@@ -132,9 +132,9 @@ public:
             for( auto const& mat : props.materials() )
             {
                 if ( Environment::isMasterRank() )
-                    std::cout << "FluidMechanics: set material " << mat.name() << "\n";
-                P0Rho.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.rho()) );
-                P0Mu.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.mu() ) );
+                    std::cout << "FluidMechanics: set material " << material(mat) << "(marker = " << marker(mat) << "\n";
+                P0Rho.on( _range=markedelements(mesh,marker(mat)), _expr=cst(material(mat).rho()) );
+                P0Mu.on( _range=markedelements(mesh,marker(mat)), _expr=cst(material(mat).mu() ) );
             }
         }
     template < typename ExprT >
@@ -210,7 +210,7 @@ private:
 
     form1_type<fluid_space_type> l,lt;
     form2_type<fluid_space_type,fluid_space_type> a,at;
-    exporter_ptrtype e;
+    exporter_ptrtype e,et;
 };
 
 template<typename FluidSpaceType>
@@ -236,7 +236,8 @@ FluidMechanics<FluidSpaceType>::FluidMechanics( std::string n, fluid_space_ptrty
     lt(form1( _test=Xh)),
     a(form2( _trial=Xh, _test=Xh)),
     at(form2( _trial=Xh, _test=Xh)),
-    e ( exporter( _mesh=mesh, _prefix=props.name() ) )
+    e ( exporter( _mesh=mesh, _prefix=props.name(), _geo="static" ) ),
+    et ( exporter( _mesh=mesh, _prefix=props.name()+"+t", _geo="static" ) )
 {
     tic();
     tic();
@@ -246,10 +247,10 @@ FluidMechanics<FluidSpaceType>::FluidMechanics( std::string n, fluid_space_ptrty
     dz_dirichlet_conditions = props.boundaryConditions().getScalarFields ( "velocity_z", "Dirichlet" );
     
     neumann_conditions = props.boundaryConditions().template getMatrixFields<dim> ( "velocity", "Neumann" );
-    toc("FM boundary conditions");
+    toc("FM boundary conditions",verbose||FLAGS_v>0);
     tic();
     this->setMaterialProperties();
-    toc("FM material properties");
+    toc("FM material properties",verbose||FLAGS_v>0);
     
 
     if ( props.model() == "Stokes" )
@@ -304,12 +305,15 @@ void
 FluidMechanics<FluidSpaceType>::addDirichlet( form2_type<fluid_space_type, fluid_space_type>& bf,
                                                               form1_type<fluid_space_type>& lf)  
 {
+    tic();
     dirichlet_conditions.setParameterValues( props.parameters().toParameterValues() );
     dirichlet_conditions.setParameterValues( { {"t",t->time()}}  );
     for( auto const& d : dirichlet_conditions )
     {
+        LOG(INFO) << " - dirichlet condition on " << marker(d) << " expr=" << expression(d) << "\n";
         bf += on( _range=markedfaces( mesh, marker(d)), _rhs=lf, _element=u,  _expr=expression(d) );
     }
+    toc("FluidMechanics::addDirichlet", verbose || FLAGS_v > 0);
 }
 template<typename FluidSpaceType>
 void
@@ -367,12 +371,11 @@ template<typename FluidSpaceType>
 typename FluidMechanics<FluidSpaceType>::SolveData
 FluidMechanics<FluidSpaceType>::solve( mpl::int_<NAVIER_STOKES>)
 {
-    if ( Environment::isMasterRank() )
-        std::cout << "Solving for NS...\n";
+    tic();
+    LOG(INFO) << "Solving for NS...\n";
     if ( Options & FM_LINEARIZED )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << " - linearized...\n";
+        LOG(INFO) << " - linearized...\n";
         auto bdf_poly = t->polyDeriv();
         auto rhsu =  bdf_poly.template element<0>();
         lt = integrate( _range=elements(mesh), _expr=idv(P0Rho)*(trans(idv(rhsu))*id(u) ) );
@@ -384,24 +387,39 @@ FluidMechanics<FluidSpaceType>::solve( mpl::int_<NAVIER_STOKES>)
         at += a;
         this->addDirichlet( at, lt );
     }
-    return at.solve( _rhs=lt, _solution=U );
+    toc("FluidMechanics::solve<NavierStokes> assembly", verbose || FLAGS_v > 0 );
+    tic();
+    auto d = at.solve( _rhs=lt, _solution=U );
+    toc("FluidMechanics::solve<NavierStokes> solve", verbose || FLAGS_v > 0 );
+    return d;
 }
 template<typename FluidSpaceType>
 typename FluidMechanics<FluidSpaceType>::SolveData
 FluidMechanics<FluidSpaceType>::solve( mpl::int_<STOKES>)
 {
+    tic();
     this->addDirichlet( a, l );
-    return a.solve( _rhs=l, _solution=U );
+    toc("FluidMechanics::solve<Stokes> dirichlet", verbose || FLAGS_v > 0 );
+    tic();
+    auto d = a.solve( _rhs=l, _solution=U );
+    toc("FluidMechanics::solve<Stokes> solve", verbose || FLAGS_v > 0 );
+    return d;
 }
 template<typename FluidSpaceType>
 void
 FluidMechanics<FluidSpaceType>::exportResults()
 {
     tic();
+
     if ( t->isSteady() )
     {
-        e->add( "velocity", u );
-        e->add( "pressure", p );
+        for ( auto const& o : props.postProcess()["Fields"] )
+        {
+            if ( o == "velocity" )
+                e->add( "velocity", u );
+            if ( o == "pressure" )
+                e->add( "pressure", p );
+        }
 #if defined( FEELPP_FLUIDMECHANICS_BOUSSINESQ )
         e->add( "temperature", T );
 #endif
@@ -409,13 +427,41 @@ FluidMechanics<FluidSpaceType>::exportResults()
     }
     else
     {
-        e->step(t->time())->add( "velocity", this->velocity() );
-        e->step(t->time())->add( "pressure", this->pressure() );
+        
+        //e->step(t->time())->add( "rho", P0Rho );
+        //e->step(t->time())->add( "mu", P0Mu );
+        for ( auto const& o : props.postProcess()["Force"] )
+        {
+            auto F = integrate( _range=markedfaces(mesh,o),
+                                _expr=-idv(p)*N()+2*idv(P0Mu)*sym(gradv(u))*N() ).evaluate();
+            et->step(t->time())->addScalar( "Fx", F(0,0) );
+            et->step(t->time())->addScalar( "Fy", F(1,0) );
+            if ( is_3d<mesh_type>::value )
+                et->step(t->time())->addScalar( "Fz", F(2,0) );
+        }
+        for ( auto const& o : props.postProcess()["Fields"] )
+        {
+            if ( o == "velocity" )
+                et->step(t->time())->add( "velocity", u );
+            if ( o == "pressure" )
+                et->step(t->time())->add( "pressure", p );
+            if ( o == "vorticity" )
+            {
+                q.on(_range=elements(mesh), _expr=curlzv(v) );
+                et->step(t->time())->add( "vorticity", q );
+            }
+            if ( o == "cellRe" )
+            {
+                q.on(_range=elements(mesh), _expr=idv(P0Rho)*norm2(idv(u))*h()/(2*idv(P0Mu)) );
+                et->step(t->time())->add( "cellRe", q );
+            }
+        }
 #if defined( FEELPP_FLUIDMECHANICS_BOUSSINESQ )
-        e->step(t->time())->add( "temperature", T );
+        et->step(t->time())->add( "temperature", T );
 #endif
-        e->save();
+        et->save();
     }
+
     toc("FluidMechanics::exportResults", verbose);
 }
 }

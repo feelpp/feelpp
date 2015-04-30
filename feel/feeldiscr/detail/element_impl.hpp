@@ -502,7 +502,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
-        const int ncdof = is_product?nComponents1:1;
+        const int ncdof = is_product?nComponents:1;
 
         for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
         {
@@ -527,9 +527,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             for ( uint16_type q = 0; q < nq; ++q )
             {
                 for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                    //for( typename array_type::index j = 0; j < nComponents2; ++j )
+                    for( typename array_type::index j = 0; j < nComponents2; ++j )
                 {
-                    v[q]( i,0 ) += s(ldof)*v_*context.id( ldof, i, 0, q );
+                    v[q]( i,j ) += s(ldof)*v_*context.id( ldof, i, j, q );
                     //vsum +=v_*context.id( ldof, i, 0, q );
                     //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                 }
@@ -620,8 +620,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
         for ( uint k=0; k<nbPtsElt; ++k,++itL )
         {
             for ( typename array_type::index i = 0; i < nComponents1; ++i )
+                for ( typename array_type::index j = 0; j < nComponents2; ++j )
             {
-                v[boost::get<0>( *itL )]( i,0 ) =  __id( i,0,k );
+                v[boost::get<0>( *itL )]( i,j ) =  __id( i,j,k );
             }
         }
     }
@@ -1964,6 +1965,174 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
             for ( int i = 0; i < nRealDim; ++i )
                 for ( int j = 0; j < nRealDim; ++j )
                     v[boost::get<0>( *itL )]( i,j ) =  __hess( i,j,k );
+    }
+
+}
+
+
+//
+// Laplacian
+//
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename ContextType>
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v ) const
+{
+    laplacian_( context, v, mpl::int_<rank>() );
+}
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename ContextType>
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const
+{
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+
+    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
+    for ( int i = 0; i < basis_type::nDof; ++i )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        {
+            size_type ldof = basis_type::nDof*c1 + i;
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
+                           gdof < this->lastLocalIndex() )
+            ( context.eId() )
+            ( i )( c1 )( ldof )( gdof )
+            ( this->size() )( this->localSize() )
+            ( this->firstLocalIndex() )( this->lastLocalIndex() )
+            .error( "FunctionSpace::Element invalid access index" );
+
+            value_type v_ = this->globalValue( gdof );
+
+            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            {
+                v[q]( 0,0 ) += v_*context.laplacian( ldof, 0, 0, q );
+            } 
+
+        }
+    }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename ContextType>
+//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const
+{
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+
+    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
+    for ( int i = 0; i < basis_type::nDof; ++i )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        {
+            size_type ldof = basis_type::nDof*c1 + i;
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
+                           gdof < this->lastLocalIndex() )
+            ( context.eId() )
+            ( i )( c1 )( ldof )( gdof )
+            ( this->size() )( this->localSize() )
+            ( this->firstLocalIndex() )( this->lastLocalIndex() )
+            .error( "FunctionSpace::Element invalid access index" );
+
+            value_type v_ = this->globalValue( gdof );
+
+            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+                for ( int c2 = 0; c2 < nRealDim; ++c2 )
+                    v[q]( c2,0 ) += v_*context.laplacian( ldof, c2, 0, q );
+        }
+    }
+
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v,
+                                                                          bool conformalEval, matrix_node_type const& setPointsConf ) const
+{
+
+    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
+    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
+    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+
+    // create analysys map : id -> List of pt
+    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    if ( conformalEval )
+        __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
+    else
+        __loc->run_analysis( __ptsReal,invalid_size_type_value );
+    analysis_iterator_type it = __loc->result_analysis_begin();
+    analysis_iterator_type it_end = __loc->result_analysis_end();
+    analysis_output_iterator_type itL,itL_end;
+
+    //geomap
+    gm_ptrtype __gm = this->functionSpace()->gm();
+
+    //if analysis map is empty : no interpolation
+    if ( it==it_end ) return;
+
+    //alocate a point matrix
+    size_type nbPtsElt=it->second.size();
+    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
+    matrix_node_type pts( nbCoord, nbPtsElt );
+
+    //init the geomap context and precompute basis function
+    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
+    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
+    gmc_ptrtype __c( new gmc_type( __gm,
+                                   this->functionSpace()->mesh()->element( it->first ),
+                                   __geopc ) );
+    typedef typename mesh_type::element_type geoelement_type;
+    typedef typename functionspace_type::fe_type fe_type;
+    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
+    typedef boost::shared_ptr<fectx_type> fectx_ptrtype;
+    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
+                                         __c,
+                                         __pc ) );
+
+    for ( ; it!=it_end; ++it )
+    {
+        nbPtsElt = it->second.size();
+
+        //iterate in the list pt for a element
+        itL=it->second.begin();
+        itL_end=it->second.end();
+
+        //compute a point matrix with the list of point
+        pts= matrix_node_type( nbCoord, nbPtsElt );
+
+        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
+            ublas::column( pts, i ) = boost::get<1>( *itL );
+
+        //update geomap context
+        __geopc->update( pts );
+        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        //update precompute of basis functions
+        __pc->update( pts );
+        __ctx->update( __c, __pc );
+
+        //evaluate element for these points
+        laplacian_type __lap( this->laplacian( *__ctx ) );
+
+        //update the output data
+        itL=it->second.begin();
+
+        for ( uint k=0; k<nbPtsElt; ++k,++itL )
+            v[boost::get<0>( *itL )]( 0,0 ) =  __lap( 0,0,k );
     }
 
 }

@@ -407,7 +407,7 @@ expr( std::string const& s, std::string const& se, ExprT const& e, std::string f
     auto it = std::find_if( g.second.begin(), g.second.end(),
                             [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
     LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << se << " in expression " << s;
-    std::cout << "g.second.size() " << g.second.size() << "\n";
+    LOG(INFO) << "g.second.size() " << g.second.size() << "\n";
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
     return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, s, VFmap, filename, world ) );

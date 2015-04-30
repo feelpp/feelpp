@@ -49,8 +49,7 @@ class GeoEntity
     boost::equality_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity>, size_type>,
-public Entity
-
+    public Entity
 {
 public:
 
@@ -101,6 +100,9 @@ public:
     {
         typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
     };
+    template<typename T = double>
+    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -512,11 +514,28 @@ public:
     }
 
     /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
+        {
+            M_idInOthersPartitions = iop;
+        }
+
+    /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
+        {
+            M_idInOthersPartitions = iop;
+        }
+
+    /**
      * \return the id of the entity in a partition pid
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOthersPartitions.find( pid )!=M_idInOthersPartitions.end() ) << " id is unknow for this pid " << pid << "\n";
+        DCHECK( M_idInOthersPartitions.find( pid )!=M_idInOthersPartitions.end() ) 
+            << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOthersPartitions.find( pid )->second;
     }
 

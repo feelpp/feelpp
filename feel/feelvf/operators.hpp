@@ -86,7 +86,7 @@ namespace vf
           ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ) \
+          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ) \
       ) \
    ) \
    /**/

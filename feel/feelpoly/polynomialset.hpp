@@ -42,6 +42,7 @@
 #include <feel/feelpoly/context.hpp>
 
 #include <feel/feelalg/svd.hpp>
+
 #include <feel/feelpoly/dubiner.hpp>
 #include <feel/feelpoly/legendre.hpp>
 #include <feel/feelpoly/boundadapted.hpp>
@@ -51,6 +52,7 @@
 #include <feel/feelpoly/quadmapped.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/traits.hpp>
 
 namespace Feel
 {
@@ -118,8 +120,11 @@ public:
     typedef typename basis_type::matrix_type matrix_type;
     typedef typename basis_type::points_type points_type;
 
-
-    typedef PolynomialSet<Poly, Vectorial> gradient_polynomialset_type;
+    using gradient_polynomialset_type = typename mpl::if_<is_scalar_polynomial<polyset_type>,
+                                                          mpl::identity<PolynomialSet<Poly, Vectorial> >,
+                                                          typename mpl::if_<is_vector_polynomial<polyset_type>,
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor2> >,
+                                                                            mpl::identity<PolynomialSet<Poly, Tensor3> > >::type>::type::type;
 
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
     BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
@@ -227,6 +232,17 @@ public:
                                ublas::slice( nrows*i+i, nComponents, nrows/nComponents ),
                                ublas::slice( 0, 1, ncols ) ), true );
     }
+
+    component_type operator()( uint16_type i, uint16_type j ) const
+        {
+            BOOST_STATIC_ASSERT( is_tensor2 );
+            
+            const int nrows = M_coeff.size1()/nComponents;
+            const int ncols = M_coeff.size2();
+            return component_type( Poly(), ublas::project( M_coeff,
+                                                           ublas::slice( nrows*i+j, nComponents, nrows/nComponents ),
+                                                           ublas::slice( 0, 1, ncols ) ), true );
+        }
 
     //@}
 
@@ -358,7 +374,8 @@ public:
         {
             if ( !__as_is )
             {
-                M_coeff = ublas::prod( __c, polyset_type::toMatrix( M_coeff ) );
+                auto m = polyset_type::toMatrix( M_coeff );
+                M_coeff = ublas::prod( __c, m );
                 M_coeff = polyset_type::toType( M_coeff );
             }
 
@@ -574,7 +591,7 @@ public:
 
         return res;
     }
-
+    
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
@@ -584,6 +601,24 @@ public:
         return res;
     }
 
+    template<typename AE>
+    ublas::matrix<matrix_type> derivate2( ublas::matrix_expression<AE> const& pts ) const
+        {
+            //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
+            matrix_type eval( M_basis.evaluate( pts ) );
+            ublas::matrix<matrix_type> res( nDim, nDim );
+
+            for ( uint16_type i = 0; i < nDim; ++i )
+            {
+                for ( uint16_type j = 0; j < nDim; ++j )
+                {
+                    matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
+                    matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
+                    res( i, j ) = ublas::prod( p2, eval );
+                }
+            }
+            return res;
+        }
     template<typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
@@ -733,16 +768,15 @@ public:
 
         typedef typename reference_element_type::points_type matrix_node_t_type;
         typedef ublas::matrix<value_type> matrix_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nDim> g_type;
         typedef Eigen::Matrix<value_type,nDim,nDim> h_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> l_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> l_type;
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
-        typedef boost::multi_array<h_type,2> hessian_type;
-        typedef boost::multi_array<l_type,2> laplacian_type;
+        typedef boost::multi_array<h_type,3> hessian_type;
 
-        PreCompute() {}
+        PreCompute()  = default;
 
 #if 0
         /**
@@ -773,42 +807,19 @@ public:
             M_nodes( __pts ),
             M_phi(),
             M_grad(),
-            M_hessian(),
-            M_laplacian()
+            M_hessian()
         {
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
 
         /** copy constructor (deep copy) */
-        PreCompute( PreCompute const& __pc )
-            :
-            M_ref_ele( __pc.M_ref_ele ),
-            M_nodes( __pc.M_nodes ),
-            M_phi( __pc.M_phi ),
-            M_grad( __pc.M_grad ),
-            M_hessian( __pc.M_hessian ),
-            M_laplacian( __pc.M_laplacian )
-        {}
+        PreCompute( PreCompute const& __pc ) = default;
 
         /** */
-        ~PreCompute()
-        {}
+        ~PreCompute() = default;
 
         /** copy operator (deep copy) */
-        PreCompute& operator=( PreCompute const& __pc )
-        {
-            if ( this != &__pc )
-            {
-                M_ref_ele = __pc.M_ref_ele;
-                M_nodes = __pc.M_nodes;
-                M_phi = __pc.M_phi;
-                M_grad = __pc.M_grad;
-                M_hessian = __pc.M_hessian;
-                M_laplacian = __pc.M_laplacian;
-            }
-
-            return *this;
-        }
+        PreCompute& operator=( PreCompute const& __pc ) = default;
 
         void update( matrix_node_t_type const& __pts )
         {
@@ -927,21 +938,15 @@ public:
             return M_hessian;
         }
 
+        // hessian of scalar basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_hessian[i][q]( c1,c2 );
+            return M_hessian[i][0][q]( c1,c2 );
         }
-
-
-
-        laplacian_type const& laplacian() const
+        // hessian of vectorial basis function
+        value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
             {
-                return M_laplacian;
-            }
-
-        value_type laplacian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                return M_laplacian[i][q]( c1,c2 );
+                return M_hessian[i][c1][q]( c2,c3 );
             }
 
         void print()
@@ -966,12 +971,11 @@ public:
         {
             M_phi.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_grad.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
-            M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
-            M_laplacian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
+            M_hessian.resize( boost::extents[M_ref_ele->nbDof()][1][__pts.size2()] );
 
             matrix_type phiv = M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
-            matrix_type __hessian( M_ref_ele->gradient().gradient().evaluate( __pts ) );
+            ublas::matrix<matrix_type> __hess( M_ref_ele->derivate2( __pts ) );
 
             typedef typename grad_type::index index;
             const index I = M_ref_ele->nbDof();
@@ -990,16 +994,11 @@ public:
                     for ( index j = 0; j < nDim; ++j )
                         for ( index k = j; k < nDim; ++k )
                         {
-                            value_type t = __hessian( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
-                            M_hessian[i][q]( j,k ) = t;
-                            M_hessian[i][q]( k,j ) = t;
+                            //value_type t = __hessian( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
+                            value_type t = __hess(j,k)( i, q );
+                            M_hessian[i][0][q]( j,k ) = t;
+                            M_hessian[i][0][q]( k,j ) = t;
                         }
-                for ( index q = 0; q < Q; ++q )
-                    for ( index j = 0; j < nDim; ++j )
-                    {
-                        value_type t = __hessian( nDim*nDim*I*( nDim*j+j )+nDim*nDim*i+nDim*j+j, q );
-                        M_laplacian[i][q]( 0,0 ) += t;
-                    }
             }
 
         }
@@ -1026,9 +1025,11 @@ public:
             //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
-
+            M_hessian.resize( boost::extents[M_ref_ele->nbDof()][nRealDim][__pts.size2()] );
+            
             matrix_type phiv = M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
+            ublas::matrix<matrix_type> __hess( M_ref_ele->derivate2( __pts ) );
 
             for ( index i = 0; i < I; ++i )
             {
@@ -1050,15 +1051,64 @@ public:
                                 //M_grad[I*c1+i][j][nRealDim-1][q] = __grad[l]( nldof*c1+nRealDim*i+j, q );
                                 //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  M_grad[I*c1+i][j](l,q) << "\n";
                             }
-#if 0
-                    for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nDim; ++j )
-                        {
-                            value_type t = __hessian( nDim*nDim*I*( nDim*j+j )+nDim*nDim*i+nDim*j+j, q );
-                            M_laplacian[i][q]( 0,0 ) += t;
-                        }
-#endif //
 
+                    for ( index q = 0; q < Q; ++q )
+                        for ( index l = 0; l < nRealDim; ++l )
+                            for ( index j = 0; j < nDim; ++j )
+                                for ( index k = j; k < nDim; ++k )
+                                {
+                                    value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
+                                    M_hessian[I*c1+i][l][q]( j,k ) = t;
+                                    M_hessian[I*c1+i][l][q]( k,j ) = t; 
+                                }
+
+
+                }
+            }
+        }
+
+        void
+        init( reference_element_ptrtype const& M_ref_ele,
+              matrix_node_t_type const& __pts,
+              mpl::int_<2> )
+        {
+            typedef typename grad_type::index index;
+#if 0
+            std::cout << "family = " << M_ref_ele->familyName() << std::endl;
+            std::cout << "is_product = " << reference_element_type::is_product << std::endl;
+            std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+#endif
+            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nComponents/nComponents:M_ref_ele->nbDof() );
+            //std::cout << "I = " << I << std::endl;
+            //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+
+            const index Q = __pts.size2();
+            //std::cout << "Q = " << I << std::endl;
+
+            const int nc1dof= ( reference_element_type::is_product?nComponents1:1 );
+            const int nc2dof= ( reference_element_type::is_product?nComponents2:1 );
+            int nldof= ( reference_element_type::is_product?I*nComponents:I );
+            //std::cout << " nldof = " << nldof << " I=" << I << " nc1dof=" << nc1dof << " nc2dof=" << nc2dof << std::endl;
+            M_phi.resize( boost::extents[nldof][__pts.size2()] );
+            M_grad.resize( boost::extents[nldof][__pts.size2()] );
+
+            matrix_type phiv = M_ref_ele->evaluate( __pts );
+
+            for ( index i = 0; i < I; ++i )
+            {
+                for ( index c1 = 0; c1 < nc1dof; ++c1 )
+                {
+                    for ( index c2 = 0; c2 < nc2dof; ++c2 )
+                    {
+                        int II = i + c2*I+nc2dof*c1*I;
+                        for ( index q = 0; q < Q; ++q )
+                        {
+                            for ( index j = 0; j < nRealDim; ++j )
+                                for ( index k = 0; k < nRealDim; ++k )
+                                    M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nRealDim*j+k, q );
+                            //std::cout << "phi[" << II << "(" << i << ",c2=" << c2 << ", " << I << "," << nc2dof << ",c1=" << c1 << ")[" << q << "]=" << M_phi[II][q] << std::endl;
+                        }
+                    }
                 }
             }
         }
@@ -1069,7 +1119,6 @@ public:
         functionvalue_type M_phi;
         grad_type M_grad;
         hessian_type M_hessian;
-        laplacian_type M_laplacian;
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
@@ -1177,17 +1226,17 @@ public:
         typedef typename matrix_type::value_type dphi_type;
         typedef typename matrix_type::value_type id_type;
 #else
-        typedef Eigen::Matrix<value_type,nComponents1,1> id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nDim> ref_grad_type;
         typedef Eigen::Matrix<value_type,nComponents1,NDim> grad_type;
         typedef Eigen::Matrix<value_type,NDim,NDim> hess_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> laplacian_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> laplacian_type;
         typedef Eigen::Matrix<value_type,1,1> div_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dn_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dn_type;
         typedef Eigen::Matrix<value_type,3,1> curl_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dx_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dy_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> dz_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dx_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dy_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> dz_type;
 
 #if 0
         typedef boost::multi_array<id_type,2> functionvalue_type;
@@ -1457,7 +1506,8 @@ public:
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                 }
                 if ( vm::has_laplacian<context>::value )
-                {
+                {   
+                    M_hessian.resize( boost::extents[ntdof][M_npoints] );
                     M_laplacian.resize( boost::extents[ntdof][M_npoints] );
                 }
             }
@@ -1821,7 +1871,7 @@ public:
             Feel::detail::ignore_unused_variable_warning( q );
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            throw std::logic_error( "invalid use of curl operator, field must be vectorial" );
+            throw std::logic_error( "invalid use of curl operator, polynomial must be vectorial" );
             return 0;
         }
 

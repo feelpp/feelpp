@@ -52,9 +52,13 @@ int main(int argc, char**argv )
   auto Xh = Pch<2>( mesh ); // \( \mathbb{p}_2 \) space
   //! [space]
 
+  //! [expr]
+  auto myExpr = sin(pi*Px());
+  //! [expr]
+  
   //! [function]
   auto v = project( _space=Xh, _range=elements(mesh),
-      _expr=sin(pi*Px()));
+      _expr=myExpr);
   //! [function]
 
   //! [exporter]	

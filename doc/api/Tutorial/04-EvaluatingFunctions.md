@@ -1,12 +1,27 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page TutorialExpr Defining and using expressions
+Using function {#TutorialFunctions}
+=====================
+
+[TOC]
+
+Once you  have created an element, you may want to give it a value, that can depends on a lot of parameters (mainly spaces, but other may apply).
+
+To do so, Feel++ relies on expression.
+We may use tree kind of expression :
+
+- [Parsed](#parsed)
+- [Build-in](#build-in)
+- [Hard coded](#hc)
 
 
-The next step is to construct a function space over the mesh. The source code is
-available in \c myexpression.cpp.
+# Parsed {#parsed}
 
-\section TutorialIntegralsExpr Step by step explanations
+Thanks to [GiNaC](http://www.ginac.de), we can parse expression like that :
+```sh
+./feelpp_myexpression --functions.f="2*x*y+cos(x+y):x:y"
+```
+
+Step by step explanations
+------------ 
 
 We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
@@ -15,9 +30,9 @@ then we define some expression through the command line or config file: \c g is 
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below
-\co
+```c++
 feelpp_doc_myexpression --a=3 --functions.g="a*x*y:x:y:a" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
-\eco
+```
 
 \remark You can print back the expression to the screen to check that everything is ok.
 \remark You want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
@@ -41,53 +56,15 @@ and the curl of \c f
 Finally we evaluate these expression at one point given by the option \c x and \c y
 \snippet myexpression.cpp eval
 
-\section TutorialExprResults Some results
+# Build-in {#build-in}
 
-We start with the following function \f$g=1\f$ and \f$f=(1,1)\f$.
+Instead of defining an expression from a string, you can use
+\snippet myexporter.cpp expr
+The list of the Feel++ Keyword is [here](Keywords.html).
 
-\code{.sh}
-shell> ./feelpp_doc_myexpression --functions.g=1:x:y --functions.f="{1,1}:x:y
-g=1
-f={x,-y}
-grad(g)=[[0]]
-grad(f)=[[1,0],[0,-1]]
-laplacian(g)=[[0]]
-laplacian(f)=[[0],[0]]
-div(f)=[[0]]
-curl(f)=[[0]]
-Evaluation  at  (0,0):
-           g(x,y)=1
-           f(x,y)= 0
--0
-Gradient:
-     grad(g)(x,y)= 0 -0
-     grad(f)(x,y)= 1  0
- 0 -1
-Divergence:
-      div(f)(x,y)=0
-Curl:
-     curl(f)(x,y)=-3.14159
-Laplacian:
-laplacian(g)(x,y)=0
-laplacian(f)(x,y)=0
-0
-\endcode
+# Hard Coded {#hc}
 
-The symbolic calculus system worked as expected.
+One other method to define function is described here.
 
+\snippet myfunctor.cpp all
 
-\section TutorialExprCode Complete code
-
-The complete code reads as follows
-
-\snippet myexpression.cpp all
-
-to compile just use the `make` command in your compilation directory
-\verbatim
-make feelpp_doc_myexpression
-\endverbatim
-
-
-
-*/
-}

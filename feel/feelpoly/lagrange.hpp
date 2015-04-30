@@ -501,8 +501,7 @@ public:
             for( int q = 0; q < nLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalDof+q ) = expr.evalq( c1, c2, q );
-
+                        Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
         }
     local_interpolant_type
     faceLocalInterpolant() const
@@ -522,7 +521,7 @@ public:
             for( int q = 0; q < nLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                        Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
 
         }
 
@@ -544,7 +543,7 @@ public:
             for( int q = 0; q < nLocalEdgeDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                        Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
 
         }
     local_interpolant_type
@@ -565,7 +564,7 @@ public:
             for( int q = 0; q < nLocalVertexDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                        Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
 
         }
 
@@ -588,7 +587,7 @@ public:
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
                     {
-                        int ldof = (c1+fe_expr_type::nComponents1*c2)*fe_expr_type::nLocalDof + i;
+                        int ldof = (c2+fe_expr_type::nComponents2*c1)*fe_expr_type::nLocalDof + i;
                         int ldof2 = (fe_expr_type::is_product)? ldof : i;
                         Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
                     }
