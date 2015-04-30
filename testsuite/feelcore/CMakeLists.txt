@@ -25,6 +25,7 @@ feelpp_add_test(gatherscatter_mpi_petsc_datatype  SRCS test_gatherscatter.cpp DE
 #feelpp_add_test(gatherscatter_mpi_petsc  SRCS test_gatherscatter.cpp DEFS USE_PETSC=1)
 feelpp_add_test(gatherscatter_mpi  SRCS test_gatherscatter.cpp )
 feelpp_add_test(comm  SRCS test_comm.cpp )
+feelpp_add_test(worldcomm  SRCS test_worldcomm.cpp GEO test_twodomains.geo )
 
 add_custom_target(feelpp_test_gatherscatter)
 add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi)
