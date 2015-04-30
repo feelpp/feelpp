@@ -334,7 +334,7 @@ template<typename MeshType>
 void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 {
     M_meshPartIn = meshParts;
-
+    M_numParts = meshParts->worldComm().localSize();
     tic();
     M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), true);
     readStats();
@@ -1208,7 +1208,7 @@ void PartitionIO<MeshType>::writeGhosts( std::string const& tablename,
     auto it = begin;
     size_type max_neighbors = 0;
     size_type max_num_entity = 0;
-    
+    DLOG(INFO) << "number of entities for table " << tablename << " :" << std::distance(begin,end) << "  max num entities " << maxNumEntities;
     for( ; it != end; ++ it )
     {
         CHECK( it->numberOfNeighborPartitions() == it->numberOfPartitions()-1 ) << "number of partitions to which the point belong is invalid " << it->numberOfNeighborPartitions() << " vs " << it->numberOfPartitions()-1;
@@ -1226,26 +1226,39 @@ void PartitionIO<MeshType>::writeGhosts( std::string const& tablename,
     hsize_t currentSpaceDimsGhost[2];
     hsize_t currentCountGhost[2];
     //hsize_t currentOffsetGhost[2];
-    currentSpaceDimsGhost[0] = (1+globals[0])*M_numParts;
+    currentSpaceDimsGhost[0] = (1+3*globals[0])*M_numParts;
     currentSpaceDimsGhost[1] = globals[1];
-    currentCountGhost[0] = (1+globals[0]);
+    currentCountGhost[0] = (1+3*globals[0]);
     currentCountGhost[1] = currentSpaceDimsGhost[1];
-    
+    LOG(INFO) << "creating ghost table " << tablename << " dims:" << currentSpaceDimsGhost[0] << " x " << currentSpaceDimsGhost[1] << " globals[0]:" << globals[0];
     M_HDF5IO.createTable (tablename, H5T_STD_U32BE, currentSpaceDimsGhost);
     
     hsize_t currentOffsetGhost[2]={M_meshPartsOut->worldComm().localRank()* currentCountGhost[0], 0};
     std::vector<unsigned int> ghost_info( currentCountGhost[0]*currentCountGhost[1], 0 );
     
+    
     size_type strideGhost = currentCountGhost[1];
     it = begin;
     for( int j = 0 ; it != end; ++it )
     {
+        DCHECK(it->numberOfNeighborPartitions() == it->numberOfPartitions()-1) << "Invalid partition data for entity id " << it->id() << " neighbord partitions " << it->numberOfNeighborPartitions() << "  number of partitions " << it->numberOfPartitions() << " should be equal, -1 for the number of partitions";
         if ( it->numberOfNeighborPartitions() >= 1 )
         {
             ghost_info[0*strideGhost+j] = it->id();
             auto const& npids = it->neighborPartitionIds();
+            
             for(int n = 0; n < it->numberOfNeighborPartitions();++n)
-                ghost_info[(n+1)*strideGhost+j] = npids[n];
+            {
+                ghost_info[(0*globals[0]+n+1)*strideGhost+j] = npids[n];
+                
+            }
+            int n = 0;
+            for( auto const& i: it->idInOthersPartitions())
+            {
+                ghost_info[(1*globals[0]+n+1)*strideGhost+j] = i.first;
+                ghost_info[(2*globals[0]+n+1)*strideGhost+j] = i.second;
+                n++;
+            }
             ++j;
         }
     }
@@ -1264,15 +1277,18 @@ void PartitionIO<MeshType>::readGhosts( std::string const& tablename,
                                         ContainerType& container )
 {
     auto it = begin;
-    hsize_t currentSpaceDimsGhost[2];
+    hsize_t currentSpaceDimsGhost[2]{0,0};
     M_HDF5IO.openTable (tablename, currentSpaceDimsGhost);
-    LOG(INFO) << "loading ghost table " << tablename << " dims:" << currentSpaceDimsGhost[0] << " x " << currentSpaceDimsGhost[1];
+    LOG(INFO) << "loading ghost table " << tablename << " dims:" << currentSpaceDimsGhost[0] << " x " << currentSpaceDimsGhost[1] << " for " << M_numParts << "  partitions";
     
-    hsize_t currentCountGhost[2];
+    hsize_t currentCountGhost[2]{0,0};
     
     currentCountGhost[0] = currentSpaceDimsGhost[0]/M_numParts;
     currentCountGhost[1] = currentSpaceDimsGhost[1];
-    
+    LOG(INFO) << "current  ghost : " << currentCountGhost[0] << " x " << currentCountGhost[1];
+
+    hsize_t maxnumghost = (currentCountGhost[0]-1)/3;
+    LOG(INFO) << "readGhosts: max num ghosts : " << maxnumghost;
     hsize_t currentOffsetGhost[2]={M_meshPartIn->worldComm().localRank()* currentCountGhost[0], 0};
     
     std::vector<unsigned int> ghost_info( currentCountGhost[0]*currentCountGhost[1], 0 );
@@ -1294,10 +1310,24 @@ void PartitionIO<MeshType>::readGhosts( std::string const& tablename,
         {
             int id = ghost_info[0*strideGhost+j];
             std::vector<rank_type> npids;
+            std::map<rank_type,size_type> iop;
             for(int n = 0; n < it->numberOfPartitions()-1;++n)
-                npids.push_back(ghost_info[(n+1)*strideGhost+j]);
+            {
+             
+                npids.push_back(ghost_info[(0*maxnumghost+n+1)*strideGhost+j]);
+                rank_type p = ghost_info[(1*maxnumghost+n+1)*strideGhost+j];
+                size_type io = ghost_info[(2*maxnumghost+n+1)*strideGhost+j];
+                DLOG(INFO) << "id " << id << " part "  << n << "/" << it->numberOfPartitions()-1 
+                           << " npid: " << ghost_info[(0*maxnumghost+n+1)*strideGhost+j] << " p: " << p << " io: " << io;
+                iop[p]=io;
+            }
             using entity_type = typename IteratorType::value_type;
-            container.modify(it,[&npids]( entity_type& e ) { e.setNeighborPartitionIds( npids ); } );
+            container.modify(it,
+                             [&npids,&iop]( entity_type& e ) 
+                             { 
+                                 e.setNeighborPartitionIds( npids ); 
+                                 e.setIdInOtherPartitions( iop );
+                             } );
             ++j;
         }
     }
