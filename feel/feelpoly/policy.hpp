@@ -41,6 +41,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/traits.hpp>
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
@@ -50,13 +51,14 @@ namespace fem
 enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
 }
 
+
 /**
  * Policy for \c Scalar polynomials or polynomial set of dimension
  * \p Dim
  * \note \c Scalar can be seen as rank 0 tensor polynomials
  */
 template<uint16_type Dim>
-struct Scalar
+struct Scalar : public ScalarBase
 {
     static const uint16_type rank = 0;
     static const uint16_type nDim = Dim;
@@ -95,7 +97,7 @@ struct Scalar
  * \note \c Vectorial can be seen as rank 1 Tensor polynomials
  */
 template<uint16_type Dim>
-struct Vectorial
+struct Vectorial : public VectorialBase
 {
     static const uint16_type rank = 1;
     static const uint16_type nDim = Dim;
@@ -239,7 +241,7 @@ struct Field
  *
  */
 template<uint16_type Dim>
-struct Tensor2
+struct Tensor2 : public Tensor2Base
 {
     static const uint16_type rank = 2;
     static const uint16_type nDim = Dim;
@@ -276,9 +278,10 @@ struct Tensor2
             {
                 ublas::project( __c_reshaped,
                                 ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) = ublas::project( __c,
-                                        ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                        ublas::slice( 0, 1, nCols ) );
+                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
+                    ublas::project( __c,
+                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                    ublas::slice( 0, 1, nCols ) );
             }
         }
 

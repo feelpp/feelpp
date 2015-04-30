@@ -139,21 +139,33 @@ public:
      * This allows ownership of v to remain with the original creator,
      * and to simply provide additional functionality with the VectorPetsc.
      */
-    VectorPetsc( Vec v )
+    VectorPetsc( Vec v, bool duplicate = false )
         :
         super(),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
-    VectorPetsc( Vec v, datamap_ptrtype const& dm )
+    VectorPetsc( Vec v, datamap_ptrtype const& dm, bool duplicate = false )
         :
         super( dm ),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
@@ -732,7 +744,7 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
     VectorPetscMPI( datamap_ptrtype const& dm );
 

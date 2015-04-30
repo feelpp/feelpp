@@ -101,3 +101,6 @@
 	path = projects/holo3
 	url = https://github.com/feelpp/holo3
 	fetchRecurseSubmodules = on-demand
+[submodule "contrib/jsonlab"]
+	path = contrib/jsonlab
+	url = https://github.com/fangq/jsonlab.git

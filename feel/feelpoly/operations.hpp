@@ -296,6 +296,7 @@ divergence( PolynomialSet<Poly, Vectorial> const& p )
 
     return PolynomialSet<Poly, Scalar>( Poly(), c, true );
 }
+
 /**
  * \brief compute the curl of a vectorial polynomial \p p
  *

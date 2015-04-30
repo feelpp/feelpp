@@ -54,7 +54,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
 
         for ( int i = 0; i < FEType::nLocalDof; ++i )
         {
-            int nc1 = ( is_product?nComponents1:1 );
+            int nc1 = ( is_product?nComponents:1 );
 
             for ( int c1 =0; c1 < nc1; ++c1 )
             {
@@ -1162,7 +1162,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         else
             for ( int i = 0; i < FEType::nLocalDof; ++i )
             {
-                int nc1 = ( is_product?nComponents1:1 );
+                int nc1 = ( is_product?nComponents:1 );
 
                 for ( int c1 =0; c1 < nc1; ++c1 )
                 {
@@ -1419,7 +1419,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
         for ( int i = 0; i < FEType::nLocalDof; ++i )
         {
-            int nc1 = ( is_product?nComponents1:1 );
+            int nc1 = ( is_product?nComponents:1 );
 
             for ( int c1 =0; c1 < nc1; ++c1 )
             {

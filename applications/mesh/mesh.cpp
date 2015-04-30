@@ -21,6 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <feel/feelconfig.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -43,7 +44,9 @@ int main( int argc, char** argv )
 
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition);
+    tic();
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition, _savehdf5=1);
+    toc("loading mesh done");
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
@@ -54,7 +57,7 @@ int main( int argc, char** argv )
         std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
         std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
         if ( FEELPP_DIM > 2 )
-            std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;  
+            std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;
         std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
         std::cout << "    number of vertices : " << mesh->numGlobalVertices() << std::endl;
         std::cout << " - mesh sizes" << std::endl;
@@ -80,7 +83,8 @@ int main( int argc, char** argv )
           {
             std::cout << " - Marker (elements) " << name << std::endl;
             std::cout << "    |- number of elements " << nelts << std::endl;
-            std::cout << "    |- measure (elements(mesh) - markedelements(mesh,<<"name"<<) : " << meas << " -- " << meas1 << std::endl;
+            std::cout << "    |- measure (elements(mesh) - markedelements(mesh,"
+                      <<name <<") : " << meas << " -- " << meas1 << std::endl;
 
           }
        }

@@ -320,7 +320,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         toc("register elements associated to marked points" , FLAGS_v > 0 );
         VLOG(1) << "[Mesh::updateForUse] update add element info for marked points : " << ti.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
         
-        this->updateNumGlobalElements();
+        this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {

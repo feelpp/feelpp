@@ -1,5 +1,11 @@
 
-#include <petsc-private/pcimpl.h>   /*I "petscpc.h" I*/
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) && PETSC_VERSION_LESS_THAN( 3,6,0 )
+#include <petsc-private/pcimpl.h>
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#include <petsc/private/pcimpl.h>
+#else
+#include <private/pcimpl.h>
+#endif
 
 typedef struct {
   PetscBool allocated;
@@ -32,8 +38,13 @@ static PetscErrorCode PCLSC2Allocate_Private(PC pc)
 #else
   ierr = MatSchurComplementGetSubmatrices(pc->mat,&A,NULL,NULL,NULL,NULL);CHKERRQ(ierr);
 #endif
+#if PETSC_VERSION_LESS_THAN(3,6,0)
   ierr = MatGetVecs(A,&lsc->x0,&lsc->y0);CHKERRQ(ierr);
   ierr = MatGetVecs(pc->pmat,&lsc->x1,NULL);CHKERRQ(ierr);
+#else
+  ierr = MatCreateVecs(A,&lsc->x0,&lsc->y0);CHKERRQ(ierr);
+  ierr = MatCreateVecs(pc->pmat,&lsc->x1,NULL);CHKERRQ(ierr);
+#endif
   if (lsc->scalediag) {
     ierr = VecDuplicate(lsc->x0,&lsc->scale);CHKERRQ(ierr);
   }
@@ -183,7 +194,11 @@ static PetscErrorCode PCDestroy_LSC2(PC pc)
 
 #undef __FUNCT__
 #define __FUNCT__ "PCSetFromOptions_LSC2"
+#if PETSC_VERSION_LESS_THAN(3,6,0)
 static PetscErrorCode PCSetFromOptions_LSC2(PC pc)
+#else
+static PetscErrorCode PCSetFromOptions_LSC2(PetscOptions*, PC pc)
+#endif
 {
 #if 0
     PC_LSC2         *lsc = (PC_LSC2*)pc->data;
