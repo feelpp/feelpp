@@ -20,8 +20,8 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define USE_BOOST_TEST 0
-#if defined(USE_BOOST_TEST)
+#define USE_BOOST_TEST 1
+#if USE_BOOST_TEST
 #define BOOST_TEST_MODULE test_laplacian
 #include <testsuite/testsuite.hpp>
 #endif
@@ -95,26 +95,36 @@ public :
             u.on(_range=elements(mesh), _expr=expr( f ));
 
             boost::mpi::timer ti;
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "Scalar Laplacian "<<Dim<<"D" );
-
+#endif
             ti.restart();
             auto f1 = form1( _test=Xh );
             f1 = integrate( _range=elements(mesh), _expr=laplacian(u) );
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
+#endif
 
             ti.restart();
-            auto a = inner_product( f1.vector(), u );
+            auto a = f1(u);
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
+#endif
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= lapf ).evaluate()(0,0);
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
+
             BOOST_CHECK_SMALL( a-b, 1e-9 );
+#else
+            CHECK(math::abs(a-b) < 1e-9) << "check failed a=" << a << "  != b =" << b;
+#endif
         }
 };
 
@@ -139,31 +149,40 @@ public :
             u.on(_range=elements(mesh), _expr=expr<Dim,1>( f ));
 
             boost::mpi::timer ti;
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "Vectorial Laplacian "<<Dim<<"D" );
+#endif
 
             ti.restart();
             auto f1 = form1( _test=Xh );
             f1 = integrate( _range=elements(mesh), _expr=inner(laplacian(u),one()) );
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time assemble laplacian(u)=" << ti.elapsed() << "s]" );
+#endif
 
             ti.restart();
-            auto a = inner_product( f1.vector(), u );
+            auto a = f1(u);
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time inner product  =" << ti.elapsed() << "s] a=" <<  a );
+#endif
 
             ti.restart();
             auto b = integrate( _range= elements( mesh ), _expr= inner(lapf,one()) ).evaluate()(0,0);
+#if USE_BOOST_TEST
             if ( Environment::rank() == 0 )
                 BOOST_TEST_MESSAGE( "[time int " << lapf <<" =" << ti.elapsed() << "s] b=" <<  b );
 
+
             BOOST_CHECK_SMALL( a-b, 1e-9 );
+#endif
         }
 };
 
 
-#if defined(USE_BOOST_TEST)
+#if USE_BOOST_TEST
  FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
  BOOST_AUTO_TEST_SUITE( inner_suite )
 
