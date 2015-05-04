@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
         WorldComm w( color );
 
         auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >(w),
-                              _filename = "test_twodomains.geo",
+                              _filename = "test_twodomains.geo"
                               );
 
         BOOST_WARN( mesh->numberOfPartitions()!= w.localSize() );
