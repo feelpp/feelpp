@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
         WorldComm w( color );
 
-        auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >(w),
+        auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >(w.localComm()),
                               _filename = "test_twodomains.geo"
                               );
 
