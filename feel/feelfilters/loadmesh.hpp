@@ -66,7 +66,7 @@ BOOST_PARAMETER_FUNCTION(
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), boption(_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       (WorldComm), mesh->WorldComm() )
+      ( worldcomm,       (WorldComm), mesh->worldComm() )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_name="gmsh.rebuild") )
       ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
