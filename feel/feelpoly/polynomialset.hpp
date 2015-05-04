@@ -1857,7 +1857,10 @@ public:
          * \param i index containing current function and component indices
          * \return curl of the basis function at the q-th point
          */
-
+        curl_type const& curl( uint16_type i, uint32_type q ) const
+            {
+                return M_curl[i][q];
+            }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
@@ -1963,15 +1966,15 @@ public:
         }
 
         value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( i );
-            Feel::detail::ignore_unused_variable_warning( q );
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
-            return 0;
-        }
-
+            {
+                Feel::detail::ignore_unused_variable_warning( i );
+                Feel::detail::ignore_unused_variable_warning( q );
+                Feel::detail::ignore_unused_variable_warning( c1 );
+                Feel::detail::ignore_unused_variable_warning( c2 );
+                throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
+                return 0;
+            }
+        
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
                 return curlz( i, c1, c2, q, mpl::bool_<do_opt>() );
@@ -1987,15 +1990,22 @@ public:
                 return M_curl[i][q]( 2 );
             }
 
-
+        hess_type const& hess( uint16_type i, uint32_type q ) const 
+            {
+                return M_hessian[i][q]; 
+            }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
-        {
-            return hess( i, c1, c2, q, mpl::int_<rank>() );
-        }
+            {
+                return hess( i, c1, c2, q, mpl::int_<rank>() );
+            }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
-        {
-            return M_hessian[i][q]( c1,c2 );
-        }
+            {
+                return M_hessian[i][q]( c1,c2 );
+            }
+        laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
+            {
+                return M_laplacian[i][q];
+            }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
                 return M_laplacian[i][q](c1,c2);
