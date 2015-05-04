@@ -252,7 +252,7 @@ struct updateIdInOthersPartitions
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setIdInOthersPartitions( M_pid, M_id );
+        element.setIdInOtherPartitions( M_pid, M_id );
     }
 private:
     rank_type M_pid;

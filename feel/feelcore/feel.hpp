@@ -94,6 +94,7 @@
 #pragma warning(disable:780)
 #endif
 #include <glog/logging.h>
+#include <glog/stl_logging.h>
 #if defined(__INTEL_COMPILER)
 #pragma warning pop
 #endif
