@@ -85,10 +85,8 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
         WorldComm w( color );
 
-        auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >,
+        auto mesh = loadMesh( _mesh = new Mesh< Simplex<2> >(w),
                               _filename = "test_twodomains.geo",
-                              _worldcomm = w.localComm(),
-                              _partitions = w.localSize()
                               );
 
         BOOST_WARN( mesh->numberOfPartitions()!= w.localSize() );
@@ -111,7 +109,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
         l+= integrate( _range=markedelements(mesh,"omega"),
                        _expr=id(v) );
 
-        a += on( _range=markedfaces( mesh, "wall"), _rhs=l, _element=u, _expr=cst(color) );
+        a += on( _range=markedfaces( mesh, "wall"), _rhs=l, _element=u, _expr=cst(color), _backend=bend );
 
         // solveb use the backend worldcomm
         a.solveb( _rhs=l, _solution=u, _backend=bend );
