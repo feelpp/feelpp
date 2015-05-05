@@ -42,10 +42,10 @@ if( FEELPP_ENABLE_DOXYGEN )
     set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     # add subpages to projects/modules
-    configure_file(
-      ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
-      ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
-    )
+    #configure_file(
+    #  ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
+    #  ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
+    #)
 
     set(FEELPP_PROJECTS_DIR,"")
     set(FEELPP_DOXYGEN_PROJECT "OFF")
@@ -62,7 +62,7 @@ if( FEELPP_ENABLE_DOXYGEN )
     endforeach()
 
     if(${FEELPP_DOXYGEN_PROJECT})
-      FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "/** \\page Project Project\n")
+      FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.md "\\page Project Project\n")
     endif()
 
     foreach(project ${projects})
@@ -73,17 +73,17 @@ if( FEELPP_ENABLE_DOXYGEN )
       string(TOUPPER ${dirname} PROJECT)
       if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
         set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"${CMAKE_SOURCE_DIR}/research/${project}/\" \\ \n")
-        FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname}\n")
+        FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.md "   - \\subpage ${dirname}\n")
         MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
       endif()
     endforeach()
-    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
+    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.md "\n")
 
     #set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "\"\" \n") #force empty directory
     STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
     SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
 
-    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
+    FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.md "\n\n")
 
     #
     configure_file(

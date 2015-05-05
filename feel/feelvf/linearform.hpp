@@ -95,7 +95,7 @@ public:
     typedef boost::shared_ptr<VectorType> vector_ptrtype;
     //typedef typename space_type::template Element<value_type, ElemContType> element_type;
     typedef typename space_type::template Element<value_type> element_type;
-
+    using space_element_type = element_type;
 #if 0
     typedef typename space_type::component_fespace_type component_fespace_type;
     typedef typename space_type::element_type::component_type component_type;
@@ -639,7 +639,7 @@ public:
      * @param __v element of Space 1 (test space)
      * @return f(v)
      */
-    value_type operator()( typename space_type::element_type const& __v ) const
+    value_type operator()( space_element_type const& __v ) const
     {
         return M_F->dot( __v );
     }
@@ -730,6 +730,9 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    // close vector
+    void close() { M_F->close(); }
 
     /**
      * Set the function space from which the linear form takes its
