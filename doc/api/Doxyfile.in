@@ -688,13 +688,13 @@ WARN_LOGFILE           =
 # @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
 
 INPUT                  = \
- "@FEELPP_HOME_DIR@/applications" \
- "@FEELPP_HOME_DIR@/quickstart" \
- "@FEELPP_HOME_DIR@/doc/manual/" \
  "@FEELPP_HOME_DIR@/doc/api" \
- "@FEELPP_HOME_DIR@/ChangeLog" \
- "@FEELPP_HOME_DIR@/doc/biblio/" \
+ "@FEELPP_HOME_DIR@/ChangeLog.md"\ 
  "@FEELPP_HOME_DIR@/feel/" \
+ "@FEELPP_HOME_DIR@/quickstart" 
+ "@FEELPP_HOME_DIR@/applications" \
+ "@FEELPP_HOME_DIR@/doc/manual/" \
+ "@FEELPP_HOME_DIR@/doc/biblio/" \
  @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
 
 # This tag can be used to specify the character encoding of the source files
