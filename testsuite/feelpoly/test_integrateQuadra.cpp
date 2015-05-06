@@ -50,9 +50,9 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) test integrate Quadra",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2014 Feel++ Consortium" );
+                     "Copyright (c) 2015 Feel++ Consortium" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
+    about.addAuthor( "Thomas Lantz", "student", "", "" );
     return about;
 }
 
@@ -159,11 +159,13 @@ BOOST_AUTO_TEST_CASE( test_run0 )
     t0.run("x:x:y");
 }
 
+
 BOOST_AUTO_TEST_CASE( test_run1 ) 
 {
     Test t1 ;
     t1.run("x*x:x:y");
 }
+
 
 BOOST_AUTO_TEST_CASE( test_run2 )
 {
@@ -171,11 +173,34 @@ BOOST_AUTO_TEST_CASE( test_run2 )
     t2.run("x*x*x*x*x:x:y");
 }
 
+
 BOOST_AUTO_TEST_CASE( test_run3 )
 {
     Test t3 ;
     t3.run("x+y:x:y");
 }
+
+
+BOOST_AUTO_TEST_CASE( test_run4 )
+{
+    Test t4 ;
+    t4.run("cos(x)*sin(y):x:y");
+}
+
+
+BOOST_AUTO_TEST_CASE( test_run5 )
+{
+    Test t5 ;
+    t5.run("cos(x*y):x:y");
+}
+
+
+BOOST_AUTO_TEST_CASE( test_run6 )
+{
+    Test t6 ;
+    t6.run("tan(x*x*x):x:y");
+}
+
 
 BOOST_AUTO_TEST_CASE( test_resol0 )
 {
@@ -202,6 +227,26 @@ BOOST_AUTO_TEST_CASE( test_resol3 )
     Test t3 ;
     t3.resol("x*y:x:y");
 }
+
+
+BOOST_AUTO_TEST_CASE( test_resol4 )
+{
+    Test t4 ;
+    t4.resol("cos(x)*sin(y):x:y");
+}
+
+BOOST_AUTO_TEST_CASE( test_resol5 )
+{
+    Test t5 ;
+    t5.resol("cos(x*y):x:y");
+}
+
+BOOST_AUTO_TEST_CASE( test_resol6 )
+{
+    Test t6 ;
+    t6.resol("tan(x*x*x):x:y");
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 #else
