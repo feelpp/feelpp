@@ -411,12 +411,12 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     size_type nDof = 0;
     for (rank_type p=0;p<this->worldComm().localSize();++p)
     {
-        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].template get<0>();
+        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].get<0>();
         dataMapRes->setFirstDof( p, 0 );
         dataMapRes->setLastDof( p, (nLocalDofWithGhostOnProc > 0)? nLocalDofWithGhostOnProc-1 :0  );
         dataMapRes->setNLocalDofWithGhost( p, nLocalDofWithGhostOnProc );
 
-        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].template get<1>();
+        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].get<1>();
         if ( p == 0 )
         {
             dataMapRes->setFirstDofGlobalCluster( p, 0 );
