@@ -141,6 +141,18 @@ BOOST_AUTO_TEST_CASE( test_run3 )
     tms3.run(2*ps,10*ps);
 }
 
+BOOST_AUTO_TEST_CASE( test_run4 )
+{
+    Test_MultiScale tms4(12345,6789);
+    tms4.run(90*ps,1234*ps);
+}
+
+BOOST_AUTO_TEST_CASE( test_run5 )
+{
+    Test_MultiScale tms5(5,7);
+    tms5.run(0*ps,2*ps);
+}
+
 BOOST_AUTO_TEST_CASE( test_runL0 )
 {
     Test_MultiScale tms0(12,12);
@@ -163,6 +175,18 @@ BOOST_AUTO_TEST_CASE( test_runL3 )
 {
     Test_MultiScale tms3(6,19);
     tms3.runLevel(2*ps,10*ps,1);
+}
+
+BOOST_AUTO_TEST_CASE( test_runL4 )
+{
+    Test_MultiScale tms4(12345,67890);
+    tms4.runLevel(90*ps,1234*ps,4);
+}
+
+BOOST_AUTO_TEST_CASE( test_runL5 )
+{
+    Test_MultiScale tms5(5,7);
+    tms5.runLevel(0*ps,2*ps,2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
