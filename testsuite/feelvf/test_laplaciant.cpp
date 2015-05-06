@@ -76,7 +76,7 @@ makeAbout()
     return about;
 }
 
-template<int Dim>
+template<int Dim, typename ConvexType=Simplex<Dim> >
 class Test:
     public Simget
 {
@@ -84,9 +84,15 @@ public :
 
     void run()
         {
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
+            bool is_hypercube = std::is_same<ConvexType,Hypercube<Dim> >::value;
+            int structured = is_hypercube ? 1:0;
+            std::string convex = is_hypercube ? "Hypercube":"Simplex";
+
+            auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexType>,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                      _dim=Dim ) );
+                                                      _dim=Dim,
+                                                      _convex=convex ),
+                                        _structured = structured );
 
             auto Xh = Pch<2>( mesh );
             auto u = Xh->element();
@@ -121,7 +127,7 @@ public :
         }
 };
 
-template<int Dim>
+template<int Dim, typename ConvexType=Simplex<Dim> >
 class TestV:
     public Simget
 {
@@ -129,9 +135,16 @@ public :
 
     void run()
         {
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
+            bool is_hypercube = std::is_same<ConvexType, Hypercube<Dim>>::value;
+            int structured = is_hypercube ? 1:0;
+            std::string convex = is_hypercube ? "Hypercube":"Simplex";
+
+            auto mesh = createGMSHMesh( _mesh=new Mesh<ConvexType>,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
-                                                      _dim=Dim ) );
+                                                      _dim=Dim,
+                                                      _convex=convex ),
+                                        _structured = structured );
+
 
             auto Xh = Pchv<2>( mesh );
             auto u = Xh->element();
@@ -168,8 +181,8 @@ public :
 
 
 #if defined(USE_BOOST_TEST)
- FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
- BOOST_AUTO_TEST_SUITE( inner_suite )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
  BOOST_AUTO_TEST_CASE( test_21 )
@@ -195,6 +208,32 @@ BOOST_AUTO_TEST_CASE( test_33 )
     TestV<3> test;
     test.run();
 }
+
+BOOST_AUTO_TEST_CASE( testH_21 )
+{
+    Test<2,Hypercube<2> > test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testH_31 )
+{
+    Test<3,Hypercube<3>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testH_22 )
+{
+    TestV<2,Hypercube<2>> test;
+    test.run();
+}
+
+BOOST_AUTO_TEST_CASE( testH_33 )
+{
+    TestV<3,Hypercube<3>> test;
+    test.run();
+ }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
 #else
