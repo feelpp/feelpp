@@ -151,21 +151,25 @@ BOOST_AUTO_TEST_CASE( im1d_test1 )
     TestImQK<1,1, double> t1( 2.0, one<double> );
     t1();
 }
+
 BOOST_AUTO_TEST_CASE( im1d_test2 )
 {
     TestImQK<1,1, double> t2( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
     t2();
 }
+
 BOOST_AUTO_TEST_CASE( im1d_test3 )
 {
     TestImQK<1,2, double> t3( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
     t3();
 }
+
 BOOST_AUTO_TEST_CASE( im1d_test4 )
 {
     TestImQK<1,3, double> t4( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.0E-4 );
     t4();
 }
+
 BOOST_AUTO_TEST_CASE( im1d_test5 )
 {
     TestImQK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
@@ -206,6 +210,12 @@ BOOST_AUTO_TEST_CASE( im2d_test5 )
 {
     TestImQK<2,1, double> t1( 4.*sin(1.)*sin(1.) , coscos<double> );
     t1();
+}
+
+BOOST_AUTO_TEST_CASE( im2d_test6 )
+{
+    TestImQK<2,50,double> t6( 4.0*sin( double( 1.0 ) )  , cost<double> );
+    t6();
 }
 
 
