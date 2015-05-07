@@ -354,7 +354,7 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
             PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
             const PCType pc_type;
 #else
             PCType pc_type;
@@ -367,7 +367,7 @@ void SolverLinearPetsc<T>::init ()
             default:
             case preconditioner_type::LEFT:
                 VLOG(2) << " . PC is set to left side\n";
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
                 KSPSetPreconditionerSide( M_ksp, PC_LEFT );
 #else
                 KSPSetPCSide( M_ksp, PC_LEFT );
@@ -375,7 +375,7 @@ void SolverLinearPetsc<T>::init ()
                 break;
             case preconditioner_type::RIGHT:
                 VLOG(2) << " . PC is set to right side\n";
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
                 KSPSetPreconditionerSide( M_ksp, PC_RIGHT );
 #else
                 KSPSetPCSide( M_ksp, PC_RIGHT );
