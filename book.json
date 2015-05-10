@@ -2,5 +2,5 @@
     "variables": {
         "feelpp": "**Feel++**"
     },
-    { "plugins": ["mathjax"] }
+    "plugins": ["mathjax"]
 }
