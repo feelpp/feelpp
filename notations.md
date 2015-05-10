@@ -19,8 +19,8 @@ and finally \e (iv) polynomials and finite elements.
 ##  Convexes {#NotationsConvexes}
 
 The supported convexes are simplices and hypercubes of topological dimension
-\f$n\f$, \f$n=1,2,3\f$ lying in \f$\mathbb{R}^d\f$ such that \f$n \leq d
-\leq 3\f$. The convexes are described geometrically in a standard way in
+$n$, $n=1,2,3$ lying in $\mathbb{R}^d$ such that $n \leq d
+\leq 3$. The convexes are described geometrically in a standard way in
 terms of their subentities (vertices, edges, faces, volumes), see for
 example \cite MR1696933, and provide the ability to iterate over the entities
 of a convex or of the same topological dimension inside a convex, e.g. iterate
@@ -38,12 +38,12 @@ over the edges of a tetrahedron.
   examples of prime basis being used are the Bernstein polynomials. Our
   framework uses the Dubiner or Legendre basis as the default prime
   basis. This choice simplifies the construction of finite elements due
-  to the hierarchical and \f$L^2\f$ orthogonality properties these basis
+  to the hierarchical and $L^2$ orthogonality properties these basis
   functions share. The choice of basis polynomials that are hierarchical
   allows for an easy extraction of a basis spanning a subspace of the
   polynomial space (which corresponds to extract a range of
-  coefficients), whereas \f$L^2\f$ orthogonality simplifies some
-  operations like numerical integration or the \f$L^2\f$ projection
+  coefficients), whereas $L^2$ orthogonality simplifies some
+  operations like numerical integration or the $L^2$ projection
   (which is explicit in this case).  The use of these basis functions
   proved to provide much better numerical stability, see \cite gpena.
 
@@ -54,7 +54,7 @@ over the edges of a tetrahedron.
 ##  Point Sets on Convexes {#NotationsPsetconvex}
 
 
-  Now we turn to the construction of point sets \f$\mathbb{P}\f$ defined on a convex \f$K\f$.
+  Now we turn to the construction of point sets $\mathbb{P}$ defined on a convex $K$.
   Point sets are represented algebraically by a matrix (rows are indexed by the
   coordinates while columns are indexed by the points) and they are parametrized
   by the associated convex and the numerical type. We recall that the convex is
@@ -71,8 +71,8 @@ over the edges of a tetrahedron.
   \e (v) Gauss, Gauss-Radau and Gauss-Lobatto and combinations in
   simplices and hypercubes. It should be noted that the last family
   is constructed from the computation of the zeros of the Legendre
-  polynomials on \f$[-1,1]\f$ including eventually the boundary vertices
-  \f$-1\f$, \f$1\f$ for the Radau and Lobatto flavors.
+  polynomials on $[-1,1]$ including eventually the boundary vertices
+  $-1$, $1$ for the Radau and Lobatto flavors.
 
 
   Warpblend and Fekete points are used with nodal basis on simplices which, when
@@ -88,7 +88,7 @@ over the edges of a tetrahedron.
   to the construction of polynomials on simplices and hypercubes, we
   now focus on the polynomial abstraction.
 
-  A polynomial set \f$\mathbb{P}\f$ is a template class parametrized by the prime
+  A polynomial set $\mathbb{P}$ is a template class parametrized by the prime
   basis in which it is expressed and the field type in which it has its values:
   scalar, vectorial or matricial. Its interface provides a number of operations
   such as evaluation and derivation at a set of points, extraction of polynomials
@@ -113,31 +113,31 @@ over the edges of a tetrahedron.
   \Feel supports modal basis, \eg Legendre or Dubiner, see
   \cite MR1696933, \cite canuto_hussaini_quarteroni_zang_2, as well as finite elements
   (FE) following the standard definition, set in \cite Ciarlet:2002:FEM:581834,
-  as a triplet \f$(K,\mathbb{P},\Sigma)\f$ where \f$K\f$ is a convex, \f$\mathbb{P}\f$ the polynomial space
-  and \f$\Sigma\f$ the dual space. We describe now some features of the finite element
-  framework. The description of \f$K\f$ and \f$\mathbb{P}\f$ has been presented
-  previously and it remains to describe \f$\Sigma\f$. \f$\Sigma\f$ is a set of functionals
-  (which can be identified as degrees of freedom) defined in \f$\mathbb{P}\f$ with
-  values in \f$\mathbb{R}\f$, \f$\mathbb{R}^d\f$ or \f$\mathbb{R}^{d\times d}\f$. Several types of functionals can
+  as a triplet $(K,\mathbb{P},\Sigma)$ where $K$ is a convex, $\mathbb{P}$ the polynomial space
+  and $\Sigma$ the dual space. We describe now some features of the finite element
+  framework. The description of $K$ and $\mathbb{P}$ has been presented
+  previously and it remains to describe $\Sigma$. $\Sigma$ is a set of functionals
+  (which can be identified as degrees of freedom) defined in $\mathbb{P}$ with
+  values in $\mathbb{R}$, $\mathbb{R}^d$ or $\mathbb{R}^{d\times d}$. Several types of functionals can
   then be instantiated which merely require basic operations like evaluation at a
   set of points, derivation at a set of points, exact integration or numerical
   integration. Some examples of functionals satisfying such requirements are
 
-  - evaluation at a point \f$x \in K\f$, \f$\ell_x : p \rightarrow p(x)\f$,
-  - derivation at a point \f$x \in K\f$ in the direction \f$i\f$, \f$\ell_{x,i} : p \rightarrow \frac{\partial p}{\partial x_i}(x)\f$,
-  -  moment integration associated with a polynomial \f$q \in \mathbb{P}(K)\f$, \f$\ell_q : p \rightarrow \int_{K} p q\f$.
+  - evaluation at a point $x \in K$, $\ell_x : p \rightarrow p(x)$,
+  - derivation at a point $x \in K$ in the direction $i$, $\ell_{x,i} : p \rightarrow \frac{\partial p}{\partial x_i}(x)$,
+  -  moment integration associated with a polynomial $q \in \mathbb{P}(K)$, $\ell_q : p \rightarrow \int_{K} p q$.
 
   A functional is represented algebraically by a vector whose entries result from
   the application of the functional to the prime basis in which we express the
-  polynomials thanks to the bijection between \f$\mathcal{L}(\mathbb{P},\mathbb{R})\f$ and
-  \f$\mathbb{R}^{\mathrm{dim}(\mathbb{P})}\f$. Then applying the functional to a polynomial is just a scalar
+  polynomials thanks to the bijection between $\mathcal{L}(\mathbb{P},\mathbb{R})$ and
+  $\mathbb{R}^{\mathrm{dim}(\mathbb{P})}$. Then applying the functional to a polynomial is just a scalar
   product between the coefficient of this polynomial in the prime basis by the
   vector representing the functional. For example the \e Lagrange \e element is
-  the finite element \f$(K, \mathbb{P}, \Sigma=\{\ell_{x_i}, x_i \in X \subset K\})\f$
-  such that \f$\ell_{x_i}( p_j ) = \delta_{ij}\f$ where \f$p_j\f$ is a Lagrange polynomial
-  and \f$X = \{x_i\}\f$ is a set of points defined in the convex \f$K\f$, for example the
+  the finite element $(K, \mathbb{P}, \Sigma=\{\ell_{x_i}, x_i \in X \subset K\})$
+  such that $\ell_{x_i}( p_j ) = \delta_{ij}$ where $p_j$ is a Lagrange polynomial
+  and $X = \{x_i\}$ is a set of points defined in the convex $K$, for example the
   Equidistributed, Warpblend or Fekete point sets. Other FE such as
-  \f$\mathbb{P}_{1,2}\f$-bubble, \f$\mathbb{R}\mathbb{T}_k\f$ or \f$\mathbb{N}_k\f$
+  $\mathbb{P}_{1,2}$-bubble, $\mathbb{R}\mathbb{T}_k$ or $\mathbb{N}_k$
   polynomials are constructed likewise though they require a more involved
   description.
 
@@ -146,35 +146,35 @@ over the edges of a tetrahedron.
 
   To conclude this section, one important object that is constructed with the help
   of the polynomial library is the \e geometric \e transformation. Indeed all
-  polynomial set constructions are done on a reference convex, denoted \f$\hat{K}\f$,
+  polynomial set constructions are done on a reference convex, denoted $\hat{K}$,
   and the geometrical transformation maps it to a convex in the physical space
-  which we denote \f$K\f$. This map, denoted \f$\varphi_\mathrm{geo}^K\f$, is the \f$C^1-\f$diffeomorphism
-  defined on \f$\hat{K} \subset \mathbb{R}^p, p=1,2,3\f$ such that the image is \f$K
-  \subset \mathbb{R}^d\f$, \ie \f$\varphi_\mathrm{geo}^K: \hat{K} \longrightarrow K\f$ for \f$p\leq d
-  \leq 3\f$. This map is contructed and associated to each convex \f$K\f$ in a
-  computational mesh \f$\mathcal{T}_h\f$. Notice
-  that this last condition over \f$p\f$ and \f$d\f$ covers a large spectrum of geometrical
-  profiles. For instance, we handle lines or surfaces in \f$\mathbb{R}^3\f$.
+  which we denote $K$. This map, denoted $\varphi_\mathrm{geo}^K$, is the $C^1-$diffeomorphism
+  defined on $\hat{K} \subset \mathbb{R}^p, p=1,2,3$ such that the image is $K
+  \subset \mathbb{R}^d$, \ie $\varphi_\mathrm{geo}^K: \hat{K} \longrightarrow K$ for $p\leq d
+  \leq 3$. This map is contructed and associated to each convex $K$ in a
+  computational mesh $\mathcal{T}_h$. Notice
+  that this last condition over $p$ and $d$ covers a large spectrum of geometrical
+  profiles. For instance, we handle lines or surfaces in $\mathbb{R}^3$.
 
   The geometric transformation is constructed as a suitable linear combination of
   Lagrange polynomials and therefore it can be a polynomial of arbitrary degree,
   allowing thus meshes with elements that have curved edges/faces, see
   \cite gpena_cprudhomme_acomen, \cite gpena_cprudhomme_aquarteroni. Another consequence
-  of \f$\varphi_\mathrm{geo}^K\f$ being a polynomial of a degree the user can choose, is the possibility
+  of $\varphi_\mathrm{geo}^K$ being a polynomial of a degree the user can choose, is the possibility
   to define isoparametric (or subparametric or surparametric) finite elements, see
-  \cite gpena_cprudhomme_aquarteroni, \cite gpena. Lets denote \f$\kgeo\f$ the
-  polynomial order of the Lagrange basis in which \f$\varphi_\mathrm{geo}^K\f$ is expanded. If there
-  is no ambiguity, we keep the notation \f$\varphi_\mathrm{geo}^K\f$, otherwise we use the notation \f$\varphi_\mathrm{geo}^Kkgeo\f$.
+  \cite gpena_cprudhomme_aquarteroni, \cite gpena. Lets denote $\kgeo$ the
+  polynomial order of the Lagrange basis in which $\varphi_\mathrm{geo}^K$ is expanded. If there
+  is no ambiguity, we keep the notation $\varphi_\mathrm{geo}^K$, otherwise we use the notation $\varphi_\mathrm{geo}^Kkgeo$.
 
 
   The class that implements the definition and evaluation of the
   geometrical transformation also provides a function to evaluate its
-  gradient, automatic consequence of \f$\varphi_\mathrm{geo}^K\f$ being an element
+  gradient, automatic consequence of $\varphi_\mathrm{geo}^K$ being an element
   belonging to a polynomial set. Another important transformation
-  associated with \f$\varphi_\mathrm{geo}^K\f$ is its inverse, \f$(\varphi_\mathrm{geo}^K)^{-1}\f$. In
+  associated with $\varphi_\mathrm{geo}^K$ is its inverse, $(\varphi_\mathrm{geo}^K)^{-1}$. In
   the case of an affine transformation, the inverse is calculated
-  explicitely. However, if \f$\varphi_\mathrm{geo}^K\f$ is nonlinear, the
-  evaluation/differentiation of \f$(\varphi_\mathrm{geo}^K)^{-1}\f$ at a set of points
+  explicitely. However, if $\varphi_\mathrm{geo}^K$ is nonlinear, the
+  evaluation/differentiation of $(\varphi_\mathrm{geo}^K)^{-1}$ at a set of points
   is performed with the help of a nonlinear solver (we have used the
   nonlinear solver available in \c PETSc for these calculations.  The
   inverse transformation plays an essential role in providing an
@@ -184,39 +184,39 @@ over the edges of a tetrahedron.
 
 # Mesh Notations {#MeshNotations}
 
-  Let \f$\Omega\subset\mathbb{R}^d\f$, \f$d\ge 1\f$, denote a bounded connected domain.  We first
-  need to introduce a suitable discretization of \f$\Omega\f$, \f$\Omega_h \subset
-  \Omega\f$. Note that if \f$\Omega\f$ is a polyhedral domain then \f$\Omega_h = \Omega\f$.
-  We denote by \f$\mathcal{T}_h\f$ a finite collection of nonempty, disjoint open simplices or
-  hypercubes \f$\mathcal{T}_h=\{K = \varphi_\mathrm{geo}^K(\hatK)\}\f$ forming a partition of \f$\Omega_h\f$ such
-  that \f$h=\max_{K\in\mathcal{T}_h} h_K\f$, with \f$h_K\f$ denoting the diameter of the element
-  \f$K\in\mathcal{T}_h\f$.  We say that a hyperplanar closed subset \f$F\f$ of \f$\closure{\Omega}\f$ is
-  a mesh face if it has positive \f$(d{-}1)\f$-dimensional measure and if either there
-  exist \f$K_1,\,K_2\in\mathcal{T}_h\f$ such that \f$F = \partial K_1\cap\partial K_2\f$ (and \f$F\f$ is
-  called an \emph{internal face}) or there exists \f$K\in\mathcal{T}_h\f$ such that \f$F
-  = \partial K\cap\partial\Omega_h\f$ (and \f$F\f$ is called a \emph{boundary face}).
-  Internal faces are collected in the set \f$\mathcal{F}_h^i\f$, boundary faces in \f$\mathcal{F}_h^b\f$ and we
-  let \f$\mathcal{F}_h\eqbydef\mathcal{F}_h^i\cup\mathcal{F}_h^b\f$.  For all \f$F\in\mathcal{F}_h\f$, we define
-  \f$\mathcal{T}_F\eqbydef\{K\in\mathcal{T}_h\; | \; F\subset\partial K\}.\f$ For every interface
-  \f$F\in\mathcal{F}_h^i\f$ we introduce two associated normals to the elements in \f$\mathcal{T}_F\f$ and
-  we have \f$\normal_{K_1,F}=-\normal_{K_2,F}\f$, where \f$\normal_{K_i,F}\f$,
-  \f$i\in\{1,2\}\f$, denotes the unit normal to \f$F\f$ pointing out of \f$K_i\in\mathcal{T}_F\f$.
-  On a boundary face \f$F\in\mathcal{F}_h^b\f$, \f$\normal_F=\normal_{K,F}\f$ denotes the unit normal
-  pointing out of \f$\Omega_h\f$.
+  Let $\Omega\subset\mathbb{R}^d$, $d\ge 1$, denote a bounded connected domain.  We first
+  need to introduce a suitable discretization of $\Omega$, $\Omega_h \subset
+  \Omega$. Note that if $\Omega$ is a polyhedral domain then $\Omega_h = \Omega$.
+  We denote by $\mathcal{T}_h$ a finite collection of nonempty, disjoint open simplices or
+  hypercubes $\mathcal{T}_h=\{K = \varphi_\mathrm{geo}^K(\hatK)\}$ forming a partition of $\Omega_h$ such
+  that $h=\max_{K\in\mathcal{T}_h} h_K$, with $h_K$ denoting the diameter of the element
+  $K\in\mathcal{T}_h$.  We say that a hyperplanar closed subset $F$ of $\closure{\Omega}$ is
+  a mesh face if it has positive $(d{-}1)$-dimensional measure and if either there
+  exist $K_1,\,K_2\in\mathcal{T}_h$ such that $F = \partial K_1\cap\partial K_2$ (and $F$ is
+  called an \emph{internal face}) or there exists $K\in\mathcal{T}_h$ such that $F
+  = \partial K\cap\partial\Omega_h$ (and $F$ is called a \emph{boundary face}).
+  Internal faces are collected in the set $\mathcal{F}_h^i$, boundary faces in $\mathcal{F}_h^b$ and we
+  let $\mathcal{F}_h\eqbydef\mathcal{F}_h^i\cup\mathcal{F}_h^b$.  For all $F\in\mathcal{F}_h$, we define
+  $\mathcal{T}_F\eqbydef\{K\in\mathcal{T}_h\; | \; F\subset\partial K\}.$ For every interface
+  $F\in\mathcal{F}_h^i$ we introduce two associated normals to the elements in $\mathcal{T}_F$ and
+  we have $\normal_{K_1,F}=-\normal_{K_2,F}$, where $\normal_{K_i,F}$,
+  $i\in\{1,2\}$, denotes the unit normal to $F$ pointing out of $K_i\in\mathcal{T}_F$.
+  On a boundary face $F\in\mathcal{F}_h^b$, $\normal_F=\normal_{K,F}$ denotes the unit normal
+  pointing out of $\Omega_h$.
 
   We also introduce
   - the set of boundary elements
-  \f[
+  \[
   \mathcal{T}^b_h=\{ K \in \mathcal{T}_h\, \; | \;\, \partial K  \cap \partial \Omega \neq \emptyset\}
-  \f],
+  \],
   - the set of internal elements
-  \f[
+  \[
   \mathcal{T}^i_h=\mathcal{T}_h \backslash \mathcal{T}^b_h
-  \f],
-  -  the set \f$\mathcal{N}_h\f$ which collects the nodes of the mesh,
-  -  when \f$d=3\f$, \f$\mathcal{E}_h\f$ which collects the edges of the mesh.
+  \],
+  -  the set $\mathcal{N}_h$ which collects the nodes of the mesh,
+  -  when $d=3$, $\mathcal{E}_h$ which collects the edges of the mesh.
 
-  The collections \f$\mathcal{T}_h, \mathcal{F}_h, \mathcal{E}_h, \mathcal{N}_h\f$, as well as
+  The collections $\mathcal{T}_h, \mathcal{F}_h, \mathcal{E}_h, \mathcal{N}_h$, as well as
   the internal and boundary collections, are provided by our mesh data
   structure and stored using the the Boost.Multi_index library
   http://www.boost.org/libs/multi_index/doc/index.html.  The mesh
