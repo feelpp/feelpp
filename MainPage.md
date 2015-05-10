@@ -1,4 +1,4 @@
-\feel is a unified C++ implementation of Galerkin methods (finite and
+feelpp is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
 differential equations.
 
