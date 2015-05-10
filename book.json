@@ -1,5 +1,6 @@
 {
     "variables": {
         "feelpp": "**Feel++**"
-    }
+    },
+    { "plugins": ["mathjax"] }
 }
