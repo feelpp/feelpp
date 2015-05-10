@@ -64,8 +64,8 @@ over the edges of a tetrahedron.
   discontinuous Galerkin formulations.
 
 
-  The type of point sets supported are \e (i) the Equidistributed
-  point set, \e (ii) the Warpblend point sets on simplices see \cite warburton06,
+  The type of point sets supported are \e (i) the Equidistributed  point set, 
+  \e (ii) the Warpblend point sets on simplices see \cite warburton06,
   \e (iii) Fekete points in simplices, see \cite MR1696933,
   \e (iv) standard quadrature rules in simplices and finally
   \e (v) Gauss, Gauss-Radau and Gauss-Lobatto and combinations in
