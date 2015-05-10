@@ -93,8 +93,22 @@
 #pragma warning push
 #pragma warning(disable:780)
 #endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-W#warnings"
+#endif
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #if defined(__INTEL_COMPILER)
 #pragma warning pop
 #endif
