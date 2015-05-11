@@ -221,12 +221,3 @@ There are some tools to manipulate this jacobian.
 |```cpp{.cpp} invJT()```|$$(J^{-1})^T$$|Transposed inverse of jacobian matrix |
 
 
-<a href="#" class="top">top</a>
-<hr>
-
-* \b Next: \ref Environment
-
-
-
-*/
-}
