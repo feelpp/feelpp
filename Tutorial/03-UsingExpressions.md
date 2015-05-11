@@ -45,7 +45,7 @@ Finally we evaluate these expression at one point given by the option \c x and \
 
 We start with the following function $$g=1$$ and $$f=(1,1)$$.
 
-\verbatim
+```bash
 shell> ./feelpp_doc_myexpression --functions.g=1:x:y --functions.f="{1,1}:x:y
 g=1
 f={x,-y}
@@ -71,7 +71,7 @@ Laplacian:
 laplacian(g)(x,y)=0
 laplacian(f)(x,y)=0
 0
-\endverbatim
+```
 
 The symbolic calculus system worked as expected.
 
@@ -83,6 +83,6 @@ The complete code reads as follows
 \snippet myexpression.cpp all
 
 to compile just use the `make` command in your compilation directory
-\verbatim
+```bash
 make feelpp_doc_myexpression
-\endverbatim
+```
