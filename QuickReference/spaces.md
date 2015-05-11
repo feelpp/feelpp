@@ -139,5 +139,3 @@ Function        | Description
 `Pchv<N>(mesh)` | generates {{book.Pchv}}
 `THch<N>(mesh)` | generates {{book.THch}}
 
-
-{% include "tt.cpp" %}
