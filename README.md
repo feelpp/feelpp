@@ -16,7 +16,7 @@ Feel++ is
  - a library entirely in ''C++'' allowing to create ''C++'' complex and typically non-linear multi-physics applications currently in industry, physics and health-care.
 
 
-# Organisation of this manual
+# Organisation of this manual {#organisation}
 
 This manual is organized as follows:
 
