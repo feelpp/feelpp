@@ -3,9 +3,11 @@ Keywords
 
 One of Feel++ assets is it finite element embedded language. The language follows the C++ grammar, and provides keywords as well as operations between objects which are, mathematically, tensors of rank 0, 1 or 2.
 
-In all following tables we use the notations:<br>
-$$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$$  with $$n=1,2,3$$, $$m=1,2,3$$, $$p=1,2,3$$<br>
-$$\Omega^e$$ current mesh element.
+In all following tables we use the notations:
+$$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}$$  
+with $$n=1,2,3, m=1,2,3, p=1,2,3$$.
+
+We denote $$\Omega^e$$ current mesh element.
 
 The genesis of the language can be found in \cite prudhomme05:_domain_specif_embed_languag_c and an update on Feel++ is available in \cite PRUDHOMME:2012:HAL-00662868:3.
 
@@ -75,6 +77,7 @@ You can also use expressions and the unit base vectors:
 
 
 ## Manipulating Vectors and Matrix
+
 Let $$A$$ be a square matrix of size $$n$$.
 
 |Feel++ Keyword | Math Object | Description | Dimension |
@@ -155,14 +158,16 @@ You can use the usual operations and logical operators.
 |` ! ` |$$ !g$$|element wise logical not|
 
 
-## Operators_Differential Differential Operators
+## Differential Operators
+
 Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Keywords are different according to the kind of the manipulated function.<br>
 <strong>Usual operators</strong> are for <strong>test</strong> functions.<br>
 <strong>t-operators</strong> for <strong>trial</strong> functions.<br>
 <strong>v-operators</strong> to get an <strong>evaluation</strong>.
 Suppose that $$f \in X_h$$ reads
+
 $$f=\sum_{i=0}^{\mathcal{N}} f_i \phi_i$$
-where $$X_h = \mathrm{span}( \phi_i, i=1,\ldots,\mathcal{N}$$
+where $$X_h = \mathrm{span}{ \phi_i }, i=1,\ldots,\mathcal{N}$$
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
 |---------------|-------------|-------------|------|-----------|
@@ -181,7 +186,7 @@ where $$X_h = \mathrm{span}( \phi_i, i=1,\ldots,\mathcal{N}$$
 |` hess(f)`| $$\nabla^2 f$$ | hessian of test function  |2 |$$n \times n $$<br>$$m=p=1$$|
 
 
-## Operators_TwoValued Two Valued Operators
+##  Two Valued Operators
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
 |----------------|-------------|-------------|------------------|
