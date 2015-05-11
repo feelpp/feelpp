@@ -1,33 +1,20 @@
-Feel++: Finite Element Embedded Library in C++
-==============================================
+Feel++
+======
+
+Finite Element Embedded Library in C++
+--------------------------------------
 
 Feel++ is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
 differential equations.
 
-The objectives of this framework is quite ambitious; ambitions which
-could be express in various ways such as :
+Feel++ is
+ - a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
+ - a *small* and *manageable* library which nevertheless encompasses a wide range of numerical methods and techniques and in particular reduced order methods such as the reduced basis method
+ - a software that follows closely the mathematical abstractions associated with partial differential equations (PDE) and in particular the finite element mathematical framework and variational formulations 
+ - a library that offers solving strategies that scales up to thousands and even tens of thousands of cores (it is supported by a european Prace project currently )
+ - a library entirely in ''C++'' allowing to create ''C++'' complex and typically non-linear multi-physics applications currently in industry, physics and health-care.
 
- - the creation of a versatile mathematical kernel solving easily
- problems using different techniques thus allowing testing and
- comparing methods, e.g. cG versus dG,
-
- - the creation of a '''small''' and '''manageable''' library which
- shall nevertheless encompass a wide range of numerical methods and
- techniques,
-
- - build mathematical software that follows closely the mathematical
- abstractions associated with partial differential equations
- (PDE)(which is often not the case, for exampl e the design
- could be physics oriented)
-
- - the creation of a library entirely in ''C++'' allowing to create
- ''C++'' complex and typically multi-physics applications such as
- fluid-structure interaction or mass transport in
- haemodynamics (the rationale being that these applications
- are computing intensive and the use of an interpreted language such
- as python would not be satisfying though in many simpler cases that
- would simplify and accelerate the development.)
 
 # Organisation of this manual
 
@@ -41,7 +28,7 @@ This manual is organized as follows:
   - \ref ProgEnv which includes instructions for installation from sources or
   from Debian/Ubuntu and MacOSX
 
-  - \ref QuickRef which describes the various components of Feel++ applications
+  - [Quick reference](QuickReference/README.md) which describes the various components of Feel++ applications
 
 
 
@@ -98,7 +85,6 @@ Coimbra (Portugal), CNRS and [Cemosis](http://www.cemosis.fr).
 
 # License for this book
 
-<hr>
 <center>
 <a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
 </center>
