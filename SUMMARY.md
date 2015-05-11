@@ -22,7 +22,7 @@
        * [Preconditioner](QuickReference/preconditioner.md)
    * [Exporter](QuickReference/exporter.md)
    * [Keywords](QuickReference/keywords.md)
-* [Frequently Asked Questions](FAQ/FAQ.md)
+* [Frequently Asked Questions](FAQ/README.md)
    * [Development](FAQ/FAQDevelopment.md)
    * [Runtime](FAQ/FAQExecution.md)
 
