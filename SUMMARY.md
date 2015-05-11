@@ -23,4 +23,6 @@
    * [Exporter](QuickReference/exporter.md)
    * [Keywords](QuickReference/keywords.md)
 * [Frequently Asked Questions](FAQ/FAQ.md)
+   * [Development](FAQ/FAQDevelopment.md)
+   * [Runtime](FAQ/FAQExecution.md)
 

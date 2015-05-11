@@ -1,21 +1,10 @@
-/* -*- mode: c++; coding: utf-8 -*- */
+Development FAQ
+===============
 
-namespace Feel {
-/**
-\page FAQDevelopment Development
+### How to print data.
 
-\tableofcontents
-<hr>
-
-\section FAQPrint How to print data.
-
-\verbatim
+```cpp
 auto val1 = integrate(_range=elements(mesh),_expr=print(idv(myScalar),"myScalar") );
 auto val2 = integrate(_range=markedfaces(mesh,"markerName"),_expr=print(idv(myScalar),"myScalar") );
 auto val2 = integrate(_range=markedfaces(mesh,"markerName"),_expr=print(trans(idv(myVector)),"myVectorTrans")*print(idv(myVector),"myVector") );
-\endverbatim
-
-<hr>
-
-*/
-}
+```
