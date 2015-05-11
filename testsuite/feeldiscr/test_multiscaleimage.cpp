@@ -43,7 +43,7 @@ makeAbout()
     AboutData about( "test_multiscaleimage" ,
                      "test_multiscaleimage" ,
                      "8.9e-3",
-                     "nD(n=2,3) test Multiscale image acces",
+                     "Test multiscale image acces",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2014 Feel++ Consortium" );
 
@@ -100,7 +100,7 @@ class Test_MultiScale
             {
                 MultiScaleImage msi;
                 int tmp=msi(ima,std::make_pair(x,y),level);
-                std::cout << "coord x : " << x << " / coord y : " << y << " / Res :" << tmp << std::endl;
+                std::cout << "coord x : " << level*x << " / coord y : " << level*y << " / Res :" << tmp << std::endl;
             }
      
     }
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( test_run3 )
 
 BOOST_AUTO_TEST_CASE( test_run4 )
 {
-    Test_MultiScale tms4(12345,6789);
+    Test_MultiScale tms4(12345,67890);
     tms4.run(90*ps,1234*ps);
 }
 
@@ -186,11 +186,12 @@ BOOST_AUTO_TEST_CASE( test_runL4 )
 BOOST_AUTO_TEST_CASE( test_runL5 )
 {
     Test_MultiScale tms5(5,7);
-    tms5.runLevel(0*ps,2*ps,2);
+    tms5.runLevel(1*ps,3*ps,2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
 #else
+std::cout << "USE_BOOST_TEST non define" << std::endl;
 #endif
 
 
