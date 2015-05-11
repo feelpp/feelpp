@@ -69,5 +69,5 @@ The list of the Feel++ Keyword is [here](Keywords.html).
 
 One other method to define function is described here.
 
-{{code/myfunctor.cpp}}
+!CODEINLINE "code/myfunctor.cpp"
 
