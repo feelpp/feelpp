@@ -65,7 +65,7 @@ You can also use expressions and the unit base vectors:
 ## Building Matrix
 
 |Feel++ Keyword | Math Object | Description | Dimension |
----------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` mat<m,n>(m_11,m_12,...,m_mn)`|$$\begin{pmatrix} m_{11} & m_{12} & ...\\ m_{21} & m_{22} & ...\\ \vdots & & \end{pmatrix}$$|$$m\times n$$ Matrix<br> entries beeing expressions |$$m \times n$$|
 |` ones<m,n>()`|$$\begin{pmatrix} 1 & 1 & ...\\ 1 & 1 & ...\\ \vdots & & \end{pmatrix}$$|$$m\times n$$ Matrix <br>Filled with 1 |$$m \times n$$|
 |` zero<m,n>()`|$$\begin{pmatrix} 0 & 0 & ...\\ 0 & 0 & ...\\ \vdots & & \end{pmatrix}$$|$$m\times n$$ Matrix <br>Filled with 0 |$$m \times n$$|
@@ -78,7 +78,7 @@ You can also use expressions and the unit base vectors:
 Let $$A$$ be a square matrix of size $$n$$.
 
 |Feel++ Keyword | Math Object | Description | Dimension |
----------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` inv(A)`|$$A^{-1}$$|Inverse of matrix $$A$$ |$$n \times n$$|
 |` det(A)`|$$\det (A)$$|Determinant of matrix $$A$$ |$$1 \times 1$$|
 |` sym(A)\eco|$$\text{Sym}(A)$$|Symmetric part of matrix $$A$$: $$\frac{1}{2}(A+A^T)$$<br> |$$n \times n$$|
@@ -88,7 +88,7 @@ Let $$A$$ be a square matrix of size $$n$$.
 Let A and B be two matrix (or two vectors) of same dimension $$m \times n$$.
 
 |Feel++ Keyword | Math Object | Description | Dimension |
----------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` trace(A)\eco|$$\text{tr}(A)$$|Trace of matrix $$A$$<br>Generalized on non-squared Matrix<br>Generalized on Vectors |$$1 \times 1$$|
 |` trans(B)\eco|$$B^T$$|Transpose of matrix $$B$$<br>Can be used on non-squared Matrix<br>Can be used on Vectors |$$n \times m$$|
 |` inner(A,B)\eco|$$ A.B \\ A:B = \text{tr}(A*B^T)$$|Scalar product of two vectors<br>Generalized scalar product of two matrix |$$1 \times 1$$|
@@ -97,12 +97,12 @@ Let A and B be two matrix (or two vectors) of same dimension $$m \times n$$.
 
 
 
-# Keywords_Expr Expressions
+# Expressions
 
 Following tables present tools to declare and manipulate expressions.
 
 |Feel++ Keyword | Description |
---------------------------------
+|---------------|-------------|
 |`
 Px()
 Py()
@@ -118,8 +118,8 @@ Constant function equal to $$c$$
 
 You can of course use all current operators ( + - / * ) and the usual following functions:
 
-|Feel++ Keyword | Math Object | Description
---------------------------------------------
+|Feel++ Keyword | Math Object | Description|
+|---------------|-------------|------------|
 |` abs(expr) `|$$|f(\overrightarrow{x})|$$|element wise absolute value of $$f$$|
 |` cos(expr)`|$$\cos(f(\overrightarrow{x}))$$|element wise cos value of $$f$$|
 |` sin(expr)`|$$\sin(f(\overrightarrow{x}))$$|element wise sin value of $$f$$|
@@ -146,7 +146,7 @@ You can of course use all current operators ( + - / * ) and the usual following 
 You can use the usual operations and logical operators.
 
 |Feel++ Keyword | Math Object | Description |
----------------------------------------------
+|---------------|-------------|-------------|
 |` + ` |$$ f+g$$|tensor sum|
 |` - ` |$$ f-g$$|tensor substraction|
 |` * ` |$$ f*g$$|tensor product|
@@ -170,7 +170,7 @@ Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Ke
 <strong>v-operators</strong> to get an <strong>evaluation</strong>.
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
-----------------------------------------------------------------
+|---------------|-------------|-------------|------|-----------|
 |` id(f)` | $$f$$ | test function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` idt(f)`| $$f$$ | trial function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` idv(f)`| $$f$$ | evaluation function   | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
@@ -189,7 +189,7 @@ Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Ke
 ## Operators_TwoValued Two Valued Operators
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
-----------------|-------------|-------------|------------------|
+|----------------|-------------|-------------|------------------|
 |` jump(f)` |  $$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$$ | jump of test function |0| $$n \times 1 $$<br>$$m=1$$|
 |` jump(f)` |  $$[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$$ | jump of test function |0| $$1 \times 1 $$<br>$$m=2$$|
 |` jumpt(f)` |  $$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$$ | jump of trial function |0| $$n \times 1 $$<br>$$m=1$$|
