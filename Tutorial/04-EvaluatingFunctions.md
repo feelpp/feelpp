@@ -24,25 +24,26 @@ Step by step explanations
 ------------ 
 
 We start by loading a Mesh in 2D
-\snippet myintegrals.cpp mesh
+
+!CODEFILE "code/myintegrals.cpp"
 
 then we define some expression through the command line or config file: \c g is a scalar field and \c f is a vector field
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below
-```c++
+```bash
 feelpp_doc_myexpression --a=3 --functions.g="a*x*y:x:y:a" --functions.f="{sin(pi*x),cos(pi*y)}:x:y"
 ```
 
-\remark You can print back the expression to the screen to check that everything is ok.
-\remark You want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
+Note that you can print back the expression to the screen to check that everything is ok.
+
+If you want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
 
 then we compute the gradient of \c g and \c f
 \snippet myexpression.cpp grad
 
 Notice that template argument are given to \c grad to specify the shape of the
-gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$
-$$2\times 2$$ since we are in 2D.
+gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$ $$2\times 2$$ since we are in 2D.
 
 then we compute the laplacian of \c g and \c f
 \snippet myexpression.cpp laplacian
@@ -56,15 +57,17 @@ and the curl of \c f
 Finally we evaluate these expression at one point given by the option \c x and \c y
 \snippet myexpression.cpp eval
 
-# Build-in {#build-in}
+# Built-in 
 
 Instead of defining an expression from a string, you can use
-\snippet myexporter.cpp expr
+
+!CODEFILE "code/myexporter.cpp"
+
 The list of the Feel++ Keyword is [here](Keywords.html).
 
-# Hard Coded {#hc}
+# Hard Coded 
 
 One other method to define function is described here.
 
-\snippet myfunctor.cpp all
+!CODEFILE "code/myfunctor.cpp"
 
