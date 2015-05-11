@@ -17,9 +17,9 @@ soption function that retrieves the command line option string \c functions.g. W
 
 then We compute two integrals over the domain and its boundary respectively
 
- @li \f$\int_\Omega g\f$
+ @li $$\int_\Omega g$$
 
- @li \f$\int_{\partial \Omega} g\f$
+ @li $$\int_{\partial \Omega} g$$
 
 and we print the results to the screen.
 
@@ -32,9 +32,9 @@ expression passed by the user through the command line option \c functions.g.
 
 # Some results {#TutorialIntegralsResults}
 
-We start with the following function \f$g=1\f$. Recall that by default the
-domain is the unit square, hence the \f$\int_\Omega g\f$ and \f$\int_{\partial
-\Omega} g\f$ should be equal to 1 and 4 respectively.
+We start with the following function $$g=1$$. Recall that by default the
+domain is the unit square, hence the $$\int_\Omega g$$ and $$\int_{\partial
+\Omega} g$$ should be equal to 1 and 4 respectively.
 
 ```
 shell> ./feelpp_doc_myintegrals --functions.g=1
@@ -42,7 +42,7 @@ int_Omega 1 = 1
 int_{boundary of Omega} 1 = 4
 ```
 
-Now we try \f$g=x\f$. We need to tell Feel++ what are the symbols associated
+Now we try $$g=x$$. We need to tell Feel++ what are the symbols associated
 with the expression: here the symbol is \c x and it works as follows
 
 ```
@@ -53,7 +53,7 @@ int_{boundary of Omega} x = 2
 
 Recall that \c : is a separator between the expression and each symbol composing it.
 
-Now we try \f$g=x y\f$. We need to tell Feel++ what are the symbols associated
+Now we try $$g=x y$$. We need to tell Feel++ what are the symbols associated
 with the expression: here the symbol is \c x and \c y and it works as follows
 
 ```
@@ -62,7 +62,7 @@ int_Omega x*y = 0.25
 int_{boundary of Omega} x*y = 1
 ```
 
-More complicated functions are of course doable, such as \f$g=\sin( x y )\f$.
+More complicated functions are of course doable, such as $$g=\sin( x y )$$.
 
 ```
 ./feelpp_doc_myintegrals --functions.g="sin(x*y):x:y"
@@ -87,9 +87,9 @@ int_{boundary of Omega} 1 = 3.14033
 ```
 
 \remark Note that we don't get the exact results due to the fact that
-\f$\Omega_h = \cup_{K \in \mathcal{T}_h} K\f$ which we use for the numerical
-integration is different from the exact domain \f$\Omega = \{ (x,y)\in
-\mathbb{R}^2 | x^2+y^2 < 1\}\f$.
+$$\Omega_h = \cup_{K \in \mathcal{T}_h} K$$ which we use for the numerical
+integration is different from the exact domain $$\Omega = \{ (x,y)\in
+\mathbb{R}^2 | x^2+y^2 < 1\}$$.
 
 #  Complete code {#TutorialIntegralsCode}
 

@@ -41,8 +41,8 @@ then we compute the gradient of \c g and \c f
 \snippet myexpression.cpp grad
 
 Notice that template argument are given to \c grad to specify the shape of the
-gradient: in the case of \f$\nabla g\f$ it is \f$1\times2\f$ and \f$\nabla f\f$
-\f$2\times 2\f$ since we are in 2D.
+gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$
+$$2\times 2$$ since we are in 2D.
 
 then we compute the laplacian of \c g and \c f
 \snippet myexpression.cpp laplacian

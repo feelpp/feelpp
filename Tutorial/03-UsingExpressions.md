@@ -26,8 +26,8 @@ then we compute the gradient of \c g and \c f
 \snippet myexpression.cpp grad
 
 Notice that template argument are given to \c grad to specify the shape of the
-gradient: in the case of \f$\nabla g\f$ it is \f$1\times2\f$ and \f$\nabla f\f$
-\f$2\times 2\f$ since we are in 2D.
+gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$
+$$2\times 2$$ since we are in 2D.
 
 then we compute the laplacian of \c g and \c f
 \snippet myexpression.cpp laplacian
@@ -43,7 +43,7 @@ Finally we evaluate these expression at one point given by the option \c x and \
 
 # Some results {#res}
 
-We start with the following function \f$g=1\f$ and \f$f=(1,1)\f$.
+We start with the following function $$g=1$$ and $$f=(1,1)$$.
 
 \verbatim
 shell> ./feelpp_doc_myexpression --functions.g=1:x:y --functions.f="{1,1}:x:y
