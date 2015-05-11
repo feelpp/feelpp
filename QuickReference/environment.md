@@ -2,7 +2,7 @@ Environment
 ===========
 
 
-In this section, we present some tools to initialize and manipulate \feel environment. For more information, see \ref detail::Environment "Environment".
+In this section, we present some tools to initialize and manipulate Feel++ environment. For more information, see \ref detail::Environment "Environment".
 
 # Initialize Feel++
 
@@ -25,7 +25,7 @@ None of those parameters are required but it is highly recommended to use the mi
 
 # Options Feel++ Options Description
 ## Options_Custom Add Options
-\c feel_option() returns a list of default options used in \feel.<br>
+\c feel_option() returns a list of default options used in Feel++.<br>
 
 You can create a personal list of options as seen in \ref FirstApp.
 
@@ -56,7 +56,7 @@ You can also add a list of options, using a routine as follows:
 
 The data returned is typically used as an argument of a Feel::Application subclass.
 
-This routine has to be declared before your \c main function. Then you can use it to initialize \feel Environment:
+This routine has to be declared before your \c main function. Then you can use it to initialize Feel++ Environment:
 ```cpp
   Environment env( _argc=argc, _argv=argv,
                    _desc=makeOptions(),

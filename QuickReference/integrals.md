@@ -6,7 +6,7 @@ You should be able to create a mesh now. If it is not the case, get back to the 
 
 To use the tools of this sections, you have to precise the domain range using the following keywords:
 <table class="manual">
-<tr><th>\feel Keyword</th><th>Description</th></tr>
+<tr><th>Feel++ Keyword</th><th>Description</th></tr>
 <tr><td> ``` elements(mesh) ```</td><td>All the elements of a mesh</td></tr>
 <tr><td> ``` markedelements(mesh, id) ```</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
 <tr><td> ``` faces(mesh) ```</td><td>All the faces of the mesh.</td></tr>
@@ -23,7 +23,7 @@ To use the tools of this sections, you have to precise the domain range using th
 <hr>
 # Integral Integrals
 ## Integrate integrate
-Thank to its finite element embedded language, \feel has its owned <tt>integrate()</tt> function.
+Thank to its finite element embedded language, Feel++ has its owned <tt>integrate()</tt> function.
 
 *Interface*
 ```
@@ -83,7 +83,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
 
 
 ## Integrals_Computing Computing my first Integrals
-This part explains how to integrate on a mesh with \feel (source \c "doc/manual/tutorial/myintegrals.cpp").
+This part explains how to integrate on a mesh with Feel++ (source \c "doc/manual/tutorial/myintegrals.cpp").
 
 Let's consider the domain $$\Omega=[0,1]^d$$ and associated meshes.<br>
 Here, we want to integrate the following function

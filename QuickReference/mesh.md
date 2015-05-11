@@ -25,8 +25,8 @@ int main( int argc, char** argv )
 // main
 \eco
 
-As always, we initialize the \feel environment (see section \ref FirstApp ).<br>
-The \c unitSquare() will generate a mesh for a square geometry. \feel provides several functions to automate the GMSH mesh generation for different topologies. These functions will create a geometry file \c .geo and a mesh file \c .msh. We can visualize them in GMSH.
+As always, we initialize the Feel++ environment (see section \ref FirstApp ).<br>
+The \c unitSquare() will generate a mesh for a square geometry. Feel++ provides several functions to automate the GMSH mesh generation for different topologies. These functions will create a geometry file \c .geo and a mesh file \c .msh. We can visualize them in GMSH.
 \verbatim
   gmsh <entity_name>.msh
 \endverbatim
@@ -36,11 +36,11 @@ Finally we use the \c exporter() (see \ref Exporter) function to export the mesh
   paraview <app_name>.sos
 \endverbatim
 
-In this section, we present some of the mesh definition and manipulation tools provided by \feel. For more information you can also see \ref Gmsh.<br>
+In this section, we present some of the mesh definition and manipulation tools provided by Feel++. For more information you can also see \ref Gmsh.<br>
 
 
 # Basic Basic Meshes
-There is a list of basic geometries you can automatically generate with \feel library.
+There is a list of basic geometries you can automatically generate with Feel++ library.
 <table class="manual">
 <tr><th>Feel++ function</th><th>Dim</th><th>Description</th</tr>
 <tr><td> \c unitSegment();</td><td>1</td><td>Build a mesh of the unit segment $$[0,1]$$</td></tr>
@@ -104,7 +104,7 @@ Optional Parameters:
 
 <br>
 The file you want to load has to be in an appropriate repository.<br>
-\feel looks for \c .geo and \c .msh files in the following directories (in this order):
+Feel++ looks for \c .geo and \c .msh files in the following directories (in this order):
 * current path
 * paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
 * localGeoRepository() which is usually \c "$HOME/feel/geo"  (cf: \ref Environment )

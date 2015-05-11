@@ -72,7 +72,7 @@ Algebraic solutions
 
   # SolverPrinciples Principles
 
-  \feel abstracts the PETSc library and provides a subset (sufficient in most
+  Feel++ abstracts the PETSc library and provides a subset (sufficient in most
   cases) to the PETSc features. It interfaces with the following PETSc
   libraries: \c Mat, \c Vec, \c KSP, \c PC, \c SNES.
   - \c Vec: Vector handling library
