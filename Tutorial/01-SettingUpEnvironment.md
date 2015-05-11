@@ -1,12 +1,8 @@
-Setting up the Feel++ Environment {#TutorialEnv} 
-==============================
-
-[TOC]
+Setting up the Feel++ Environment 
+=================================
 
 
-See section \ref ProgEnv for more information about \feel installation.
-
-# Minimal Minimal {#Example}
+# Minimal Example
 
 Let's begin with our first program using the \feel framework (source:
 <tt>doc/manual/tutorial/myapp.cpp</tt>).  Before all, you have to include the
@@ -18,9 +14,8 @@ We use the C++ <tt>namespace</tt> to avoid <tt>Feel::</tt> prefix before
 
 We initialize the environment variables through the \feel <tt>Environment</tt> class.
 
-<a href="#" class="top">top</a>
-<hr>
-# MyAppWithOption Adding {#options}
+
+# Adding options
 
 \snippet myappwithoptions.cpp marker
 
@@ -30,9 +25,9 @@ We initialize the environment variables through the \feel <tt>Environment</tt> c
 and the new one that we choose here as a double value. Note that the default
 value will be assigned if not specified by the user.
 
-<a href="#" class="top">top</a>
-<hr>
-# Compilation Compilation, execution, {#logs}
+
+# Compilation execution and logs
+
 To compile a tutorial, just use the GNU make command.
 \verbatim
   make feelpp_doc_<appname>
@@ -57,7 +52,7 @@ Note that there will be one log for each processor in that case.
 
 <a href="#" class="top">top</a>
 <hr>
-# Config Config {#files}
+# Config files
 
 A config file can be parsed to the program to profile your options. The default config paths are,
     \li current dir
@@ -88,7 +83,7 @@ And all options in the command line can overwrite all options given in cfg files
 
 <a href="#" class="top">top</a>
 <hr>
-# Initializing Initializing PETSc and {#Trilinos}
+# Initializing PETSc, SLEPc and other third party libraries
 
 PETSc is a suite of data structures and routines for the scalable (parallel)
 solution of scientific applications modeled by partial differential
@@ -96,6 +91,5 @@ equations. It employs the MPI standard for parallelism.
 
 \feel supports the PETSc framework, the <tt>Environment</tt> takes care of initializing the associated PETSc environment.
 
-<a href="#" class="top">top</a>
-<hr>
+
 
