@@ -1,8 +1,8 @@
-\feel is a unified C++ implementation of Galerkin methods (finite and
+Feel++ is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
 differential equations.
 
-## Objectives 
+## Objectives
 
 The objectives of this framework is quite ambitious; ambitions which
 could be express in various ways such as :
@@ -28,7 +28,7 @@ could be express in various ways such as :
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
 
-## Organisation of this manual 
+## Organisation of this manual
 
 This manual is organized as follows:
 
@@ -46,58 +46,53 @@ This manual is organized as follows:
 
 ##  Credits
 
-See the \ref Credits page for proper credits attribution.
+See the [Credits](Credits.md) page for proper credits attribution.
 
 
-## FEEL Consortium 
+## FEEL Consortium
 
 Feel++ was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between Université de
 Strasbourg, Université Joseph Fourier (Grenoble), University of
 Coimbra (Portugal), CNRS and [Cemosis](http://www.cemosis.fr).
 
-\htmlonly
+
+
 <center>
-<table border=0px">
 <tr>
-  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="logo_uds.png" width="100"/></a></td>
-  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="logo_cemosis.png" width="100"/></a></td>
-  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="logo_ujf.jpg" width="100"/></a></td>
-  <td><a href="http://www.uc.pt/"><img alt="UC" src="logo_uc.png" width="100"/></a></td>
-  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="logo_cnrs.png" width="100"/></a></td>
-  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="logo_imati.jpg" width="100"/></a></td>
+  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="pngs/logos/logo_uds.png" width="100"/></a></td>
+  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="pngs/logos/logo_cemosis.png" width="100"/></a></td>
+  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="pngs/logos/logo_ujf.jpg" width="100"/></a></td>
+  <td><a href="http://www.uc.pt/"><img alt="UC" src="pngs/logos/logo_uc.png" width="100"/></a></td>
+  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="pngs/logos/logo_cnrs.png" width="100"/></a></td>
+  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="pngs/logos/logo_imati.jpg" width="100"/></a></td>
 </tr>
-</table>
 </center>
-\endhtmlonly
+
 
 
 ## Current Sponsors
 
-\htmlonly
+
 <center>
-<table border=0px">
 <tr>
-  <td><a href="http://www.agence-nationale-recherche.fr/"><img alt="ANR" src="logo_anr.png" width="100"/></a></td>
-  <td><a href="http://agence-maths-entreprises.fr/"><img alt="AMIES" src="logo_amies.png" width="100"/></a></td>
-  <td><a href="http://labex-irmia.u-strasbg.fr/"><img alt="Labex IRMIA" src="logoIRMIA.png" width="100"/></a></td>
+  <td><a href="http://www.agence-nationale-recherche.fr/"><img alt="ANR" src="pngs/logos/logo_anr.png" width="100"/></a></td>
+  <td><a href="http://agence-maths-entreprises.fr/"><img alt="AMIES" src="pngs/logos/logo_amies.png" width="100"/></a></td>
+  <td><a href="http://labex-irmia.u-strasbg.fr/"><img alt="Labex IRMIA" src="pngs/logos/logoIRMIA.png" width="100"/></a></td>
 </tr>
-</table>
 </center>
-\endhtmlonly
+
 
 ## Former Sponsors
 
-\htmlonly
+
 <center>
-<table border=0px">
 <tr>
-  <td><a href="http://cluster-isle.grenoble-inp.fr/ "><img alt="ISLE" src="logo_isle.jpeg" width="100"/></a></td>
-  <td><a href="http://www.rhonealpes.fr/ "><img alt="RA" src="logo_ra.png" width="100"/></a></td>
+  <td><a href="http://cluster-isle.grenoble-inp.fr/ "><img alt="ISLE" src="pngs/logos/logo_isle.jpeg" width="100"/></a></td>
+  <td><a href="http://www.rhonealpes.fr/ "><img alt="RA" src="pngs/logos/logo_ra.png" width="100"/></a></td>
 </tr>
-</table>
 </center>
-\endhtmlonly
+
 
 
 \htmlonly
