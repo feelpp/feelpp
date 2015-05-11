@@ -1,8 +1,9 @@
+Feel++: Finite Element Embedded Library in C++
+==============================================
+
 Feel++ is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
 differential equations.
-
-## Objectives
 
 The objectives of this framework is quite ambitious; ambitions which
 could be express in various ways such as :
@@ -28,7 +29,7 @@ could be express in various ways such as :
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
 
-## Organisation of this manual
+# Organisation of this manual
 
 This manual is organized as follows:
 
@@ -44,12 +45,12 @@ This manual is organized as follows:
 
 
 
-##  Credits
+#  Credits
 
 See the [Credits](credits.md) page for proper credits attribution.
 
 
-## FEEL Consortium
+# FEEL++ Consortium
 
 Feel++ was initially developed at École Polytechnique Fédérale de
 Lausanne(Suisse) and is now a joint effort between Université de
@@ -71,7 +72,7 @@ Coimbra (Portugal), CNRS and [Cemosis](http://www.cemosis.fr).
 
 
 
-## Current Sponsors
+# Sponsors 
 
 
 <center>
@@ -94,6 +95,8 @@ Coimbra (Portugal), CNRS and [Cemosis](http://www.cemosis.fr).
 </center>
 
 
+
+# License for this book
 
 <hr>
 <center>
