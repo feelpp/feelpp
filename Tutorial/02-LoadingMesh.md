@@ -1,24 +1,22 @@
-Loading a Mesh {#TutorialMesh}
-==================
-
-\tableofcontents
+Loading a Mesh 
+==============
 
 
 The next step is to load a mesh. The source code is available in \c mymesh.cpp.
 
-# TutorialMeshSteps Step by step {#explanations}
-
-## Loading a Mesh in 2D {#first}
 The `loadMesh` function has a `_name` option set by default as the default value of the `--gmsh.filename` option that point either to a `.geo`, either to a `.msh` file.
 
-\snippet mymesh.cpp load
+```c++
+#include <feel/feel.hpp>
 
-## Exporting the Mesh for visualisation {#visu}
+...
 
-Please refere [here](TutorialVisualize.html) for explanations.
-\snippet mymesh.cpp export
+auto mesh=loadMesh( _mesh=new Mesh<Simplex<2>> );
+```
 
-# Complete code {#TutorialMeshCode}
+## Exporting the Mesh for visualisation 
 
-\snippet mymesh.cpp all
+See this [section](TutorialVisualize.md) for more details about
+exporting and visualizing meshes.
+
 
