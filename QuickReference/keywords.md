@@ -9,12 +9,12 @@ $$\Omega^e$$ current mesh element.
 
 The genesis of the language can be found in \cite prudhomme05:_domain_specif_embed_languag_c and an update on Feel++ is available in \cite PRUDHOMME:2012:HAL-00662868:3.
 
-# Keywords_Points Points
+# Points
 
 ## Current Point:
 
 |Feel++ Keyword | Math Object | Description | Dimension|
-|---------------|-------------|-------------|-----------
+|---------------|-------------|-------------|----------|
 |` P()`|$$\overrightarrow{P}$$| $$(P_x, P_y, P_z)^T$$|$$d \times 1$$|
 |` Px()`|$$P_x$$|$$x$$ coordinate of $$\overrightarrow{P}$$|$$1 \times 1$$|
 |` Py()`|$$P_y$$|$$y$$ coordinate of $$\overrightarrow{P}$$<br>(value is 0 in 1D)|$$1 \times 1$$|
@@ -24,17 +24,17 @@ The genesis of the language can be found in \cite prudhomme05:_domain_specif_emb
 ## Element Barycenter Point:
 
 |Feel++ Keyword | Math Object | Description | Dimension |
-----------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` C()`|$$\overrightarrow{C}$$| $$(C_x, C_y, C_z)^T$$|$$d \times 1$$|
 |` Cx()`|$$C_x$$|$$x$$ coordinate of $$\overrightarrow{C}$$|$$1 \times 1$$|
 |` Cy()`|$$C_y$$|$$y$$ coordinate of $$\overrightarrow{C}$$<br>(value is 0 in 1D)|$$1 \times 1$$|
 |` Cz()`|$$C_z$$|$$z$$ coordinate of $$\overrightarrow{C}$$<br>(value is 0 in 1D and 2D)|$$1 \times 1$$|
 
 
-Normal at Current Point:
+## Normal at Current Point:
 
 |Feel++ Keyword | Math Object | Description | Dimension |
---------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` N()`|$$\overrightarrow{N}$$| $$(N_x, N_y, N_z)^T$$|$$d \times 1$$|
 |` Nx()`|$$N_x$$|$$x$$ coordinate of $$\overrightarrow{N}$$|$$1 \times 1$$|
 |` Ny()`|$$N_y$$|$$y$$ coordinate of $$\overrightarrow{N}$$<br>(value is 0 in 1D)|$$1 \times 1$$|
@@ -42,20 +42,20 @@ Normal at Current Point:
 
 
 
-# Keywords_Array Vectors and Matrix
+# Vectors and Matrix
 
-## BuildingVectors Building Vectors
+## Building Vectors
 
 Usual syntax to create vectors:
 
 |Feel++ Keyword | Math Object | Description | Dimension |
----------------------------------------------------------
+|---------------|-------------|-------------|-----------|
 |` vec<n>(v_1,v_2,...,v_n)`|$$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}$$|Column Vector with $$n$$ rows<br>entries being expressions|$$n \times 1$$|
 
 You can also use expressions and the unit base vectors:
 
 |Feel++ Keyword | Math Object | Description |
----------------------------------------------
+|---------------|-------------|-------------|
 |\c oneX() | $$\begin{pmatrix} 1\\0\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{i}$$|
 |\c oneY() | $$\begin{pmatrix} 0\\1\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{j}$$|
 |\c oneZ() | $$\begin{pmatrix} 0\\0\\1 \end{pmatrix}$$|Unit vector $$\overrightarrow{k}$$|
@@ -103,18 +103,10 @@ Following tables present tools to declare and manipulate expressions.
 
 |Feel++ Keyword | Description |
 |---------------|-------------|
-|`
-Px()
-Py()
-Pz()
-cst( c )
-`|
-Variable $$x$$<br>
-Variable $$y$$<br>
-Variable $$z$$<br>
-Constant function equal to $$c$$
-|
-
+|`Px()`    | Variable $$x$$ | 
+|`Py()`    | Variable $$y$$ |
+| `Pz()`  |Variable $$z$$ |
+| cst( c ) | Constant function equal to $$c$$ |
 
 You can of course use all current operators ( + - / * ) and the usual following functions:
 
