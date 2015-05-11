@@ -167,12 +167,14 @@ Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Ke
 Suppose that $$f \in X_h$$ reads
 
 $$f=\sum_{i=0}^{\mathcal{N}} f_i \phi_i$$
-where $$X_h = \mathrm{span}{ \phi_i }, i=1,\ldots,\mathcal{N}$$
+where 
+$$X_h = \mathrm{span}\{ \phi_i, i=1,\ldots,\mathcal{N}\}$$
+is a finite element space.
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
 |---------------|-------------|-------------|------|-----------|
-|` id(f)` | $$f$$ | test function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
-|` idt(f)`| $$f$$ | trial function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
+|` id(f)` | $$\{\phi_i$\}$ | test function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
+|` idt(f)`| $$\{\phi_i\}$$ | trial function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` idv(f)`| $$f$$ | evaluation function   | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` grad(f)` | $$\nabla f$$ | gradient of test function | $$\mathrm{rank}(f(\overrightarrow{x}))+1$$ | $$m \times n $$ <br> $$p=1$$|
 |` gradt(f)`| $$\nabla f$$ | grdient of trial function | $$\mathrm{rank}(f(\overrightarrow{x}))+1$$ |$$m \times n $$<br> $$p=1$$|
