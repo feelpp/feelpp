@@ -154,7 +154,7 @@ You can use the usual operations and logical operators.
 |` != ` |$$ f!=g$$|element wise not equal|
 |` - ` |$$ -g$$|element wise unary minus|
 |` && ` |$$ f$$ and $$g$$|element wise logical and |
-|` \|\| ` |$$ f$$ or $$g$$|element wise logical or|
+|{% raw %}||{% endraw %} |$$ f$$ or $$g$$|element wise logical or|
 |` ! ` |$$ !g$$|element wise logical not|
 
 
@@ -173,7 +173,7 @@ is a finite element space.
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
 |---------------|-------------|-------------|------|-----------|
-|` id(f)` | $$\{\phi_i$\}$ | test function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
+|` id(f)` | $$\{\phi_i\}$$ | test function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` idt(f)`| $$\{\phi_i\}$$ | trial function | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` idv(f)`| $$f$$ | evaluation function   | $$\mathrm{rank}(f(\overrightarrow{x}))$$ | $$m \times p $$|
 |` grad(f)` | $$\nabla f$$ | gradient of test function | $$\mathrm{rank}(f(\overrightarrow{x}))+1$$ | $$m \times n $$ <br> $$p=1$$|
