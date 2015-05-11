@@ -131,10 +131,12 @@ where $$\X$$ is the infinite dimensional space, $$(\ell_i)_{i=1,...,\opdim\X}$$ 
 the linear forms and $$(\phi_i)_{i=1...\opdim\X}$$ the basis function associated
 with the various approximations.
 
-# QRFunctionSpaceFn Function Space helper functions
+# Function Space helper functions
 
- - \c Pch<N>(mesh) generates $$\Pch[N](\Omega_h)$$
- - \c Pchv<N>(mesh) generates $$[\Pch[N](\Omega_h)]^d$$
- - \c THch<N>(mesh) generates $$[\Pch[N](\Omega_h)]^d\times \Pch[N](\Omega_h)$$
+Function        | Description
+----------------|------------------------------
+`Pch<N>(mesh)`  | generates {{book.Pch}}
+`Pchv<N>(mesh)` | generates {{book.Pchv}}
+`THch<N>(mesh)` | generates {{book.THch}}
 
 
