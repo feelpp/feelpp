@@ -81,18 +81,18 @@ Let $$A$$ be a square matrix of size $$n$$.
 |---------------|-------------|-------------|-----------|
 |` inv(A)`|$$A^{-1}$$|Inverse of matrix $$A$$ |$$n \times n$$|
 |` det(A)`|$$\det (A)$$|Determinant of matrix $$A$$ |$$1 \times 1$$|
-|` sym(A)\eco|$$\text{Sym}(A)$$|Symmetric part of matrix $$A$$: $$\frac{1}{2}(A+A^T)$$<br> |$$n \times n$$|
-|` antisym(A)\eco|$$ \text{Asym}(A)$$|Antisymmetric part of  $$A$$: $$\frac{1}{2}(A-A^T)$$<br> |$$n \times n$$|
+|` sym(A)`|$$\text{Sym}(A)$$|Symmetric part of matrix $$A$$: $$\frac{1}{2}(A+A^T)$$<br> |$$n \times n$$|
+|` antisym(A)`|$$ \text{Asym}(A)$$|Antisymmetric part of  $$A$$: $$\frac{1}{2}(A-A^T)$$<br> |$$n \times n$$|
 
 
 Let A and B be two matrix (or two vectors) of same dimension $$m \times n$$.
 
 |Feel++ Keyword | Math Object | Description | Dimension |
 |---------------|-------------|-------------|-----------|
-|` trace(A)\eco|$$\text{tr}(A)$$|Trace of matrix $$A$$<br>Generalized on non-squared Matrix<br>Generalized on Vectors |$$1 \times 1$$|
-|` trans(B)\eco|$$B^T$$|Transpose of matrix $$B$$<br>Can be used on non-squared Matrix<br>Can be used on Vectors |$$n \times m$$|
-|` inner(A,B)\eco|$$ A.B \\ A:B = \text{tr}(A*B^T)$$|Scalar product of two vectors<br>Generalized scalar product of two matrix |$$1 \times 1$$|
-|` cross(A,B)\eco|$$ A\times B$$|Cross product of two vectors|$$n \times 1$$|
+|` trace(A)`|$$\text{tr}(A)$$|Trace of matrix $$A$$<br>Generalized on non-squared Matrix<br>Generalized on Vectors |$$1 \times 1$$|
+|` trans(B)`|$$B^T$$|Transpose of matrix $$B$$<br>Can be used on non-squared Matrix<br>Can be used on Vectors |$$n \times m$$|
+|` inner(A,B)`|$$ A.B \\ A:B = \text{tr}(A*B^T)$$|Scalar product of two vectors<br>Generalized scalar product of two matrix |$$1 \times 1$$|
+|` cross(A,B)`|$$ A\times B$$|Cross product of two vectors|$$n \times 1$$|
 
 
 
