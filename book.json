@@ -1,9 +1,9 @@
 {
     "plugins": ["mathjax","include-highlight"],
-    "variables":   { 
-        "Pch" : "$$P^N_{c,h}(\Omega_h)$$",
-        "Pchv" : "$$[P^N_{c,h}(\Omega_h)]^d$$",
-        "THch" : "$$[P^{N+1}_{c,h}(\Omega_h)]^d \times P^N_{c,h}(\Omega_h)$$"
+    "variables": { 
+        "Pch": "$$P^N_{c,h}(\Omega_h)$$",
+        "Pchv": "$$[P^N_{c,h}(\Omega_h)]^d$$",
+        "THch": "$$[P^{N+1}_{c,h}(\Omega_h)]^d \times P^N_{c,h}(\Omega_h)$$"
     }
     
 }
