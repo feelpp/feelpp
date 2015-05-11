@@ -1,27 +1,27 @@
-Setting up the Feel++ Environment 
+Setting up the Feel++++ Environment 
 =================================
 
 
 # Minimal Example
 
-Let's begin with our first program using the \feel framework (source:
+Let's begin with our first program using the \Feel++ framework (source:
 <tt>doc/manual/tutorial/myapp.cpp</tt>).  Before all, you have to include the
-\feel headers.
+\Feel++ headers.
 
-We use the C++ <tt>namespace</tt> to avoid <tt>Feel::</tt> prefix before
-\feel objects.
+We use the C++ <tt>namespace</tt> to avoid <tt>Feel++::</tt> prefix before
+\Feel++ objects.
 \snippet myapp.cpp marker
 
-We initialize the environment variables through the \feel <tt>Environment</tt> class.
+We initialize the environment variables through the \Feel++ <tt>Environment</tt> class.
 
 
 # Adding options
 
 \snippet myappwithoptions.cpp marker
 
-\li We pass command line options using the <a href="http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html">Boost Program Options</a>, library using the prefix <tt>po::</tt> which is a \feel alias for the Boost::program_options namespace. To add a new \feel option, we must create a new
+* We pass command line options using the <a href="http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html">Boost Program Options</a>, library using the prefix <tt>po::</tt> which is a \Feel++ alias for the Boost::program_options namespace. To add a new \Feel++ option, we must create a new
 
-\feel <tt>options_description</tt>. You must add the default \feel options
+\Feel++ <tt>options_description</tt>. You must add the default \Feel++ options
 and the new one that we choose here as a double value. Note that the default
 value will be assigned if not specified by the user.
 
@@ -29,24 +29,24 @@ value will be assigned if not specified by the user.
 # Compilation execution and logs
 
 To compile a tutorial, just use the GNU make command.
-\verbatim
-  make feelpp_doc_<appname>
-\endverbatim
+```
+  make Feel++pp_doc_<appname>
+```
 
 where <tt><appname></tt> is the name of the application you wish to compile (here, <tt>myapp</tt>). Go to the execution directory as specified in the program, and execute it. You can change your option value.
-\verbatim
-  ./feelpp_doc_myapp [--value 6.6]
-\endverbatim
+```
+  ./Feel++pp_doc_myapp [--value 6.6]
+```
 
 You can list the log files created.
-\verbatim
-  ls /tmp/<your login>/feelpp_doc_myapp/
-\endverbatim
+```
+  ls /tmp/<your login>/Feel++pp_doc_myapp/
+```
 
 If you open one of these log, you should be able to see your value and the processor number used to compute. You can run your application on several processors using MPI.
-\verbatim
-  mpirun -np 2 feelpp_doc_myapp
-\endverbatim
+```
+  mpirun -np 2 Feel++pp_doc_myapp
+```
 
 Note that there will be one log for each processor in that case.
 
@@ -55,28 +55,28 @@ Note that there will be one log for each processor in that case.
 # Config files
 
 A config file can be parsed to the program to profile your options. The default config paths are,
-    \li current dir
-    \li <tt>$HOME/feel/config/</tt>
-    \li <tt>$INSTALL_PREFIX/share/feel/config/</tt>
+    * current dir
+    * <tt>$HOME/Feel++/config/</tt>
+    * <tt>$INSTALL_PREFIX/share/Feel++/config/</tt>
 
 then you have to write inside one of these folders a file called
-<tt><app_name>.cfg</tt> or <tt>feelpp_<app_name>.cfg</tt>. For example, our
+<tt><app_name>.cfg</tt> or <tt>Feel++pp_<app_name>.cfg</tt>. For example, our
 <tt>myapp.cfg</tt> would looks like,
 
-\verbatim
+```
 value=0.53
-\endverbatim
+```
 
 Note that you can specify the config file through the option <tt>--config-file=<path></tt>
 
 It's also possible to give several configuration files with the option <tt>--config-files <path1> <path2> <path3></tt>
-\verbatim
- ./feelpp_doc_myapp --config-files ex1.cfg ex2.cfg ex3.cfg
-\endverbatim
+```
+ ./Feel++pp_doc_myapp --config-files ex1.cfg ex2.cfg ex3.cfg
+```
 
 In the case where some options are duplicated in the files, the priority is given at the end :
-\li <tt>ex3.cfg</tt> can overwrite options in <tt>ex2.cfg</tt> and <tt>ex3.cfg</tt>
-\li <tt>ex2.cfg</tt> can overwrite options in <tt>ex1.cfg</tt>
+  * <tt>ex3.cfg</tt> can overwrite options in <tt>ex2.cfg</tt> and <tt>ex3.cfg</tt>
+  * <tt>ex2.cfg</tt> can overwrite options in <tt>ex1.cfg</tt>
 
 All files in <tt> --config-files </tt> can overwrite options given by <tt> --config-file </tt>.
 And all options in the command line can overwrite all options given in cfg files.
@@ -89,7 +89,7 @@ PETSc is a suite of data structures and routines for the scalable (parallel)
 solution of scientific applications modeled by partial differential
 equations. It employs the MPI standard for parallelism.
 
-\feel supports the PETSc framework, the <tt>Environment</tt> takes care of initializing the associated PETSc environment.
+\Feel++ supports the PETSc framework, the <tt>Environment</tt> takes care of initializing the associated PETSc environment.
 
 
 
