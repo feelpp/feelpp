@@ -4,9 +4,7 @@
 
   Author(s): Thomas Lantz <thomas.lantz@etu.unistra.fr>
        Date: 2015-03-09
-
-  Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
-
+@
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -45,6 +43,7 @@ namespace Feel
  *
  * @author Thomas Lantz
  */
+
 template<class Convex, uint16_type Integration_Degree, typename T>
 class MultiScaleQuadrature : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
 
@@ -104,11 +103,7 @@ public :
         // build rules in x and y direction
         weights_type wx( 8 );
         weights_type px( 8 );
-        //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
-#if 0
-        VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
-#endif
+
         double tmp=-1;
         for ( double i = 0; i < 8; i++ )
         {
@@ -117,13 +112,6 @@ public :
             this->M_points( 0, i ) = tmp ;
             tmp+=2./8;
         }
-
-
-#if 0
-        VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
-#endif
-
 
         boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
@@ -172,6 +160,8 @@ public :
 
     FEELPP_DEFINE_VISITABLE();
 };
+
+
 /** Multi Scale Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
 template< uint16_type Integration_Degree, typename T>
@@ -196,36 +186,28 @@ public :
 
     MultiScaleQuadrature( )
         :
-        super( 8*8 )
+        super( 16*16 )
     {
         // build rules in x and y direction
-        weights_type wx( 8*8 );
-        weights_type px( 8*8 );
-        //details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
-#if 0
-        VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
-#endif
+        weights_type wx( 16*16 );
+        weights_type px( 16*16 );
+
         double tmpx=-1.;
         double tmpy=-1.;
-        for ( int i = 0,  k = 0; i < 8; i++ )
+        for ( int i = 0,  k = 0; i < 16; i++ )
         {
-            for ( int j = 0; j < 8; j++, ++k )
+            for ( int j = 0; j < 16; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4./(8.*8.) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4./(16.*16.) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./8;
+                tmpy+=2./16;
             }
             tmpy=-1.;
-            tmpx+=2./8;
+            tmpx+=2./16;
         }
 
-#if 0
-        VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
-        VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
-#endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures
@@ -274,7 +256,6 @@ public :
 
     }
     */
-
 
     ~MultiScaleQuadrature() {}
 

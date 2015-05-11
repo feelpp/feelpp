@@ -5,9 +5,6 @@
   Author(s): Thomas Lantz 
        Date: 2015-04-27
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007, 2008 Université Joseph Fourier Grenoble 1
-
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -135,12 +132,7 @@ public:
     value_type M_tol;
     boost::function<value_type( node_type const& )> M_func;
 };
-#define TESTS_QK_COSCOS( T )                                                    \
- test->add( BOOST_TEST_CASE( ( TestImQK2D<40, T>( 4.0*sin(T(1.0))*sin(T(1.0)) , coscos<T>, 1.0E-14 ) )  ) );\
- /**/
 
-
-#if 1
 
 // automatically registered test cases could be organized in test suites
 BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
@@ -221,5 +213,3 @@ BOOST_AUTO_TEST_CASE( im2d_test6 )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#else
-#endif // 1
