@@ -46,7 +46,7 @@ This manual is organized as follows:
 
 ##  Credits
 
-See the [Credits](Credits.md) page for proper credits attribution.
+See the [Credits](credits.md) page for proper credits attribution.
 
 
 ## FEEL Consortium
