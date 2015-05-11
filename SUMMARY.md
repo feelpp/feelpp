@@ -2,7 +2,7 @@
 
 * [introduction](README.md)
 
-* [Getting Started](GettingStarted/GettingStart.md)
+* [Getting Started](GettingStarted/GettingStarted.md)
 
 * [Tutorial](Tutorial/README.md)
     * [Environment](Tutorial/01-SettingUpEnvironment.md)
