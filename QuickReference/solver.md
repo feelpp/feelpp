@@ -2,62 +2,62 @@ Algebraic solutions
 ====================
 
 
-  # SolverDefinitions Definitions
+#  Definitions
 
-  ## SolverDefinitionsMatrices Matrices
-  Matrix
-  A \b matrix is a linear transformation between finite dimensional vector spaces.
+##  Matrices
 
-  Assembling a matrix
-  \b Assembling a matrix means defining it's action in terms of entries
-  (usually stored in a sparse format).
+A \b matrix is a linear transformation between finite dimensional vector spaces.
 
-  Symmetric matrix
-  $$A = A^T$$
+Assembling a matrix
+\b Assembling a matrix means defining it's action in terms of entries
+(usually stored in a sparse format).
+
+Symmetric matrix
+$$A = A^T$$
 
 
-  Definite (resp. semi-definite) positive matrix
-  All eigenvalue are $$>0$$ (resp $$\geq 0$$) or $$x^TAx >0\, \forall x$$ (resp. $$x^TAx
-  \geq 0\, \forall x$$)
+Definite (resp. semi-definite) positive matrix
+All eigenvalue are $$>0$$ (resp $$\geq 0$$) or $$x^TAx >0\, \forall x$$ (resp. $$x^TAx
+\geq 0\, \forall x$$)
 
-  Definite (resp. semi-negative matrix)
-  All eigenvalue are $$<0$$ (resp. $$\leq 0$$) or $$x^TAx <0 \forall x$$ (resp $$x^TAx
-  \leq 0\, \forall x)$$
+Definite (resp. semi-negative matrix)
+All eigenvalue are $$<0$$ (resp. $$\leq 0$$) or $$x^TAx <0 \forall x$$ (resp $$x^TAx
+\leq 0\, \forall x)$$
 
-  Indefinite matrix
-  There exists positive and negative eigenvalue (Stokes, Helmholtz) or there
-  exists $$x,y$$ such that $$x^TAx > 0 > y^T A y$$
+Indefinite matrix
+There exists positive and negative eigenvalue (Stokes, Helmholtz) or there
+exists $$x,y$$ such that $$x^TAx > 0 > y^T A y$$
 
-  ## SolverDefinitionsPreconditioners Preconditioners
+## Preconditioners
 
-  ### SolverDefinitionsPreconditioning Preconditioning
+### Preconditioning
 
-  Preconditioning improves the conditioning of the Krylov operator.
+Preconditioning improves the conditioning of the Krylov operator.
 
-  Left preconditioning
-  $$
+Left preconditioning
+$$
   \begin{gather*}
   (P^{-1} A) x = P^{-1} b \\
   \{ P^{-1} b, (P^{-1}A) P^{-1} b, (P^{-1}A)^2 P^{-1} b, \dotsc \}
   \end{gather*}
-  $$
+$$
 
-  Right preconditioning
-  $$
+Right preconditioning
+$$
   \begin{gather*}
   (A P^{-1}) P x = b \\
   \{ b, (P^{-1}A)b, (P^{-1}A)^2b, \dotsc \}
   \end{gather*}
-  $$
-  \note The product $$P^{-1}A$$ or $$A P^{-1}$$ is \b never formed.
+$$
+Note that the product $$P^{-1}A$$ or $$A P^{-1}$$ is \b never formed.
 
-  ### SolverDefinitionsPreconditioner Preconditioner
+### Preconditioner
 
-  Definition
-  A \b preconditioner $$\mathcal{P}$$ is a method for constructing a
-  matrix (just a linear function, not assembled!)  $$P^{-1} = \mathcal{P}(A,A_p)$$
-  using a matrix $$A$$ and extra information $$A_p$$, such that the spectrum
-  of $$P^{-1}A$$ (or $$A P^{-1}$$) is well-behaved.
+Definition
+A \b preconditioner $$\mathcal{P}$$ is a method for constructing a
+matrix (just a linear function, not assembled!)  $$P^{-1} = \mathcal{P}(A,A_p)$$
+using a matrix $$A$$ and extra information $$A_p$$, such that the spectrum
+of $$P^{-1}A$$ (or $$A P^{-1}$$) is well-behaved.
 
 
   - $$P^{-1}$$ is dense, $$P$$ is often not available and is not needed
@@ -70,7 +70,7 @@ Algebraic solutions
   Various preconditioning strategies are presented in
   - \subpage PreconditionerPage
 
-  # SolverPrinciples Principles
+# Principles 
 
   Feel++ abstracts the PETSc library and provides a subset (sufficient in most
   cases) to the PETSc features. It interfaces with the following PETSc
@@ -87,9 +87,9 @@ Algebraic solutions
 
   The \b Default \b backend is \c petsc.
 
-  # SolverExamples Examples
+# Examples
 
-  ## SolverExamplesLaplacian Laplacian
+## Laplacian
 
   We start with the quickstart Laplacian example, recall that we wish to, given
   a domain $$\Omega$$, find $$u$$ such that
@@ -132,27 +132,29 @@ PC Object: 2 MPI processes
 
   ```
 
-  ### SolverExamplesLaplacianSolvers Solvers and preconditioners
+### Solvers and preconditioners
 
-  ## SolverExamplesStokes Stokes
+## Stokes
 
   We now turn to the quickstart Stokes example, recall that we wish to, given a
   domain $$\Omega$$, find $$(\mathbf{u},p) $$ such that
 
-  \f{eqnarray*}{
+  $$
+  \begin{eqnarray*}
   -\Delta \mathbf{u} + \nabla p &= \mathbf{ f},\\
-	\nabla \cdot \mathbf{u} &=    0 \mbox{ in } \Omega\\
-	 \mathbf{u} &= \mathbf{g} \mbox{ on } \partial \Omega
-  \f}
+  \nabla \cdot \mathbf{u} &=    0 \mbox{ in } \Omega\\
+  \mathbf{u} &= \mathbf{g} \mbox{ on } \partial \Omega
+  \end{eqnarray*}     
+  $$
 
   This problem is indefinite, \ref SolverDefinitionsMatrices.
 
   - \b Strategies : Uzawa, penalty(techniques from optimisation), augmented
   lagrangian approach (Glowinski,Le Tallec)
 
-  \note The Inf-sup condition must be satisfied. In particular for a multigrid strategy, the smoother needs to preserve it
+  Note that The Inf-sup condition must be satisfied. In particular for a multigrid strategy, the smoother needs to preserve it
 
-  ### SolverExamplesStokesApproach General approach for saddle point problems
+### General approach for saddle point problems
 
   - \b Solvers: MINRES, GMRES
   - \b Preconditioners : look first at the saddle point matrix $$M$$ and its
@@ -200,5 +202,5 @@ PC Object: 2 MPI processes
     where $$\tilde{S} \approx S^{-1} = B^T A^{-1} B$$ and  $$\tilde{A}^{-1}
     \approx A^{-1}$$
 
-  # SolverOptions Options
+# Options
 
