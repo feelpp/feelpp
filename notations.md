@@ -19,7 +19,7 @@ and finally \e (iv) polynomials and finite elements.
 ##  Convexes {#NotationsConvexes}
 
 The supported convexes are simplices and hypercubes of topological dimension
-$n$, $n=1,2,3$ lying in $\mathbb{R}^d$ such that $n \leq d
+$$n, n=1,2,3$$ lying in $$\mathbb{R}^d$$ such that $n \leq d
 \leq 3$. The convexes are described geometrically in a standard way in
 terms of their subentities (vertices, edges, faces, volumes), see for
 example \cite MR1696933, and provide the ability to iterate over the entities
@@ -64,8 +64,8 @@ over the edges of a tetrahedron.
   discontinuous Galerkin formulations.
 
 
-  The type of point sets supported are \e (i) the Equidistributed
-  point set, \e (ii) the Warpblend point sets on simplices see \cite warburton06,
+  The type of point sets supported are \e (i) the Equidistributed  point set, 
+  \e (ii) the Warpblend point sets on simplices see \cite warburton06,
   \e (iii) Fekete points in simplices, see \cite MR1696933,
   \e (iv) standard quadrature rules in simplices and finally
   \e (v) Gauss, Gauss-Radau and Gauss-Lobatto and combinations in

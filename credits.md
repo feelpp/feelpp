@@ -1,6 +1,5 @@
 # Credits {#Credits}
 
-[TOC]   
 
 ##  Copyright  {#Copyright}
 
