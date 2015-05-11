@@ -5,8 +5,6 @@
   Author(s): Thomas Lantz
        Date: 2015-04-27
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
-
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -21,6 +19,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /// [all]
+
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
@@ -39,6 +38,7 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+
 using namespace Feel;
 
 inline
@@ -48,16 +48,13 @@ makeAbout()
     AboutData about( "test_integrateQuadra" ,
                      "test_integrateQuadra" ,
                      "0.2",
-                     "nD(n=2,3) test integrate Quadra",
+                     "test integrate Quadra",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
 
     about.addAuthor( "Thomas Lantz", "student", "", "" );
     return about;
 }
-
-
-
 
 class Test
 {
@@ -108,7 +105,6 @@ class Test
 
         BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 1e-1 );
         BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 1e-1 );
-        //BOOST_CHECK_CLOSE( intgrad_f, intgrad_f2, 1e-4 );
     }
     
      void resol(std::string s)
@@ -202,6 +198,13 @@ BOOST_AUTO_TEST_CASE( test_run6 )
 }
 
 
+BOOST_AUTO_TEST_CASE( test_run7 )
+{
+    Test t7 ;
+    t7.run("y*exp(x):x:y");
+}
+
+
 BOOST_AUTO_TEST_CASE( test_resol0 )
 {
     Test t0 ;
@@ -248,7 +251,15 @@ BOOST_AUTO_TEST_CASE( test_resol6 )
 }
 
 
+BOOST_AUTO_TEST_CASE( test_resol7 )
+{
+    Test t7 ;
+    t7.resol("y*exp(x):x:y");
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 #else
+std::cout << "USE_BOOST_TEST non define" << std::endl;
 #endif
 
