@@ -1,6 +1,11 @@
 {
     "gitbook": "2.x.x",
     "plugins": ["mathjax","include-highlight"],
+    "links": {
+        "sidebar": {
+            "Contact us / Support": "https://www.feelpp.org/contact"
+        }
+    },
     "variables": { 
         "Pch": "$$P^N_{c,h}(\Omega_h)$$",
         "Pchv": "$$[P^N_{c,h}(\Omega_h)]^d$$",
