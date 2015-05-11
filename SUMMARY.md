@@ -22,5 +22,5 @@
        * [Preconditioner](QuickReference/preconditioner.md)
    * [Exporter](QuickReference/exporter.md)
    * [Keywords](QuickReference/keywords.md)
-* [Frequently Asked Questions](FAQ.md)
+* [Frequently Asked Questions](FAQ/FAQ.md)
 
