@@ -32,10 +32,10 @@ could be express in various ways such as :
 
 This manual is organized as follows:
 
-  - \ref GettingStarted where we provide various standard PDE solvers to start
+  - [GettingStarted](GettingStarted/GettingStarted.md) where we provide various standard PDE solvers to start
   with
 
-  - \ref Tutorial where we dive step by step into Feel++
+  - [Tutorial](Tutorial.md) where we dive step by step into Feel++
 
   - \ref ProgEnv which includes instructions for installation from sources or
   from Debian/Ubuntu and MacOSX

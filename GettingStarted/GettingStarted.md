@@ -31,7 +31,7 @@ Then you can go to the \feel top directory with
   cd feel
 ```
 You should obtain further directories such as:
-\verbatim
+```
 applications/   # functional applications
 benchmarks/  # applications under test
 cmake/   # do not touch, used for compilation
@@ -46,21 +46,19 @@ scripts/ # various scripts
 testsuite/ # Feel++ unit tests testsuite
 CMakeLists.txt   # the file for cmake to build, do not modify
 ...
-\endverbatim
-
-<a href="#" class="top">top</a>
-<hr>
+```
 
 
-\subsection Compiling Compiling Feel++
 
-\subsubsection hurry If you are in a hurry
-\verbatim
+## Compiling Compiling Feel++
+
+### hurry If you are in a hurry
+```
 	cmake ../feel -DCMAKE_CXX_COMPILER=/usr/bin/clang++ // Generate the makefile
 	sudo make install // actually compile and install the library
 	make -j 4 feelpp_qs_laplacian // Compile the library and an example
 	./quickstart/feelpp_qs_laplacian // execute one example
-\endverbatim
+```
 
 \subsubseciton general General information
 \feel uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using `gcc4.7` (or a higher version) or `clang++` as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.7</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
@@ -73,7 +71,7 @@ build type:
 \li debug: debug
 \li none(default)
 
-\subsubsection comp Compiling out the source
+### comp Compiling out the source
 <b>It is not allowed to build the library in the source directory </b>: The best way is to have a directory (<tt>FEEL</tt> for example) in which you have:
 \code
 ls FEEL
@@ -82,53 +80,53 @@ feel.opt/ // Build directory
 \endcode
 where <tt>feel</tt> is the top directory where the source have been downloaded, using git or trackballs.
 <tt>cmake</tt> is used as it: 
-\verbatim
+```
 	cd FEEL/feel.opt
 	cmake ../feel -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_BUILD_TYPE=RelWithDebInfo 
-\endverbatim
+```
 
 You can customize the build type in any way.
 Please have a look to 
-\verbatim
+```
 	FEEL/feel/CMakeLists.txt
-\endverbatim
+```
 or at the <tt>List of Cmake Options</tt> section.
 
 <p>
-\subsubsection comp_spec Per-system specific configuration
+### comp_spec Per-system specific configuration
 If you need to set specific CMake variables to fit an exotic system (e.g. supercomputer), you can create a machine file fitting this system.
 To do so, simply create a file named <tt>feelpp.machines.&lt;name&gt;.cmake</tt> in the <tt>cmake/machines</tt> directory, where <tt>&lt;name&gt;</tt> is the machine name returned by the execution of <tt>uname -n</tt>.
 The file will automatically be recognized and loaded, when you will be compiling \feel on this system.
 </p>
 
 Once CMake has done its work, you are now able to compile the library with:
-\verbatim
+```
   make
-\endverbatim
+```
 
 You can speed up the compilation process, if you have a multicore processor. To
 do so, you have to specify the number of parallel jobs <tt>make</tt> will be
 allowed to spawn by using the <tt>-j</tt> flag:
 
-\verbatim
+```
   make -j <nbjobs>
-\endverbatim
+```
 <b>Important</b>: from now on, all commands should be typed in <tt>feel.opt</tt> or its subdirectories.
 
 <p>
-\subsubsection Unit tests :
+### Unit tests :
 
 \feel comes with built-in unit tests to ensure that the library is working
 correctly. You can launch basic tests based on the quickstart application by
 typing:
 
-\verbatim
+```
   make check
-\endverbatim
+```
 Or you can execute the whole testsuite, by typing the following command: (This might take a while)
-\verbatim
+```
   make check-full
-\endverbatim
+```
 </p>
 
 <p>
@@ -136,9 +134,9 @@ Or you can execute the whole testsuite, by typing the following command: (This m
 <a href="#" class="top">top</a>
 <hr>
 
-\section library Using systems library
+# library Using systems library
 
-\subsection Unis Unix: dependencies
+## Unis Unix: dependencies
 In order to install \feel on Unix systems (other than Mac OS X, if you have a Macintosh, please go to \ref Mac), you have to install many dependencies
 before. Those libraries and programs are necessary for the
 compilation and installation of the \feel libraries.<br>
@@ -167,12 +165,12 @@ Ubuntu. Once you have installed those dependencies, you can jump to \ref Compili
 
 <a href="#" class="top">top</a>
 <hr>
-\subsection Debian Debian
+## Debian Debian
 Debian is the platform of choice for \feel, it was developed mainly on it. The commands to install \feel on Debian are
-\verbatim
+```
   sudo apt-get update
   sudo apt-get install feel++-apps libfeel++-dev feel++-doc
-\endverbatim
+```
 
 The interested user is encouraged to follow the \feel PTS page
 \li Feel++ <a href="http://packages.qa.debian.org/f/feel%2B%2B.html">Debian Packages Tracking System</a>
@@ -181,14 +179,14 @@ At the moment \feel compiles and is available on the following Debian
 platforms:
 \li Feel++ <a href="https://buildd.debian.org/status/package.php?p=feel%2b%2b">Build results</a>
 
-\subsection Ubuntu Ubuntu
+## Ubuntu Ubuntu
 \feel has its own PPA, checkout <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>.
 
 The interested user might want to look at the following Ubuntu Launchpad \feel page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
   Page for all Ubuntu versions</a>
 
-\subsubsection precise Ubuntu Precise - 12.04
-\verbatim
+### precise Ubuntu Precise - 12.04
+```
 	sudo add-apt-repository -y ppa:feelpp/ppa
 	sudo add-apt-repository -y ppa:feelpp/petsc
 	sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54
@@ -196,25 +194,25 @@ The interested user might want to look at the following Ubuntu Launchpad \feel p
 	sudo apt-get -qq update
 	sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig imagemagick libtbb-dev libann-dev libglpk-dev automake libtool
 	sudo apt-get install feel++-apps libfeel++-dev
-\endverbatim
+```
 
 \remark 
 It allows us also to provide a recent version to compile the \feel projects on <a href="https://travis-ci.org/feelpp/feelpp">Travis-ci</a>, which is a continuous integration tool. 
 The installation procedure is currently <a href="https://github.com/feelpp/feelpp/blob/develop/.travis.yml">as follows</a>.
 
-\subsubsection trusty Ubuntu Trusty - 14.04
-\verbatim
+### trusty Ubuntu Trusty - 14.04
+```
 	sudo add-apt-repository ppa:feelpp/ppa
 	sudo apt-get -qq update
 	sudo apt-get install feel++-apps libfeel++-dev
-\endverbatim
+```
 
 <a href="#" class="top">top</a>
 <hr>
-\subsection Mac Feel++ on Mac OS X
+## Mac Feel++ on Mac OS X
 \feel is also supported on Mac operating systems, starting from OS X 10.9 Mavericks. The way to make it work is quite different.
 
-\subsubsection Compilers Compilers
+### Compilers Compilers
 In order to make \feel and <tt>cmake</tt> work properly, you first have to install \lia Xcode for Gcc/clang. <br />
 If your computer is recent, you can install it with your DVD that came with your machine (not the
 OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example,
@@ -222,10 +220,10 @@ it's not necessary here and requires a lot of memory). You can also install Xcod
 Xcode will provide your computer all the basic tools to compile, such as gcc and clang.
 It's the first step, you'll see later how to easily install the necessary tools to build \feel.
 
-\subsubsection PMS Package management systems
+### PMS Package management systems
 Currently, building \feel is only available through <a href="http://brew.sh">Homebrew</a>. <a href="http://www.macports.org/install.php">MacPorts</a> versions are also present in the source tree of \feel. You can find a version using gcc in &lt;path to top feel directory&gt;/ports/macosx/macports, and an experimental version using clang/libc++ in &lt;path to top feel directory&gt;/ports/macosx/macports-xc5.
 
-\subsubsection Homebrew Homebrew
+### Homebrew Homebrew
 <b>Introduction</b>: Homebrew is a free/open source software introduced to simplify the installation of other free/open source software on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
 
 <b>Installation</b>: To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
@@ -238,11 +236,11 @@ Currently, building \feel is only available through <a href="http://brew.sh">Hom
 
 <b>Formula</b>: A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
 
-\subsubsection HomebrewFeel First time installation: Homebrew and Feel++
+### HomebrewFeel First time installation: Homebrew and Feel++
 <p>
 This section is aimed at users that do not have Homebrew already installed. If it is not your case, keep in mind the repository to tap and see the next section so you do not miss any important dependency. </p>
 In order to build \feel from Homebrew, you have to do the following steps:
-\verbatim
+```
 # Install Homebrew:
 ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go/install)"
 # Check that everything is ok or fix warnings/errors if necessary:
@@ -256,11 +254,11 @@ brew install feelpp
 # - Or install only the dependencies: 
 # (useful if you plan to use a different version from the master one, e.g. develop)
 brew install --only-dependencies feelpp
-\endverbatim
+```
 
 <!--
 or in a more detailed way:
-\verbatim
+```
 # Install Homebrew:
 ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
 # Check that everything is ok or fix warnings/errors if necessary:
@@ -275,7 +273,7 @@ brew install boost --without-python --without-single --without-static --with-mpi
 brew install ann && brew install petsc && brew install gmsh && brew install hdf5
 # Install Feel++:
 brew install feelpp
-\endverbatim
+```
 -->
 
 And you should be set to use \feel on MacOS X.
@@ -286,18 +284,18 @@ Be careful: you have to specifically use clang++ (and not clang).
 cmake ../where/is/my/code -DCMAKE_CXX_COMPILER=`which clang++`
 -->
 
-\subsubsection HomebrewFeelDependencies Advanced usage: Homebrew and Feel++ dependencies
+### HomebrewFeelDependencies Advanced usage: Homebrew and Feel++ dependencies
 
 If Homebrew is already installed on your system, you might want to customize your installation for the correct dependencies to be met for \feel.
 
 You can browse \feel dependencies using the following command:
-\verbatim
+```
 brew deps feelpp
-\endverbatim
+```
 
 If you want to customize the compilation process for a dependency (Set debug mode, Remove checking steps, Remove the link with certain libraries, etc.),
 you can access to the building options with the <tt>info</tt> flag. For exemple, with open-mpi:
-\verbatim
+```
 user@server: brew info open-mpi
 
 open-mpi: stable 1.7.5
@@ -315,7 +313,7 @@ Required: libevent
     Do not build the Fortran bindings
 --enable-mpi-thread-multiple
     Enable MPI_THREAD_MULTIPLE
-\endverbatim
+```
 
 You then just have to pass the needed flags, when installing the dependency.<br />
 When you install feelpp with <tt>brew install feelpp</tt>, the default flags for each dependency will be used.
@@ -335,7 +333,7 @@ If you require specific flags, first install the dependency with the correct fla
 <a href="#" class="top">top</a>
 <hr>
 
-\subsubsection MacPorts MacPorts
+### MacPorts MacPorts
 <b>Introduction</b>: MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source software on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (software) without installing or compiling open-source software.  MacPorts provides a single software tree which includes the latest stable releases of approximately 17700 ports targeting the current Mac OS X release (10.9). If you want more information, please visit their <a href="http://www.macports.org/">website</a>.
 
 <b>Installation</b>: To install the latest version of MacPorts, please go to
@@ -356,20 +354,20 @@ properly or new version not yet available in MacPorts.  These Portfiles are
 installed in <tt>ports/macosx/macports</tt>.
 
 
-\subsubsection MacPortsFeel MacPorts and Feel++
+### MacPortsFeel MacPorts and Feel++
 To be able to install \feel, add the following line in <tt>/opt/local/etc/macports/source.conf</tt> at the top of the file before any other sources:
-\verbatim
+```
 file:///<path to feel top directory>/ports/macosx/macports
-\endverbatim
+```
 
 Once it's done, type in a command-line:
-\verbatim
+```
   cd <your path to feel top directory>/ports/macosx/macports
   sudo portindex -f
-\endverbatim
+```
 
 You should have an output like this:
-\verbatim
+```
 Reading port index in $<$your path to feel top directory$>$/ports/macosx/macports
 Adding port science/feel++
 Adding port science/gmsh
@@ -379,35 +377,28 @@ Total number of ports parsed:   3
 Ports successfully parsed:      3
 Ports failed:                   0
 Up-to-date ports skipped:       0
-\endverbatim
+```
 
 Your are now able to type
-\verbatim
+```
   sudo port install feel++
-\endverbatim
+```
 
 It might take some time (possibly an entire day) to compile all the requirements for \feel to compile properly. If you have several cores on your MacBook Pro, iMac or MacBook we suggest that you configure macports to use all or some of them.
 To do that uncomment the following line in the file  <tt>/opt/local/etc/macports/macports.conf</tt>
-\verbatim
+```
 buildmakejobs	0 $\#$ all the cores
-\endverbatim
+```
 At the end of the <tt>sudo port install feel++</tt>, you have all dependencies installed. To build all the Makefile, \cmake is automatically launched but can have some libraries may not be found but they are not mandatory for build Feel++, only the features related to the missing libraries will be missing.
 
-\subsubsection Missing Missing ports
+### Missing Missing ports
 <tt>cmake</tt> can build Makefiles even if some packages are missing (latex2html, VTK ...). It's not necessary to install them but you can complete the installation
 with MacPorts, <tt>cmake</tt> will find them by itself once they have been installed.
 
-\subsubsection MacPortsXC5 MacPorts and XCode 5
+### MacPortsXC5 MacPorts and XCode 5
 There is an experimental version of ports for \feel in &lt;path to top feel directory&gt;/ports/macosx/macports-xc5. Using these ports will set up the compilation using clang and libc++. The process is similar to the one previously described for MacPorts, except for one point:
 Before starting to install packages, you must switch to the llvm c++ standard library by adding the following line to your macports.conf file:
-\verbatim
+```
 cxx_stdlib  libc++
-\endverbatim
+```
 This requires MacPorts to be at least on version 2.2.1 for the flag to be recognized and will normally cause all the packages you will install to be recompiled using libc++ instead of libstdc++.
-
-<a href="#" class="top">top</a>
-<hr>
-
-
-*/
-}
