@@ -3,7 +3,7 @@
     "plugins": ["mathjax","include-highlight"],
     "links": {
         "sidebar": {
-            "Contact us / Support": "https://www.feelpp.org/contact"
+            "Feel++": "https://www.feelpp.org/"
         }
     },
     "variables": { 
