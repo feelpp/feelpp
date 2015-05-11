@@ -1,40 +1,35 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/** \page BuildingP Installing Feel++
+Installing Feel++
+=================
 
-\tableofcontents
+# Source Installing Feel++ from source
 
-<hr>
+## Getting the source via an archive
 
-
-\section Source Installing Feel++ from source
-
-\subsection Archive Getting the source via an archive
 \feel is distributed as a tarball once in a while. The tarballs are available :
-at<br>
-<center><a href="https://github.com/feelpp/feelpp/releases">https://github.com/feelpp/feelpp/releases</a></center><br>
+at
+
+[https://github.com/feelpp/feelpp/releases](https://github.com/feelpp/feelpp/releases)
+
 Download the latest tarball, then :
-\verbatim
-  tar -xzf feelpp-X.YY.0.tar.gz
-  cd feelpp-X.YY.0
-\endverbatim
+```
+tar -xzf feelpp-X.YY.0.tar.gz
+cd feelpp-X.YY.0
+```
 Once downloaded, you can compile and install it via the cmake procedure (see above).
 
-<a href="#" class="top">top</a>
-<hr>
-\subsection Git Getting the source via Git
+## Getting the source via Git
 In order to download the sources of \feel, you can download it directly from <a href="https://github.com/feelpp/feelpp">the source depository</a> thanks to Git. 
 
 To make it possible, you can download them anonymously or with an account in Github that you have created. As an open-source project, we strongly suggest you to create an account and take part of the project with sharing your ideas, developments or suggests. For now, if you want to get the sources without an account, open a command-line and type
-\verbatim
-  git clone --depth=xx https://github.com/feelpp/feelpp.git
-\endverbatim
+```
+git clone --depth=xx https://github.com/feelpp/feelpp.git
+```
 with `xx` the number of last commits you want to save.
 `xx=1` reduce the time to clone.
 Then you can go to the \feel top directory with
-\verbatim
+```
   cd feel
-\endverbatim
+```
 You should obtain further directories such as:
 \verbatim
 applications/   # functional applications
