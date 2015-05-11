@@ -16,9 +16,14 @@
     * [Creating a model](Tutorial/08-Model.md)
 
 * [Quick Reference](QuickReference/README.md)
-    * [Environment](environment.md)
-    * [Mesh](mesh.md)
-    * [Integrals](integrals.md)
-
+    * [Environment](QuickReference/environment.md)
+    * [Mesh](QuickReference/mesh.md)
+    * [Integrals](QuickReference/integrals.md)
+    * [Spaces](QuickReference/spaces.md)
+    * [Forms](QuickReference/forms.md)
+    * [Solver](QuickReference/solver.md)
+        * [Preconditioner](QuickReference/preconditioner.md)
+    * [Exporter](QuickReference/exporter.md)
+    
 * [Frequently Asked Questions](FAQ.md)
 

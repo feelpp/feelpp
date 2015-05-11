@@ -1,37 +1,30 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page Spaces Function Spaces
+Function Spaces
+===============
 
 
 
-\li \b Previous: \ref Mesh
-\li \b Next: \ref Integrals
-
-<hr>
-
-\tableofcontents
 
 
-\section QRFunctionSpace Function Space
+# QRFunctionSpace Function Space
 
 We now turn to the next crucial mathematical ingredient: the function space,
-whose definition depends on \f$\Omega_h\f$ --- or more precisely its partitioning
-\f$\calT_h\f$ --- and the choice of basis function. Function spaces in \feel
+whose definition depends on $$\Omega_h$$ --- or more precisely its partitioning
+$$\calT_h$$ --- and the choice of basis function. Function spaces in \feel
 follow the same definition, see listing~\ref fspace1, and \feel provides
 support for continuous and discontinuous Galerkin methods and in particular
-approximations in \f$L^2\f$, \f$H^1\f$-conforming and \f$H^1\f$-nonconforming, \f$H^2\f$,
-\f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$\footnote{At the time of writing, \f$H^2\f$,
-\f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$ approximations are in experimental
+approximations in $$L^2$$, $$H^1$$-conforming and $$H^1$$-nonconforming, $$H^2$$,
+$$H(\mathrm{div})$$ and $$H(\mathrm{curl})$$\footnote{At the time of writing, $$H^2$$,
+$$H(\mathrm{div})$$ and $$H(\mathrm{curl})$$ approximations are in experimental
 support.
 
 \anchor fspace1
-\code
+```cpp
  // space of continuous piecewise
- // \f$\P_3\f$ functions defined on a mesh
+ // $$\P_3$$ functions defined on a mesh
  // of order 2 triangles in 3D
  FunctionSpace<Mesh<Simplex<2,2,3>,
                bases<Lagrange<3> > > Xh;
-\endcode
+```
 
 
 The \c FunctionSpace class
@@ -45,7 +38,7 @@ The \c FunctionSpace class
 
 
 We introduce the following spaces
-\f[
+$$
   \begin{aligned}
     \mathbb{W}_h &= \{v_h \in L^2(\Omega_h): \ \forall K \in \mathcal{T}_h, v_h|_K
     \in \mathbb{P}_K\},\\
@@ -62,17 +55,17 @@ We introduce the following spaces
     \N_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \calT_h, v_h|_K \in
     \N_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
   \end{aligned}
-\f]
-where \f$\RT_k\f$ and \f$\N_k\f$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
-elements of degree \f$k\f$.
+$$
+where $$\RT_k$$ and $$\N_k$$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
+elements of degree $$k$$.
 
 The Legrendre and Dubiner basis yield implicitely discontinuous
 approximations, the Legendre and Dubiner boundary adapted basis,
 see~\cite MR1696933, were designed to handle continuous approximations
 whereas the Lagrange basis can yield either discontinuous or continuous
-(default behavior) approximations.  \f$\RT_h\f$ and \f$\N_h\f$ are implicitely spaces
-of vectorial functions \f$\bm{f}\f$ \st \f$\bm{f}: \Omega_h \subset \R^d \mapsto
-\R^d\f$. As to the other basis functions, \ie Lagrange, Legrendre, Dubiner,
+(default behavior) approximations.  $$\RT_h$$ and $$\N_h$$ are implicitely spaces
+of vectorial functions $$\bm{f}$$ \st $$\bm{f}: \Omega_h \subset \R^d \mapsto
+\R^d$$. As to the other basis functions, \ie Lagrange, Legrendre, Dubiner,
 etc., they are parametrized by their values namely \c Scalar ,
 \c Vectorial or \c Matricial.  Note that
 \c FunctionSpace handles also products of function spaces.  This is
@@ -80,7 +73,7 @@ very powerful to describe complex multiphysics problems when coupled with
 operators, functionals and forms described in the next section. Extracting
 subspaces or component spaces are part of the interface.
 
-\code
+```cpp
 // continuous piecewise P3
 // approximations
 FunctionSpace<Mesh<Simplex<2> >,
@@ -97,7 +90,7 @@ FunctionSpace<Mesh<Simplex<2>>,
  bases<Lagrange<2,Vectorial>,
        Lagrange<1,Scalar>,
        Lagrange<1,Scalar>>> P2P1P1;
-\endcode
+```
 
 The most important feature in \c FunctionSpace is that it embeds the
 definition of element which allows for the strict definition of an \c
@@ -108,7 +101,7 @@ parametrized by one of the linear algebra backends. Other supported
 operations are interpolation and extraction of components --- be it a
 product of function spaces element or a vectorial/matricial element:
 
-\code
+```cpp
 FunctionSpace<Mesh<Simplex<2> >,
   bases<Lagrange<3,Scalar, Continuous> > > P3ch;
 // get an element from P3ch
@@ -126,28 +119,22 @@ auto ux = u.comp(X);
 auto p = U.element<1>();
 // view on element associated to 2nd P1
 auto q = U.element<2>();
-\endcode
+```
 
-Finally Feel++ provides the Lagrange, \f$\Iclag, \Idlag\f$, Crouzeix-Raviart, \f$\Icr\f$,
-Raviart-Thomas, \f$\Irt\f$ and N&eacute;d&eacute;lec, \f$\In\f$ global interpolation operators.
+Finally Feel++ provides the Lagrange, $$\Iclag, \Idlag$$, Crouzeix-Raviart, $$\Icr$$,
+Raviart-Thomas, $$\Irt$$ and N&eacute;d&eacute;lec, $$\In$$ global interpolation operators.
 In abstract form, they read
-\f[
+$$
   \calI : \X \ni v \mapsto \sum_{i=1}^{\opdim\X} \ell_i(v) \phi_i
-\f]
-where \f$\X\f$ is the infinite dimensional space, \f$(\ell_i)_{i=1,...,\opdim\X}\f$ are
-the linear forms and \f$(\phi_i)_{i=1...\opdim\X}\f$ the basis function associated
+$$
+where $$\X$$ is the infinite dimensional space, $$(\ell_i)_{i=1,...,\opdim\X}$$ are
+the linear forms and $$(\phi_i)_{i=1...\opdim\X}$$ the basis function associated
 with the various approximations.
 
-\section QRFunctionSpaceFn Function Space helper functions
+# QRFunctionSpaceFn Function Space helper functions
 
- - \c Pch<N>(mesh) generates \f$\Pch[N](\Omega_h)\f$
- - \c Pchv<N>(mesh) generates \f$[\Pch[N](\Omega_h)]^d\f$
- - \c THch<N>(mesh) generates \f$[\Pch[N](\Omega_h)]^d\times \Pch[N](\Omega_h)\f$
-
-<a href="#" class="top">top</a>
-<hr>
+ - \c Pch<N>(mesh) generates $$\Pch[N](\Omega_h)$$
+ - \c Pchv<N>(mesh) generates $$[\Pch[N](\Omega_h)]^d$$
+ - \c THch<N>(mesh) generates $$[\Pch[N](\Omega_h)]^d\times \Pch[N](\Omega_h)$$
 
 
-
-*/
-}

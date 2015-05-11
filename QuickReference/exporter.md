@@ -1,31 +1,21 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/*! \page Exporter Post-Processing and Visualization
+Post-Processing and Visualization
+=================================
 
 
-  \tableofcontents
-
-  \li \b Previous: \ref Solver
-  \li \b Next: \ref
-
-  <hr>
-
-
-
-  \section Introduction Introduction
+  # Introduction Introduction
 
   Once the PDE is solved we usually would like to
   visualize the solution and possibly other data or fields associated
   with the problem. Feel++ provides a very powerful framework for
   post-processing allowing to:
-  \li visualize time-based data,
-  \li visualize high order functions,
-  \li visualize traces,
-  \li use standard visualization tools such as Paraview, Ensight and Gmsh.
+  * visualize time-based data,
+  * visualize high order functions,
+  * visualize traces,
+  * use standard visualization tools such as Paraview, Ensight and Gmsh.
 
   To achieve this, Feel++ defines a so-called \c Exporter object.
 
-  \section VisPrinciples General principles
+  # VisPrinciples General principles
 
   The library Feel itself does not have any visualization
   capabilities. However, it provides tools to export both scalar and
@@ -53,7 +43,7 @@ namespace Feel {
 
   To illustrate both approaches in visualizing high degree polynomials
   in curved meshes, we plot, in the Figures below, the nodal
-  projection of the function \f$f(x,y)=\cos(5x) \sin(5y)\f$ in the
+  projection of the function $$f(x,y)=\cos(5x) \sin(5y)$$ in the
   unit circle onto several function spaces. Notice the improved
   ``look`` of the projection using high degree polynomials instead of
   linear projections in a finer mesh. We remark also that the
@@ -75,7 +65,7 @@ namespace Feel {
   <td width="15%">\image html circle_p2p2_p1interpolator.png</td>
   </tr>
   <tr>
-  <td><center>\f$u\f$: \f$P_1\f$, \f$P_2/P_2\f$ and  \f$P_2/P_2\f$ with \f$P_1\f$ interpolation </center></td>
+  <td><center>$$u$$: $$P_1$$, $$P_2/P_2$$ and  $$P_2/P_2$$ with $$P_1$$ interpolation </center></td>
   </tr>
   <tr>
   <td width="15%">\image html circle_p3p3.png</td>
@@ -86,14 +76,14 @@ namespace Feel {
   <td width="15%">\image html circle_p5p5_p1interpolator.png</td>
   </tr>
   <tr>
-  <td><center>\f$u\f$: \f$P_1\f$, \f$P_2/P_2\f$ and  \f$P_2/P_2\f$ with \f$P_1\f$ interpolation </center></td>
+  <td><center>$$u$$: $$P_1$$, $$P_2/P_2$$ and  $$P_2/P_2$$ with $$P_1$$ interpolation </center></td>
   </tr>
   </table>
   </center>
 
 
   To further illustrate the capabilities of the Feel's exporter to
-  Gmsh, we plot in Figures 1D and 3D functions defined in the \f$[-1,1]\f$
+  Gmsh, we plot in Figures 1D and 3D functions defined in the $$[-1,1]$$
   interval and the unit sphere, respectively.
 
   <center>
@@ -105,71 +95,69 @@ namespace Feel {
   <td width="15%">\image html sphere_p4.png</td>
   </tr>
   <tr>
-  <td><center>Low to high order visualization of \f$u\f$</center></td>
+  <td><center>Low to high order visualization of $$u$$</center></td>
   </tr>
   </table>
   </center>
 
-  \section Visualization Visualization
+  # Visualization Visualization
 
-  We would like to visualize the function \f$u=\sin(\pi x)\f$ over
-  \f$\Omega=\{(x,y) \in \mathbb{R}^2 | x^2 + y^2 < 1\}\f$. \f$\Omega\f$
-  is approximated by \f$\Omega_h\f$.
+  We would like to visualize the function $$u=\sin(\pi x)$$ over
+  $$\Omega=\{(x,y) \in \mathbb{R}^2 | x^2 + y^2 < 1\}$$. $$\Omega$$
+  is approximated by $$\Omega_h$$.
 
-  To define \f$\Omega\f$ the code reads
+  To define $$\Omega$$ the code reads
   \snippet myexporter.cpp mesh
-and \f$u\f$ :
+and $$u$$ :
   \snippet myexporter.cpp function
 
-  We start with an \c Exporter object that allows to visualize the \f$P_1\f$ interpolant of \f$u\f$ over \f$\Omega\f$.
+  We start with an \c Exporter object that allows to visualize the $$P_1$$ interpolant of $$u$$ over $$\Omega$$.
 
 
   <a href="#" class="top">top</a>
   <hr>
 
-  \section ExporterReference Reference
+  # ExporterReference Reference
 
-  \subsection ExporterReferenceOptions Options
+  ## ExporterReferenceOptions Options
 
   \par \c exporter.format
-  \li Type: multiple choice \c string
-  \li Values: \c gmsh, \c ensight, \c ensightgold
-  \li Default value: ensightgold
-  \li Action: \c exporter.format defines the format to save Feel++ data into.
+  * Type: multiple choice \c string
+  * Values: \c gmsh, \c ensight, \c ensightgold
+  * Default value: ensightgold
+  * Action: \c exporter.format defines the format to save Feel++ data into.
 
   \par \c exporter.geometry
-  \li Type: multiple choice \c string
-  \li Values: \c change_coords_only, \c change, \c  static
-  \li Default value: change_coords_only
-  \li Action: \c exporter.geometry tells to the exporter if the mesh changes over time steps : no
+  * Type: multiple choice \c string
+  * Values: \c change_coords_only, \c change, \c  static
+  * Default value: change_coords_only
+  * Action: \c exporter.geometry tells to the exporter if the mesh changes over time steps : no
   changes(\c static) coordinates only (\c change_coords_only) or remeshed (\c changes)
 
   \par \c exporter.fileset
-  \li Type: \c bool
-  \li Values: 0, 1
-  \li Default value: 0
-  \li Action: \c exporter.fileset=0 save one file per timestep per subdomain,  whereas \c exporter.fileset=1 use one file per subdomain to store all time
+  * Type: \c bool
+  * Values: 0, 1
+  * Default value: 0
+  * Action: \c exporter.fileset=0 save one file per timestep per subdomain,  whereas \c exporter.fileset=1 use one file per subdomain to store all time
   steps. \note This option, \c exporter.fileset=1, reduces tremendously the number of files generated for transient simulations.
 
   \par \c exporter.prefix
-  \li Type: \c string
-  \li Default Value: <empty string>
-  \li Action: \c exporter.prefix defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
+  * Type: \c string
+  * Default Value: <empty string>
+  * Action: \c exporter.prefix defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
 
   \par \c exporter.directory
-  \li Type: string
-  \li Default Value: results
-  \li Action: \c exporter.directory tells where to export the results to
+  * Type: string
+  * Default Value: results
+  * Action: \c exporter.directory tells where to export the results to
 
   \subsubsection ExporterReferenceOptionsEnsightGold Ensight Gold specific options
 
   \par \c exporter.ensightgold.use-sos
-  \li Type: \c bool
-  \li Action: if \c exporter.ensightgold.use-sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
+  * Type: \c bool
+  * Action: if \c exporter.ensightgold.use-sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
 
   \par \c exporter.ensightgold.save-face
-  \li Type: \c bool
-  \li Action: if \c exporter.ensightgold.save-face=1, the exporter saves mesh and fields on marked faces
+  * Type: \c bool
+  * Action: if \c exporter.ensightgold.save-face=1, the exporter saves mesh and fields on marked faces
 
-*/
-}
