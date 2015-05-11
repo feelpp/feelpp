@@ -4,14 +4,15 @@ Setting up the Feel++++ Environment
 
 # Minimal Example
 
-Let's begin with our first program using the Feel++ framework (source:
-`doc/manual/tutorial/myapp.cpp`).  Before all, you have to include the
-Feel++ headers.
+Let's begin with our first program using the Feel++ framework.  To
+start, you include the Feel++ headers.
 
 We use the C++ `namespace` to avoid `Feel++::` prefix before
 Feel++ objects.
 
 We initialize the environment variables through the Feel++ `Environment` class.
+
+{{ code/environment.cpp }}
 
 
 # Adding options
