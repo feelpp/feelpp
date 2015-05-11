@@ -1,5 +1,5 @@
-Installing Feel++
-=================
+Getting Started
+===============
 
 # Source Installing Feel++ from source
 
