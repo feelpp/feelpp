@@ -1,10 +1,6 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/** \page UsingInstalledFeelpp Compiling your application
+Using Installed version
+=======================
 
-\tableofcontents
-
-<hr>
 
 \section intro Introcution
 You may have installed Feel++ via a packet manager or the <tt>cmake</tt> process.
