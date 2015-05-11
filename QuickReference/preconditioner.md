@@ -1,15 +1,15 @@
 Preconditioner strategies
 =========================
 
-   # PreconditionerRelaxation Relaxation
+# Relaxation
 
    Split into lower, diagonal, upper parts: $$ A = L + D + U $$
 
-   ## PreconditionerRelaxationJacobi Jacobi
+## Jacobi
 
    Cheapest preconditioner: $$P^{-1} = D^{-1}$$
 
-   ## PreconditionerRelaxationSOR    Successive over-relaxation (SOR)
+##    Successive over-relaxation (SOR)
 
    $$
    \begin{gather*}
@@ -23,13 +23,13 @@ Preconditioner strategies
    * Very effective at removing high-frequency components of residual
 
    <hr>
-   # PreconditionerFactorization Factorization
+# Factorization
    Two phases
 
    - symbolic factorization: find where fill occurs, only uses sparsity pattern
    - numeric factorization: compute factors
 
-   ## PreconditionerFactorizationLU LU decomposition
+## LU decomposition
 
    - preconditioner
    - Expensive, for $$m\times m$$ sparse matrix with bandwidth $$b$$, traditionally requires $$\mathcal{O}(mb^2)$$ time and $$\mathcal{O}(mb)$$ space.
@@ -38,23 +38,23 @@ Preconditioner strategies
      - Optimal in 3D: $$\mathcal{O}(m^{4/3})$$ space, $$\mathcal{O}(m^2)$$ time
    - Symbolic factorization is problematic in parallel
 
-   ## PreconditionerFactorizationILU Incomplete LU
+## Incomplete LU
 
    - Allow a limited number of levels of fill: ILU($$k$$)
    - Only allow fill for entries that exceed threshold: ILUT
    - Usually poor scaling in parallel
    - No guarantees
 
-   # PreconditionerDD 1-level Domain decomposition
+# 1-level Domain decomposition
 
    Domain size $$L$$, subdomain size $$H$$, element size $$h$$
 
-   Overlapping/Schwarz
+ * Overlapping/Schwarz
     - Solve Dirichlet problems on overlapping subdomains
     - No overlap: $$\textit{its} \in \mathcal{O}\big( \frac{L}{\sqrt{Hh}} \big)$$
     - Overlap $$\delta$$: $$\textit{its} \in \big( \frac L {\sqrt{H\delta}} \big)$$
 
-   Neumann-Neumann
+ * Neumann-Neumann
 
     - Solve Neumann problems on non-overlapping subdomains
     - $$\textit{its} \in \mathcal{O}\big( \frac{L}{H}(1+\log\frac H h) \big)$$
@@ -64,14 +64,14 @@ Preconditioner strategies
    \note Multilevel variants knock off the leading $$\frac L H$$
    \note Both overlapping and nonoverlapping with this bound
 
-  BDDC and FETI-DP
+ * BDDC and FETI-DP
      - Neumann problems on subdomains with coarse grid correction
      - $$\textit{its} \in \mathcal{O}\big(1 + \log\frac H h \big)$$
 
 
-   # PreconditionerMultigrid Multigrid
+# Multigrid
 
-   ## PreconditionerMultigridIntro Introduction
+## Introduction
 
    Hierarchy: Interpolation and restriction operators}
    $$ \Pi^\uparrow : X_{\text{coarse}} \to X_{\text{fine}} \qquad
@@ -90,7 +90,7 @@ Preconditioner strategies
     - Apply post-smoother on fine level (any preconditioner)
 
 
- ## PreconditionerMultigridProps Multigrid convergence properties
+## Multigrid convergence properties
   - Textbook: $$P^{-1}A$$ is spectrally equivalent to identity
     - Constant number of iterations to converge up to discretization error
   - Most theory applies to SPD systems
