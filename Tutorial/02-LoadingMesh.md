@@ -16,7 +16,7 @@ auto mesh=loadMesh( _mesh=new Mesh<Simplex<2>> );
 
 ## Exporting the Mesh for visualisation 
 
-See this [section](TutorialVisualize.md) for more details about
+See this [section](05-VisualizingFunctions.md) for more details about
 exporting and visualizing meshes.
 
 
