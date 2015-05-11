@@ -7,15 +7,15 @@ You should be able to create a mesh now. If it is not the case, get back to the 
 To use the tools of this sections, you have to precise the domain range using the following keywords:
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Description</th></tr>
-<tr><td> \co elements(mesh) \eco</td><td>All the elements of a mesh</td></tr>
-<tr><td> \co markedelements(mesh, id) \eco</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
-<tr><td> \co faces(mesh) \eco</td><td>All the faces of the mesh.</td></tr>
-<tr><td> \co markedfaces(mesh) \eco</td><td>All the faces of the mesh which are marked.</td></tr>
-<tr><td> \co boundaryfaces(mesh) \eco</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one, \c boundaryfaces(mesh) will return all the lines (because of dimension $$2-1=1$$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
-<tr><td> \co internalelements(mesh) \eco</td><td>All the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.</td></tr>
-<tr><td> \co boundaryelements(mesh) \eco</td><td>All the elements of the mesh which share a face with the boundary of the mesh.</td></tr>
-<tr><td> \co edges(mesh) \eco</td><td>All the edges of the mesh.</td></tr>
-<tr><td> \co boundaryedges(mesh) \eco</td><td>All boundary edges of the mesh.</td></tr>
+<tr><td> ``` elements(mesh) ```</td><td>All the elements of a mesh</td></tr>
+<tr><td> ``` markedelements(mesh, id) ```</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
+<tr><td> ``` faces(mesh) ```</td><td>All the faces of the mesh.</td></tr>
+<tr><td> ``` markedfaces(mesh) ```</td><td>All the faces of the mesh which are marked.</td></tr>
+<tr><td> ``` boundaryfaces(mesh) ```</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one, \c boundaryfaces(mesh) will return all the lines (because of dimension $$2-1=1$$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
+<tr><td> ``` internalelements(mesh) ```</td><td>All the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.</td></tr>
+<tr><td> ``` boundaryelements(mesh) ```</td><td>All the elements of the mesh which share a face with the boundary of the mesh.</td></tr>
+<tr><td> ``` edges(mesh) ```</td><td>All the edges of the mesh.</td></tr>
+<tr><td> ``` boundaryedges(mesh) ```</td><td>All boundary edges of the mesh.</td></tr>
 </table>
 
 
@@ -26,9 +26,9 @@ To use the tools of this sections, you have to precise the domain range using th
 Thank to its finite element embedded language, \feel has its owned <tt>integrate()</tt> function.
 
 \Interface
-\co
+```
   integrate( _range, _expr, _quad, _geomap );
-\eco
+```
 please notice that the order of the parameter is not important, these are <tt>boost</tt> parameters, so you can enter them in the order you want. <br>
 To make it clear, there are two required parameters and 2 optional and they of course can be entered in any order
 provided you give the parameter name. If you don't provide the parameter name (that is to say \c _range= or the others) they must be entered in the order they are described
@@ -43,43 +43,43 @@ Optional parameters:
 * <tt>_geomap</tt>  = type of geometric mapping to use, that is to say:
 <table class="manual">
 <tr><th>Feel Parameter</th><th>Description</th></tr>
-<tr><td>\co GEOMAP_HO\eco</td><td>High order approximation (same of the mesh)</td></tr>
-<tr><td>\co GEOMAP_OPT\eco</td><td>Optimal approximation:<br> high order on boundary elements<br> order 1 in the interior</td></tr>
-<tr><td>\co GEOMAP_01\eco</td><td>Order 1 approximation (same of the mesh)</td></tr>
+<tr><td>``` GEOMAP_HO```</td><td>High order approximation (same of the mesh)</td></tr>
+<tr><td>``` GEOMAP_OPT```</td><td>Optimal approximation:<br> high order on boundary elements<br> order 1 in the interior</td></tr>
+<tr><td>``` GEOMAP_01```</td><td>Order 1 approximation (same of the mesh)</td></tr>
 </table>
 
 \Examples
 From \c "doc/manual/tutorial/dar.cpp":
-\co
+```
   form1( ... ) = integrate( _range = elements( mesh ),
                             _expr = f*id( v ) );
-\eco
+```
 
 From \c "doc/manual/tutorial/myintegrals.cpp":
-\co
+```
   // compute integral f on boundary
   double intf_3 = integrate( _range = boundaryfaces( mesh ),
                              _expr = f );
-\eco
+```
 
 From \c "doc/manual/advection/advection.cpp":
-\co
+```
   form2( _test = Xh, _trial = Xh, _matrix = D ) +=
     integrate( _range = internalfaces( mesh ),
                _quad = _Q<2*Order>(),
                _expr = ( averaget( trans( beta )*idt( u ) ) * jump( id( v ) ) )
                      + penalisation*beta_abs*( trans( jumpt( trans( idt( u ) ) ) )*jump( trans( id( v ) ) ) ),
                _geomap = geomap );
-\eco
+```
 
 From \c "doc/manual/laplacian/laplacian.cpp":
-\co
+```
  auto l = form1( _test=Xh, _vector=F );
  l = integrate( _range = elements( mesh ),
                 _expr=f*id( v ) ) +
      integrate( _range = markedfaces( mesh, "Neumann" ),
                 _expr = nu*gradg*vf::N()*id( v ) );
-\eco
+```
 
 
 ## Integrals_Computing Computing my first Integrals
@@ -95,7 +95,7 @@ $$</center><br>
 on the whole domain $$\Omega$$ and on part of the boundary $$\Omega$$.
 
 There is the appropriate code:
-\co
+```
 int
 main( int argc, char** argv )
 {
@@ -127,7 +127,7 @@ main( int argc, char** argv )
     std::cout << "int global ; local ; boundary" << std::endl
               << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
 }
-\eco
+```
 
 
 <a href="#" class="top">top</a>
@@ -137,9 +137,9 @@ main( int argc, char** argv )
 It is also possible to make projections with the library.
 
 \Interface
-\co
+```
   project( _range, _space, _expr, _geomap );
-\eco
+```
 
 Required parameters:
 * <tt>_space</tt>: the space in which lives the projected expression, it should be a nodal function space
@@ -151,19 +151,19 @@ Optional parameters:
 
 \Examples
 From \c "doc/manual/laplacian/laplacian.cpp":
-\co
+```
   element_type e( Xh, "e" );
   e = project( _space = Xh,
                _range = elements( mesh ),
                _expr = g );
-\eco
+```
 
 From \c "doc/manual/heatns/convection_run.cpp":
-\co
+```
 tn = project( _space = Xh->functionSpace<2>(),
               _range = elements( mesh ),
               _expr = constant( 300 ) );
-\eco
+```
 
 
 
@@ -177,9 +177,9 @@ Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the mean val
 $$</center><br>
 
 \Interface
-\co
+```
   mean( _range, _expr, _quad, _geomap );
-\eco
+```
 
 Required parameters:
 * <tt>_range</tt> = domain of integration
@@ -205,13 +205,13 @@ Let $$f \in L^2(\Omega)$$ you can evaluate the L2 norm:
 $$</center><br>
 
 \Interface
-\co
+```
   normL2( _range, _expr, _quad, _geomap );
-\eco
+```
 or squared norm:
-\co
+```
   normL2Squared( _range, _expr, _quad, _geomap );
-\eco
+```
 
 Required parameters:
 * <tt>_range</tt> = domain of integration
@@ -223,10 +223,10 @@ Optional parameters:
 
 \Examples
 From \c "doc/manual/laplacian/laplacian.cpp":
-\co
+```
   double L2error =normL2( _range=elements( mesh ),
                           _expr=( idv( u )-g ) );
-\eco
+```
 
 From \c "doc/manual/stokes/stokes.cpp":
 \snippet stokes.cpp norml2
@@ -242,13 +242,13 @@ In the same idea, you can evaluate the H1 norm or semi norm, for any function $$
 $$</center><br>
 
 \Interface
-\co
+```
   normH1( _range, _expr, _grad_expr, _quad, _geomap );
-\eco
+```
 or semi norm:
-\co
+```
   normSemiH1( _range, _grad_expr, _quad, _geomap );
-\eco
+```
 
 Required parameters:
 * <tt>_range</tt> = domain of integration
@@ -262,7 +262,7 @@ Optional parameters:
 
 \Examples
 With expression:
-\co
+```
   auto g = sin(2*pi*Px())*cos(2*pi*Py());
   auto gradg = 2*pi*cos(2* pi*Px())*cos(2*pi*Py())*oneX() \
 	           -2*pi*sin(2*pi*Px())*sin(2*pi*Py())*oneY();
@@ -271,13 +271,13 @@ With expression:
   double normH1_g = normH1( _range=elements(mesh),\
   			                _expr=g,\
 			                _grad_expr=trans(gradg) );
-\eco
+```
 With test or trial function \c u:
-\co
+```
   double errorH1 = normH1( _range=elements(mesh),\
   			               _expr=(u-g),\
     			           _grad_expr=(gradv(u)-trans(gradg)) );
-\eco
+```
 
 
 
@@ -287,10 +287,10 @@ Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the infinity
 \parallel f \parallel_\infty=\sup_\Omega(|f|)
 $$</center><br>
 
-\Interface:
-\co
+*Interface:*
+```
   normLinf( _range, _expr, _pset, _geomap );
-\eco
+```
 
 Required parameters:
 * <tt>_range</tt> = domain of integration
@@ -301,12 +301,12 @@ Optional parameters:
 * <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 
-\Examples
-\co
+*Example*:
+```
   auto uMax = normLinf( _range=elements(mesh),\
 		        _expr=idv(u),\
 		        _pset=_Q<5>() );
-\eco
+```
 
 
 
