@@ -189,7 +189,7 @@ Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Ke
 ## Operators_TwoValued Two Valued Operators
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
-----------------------------------------------------------------
+----------------|-------------|-------------|------------------|
 |```cpp jump(f)``` |  $$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$$ | jump of test function |0| $$n \times 1 $$<br>$$m=1$$|
 |```cpp jump(f)``` |  $$[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}$$ | jump of test function |0| $$1 \times 1 $$<br>$$m=2$$|
 |```cpp jumpt(f)``` |  $$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}$$ | jump of trial function |0| $$n \times 1 $$<br>$$m=1$$|
@@ -221,7 +221,7 @@ You can access to the jacobian matrix, $$J$$, of the geometric transformation, u
 There are some tools to manipulate this jacobian.
 
 |Feel++ Keyword | Math Object | Description |
----------------------------------------------
+----------------|-------------|-------------|
 |```cpp detJ()```|$$\det(J)$$|Determinant of jacobian matrix |
 |```cpp invJT()```|$$(J^{-1})^T$$|Transposed inverse of jacobian matrix |
 
