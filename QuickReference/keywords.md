@@ -56,9 +56,9 @@ You can also use expressions and the unit base vectors:
 
 |Feel++ Keyword | Math Object | Description |
 |---------------|-------------|-------------|
-|\c oneX() | $$\begin{pmatrix} 1\\0\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{i}$$|
-|\c oneY() | $$\begin{pmatrix} 0\\1\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{j}$$|
-|\c oneZ() | $$\begin{pmatrix} 0\\0\\1 \end{pmatrix}$$|Unit vector $$\overrightarrow{k}$$|
+|`oneX()` | $$\begin{pmatrix} 1\\0\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{i}$$|
+|`oneY()` | $$\begin{pmatrix} 0\\1\\0 \end{pmatrix}$$|Unit vector $$\overrightarrow{j}$$|
+|`oneZ()` | $$\begin{pmatrix} 0\\0\\1 \end{pmatrix}$$|Unit vector $$\overrightarrow{k}$$|
 
 
 
@@ -106,7 +106,7 @@ Following tables present tools to declare and manipulate expressions.
 |`Px()`    | Variable $$x$$ | 
 |`Py()`    | Variable $$y$$ |
 | `Pz()`  |Variable $$z$$ |
-| cst( c ) | Constant function equal to $$c$$ |
+| `cst( c )` | Constant function equal to $$c$$ |
 
 You can of course use all current operators ( + - / * ) and the usual following functions:
 
@@ -116,9 +116,9 @@ You can of course use all current operators ( + - / * ) and the usual following 
 |` cos(expr)`|$$\cos(f(\overrightarrow{x}))$$|element wise cos value of $$f$$|
 |` sin(expr)`|$$\sin(f(\overrightarrow{x}))$$|element wise sin value of $$f$$|
 |` tan(expr)`|$$\tan(f(\overrightarrow{x}))$$|element wise tan value of $$f$$|
-|` acos(expr)`|$$\acos(f(\overrightarrow{x}))$$|element wise acos value of $$f$$|
-|` asin(expr)`|$$\asin(f(\overrightarrow{x}))$$|element wise asin value of $$f$$|
-|` atan(expr)`|$$\atan(f(\overrightarrow{x}))$$|element wise atan value of $$f$$|
+|` acos(expr)`|$$\mathrm{acos}(f(\overrightarrow{x}))$$|element wise acos value of $$f$$|
+|` asin(expr)`|$$\mathrm{asin}(f(\overrightarrow{x}))$$|element wise asin value of $$f$$|
+|` atan(expr)`|$$\mathrm{atan}(f(\overrightarrow{x}))$$|element wise atan value of $$f$$|
 |` cosh(expr)`|$$\cosh(f(\overrightarrow{x}))$$|element wise cosh value of $$f$$|
 |` sinh(expr)`|$$\sinh(f(\overrightarrow{x}))$$|element wise sinh value of $$f$$|
 |` tanh(expr)`|$$\tanh(f(\overrightarrow{x}))$$|element wise tanh value of $$f$$|
@@ -131,9 +131,9 @@ You can of course use all current operators ( + - / * ) and the usual following 
 |` chi(expr)`|$$\chi(f(\overrightarrow{x}))=\begin{cases}0 & \text{if}\ f(\overrightarrow{x}) = 0\\1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\\end{cases}$$|element wise boolean test of $$f$$|
 
 
-# Keywords_Operators Operators
+# Operators
 
-## Operators_Operations Operations
+## Operations
 
 You can use the usual operations and logical operators.
 
@@ -151,7 +151,7 @@ You can use the usual operations and logical operators.
 |` != ` |$$ f!=g$$|element wise not equal|
 |` - ` |$$ -g$$|element wise unary minus|
 |` && ` |$$ f$$ and $$g$$|element wise logical and |
-|` || ` |$$ f$$ or $$g$$|element wise logical or|
+|` \|\| ` |$$ f$$ or $$g$$|element wise logical or|
 |` ! ` |$$ !g$$|element wise logical not|
 
 
@@ -160,6 +160,9 @@ Feel++ finit element language use <em>test</em> and <em>trial</em> functions. Ke
 <strong>Usual operators</strong> are for <strong>test</strong> functions.<br>
 <strong>t-operators</strong> for <strong>trial</strong> functions.<br>
 <strong>v-operators</strong> to get an <strong>evaluation</strong>.
+Suppose that $$f \in X_h$$ reads
+$$f=\sum_{i=0}^{\mathcal{N}} f_i \phi_i$$
+where $$X_h = \mathrm{span}( \phi_i, i=1,\ldots,\mathcal{N}$$
 
 |Feel++ Keyword | Math Object | Description | Rank | Dimension |
 |---------------|-------------|-------------|------|-----------|
