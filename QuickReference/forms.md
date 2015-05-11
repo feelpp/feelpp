@@ -12,7 +12,7 @@ Notations:
 
 # Forms_Building Building Forms
 ## form1 form1
-\Interface
+*Interface*
 \co
 form1(_test, _init);
 \eco
@@ -28,7 +28,7 @@ l(v)=\int_\Omega v
 $$
 Then you can customize it using integration tools.
 
-\Examples
+*Example*
 From `mylaplacian.cpp`
 \snippet mylaplacian.cpp marker_form1
 
@@ -39,7 +39,7 @@ Notice that \c += operator is working with linear and bilinear forms.
 
 
 ## form2 form2
-\Interface
+*Interface*
 \co
 form2(_trial, _test, _init);
 \eco
@@ -74,7 +74,7 @@ In this section we present syntax to solve variational formulations. For more ge
 ## solve solve
 Once you created your linear and bilinear forms you can use the \c solve() function on your bilinear form.<br>
 The \c solve() function presented there is a method from the class \c BilinearForm.<br>
-\Interface
+*Interface*
 \co
 solve(_solution, _rhs, _rebuild, _name);
 \eco
@@ -86,13 +86,13 @@ Optional Parameters:
 * \c _rebuild: rebuild the solver matrix. Default = \c false.
 * \c _name: Default = "".
 
-\Examples
+*Example*
 From `laplacian.cpp`:
 \snippet mylaplacian.cpp marker_solve
 
 ## on on
 The function \c on() allows you to add conditions to your bilinear form before using the \c solve function.<br>
-\Interface
+*Interface*
 \co
 on(_range, _rhs, _element, _expr);
 \eco
@@ -104,7 +104,7 @@ Required Parameters:
 
 This function is used with += operator.
 
-\Examples
+*Example*
 From `mylaplacian.cpp`:
 \snippet mylaplacian.cpp marker_on
 There we add the condition:$$ u  =  0  \text{ on }\;\partial\Omega \;$$.

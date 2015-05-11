@@ -188,7 +188,7 @@ To generate your mesh you need a description parameter. This one can be create b
 ## Geo geo
 Use this function to create a description from a \c .geo file.
 
-\Interface
+*Interface*
 \co
 gmsh_ptrtype geo(_filename, _h, _dim, _order, _files_path);
 \eco
@@ -204,7 +204,7 @@ Optional Parameters:
 
 The file you want to load has to be in an appropriate repository. See \ref LoadMesh.
 
-\Examples
+*Example*
 From \c "doc/manual/heat/ground.cpp":
 \co
 mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -227,7 +227,7 @@ mesh = createGMSHMesh( _mesh=new mesh_type,
 ## Domain domain
 Use this function to generate a simple geometrical domain from parameters.
 
-\Interface
+*Interface*
 \co
 gmsh_ptrtype domain(_name, _shape, _h, _dim, _order, _convex, \
                     _addmidpoint, _xmin, _xmax, _ymin, _ymax, _zmin, _zmax);
@@ -251,7 +251,7 @@ Optional Parameters:
 * \c _zmin: minimum z coordinate. Default = \c 0.
 * \c _zmax: maximum z coordinate. Default = \c 1.
 
-\Examples
+*Example*
 From \c "doc/manual/laplacian/laplacian.ccp":
 \co
 mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,

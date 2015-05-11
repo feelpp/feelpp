@@ -25,7 +25,7 @@ To use the tools of this sections, you have to precise the domain range using th
 ## Integrate integrate
 Thank to its finite element embedded language, \feel has its owned <tt>integrate()</tt> function.
 
-\Interface
+*Interface*
 ```
   integrate( _range, _expr, _quad, _geomap );
 ```
@@ -48,7 +48,7 @@ Optional parameters:
 <tr><td>``` GEOMAP_01```</td><td>Order 1 approximation (same of the mesh)</td></tr>
 </table>
 
-\Examples
+*Example*
 From \c "doc/manual/tutorial/dar.cpp":
 ```
   form1( ... ) = integrate( _range = elements( mesh ),
@@ -136,7 +136,7 @@ main( int argc, char** argv )
 ## Project project
 It is also possible to make projections with the library.
 
-\Interface
+*Interface*
 ```
   project( _range, _space, _expr, _geomap );
 ```
@@ -149,7 +149,7 @@ Optional parameters:
 * <tt>_range</tt>: the domain for the projection. Default = all elements from <tt>space->mesh()</tt>
 * <tt>_geomap</tt>: type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
-\Examples
+*Example*
 From \c "doc/manual/laplacian/laplacian.cpp":
 ```
   element_type e( Xh, "e" );
@@ -176,7 +176,7 @@ Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the mean val
   \end{aligned}
 $$</center><br>
 
-\Interface
+*Interface*
 ```
   mean( _range, _expr, _quad, _geomap );
 ```
@@ -189,7 +189,7 @@ Optional parameters:
 * <tt>_quad</tt> = quadrature to use. Default = \lstinline!_Q<integer>()!
 * <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
-\Examples
+*Example*
 From \c "doc/manual/stokes/stokes.cpp":
 \snippet stokes.cpp mean
 
@@ -204,7 +204,7 @@ Let $$f \in L^2(\Omega)$$ you can evaluate the L2 norm:
   \end{aligned}
 $$</center><br>
 
-\Interface
+*Interface*
 ```
   normL2( _range, _expr, _quad, _geomap );
 ```
@@ -221,7 +221,7 @@ Optional parameters:
 * <tt>_quad</tt>  = quadrature to use. Default = <tt>_Q<integer>()</tt>
 * <tt>_geomap</tt>  = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
-\Examples
+*Example*
 From \c "doc/manual/laplacian/laplacian.cpp":
 ```
   double L2error =normL2( _range=elements( mesh ),
@@ -241,7 +241,7 @@ In the same idea, you can evaluate the H1 norm or semi norm, for any function $$
 \end{aligned}
 $$</center><br>
 
-\Interface
+*Interface*
 ```
   normH1( _range, _expr, _grad_expr, _quad, _geomap );
 ```
@@ -260,7 +260,7 @@ Optional parameters:
 * <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 
-\Examples
+*Example*
 With expression:
 ```
   auto g = sin(2*pi*Px())*cos(2*pi*Py());
