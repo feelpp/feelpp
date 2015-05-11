@@ -25,7 +25,7 @@ This manual is organized as follows:
 
   - [Tutorial](Tutorial.md) where we dive step by step into Feel++
 
-  - \ref ProgEnv which includes instructions for installation from sources or
+  - [Programmation Envivonment](GettingStarted.md) which includes instructions for installation from sources or
   from Debian/Ubuntu and MacOSX
 
   - [Quick reference](QuickReference/README.md) which describes the various components of Feel++ applications
