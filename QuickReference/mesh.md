@@ -54,7 +54,7 @@ There is a list of basic geometries you can automatically generate with Feel++ l
 
 <b>Examples:</b><br>
 From \c "doc/manual/tutorial/myfunctionspace.cpp":
-\co auto mesh = unitSquare();\eco
+```cpp auto mesh = unitSquare();\eco
 
 
 <a href="#" class="top">top</a>
