@@ -135,7 +135,7 @@ with the various approximations.
 
 Function        | Description
 ----------------|------------------------------
-`Pch<N>(mesh)`  | generates {{book.Pch}}
-`Pchv<N>(mesh)` | generates {{book.Pchv}}
-`THch<N>(mesh)` | generates {{book.THch}}
+`Pch<N>(mesh)`  | generates $$P^N_{c,h}$$
+`Pchv<N>(mesh)` | generates $$[P^N_{c,h}]^d$$
+`THch<N>(mesh)` | generates $$[P^N_{c,h}]^d \times P^N_{c,h}$$
 

@@ -121,43 +121,43 @@ and $$u$$ :
 
   ## ExporterReferenceOptions Options
 
-  \par \c exporter.format
+   \c exporter.format
   * Type: multiple choice \c string
   * Values: \c gmsh, \c ensight, \c ensightgold
   * Default value: ensightgold
   * Action: \c exporter.format defines the format to save Feel++ data into.
 
-  \par \c exporter.geometry
+   \c exporter.geometry
   * Type: multiple choice \c string
   * Values: \c change_coords_only, \c change, \c  static
   * Default value: change_coords_only
   * Action: \c exporter.geometry tells to the exporter if the mesh changes over time steps : no
   changes(\c static) coordinates only (\c change_coords_only) or remeshed (\c changes)
 
-  \par \c exporter.fileset
+   \c exporter.fileset
   * Type: \c bool
   * Values: 0, 1
   * Default value: 0
   * Action: \c exporter.fileset=0 save one file per timestep per subdomain,  whereas \c exporter.fileset=1 use one file per subdomain to store all time
   steps. \note This option, \c exporter.fileset=1, reduces tremendously the number of files generated for transient simulations.
 
-  \par \c exporter.prefix
+   \c exporter.prefix
   * Type: \c string
   * Default Value: <empty string>
   * Action: \c exporter.prefix defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
 
-  \par \c exporter.directory
+   \c exporter.directory
   * Type: string
   * Default Value: results
   * Action: \c exporter.directory tells where to export the results to
 
-  \subsubsection ExporterReferenceOptionsEnsightGold Ensight Gold specific options
+  ### ExporterReferenceOptionsEnsightGold Ensight Gold specific options
 
-  \par \c exporter.ensightgold.use-sos
+   \c exporter.ensightgold.use-sos
   * Type: \c bool
   * Action: if \c exporter.ensightgold.use-sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
 
-  \par \c exporter.ensightgold.save-face
+   \c exporter.ensightgold.save-face
   * Type: \c bool
   * Action: if \c exporter.ensightgold.save-face=1, the exporter saves mesh and fields on marked faces
 

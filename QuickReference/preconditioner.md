@@ -49,12 +49,12 @@ Preconditioner strategies
 
    Domain size $$L$$, subdomain size $$H$$, element size $$h$$
 
-   \par Overlapping/Schwarz
+   Overlapping/Schwarz
     - Solve Dirichlet problems on overlapping subdomains
     - No overlap: $$\textit{its} \in \mathcal{O}\big( \frac{L}{\sqrt{Hh}} \big)$$
     - Overlap $$\delta$$: $$\textit{its} \in \big( \frac L {\sqrt{H\delta}} \big)$$
 
-   \par Neumann-Neumann
+   Neumann-Neumann
 
     - Solve Neumann problems on non-overlapping subdomains
     - $$\textit{its} \in \mathcal{O}\big( \frac{L}{H}(1+\log\frac H h) \big)$$
@@ -64,7 +64,7 @@ Preconditioner strategies
    \note Multilevel variants knock off the leading $$\frac L H$$
    \note Both overlapping and nonoverlapping with this bound
 
-  \par BDDC and FETI-DP
+  BDDC and FETI-DP
      - Neumann problems on subdomains with coarse grid correction
      - $$\textit{its} \in \mathcal{O}\big(1 + \log\frac H h \big)$$
 
@@ -73,16 +73,16 @@ Preconditioner strategies
 
    ## PreconditionerMultigridIntro Introduction
 
-   \par Hierarchy: Interpolation and restriction operators}
+   Hierarchy: Interpolation and restriction operators}
    $$ \Pi^\uparrow : X_{\text{coarse}} \to X_{\text{fine}} \qquad
    \Pi^\downarrow :  X_{\text{fine}} \to X_{\text{coarse}} $$
    - Geometric: define problem on multiple levels, use grid to compute hierarchy
    - Algebraic: define problem only on finest level, use matrix structure to build hierarchy
 
-   \par Galerkin approximation
+   Galerkin approximation
    Assemble this matrix: $$A_{\text{coarse}} = \Pi^\downarrow A_{\text{fine}} \Pi^\uparrow$$
 
-   \par Application of multigrid preconditioner ($$ V $$-cycle)
+   Application of multigrid preconditioner ($$ V $$-cycle)
     - Apply pre-smoother on fine level (any preconditioner)
     - Restrict residual to coarse level with $$\Pi^\downarrow$$
     - Solve on coarse level $$A_{\text{coarse}} x = r$$

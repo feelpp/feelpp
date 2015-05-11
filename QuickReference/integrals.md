@@ -25,7 +25,7 @@ To use the tools of this sections, you have to precise the domain range using th
 ## Integrate integrate
 Thank to its finite element embedded language, Feel++ has its owned <tt>integrate()</tt> function.
 
-*Interface*
+**Interface***
 ```
   integrate( _range, _expr, _quad, _geomap );
 ```
@@ -136,7 +136,7 @@ main( int argc, char** argv )
 ## Project project
 It is also possible to make projections with the library.
 
-*Interface*
+**Interface***
 ```
   project( _range, _space, _expr, _geomap );
 ```
@@ -176,7 +176,7 @@ Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the mean val
   \end{aligned}
 $$</center><br>
 
-*Interface*
+**Interface***
 ```
   mean( _range, _expr, _quad, _geomap );
 ```
@@ -204,7 +204,7 @@ Let $$f \in L^2(\Omega)$$ you can evaluate the L2 norm:
   \end{aligned}
 $$</center><br>
 
-*Interface*
+**Interface***
 ```
   normL2( _range, _expr, _quad, _geomap );
 ```
@@ -241,7 +241,7 @@ In the same idea, you can evaluate the H1 norm or semi norm, for any function $$
 \end{aligned}
 $$</center><br>
 
-*Interface*
+**Interface***
 ```
   normH1( _range, _expr, _grad_expr, _quad, _geomap );
 ```
@@ -287,7 +287,7 @@ Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the infinity
 \parallel f \parallel_\infty=\sup_\Omega(|f|)
 $$</center><br>
 
-*Interface:*
+**Interface**:*
 ```
   normLinf( _range, _expr, _pset, _geomap );
 ```

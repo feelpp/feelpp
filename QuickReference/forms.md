@@ -12,10 +12,10 @@ Notations:
 
 # Forms_Building Building Forms
 ## form1 form1
-*Interface*
-\co
+**Interface***
+```cpp
 form1(_test, _init);
-\eco
+```
 Required Parameters:
 * \c _test: test function space.
 
@@ -39,10 +39,10 @@ Notice that \c += operator is working with linear and bilinear forms.
 
 
 ## form2 form2
-*Interface*
-\co
+**Interface***
+```cpp
 form2(_trial, _test, _init);
-\eco
+```
 Required Parameters:
 * \c _trial: test function space
 * \c _test: trial function space
@@ -74,10 +74,10 @@ In this section we present syntax to solve variational formulations. For more ge
 ## solve solve
 Once you created your linear and bilinear forms you can use the \c solve() function on your bilinear form.<br>
 The \c solve() function presented there is a method from the class \c BilinearForm.<br>
-*Interface*
-\co
+**Interface***
+```cpp
 solve(_solution, _rhs, _rebuild, _name);
-\eco
+```
 Required Parameters:
 * \c _solution: the solution.
 * \c _rhs: right hand side. The linear form.
@@ -92,10 +92,10 @@ From `laplacian.cpp`:
 
 ## on on
 The function \c on() allows you to add conditions to your bilinear form before using the \c solve function.<br>
-*Interface*
-\co
+**Interface***
+```cpp
 on(_range, _rhs, _element, _expr);
-\eco
+```
 Required Parameters:
 * \c _range: domain concerned by this condition (see \ref Integrals ).
 * \c _rhs: right hand side. The linear form.
@@ -113,9 +113,9 @@ From `mystokes.cpp`:
 \snippet mystokes.cpp marker_on
 
 You can also apply boundary conditions using :
- \co
+ ```cpp
   a+=on(_range=markedfaces(mesh,"top"),_element=u[Component::Y],_rhs=l,_expr=cst(0.))
-\eco
+```
 
 <a href="#" class="top">top</a>
 <hr>

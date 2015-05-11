@@ -188,7 +188,7 @@ To generate your mesh you need a description parameter. This one can be create b
 ## Geo geo
 Use this function to create a description from a \c .geo file.
 
-*Interface*
+**Interface***
 \co
 gmsh_ptrtype geo(_filename, _h, _dim, _order, _files_path);
 \eco
@@ -227,7 +227,7 @@ mesh = createGMSHMesh( _mesh=new mesh_type,
 ## Domain domain
 Use this function to generate a simple geometrical domain from parameters.
 
-*Interface*
+**Interface***
 \co
 gmsh_ptrtype domain(_name, _shape, _h, _dim, _order, _convex, \
                     _addmidpoint, _xmin, _xmax, _ymin, _ymax, _zmin, _zmax);

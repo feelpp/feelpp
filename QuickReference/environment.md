@@ -175,7 +175,7 @@ If `filename` is not found, then the empty string is returned.
 
 
 ## SetLogs setLogs
-*Interface*
+**Interface***
 ```cpp
 void setLogs( std::string const& prefix );
 ```

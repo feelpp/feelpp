@@ -5,36 +5,36 @@ Algebraic solutions
   # SolverDefinitions Definitions
 
   ## SolverDefinitionsMatrices Matrices
-  \par Matrix
+  Matrix
   A \b matrix is a linear transformation between finite dimensional vector spaces.
 
-  \par Assembling a matrix
+  Assembling a matrix
   \b Assembling a matrix means defining it's action in terms of entries
   (usually stored in a sparse format).
 
-  \par Symmetric matrix
+  Symmetric matrix
   $$A = A^T$$
 
 
-  \par Definite (resp. semi-definite) positive matrix
+  Definite (resp. semi-definite) positive matrix
   All eigenvalue are $$>0$$ (resp $$\geq 0$$) or $$x^TAx >0\, \forall x$$ (resp. $$x^TAx
   \geq 0\, \forall x$$)
 
-  \par Definite (resp. semi-negative matrix)
+  Definite (resp. semi-negative matrix)
   All eigenvalue are $$<0$$ (resp. $$\leq 0$$) or $$x^TAx <0 \forall x$$ (resp $$x^TAx
   \leq 0\, \forall x)$$
 
-  \par Indefinite matrix
+  Indefinite matrix
   There exists positive and negative eigenvalue (Stokes, Helmholtz) or there
   exists $$x,y$$ such that $$x^TAx > 0 > y^T A y$$
 
   ## SolverDefinitionsPreconditioners Preconditioners
 
-  \subsubsection SolverDefinitionsPreconditioning Preconditioning
+  ### SolverDefinitionsPreconditioning Preconditioning
 
   Preconditioning improves the conditioning of the Krylov operator.
 
-  \par Left preconditioning
+  Left preconditioning
   $$
   \begin{gather*}
   (P^{-1} A) x = P^{-1} b \\
@@ -42,7 +42,7 @@ Algebraic solutions
   \end{gather*}
   $$
 
-  \par Right preconditioning
+  Right preconditioning
   $$
   \begin{gather*}
   (A P^{-1}) P x = b \\
@@ -51,9 +51,9 @@ Algebraic solutions
   $$
   \note The product $$P^{-1}A$$ or $$A P^{-1}$$ is \b never formed.
 
-  \subsubsection SolverDefinitionsPreconditioner Preconditioner
+  ### SolverDefinitionsPreconditioner Preconditioner
 
-  \par Definition
+  Definition
   A \b preconditioner $$\mathcal{P}$$ is a method for constructing a
   matrix (just a linear function, not assembled!)  $$P^{-1} = \mathcal{P}(A,A_p)$$
   using a matrix $$A$$ and extra information $$A_p$$, such that the spectrum
@@ -96,13 +96,13 @@ Algebraic solutions
 
   $$ -\nabla \cdot (k \nabla u) = f \mbox{ in } \Omega \subset \mathbb{R}^{2}, u = g \mbox{ on } \partial \Omega $$
 
-  \par Monitoring KSP solvers
+  Monitoring KSP solvers
 
   ```cpp
   feelpp_qs_laplacian --ksp-monitor=true
   ```
 
-  \par Viewing KSP solvers
+  Viewing KSP solvers
 
 
   ```cpp{.sh}
@@ -132,7 +132,7 @@ PC Object: 2 MPI processes
 
   ```
 
-  \subsubsection SolverExamplesLaplacianSolvers Solvers and preconditioners
+  ### SolverExamplesLaplacianSolvers Solvers and preconditioners
 
   ## SolverExamplesStokes Stokes
 
@@ -152,7 +152,7 @@ PC Object: 2 MPI processes
 
   \note The Inf-sup condition must be satisfied. In particular for a multigrid strategy, the smoother needs to preserve it
 
-  \subsubsection SolverExamplesStokesApproach General approach for saddle point problems
+  ### SolverExamplesStokesApproach General approach for saddle point problems
 
   - \b Solvers: MINRES, GMRES
   - \b Preconditioners : look first at the saddle point matrix $$M$$ and its
