@@ -95,9 +95,9 @@ Coimbra (Portugal), CNRS and [Cemosis](http://www.cemosis.fr).
 
 
 
-\htmlonly
+<hr>
 <center>
 <a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>
 </center>
-\endhtmlonly
+
 
