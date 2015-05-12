@@ -39,13 +39,10 @@ The current developers are
  - Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
  - Vincent Huber <vincent.huber@cemosis.fr>
  - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
- - Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
- - Goncalo Pena <goncalo.pena@epfl.ch>
+ - Pierre Jolivet (former Phd student at U. Joseph Fourier, currently at ETHZ)
  - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- - Abdoulaye Samake <samakeablo@gmail.com>
  - Ranine Tarabay <ranine.tarbay@math.unistra.fr>
  - Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
- - Stéphane Veys <stephane.veys@imag.fr>
  - Jean-Baptiste Wahl <wahl.jb@gmail.com>
 
 Feel++ benefits from the many discussions and close research collaborations with
@@ -67,9 +64,13 @@ Daniele Di Pietro.
 
 ##  Past Developers and Contributors {#PastDevs}
 
- - Benjamn Stamm <benjamin.stamm@epfl.ch>
- - Gilles Steiner <gilles.steiner@epfl.ch>
- - Christoph Winkelmann <christoph.winkelmann@epfl.ch>
+ - Abdoulaye Samake (former Phd student at U. Joseph Fourier,
+   currently at NERSC in Norway)
+ - Stéphane Veys (former Phd student at U. Joseph Fourier, currently at CEA in France)
+ - Goncalo Pena (formerly at EPFL, currently at U. Coimbra in Portugal)
+ - Benjamn Stamm (formerly at EPFL, currently at UPMC in France)
+ - Gilles Steiner (formerly at EPFL)
+ - Christoph Winkelmann (formerly at EPFL)
 
 
 # Funding
@@ -77,29 +78,33 @@ Daniele Di Pietro.
 ##  Current funding {#CurFunding}
 
  Feel++ is supported by
- - ANR projects:
+ * ANR projects:
    - [VIVABRAIN](http://www.vivabrain.fr)   (MN call - 2013-2017)
    - CHORUS (MN call - 2013-2017)
- - PRACE projects
+
+ * PRACE projects
    - HP-FEEL++ 2015-2016
- - [LABEX IRMIA](http://labex-irmia.u-strasbg.fr/)
+
+ * [LABEX IRMIA](http://labex-irmia.u-strasbg.fr/)
 
 ##   Past funding {#PastFunding}
 
 
- - ANR
-   - HAMM - http://www.hamm-project.fr (Cosinus call - 2010-2014)
-   - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
- - IDEX Cemosis http://www.cemosis.fr
+ * ANR
+   - [HAMM](http://www.hamm-project.fr) - (Cosinus call - 2010-2014)
+   - [OPUS](http://www.opus-project.fr) - (TLOG call - 2008-2011)
 
- - FRAE
+ * IDEX
+   - Funding for [Cemosis](http://www.cemosis.fr)
+
+ * FRAE
    - RB4FASTSIM - 2010-2014
 
- - PRACE projects
+ * PRACE projects
    - HP-FEEL++ 2013-2014
    - HP-PDE{1,2} 2012-2014
 
- - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
+ * the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
    CHPID since 2009
 
 # Footnotes
