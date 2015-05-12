@@ -1,11 +1,10 @@
 Feel++
 ======
 
-
 Finite Element Embedded Library in C++
 --------------------------------------
 
-
+# Introduction
 
 Feel++ is a unified C++ implementation of Galerkin methods (finite and
 spectral element methods) in 1D, 2D And 3D to solve partial
@@ -18,15 +17,13 @@ Feel++ is
  - a library that offers solving strategies that scales up to thousands and even tens of thousands of cores (it is supported by a european Prace project currently )
  - a library entirely in ''C++'' allowing to create ''C++'' complex and typically non-linear multi-physics applications currently in industry, physics and health-care.
 
-# Book
+# Organisation of this book {#organisation}
 
 This book is available on Github and Gitbook. We use Gitter to discuss the changes in the book.
 
 [![Join the chat at https://gitter.im/feelpp/feelpp-book](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp-book?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Organisation of this book {#organisation}
-
-This book is organized as follows:
+It is organized as follows:
 
   - [GettingStarted](GettingStarted/GettingStarted.md) where we provide various standard PDE solvers to start
   with
