@@ -1,8 +1,7 @@
-Credits {#Credits}
-==================
-|Table of Contents|
-|-----------------|
-|<!-- toc -->|
+Credits 
+=======
+
+<!-- toc -->
 
 #  Copyright  
 
