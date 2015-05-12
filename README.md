@@ -27,3 +27,20 @@ Feel++ is
  - a library entirely in ''C++'' allowing to create ''C++'' complex
    and typically non-linear multi-physics applications currently in
    industry, physics and health-care.
+
+### Help and Support
+
+We're always happy to help out with Feel++ or any other questions you
+might have. You can ask a question or signal an issue at the Gitter
+Feel++ salon
+[![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+
+### Contribute to this documentation
+
+You can contribute to improve this documentation on
+[GitHub](https://github.com/feelpp/feelpp-book).
+
+---
+
+{% include "SUMMARY.md" %}

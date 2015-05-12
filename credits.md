@@ -1,6 +1,7 @@
 Credits {#Credits}
 ==================
 
+<!-- toc -->
 
 #  Copyright  {#Copyright}
 

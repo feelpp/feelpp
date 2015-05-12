@@ -1,6 +1,12 @@
 {
     "gitbook": "2.x.x",
-    "plugins": ["mathjax","include-highlight"],
+    "plugins": ["mathjax","include-highlight","toc"],
+    "pluginsConfig": {
+        "toc": {
+            "addClass": true,
+            "className": "toc"
+        }
+    },
     "links": {
         "sidebar": {
             "Feel++": "http://www.feelpp.org/"
