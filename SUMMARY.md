@@ -2,6 +2,7 @@
 
 * [Introduction](README.md)
    * [This book](book.md)
+   * [Credits](credits.md)
    * [Consortium](consortium.md)
    * [Sponsors](sponsors.md)
 * [Getting Started](GettingStarted/README.md)

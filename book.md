@@ -17,6 +17,17 @@ It is organized as follows:
   - [Quick reference](QuickReference/README.md) which describes the
     various components of Feel++ applications
 
+#  Contributors
+
+ This book is the result of many contributions and in particular from
+
+ - Alexandre Ancel
+ - Denis Barbier
+ - Guillaume Dollé
+ - Vincent Huber
+ - Christophe Prud'homme
+ - Ranine Tarabay
+ - Jean-Baptiste Wahl
 
 # License
 

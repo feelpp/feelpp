@@ -1,32 +1,34 @@
-# Credits {#Credits}
+Credits {#Credits}
+==================
 
 
-##  Copyright  {#Copyright}
+#  Copyright  {#Copyright}
 
-   Feel++ is Copyright (C) 2010-2015 by
-   - Feel++ Consortium
+  * Feel++ is Copyright (C) 2010-2015 by- Feel++ Consortium
 
-   Feel++ is Copyright (C) 2005-2015 by
+  * Feel++ is Copyright (C) 2005-2015 by
    - Université Joseph Fourier (Grenoble, France)
    - University of Coimbra (Portugal)
 
-   Feel++ is Copyright (C) 2011-2015 by
+  * Feel++ is Copyright (C) 2011-2015 by
    - Université de Strasbourg (France)
 
-   Feel++ is Copyright (C) 2011-2015 by
-   - CNRS (France)
+  * Feel++ is Copyright (C) 2011-2015 by CNRS (France)
 
-   Feel++ is Copyright (C) 2005-2006 by
-   - Ecole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
+  * Feel++ is Copyright (C) 2005-2006 by Ecole Polytechnique Fédérale
+  de Lausanne (EPFL, Switzerland)
 
 
 
 #  Management  {#Management}
+
 Feel++ is managed by Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
 Professor in applied mathematic and scientific computing at U. de Strasbourg,
 France.
 
-#  Current Developers and Contributors {#CurrentDevs}
+# Developers
+
+##  Current Developers and Contributors {#CurrentDevs}
 The current developers are
 
 
@@ -63,45 +65,40 @@ Gerhard, Frédéric Hecht, Michel Fouquembergh, Denis Barbier, Jean-Marc Gratien
 Daniele Di Pietro.
 
 
-#  Past Developers and Contributors {#PastDevs}
+##  Past Developers and Contributors {#PastDevs}
 
  - Benjamn Stamm <benjamin.stamm@epfl.ch>
  - Gilles Steiner <gilles.steiner@epfl.ch>
  - Christoph Winkelmann <christoph.winkelmann@epfl.ch>
 
-#  Documentation Authors {#DocAuthors}
 
- This documentation is a contribution from many people (in alphabetical order
- with respect to the name):
+# Funding
 
- - Alexandre Ancel
- - Denis Barbier
- - Guillaume Dollé
- - Vincent Huber
- - Christophe Prud'homme
- - Ranine Tarabay
- - Jean-Baptiste Wahl
-
-#  Current funding {#CurFunding}
+##  Current funding {#CurFunding}
 
  Feel++ is supported by
  - ANR projects:
-   - VIVABRAIN - http://www.vivabrain.fr (MN call - 2013-2017)
+   - [VIVABRAIN](http://www.vivabrain.fr)   (MN call - 2013-2017)
    - CHORUS (MN call - 2013-2017)
  - PRACE projects
-   - HP-FEEL++
-   - HP-PDE{1,2}
- - LABEX IRMIA http://labex-irmia.u-strasbg.fr/
+   - HP-FEEL++ 2015-2016
+ - [LABEX IRMIA](http://labex-irmia.u-strasbg.fr/)
 
-#   Past funding {#PastFunding}
+##   Past funding {#PastFunding}
 
 
  - ANR
    - HAMM - http://www.hamm-project.fr (Cosinus call - 2010-2014)
    - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
  - IDEX Cemosis http://www.cemosis.fr
- - FRAE 
+
+ - FRAE
    - RB4FASTSIM - 2010-2014
+
+ - PRACE projects
+   - HP-FEEL++ 2013-2014
+   - HP-PDE{1,2} 2012-2014
+
  - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
    CHPID since 2009
 
@@ -114,4 +111,3 @@ Daniele Di Pietro.
 [fn:3] http://chpid.www.forge.imag.fr/
 
 [fn:4] http://www.fnrae.org
-
