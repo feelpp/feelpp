@@ -1,7 +1,7 @@
 Using function {#TutorialFunctions}
 =====================
 
-[TOC]
+
 
 Once you  have created an element, you may want to give it a value, that can depends on a lot of parameters (mainly spaces, but other may apply).
 
@@ -21,7 +21,7 @@ Thanks to [GiNaC](http://www.ginac.de), we can parse expression like that :
 ```
 
 Step by step explanations
------------- 
+------------
 
 We start by loading a Mesh in 2D
 
@@ -39,25 +39,25 @@ Note that you can print back the expression to the screen to check that everythi
 
 If you want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
 
-then we compute the gradient of `g`  and `f` 
+then we compute the gradient of `g`  and `f`
 \snippet myexpression.cpp grad
 
 Notice that template argument are given to `grad`  to specify the shape of the
 gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$ $$2\times 2$$ since we are in 2D.
 
-then we compute the laplacian of `g`  and `f` 
+then we compute the laplacian of `g`  and `f`
 \snippet myexpression.cpp laplacian
 
-then we compute the divergence of `f` 
+then we compute the divergence of `f`
 \snippet myexpression.cpp div
 
-and the curl of `f` 
+and the curl of `f`
 \snippet myexpression.cpp curl
 
-Finally we evaluate these expression at one point given by the option `x`  and `y` 
+Finally we evaluate these expression at one point given by the option `x`  and `y`
 \snippet myexpression.cpp eval
 
-# Built-in 
+# Built-in
 
 Instead of defining an expression from a string, you can use
 
@@ -65,9 +65,8 @@ Instead of defining an expression from a string, you can use
 
 The list of the Feel++ Keyword is [here](Keywords.html).
 
-# Hard Coded 
+# Hard Coded
 
 One other method to define function is described here.
 
 !CODEFILE "code/myfunctor.cpp"
-

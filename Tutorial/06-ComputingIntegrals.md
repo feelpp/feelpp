@@ -1,7 +1,7 @@
 Computing integrals over mesh {#TutorialIntegrals}
 ==================================
 
-[TOC]
+
 
 The next step is to compute integrals over the mesh. The source code is available in `myintegrals.cpp.`
 

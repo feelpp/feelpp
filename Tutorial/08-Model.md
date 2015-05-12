@@ -1,8 +1,7 @@
-
 Defining a Model {#TutorialModel}
 ================
 
-[TOC]
+
 
 # Introduction {#Intro}
 
@@ -22,7 +21,7 @@ A model is defined by :
 - [Post Processing](@ref PostPro)
 
 ## Parameters {#Parameters}
-A parameter is a non physical property for a model. 
+A parameter is a non physical property for a model.
 
 ## Materials {#Materials}
 To retrieve the materials properties, we use :
@@ -43,4 +42,3 @@ We can apply theses boundary condition this way
 We have set up an example : an anisotropic laplacian.
 
 \snippet aniso_laplacian.cpp global
-

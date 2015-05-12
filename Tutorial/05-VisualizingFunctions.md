@@ -1,10 +1,10 @@
 Visualizing functions over a mesh {#TutorialVisualize}
 ======================================
 
-[TOC]
+
 
 The next step is to visualize function over the mesh. The source code is
-available in `myexporter.cpp.` 
+available in `myexporter.cpp.`
 
 # Loading a Mesh in 2D {#load}
 
@@ -35,7 +35,7 @@ We create now three exporter:
 # Adding function to save {#add}
 
 Here we save the function many times.
-That is here not relevant but you may want to simulate process over time. 
+That is here not relevant but you may want to simulate process over time.
 \snippet myexporter.cpp adding
 
 # Actually saving {#save}
@@ -65,6 +65,5 @@ You can visualize data via
 - [ensight](https://www.ceisoftware.com/),
 - [paraview](www.paraview.org/),
 - [gmsh](http://geuz.org/gmsh).
- 
-The results files are in \c $HOME/feel/myexporter/np_1 or \c $FEELPP_WORKDIR/feel/myexporter/np_1
 
+The results files are in \c $HOME/feel/myexporter/np_1 or \c $FEELPP_WORKDIR/feel/myexporter/np_1

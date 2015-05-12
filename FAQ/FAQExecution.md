@@ -1,7 +1,7 @@
 Runtime FAQ
 ===========
 
-[TOC]
+
 
 # Parallel computing
 
@@ -40,7 +40,7 @@ Environment::logMemoryUsage("memory usage before:");
 Environment::logMemoryUsage("memory usage after:");
 ```
 
-Otherwise there are tools like `valgrind`  (OpenSource) or `ddt/map` 
+Otherwise there are tools like `valgrind`  (OpenSource) or `ddt/map`
 (Commercial) that allow to better better the memory usage for data structures
 other than PETSc ones.
 

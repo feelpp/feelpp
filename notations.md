@@ -1,11 +1,10 @@
-
 Mathematical Concepts and Notations {#Notations}
 ============================
 
 The mathematical concepts and the associated notations are defined on
 this page and will be used throughout the Feel++ Online Documentation.
 
-[TOC]
+
 
 #  Polynomial Library {#PolynomialNotations}
 
@@ -64,7 +63,7 @@ over the edges of a tetrahedron.
   discontinuous Galerkin formulations.
 
 
-  The type of point sets supported are \e (i) the Equidistributed  point set, 
+  The type of point sets supported are \e (i) the Equidistributed  point set,
   \e (ii) the Warpblend point sets on simplices see \cite warburton06,
   \e (iii) Fekete points in simplices, see \cite MR1696933,
   \e (iv) standard quadrature rules in simplices and finally
@@ -105,7 +104,7 @@ over the edges of a tetrahedron.
   matrix (a generalized Vandermonde matrix, see \cite gpena). % A trick that
   % amounts for a appreciable gain in accuracy is to do these computations using
   % higher precision types, e.g. `dd_real` , and then fall back in the end
-  % to the required numerical type, e.g. `double.` 
+  % to the required numerical type, e.g. `double.`
 
 
 ##  Finite Elements and Other Polynomial Basis {#Notations_fem}
@@ -232,4 +231,3 @@ over the edges of a tetrahedron.
   iterators are then turned into a range, see Boost.Range
   http://www.boost.org/libs/range/index.html, to be manipulated by
   integration, \ref Integrals, and projection, tools.
-

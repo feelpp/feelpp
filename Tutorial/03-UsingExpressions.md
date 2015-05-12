@@ -1,7 +1,7 @@
 Defining and using expressions {#TutorialExpr}
 ================================
 
-[TOC]
+
 
 The next step is to construct a function space over the mesh. The source code is
 available in `myexpression.cpp.`
