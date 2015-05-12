@@ -1,9 +1,10 @@
 Credits {#Credits}
 ==================
+|Table of Contents|
+|-----------------|
+|<!-- toc -->|
 
-<!-- toc -->
-
-#  Copyright  {#Copyright}
+#  Copyright  
 
   * Feel++ is Copyright (C) 2010-2015 by- Feel++ Consortium
 
@@ -21,7 +22,7 @@ Credits {#Credits}
 
 
 
-#  Management  {#Management}
+#  Management  
 
 Feel++ is managed by Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
 Professor in applied mathematic and scientific computing at U. de Strasbourg,
@@ -63,7 +64,7 @@ Gerhard, Frédéric Hecht, Michel Fouquembergh, Denis Barbier, Jean-Marc Gratien
 Daniele Di Pietro.
 
 
-##  Past Developers and Contributors {#PastDevs}
+##  Past Developers and Contributors 
 
  - Abdoulaye Samake (former Phd student at U. Joseph Fourier,
    currently at NERSC in Norway)
@@ -76,7 +77,7 @@ Daniele Di Pietro.
 
 # Funding
 
-##  Current funding {#CurFunding}
+##  Current funding 
 
  Feel++ is supported by
  * ANR projects:
@@ -88,7 +89,7 @@ Daniele Di Pietro.
 
  * [LABEX IRMIA](http://labex-irmia.u-strasbg.fr/)
 
-##   Past funding {#PastFunding}
+##   Past funding 
 
 
  * ANR
