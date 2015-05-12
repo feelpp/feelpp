@@ -4,7 +4,7 @@ Projection
 
 # NodalProjection Nodal Projection
 
-An important keyword is \c project which allows to compute the
+An important keyword is `project`  which allows to compute the
 interpolant of an expression with respect to a nodal function space over a part
 of the mesh  or the whole mesh. The interface is as follows
 ```cpp
@@ -44,7 +44,7 @@ The idea with GiNaC is to provide a string which will be parsed to generate a fu
 \snippet myexpression.cpp expr
 
 To use the Functor, you have to define in the Feel namespace a struct with some variable.
-That struct will provide an \c operator() interface with specific signature.
+That struct will provide an `operator()`  interface with specific signature.
 
 \snippet myfunctor.cpp functor
 

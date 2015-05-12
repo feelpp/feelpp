@@ -11,7 +11,7 @@ To use the tools of this sections, you have to precise the domain range using th
 <tr><td> ``` markedelements(mesh, id) ```</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
 <tr><td> ``` faces(mesh) ```</td><td>All the faces of the mesh.</td></tr>
 <tr><td> ``` markedfaces(mesh) ```</td><td>All the faces of the mesh which are marked.</td></tr>
-<tr><td> ``` boundaryfaces(mesh) ```</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one, \c boundaryfaces(mesh) will return all the lines (because of dimension $$2-1=1$$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
+<tr><td> ``` boundaryfaces(mesh) ```</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one, `boundaryfaces(mesh)`  will return all the lines (because of dimension $$2-1=1$$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
 <tr><td> ``` internalelements(mesh) ```</td><td>All the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.</td></tr>
 <tr><td> ``` boundaryelements(mesh) ```</td><td>All the elements of the mesh which share a face with the boundary of the mesh.</td></tr>
 <tr><td> ``` edges(mesh) ```</td><td>All the edges of the mesh.</td></tr>
@@ -31,7 +31,7 @@ Thank to its finite element embedded language, Feel++ has its owned <tt>integrat
 ```
 please notice that the order of the parameter is not important, these are <tt>boost</tt> parameters, so you can enter them in the order you want. <br>
 To make it clear, there are two required parameters and 2 optional and they of course can be entered in any order
-provided you give the parameter name. If you don't provide the parameter name (that is to say \c _range= or the others) they must be entered in the order they are described
+provided you give the parameter name. If you don't provide the parameter name (that is to say `_range` = or the others) they must be entered in the order they are described
 below.
 
 Required parameters:
@@ -49,20 +49,20 @@ Optional parameters:
 </table>
 
 *Example*
-From \c "doc/manual/tutorial/dar.cpp":
+From `doc/manual/tutorial/dar.cpp` 
 ```
   form1( ... ) = integrate( _range = elements( mesh ),
                             _expr = f*id( v ) );
 ```
 
-From \c "doc/manual/tutorial/myintegrals.cpp":
+From `doc/manual/tutorial/myintegrals.cpp` 
 ```
   // compute integral f on boundary
   double intf_3 = integrate( _range = boundaryfaces( mesh ),
                              _expr = f );
 ```
 
-From \c "doc/manual/advection/advection.cpp":
+From `doc/manual/advection/advection.cpp` 
 ```
   form2( _test = Xh, _trial = Xh, _matrix = D ) +=
     integrate( _range = internalfaces( mesh ),
@@ -72,7 +72,7 @@ From \c "doc/manual/advection/advection.cpp":
                _geomap = geomap );
 ```
 
-From \c "doc/manual/laplacian/laplacian.cpp":
+From `doc/manual/laplacian/laplacian.cpp` 
 ```
  auto l = form1( _test=Xh, _vector=F );
  l = integrate( _range = elements( mesh ),
@@ -83,7 +83,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
 
 
 ## Integrals_Computing Computing my first Integrals
-This part explains how to integrate on a mesh with Feel++ (source \c "doc/manual/tutorial/myintegrals.cpp").
+This part explains how to integrate on a mesh with Feel++ (source `doc/manual/tutorial/myintegrals.cpp` ).
 
 Let's consider the domain $$\Omega=[0,1]^d$$ and associated meshes.<br>
 Here, we want to integrate the following function
@@ -150,7 +150,7 @@ Optional parameters:
 * <tt>_geomap</tt>: type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 *Example*
-From \c "doc/manual/laplacian/laplacian.cpp":
+From `doc/manual/laplacian/laplacian.cpp` 
 ```
   element_type e( Xh, "e" );
   e = project( _space = Xh,
@@ -158,7 +158,7 @@ From \c "doc/manual/laplacian/laplacian.cpp":
                _expr = g );
 ```
 
-From \c "doc/manual/heatns/convection_run.cpp":
+From `doc/manual/heatns/convection_run.cpp` 
 ```
 tn = project( _space = Xh->functionSpace<2>(),
               _range = elements( mesh ),
@@ -190,7 +190,7 @@ Optional parameters:
 * <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 *Example*
-From \c "doc/manual/stokes/stokes.cpp":
+From `doc/manual/stokes/stokes.cpp` 
 \snippet stokes.cpp mean
 
 <a href="#" class="top">top</a>
@@ -222,13 +222,13 @@ Optional parameters:
 * <tt>_geomap</tt>  = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 *Example*
-From \c "doc/manual/laplacian/laplacian.cpp":
+From `doc/manual/laplacian/laplacian.cpp` 
 ```
   double L2error =normL2( _range=elements( mesh ),
                           _expr=( idv( u )-g ) );
 ```
 
-From \c "doc/manual/stokes/stokes.cpp":
+From `doc/manual/stokes/stokes.cpp` 
 \snippet stokes.cpp norml2
 
 ## NormH1 normH1
@@ -272,7 +272,7 @@ With expression:
   			                _expr=g,\
 			                _grad_expr=trans(gradg) );
 ```
-With test or trial function \c u:
+With test or trial function `u` 
 ```
   double errorH1 = normH1( _range=elements(mesh),\
   			               _expr=(u-g),\

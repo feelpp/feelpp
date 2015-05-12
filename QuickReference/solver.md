@@ -74,18 +74,18 @@ of $$P^{-1}A$$ (or $$A P^{-1}$$) is well-behaved.
 
   Feel++ abstracts the PETSc library and provides a subset (sufficient in most
   cases) to the PETSc features. It interfaces with the following PETSc
-  libraries: \c Mat, \c Vec, \c KSP, \c PC, \c SNES.
-  - \c Vec: Vector handling library
-  - \c Mat: Matrix handling library
-  - \c KSP: Krylov SubSpace library implements various iterative solvers
-  - \c PC: Preconditioner library implements various  preconditioning strategies
-  - \c SNES: Nonlinear solver library implements various  nonlinear solve strategies
+  libraries: `Mat` , `Vec` , `KSP` , `PC` , `SNES.` 
+  - `Vec`  Vector handling library
+  - `Mat`  Matrix handling library
+  - `KSP`  Krylov SubSpace library implements various iterative solvers
+  - `PC`  Preconditioner library implements various  preconditioning strategies
+  - `SNES`  Nonlinear solver library implements various  nonlinear solve strategies
 
-  All linear algebra are encapsulated within backend which interfaces PETSc (\c petsc),
-  Eigen sparse (\c eigen) or dense (\c eigen_dense)
+  All linear algebra are encapsulated within backend which interfaces PETSc (`petsc)` ,
+  Eigen sparse (`eigen)`  or dense (`eigen_dense)` 
 
 
-  The \b Default \b backend is \c petsc.
+  The \b Default \b backend is `petsc.` 
 
 # Examples
 

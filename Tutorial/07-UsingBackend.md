@@ -9,7 +9,7 @@ After the discretization process, one may have to solve a (non) linear system. F
 Consider this system
 $$A x = b $$
 
-We call \c Backend an object that manages the solution strategy to solve it. Some explanation are available \ref Solver and \ref Preconditioner.
+We call `Backend`  an object that manages the solution strategy to solve it. Some explanation are available \ref Solver and \ref Preconditioner.
 
 
 Feel++ provides a default backend that is mostly hidden to the final user.

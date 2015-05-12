@@ -3,7 +3,7 @@ Computing integrals over mesh {#TutorialIntegrals}
 
 [TOC]
 
-The next step is to compute integrals over the mesh. The source code is available in \c myintegrals.cpp.
+The next step is to compute integrals over the mesh. The source code is available in `myintegrals.cpp.` 
 
 # Step by step explanations {#TutorialIntegralsSteps}
 
@@ -11,7 +11,7 @@ We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
 
 then we define the Feel++ expression that we are going to integrate using the \c
-soption function that retrieves the command line option string \c functions.g. We then transform this string into a Feel++ expression using \c expr().
+soption function that retrieves the command line option string `functions.g.`  We then transform this string into a Feel++ expression using `expr().` 
 
 \snippet myintegrals.cpp expression
 
@@ -25,10 +25,10 @@ and we print the results to the screen.
 
 \snippet myintegrals.cpp integrals
 
-\remark Only the rank 0 process (thanks to \c Environment::isMasterRank() prints
+\remark Only the rank 0 process (thanks to `Environment` isMasterRank() prints
 to the screen as the result is the same over all mpi processes if the
 application was run in parallel. Note also that the code actually prints the
-expression passed by the user through the command line option \c functions.g.
+expression passed by the user through the command line option `functions.g.` 
 
 # Some results {#TutorialIntegralsResults}
 
@@ -43,7 +43,7 @@ int_{boundary of Omega} 1 = 4
 ```
 
 Now we try $$g=x$$. We need to tell Feel++ what are the symbols associated
-with the expression: here the symbol is \c x and it works as follows
+with the expression: here the symbol is `x`  and it works as follows
 
 ```
 shell> ./feelpp_doc_myintegrals --functions.g=x:x
@@ -54,7 +54,7 @@ int_{boundary of Omega} x = 2
 Recall that \c : is a separator between the expression and each symbol composing it.
 
 Now we try $$g=x y$$. We need to tell Feel++ what are the symbols associated
-with the expression: here the symbol is \c x and \c y and it works as follows
+with the expression: here the symbol is `x`  and `y`  and it works as follows
 
 ```
 shell> ./feelpp_doc_myintegrals --functions.g=x*y:x:y

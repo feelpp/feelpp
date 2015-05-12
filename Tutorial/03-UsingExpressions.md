@@ -4,14 +4,14 @@ Defining and using expressions {#TutorialExpr}
 [TOC] 
 
 The next step is to construct a function space over the mesh. The source code is
-available in \c myexpression.cpp.
+available in `myexpression.cpp.` 
 
 # Step by step explanations {#ex}
 
 We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
 
-then we define some expression through the command line or config file: \c g is a scalar field and \c f is a vector field
+then we define some expression through the command line or config file: `g`  is a scalar field and `f`  is a vector field
 \snippet myexpression.cpp expr
 
 here is an example how to enter them, more are available below
@@ -22,23 +22,23 @@ feelpp_doc_myexpression --a=3 --functions.g="a*x*y:x:y:a" --functions.f="{sin(pi
 \remark You can print back the expression to the screen to check that everything is ok.
 \remark You want to use as expression `a*x+b*y`, you have to define `a` and `b` as option (either in your code, either in the library).
 
-then we compute the gradient of \c g and \c f
+then we compute the gradient of `g`  and `f` 
 \snippet myexpression.cpp grad
 
-Notice that template argument are given to \c grad to specify the shape of the
+Notice that template argument are given to `grad`  to specify the shape of the
 gradient: in the case of $$\nabla g$$ it is $$1\times2$$ and $$\nabla f$$
 $$2\times 2$$ since we are in 2D.
 
-then we compute the laplacian of \c g and \c f
+then we compute the laplacian of `g`  and `f` 
 \snippet myexpression.cpp laplacian
 
-then we compute the divergence of \c f
+then we compute the divergence of `f` 
 \snippet myexpression.cpp div
 
-and the curl of \c f
+and the curl of `f` 
 \snippet myexpression.cpp curl
 
-Finally we evaluate these expression at one point given by the option \c x and \c y
+Finally we evaluate these expression at one point given by the option `x`  and `y` 
 \snippet myexpression.cpp eval
 
 # Some results {#res}

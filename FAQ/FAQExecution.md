@@ -20,15 +20,15 @@ mpirun -np 4 -bind-to-core feelpp_qs_laplacian
 ## How to monitor the memory usage in Feel++
 
 It is not easy to have a precise account for memory usage in a code with
-standard unix tools. \c top, \c ps or \c htop can tell you more or less what memory has
+standard unix tools. `top` , `ps`  or `htop`  can tell you more or less what memory has
 been allocated with the OS to your application but it is not, and by far, a
 precise account.
 
 You can compile and link your application with PETSc in Debug mode and use the
-following function \c logMemoryUsage(<string>) to monitor in LOG files
+following function `logMemoryUsage(` <string>) to monitor in LOG files
 accurately the amount of memory spent by PETSc. The string allows you to write a
 message in the LOG file to better identify the place where you monitored the
-memory. Also this function displays system information using the \c ps command.
+memory. Also this function displays system information using the `ps`  command.
 Your code can be instrumented as follows:
 ```cpp
 Environment::logMemoryUsage("memory usage before:");
@@ -40,7 +40,7 @@ Environment::logMemoryUsage("memory usage before:");
 Environment::logMemoryUsage("memory usage after:");
 ```
 
-Otherwise there are tools like \c valgrind (OpenSource) or \c ddt/map
+Otherwise there are tools like `valgrind`  (OpenSource) or `ddt/map` 
 (Commercial) that allow to better better the memory usage for data structures
 other than PETSc ones.
 

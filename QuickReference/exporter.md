@@ -13,13 +13,13 @@ Post-Processing and Visualization
   * visualize traces,
   * use standard visualization tools such as Paraview, Ensight and Gmsh.
 
-  To achieve this, Feel++ defines a so-called \c Exporter object.
+  To achieve this, Feel++ defines a so-called `Exporter`  object.
 
   # VisPrinciples General principles
 
   The library Feel itself does not have any visualization
   capabilities. However, it provides tools to export both scalar and
-  vector fields into two formats: \c EnSight and \c Gmsh. The EnSight format
+  vector fields into two formats: `EnSight`  and `Gmsh.`  The EnSight format
   can be read by the visualization software EnSight
   http://www.ensight.com or, for instance, by the open source package
   Paraview http://www.paraview.org.
@@ -111,7 +111,7 @@ Post-Processing and Visualization
 and $$u$$ :
   \snippet myexporter.cpp function
 
-  We start with an \c Exporter object that allows to visualize the $$P_1$$ interpolant of $$u$$ over $$\Omega$$.
+  We start with an `Exporter`  object that allows to visualize the $$P_1$$ interpolant of $$u$$ over $$\Omega$$.
 
 
   <a href="#" class="top">top</a>
@@ -121,43 +121,43 @@ and $$u$$ :
 
   ## ExporterReferenceOptions Options
 
-   \c exporter.format
-  * Type: multiple choice \c string
-  * Values: \c gmsh, \c ensight, \c ensightgold
+   `exporter.format` 
+  * Type: multiple choice `string` 
+  * Values: `gmsh` , `ensight` , `ensightgold` 
   * Default value: ensightgold
-  * Action: \c exporter.format defines the format to save Feel++ data into.
+  * Action: `exporter.format`  defines the format to save Feel++ data into.
 
-   \c exporter.geometry
-  * Type: multiple choice \c string
-  * Values: \c change_coords_only, \c change, \c  static
+   `exporter.geometry` 
+  * Type: multiple choice `string` 
+  * Values: `change_coords_only` , `change` , `static` 
   * Default value: change_coords_only
-  * Action: \c exporter.geometry tells to the exporter if the mesh changes over time steps : no
-  changes(\c static) coordinates only (\c change_coords_only) or remeshed (\c changes)
+  * Action: `exporter.geometry`  tells to the exporter if the mesh changes over time steps : no
+  changes(`static)`  coordinates only (`change_coords_only)`  or remeshed (`changes)` 
 
-   \c exporter.fileset
-  * Type: \c bool
+   `exporter.fileset` 
+  * Type: `bool` 
   * Values: 0, 1
   * Default value: 0
-  * Action: \c exporter.fileset=0 save one file per timestep per subdomain,  whereas \c exporter.fileset=1 use one file per subdomain to store all time
-  steps. \note This option, \c exporter.fileset=1, reduces tremendously the number of files generated for transient simulations.
+  * Action: `exporter.fileset` =0 save one file per timestep per subdomain,  whereas `exporter.fileset` =1 use one file per subdomain to store all time
+  steps. \note This option, `exporter.fileset` =1, reduces tremendously the number of files generated for transient simulations.
 
-   \c exporter.prefix
-  * Type: \c string
+   `exporter.prefix` 
+  * Type: `string` 
   * Default Value: <empty string>
-  * Action: \c exporter.prefix defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
+  * Action: `exporter.prefix`  defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
 
-   \c exporter.directory
+   `exporter.directory` 
   * Type: string
   * Default Value: results
-  * Action: \c exporter.directory tells where to export the results to
+  * Action: `exporter.directory`  tells where to export the results to
 
   ### ExporterReferenceOptionsEnsightGold Ensight Gold specific options
 
-   \c exporter.ensightgold.use-sos
-  * Type: \c bool
-  * Action: if \c exporter.ensightgold.use-sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
+   `exporter.ensightgold.use` -sos
+  * Type: `bool` 
+  * Action: if `exporter.ensightgold.use` -sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
 
-   \c exporter.ensightgold.save-face
-  * Type: \c bool
-  * Action: if \c exporter.ensightgold.save-face=1, the exporter saves mesh and fields on marked faces
+   `exporter.ensightgold.save` -face
+  * Type: `bool` 
+  * Action: if `exporter.ensightgold.save` -face=1, the exporter saves mesh and fields on marked faces
 

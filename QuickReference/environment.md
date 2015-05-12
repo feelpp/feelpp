@@ -25,7 +25,7 @@ None of those parameters are required but it is highly recommended to use the mi
 
 # Options Feel++ Options Description
 ## Options_Custom Add Options
-\c feel_option() returns a list of default options used in Feel++.<br>
+`feel_option()`  returns a list of default options used in Feel++.<br>
 
 You can create a personal list of options as seen in \ref FirstApp.
 
@@ -47,16 +47,16 @@ You can also add a list of options, using a routine as follows:
     return myappOptions.add( feel_options() ); // Add the default feel options to your list
   }
 ```
-* \c makeOptions is the usual name of this routine but you can change it
-* \c myappOptions: the name of you options list
-* \c option#: the name of parameter #
-* \c type#: the type parameter #
-* \c value#: the default value of parameter #
-* \c description#: the description of parameter #
+* `makeOptions`  is the usual name of this routine but you can change it
+* `myappOptions`  the name of you options list
+* `option` #: the name of parameter #
+* `type` #: the type parameter #
+* `value` #: the default value of parameter #
+* `description` #: the description of parameter #
 
 The data returned is typically used as an argument of a Feel::Application subclass.
 
-This routine has to be declared before your \c main function. Then you can use it to initialize Feel++ Environment:
+This routine has to be declared before your `main`  function. Then you can use it to initialize Feel++ Environment:
 ```cpp
   Environment env( _argc=argc, _argv=argv,
                    _desc=makeOptions(),
@@ -72,7 +72,7 @@ So you can change this parameter when you execute your app:
 
 
 <b>Example:</b><br>
-From \c "/doc/manual/laplacian/laplacian.cpp":
+From `/doc/manual/laplacian/laplacian.cpp` 
 ```cpp
   using namespace Feel;
 
@@ -103,7 +103,7 @@ From \c "/doc/manual/laplacian/laplacian.cpp":
 ## Options_Accessors Accessors
 <b>Options Description:</b><br>
 ```cpp Environment::optionsDescription();```
-Returns options description data structure (\c po::options_description).<br>
+Returns options description data structure (`po` options_description).<br>
 
 
 <b>Variable map</b><br>
@@ -111,17 +111,17 @@ You can access to the parameters of your application environment using the follo
 ```cpp
   Environment::vm(_name);
 ```
-\c _name is the name of the parameter as seen in the previous paragraph.<br>
-This function returns a \c po::variable_value .<br>
+`_name`  is the name of the parameter as seen in the previous paragraph.<br>
+This function returns a `po` variable_value .<br>
 Use template methode to cast the parameter into the appropriate type.<br>
 
 <b>Examples:</b><br>
-From \c "doc/manual/solid/beam.cpp":
+From `doc/manual/solid/beam.cpp` 
 ```cpp
   const double E = Environment::vm(_name="E").template as<double>();
   const double nu = Environment::vm(_name="nu").template as<double>();
 ```
-From \c "doc/manual/fd/penalisation.cpp":
+From `doc/manual/fd/penalisation.cpp` 
 ```cpp
   Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
 ```
@@ -142,9 +142,9 @@ Optional Parameters:
 * `_subdir`: Default = `true`
 * `_filename`: Default = `"logfile"`
 
-You can use \c boost::format to customize the path. <br>
+You can use `boost` format to customize the path. <br>
 <b>Example:</b><br>
-From \c "doc/manual/laplacian/laplacian.cpp":
+From `doc/manual/laplacian/laplacian.cpp` 
 ```cpp
     Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
@@ -168,8 +168,8 @@ The lookup is as follows:
 * look into paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
 
 If the file has an extension .geo or .msh, try also to
-* look into \c localGeoRepository() which is usually $HOME/feel/geo
-* look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
+* look into `localGeoRepository()`  which is usually $HOME/feel/geo
+* look into `systemGeoRepository()`  which is usually $FEELPP_DIR/share/feel/geo
 
 If `filename` is not found, then the empty string is returned.
 
@@ -180,6 +180,6 @@ If `filename` is not found, then the empty string is returned.
 void setLogs( std::string const& prefix );
 ```
 Required Parameters:
-* \c prefix: prefix for log filenames.
+* `prefix`  prefix for log filenames.
 
 

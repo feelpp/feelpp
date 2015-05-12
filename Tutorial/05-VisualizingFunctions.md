@@ -4,7 +4,7 @@ Visualizing functions over a mesh {#TutorialVisualize}
 [TOC]
 
 The next step is to visualize function over the mesh. The source code is
-available in \c myexporter.cpp.
+available in `myexporter.cpp.` 
 
 # Loading a Mesh in 2D {#load}
 

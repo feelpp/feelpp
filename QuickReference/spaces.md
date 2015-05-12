@@ -27,7 +27,7 @@ support.
 ```
 
 
-The \c FunctionSpace class
+The `FunctionSpace`  class
 
  -  constructs the table of degrees of freedom which maps local (elementwise) degrees of
   freedom to the global ones with respect to the geometrical entities,
@@ -66,9 +66,9 @@ whereas the Lagrange basis can yield either discontinuous or continuous
 (default behavior) approximations.  $$\RT_h$$ and $$\N_h$$ are implicitely spaces
 of vectorial functions $$\bm{f}$$ \st $$\bm{f}: \Omega_h \subset \R^d \mapsto
 \R^d$$. As to the other basis functions, \ie Lagrange, Legrendre, Dubiner,
-etc., they are parametrized by their values namely \c Scalar ,
-\c Vectorial or \c Matricial.  Note that
-\c FunctionSpace handles also products of function spaces.  This is
+etc., they are parametrized by their values namely `Scalar`  ,
+`Vectorial`  or `Matricial.`   Note that
+`FunctionSpace`  handles also products of function spaces.  This is
 very powerful to describe complex multiphysics problems when coupled with
 operators, functionals and forms described in the next section. Extracting
 subspaces or component spaces are part of the interface.
@@ -92,9 +92,9 @@ FunctionSpace<Mesh<Simplex<2>>,
        Lagrange<1,Scalar>>> P2P1P1;
 ```
 
-The most important feature in \c FunctionSpace is that it embeds the
+The most important feature in `FunctionSpace`  is that it embeds the
 definition of element which allows for the strict definition of an \c
-Element of a \c FunctionSpace and thus ensures the correctness of the
+Element of a `FunctionSpace`  and thus ensures the correctness of the
 code.  An element has its representation as a vector --- also in the
 case of product of multiple spaces. --- The vector representation is
 parametrized by one of the linear algebra backends. Other supported

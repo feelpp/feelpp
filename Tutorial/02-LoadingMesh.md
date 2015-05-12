@@ -2,7 +2,7 @@ Loading a Mesh
 ==============
 
 
-The next step is to load a mesh. The source code is available in \c mymesh.cpp.
+The next step is to load a mesh. The source code is available in `mymesh.cpp.` 
 
 The `loadMesh` function has a `_name` option set by default as the default value of the `--gmsh.filename` option that point either to a `.geo`, either to a `.msh` file.
 

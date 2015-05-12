@@ -92,8 +92,8 @@ over the edges of a tetrahedron.
   basis in which it is expressed and the field type in which it has its values:
   scalar, vectorial or matricial. Its interface provides a number of operations
   such as evaluation and derivation at a set of points, extraction of polynomials
-  or components (when the \c FieldType is \c Vectorial  or
-  \c Matricial) of a polynomial from a polynomial set .
+  or components (when the `FieldType`  is `Vectorial`   or
+  `Matricial)`  of a polynomial from a polynomial set .
 
   One critical operation is the construction of the gradient of a polynomial (or a
   polynomial set) expressed in the prime basis. This usually requires solving a
@@ -104,8 +104,8 @@ over the edges of a tetrahedron.
   simplicies as they provide a much better conditioning for the underlying system
   matrix (a generalized Vandermonde matrix, see \cite gpena). % A trick that
   % amounts for a appreciable gain in accuracy is to do these computations using
-  % higher precision types, e.g. \c dd_real, and then fall back in the end
-  % to the required numerical type, e.g. \c double.
+  % higher precision types, e.g. `dd_real` , and then fall back in the end
+  % to the required numerical type, e.g. `double.` 
 
 
 ##  Finite Elements and Other Polynomial Basis {#Notations_fem}
@@ -176,7 +176,7 @@ over the edges of a tetrahedron.
   explicitely. However, if $\varphi_\mathrm{geo}^K$ is nonlinear, the
   evaluation/differentiation of $(\varphi_\mathrm{geo}^K)^{-1}$ at a set of points
   is performed with the help of a nonlinear solver (we have used the
-  nonlinear solver available in \c PETSc for these calculations.  The
+  nonlinear solver available in `PETSc`  for these calculations.  The
   inverse transformation plays an essential role in providing an
   interpolation tool, all the advanced numerical methods use this tool
   and hence the inverse geometrical transformation.

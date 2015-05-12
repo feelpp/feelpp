@@ -7,8 +7,8 @@ We suppose in this section that you know how to define your mesh (see \ref Mesh)
 There are Feel++ tools you need to create linear and bilinear forms in order to solve variational formulation.
 
 Notations:
-* \c u: element from your trial function space (unknown function)
-* \c v: element from your test function space
+* `u`  element from your trial function space (unknown function)
+* `v`  element from your test function space
 
 # Forms_Building Building Forms
 ## form1 form1
@@ -17,10 +17,10 @@ Notations:
 form1(_test, _init);
 ```
 Required Parameters:
-* \c _test: test function space.
+* `_test`  test function space.
 
 Optional Parameters:
-* \c _init: Default = \c false.
+* `_init`  Default = `false.` 
 
 By default, a new linear form is:
 $$
@@ -44,11 +44,11 @@ Notice that \c += operator is working with linear and bilinear forms.
 form2(_trial, _test, _init);
 ```
 Required Parameters:
-* \c _trial: test function space
-* \c _test: trial function space
+* `_trial`  test function space
+* `_test`  trial function space
 
 Optional Parameters:
-* \c _init: Default = \c false.
+* `_init`  Default = `false.` 
 
 By default, a new bilinear form is:
 $$
@@ -72,35 +72,35 @@ Notice that \c += operator is working with linear and bilinear forms.
 In this section we present syntax to solve variational formulations. For more general linear problems see \ref Linear.<br>
 
 ## solve solve
-Once you created your linear and bilinear forms you can use the \c solve() function on your bilinear form.<br>
-The \c solve() function presented there is a method from the class \c BilinearForm.<br>
+Once you created your linear and bilinear forms you can use the `solve()`  function on your bilinear form.<br>
+The `solve()`  function presented there is a method from the class `BilinearForm.` <br>
 **Interface***
 ```cpp
 solve(_solution, _rhs, _rebuild, _name);
 ```
 Required Parameters:
-* \c _solution: the solution.
-* \c _rhs: right hand side. The linear form.
+* `_solution`  the solution.
+* `_rhs`  right hand side. The linear form.
 
 Optional Parameters:
-* \c _rebuild: rebuild the solver matrix. Default = \c false.
-* \c _name: Default = "".
+* `_rebuild`  rebuild the solver matrix. Default = `false.` 
+* `_name`  Default = "".
 
 *Example*
 From `laplacian.cpp`:
 \snippet mylaplacian.cpp marker_solve
 
 ## on on
-The function \c on() allows you to add conditions to your bilinear form before using the \c solve function.<br>
+The function `on()`  allows you to add conditions to your bilinear form before using the `solve`  function.<br>
 **Interface***
 ```cpp
 on(_range, _rhs, _element, _expr);
 ```
 Required Parameters:
-* \c _range: domain concerned by this condition (see \ref Integrals ).
-* \c _rhs: right hand side. The linear form.
-* \c _element: element concerned.
-* \c _expr: the condition.
+* `_range`  domain concerned by this condition (see \ref Integrals ).
+* `_rhs`  right hand side. The linear form.
+* `_element`  element concerned.
+* `_expr`  the condition.
 
 This function is used with += operator.
 
