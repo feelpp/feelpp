@@ -1,6 +1,9 @@
 # Summary
 
 * [Introduction](README.md)
+   * [This book](book.md)
+   * [Consortium](consortium.md)
+   * [Sponsors](sponsors.md)
 * [Getting Started](GettingStarted/README.md)
    * [Download](GettingStarted/download.md)
    * [Compiling from sources](GettingStarted/compiling.md)
@@ -29,5 +32,3 @@
 * [Frequently Asked Questions](FAQ/README.md)
    * [Development](FAQ/FAQDevelopment.md)
    * [Runtime](FAQ/FAQExecution.md)
-
-
