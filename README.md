@@ -1,6 +1,8 @@
 Feel++
 ======
 
+[![Join the chat at https://gitter.im/feelpp/feelpp-book](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp-book?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Finite Element Embedded Library in C++
 --------------------------------------
 
