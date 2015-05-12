@@ -62,8 +62,8 @@ auto mesh = unitSquare();
 ```
 
 
-<a href="# " class="top">top</a>
-<hr>
+[top](# )
+
 #  Load Meshes
 ##  loadMesh
 
@@ -296,11 +296,9 @@ mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
 ```
 
 
-<a href="# " class="top">top</a>
-<hr>
+[top](# )
+
 #  Todo
 ```cpp
 straightenMesh
 ```
-
-

@@ -12,17 +12,17 @@ on it. The commands to install Feel++ on Debian are
 ```
 
 The interested user is encouraged to follow the Feel++ PTS page
-* Feel++ <a href="http://packages.qa.debian.org/f/feel%2B%2B.html">Debian Packages Tracking System</a>
+* Feel++ [Debian Packages Tracking System](http://packages.qa.debian.org/f/feel%2B%2B.html)
 
 At the moment Feel++ compiles and is available on the following Debian
 platforms:
-* Feel++ <a href="https://buildd.debian.org/status/package.php?p=feel%2b%2b">Build results</a>
+* Feel++ [Build results](https://buildd.debian.org/status/package.php?p=feel%2b%2b)
 
 #  Ubuntu
-Feel++ has its own PPA, checkout <a href="https://launchpad.net/~feelpp/+archive/ppa">feelpp ppa for Trusty, Saucy and Precise</a>.
+Feel++ has its own PPA, checkout [feelpp ppa for Trusty, Saucy and Precise](https://launchpad.net/~feelpp/+archive/ppa).
 
-The interested user might want to look at the following Ubuntu Launchpad Feel++ page <a href="https://launchpad.net/ubuntu/+source/feel++">Ubuntu Source
-  Page for all Ubuntu versions</a>
+The interested user might want to look at the following Ubuntu Launchpad Feel++ page [Ubuntu Source
+  Page for all Ubuntu versions](https://launchpad.net/ubuntu/+source/feel++)
 
 ## precise Ubuntu Precise - 12.04
 ```
@@ -36,8 +36,8 @@ The interested user might want to look at the following Ubuntu Launchpad Feel++ 
 ```
 
 
-It allows us also to provide a recent version to compile the Feel++ projects on <a href="https://travis-ci.org/feelpp/feelpp">Travis-ci</a>, which is a continuous integration tool.
-The installation procedure is currently <a href="https://github.com/feelpp/feelpp/blob/develop/.travis.yml">as follows</a>.
+It allows us also to provide a recent version to compile the Feel++ projects on [Travis-ci](https://travis-ci.org/feelpp/feelpp), which is a continuous integration tool.
+The installation procedure is currently [as follows](https://github.com/feelpp/feelpp/blob/develop/.travis.yml).
 
 ## Ubuntu Trusty - 14.04
 ```

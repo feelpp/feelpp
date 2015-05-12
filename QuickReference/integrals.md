@@ -19,8 +19,8 @@ To use the tools of this sections, you have to precise the domain range using th
 </table>
 
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Integral Integrals
 ## Integrate integrate
 Thank to its finite element embedded language, Feel++ has its owned `integrate()` function.
@@ -130,8 +130,8 @@ main( int argc, char** argv )
 ```
 
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Operators Operators
 ## Project project
 It is also possible to make projections with the library.
@@ -193,8 +193,8 @@ Optional parameters:
 From `doc/manual/stokes/stokes.cpp`
 \snippet stokes.cpp mean
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Norms Norms
 ## NormL2 normL2
 Let $$f \in L^2(\Omega)$$ you can evaluate the L2 norm:

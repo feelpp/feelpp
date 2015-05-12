@@ -40,7 +40,7 @@ feelpp_add_application(
 As you can see, (line 2) we check if your project is not added as a subproject to the Feel++ one (basically, located in the `research` directory.
 
 The one important line is the last. That macro will generate all the process to actually compile your application.
-You can fine the whole definition of that macro <a href="https://github.com/feelpp/feelpp/blob/develop/cmake/modules/feelpp.macros.cmake">here</a>.
+You can fine the whole definition of that macro [here](https://github.com/feelpp/feelpp/blob/develop/cmake/modules/feelpp.macros.cmake).
 As you can see here, my project is composed of 3 files, with two different geometry.
 The `DEFS` entry is used if you have defined something like
 `
@@ -75,8 +75,8 @@ It is highly recommended to use clang instead of gcc.
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 \endverbatim
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 
 */
 }

@@ -5,16 +5,17 @@ Defining a Model {#TutorialModel}
 
 # Introduction {#Intro}
 
-It is well known an equation can describe a huge range of physical problems.
-Each of theses problems will have a particular environment, but the equation to solve will be the same.
-To make our program applicable to theses range of problem, we have defined a model.
+It is well known an equation can describe a huge range of physical
+problems.  Each of theses problems will have a particular environment,
+but the equation to solve will be the same.  To make our program
+applicable to theses range of problem, we have defined a model.
 
 # What is a model {#What}
 
 A model is defined by :
 - a Name
 - a Description
-- a Modele
+- a Model
 - [Parameters](@ref Parameters)
 - [Materials](@ref Materials)
 - [Boundary Conditions](@ref BoundaryConditions)

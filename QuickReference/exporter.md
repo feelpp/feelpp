@@ -114,39 +114,39 @@ and $$u$$ :
   We start with an `Exporter`  object that allows to visualize the $$P_1$$ interpolant of $$u$$ over $$\Omega$$.
 
 
-  <a href="#" class="top">top</a>
-  <hr>
+
+
 
   # ExporterReference Reference
 
   ## ExporterReferenceOptions Options
 
-   `exporter.format` 
-  * Type: multiple choice `string` 
-  * Values: `gmsh` , `ensight` , `ensightgold` 
+   `exporter.format`
+  * Type: multiple choice `string`
+  * Values: `gmsh` , `ensight` , `ensightgold`
   * Default value: ensightgold
   * Action: `exporter.format`  defines the format to save Feel++ data into.
 
-   `exporter.geometry` 
-  * Type: multiple choice `string` 
-  * Values: `change_coords_only` , `change` , `static` 
+   `exporter.geometry`
+  * Type: multiple choice `string`
+  * Values: `change_coords_only` , `change` , `static`
   * Default value: change_coords_only
   * Action: `exporter.geometry`  tells to the exporter if the mesh changes over time steps : no
-  changes(`static)`  coordinates only (`change_coords_only)`  or remeshed (`changes)` 
+  changes(`static)`  coordinates only (`change_coords_only)`  or remeshed (`changes)`
 
-   `exporter.fileset` 
-  * Type: `bool` 
+   `exporter.fileset`
+  * Type: `bool`
   * Values: 0, 1
   * Default value: 0
   * Action: `exporter.fileset` =0 save one file per timestep per subdomain,  whereas `exporter.fileset` =1 use one file per subdomain to store all time
   steps. \note This option, `exporter.fileset` =1, reduces tremendously the number of files generated for transient simulations.
 
-   `exporter.prefix` 
-  * Type: `string` 
+   `exporter.prefix`
+  * Type: `string`
   * Default Value: <empty string>
   * Action: `exporter.prefix`  defines the prefix to be user by the exporter. It is especially useful when using multiple exporters and avoid name collision.
 
-   `exporter.directory` 
+   `exporter.directory`
   * Type: string
   * Default Value: results
   * Action: `exporter.directory`  tells where to export the results to
@@ -154,10 +154,9 @@ and $$u$$ :
   ### ExporterReferenceOptionsEnsightGold Ensight Gold specific options
 
    `exporter.ensightgold.use` -sos
-  * Type: `bool` 
+  * Type: `bool`
   * Action: if `exporter.ensightgold.use` -sos=0 multiple case files are handle in first case file else the sos file is used to handle multiple case files
 
    `exporter.ensightgold.save` -face
-  * Type: `bool` 
+  * Type: `bool`
   * Action: if `exporter.ensightgold.save` -face=1, the exporter saves mesh and fields on marked faces
-

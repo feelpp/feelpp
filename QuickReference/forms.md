@@ -1,4 +1,4 @@
-Forms 
+Forms
 ======
 
 
@@ -20,7 +20,7 @@ Required Parameters:
 * `_test`  test function space.
 
 Optional Parameters:
-* `_init`  Default = `false.` 
+* `_init`  Default = `false.`
 
 By default, a new linear form is:
 $$
@@ -48,7 +48,7 @@ Required Parameters:
 * `_test`  trial function space
 
 Optional Parameters:
-* `_init`  Default = `false.` 
+* `_init`  Default = `false.`
 
 By default, a new bilinear form is:
 $$
@@ -66,8 +66,8 @@ From `mystokes.cpp`:
 Notice that \c += operator is working with linear and bilinear forms.
 
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Solver Solver
 In this section we present syntax to solve variational formulations. For more general linear problems see \ref Linear.<br>
 
@@ -83,7 +83,7 @@ Required Parameters:
 * `_rhs`  right hand side. The linear form.
 
 Optional Parameters:
-* `_rebuild`  rebuild the solver matrix. Default = `false.` 
+* `_rebuild`  rebuild the solver matrix. Default = `false.`
 * `_name`  Default = "".
 
 *Example*
@@ -116,8 +116,3 @@ You can also apply boundary conditions using :
  ```cpp
   a+=on(_range=markedfaces(mesh,"top"),_element=u[Component::Y],_rhs=l,_expr=cst(0.))
 ```
-
-<a href="#" class="top">top</a>
-<hr>
-
-

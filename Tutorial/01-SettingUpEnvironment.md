@@ -1,4 +1,4 @@
-Setting up the Feel++++ Environment 
+Setting up the Feel++++ Environment
 =================================
 
 
@@ -52,8 +52,8 @@ If you open one of these log, you should be able to see your value and the proce
 
 Note that there will be one log for each processor in that case.
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Config files
 
 A config file can be parsed to the program to profile your options. The default config paths are,
@@ -83,8 +83,8 @@ In the case where some options are duplicated in the files, the priority is give
 All files in ` --config-files ` can overwrite options given by ` --config-file `.
 And all options in the command line can overwrite all options given in cfg files.
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 # Initializing PETSc, SLEPc and other third party libraries
 
 PETSc is a suite of data structures and routines for the scalable (parallel)
@@ -92,6 +92,3 @@ solution of scientific applications modeled by partial differential
 equations. It employs the MPI standard for parallelism.
 
 Feel++ supports the PETSc framework, the `Environment` takes care of initializing the associated PETSc environment.
-
-
-

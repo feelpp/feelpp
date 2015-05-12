@@ -31,7 +31,7 @@ href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD
 href="http://brew.sh">website</a>.
 
 **Installation**: To install the latest version of Homebrew, simply
-visit their <a href="http://brew.sh">website</a> and follow the
+visit their [website](http://brew.sh) and follow the
 instructions. Each new package Homebrew installs is built into an
 intermediate place called the Cellar (usually /usr/local/Cellar) and
 then the packages are symlinked into /usr/local (default).
@@ -42,7 +42,7 @@ then the packages are symlinked into /usr/local (default).
 * `brew install [--devel|--HEAD] mypackage`: These action respectively installs either the development version or the HEAD version of the package mypackage, if such versions are specified in the Formula file,
 * `brew uninstall mypackage`: This action uninstalls the package mypackage.
 
-**Formula**: A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. Feel++ uses specific Formulae that you can get in the Feel++ github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
+**Formula**: A Formula is a [Ruby](https://www.ruby-lang.org) script describing to Homebrew how to install a package. Feel++ uses specific Formulae that you can get in the Feel++ github repository: [feelpp/homebrew-science](https://github.com/feelpp/homebrew-science).
 
 ###  First time installation: Homebrew and Feel++
 <p>
@@ -138,8 +138,8 @@ If you require specific flags, first install the dependency with the correct fla
 <li>`scalapack` can be installed with the following flag: `--without-check`</li>
 </ul>
 
-<a href="#" class="top">top</a>
-<hr>
+
+
 
 ## MacPorts
 
@@ -153,11 +153,11 @@ If you require specific flags, first install the dependency with the correct fla
   MacPorts provides a single software tree which includes the latest
   stable releases of approximately 17700 ports targeting the current
   Mac OS X release (10.9). If you want more information, please visit
-  their <a href="http://www.macports.org/">website</a>.
+  their [website](http://www.macports.org/).
 
 **Installation**: To install the latest version of MacPorts, please go
-to <a href="http://www.macports.org/install.php">Installing
-MacPorts</a> page and follow the instructions. The simplest way is to
+to [Installing
+MacPorts](http://www.macports.org/install.php) page and follow the instructions. The simplest way is to
 install it with the Mac OS X Installer using the `pkg` file
 provided on their website. It is recommended that you install X11 (X
 Window System) which is normally used to display X11 applications.<br>

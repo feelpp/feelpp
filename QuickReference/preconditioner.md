@@ -22,7 +22,7 @@ Preconditioner strategies
    * $$\omega = 1$$ corresponds to Gauss-Seidel
    * Very effective at removing high-frequency components of residual
 
-   <hr>
+
 # Factorization
    Two phases
 

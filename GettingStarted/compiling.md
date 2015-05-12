@@ -12,7 +12,7 @@ Compiling Feel++ from sources
 
 # General information
 
-Feel++ uses <a href="http://www.cmake.org">`cmake`</a> as its build system. Check that \cmake is using `gcc4.7` (or a higher version) or `clang++` as C++ compiler (you can use the option `CMAKE_CXX_COMPILER=<path>/g++-4.7` where the `path` depends on your OS, it's probably `/usr/bin` or
+Feel++ uses [`cmake`](http://www.cmake.org) as its build system. Check that \cmake is using `gcc4.7` (or a higher version) or `clang++` as C++ compiler (you can use the option `CMAKE_CXX_COMPILER=<path>/g++-4.7` where the `path` depends on your OS, it's probably `/usr/bin` or
 `/opt/local/bin` but you can also change it with the command `ccmake`
 and press `t` for advanced options).
 Feel++, using `cmake`, can be built either in source and out of source and different
@@ -36,7 +36,7 @@ Required packages:
 * Boost >= 1.55
 * Petsc >= 3.2
 * CMake >= 2.8.7
-* Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
+* Gmsh >= 2.8.3 (can be found at [http://www.geuz.org/gmsh](http://www.geuz.org/gmsh))
 * Libxml2
 
 Optional packages:
@@ -45,7 +45,7 @@ Optional packages:
 * Metis: scotch with the metis interface (preferred), metis (non-free)
 * Google perftools
 * Paraview, this is not stricly required to run Feel++ programs but it is somehow
-  necessary for visualization. (Can be found at <a href="http://www.paraview.org">http://www.paraview.org</a>)
+  necessary for visualization. (Can be found at [http://www.paraview.org](http://www.paraview.org))
 * Python (2.5 or later) for the validation tools
 
 Note that all these packages are available under Debian GNU/Linux and
@@ -123,6 +123,3 @@ command: (This might take a while)
 </p>
 
 <p>
-
-<a href="#" class="top">top</a>
-<hr>
