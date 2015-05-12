@@ -1,8 +1,6 @@
 Credits 
 =======
 
-<!-- toc -->
-
 #  Copyright  
 
   * Feel++ is Copyright (C) 2010-2015 by- Feel++ Consortium
@@ -29,7 +27,8 @@ France.
 
 # Developers
 
-##  Current Developers and Contributors {#CurrentDevs}
+##  Current Developers and Contributors 
+
 The current developers are
 
 
