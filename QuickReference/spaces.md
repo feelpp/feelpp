@@ -137,5 +137,5 @@ Function        | Description
 ----------------|------------------------------
 `Pch<N>(mesh)`  | generates $$P^N_{c,h}$$
 `Pchv<N>(mesh)` | generates $$[P^N_{c,h}]^d$$
-`THch<N>(mesh)` | generates $$[P^N_{c,h}]^d \times P^N_{c,h}$$
+`THch<N>(mesh)` | generates $$[P^{N+1}_{c,h}]^d \times P^N_{c,h}$$
 
