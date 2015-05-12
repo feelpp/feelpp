@@ -1,7 +1,11 @@
 # Summary
 
 * [Introduction](README.md)
-* [Getting Started](GettingStarted/GettingStart.md)
+* [Getting Started](GettingStarted/README.md)
+   * [Download](GettingStarted/download.md)
+   * [Compiling from sources](GettingStarted/compiling.md)
+   * [Linux](GettingStarted/linux.md)
+   * [Mac OS X](GettingStarted/mac.md)
 * [Tutorial](Tutorial/README.md)
    * [Environment](Tutorial/01-SettingUpEnvironment.md)
    * [Loading a Mesh](Tutorial/02-LoadingMesh.md)

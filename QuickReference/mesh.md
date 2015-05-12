@@ -55,7 +55,7 @@ There is a list of basic geometries you can automatically generate with Feel++ l
 
 
 
-<b>Examples:</b><br>
+**Examples:**<br>
 From `doc/manual/tutorial/myfunctionspace.cpp`
 ```cpp
 auto mesh = unitSquare();
@@ -71,7 +71,7 @@ You can use this function to:
 * load a `.msh` file and use the mesh data structure
 * load a `.geo` file and automatically generate a mesh data structure on this geometrical structure
 
-<b>Interface:</b><br>
+**Interface:**<br>
 ```cpp
 mesh_ptrtype loadMesh(_mesh, _filename, _refine, _update, physical_are_elementary_regions);
 ```
@@ -118,7 +118,7 @@ Feel++ looks for `.geo` and `.msh` files in the following directories (in this o
 * systemGeoRepository() which is usually \c "$FEELPP_DIR/share/feel/geo" (cf: \ref Environment)
 
 
-<b>Examples:</b><br>
+**Examples:**<br>
 Load a mesh data structure from the file \c "$HOME/feel/mymesh.msh".
 ```cpp
 auto mesh = loadMesh(_mesh=new mesh_type,
@@ -140,7 +140,7 @@ auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 
 In order to load only `.msh` file, you can also use the loadGMSHMesh.
 
-<b>Interface:</b><br>
+**Interface:**<br>
 ```cpp
 mesh_ptrtype loadGMSHMesh(_mesh, _filename, _refine, _update, _physical_are_elementary_regions);
 ```
@@ -155,7 +155,7 @@ Optional Parameters:
 
 The file you want to load has to be in an appropriate repository. See \ref LoadMesh.
 
-<b>Examples:</b><br>
+**Examples:**<br>
 From `doc/manual/heatns.cpp`
 ```cpp
  mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
@@ -176,7 +176,7 @@ mesh = loadGMSHMesh( _mesh=new mesh_type,
 
 ##  createGMSHMesh
 
-<b>Interface:</b><br>
+**Interface:**<br>
 ```cpp
 mesh_ptrtype createGMSHMesh(_mesh, _desc, _h, _order, _parametricnodes, _refine, _update, _force_rebuild, _physical_are_elementary_regions);
 ```

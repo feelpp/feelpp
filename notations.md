@@ -110,7 +110,7 @@ over the edges of a tetrahedron.
 
 ##  Finite Elements and Other Polynomial Basis {#Notations_fem}
 
-  \Feel supports modal basis, \eg Legendre or Dubiner, see
+  Feel++ supports modal basis, \eg Legendre or Dubiner, see
   \cite MR1696933, \cite canuto_hussaini_quarteroni_zang_2, as well as finite elements
   (FE) following the standard definition, set in \cite Ciarlet:2002:FEM:581834,
   as a triplet $(K,\mathbb{P},\Sigma)$ where $K$ is a convex, $\mathbb{P}$ the polynomial space

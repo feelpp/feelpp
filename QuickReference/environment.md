@@ -71,7 +71,7 @@ So you can change this parameter when you execute your app:
 \endverbatim
 
 
-<b>Example:</b><br>
+**Example:**<br>
 From `/doc/manual/laplacian/laplacian.cpp` 
 ```cpp
   using namespace Feel;
@@ -101,12 +101,12 @@ From `/doc/manual/laplacian/laplacian.cpp`
 
 
 ## Options_Accessors Accessors
-<b>Options Description:</b><br>
+**Options Description:**<br>
 ```cpp Environment::optionsDescription();```
 Returns options description data structure (`po` options_description).<br>
 
 
-<b>Variable map</b><br>
+**Variable map**<br>
 You can access to the parameters of your application environment using the following function:
 ```cpp
   Environment::vm(_name);
@@ -115,7 +115,7 @@ You can access to the parameters of your application environment using the follo
 This function returns a `po` variable_value .<br>
 Use template methode to cast the parameter into the appropriate type.<br>
 
-<b>Examples:</b><br>
+**Examples:**<br>
 From `doc/manual/solid/beam.cpp` 
 ```cpp
   const double E = Environment::vm(_name="E").template as<double>();
@@ -143,7 +143,7 @@ Optional Parameters:
 * `_filename`: Default = `"logfile"`
 
 You can use `boost` format to customize the path. <br>
-<b>Example:</b><br>
+**Example:**<br>
 From `doc/manual/laplacian/laplacian.cpp` 
 ```cpp
     Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
