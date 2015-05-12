@@ -1,4 +1,4 @@
-Feel++ on Linux 
+Feel++ on Linux
 ===============
 
 # Debian
@@ -35,8 +35,8 @@ The interested user might want to look at the following Ubuntu Launchpad Feel++ 
 	sudo apt-get install feel++-apps libfeel++-dev
 ```
 
-\remark 
-It allows us also to provide a recent version to compile the Feel++ projects on <a href="https://travis-ci.org/feelpp/feelpp">Travis-ci</a>, which is a continuous integration tool. 
+
+It allows us also to provide a recent version to compile the Feel++ projects on <a href="https://travis-ci.org/feelpp/feelpp">Travis-ci</a>, which is a continuous integration tool.
 The installation procedure is currently <a href="https://github.com/feelpp/feelpp/blob/develop/.travis.yml">as follows</a>.
 
 ## Ubuntu Trusty - 14.04
@@ -45,5 +45,3 @@ The installation procedure is currently <a href="https://github.com/feelpp/feelp
 	sudo apt-get -qq update
 	sudo apt-get install feel++-apps libfeel++-dev
 ```
-
-

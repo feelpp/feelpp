@@ -1,9 +1,9 @@
-Computing integrals over mesh {#TutorialIntegrals} 
+Computing integrals over mesh {#TutorialIntegrals}
 ==================================
 
 [TOC]
 
-The next step is to compute integrals over the mesh. The source code is available in `myintegrals.cpp.` 
+The next step is to compute integrals over the mesh. The source code is available in `myintegrals.cpp.`
 
 # Step by step explanations {#TutorialIntegralsSteps}
 
@@ -11,24 +11,24 @@ We start by loading a Mesh in 2D
 \snippet myintegrals.cpp mesh
 
 then we define the Feel++ expression that we are going to integrate using the \c
-soption function that retrieves the command line option string `functions.g.`  We then transform this string into a Feel++ expression using `expr().` 
+soption function that retrieves the command line option string `functions.g.`  We then transform this string into a Feel++ expression using `expr().`
 
 \snippet myintegrals.cpp expression
 
 then We compute two integrals over the domain and its boundary respectively
 
- @li $$\int_\Omega g$$
+ * $$\int_\Omega g$$
 
- @li $$\int_{\partial \Omega} g$$
+ * $$\int_{\partial \Omega} g$$
 
 and we print the results to the screen.
 
 \snippet myintegrals.cpp integrals
 
-\remark Only the rank 0 process (thanks to `Environment` isMasterRank() prints
+Only the rank 0 process (thanks to `Environment` isMasterRank() prints
 to the screen as the result is the same over all mpi processes if the
 application was run in parallel. Note also that the code actually prints the
-expression passed by the user through the command line option `functions.g.` 
+expression passed by the user through the command line option `functions.g.`
 
 # Some results {#TutorialIntegralsResults}
 
@@ -86,7 +86,7 @@ int_Omega 1 = 0.784137
 int_{boundary of Omega} 1 = 3.14033
 ```
 
-\remark Note that we don't get the exact results due to the fact that
+Note that we don't get the exact results due to the fact that
 $$\Omega_h = \cup_{K \in \mathcal{T}_h} K$$ which we use for the numerical
 integration is different from the exact domain $$\Omega = \{ (x,y)\in
 \mathbb{R}^2 | x^2+y^2 < 1\}$$.
@@ -101,4 +101,3 @@ to compile just type
 ```
 make feelpp_doc_myintegrals
 ```
-
