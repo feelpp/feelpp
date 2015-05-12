@@ -3,7 +3,7 @@ Using Installed version
 
 
 \section intro Introcution
-You may have installed Feel++ via a packet manager or the <tt>cmake</tt> process.
+You may have installed Feel++ via a packet manager or the `cmake` process.
 You may also only have compiled Feel++ but not installed it in the system.
 
 We considere here you have various files:
@@ -14,13 +14,13 @@ We considere here you have various files:
 
 \section cmakelists CMakeLists.txt
 
-In order to take care of that various situation, here is provided a default <tt>CMakeLists.txt</tt> to be put at the top of your project directory:
+In order to take care of that various situation, here is provided a default `CMakeLists.txt` to be put at the top of your project directory:
 \code{cmake}
 cmake_minimum_required(VERSION 2.8)
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-	FIND_PATH(FEELPP_CMAKE_MODULES FindFeel++.cmake 
-						PATH  /usr/share/feel/cmake/modules/ 
-									/usr/local/share/feel/cmake/modules/ 
+	FIND_PATH(FEELPP_CMAKE_MODULES FindFeel++.cmake
+						PATH  /usr/share/feel/cmake/modules/
+									/usr/local/share/feel/cmake/modules/
 									/where/I/have/installed/feel++ )
 	if ( FEELPP_CMAKE_MODULES )
 		set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
@@ -29,7 +29,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 	endif()
 	Find_Package(Feel++)
 endif()
-feelpp_add_application( 
+feelpp_add_application(
  applicationName
   SRCS file.cpp file1.hpp file2.hpp
   GEO geoFile1 geoFile2
@@ -37,12 +37,12 @@ feelpp_add_application(
   CFG cfgFile1.cfg cfgFile2.cfg )
 \endcode{cmake}
 
-As you can see, (line 2) we check if your project is not added as a subproject to the Feel++ one (basically, located in the <tt>research</tt> directory.
+As you can see, (line 2) we check if your project is not added as a subproject to the Feel++ one (basically, located in the `research` directory.
 
 The one important line is the last. That macro will generate all the process to actually compile your application.
 You can fine the whole definition of that macro <a href="https://github.com/feelpp/feelpp/blob/develop/cmake/modules/feelpp.macros.cmake">here</a>.
 As you can see here, my project is composed of 3 files, with two different geometry.
-The <tt>DEFS</tt> entry is used if you have defined something like
+The `DEFS` entry is used if you have defined something like
 `
 	auto mesh = loadMesh(_mesh = new Mesh<Simplex<DIM>> );
 `
@@ -55,7 +55,7 @@ You have to use the cmake process.
 \subsection system Is Feel++ installed on the system ?
 Is that case, the root directory for the cmake process is the top one of the Feel++ projet.
 \subsection local Are you defining a sub project ?
-Is that case, the root directory for the cmake process is the top one of your project. 
+Is that case, the root directory for the cmake process is the top one of your project.
 
 \subsection whatever To compile
 \verbatim
@@ -72,7 +72,7 @@ It is highly recommended to use clang instead of gcc.
 	cmake /root/directory \
 		-DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
 		-DCMAKE_C_COMPILER=/usr/bin/clang \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo 
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 \endverbatim
 
 <a href="#" class="top">top</a>

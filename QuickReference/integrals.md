@@ -23,24 +23,24 @@ To use the tools of this sections, you have to precise the domain range using th
 <hr>
 # Integral Integrals
 ## Integrate integrate
-Thank to its finite element embedded language, Feel++ has its owned <tt>integrate()</tt> function.
+Thank to its finite element embedded language, Feel++ has its owned `integrate()` function.
 
 **Interface***
 ```
   integrate( _range, _expr, _quad, _geomap );
 ```
-please notice that the order of the parameter is not important, these are <tt>boost</tt> parameters, so you can enter them in the order you want. <br>
+please notice that the order of the parameter is not important, these are `boost` parameters, so you can enter them in the order you want. <br>
 To make it clear, there are two required parameters and 2 optional and they of course can be entered in any order
 provided you give the parameter name. If you don't provide the parameter name (that is to say `_range` = or the others) they must be entered in the order they are described
 below.
 
 Required parameters:
-* <tt>_range</tt>  = domain of integration
-* <tt>_expr</tt>  = integrand expression
+* `_range`  = domain of integration
+* `_expr`  = integrand expression
 
 Optional parameters:
-* <tt>_quad</tt>  = quadrature to use instead of the default one, wich means <tt>_Q<integer>()</tt> where the integer is the polynomial order to integrate exactely
-* <tt>_geomap</tt>  = type of geometric mapping to use, that is to say:
+* `_quad`  = quadrature to use instead of the default one, wich means `_Q<integer>()` where the integer is the polynomial order to integrate exactely
+* `_geomap`  = type of geometric mapping to use, that is to say:
 <table class="manual">
 <tr><th>Feel Parameter</th><th>Description</th></tr>
 <tr><td>``` GEOMAP_HO```</td><td>High order approximation (same of the mesh)</td></tr>
@@ -49,20 +49,20 @@ Optional parameters:
 </table>
 
 *Example*
-From `doc/manual/tutorial/dar.cpp` 
+From `doc/manual/tutorial/dar.cpp`
 ```
   form1( ... ) = integrate( _range = elements( mesh ),
                             _expr = f*id( v ) );
 ```
 
-From `doc/manual/tutorial/myintegrals.cpp` 
+From `doc/manual/tutorial/myintegrals.cpp`
 ```
   // compute integral f on boundary
   double intf_3 = integrate( _range = boundaryfaces( mesh ),
                              _expr = f );
 ```
 
-From `doc/manual/advection/advection.cpp` 
+From `doc/manual/advection/advection.cpp`
 ```
   form2( _test = Xh, _trial = Xh, _matrix = D ) +=
     integrate( _range = internalfaces( mesh ),
@@ -72,7 +72,7 @@ From `doc/manual/advection/advection.cpp`
                _geomap = geomap );
 ```
 
-From `doc/manual/laplacian/laplacian.cpp` 
+From `doc/manual/laplacian/laplacian.cpp`
 ```
  auto l = form1( _test=Xh, _vector=F );
  l = integrate( _range = elements( mesh ),
@@ -142,15 +142,15 @@ It is also possible to make projections with the library.
 ```
 
 Required parameters:
-* <tt>_space</tt>: the space in which lives the projected expression, it should be a nodal function space
-* <tt>_expr</tt>: the expression to project
+* `_space`: the space in which lives the projected expression, it should be a nodal function space
+* `_expr`: the expression to project
 
 Optional parameters:
-* <tt>_range</tt>: the domain for the projection. Default = all elements from <tt>space->mesh()</tt>
-* <tt>_geomap</tt>: type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+* `_range`: the domain for the projection. Default = all elements from `space->mesh()`
+* `_geomap`: type of geometric mapping. Default = `GEOMAP_OPT`
 
 *Example*
-From `doc/manual/laplacian/laplacian.cpp` 
+From `doc/manual/laplacian/laplacian.cpp`
 ```
   element_type e( Xh, "e" );
   e = project( _space = Xh,
@@ -158,7 +158,7 @@ From `doc/manual/laplacian/laplacian.cpp`
                _expr = g );
 ```
 
-From `doc/manual/heatns/convection_run.cpp` 
+From `doc/manual/heatns/convection_run.cpp`
 ```
 tn = project( _space = Xh->functionSpace<2>(),
               _range = elements( mesh ),
@@ -182,15 +182,15 @@ $$</center><br>
 ```
 
 Required parameters:
-* <tt>_range</tt> = domain of integration
-* <tt>_expr</tt> = mesurable function
+* `_range` = domain of integration
+* `_expr` = mesurable function
 
 Optional parameters:
-* <tt>_quad</tt> = quadrature to use. Default = \lstinline!_Q<integer>()!
-* <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+* `_quad` = quadrature to use. Default = \lstinline!_Q<integer>()!
+* `_geomap` = type of geometric mapping. Default = `GEOMAP_OPT`
 
 *Example*
-From `doc/manual/stokes/stokes.cpp` 
+From `doc/manual/stokes/stokes.cpp`
 \snippet stokes.cpp mean
 
 <a href="#" class="top">top</a>
@@ -214,32 +214,37 @@ or squared norm:
 ```
 
 Required parameters:
-* <tt>_range</tt> = domain of integration
-* <tt>_expr</tt>  = mesurable function
+* `_range` = domain of integration
+* `_expr`  = mesurable function
 
 Optional parameters:
-* <tt>_quad</tt>  = quadrature to use. Default = <tt>_Q<integer>()</tt>
-* <tt>_geomap</tt>  = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+* `_quad`  = quadrature to use. Default = `_Q<integer>()`
+* `_geomap`  = type of geometric mapping. Default = `GEOMAP_OPT`
 
 *Example*
-From `doc/manual/laplacian/laplacian.cpp` 
+From `doc/manual/laplacian/laplacian.cpp`
 ```
   double L2error =normL2( _range=elements( mesh ),
                           _expr=( idv( u )-g ) );
 ```
 
-From `doc/manual/stokes/stokes.cpp` 
+From `doc/manual/stokes/stokes.cpp`
 \snippet stokes.cpp norml2
 
-## NormH1 normH1
-In the same idea, you can evaluate the H1 norm or semi norm, for any function $$f \in H^1(\Omega)$$:
-<br><center>$$
-\begin{aligned}
+##  normH1
+
+In the same idea, you can evaluate the H1 norm or semi norm, for any
+function $$f \in H^1(\Omega)$$:
+
+$$\begin{aligned}
  \parallel f \parallel_{H^1(\Omega)}&=\sqrt{\int_\Omega |f|^2+|\nabla f|^2}\\
-&=\sqrt{\int_\Omega |f|^2+\nabla f*\nabla f^T}\\
+&=\sqrt{\int_\Omega |f|^2+\nabla f * \nabla f^T}\\
 |f|_{H^1(\Omega)}&=\sqrt{\int_\Omega |\nabla f|^2}
-\end{aligned}
-$$</center><br>
+\end{aligned}$$
+
+where $$*$$ is the scalar product $$\cdot$$ when $$f$$ is a scalar
+field and the frobenius scalar product $$:$$ when $$f$$ is a vector
+field
 
 **Interface***
 ```
@@ -251,18 +256,18 @@ or semi norm:
 ```
 
 Required parameters:
-* <tt>_range</tt> = domain of integration
-* <tt>_expr</tt> = mesurable function
-* <tt>_grad_expr</tt> = gradient of function (Row vector!)
+* `_range` = domain of integration
+* `_expr` = mesurable function
+* `_grad_expr` = gradient of function (Row vector!)
 
 Optional parameters:
-* <tt>_quad</tt> = quadrature to use. Default = <tt>_Q<integer>()</tt>
-* <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+* `_quad` = quadrature to use. Default = `_Q<integer>()`
+* `_geomap` = type of geometric mapping. Default = `GEOMAP_OPT`
 
 
 *Example*
 With expression:
-```
+```cpp
   auto g = sin(2*pi*Px())*cos(2*pi*Py());
   auto gradg = 2*pi*cos(2* pi*Px())*cos(2*pi*Py())*oneX() \
 	           -2*pi*sin(2*pi*Px())*sin(2*pi*Py())*oneY();
@@ -272,8 +277,8 @@ With expression:
   			                _expr=g,\
 			                _grad_expr=trans(gradg) );
 ```
-With test or trial function `u` 
-```
+With test or trial function `u`
+```cpp
   double errorH1 = normH1( _range=elements(mesh),\
   			               _expr=(u-g),\
     			           _grad_expr=(gradv(u)-trans(gradg)) );
@@ -281,33 +286,29 @@ With test or trial function `u`
 
 
 
-## normLinf normLinf
-Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the infinity norm:
-<br><center>$$
-\parallel f \parallel_\infty=\sup_\Omega(|f|)
-$$</center><br>
+## normLinf
 
-**Interface**:*
-```
+Let $$f$$ a bounded function on domain $$\Omega$$. You can evaluate the infinity norm:
+
+$$\parallel f \parallel_\infty=\sup_\Omega(|f|)$$
+
+**Interface**
+```cpp
   normLinf( _range, _expr, _pset, _geomap );
 ```
 
 Required parameters:
-* <tt>_range</tt> = domain of integration
-* <tt>_expr</tt> = mesurable function
-* <tt>_pset</tt> = set of points (e.g. quadrature points)
+* `_range` = domain of integration
+* `_expr` = mesurable function
+* `_pset` = set of points (e.g. quadrature points)
 
 Optional parameters:
-* <tt>_geomap</tt> = type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
+* `_geomap` = type of geometric mapping. Default = `GEOMAP_OPT`
 
 
 *Example*:
-```
+```cpp
   auto uMax = normLinf( _range=elements(mesh),\
 		        _expr=idv(u),\
 		        _pset=_Q<5>() );
 ```
-
-
-
-

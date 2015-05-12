@@ -12,10 +12,10 @@ Compiling Feel++ from sources
 
 # General information
 
-Feel++ uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using `gcc4.7` (or a higher version) or `clang++` as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.7</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
-<tt>/opt/local/bin</tt> but you can also change it with the command <tt>ccmake</tt>
-and press <tt>t</tt> for advanced options).
-Feel++, using <tt>cmake</tt>, can be built either in source and out of source and different
+Feel++ uses <a href="http://www.cmake.org">`cmake`</a> as its build system. Check that \cmake is using `gcc4.7` (or a higher version) or `clang++` as C++ compiler (you can use the option `CMAKE_CXX_COMPILER=<path>/g++-4.7` where the `path` depends on your OS, it's probably `/usr/bin` or
+`/opt/local/bin` but you can also change it with the command `ccmake`
+and press `t` for advanced options).
+Feel++, using `cmake`, can be built either in source and out of source and different
 build type:
 * minsizerel: minimal size release
 * release: release
@@ -28,7 +28,7 @@ dependencies before. Those libraries and programs are necessary for
 the compilation and installation of the Feel++ libraries.
 
 This is the list of all the libraries you must have installed on your
-computer, and the <tt>*-dev</tt> packages for some of them.
+computer, and the `*-dev` packages for some of them.
 
 Required packages:
 * g++ (4.7, 4.8, 4.9, 5.1) OR Clang (3.3, 3.4, 3.5, 3.6, 3.7)
@@ -55,34 +55,34 @@ Ubuntu. Once you have installed those dependencies, you can jump to \ref Compili
 
 ## Compiling out the source
 
-**It is not allowed to build the library in the source directory **: The best way is to have a directory (<tt>FEEL</tt> for example) in which you have:
+**It is not allowed to build the library in the source directory **: The best way is to have a directory (`FEEL` for example) in which you have:
 \code
 ls FEEL
 feel/ // Sources
 feel.opt/ // Build directory
 \endcode
-where <tt>feel</tt> is the top directory where the source have been downloaded, using git or trackballs.
-<tt>cmake</tt> is used as it: 
+where `feel` is the top directory where the source have been downloaded, using git or trackballs.
+`cmake` is used as it:
 ```
 	cd FEEL/feel.opt
-	cmake ../feel -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_BUILD_TYPE=RelWithDebInfo 
+	cmake ../feel -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
 You can customize the build type in any way.
-Please have a look to 
+Please have a look to
 ```
 	FEEL/feel/CMakeLists.txt
 ```
-or at the <tt>List of Cmake Options</tt> section.
+or at the `List of Cmake Options` section.
 
 ## Per-system specific configuration
 
 If you need to set specific CMake variables to fit an exotic system
 (e.g. supercomputer), you can create a machine file fitting this
 system.  To do so, simply create a file named
-<tt>feelpp.machines.&lt;name&gt;.cmake</tt> in the
-<tt>cmake/machines</tt> directory, where <tt>&lt;name&gt;</tt> is the
-machine name returned by the execution of <tt>uname -n</tt>.  The file
+`feelpp.machines.&lt;name&gt;.cmake` in the
+`cmake/machines` directory, where `&lt;name&gt;` is the
+machine name returned by the execution of `uname -n`.  The file
 will automatically be recognized and loaded, when you will be
 compiling Feel++ on this system.  </p>
 
@@ -92,18 +92,18 @@ Once CMake has done its work, you are now able to compile the library with:
 ```
 
 You can speed up the compilation process, if you have a multicore processor. To
-do so, you have to specify the number of parallel jobs <tt>make</tt> will be
-allowed to spawn by using the <tt>-j</tt> flag:
+do so, you have to specify the number of parallel jobs `make` will be
+allowed to spawn by using the `-j` flag:
 
 ```bash
   make -j <nbjobs>
 ```
 
 **Important**: from now on, all commands should be typed in
-  <tt>feel.opt</tt> or its subdirectories.
+  `feel.opt` or its subdirectories.
 
 
-## Unit tests 
+## Unit tests
 
 Feel++ comes with built-in unit tests to ensure that the library is
 working correctly. You can launch basic tests based on the quickstart
@@ -126,7 +126,3 @@ command: (This might take a while)
 
 <a href="#" class="top">top</a>
 <hr>
-
-
-
-
