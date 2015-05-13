@@ -31,17 +31,17 @@ $$
     \mathbb{W}_h &= \{v_h \in L^2(\Omega_h): \ \forall K \in \mathcal{T}_h, v_h|_K
     \in \mathbb{P}_K\},\\
     \mathbb{V}_h &= \mathbb{W}_h \cap C^0(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in
-    \mathcal{F}^i_h\ \llbracket v_h \rrbracket_F = 0\}\\
+    \mathcal{F}^i_h\ [ v_h ]_F = 0\}\\
     \mathbb{H}_h &= \mathbb{W}_h \cap C^1(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in
-    \mathcal{F}^i_h\ \llbracket v_h \rrbracket_F = \llbracket \nabla v_h \rrbracket_F = 0\}\\
+    \mathcal{F}^i_h\ [ v_h ]_F = [ \nabla v_h ]_F = 0\}\\
     \mathbb{C}\mathbb{R}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{P}_1; \forall F \in \mathcal{F}^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
+    \mathbb{P}_1; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
     \mathbb{RaTu}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \mathcal{F}^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
-    \mathbb{R}T_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ \jump{\bm{v}_h \cdot \normal}_F = 0 \}\\
-    \mathbb{N}_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
+    \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
+    \mathbb{R}T_h&=\{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
+    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ \[{\mathbf{v}_h \cdot \mathrm{n}]_F = 0 \}\\
+    \mathbb{N}_h&=\{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
+    \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \times \mathrm{n}}]_F = 0 \}
   \end{aligned}
 $$
 where $$\mathbb{R}\mathbb{T}_k$$ and $$\mathbb{N}_k$$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
@@ -52,7 +52,7 @@ approximations, the Legendre and Dubiner boundary adapted basis,
 see~\cite MR1696933, were designed to handle continuous approximations
 whereas the Lagrange basis can yield either discontinuous or continuous
 (default behavior) approximations.  $$\mathbb{R}\mathbb{T}_h$$ and $$\mathbb{N}_h$$ are implicitely spaces
-of vectorial functions $$\bm{f}$$ \st $$\bm{f}: \Omega_h \subset \mathbb{R}^d \mapsto
+of vectorial functions $$\mathbf{f}$$ \st $$\mathbf{f}: \Omega_h \subset \mathbb{R}^d \mapsto
 \mathbb{R}^d$$. As to the other basis functions, \ie Lagrange, Legrendre, Dubiner,
 etc., they are parametrized by their values namely `Scalar`  ,
 `Vectorial`  or `Matricial.`   Note that
@@ -109,14 +109,14 @@ auto p = U.element<1>();
 auto q = U.element<2>();
 ```
 
-Finally Feel++ provides the Lagrange, $$\Iclag, \Idlag$$, Crouzeix-Raviart, $$\Icr$$,
-Raviart-Thomas, $$\Irt$$ and N&eacute;d&eacute;lec, $$\In$$ global interpolation operators.
+Finally Feel++ provides the Lagrange, $$\mathcal{I}_c^{\mathrm{lag}}, \mathcal{I}_d^{\mathrm{lag}}$$, Crouzeix-Raviart, $$\mathcal{I}^{\mathrm{cr}}$$,
+Raviart-Thomas, $$\mathcal{I}^{\mathrm{RT}}$$ and N&eacute;d&eacute;lec, $$\mathcal{I}^{\mathrm{N}}$$ global interpolation operators.
 In abstract form, they read
 $$
-  \calI : \X \ni v \mapsto \sum_{i=1}^{\opdim\X} \ell_i(v) \phi_i
+  \mathcal{I} : \mathbb{X} \ni v \mapsto \sum_{i=1}^{\mathrm{dim}\mathbb{X}} \ell_i(v) \phi_i
 $$
-where $$\X$$ is the infinite dimensional space, $$(\ell_i)_{i=1,...,\opdim\X}$$ are
-the linear forms and $$(\phi_i)_{i=1...\opdim\X}$$ the basis function associated
+where $$\mathbb{X}$$ is the infinite dimensional space, $$(\ell_i)_{i=1,...,\mathrm{dim}\mathbb{X}}$$ are
+the linear forms and $$(\phi_i)_{i=1...\mathrm{dim}\mathbb{X}}$$ the basis function associated
 with the various approximations.
 
 # Function Space helper functions
