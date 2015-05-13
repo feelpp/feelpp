@@ -25,7 +25,7 @@
 #
 # METIS
 #
-OPTION( FEELPP_ENABLE_METIS "Enable METIS" ON )
+OPTION( FEELPP_ENABLE_METIS "Enable METIS" OFF )
 
 if ( FEELPP_ENABLE_METIS )
   #
@@ -54,11 +54,8 @@ if ( FEELPP_ENABLE_METIS )
   ENDIF()
   
   
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/metis )
-    if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/metis/ )
-      message( FATAL_ERROR "Please make sure that git submodule contrib/metis is available")
-      message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/metis`")
-    endif()
+  if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/metis/ )
+    message( FATAL_ERROR "Please make sure that git submodule contrib/metis is available. Run `git submodule update --init --recursive contrib/metis`")
   endif()
 
   FIND_PATH(METIS_INCLUDE_DIR metis.h HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{METIS_DIR} ${METIS_INCLUDE_DIR} PATH_SUFFIXES metis/include)
