@@ -35,13 +35,13 @@ $$
     \mathbb{H}_h &= \mathbb{W}_h \cap C^1(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in
     \mathcal{F}^i_h\ \llbracket v_h \rrbracket_F = \llbracket \nabla v_h \rrbracket_F = 0\}\\
     \mathbb{C}\mathbb{R}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{P}_1; \forall F \in \calF^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
+    \mathbb{P}_1; \forall F \in \mathcal{F}^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
     \mathbb{RaTu}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \calF^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
+    \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \mathcal{F}^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
     \mathbb{R}T_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{R}\mathbb{T}_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \cdot \normal}_F = 0 \}\\
+    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ \jump{\bm{v}_h \cdot \normal}_F = 0 \}\\
     \mathbb{N}_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{N}_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
+    \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
   \end{aligned}
 $$
 where $$\mathbb{R}\mathbb{T}_k$$ and $$\mathbb{N}_k$$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
