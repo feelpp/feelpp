@@ -39,7 +39,7 @@ $$
     \mathbb{RaTu}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
     \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
     \mathbb{R}T_h&=\{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
-    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ \[{\mathbf{v}_h \cdot \mathrm{n}]_F = 0 \}\\
+    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \cdot \mathrm{n}]_F = 0 \}\\
     \mathbb{N}_h&=\{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
     \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \times \mathrm{n}}]_F = 0 \}
   \end{aligned}
