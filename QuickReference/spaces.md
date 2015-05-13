@@ -9,7 +9,7 @@ Function Spaces
 
 We now turn to the next crucial mathematical ingredient: the function space,
 whose definition depends on $$\Omega_h$$ --- or more precisely its partitioning
-$$\calT_h$$ --- and the choice of basis function. Function spaces in Feel++
+$$\mathcal{T}_h$$ --- and the choice of basis function. Function spaces in Feel++
 follow the same definition, see listing~\ref fspace1, and Feel++ provides
 support for continuous and discontinuous Galerkin methods and in particular
 approximations in $$L^2$$, $$H^1$$-conforming and $$H^1$$-nonconforming, $$H^2$$,
@@ -43,16 +43,16 @@ $$
     \mathbb{W}_h &= \{v_h \in L^2(\Omega_h): \ \forall K \in \mathcal{T}_h, v_h|_K
     \in \mathbb{P}_K\},\\
     \mathbb{V}_h &= \mathbb{W}_h \cap C^0(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in
-    \mathcal{F}^i_h\ \jump{v_h}_F = 0\}\\
+    \mathcal{F}^i_h\ \llbracket v_h \rrbracket_F = 0\}\\
     \mathbb{H}_h &= \mathbb{W}_h \cap C^1(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in
-    \mathcal{F}^i_h\ \jump{v_h}_F = \jump{\nabla v_h}_F = 0\}\\
-    \CR_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \calT_h, v_h|_K \in
-    \P_1; \forall F \in \calF^i_h\ \int_F \jump{v_h} = 0 \}\\
-    \RaTu_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \calT_h, v_h|_K \in
-    \Span{1,x,y,x^2-y^2}; \forall F \in \calF^i_h\ \int_F \jump{v_h} = 0 \}\\
-    \RT_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \calT_h, v_h|_K \in
+    \mathcal{F}^i_h\ \llbracket v_h \rrbracket_F = \llbracket \nabla v_h \rrbracket_F = 0\}\\
+    \CR_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
+    \P_1; \forall F \in \calF^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
+    \RaTu_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in
+    \Span{1,x,y,x^2-y^2}; \forall F \in \calF^i_h\ \int_F \llbracket v_h \rrbracket = 0 \}\\
+    \RT_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
     \RT_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \cdot \normal}_F = 0 \}\\
-    \N_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \calT_h, v_h|_K \in
+    \N_h&=\{\bm{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in
     \N_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
   \end{aligned}
 $$
@@ -138,4 +138,3 @@ Function        | Description
 `Pch<N>(mesh)`  | generates $$P^N_{c,h}$$
 `Pchv<N>(mesh)` | generates $$[P^N_{c,h}]^d$$
 `THch<N>(mesh)` | generates $$[P^N_{c,h}]^d \times P^N_{c,h}$$
-
