@@ -9,19 +9,19 @@ available in `myexporter.cpp.`
 # Loading a Mesh in 2D {#load}
 
 Here, we generate a second order mesh,
-\snippet myexporter.cpp mesh
+!CODEFILE "code/myexporter.cpp" mesh
 and one of first order.
-\snippet myexporter.cpp P1_mesh
+!CODEFILE "code/myexporter.cpp" P1_mesh
 
 
 # Constructing a function space {#fs}
 
 here, we generate a second order function space,
-\snippet myexporter.cpp space
+!CODEFILE "code/myexporter.cpp" space
 
 # Defining a (scalar) function over the function space {#scal}
 
-\snippet myexporter.cpp function
+!CODEFILE "code/myexporter.cpp" function
 
 # Exporter {#exp}
 
@@ -30,33 +30,33 @@ We create now three exporter:
 - once generated on the P2 mesh
 - once generated on a P1 mesh extracted from P2 mesh
 
-\snippet myexporter.cpp exporter
+!CODEFILE "code/myexporter.cpp" exporter
 
 # Adding function to save {#add}
 
 Here we save the function many times.
 That is here not relevant but you may want to simulate process over time.
-\snippet myexporter.cpp adding
+!CODEFILE "code/myexporter.cpp" adding
 
 # Actually saving {#save}
 
-\snippet myexporter.cpp save
+!CODEFILE "code/myexporter.cpp" save
 
 
 #  Complete code {#TutorialExprCode}
 
 The complete code reads as follows
 
-\snippet myexporter.cpp all
+!CODEFILE "code/myexporter.cpp" all
 
 to compile just type
-\verbatim
+```cpp
 make feelpp_doc_myexporter
-\endverbatim
+```
 to execute just type
-\verbatim
+```cpp
 ./feelpp_doc_myexporter
-\endverbatim
+```
 
 
 # Reading saved data {#read}

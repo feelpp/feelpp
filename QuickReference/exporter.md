@@ -107,9 +107,9 @@ Post-Processing and Visualization
   is approximated by $$\Omega_h$$.
 
   To define $$\Omega$$ the code reads
-  \snippet myexporter.cpp mesh
+  !CODEFILE "code/myexporter.cpp" mesh
 and $$u$$ :
-  \snippet myexporter.cpp function
+  !CODEFILE "code/myexporter.cpp" function
 
   We start with an `Exporter`  object that allows to visualize the $$P_1$$ interpolant of $$u$$ over $$\Omega$$.
 

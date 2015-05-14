@@ -41,14 +41,13 @@ We have based that mechanism over the GiNaC librarie or the Functor.
 
 The idea with GiNaC is to provide a string which will be parsed to generate a function:
 
-\snippet myexpression.cpp expr
+!CODEFILE "code/myexpression.cpp" expr
 
 To use the Functor, you have to define in the Feel namespace a struct with some variable.
 That struct will provide an `operator()`  interface with specific signature.
 
-\snippet myfunctor.cpp functor
+!CODEFILE "code/myfunctor.cpp" functor
 
 and then, you are allowed to define a functor based expression on that way:
 
-\snippet myfunctor.cpp functors_and_proj
-
+!CODEFILE "code/myfunctor.cpp" functors_and_proj

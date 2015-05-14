@@ -191,7 +191,7 @@ Optional parameters:
 
 *Example*
 From `doc/manual/stokes/stokes.cpp`
-\snippet stokes.cpp mean
+!CODEFILE "code/stokes.cpp" mean
 
 
 
@@ -229,7 +229,7 @@ From `doc/manual/laplacian/laplacian.cpp`
 ```
 
 From `doc/manual/stokes/stokes.cpp`
-\snippet stokes.cpp norml2
+!CODEFILE "code/stokes.cpp" norml2
 
 ##  normH1
 

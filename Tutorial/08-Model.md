@@ -26,20 +26,20 @@ A parameter is a non physical property for a model.
 
 ## Materials {#Materials}
 To retrieve the materials properties, we use :
-\snippet aniso_laplacian.cpp get_mat
+!CODEFILE "code/aniso" _laplacian.cpp get_mat
 And to apply them :
-\snippet aniso_laplacian.cpp materials
+!CODEFILE "code/aniso" _laplacian.cpp materials
 
 ## BoundaryConditions {#BoundaryConditions}
 Thanks to GiNaC, we handle boundary conditions (Dirichlet, Neumann, Robin) as expression.
 You have to indicate in the json file the quantity to handle (velocity, pressure...) and the associated expression.
-\snippet aniso_laplacian.cpp get_bc
+!CODEFILE "code/aniso" _laplacian.cpp get_bc
 We can apply theses boundary condition this way
-\snippet aniso_laplacian.cpp boundary
+!CODEFILE "code/aniso" _laplacian.cpp boundary
 
 ## PostProcessing {#PostPro}
 
 # Example {#Example}
 We have set up an example : an anisotropic laplacian.
 
-\snippet aniso_laplacian.cpp global
+!CODEFILE "code/aniso" _laplacian.cpp global

@@ -66,13 +66,13 @@ This routine has to be declared before your `main`  function. Then you can use i
 ```
 
 So you can change this parameter when you execute your app:
-\verbatim
+```cpp
   ./myapp --option1=alpha --option2=beta --option3=gama
-\endverbatim
+```
 
 
 **Example:**<br>
-From `/doc/manual/laplacian/laplacian.cpp` 
+From `/doc/manual/laplacian/laplacian.cpp`
 ```cpp
   using namespace Feel;
 
@@ -116,12 +116,12 @@ This function returns a `po` variable_value .<br>
 Use template methode to cast the parameter into the appropriate type.<br>
 
 **Examples:**<br>
-From `doc/manual/solid/beam.cpp` 
+From `doc/manual/solid/beam.cpp`
 ```cpp
   const double E = Environment::vm(_name="E").template as<double>();
   const double nu = Environment::vm(_name="nu").template as<double>();
 ```
-From `doc/manual/fd/penalisation.cpp` 
+From `doc/manual/fd/penalisation.cpp`
 ```cpp
   Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
 ```
@@ -144,7 +144,7 @@ Optional Parameters:
 
 You can use `boost` format to customize the path. <br>
 **Example:**<br>
-From `doc/manual/laplacian/laplacian.cpp` 
+From `doc/manual/laplacian/laplacian.cpp`
 ```cpp
     Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
@@ -181,5 +181,3 @@ void setLogs( std::string const& prefix );
 ```
 Required Parameters:
 * `prefix`  prefix for log filenames.
-
-

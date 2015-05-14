@@ -8,12 +8,12 @@ The next step is to compute integrals over the mesh. The source code is availabl
 # Step by step explanations {#TutorialIntegralsSteps}
 
 We start by loading a Mesh in 2D
-\snippet myintegrals.cpp mesh
+!CODEFILE "code/myintegrals.cpp" mesh
 
 then we define the Feel++ expression that we are going to integrate using the \c
 soption function that retrieves the command line option string `functions.g.`  We then transform this string into a Feel++ expression using `expr().`
 
-\snippet myintegrals.cpp expression
+!CODEFILE "code/myintegrals.cpp" expression
 
 then We compute two integrals over the domain and its boundary respectively
 
@@ -23,7 +23,7 @@ then We compute two integrals over the domain and its boundary respectively
 
 and we print the results to the screen.
 
-\snippet myintegrals.cpp integrals
+!CODEFILE "code/myintegrals.cpp" integrals
 
 Only the rank 0 process (thanks to `Environment` isMasterRank() prints
 to the screen as the result is the same over all mpi processes if the
@@ -95,7 +95,7 @@ integration is different from the exact domain $$\Omega = \{ (x,y)\in
 
 The complete code reads as follows
 
-\snippet myintegrals.cpp all
+!CODEFILE "code/myintegrals.cpp" all
 
 to compile just type
 ```

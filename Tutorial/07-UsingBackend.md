@@ -45,15 +45,15 @@ computed objects such as preconditioners.
 The default backend is in fact an unnamed backend: in order to
 distinguish between backend you have to name them. for example
 
-\snippet mybackend.cpp marker_opt
+!CODEFILE "code/mybackend.cpp" marker_opt
 
 After that, you create the backend object:
-\snippet mybackend.cpp marker_obj
+!CODEFILE "code/mybackend.cpp" marker_obj
 
 Be careful, the backend' name has to match the name you gave at the options step.
 
 Then, you load meshes, creates spaces etc. At solve time, or you solve with the default backend:
-\snippet mybackend.cpp marker_default
+!CODEFILE "code/mybackend.cpp" marker_default
 
 One of the important backend option is to be able to monitor the residuals and iteration count
 ```sh
@@ -61,8 +61,8 @@ One of the important backend option is to be able to monitor the residuals and i
 ```
 
 Finally you can create a named backend:
-\snippet mybackend.cpp marker_hm
+!CODEFILE "code/mybackend.cpp" marker_hm
 
 
 The whole code example :
-\snippet mybackend.cpp marker_main
+!CODEFILE "code/mybackend.cpp" marker_main

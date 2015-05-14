@@ -30,10 +30,10 @@ Then you can customize it using integration tools.
 
 *Example*
 From `mylaplacian.cpp`
-\snippet mylaplacian.cpp marker_form1
+!CODEFILE "code/mylaplacian.cpp" marker_form1
 
 From `myadvection.cpp`
-\snippet myadvection.cpp marker_form1
+!CODEFILE "code/myadvection.cpp" marker_form1
 
 Notice that \c += operator is working with linear and bilinear forms.
 
@@ -58,10 +58,10 @@ Then you can custom it using integrations tools
 
 \Example
 From `mylaplacian.cpp`
-\snippet mylaplacian.cpp marker_form2
+!CODEFILE "code/mylaplacian.cpp" marker_form2
 
 From `mystokes.cpp`:
-\snippet mystokes.cpp marker_form2
+!CODEFILE "code/mystokes.cpp" marker_form2
 
 Notice that \c += operator is working with linear and bilinear forms.
 
@@ -88,7 +88,7 @@ Optional Parameters:
 
 *Example*
 From `laplacian.cpp`:
-\snippet mylaplacian.cpp marker_solve
+!CODEFILE "code/mylaplacian.cpp" marker_solve
 
 ## on on
 The function `on()`  allows you to add conditions to your bilinear form before using the `solve`  function.<br>
@@ -106,11 +106,11 @@ This function is used with += operator.
 
 *Example*
 From `mylaplacian.cpp`:
-\snippet mylaplacian.cpp marker_on
+!CODEFILE "code/mylaplacian.cpp" marker_on
 There we add the condition:$$ u  =  0  \text{ on }\;\partial\Omega \;$$.
 
 From `mystokes.cpp`:
-\snippet mystokes.cpp marker_on
+!CODEFILE "code/mystokes.cpp" marker_on
 
 You can also apply boundary conditions using :
  ```cpp

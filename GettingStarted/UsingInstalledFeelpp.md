@@ -58,22 +58,22 @@ Is that case, the root directory for the cmake process is the top one of the Fee
 Is that case, the root directory for the cmake process is the top one of your project.
 
 \subsection whatever To compile
-\verbatim
+```cpp
 	cmake -DCMAKE_CXX_COMPILER=/usr/bin/clang++ /root/directory
 	make -n 2 feelpp_applicationName
 	cd where/is/my/app
 	./feelpp_applicationName
-\endverbatim
+```
 
 \subsection comp_opt Option at cmake
 You can customize your compilation to use various compiler or way of compiling.
 It is highly recommended to use clang instead of gcc.
-\verbatim
+```cpp
 	cmake /root/directory \
 		-DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
 		-DCMAKE_C_COMPILER=/usr/bin/clang \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
-\endverbatim
+```
 
 
 
