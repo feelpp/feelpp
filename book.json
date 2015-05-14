@@ -1,10 +1,13 @@
 {
     "gitbook": "2.x.x",
-    "plugins": ["mathjax","include-highlight","toc"],
+    "plugins": ["mathjax","include-highlight","toc","ga"],
     "pluginsConfig": {
         "toc": {
             "addClass": true,
             "className": "toc"
+        },
+        "ga": {
+            "token": "UA-23513889-1"
         }
     },
     "links": {
