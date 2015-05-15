@@ -230,3 +230,21 @@ manipulate this jacobian.
 |`invJT()`|$$(J^{-1})^T$$|Transposed inverse of jacobian matrix |
 
 
+
+# Multiscale Image
+
+in order to deal with large scale image, several tools have been
+developed to facilitate access to images.
+
+Denote $$f \in \mathbb{R}^N$$ where $$N$$ is the dimension of the
+image $$N=N_x*N_y$$, $$N_x, N_y$$ are the number of pixels in
+direction $$X$$ and $$Y$$ respectively. $$f$$ contains the pixel
+value.
+
+todo: define image format
+todo: define transformation
+
+|Feel++ Keyword | Math Object | Description |
+----------------|-------------|-------------|
+|`msi(f)`       | $$T(f)$$    | the transformation from the coarse to fine level |
+
