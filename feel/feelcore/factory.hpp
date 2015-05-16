@@ -7,6 +7,7 @@
 
   Copyright (C) 2009 Université de Grenoble 1
   Copyright (C) 2004 EPFL
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,20 +23,13 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file factory.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2004-10-04
- */
-#ifndef __factory_H
-#define __factory_H 1
+#ifndef FEELPP_FACTORY_HPP
+#define FEELPP_FACTORY_HPP 1
 
 #include <map>
 #include <stdexcept>
 #include <string>
-
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typeinfo.hpp>
@@ -106,7 +100,7 @@ template
 <
 class AbstractProduct,
       typename IdentifierType,
-      typename ProductCreator = boost::function<AbstractProduct*()>,
+      typename ProductCreator = std::function<AbstractProduct*()>,
       template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
       >
 class Factory
@@ -206,7 +200,7 @@ private:
 */
 template <
 class AbstractProduct,
-      class ProductCreator = boost::function<AbstractProduct* ( const AbstractProduct* )>,
+      class ProductCreator = std::function<AbstractProduct* ( const AbstractProduct* )>,
       template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
       >
 class FactoryClone
