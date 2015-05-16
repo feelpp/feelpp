@@ -33,7 +33,7 @@ $$
     \mathbb{H}_h &= \mathbb{W}_h \cap C^1(\Omega_h)= \{ v_h \in \mathbb{W}_h: \ \forall F \in    \mathcal{F}^i_h\ [ v_h ]_F = [ \nabla v_h ]_F = 0\}\\
     \mathbb{C}\mathbb{R}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{P}_1; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
     \mathbb{R}{a}\mathbb{T}{u}_h &= \{ v_h \in L^2(\Omega_h):\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathrm{Span}{1,x,y,x^2-y^2}; \forall F \in \mathcal{F}^i_h\ \int_F [ v_h ] = 0 \}\\
-    \mathbb{R}T_h &= \{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \cdot \mathrm{n}}]_F = 0 \}\\
+    \mathbb{R}\mathbb{T}_h &= \{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{R}\mathbb{T}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \cdot \mathrm{n}}]_F = 0 \}\\
     \mathbb{N}_h &= \{\mathbf{v}_h \in [L^2(\Omega_h)]^d:\ \forall K \in \mathcal{T}_h, v_h|_K \in    \mathbb{N}_k; \forall F \in \mathcal{F}^i_h\ [{\mathbf{v}_h \times \mathrm{n}}]_F = 0 \}
   \end{aligned}
 $$
@@ -114,8 +114,10 @@ with the various approximations.
 
 # Function Space helper functions
 
-Function        | Description
-----------------|------------------------------
-`Pch<N>(mesh)`  | generates $$P^N_{c,h}$$
-`Pchv<N>(mesh)` | generates $$[P^N_{c,h}]^d$$
-`THch<N>(mesh)` | generates $$[P^{N+1}_{c,h}]^d \times P^N_{c,h}$$
+Function         | Description
+-----------------|------------------------------
+`Pch<N>(mesh)`   | generates $$P^N_{c,h}$$
+`Pchv<N>(mesh)`  | generates $$[P^N_{c,h}]^d$$
+`THch<N>(mesh)`  | generates $$[P^{N+1}_{c,h}]^d \times P^N_{c,h}$$
+`Dh<N>(mesh)`    | generates $$\mathbb{R}\mathbb{T}_h$$
+`Ned1h<N>(mesh)` | generates $$\mathbb{N}_h$$
