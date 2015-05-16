@@ -139,7 +139,7 @@ template<typename T>
 struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
 
 template<typename T>
-struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
+struct is_simplex : std::is_base_of<SimplexBase, T> {};
 template<typename T>
 struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
 template<typename T>

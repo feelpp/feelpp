@@ -48,15 +48,20 @@ class Entity
 };
 
 /**
- * \class Reference
- * \brief Reference convex
+ * @brief Reference convex
  *
- * @author Christophe Prud'homme
- * @see
+  * @see Simplex Hypercube
  */
 template<typename Geo, uint16_type Dim = 1, uint16_type Order = 1, uint16_type RDim = Dim, typename T = double>
 class Reference
 {};
+
+template<typename Geo, uint16_type Dim = 1, uint16_type Order = 1, uint16_type RDim = Dim, typename T = double>
+Reference<Geo,Geo::nDim, 1,  Geo::nRealDim,T>
+makeReferenceConvex()
+{
+    return Reference<Geo,Geo::nDim, 1,  Geo::nRealDim,T>();
+}
 
 template<typename Geo, uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 std::ostream&

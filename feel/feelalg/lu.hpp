@@ -42,6 +42,13 @@ namespace details
 {
 template<typename Matrix>
 inline typename Matrix::value_type
+det( Matrix const& M, mpl::int_<0> )
+{
+    return 1;
+}
+
+template<typename Matrix>
+inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<1> )
 {
     return M( 0, 0 );

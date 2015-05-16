@@ -351,6 +351,9 @@ public:
         {
             switch ( nDim )
             {
+            case 0:
+                
+                break;
             case 1:
             case 3:
                 ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
