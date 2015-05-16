@@ -103,20 +103,20 @@ private:
                              >::type
                              >::type::value;
 
-    typedef mpl::vector<boost::none_t, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
+    typedef mpl::vector<details::point<orderTriangle>, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 
     template<uint16_type rdim>
     struct faces_t
     {
-        typedef mpl::vector<boost::none_t,
-                Simplex<0, Order, rdim>,
-                Simplex<1, Order, rdim>,
-                Simplex<2, Order, rdim> > type;
+        typedef mpl::vector<Simplex<0, Order, rdim>,
+                            Simplex<0, Order, rdim>,
+                            Simplex<1, Order, rdim>,
+                            Simplex<2, Order, rdim> > type;
     };
 
-    typedef mpl::vector<boost::none_t,Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
+    typedef mpl::vector<Simplex<0, Order,0>, Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Simplex<1, Order>, Simplex<2, Order>, Simplex<3, Order>, boost::none_t > elements_t;
 
 public:
