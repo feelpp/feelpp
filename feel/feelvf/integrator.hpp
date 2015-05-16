@@ -246,8 +246,8 @@ public:
         M_elts(),
         M_eltbegin( elts.template get<1>() ),
         M_eltend( elts.template get<2>() ),
-        M_im( ),
-        M_im2( ),
+        M_im( Im::CompileTimeOrder ),
+        M_im2( Im2::CompileTimeOrder ),
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
@@ -257,6 +257,9 @@ public:
         M_QPL( qpl )
     {
         M_elts.push_back( elts );
+        LOG(INFO) << "Compile Time order : " << Im::CompileTimeOrder;
+        M_im.create( Im::CompileTimeOrder );
+        LOG(INFO) << "im : " << M_im.points() << " w:" << M_im.weights();
         DLOG(INFO) << "Integrator constructor from expression\n";
     }
 
@@ -265,8 +268,8 @@ public:
                 boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
-        M_im( ),
-        M_im2( ),
+        M_im( Im::CompileTimeOrder ),
+        M_im2( Im2::CompileTimeOrder ),
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
@@ -5668,7 +5671,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     //typedef typename Im::value_type value_type;
 
     //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<the_face_element_type>, mpl::identity<the_element_type> ) );;
-
     QuadMapped<im_type> qm;
     typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
@@ -6224,8 +6226,10 @@ struct integrate_type
     static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
 
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-    typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-    typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+    static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
+    static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
+    typedef typename clean2_type<Args,tag::quad, _Q< exprOrder  > >::type _quad_type;
+    typedef typename clean2_type<Args,tag::quad1, _Q< exprOrder_1 > >::type _quad1_type;
     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
