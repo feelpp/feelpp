@@ -134,21 +134,9 @@ public:
         }
     }
 
-    virtual ~PointSet()
-    {}
+    virtual ~PointSet() = default;
 
-    self_type& operator=( self_type const& p )
-    {
-        if ( this != &p )
-        {
-            M_npoints = p.M_npoints;
-            M_points = p.M_points;
-            M_points_face = p.M_points_face;
-        }
-
-        return *this;
-    }
-
+    self_type& operator=( self_type const& p ) = default;
 
     uint32_type nPoints() const
     {

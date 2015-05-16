@@ -57,7 +57,7 @@
 #include <feel/feelpoly/operations.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/functionals2.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/fe.hpp>
 
 #include <feel/feelvf/vf.hpp>
