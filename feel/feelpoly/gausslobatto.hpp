@@ -43,7 +43,7 @@
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelalg/glas.hpp>
@@ -55,7 +55,7 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 
 
-template<class Convex, uint16_type Integration_Degree, typename T> class PointSetQuadrature;
+template<class Convex, typename T> class PointSetQuadrature;
 template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
 
 /*!
@@ -73,16 +73,16 @@ template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint1
  * @author Christophe Prud'homme
  */
 template<class Convex, uint16_type Integration_Degree, typename T>
-class GaussLobatto : public PointSetQuadrature<Convex, Integration_Degree, T>  {};
+class GaussLobatto : public PointSetQuadrature<Convex, T>  {};
 
 /// \cond detail
 template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , Integration_Degree, T>
+class GaussLobatto<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<1,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<1,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -110,12 +110,12 @@ public :
 /** Gauss-Lobatto x Left-Radau Quadrature on a triangle **/
 
 template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , Integration_Degree, T>
+class GaussLobatto<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<2,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<2,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -174,12 +174,12 @@ public :
 /** Gauss-Lobatto x Left-Radau x Left-Radau Quadrature on a tetrahedra **/
 
 template< uint16_type Integration_Degree, typename T>
-class GaussLobatto<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , Integration_Degree, T>
+class GaussLobatto<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Simplex<3,1> , Integration_Degree, T> super;
+    typedef PointSetQuadrature<Simplex<3,1> , T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -253,12 +253,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class GaussLobatto<Hypercube<2,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<2,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<2,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<2,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -303,12 +303,12 @@ public :
 template< uint16_type Integration_Degree, typename T>
 class GaussLobatto<Hypercube<3,1>, Integration_Degree ,T >
     :
-public PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T>
+public PointSetQuadrature<Hypercube<3,1>, T>
 {
 public :
     typedef T value_type;
 
-    typedef PointSetQuadrature<Hypercube<3,1>, Integration_Degree, T> super;
+    typedef PointSetQuadrature<Hypercube<3,1>, T> super;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;

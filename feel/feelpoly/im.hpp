@@ -82,25 +82,20 @@ struct IntegrationDegree
  * \endcode
  **/
 template<int Dim,
-         uint16_type Order,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-         template<class Convex, uint16_type O, typename T2> class QPS = Gauss,
-         template<uint16_type N> class DegreePolicy = IntegrationDegree>
+         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class IMGeneral
     :
-public QPS<Entity<Dim,1,Dim>, DegreePolicy<Order>::integration_degree, T>
+        public PointSetQuadrature<Entity<Dim,1> , T>
+
 {
-    typedef QPS<Entity<Dim,1,Dim>, DegreePolicy<Order>::integration_degree, T> super;
+    using super = PointSetQuadrature<Entity<Dim,1> , T>;
+    
 public:
     static const bool is_exact = false;
-    typedef DegreePolicy<Order> degree_policy_type;
     static const uint16_type nDim = Dim;
-    static const uint16_type nNodes = degree_policy_type::jacobi_degree;
-    static const uint16_type nOrder = degree_policy_type::integration_degree;
-    static const uint16_type nQuadPoints = super::Npoints;
+    static const uint16_type nRealDim = Dim;
 
-    //typedef typename super::convex_type convex_type;
     typedef Entity<Dim,1,Dim> convex_type;
     typedef typename super::value_type value_type;
     typedef typename super::node_type node_type;
@@ -109,69 +104,79 @@ public:
 
     typedef boost::tuple<nodes_type, weights_type> quadrature_data_type;
     typedef typename super::face_quadrature_type face_quadrature_type;
-    typedef IMGeneral<Dim,Order,T,Entity,QPS,DegreePolicy> parent_quadrature_type;
+    typedef IMGeneral<Dim,T,Entity> parent_quadrature_type;
+    using face_quad_type = IMGeneral<Dim_m_1,T, Entity>;
 
-    IMGeneral()
-        :
-        super()
-    {
+    IMGeneral() = default;
 
-    }
+    IMGeneral( uint16_type o ): super(o) 
+        {
+            auto gm = makeGeometricTransformation<convex_type,T>();
+            auto face_qr = boost::make_shared<face_quad_type>(order);
+            this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
+        }
+    ~IMGeneral() = default;
 
-    ~IMGeneral() {}
     quadrature_data_type data() const
     {
         return boost::make_tuple( this->points(), this->weights() );
     }
 
+    void create( uint16_type order ) override
+        {
+            super::create(order);
+            auto gm = makeGeometricTransformation<convex_type,T>();
+            auto face_qr = boost::make_shared<face_quad_type>(order);
+         
+            this->constructQROnFace( Reference<convex_type,nDim,1,nRealDim>(), gm, face_qr );
+        }
 };
 
 template<int DIM,
          int IMORDER,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
-struct IM
+class IM
         :
-    public mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-        mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-        mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-        mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
-        mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
-        mpl::identity<IMSimplex<DIM, IMORDER, T> >,
-        mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type
+    public mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                              is_simplex<Entity<DIM,1,DIM> > >,
+                    mpl::identity<IMSimplex<DIM, T> >,
+                    mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type
 {
+    using super = typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                              is_simplex<Entity<DIM,1,DIM> > >,
+                                    mpl::identity<IMSimplex<DIM, T> >,
+                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type;
+public:
     template<int DIM1,
              typename T1,
              template<uint16_type, uint16_type, uint16_type> class Entity1>
     struct apply
     {
-        typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM1>,mpl::int_<2> > >,
-                mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM1>,mpl::int_<3> > > >,
-                mpl::bool_<Entity1<DIM1,1,DIM1>::is_simplex> >,
-                mpl::identity<IMSimplex<DIM1, IMORDER, T1> >,
-                mpl::identity<IMGeneral<DIM1, IMORDER, T1, Entity1> > >::type::type type;
+        typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                            is_simplex<Entity1<DIM1,1,DIM1> > >,
+                                  mpl::identity<IMSimplex<DIM1, T1> >,
+                                  mpl::identity<IMGeneral<DIM1, IMORDER, T1, Entity1> > >::type::type type;
     };
+    IM() : super( IMORDER ) {}
+    IM( uint16_type o ) : super( o ) {}
 };
 
-template<int IMORDER,
+template<uint16_type IMORDER = invalid_uint16_type_value,
          template<class Convex, uint16_type O, typename T2> class QPS = Gauss>
 struct _Q
 {
     static const int order = IMORDER;
+    static const uint16_type CompileTimeOrder = IMORDER;
 
     template<int DIM,
              typename T,
              template<uint16_type, uint16_type, uint16_type> class Entity>
     struct apply
     {
-        typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
+        typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                             mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
-                                  mpl::identity<IMSimplex<DIM, IMORDER, T> >,
+                                  mpl::identity<IMSimplex<DIM, T> >,
                                   mpl::identity<IMGeneral<DIM, IMORDER, T, Entity,QPS> > >::type::type type;
     };
 
@@ -188,16 +193,23 @@ struct _Q
     {
         static const int DIM = ContextType::PDim;
         typedef typename ContextType::value_type T;
-        typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
-                mpl::bool_<ContextType::element_type::is_simplex> >,
-                mpl::identity<IMSimplex<DIM, IMORDER, T> >,
-                typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
-                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex,QPS> >,
-                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube,QPS> > >::type>::type::type type;
+        typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                            mpl::bool_<ContextType::element_type::is_simplex> >,
+                                  mpl::identity<IMSimplex<DIM, T> >,
+                                  typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
+                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex,QPS> >,
+                                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube,QPS> > >::type>::type::type type;
     };
+    _Q()
+        :
+        M_order( CompileTimeOrder )
+        {}
+    _Q( uint16_type M_order )
+        :
+        M_order( M_order )
+        {}
+private:
+    uint16_type M_order;
 };
 
 
@@ -231,10 +243,14 @@ operator<<( std::ostream& os,
 template<int Dim, int IMORDER, typename T> struct ImBestSimplex
         :
     public mpl::if_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<6> >,
-        mpl::identity<IMSimplex<Dim, IMORDER, T> >,
+        mpl::identity<IMSimplex<Dim, T> >,
         mpl::identity<IM<Dim, IMORDER, T, Simplex> > >::type::type
 {};
 #endif
+
+
+
+;
 } // Feel
 
 
