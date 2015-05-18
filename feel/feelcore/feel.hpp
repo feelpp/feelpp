@@ -368,6 +368,9 @@ typedef uint16_type dim_type;
 //! Indices (starting from 0)
 typedef size_t size_type;
 
+//! dof id type 
+typedef size_type dof_id_type;
+
 //! type for mpi rank ids
 typedef uint16_type rank_type;
 
