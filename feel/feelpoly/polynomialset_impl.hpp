@@ -105,9 +105,6 @@ update( geometric_mapping_context_ptrtype const& __gmc,
         M_gradphi = M_pc.get()->gradPtr();
 
         update( __gmc );
-
-
-
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
@@ -154,7 +151,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, optimizati
                 }
 
         } // grad
-
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
@@ -632,8 +628,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, optimizati
         }
 
     } // grad
-
-
 }
 
 template<typename Poly, template<uint16_type> class PolySetType>
