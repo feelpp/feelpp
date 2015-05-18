@@ -48,6 +48,7 @@ feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( vect_comp )
 feelpp_add_test( matrixfield )
+feelpp_add_test( multiscaleimage )
 feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )

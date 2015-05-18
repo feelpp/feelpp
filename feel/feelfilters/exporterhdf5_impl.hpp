@@ -376,23 +376,21 @@ void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
             std::ostringstream gName;
             gName << "/" << i << "-" << p_it->first;
             currentCount[0] = mp.numberOfPoints[i];
-            //M_HDF5.createTable(groupName.str(), "point_coords", H5T_NATIVE_DOUBLE, currentCount, false);
-            M_HDF5.createGroup(gName.str());
-            M_HDF5.createTable(gName.str(), "point_coords", H5T_NATIVE_FLOAT, currentCount, true);
+            M_HDF5.createTable(gName.str() + "/" + "point_coords", H5T_NATIVE_FLOAT, currentCount);
         }
         currentCount[0] = mp.ids.size(); 
 
         hsize_t currentOffset[2] = {0, 0};
 
         /* write the point coordinates */
-        M_HDF5.write(groupName.str() + "point_coords", H5T_NATIVE_FLOAT, currentCount, currentOffset, mp.coords.data());
+        M_HDF5.write(groupName.str() + "/" + "point_coords", H5T_NATIVE_FLOAT, currentCount, currentOffset, mp.coords.data());
 
         /* close all the opened tables */
         for (size_type i = 0; i < this->worldComm().globalSize(); i++)
         {
             std::ostringstream gName;
             gName << "/" << i << "-" << p_it->first;
-            M_HDF5.closeTable(gName.str()+"point_coords");
+            M_HDF5.closeTable(gName.str() + "/" + "point_coords");
         }
 
         M_XDMFContent << "<Geometry GeometryType=\"XYZ\">" << std::endl;
@@ -410,18 +408,17 @@ void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
             std::ostringstream gName;
             gName << "/" << i << "-" << p_it->first;
             currentSpaceDims [0] = mp.numberOfElements[i];
-
-            M_HDF5.createTable (gName.str(), "element_nodes", H5T_STD_I32LE, currentSpaceDims, true);
+            M_HDF5.createTable(gName.str() + "/" + "element_nodes", H5T_STD_I32LE, currentSpaceDims);
         }
         currentSpaceDims [0] = mp.numberOfElements[this->worldComm().globalRank()];
 
-        M_HDF5.write( groupName.str()+"element_nodes", /*H5T_NATIVE_LLONG*/ H5T_STD_I32LE /*H5T_NATIVE_B32*/, currentSpaceDims, currentOffset, mp.elem.data() );
+        M_HDF5.write(groupName.str() + "/" + "element_nodes", /*H5T_NATIVE_LLONG*/ H5T_STD_I32LE /*H5T_NATIVE_B32*/, currentSpaceDims, currentOffset, mp.elem.data() );
 
         for (size_type i = 0; i < this->worldComm().globalSize(); i++)
         {
             std::ostringstream gName;
             gName << "/" << i << "-" << p_it->first;
-            M_HDF5.closeTable(gName.str()+"element_nodes");
+            M_HDF5.closeTable(gName.str() + "/" + "element_nodes");
         }
 
         M_XDMFContent << "<Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" << mp.numberOfElements[this->worldComm().globalRank()] << "\" NodesPerElement=\"" << elt.numLocalVertices << "\">" << std::endl;
