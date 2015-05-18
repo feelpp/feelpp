@@ -82,8 +82,11 @@ class Test_MultiScale
         }
             else
             {
-                MultiScaleImage msi;
-                int tmp=msi(ima,std::make_pair(x,y));
+                ublas::vector<double> v (2);
+                v(0)=x;
+                v(1)=y;
+                MultiScaleImage msi(ima);
+                int tmp=msi(v);
                 std::cout << "coord x : " << x << " / coord y : " << y << " / Res :" << tmp << std::endl;
             }
      
@@ -98,8 +101,11 @@ class Test_MultiScale
         }
             else
             {
-                MultiScaleImage msi;
-                int tmp=msi(ima,std::make_pair(x,y),level);
+                ublas::vector<double> v (2);
+                v(0)=x;
+                v(1)=y;
+                MultiScaleImage msi(ima);
+                int tmp=msi(v,level);
                 std::cout << "coord x : " << level*x << " / coord y : " << level*y << " / Res :" << tmp << std::endl;
             }
      
