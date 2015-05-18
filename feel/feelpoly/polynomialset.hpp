@@ -59,7 +59,6 @@ namespace Feel
 using optimizable_t = mpl::bool_<true>;
 using default_t = mpl::bool_<false>;
 
-
 /**
  * \class PolynomialSet
  *  \brief a Set of polynomials
@@ -239,7 +238,6 @@ public:
     component_type operator()( uint16_type i, uint16_type j ) const
         {
             BOOST_STATIC_ASSERT( is_tensor2 );
-
             const int nrows = M_coeff.size1()/nComponents;
             const int ncols = M_coeff.size2();
             return component_type( Poly(), ublas::project( M_coeff,
@@ -1170,7 +1168,6 @@ public:
     {
         typedef typename convex_type::permutation_type permutation_type;
         std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
-
         for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
         {
             __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p(__f) );
