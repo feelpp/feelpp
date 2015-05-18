@@ -37,7 +37,7 @@ public:
     using super = Partitioner<MeshType>;
     using clone_ptrtype = typename super::clone_ptrtype;
     using mesh_ptrtype = typename super::mesh_ptrtype;
-        
+    using element_type = typename super::element_type;
     /**
      * Constructor.
      */

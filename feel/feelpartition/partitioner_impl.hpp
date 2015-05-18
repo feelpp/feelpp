@@ -21,7 +21,10 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelpartition/partitioner.hpp>
+#ifndef FEELPP_PARTITIONER_IMPL_HPP
+#define FEELPP_PARTITIONER_IMPL_HPP 1
+
+
 
 namespace Feel {
 
@@ -107,10 +110,15 @@ template<typename MeshType>
 void 
 Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
 {
-    auto it = mesh->beginElement();
-    auto en = mesh->endElement();
-    for( ; it != en; ++it )
-        mesh->modify( it, []( element_type & e) { e->setProcessId( 0 ); });
+    for( auto elt : elements(mesh) )
+        mesh->modify( mesh->elementIterator(elt.id()), 
+                      []( element_type & e) { e.setProcessId( 0 ); });
+    for( auto elt : faces(mesh) )
+        mesh->modify( mesh->faceIterator(elt.id()), 
+                      []( face_type & e) { e.setProcessId( 0 ); });
+    for( auto elt : points(mesh) )
+        mesh->modify( mesh->pointIterator(elt.id()), 
+                      []( point_type & e) { e.setProcessId( 0 ); });
 
 }
 
@@ -127,3 +135,4 @@ Partitioner<MeshType>::setNodeProcessorIds(mesh_ptrtype mesh)
 
 } // Feel
 
+#endif

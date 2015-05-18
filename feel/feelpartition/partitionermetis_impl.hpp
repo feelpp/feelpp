@@ -24,16 +24,41 @@
 #ifndef FEELPP_PARTITIONERMETIS_IMPL_HPP
 #define FEELPP_PARTITIONERMETIS_IMPL_HPP 1
 
+namespace Metis {
+extern "C" {
+#include <metis.h>
+} //"C"
+}
 
 namespace Feel {
 
 template<typename MeshType>
 void 
-PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type nparts )
+PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 {
     LOG(INFO) << "PartitionerMetis::partitionImpl starts...";
     tic();
 
+    // Check for an easy return
+    if (np == 1)
+    {
+        this->singlePartition (mesh);
+        return;
+    }
+    const dof_id_type n_elems = mesh->numElements();
+
+    // build the graph
+    // std::vector<Metis::idx_t> options(5);
+    std::vector<Metis::idx_t> vwgt(n_elems);
+    std::vector<Metis::idx_t> part(n_elems);
+
+    // number of "nodes" (elements) in the graph
+    Metis::idx_t n = static_cast<Metis::idx_t>(n_elems);
+    // number of subdomains to create
+    Metis::idx_t nparts  = static_cast<Metis::idx_t>(np); 
+    // number of edges cut by the resulting partition
+    Metis::idx_t edgecut = 0;
+    
     auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
     LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
 }
