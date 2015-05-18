@@ -1,5 +1,12 @@
 #! /bin/bash
 
+
+# DO NOT FORGET to modify the CMakeLists.txt 
+# - has to take into account the $SLEPC_DIR variable !
+# - Exclude all petsc installation on system if custom install
+
+
+
 cmake \
   -DCMAKE_CXX_COMPILER=`which g++` \
   -DCMAKE_C_COMPILER=`which gcc` \
