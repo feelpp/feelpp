@@ -94,8 +94,7 @@ public:
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(mesh,n)
      */
-    void repartition ( mesh_ptrtype mesh,
-                       const unsigned int n);
+    void repartition ( mesh_ptrtype mesh, rank_type n );
 
     /**
      * Repartitions the \p Mesh into \p Environment::numberOfProcessors() parts.

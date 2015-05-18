@@ -24,6 +24,8 @@
 #ifndef FEELPP_PARTITIONER_IMPL_HPP
 #define FEELPP_PARTITIONER_IMPL_HPP 1
 
+#include <feel/feelmesh/filters.hpp>
+
 
 
 namespace Feel {
@@ -80,7 +82,7 @@ Partitioner<MeshType>::repartition (mesh_ptrtype mesh)
 
 template<typename MeshType>
 void 
-Partitioner<mesh_ptrtype>::repartition ( mesh_ptrtype mesh, rank_type n )
+Partitioner<MeshType>::repartition ( mesh_ptrtype mesh, rank_type n )
 {
   // we cannot partition into more pieces than we have
   // active elements!
@@ -111,14 +113,14 @@ void
 Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
 {
     for( auto elt : elements(mesh) )
-        mesh->modify( mesh->elementIterator(elt.id()), 
-                      []( element_type & e) { e.setProcessId( 0 ); });
+        mesh->elements().modify( mesh->elementIterator(elt.id()), 
+                                 []( element_type & e) { e.setProcessId( 0 ); });
     for( auto elt : faces(mesh) )
-        mesh->modify( mesh->faceIterator(elt.id()), 
-                      []( face_type & e) { e.setProcessId( 0 ); });
+        mesh->faces().modify( mesh->faceIterator(elt.id()), 
+                              []( face_type & e) { e.setProcessId( 0 ); });
     for( auto elt : points(mesh) )
-        mesh->modify( mesh->pointIterator(elt.id()), 
-                      []( point_type & e) { e.setProcessId( 0 ); });
+        mesh->points().modify( mesh->pointIterator(elt.id()), 
+                               []( point_type & e) { e.setProcessId( 0 ); });
 
 }
 
