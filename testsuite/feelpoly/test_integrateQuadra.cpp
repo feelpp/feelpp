@@ -105,7 +105,9 @@ class Test
 
         BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 1e-1 );
         BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 1e-1 );
+
         std::cout <<"" << std::endl;
+
     }
     
      void resol(std::string s)
@@ -139,7 +141,9 @@ class Test
         a.solve( _rhs=l, _solution=u );
 
         std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(gProj)) << std::endl;
+
         std::cout <<"" << std::endl;
+
 
 //        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
        }
