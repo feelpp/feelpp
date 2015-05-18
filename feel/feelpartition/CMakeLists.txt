@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Alexandre Ancel <alexandre.ancel@cemosis.fr>
-#       Date: 2014-12-18
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 17 May 2015
 #
-#  Copyright (C) 2014-2015 Feel++ Consortium
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,24 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-#
-# METIS
-#
-OPTION( FEELPP_ENABLE_METIS "Enable METIS" ON )
-
-if ( FEELPP_ENABLE_METIS )
-    #
-    # Metis
-    #
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/contrib/metis/include)
-    
-    SET(FEELPP_HAS_METIS 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} METIS" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
-    
-    SET(FEELPP_LIBRARIES metis ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
-    add_subdirectory(contrib/metis)
-  
-endif()
+#SET( SRC )
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelmesh "${SRC};${HDR}")
