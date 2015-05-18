@@ -100,3 +100,6 @@
 [submodule "contrib/jsonlab"]
 	path = contrib/jsonlab
 	url = https://github.com/fangq/jsonlab.git
+[submodule "projects/hamm"]
+	path = projects/hamm
+	url = https://github.com/feelpp/hamm.git
