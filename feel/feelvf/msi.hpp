@@ -148,7 +148,7 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
-        typedef <Shape<gmc_type::nDim, Scalar, false, false> > shape;
+        typedef Shape<gmc_type::nDim, Scalar, false, false> > shape;
 
         template <class Args> struct sig
         {

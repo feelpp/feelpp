@@ -86,10 +86,10 @@ template<int Dim,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class IMGeneral
     :
-        public PointSetQuadrature<Entity<Dim,1> , T>
+        public PointSetQuadrature<Entity<Dim,1,Dim> , T>
 
 {
-    using super = PointSetQuadrature<Entity<Dim,1> , T>;
+    using super = PointSetQuadrature<Entity<Dim,1,Dim> , T>;
     
 public:
     static const bool is_exact = false;
@@ -105,6 +105,7 @@ public:
     typedef boost::tuple<nodes_type, weights_type> quadrature_data_type;
     typedef typename super::face_quadrature_type face_quadrature_type;
     typedef IMGeneral<Dim,T,Entity> parent_quadrature_type;
+    static constexpr uint16_type Dim_m_1 = (Dim > 1 )?Dim-1:0;
     using face_quad_type = IMGeneral<Dim_m_1,T, Entity>;
 
     IMGeneral() = default;
@@ -112,7 +113,7 @@ public:
     IMGeneral( uint16_type o ): super(o) 
         {
             auto gm = makeGeometricTransformation<convex_type,T>();
-            auto face_qr = boost::make_shared<face_quad_type>(order);
+            auto face_qr = boost::make_shared<face_quad_type>(o);
             this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
         }
     ~IMGeneral() = default;
@@ -138,25 +139,18 @@ template<int DIM,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
 class IM
         :
-    public mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                              is_simplex<Entity<DIM,1,DIM> > >,
-                    mpl::identity<IMSimplex<DIM, T> >,
-                    mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type
+        public IMGeneral<DIM, T, Entity>
 {
-    using super = typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                                              is_simplex<Entity<DIM,1,DIM> > >,
-                                    mpl::identity<IMSimplex<DIM, T> >,
-                                    mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type;
+    using super = IMGeneral<DIM, T, Entity>;
 public:
     template<int DIM1,
              typename T1,
              template<uint16_type, uint16_type, uint16_type> class Entity1>
     struct apply
     {
-        typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                                            is_simplex<Entity1<DIM1,1,DIM1> > >,
-                                  mpl::identity<IMSimplex<DIM1, T1> >,
-                                  mpl::identity<IMGeneral<DIM1, IMORDER, T1, Entity1> > >::type::type type;
+        typedef IMGeneral<DIM1, T1, Entity1> type;
+        
+        
     };
     IM() : super( IMORDER ) {}
     IM( uint16_type o ) : super( o ) {}
@@ -174,10 +168,7 @@ struct _Q
              template<uint16_type, uint16_type, uint16_type> class Entity>
     struct apply
     {
-        typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                                            mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
-                                  mpl::identity<IMSimplex<DIM, T> >,
-                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Entity,QPS> > >::type::type type;
+        typedef IMGeneral<DIM, T, Entity> type;
     };
 
     template<int DIM,
@@ -185,7 +176,8 @@ struct _Q
              template<uint16_type, uint16_type, uint16_type> class Entity>
     struct applyIMGeneral
     {
-        typedef IMGeneral<DIM, IMORDER, T, Entity,QPS> type;
+        //typedef IMGeneral<DIM, IMORDER, T, Entity,QPS> type;
+        typedef IMGeneral<DIM, T, Entity> type;
     };
 
     template<typename ContextType>
@@ -193,12 +185,18 @@ struct _Q
     {
         static const int DIM = ContextType::PDim;
         typedef typename ContextType::value_type T;
+#if 0
         typedef typename mpl::if_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
                                             mpl::bool_<ContextType::element_type::is_simplex> >,
                                   mpl::identity<IMSimplex<DIM, T> >,
                                   typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
                                                     mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex,QPS> >,
                                                     mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube,QPS> > >::type>::type::type type;
+#else
+        typedef typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
+                                  mpl::identity<IMGeneral<DIM, T, Simplex> >,
+                                  mpl::identity<IMGeneral<DIM, T, Hypercube> > >::type::type type;
+#endif
     };
     _Q()
         :
