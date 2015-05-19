@@ -73,10 +73,10 @@ class Test_MultiScale
     }
     
     
-    void run (double x, double y) 
+    void run (double x, double y, double l) 
     {
       
-        if ( x >= ima.cols()*8.9e-3 || y>= ima.rows()*8.9e-3 )
+        if ( x*l >= ima.cols()*8.9e-3 || y*l >= ima.rows()*8.9e-3 )
         {
             std::cout << " Coord out of the image " << std::endl;
         }
@@ -85,13 +85,14 @@ class Test_MultiScale
                 ublas::vector<double> v (2);
                 v(0)=x;
                 v(1)=y;
-                MultiScaleImage msi(ima);
+                MultiScaleImage<float> msi(ima,l);
                 int tmp=msi(v);
                 std::cout << "coord x : " << x << " / coord y : " << y << " / Res :" << tmp << std::endl;
             }
      
     }
 
+/*
     void runLevel (double x, double y, double level) 
     {
       
@@ -110,7 +111,7 @@ class Test_MultiScale
             }
      
     }
-
+    */
     private :
 
     holo3_image<float> ima;
@@ -126,39 +127,39 @@ double ps=8.9e-3;
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
     Test_MultiScale tms0(12,12);
-    tms0.run(2*ps,2*ps);
+    tms0.run(2*ps,2*ps,4);
 }
 
 BOOST_AUTO_TEST_CASE( test_run1 )
 {
     Test_MultiScale tms1(12,12);
-    tms1.run(11*ps,4*ps);
+    tms1.run(11*ps,4*ps,1);
 }
 
 BOOST_AUTO_TEST_CASE( test_run2 )
 {
     Test_MultiScale tms2(32,7);
-    tms2.run(11*ps,6*ps);
+    tms2.run(11*ps,6*ps,2);
 }
 
 BOOST_AUTO_TEST_CASE( test_run3 )
 {
     Test_MultiScale tms3(6,19);
-    tms3.run(2*ps,10*ps);
+    tms3.run(2*ps,10*ps,2);
 }
 
 BOOST_AUTO_TEST_CASE( test_run4 )
 {
     Test_MultiScale tms4(12345,67890);
-    tms4.run(90*ps,1234*ps);
+    tms4.run(90*ps,1234*ps,4);
 }
 
 BOOST_AUTO_TEST_CASE( test_run5 )
 {
     Test_MultiScale tms5(5,7);
-    tms5.run(0*ps,2*ps);
+    tms5.run(0*ps,2*ps,1);
 }
-
+/*
 BOOST_AUTO_TEST_CASE( test_runL0 )
 {
     Test_MultiScale tms0(12,12);
@@ -194,7 +195,7 @@ BOOST_AUTO_TEST_CASE( test_runL5 )
     Test_MultiScale tms5(5,7);
     tms5.runLevel(1*ps,3*ps,2);
 }
-
+*/
 BOOST_AUTO_TEST_SUITE_END()
 #else
 std::cout << "USE_BOOST_TEST non define" << std::endl;
