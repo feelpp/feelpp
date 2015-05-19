@@ -25,6 +25,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelpartition/partitionermetis.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
 using namespace Feel;
@@ -45,8 +46,14 @@ int main( int argc, char** argv )
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
     tic();
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=numPartition, _savehdf5=1);
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
     toc("loading mesh done");
+    
+    //partition( "metis", mesh, numPartitions );
+    PartitionerMetis<decltype(mesh)> metis;
+    metis.partition( mesh, numPartition );
+//mesh->saveHDF5( fs::path(soption("gmsh.filename")).string()+".h5" );
+       
 
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 

@@ -81,6 +81,9 @@ struct MeshTraits
     typedef typename mesh_type::face_iterator face_iterator;
     typedef typename mesh_type::face_const_iterator face_const_iterator;
 
+    typedef typename mesh_type::pid_face_iterator pid_face_iterator;
+    typedef typename mesh_type::pid_face_const_iterator pid_face_const_iterator;
+
     typedef typename mesh_type::marker_face_iterator marker_face_iterator;
     typedef typename mesh_type::marker_face_const_iterator marker_face_const_iterator;
 
