@@ -25,46 +25,20 @@
 #
 # METIS
 #
-OPTION( FEELPP_ENABLE_METIS "Enable METIS" OFF )
+OPTION( FEELPP_ENABLE_METIS "Enable METIS" ON )
 
 if ( FEELPP_ENABLE_METIS )
-  #
-  # Metis
-  #
-  FIND_PACKAGE(Metis)
-  if ( METIS_FOUND )
-    INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-    #  LINK_DIRECTORIES(${METIS_LIBRARIES})
-    SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
-  endif( METIS_FOUND )
-  
-  # metis
-  FIND_LIBRARY(METIS_LIBRARY
-    NAMES
-    metis
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    #    "/opt/local/lib"
-    )
-  message(STATUS "[feelpp] Metis: ${METIS_LIBRARY}" )
-  IF( METIS_LIBRARY )
-    SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-  ENDIF()
-  
-  
-  if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/metis/ )
-    message( FATAL_ERROR "Please make sure that git submodule contrib/metis is available. Run `git submodule update --init --recursive contrib/metis`")
-  endif()
-
-  FIND_PATH(METIS_INCLUDE_DIR metis.h HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{METIS_DIR} ${METIS_INCLUDE_DIR} PATH_SUFFIXES metis/include)
-  if( METIS_INCLUDE_DIR )
-    INCLUDE_DIRECTORIES( ${METIS_INCLUDE_DIR} )
+    #
+    # Metis
+    #
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/contrib/metis/include)
+    
     SET(FEELPP_HAS_METIS 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} METIS" )
     ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
+    
+    SET(FEELPP_LIBRARIES metis ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
     add_subdirectory(contrib/metis)
-  endif()
-
+  
 endif()

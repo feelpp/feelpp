@@ -14,7 +14,7 @@
 * A set of defines that can be modified by the user
 *****************************************************************************/
 
-#include <feel/feelcore/feel.hpp>
+//#include <feel/feelcore/feel.hpp>
 
 /*--------------------------------------------------------------------------
  Specifies the width of the elementary data type that will hold information

@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2014-06-11
+#       Date: 17 May 2015
 #
-#  Copyright (C) 2014-2015 Feel++ Consortium
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,11 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
-feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex LINK_LIBRARIES metis)
-feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Simplex)
-feelpp_add_application( mesh3d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Hypercube)
-feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Hypercube)
-feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Hypercube)
+#SET( SRC )
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelpartition "${SRC};${HDR}")
