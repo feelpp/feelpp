@@ -499,9 +499,8 @@ template <uint16_type Dim,
           typename T = double>
 class GeoElement0D
     :
-    //public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-public Geo0D<Dim,T>,
-public SubFace
+    public Geo0D<Dim,T>,
+    public SubFace
 {
 public:
 
@@ -515,7 +514,15 @@ public:
     typedef SubFace super2;
 
     typedef GeoElement0D<Dim,SubFace,T> self_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
+#if 0
+    using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
+                                           mpl::identity<self_type>, 
+                                           mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
+#else
+    using element_type = self_type;
+    using gm_type = boost::none_t;
+    using gm1_type = boost::none_t;
+#endif
     typedef self_type point_type;
 
     typedef typename super::matrix_node_type matrix_node_type;
