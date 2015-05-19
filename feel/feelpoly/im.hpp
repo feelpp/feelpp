@@ -198,6 +198,7 @@ struct _Q
                                   mpl::identity<IMGeneral<DIM, T, Hypercube> > >::type::type type;
 #endif
     };
+
     _Q()
         :
         M_order( CompileTimeOrder )
