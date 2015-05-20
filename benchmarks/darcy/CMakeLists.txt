@@ -37,7 +37,7 @@ foreach( dim 2 3)
       Feel::Assert::setLog( \"${BENCH}.assert\");
       Feel::Environment env( argc, argv, makeOptions() );
       Darcy<${dim}, ${orderU}, ${orderP}> darcy;
-      darcy.convergence(5);
+      darcy.convergence();
     }
     \n" )
 
