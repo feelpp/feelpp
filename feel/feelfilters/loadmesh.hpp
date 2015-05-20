@@ -58,24 +58,25 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.filename") )
+      ( prefix,(std::string), "" )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
       ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_name="gmsh.hsize") )
-      ( straighten,          (bool), boption(_name="gmsh.straighten") )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), boption(_name="gmsh.physical_are_elementary_regions") )
+      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
       ( worldcomm,       (WorldComm), mesh->worldComm() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_name="gmsh.rebuild") )
-      ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
-      ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
+      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
-      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_name="gmsh.savehdf5") )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
+      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
         )
     )
 {
