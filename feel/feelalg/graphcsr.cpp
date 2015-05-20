@@ -1005,7 +1005,7 @@ GraphCSR::close()
 #endif // MPI_MODE
 
 
-
+#if 0
     size_type nRowLoc = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
     if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
     {
@@ -1042,6 +1042,31 @@ GraphCSR::close()
         M_a.resize(  0 );
 
     }
+#else
+    size_type nRowLoc = this->mapRow().nLocalDofWithoutGhost();
+    M_ia.resize( nRowLoc+1,0 );
+    M_ja.resize( sum_nz, 0. );
+    //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+
+    for ( size_type i = 0 ; i< nRowLoc; ++i )
+    {
+        if ( M_storage.find( this->firstRowEntryOnProc()+i ) != M_storage.end() )
+        {
+            row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
+            M_ia[i] = col_cursor;
+            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+            col_cursor+=boost::get<2>( irow ).size();
+        }
+        else
+        {
+            M_ia[i] = col_cursor;
+        }
+    }
+
+    M_ia[nRowLoc] = sum_nz;
+#endif
 } // close
 
 

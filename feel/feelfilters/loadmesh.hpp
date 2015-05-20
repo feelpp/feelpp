@@ -58,23 +58,25 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.filename") )
+      ( prefix,(std::string), "" )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
       ( desc, *,boost::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_name="gmsh.hsize") )
-      ( straighten,          (bool), boption(_name="gmsh.straighten") )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), boption(_name="gmsh.physical_are_elementary_regions") )
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_name="gmsh.rebuild") )
-      ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
-      ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
+      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
+      ( worldcomm,       (WorldComm), mesh->worldComm() )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
+      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
+      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
         )
     )
 {
@@ -90,14 +92,17 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
-    LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
-        << "Invalid filename " << filenameExpand << " it should have either the .geo or .msh extension\n";
+    LOG_IF( WARNING,
+            mesh_name.extension() != ".geo" &&
+            mesh_name.extension() != ".h5" &&
+            mesh_name.extension() != ".msh" )
+        << "Invalid filename " << filenameExpand << " it should have either the .geo. .h5 or .msh extension\n";
 
 
     if ( mesh_name.extension() == ".geo" )
     {
 
-        return createGMSHMesh(
+        auto m = createGMSHMesh(
             _mesh=mesh,
             _desc= (!desc) ? geo( _filename=mesh_name.string(),
                                   _h=h,
@@ -117,11 +122,17 @@ BOOST_PARAMETER_FUNCTION(
             _partitioner=partitioner,
             _partition_file=partition_file
             );
+
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
+        return m;
     }
 
     if ( mesh_name.extension() == ".msh"  )
     {
-        return loadGMSHMesh( _mesh=mesh,
+        auto m = loadGMSHMesh( _mesh=mesh,
                              _filename=mesh_name.string(),
                              _straighten=straighten,
                              _refine=refine,
@@ -135,11 +146,25 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
-
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( mesh_name.stem().string()+".h5" );
+#endif
+        return m;
     }
+#if defined(FEELPP_HAS_HDF5)
+    if ( mesh_name.extension() == ".h5"  )
+    {
+        LOG(INFO) << " Loading mesh in HDF5 format";
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        auto m = boost::make_shared<_mesh_type>();
+        m->loadHDF5( mesh_name.string() );
+        return m;
+    }
+#endif
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    return createGMSHMesh(_mesh=mesh,
+    auto m = createGMSHMesh(_mesh=mesh,
                           _desc=domain( _name=soption(_name="gmsh.domain.shape"), _h=h, _worldcomm=worldcomm ),
                           _h=h,
                           _refine=refine,
@@ -153,6 +178,12 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+
+#if defined(FEELPP_HAS_HDF5)
+    if ( savehdf5 )
+        m->saveHDF5( fs::path(filenameExpand).stem().string()+".h5" );
+#endif
+    return m;
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif

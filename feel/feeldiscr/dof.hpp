@@ -539,6 +539,16 @@ class LocalDofSet : public std::vector<LocalDof<NC>>
         std::for_each( this->begin(), this->end(), [eid]( localdof_type& d ) { d.first = eid; } );
         return *this;
     }
+    LocalDofSet const& update( size_type eid, uint16_type nLocalDof )
+    {
+        if ( nLocalDof == this->size() )
+            return this->update( eid );
+        this->resize( nLocalDof );
+        for(uint16_type i = 0; i < nLocalDof; ++i )
+            this->at( i ) = localdof_type( eid, i );
+        return *this;
+    }
+
 };
 
 } // Feel

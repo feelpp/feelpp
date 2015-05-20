@@ -933,6 +933,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     M_points[ i ] = const_cast<point_type *>( &p );
     //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
+    DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
+                                                       << " n=" << M_points[i]->node();
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
 }

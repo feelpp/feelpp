@@ -95,7 +95,7 @@ public:
     typedef boost::shared_ptr<VectorType> vector_ptrtype;
     //typedef typename space_type::template Element<value_type, ElemContType> element_type;
     typedef typename space_type::template Element<value_type> element_type;
-
+    using space_element_type = element_type;
 #if 0
     typedef typename space_type::component_fespace_type component_fespace_type;
     typedef typename space_type::element_type::component_type component_type;
@@ -109,9 +109,30 @@ public:
     typedef typename space_type::gm1_ptrtype gm1_ptrtype;
 
     typedef typename space_type::fe_type fe_type;
-    typedef typename space_type::basis_0_type::precompute_type test_precompute_type;
 
-    typedef boost::shared_ptr<test_precompute_type> test_precompute_ptrtype;
+    template<typename TheSpaceType, bool UseMortar = false>
+    struct finite_element
+    {
+        typedef  typename mpl::if_<mpl::bool_<UseMortar&&TheSpaceType::is_mortar>,
+                                   mpl::identity<typename TheSpaceType::mortar_fe_type>,
+                                   mpl::identity<typename TheSpaceType::fe_type> >::type::type type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+    template<int _N = 0, bool UseMortar = false>
+    struct test_precompute
+    {
+        typedef typename finite_element<space_type,UseMortar>::type::PreCompute type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+
+    // return test finite element
+    template<bool UseMortar=false>
+    typename finite_element<space_type,UseMortar>::ptrtype
+    testFiniteElement() const
+    {
+        return boost::make_shared<typename finite_element<space_type,UseMortar>::type>();
+    }
+
     //@}
 
     /**
@@ -134,16 +155,18 @@ public:
     template<typename GeomapContext,
              typename ExprT,
              typename IM,
-             typename GeomapExprContext = GeomapContext
+             typename GeomapExprContext = GeomapContext,
+             typename GeomapTrialContext = GeomapContext, // useless : just to have a similar template def with bilinearform
+             int UseMortarType = 0
              >
     class Context //: public FormContextBase<GeomapContext, IM>
     {
-        typedef FormContextBase<GeomapContext, IM, GeomapExprContext> super;
-
+        typedef FormContextBase<GeomapContext, IM, GeomapExprContext/*,GeomapTrialContext,UseMortar*/> super;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
+        typedef Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType> form_context_type;
+        static const bool UseMortar = UseMortarType > 0;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
         typedef typename space_type::dof_type dof_type;
         typedef typename form_type::value_type value_type;
@@ -174,8 +197,12 @@ public:
         typedef typename space_type::mesh_type mesh_type;
         typedef typename mesh_type::element_type mesh_element_type;
         typedef typename mesh_element_type::permutation_type permutation_type;
-        typedef typename space_type::fe_type test_fe_type;
-        typedef typename space_type::fe_type trial_fe_type;
+        typedef typename test_precompute<0,UseMortar>::type test_precompute_type;
+        typedef typename test_precompute<0,UseMortar>::ptrtype test_precompute_ptrtype;
+        typedef typename mpl::if_<mpl::bool_<UseMortar&&space_type::is_mortar>,
+                                  mpl::identity<typename space_type::mortar_fe_type>,
+                                  mpl::identity<typename space_type::fe_type> >::type::type test_fe_type;
+        typedef test_fe_type trial_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
@@ -255,6 +282,9 @@ public:
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
 
+        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, 1> mortar_local_vector_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
+
     public:
 
         Context( form_type& __form,
@@ -290,6 +320,9 @@ public:
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
+
+        size_type trialElementId( size_type trial_eid ) const { return invalid_size_type_value; }
+        bool trialElementIsOnBoundary( size_type trial_eid ) const { return false; }
 
         bool isZero( size_type i ) const
             {
@@ -374,7 +407,7 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
-            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
         }
 
         /**
@@ -385,7 +418,7 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
         {
-            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
             //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
         }
         /**
@@ -438,7 +471,7 @@ public:
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts.fpoints( __f,__p.value() ) ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts.fpoints( __f,__p.value() ) ) );
                 }
             }
 
@@ -476,8 +509,10 @@ public:
 
         local_vector_type M_rep;
         local2_vector_type M_rep_2;
+        mortar_local_vector_type M_rep_mortar;
         local_row_type M_local_rows;
         local2_row_type M_local_rows_2;
+        mortar_local_row_type M_mortar_local_rows;
         local_row_type M_local_rowsigns;
         local2_row_type M_local_rowsigns_2;
 
@@ -531,8 +566,6 @@ public:
                 M_F = lf.M_F;
                 M_lb = lf.M_lb;
                 M_row_startInVector = lf.M_row_startInVector;
-                M_test_pc = lf.M_test_pc;
-                M_test_pc_face = lf.M_test_pc_face;
                 M_do_threshold = lf.M_do_threshold;
                 M_threshold = lf.M_threshold;
             }
@@ -606,7 +639,7 @@ public:
      * @param __v element of Space 1 (test space)
      * @return f(v)
      */
-    value_type operator()( typename space_type::element_type const& __v ) const
+    value_type operator()( space_element_type const& __v ) const
     {
         return M_F->dot( __v );
     }
@@ -648,21 +681,6 @@ public:
     gm1_ptrtype const& gm1() const
     {
         return M_X->gm1();
-    }
-
-    /**
-      * Return the structure that holds the test basis functions
-      * evaluated at a previously given set of points on a face of the
-      * reference element
-      * \see precomputeBasisAtPoints()
-      */
-    test_precompute_ptrtype const& testPc( uint16_type __f,
-                                           permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
-    {
-        if ( __f == invalid_uint16_type_value )
-            return  M_test_pc;
-
-        return M_test_pc_face.find( __f )->second.find( __p )->second;
     }
 
     vector_type& representation() const
@@ -713,6 +731,9 @@ public:
      */
     //@{
 
+    // close vector
+    void close() { M_F->close(); }
+
     /**
      * Set the function space from which the linear form takes its
      * value from.
@@ -745,28 +766,6 @@ public:
     /** @name  Methods
      */
     //@{
-
-    /**
-     * precompute the basis function associated with the test and
-     * trial space at a set of points
-     */
-    template<typename Pts>
-    void precomputeBasisAtPoints( Pts const& pts )
-    {
-        M_test_pc = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
-    }
-
-    /**
-      * precompute the basis function associated with the test and
-      * trial space at a set of points on a face of the reference
-      * element
-      */
-    template<typename Pts>
-    void precomputeBasisAtPoints( uint16_type __f, permutation_type __p, Pts const& pts )
-    {
-        M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
-    }
-
     /**
      * add value \p v at position (\p i) of the vector
      * associated with the linear form
@@ -839,10 +838,6 @@ private:
 
     size_type M_row_startInVector;
 
-    test_precompute_ptrtype M_test_pc;
-
-    std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > M_test_pc_face;
-
     bool M_do_threshold;
     value_type M_threshold;
 };
@@ -854,8 +849,6 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_F( __vf.M_F ),
     M_lb( __vf.M_lb ),
     M_row_startInVector( __vf.M_row_startInVector ),
-    M_test_pc(),
-    M_test_pc_face(),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold )
 

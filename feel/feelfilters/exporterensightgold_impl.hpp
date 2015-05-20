@@ -1856,6 +1856,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 nComponents = 3;
                 VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
             }
+            if ( __var->second.is_tensor2 )
+            {
+                nComponents = 9;
+                VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
+            }
 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
@@ -1871,6 +1876,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = npts;
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
+            if ( __var->second.is_tensor2 )
+                __field_size *= 9;
             ublas::vector<float> __field( __field_size, 0.0 );
             size_type e = 0;
             VLOG(1) << "field size=" << __field_size;
@@ -2085,6 +2092,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
             if ( __evar->second.is_vectorial )
                 nComponents = 3;
+            if ( __evar->second.is_tensor2 )
+                nComponents = 9;
 
             size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
             ublas::vector<float> __field( __field_size );

@@ -584,6 +584,16 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
                               mesh.beginInternalEdge(),
                               mesh.endInternalEdge() );
 }
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_const_iterator,
+             typename MeshTraits<MeshType>::point_const_iterator>
+points( MeshType const& mesh, mpl::bool_<false> )
+{
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
+                              mesh.beginPoint(),
+                              mesh.endPoint() );
+}
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
@@ -592,16 +602,6 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
       points( MeshType const& mesh, mpl::bool_<true> )
 {
     return points( *mesh, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::point_const_iterator,
-      typename MeshTraits<MeshType>::point_const_iterator>
-      points( MeshType const& mesh, mpl::bool_<false> )
-{
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPoint(),
-                              mesh.endPoint() );
 }
 
 template<typename MeshType>

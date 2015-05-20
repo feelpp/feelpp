@@ -44,6 +44,9 @@ public:
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
+    std::string shortName() const {  return M_shortname; }
+    void setShortName( std::string const& t) { M_shortname = t; }
+    
 
     std::string const& description() const {  return M_description; }
     void setDescription( std::string const& t) { M_description = t; }
@@ -62,10 +65,12 @@ public:
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
+
+    std::string getEntry(std::string &s);
     
 private:
     pt::ptree M_p;
-    std::string M_name, M_description, M_model;
+    std::string M_name, M_shortname, M_description, M_model;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;

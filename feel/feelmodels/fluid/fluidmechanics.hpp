@@ -132,9 +132,9 @@ public:
             for( auto const& mat : props.materials() )
             {
                 if ( Environment::isMasterRank() )
-                    std::cout << "FluidMechanics: set material " << mat.name() << "\n";
-                P0Rho.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.rho()) );
-                P0Mu.on( _range=markedelements(mesh,mat.name()), _expr=cst(mat.mu() ) );
+                    std::cout << "FluidMechanics: set material " << material(mat) << "(marker = " << marker(mat) << "\n";
+                P0Rho.on( _range=markedelements(mesh,marker(mat)), _expr=cst(material(mat).rho()) );
+                P0Mu.on( _range=markedelements(mesh,marker(mat)), _expr=cst(material(mat).mu() ) );
             }
         }
     template < typename ExprT >

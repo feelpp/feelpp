@@ -244,7 +244,10 @@ public:
         {
             return this->faces().size();
         }
-
+    size_type numEdges() const
+        {
+            return this->faces().size();
+        }
 
 /**
  * \return the number of points

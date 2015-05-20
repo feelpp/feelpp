@@ -34,9 +34,12 @@
 
 extern "C" {
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 #include <petsc-private/pcimpl.h>
 #include <petsc-private/kspimpl.h>
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+#include <petsc/private/pcimpl.h>
+#include <petsc/private/kspimpl.h>
 #else
 #include <private/pcimpl.h>
 #include <private/kspimpl.h>
@@ -1802,7 +1805,7 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
     // set factor package
     //this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
 
