@@ -48,7 +48,7 @@ public :
     }
 
     value_type 
-    operator()(ublas::vector<double> const& c)
+    operator()(ublas::vector<double> const& c) const
         {
             double x = c[0];
             double y = c[1];

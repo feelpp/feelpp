@@ -27,7 +27,8 @@
 
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
-
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/shape.hpp>
 
 
 namespace Feel
@@ -132,7 +133,7 @@ public:
 
 private:
     
-    MultiscaleImage<T> M_coarse2fine;
+    MultiScaleImage<T> M_coarse2fine;
 
 public:
     //@}
@@ -147,8 +148,7 @@ public:
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-        typedef Shape<gmc_type::nDim, Scalar, false, false> > shape;
+        typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
         template <class Args> struct sig
         {
@@ -195,7 +195,7 @@ public:
             update( geom );
             
         }
-        void update( Geo_t const& gmc)
+        void update( Geo_t const& geom)
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
         }
@@ -259,9 +259,9 @@ public:
 template<typename T>
 inline
 Expr<vf::detail::MSI<T> >
-msi( typename vf::detail::MSI<T>::image_type const& f ))
+msi( typename vf::detail::MSI<T>::image_type const& f, int level )
 {
-    return Expr<vf::detail::MSI<T> >( vf::detail::MSI<T>(f) );
+    return Expr<vf::detail::MSI<T> >( vf::detail::MSI<T>(f,level ));
 }
 
 
