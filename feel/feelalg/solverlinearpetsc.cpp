@@ -754,9 +754,16 @@ SolverLinearPetsc<T>::setPetscConstantNullSpace()
         MatNullSpace nullsp;
 
         ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+#if PETSC_VERSION_LESS_THAN( 3,5,4 )
         ierr = KSPSetNullSpace( M_ksp, nullsp );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+#else
+        Mat A;
+        ierr = KSPGetOperators( M_ksp, &A, NULL );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = MatSetNullSpace( A, nullsp );
+#endif
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
         PETSc::MatNullSpaceDestroy( nullsp );
     }
 }
