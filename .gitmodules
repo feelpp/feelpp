@@ -10,10 +10,6 @@
 	path = projects/hifimagnet
 	url = https://github.com/feelpp/hifimagnet
     fetchRecurseSubmodules = on-demand
-[submodule "hamm"]
-	path = projects/hamm
-	url = https://github.com/feelpp/hamm
-    fetchRecurseSubmodules = on-demand
 [submodule "pmp"]
 	path = projects/pmp
 	url = https://github.com/feelpp/pmp
@@ -104,3 +100,6 @@
 [submodule "contrib/jsonlab"]
 	path = contrib/jsonlab
 	url = https://github.com/fangq/jsonlab.git
+[submodule "projects/hamm"]
+	path = projects/hamm
+	url = https://github.com/feelpp/hamm.git

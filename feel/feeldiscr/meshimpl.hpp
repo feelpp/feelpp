@@ -210,7 +210,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
-
+            this->check();
             VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
 
         }
@@ -320,7 +320,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         toc("register elements associated to marked points" , FLAGS_v > 0 );
         VLOG(1) << "[Mesh::updateForUse] update add element info for marked points : " << ti.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
         
-        this->updateNumGlobalElements();
+        this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {
@@ -2045,10 +2045,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 // update id face in other partition
-                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+                this->faces().modify( face_it, [&idProc,&idFaceRecv]( face_type& f )
+                                      {
+                                          f.addNeighborPartitionId( idProc );
+                                          f.setIdInOtherPartitions( idProc, idFaceRecv );
+                                      } );
+                                      
                 // maybe the face is not really on boundary
                 if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
-                    this->faces().modify( face_it, Feel::detail::UpdateFaceOnBoundary( false ) );
+                    this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -2076,7 +2081,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
+                this->points().modify( point_it, [&idProc,&idPointRecv]( point_type& p )
+                                       {
+                                           p.addNeighborPartitionId( idProc );
+                                           p.setIdInOtherPartitions( idProc, idPointRecv );
+                                       } );
+                                       
 
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
@@ -2097,8 +2107,10 @@ Mesh<Shape, T, Tag>::check() const
         return;
 #if !defined( NDEBUG )
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
-    element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto iv = this->beginElement();
+    auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
 
     //boost::tie( iv, en ) = this->elementsRange();

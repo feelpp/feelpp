@@ -32,14 +32,28 @@ ModelProperties::ModelProperties( std::string const& filename )
 {
     pt::read_json(filename, M_p);
     try {
-        M_name = M_p.get<std::string>( "Name" );
-        M_model = M_p.get<std::string>( "Model" );
+        M_name  = M_p.get<std::string>( "Name"  );
     }
     catch ( pt::ptree_bad_path& e )
     {
         if ( Environment::isMasterRank() )
-            std::cout << "Missing Name or Model entry in model properties\n";
-            //std::cout << "Missing path " << e.path() << "\n";
+            std::cout << "Missing Name entry in model properties\n";
+    }
+    try {
+        M_model  = M_p.get<std::string>( "Model" );
+    }
+    catch ( pt::ptree_bad_path& e )
+    {
+        if ( Environment::isMasterRank() )
+            std::cout << "Missing Model entry in model properties\n";
+    }
+    try {
+        M_shortname = M_p.get( "ShortName", M_name );
+    }
+    catch ( pt::ptree_bad_path& e )
+    {
+        if ( Environment::isMasterRank() )
+            std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
     }
     auto par = M_p.get_child_optional("Parameters");
     if ( par )
@@ -85,5 +99,19 @@ ModelProperties::ModelProperties( std::string const& filename )
 
 ModelProperties::~ModelProperties()
 {}
+
+std::string ModelProperties::getEntry(std::string &s)
+{
+  std::string res;
+  try{
+  res = M_p.get<std::string>(s);
+  }
+  catch( pt::ptree_bad_path& e)
+  {
+        if ( Environment::isMasterRank() )
+            std::cout << s << " is not an entry in the tree\n";
+  }
+  return res;
+}
 
 }

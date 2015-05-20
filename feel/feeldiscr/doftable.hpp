@@ -212,7 +212,7 @@ public:
     static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
 
     static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents1>, mpl::int_<FEType::nLocalDof> >::type::value;
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
 
     typedef PeriodicityType periodicity_type;
     static const bool is_periodic = periodicity_type::is_periodic;
@@ -384,7 +384,10 @@ public:
     local_dof_set_type const&
     localDofSet( size_type eid ) const
         {
-            return M_local_dof_set.update( eid );
+            if ( is_mortar )
+                return M_local_dof_set.update( eid, getIndicesSize( eid ) );
+            else
+                return M_local_dof_set.update( eid );
         }
     mesh_type* mesh() { return M_mesh; }
     mesh_type* mesh() const { return M_mesh; }
@@ -479,7 +482,7 @@ public:
 
     std::vector<size_type> getIndicesOnGlobalCluster( size_type id_el ) const
         {
-            const size_type s = getIndicesSize();
+            const size_type s = getIndicesSize( id_el );
             std::vector<size_type> ind( s );
             getIndicesSetOnGlobalCluster( id_el, ind );
             return ind;
@@ -1712,6 +1715,19 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                            0 );
             }
             this->M_n_dofs = nDofP0;
+
+            if ( themasterRank == this->worldComm().localRank() )
+            {
+                for ( size_type k = 0; k < this->nLocalDofWithGhost() ; ++k )
+                {
+                    for ( rank_type proc=0; proc<this->worldComm().localSize(); ++proc )
+                    {
+                        if ( proc == themasterRank ) continue;
+                        if ( this->nLocalDofWithGhost(proc) == 0 ) continue;
+                        this->M_activeDofSharedOnCluster[k].insert(proc);
+                    }
+                }
+            }
         }
     }
     else
@@ -2211,7 +2227,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         else
             for ( int i = 0; i < FEType::nLocalDof; ++i )
             {
-                int nc1 = ( is_product?nComponents1:1 );
+                int nc1 = ( is_product?nComponents:1 );
 
                 for ( int c1 =0; c1 < nc1; ++c1 )
                 {

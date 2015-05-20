@@ -85,8 +85,7 @@ namespace py = boost::parameter::python;
     template<typename MeshType, int N>
 void expo_w ( boost::shared_ptr<MeshType> m)
 {
-    auto x=Exporter<MeshType,N>::New();
-    x->setMesh(m);
+    auto x = exporter( _mesh=m );
     x->addRegions();
     x->save();
 }

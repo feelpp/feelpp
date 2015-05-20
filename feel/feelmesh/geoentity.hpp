@@ -49,8 +49,7 @@ class GeoEntity
     boost::equality_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity>, size_type>,
-public Entity
-
+    public Entity
 {
 public:
 
@@ -101,6 +100,9 @@ public:
     {
         typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
     };
+    template<typename T = double>
+    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -119,7 +121,7 @@ public:
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
-        M_idInOthersPartitions(),
+        M_idInOtherPartitions(),
         M_elist(),
         M_elistGhost()
     {}
@@ -139,7 +141,7 @@ public:
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
-        M_idInOthersPartitions(),
+        M_idInOtherPartitions(),
         M_elist(),
         M_elistGhost()
     {}
@@ -506,18 +508,40 @@ public:
     /**
      * set id in a partition pid of the entity
      */
-    void setIdInOthersPartitions( rank_type pid, size_type id )
+    FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
     {
-        M_idInOthersPartitions.insert( std::make_pair( pid, id ) );
+        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
     }
+    void setIdInOtherPartitions( rank_type pid, size_type id )
+    {
+            M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
+    }
+
+    /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
+        {
+            M_idInOtherPartitions = iop;
+        }
+
+    
+    /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
+        {
+            M_idInOtherPartitions = iop;
+        }
 
     /**
      * \return the id of the entity in a partition pid
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOthersPartitions.find( pid )!=M_idInOthersPartitions.end() ) << " id is unknow for this pid " << pid << "\n";
-        return M_idInOthersPartitions.find( pid )->second;
+        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+            << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
+        return M_idInOtherPartitions.find( pid )->second;
     }
 
     /**
@@ -525,14 +549,14 @@ public:
      */
     std::map<rank_type, size_type> const& idInOthersPartitions() const
     {
-        return M_idInOthersPartitions;
+        return M_idInOtherPartitions;
     }
     /**
      * clear id in others partitions container
      */
     void clearIdInOthersPartitions()
     {
-        M_idInOthersPartitions.clear();
+        M_idInOtherPartitions.clear();
     }
 
     /**
@@ -746,7 +770,7 @@ private:
             DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
             ar & M_neighor_pids;
-            ar & M_idInOthersPartitions;
+            ar & M_idInOtherPartitions;
         }
 
 private:
@@ -765,7 +789,7 @@ private:
     rank_type M_pid;
     rank_type M_pidInPartition;
     std::vector<rank_type> M_neighor_pids;
-    std::map<uint16_type, size_type> M_idInOthersPartitions;
+    std::map<rank_type, size_type> M_idInOtherPartitions;
 
     //! element list to which the point belongs
     std::set<std::pair<size_type,uint16_type>>  M_elist;

@@ -11,8 +11,8 @@ compiler:
 - clang
 
 env:
-- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 - BUILD="llvm-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 #- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
@@ -56,7 +56,7 @@ install:
 script:
 - make -j16 feelpp_ginac
 - make -j2 feelpp
-- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
+#- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
   only:
