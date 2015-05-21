@@ -65,15 +65,16 @@ class Test
         Test(int nx,int ny, std::string s)
         {
             ima=holo3_image<float>(ny,nx);
+            ex=s;
             auto f = expr(s);
-            for (int i=0;i<nx;i++)
+            for (double i=0;i<nx*8.9e-3;i+=8.9e-3)
             {
-                for (int j=0;j<ny;j++)
+                for (double j=0;j<ny*8.9e-3;j+=8.9e-3)
                 {
-                    ima(i,j)=f.evaluate(std::make_pair("x",i));
+                    std::map<std::string,double> m {{"x",i*8.9e-3},{"y",j*8.9e-3}};
+                    ima(i,j)=f.evaluate(m);
                 }
             }
-
         }
        
            
@@ -81,41 +82,43 @@ class Test
 
         {
           /// [mesh] 
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                 _desc=domain(_name="polymere",
-                                              _xmax=ima.cols()/level,
-                                              _ymax=ima.rows()/level));
+        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
+                                    _h=8.9e-3, 
+                                    _desc=domain(_name="polymere",
+                                              _xmax=8.9e-3*ima.cols()/level,
+                                              _ymax=8.9e-3*ima.rows()/level));
 
         auto Xhc = Pch<1>( mesh );
         auto u=Xhc->element();
         auto v=Xhc->element();
          
         /// [expression]
-        // our function to integrate
-
+        // our function to integrate 
         auto a = form2( _trial=Xhc, _test=Xhc );
         a=integrate( _range=elements( mesh ),
                      _expr=idt(u)*id(v),
                      _quad=_Q<1,MultiScaleQuadrature>() );
 
+
         auto l = form1( _test=Xhc );
         l= integrate( _range=elements( mesh ),
                       _expr=vf::msi<float>(ima,level)*id(v),
                       _quad=_Q<1,MultiScaleQuadrature>() ); 
-       
+
+      
         a.solve( _rhs=l, _solution=u );
 
-        //std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(ima)) << std::endl;
+        auto fP=vf::project(_space=Xhc,
+                            _range=elements(mesh),
+                            _expr=expr(ex));
+        std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(fP)) << std::endl;
 
-        std::cout <<"" << std::endl;
-
-
-//        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
        }
 
     private :
 
     holo3_image<float> ima;
+    std::string ex;
 
 };
 
@@ -125,8 +128,8 @@ BOOST_AUTO_TEST_SUITE( msi_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
-    Test t0= Test(64,64,"x:x:y") ;
-    t0.resol(16);
+    Test t0= Test(256,256,"x+y:x:y") ;
+    t0.resol(8);
 }
 
 
