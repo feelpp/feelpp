@@ -125,7 +125,9 @@ public:
         }
 
         BOOST_CHECK( res < M_tol );
-        std::cout << "Everything is OK" << std::endl;
+
+        std::cout << "" << std::endl;
+
         return res;
     }
     value_type M_res;
