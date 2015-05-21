@@ -40,7 +40,7 @@ public:
     using mesh_type = typename super::mesh_type;
     using mesh_ptrtype = typename super::mesh_ptrtype;
     using clone_ptrtype = typename super::clone_ptrtype;
-    
+    using element_type = typename super::element_type;
     /**
      * Constructor.
      */
@@ -54,14 +54,14 @@ public:
             return std::make_unique<PartitionerMetis<mesh_type>>();
         }
 
-    virtual void attachWeights( std::vector<double> const& weights) 
+    void attachWeights( std::vector<double> const& weights) override
         { this->M_weights = weights; }
 
 protected:
     /**
      * Partition the \p MeshBase into \p n subdomains.
      */
-    virtual void partitionImpl ( mesh_ptrtype mesh, rank_type n );
+    void partitionImpl ( mesh_ptrtype mesh, rank_type n ) override;
 };
 
 

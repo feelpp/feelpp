@@ -24,6 +24,11 @@
 #ifndef FEELPP_PARTITIONER_HPP
 #define FEELPP_PARTITIONER_HPP 1
 
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/traits.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+
+
 namespace Feel
 {
 
@@ -43,7 +48,11 @@ public:
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
     using partitioner_type = Partitioner<mesh_type>;
     using clone_ptrtype = std::unique_ptr<partitioner_type>;
-    
+
+    using element_type = typename mesh_type::element_type;
+    using face_type = typename mesh_type::face_type;
+    using point_type = typename mesh_type::point_type;
+
     /**
      * Constructor.
      */
@@ -85,8 +94,7 @@ public:
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(mesh,n)
      */
-    void repartition ( mesh_ptrtype mesh,
-                       const unsigned int n);
+    void repartition ( mesh_ptrtype mesh, rank_type n );
 
     /**
      * Repartitions the \p Mesh into \p Environment::numberOfProcessors() parts.
@@ -128,7 +136,7 @@ protected:
      * in derived classes.  It is called via the public partition()
      * method above by the user.
      */
-    virtual void partitionImpl(mesh_ptrtype mesh, rank_type n = 0 );
+    virtual void partitionImpl(mesh_ptrtype mesh, rank_type n  ) = 0;
 
     /**
      * This is the actual re-partitioning method which can be overloaded
@@ -152,6 +160,8 @@ protected:
 
 
 } // namespace libMesh
+
+#include <feel/feelpartition/partitioner_impl.hpp>
 
 
 

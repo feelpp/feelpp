@@ -27,40 +27,53 @@
 
 //#ifndef _MULTISCALEIMAGE_HPP_
 //#define _MULTISCALEIMAGE_HPP_
+#include <boost/numeric/ublas/vector.hpp>
+using namespace boost::numeric;
 
 namespace Feel
 {
 template <typename T = float>
 using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
+
+template<typename T>
 class MultiScaleImage
 {
-    public :
-    int operator()(holo3_image<float> im, std::pair<double,double> c)
- 
+public :
+    using value_type = T;
+    
+    MultiScaleImage(holo3_image<value_type> const& im)
+        :
+        image(im)
     {
-     double x = c.first;
-     double y = c.second;
-     
-     int i = x/dx;
-     int j = y/dy;
-
-    return im(j,i);
     }
 
-    int operator()(holo3_image<float> im, std::pair<double,double> c, int L)
-    {
-     double x = c.first;
-     double y = c.second;
+    value_type 
+    operator()(ublas::vector<double> const& c)
+        {
+            double x = c[0];
+            double y = c[1];
      
-     int i = x/dx;
-     int j = y/dy;
+            int i = x/dx;
+            int j = y/dy;
 
-    return im(L*j,L*i);
-    }
+            return image(j,i);
+        }
+
+    value_type operator()(ublas::vector<double> const& c, int L)
+        {     
+            double x = c[0];
+            double y = c[1];
+            
+            int i = x/dx;
+            int j = y/dy;
+            
+            return image(L*j,L*i);
+        }
      
-    private :
+private :
     double dx =8.9e-3;
     double dy =8.9e-3;
+    holo3_image<value_type> image;
 };
 
-}
+} // Feel
