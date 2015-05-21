@@ -187,14 +187,25 @@ IF ( MPI_FOUND )
 
   # Check if we have the types from the 2.2 standard
   # needed for MPI IO
+  # This minimal sample test for the 2.2 Types (produces garbage if tested)
   CHECK_CXX_SOURCE_COMPILES(
       "
+      #include <stdint.h>
       #include <mpi.h>
-
+      #define SIZE 64
       int main(int argc, char** argv)
       {
-      MPI_INT32_T i32;
-      MPI_INT64_T i64;
+          int32_t buf32[SIZE];
+          int64_t buf64[SIZE];
+          MPI_File file;
+          MPI_Status status;
+
+          MPI_Init(&argc, &argv);
+          MPI_File_open( MPI_COMM_WORLD, \"output.bin\", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file );
+          MPI_File_write( file, buf32, SIZE, MPI_INT32_T, &status );
+          MPI_File_write( file, buf64, SIZE, MPI_INT64_T, &status );
+          MPI_File_close( &file );
+          MPI_Finalize();
       }
       "
       MPIIO_HAS_STD_22_TYPES)
