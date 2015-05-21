@@ -393,7 +393,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
         tic();
         helmOp->applyInverse(*M_aux, *M_vout);
-        toc("PCD::Fu",FLAGS_v>0)
+        toc("PCD::Fu",FLAGS_v>0);
     }
     else
     {
