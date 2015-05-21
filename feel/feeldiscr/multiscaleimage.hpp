@@ -41,14 +41,14 @@ class MultiScaleImage
 public :
     using value_type = T;
     
-    MultiScaleImage(holo3_image<value_type> const& im, int L)
+    MultiScaleImage(holo3_image<value_type> /*const&*/ im, int L)
         :
         image(im),level(L)
     {
     }
 
     value_type 
-    operator()(ublas::vector<double> const& c) const
+    operator()(ublas::vector<double> const& c) const&
         {
             double x = c[0];
             double y = c[1];

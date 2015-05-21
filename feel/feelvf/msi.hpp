@@ -79,7 +79,7 @@ public:
     typedef T value_type;
     typedef value_type evaluate_type;
 
-    using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>;
+    using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     //@}
 
     /** @name Constructors, destructor
