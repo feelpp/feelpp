@@ -366,10 +366,11 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
             CHECK(pcdOp) << "Invalid PCD oeprator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
-            
+            tic();
             pcdOp->applyInverse( *M_pin, *M_pout );
             M_pout->scale(-1);
             M_pout->close();
+            toc("PCD::S", FLAGS_v > 0);
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
         else
@@ -379,15 +380,20 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         }
     }
     LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
+    tic();
     divOp->apply( *M_pout, *M_vout );
+    
     
     M_aux->add( -1.0, *M_vout );
     M_aux->close();
-
+    toc("PCD::B^T", FLAGS_v > 0);
     if ( boption("blockns.cd") )
     {
+        
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
+        tic();
         helmOp->applyInverse(*M_aux, *M_vout);
+        toc("PCD::Fu",FLAGS_v>0)
     }
     else
     {
@@ -397,13 +403,13 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
 
 
     LOG(INFO) << "Update output velocity/pressure...\n";
-
+    tic();
     U.template element<0>() = *M_vout;
     U.template element<1>() = *M_pout;
     U.close();
     Y=U;
     Y.close();
-
+    toc("PCD::update solution",FLAGS_v>0);
     return 0;
 }
 
