@@ -48,6 +48,7 @@ add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
 add_subdirectory (feelpde)
 add_subdirectory (feelmodels)
+add_subdirectory (feelmodels2)
 add_subdirectory (feelpython)
 
 
