@@ -25,8 +25,6 @@ file(REMOVE_RECURSE ${FEELMODELS_LIBBASE_CHECK_DIR})
 #############################################################################
 #############################################################################
 
-#set(FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} )
-
 add_library(feelmodelscore
   SHARED
   feelmodelsoptions.cpp feelmodelslog.cpp feelmodelstimertool.cpp
@@ -57,17 +55,17 @@ endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;PREFIX_LIBNAME;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;PREFIX_LIBNAME;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
     ""
     ${ARGN}
     )
+  set( FEELMODELS_GENLIB_APPLICATION_DIR ${FEELMODELS_GENLIB_BASE_LIB_DIR} )
+  message("FEELMODELS_GENLIB_APPLICATION_DIR ${FEELMODELS_GENLIB_APPLICATION_DIR}")
+  #CAR(APPLICATION_NAME      ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
+  #CDR(FEELMODELS_GENLIB_APPLICATION_DIR       ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
 
-  CAR(APPLICATION_NAME      ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
-  CDR(FEELMODELS_GENLIB_APPLICATION_DIR       ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
-  #message( "APPLICATION_DIR ${FEELMODELS_GENLIB_APPLICATION_DIR}")
   set(LIB_DEPENDS           ${FEELMODELS_GENLIB_BASE_LIB_DEPENDS})
   set(PREFIX_FILES_TO_COPY  ${FEELMODELS_GENLIB_BASE_PREFIX_INCLUDE_USERCONFIG})
-  #set(PREFIX_LIB            ${FEELMODELS_GENLIB_BASE_PREFIX_LIBNAME})
   set(LIB_APPLICATION_NAME ${FEELMODELS_GENLIB_BASE_PREFIX_LIBNAME})
 
   set(CODEGEN_FILES_TO_COPY ${FEELMODELS_GENLIB_BASE_FILES_TO_COPY})
@@ -79,7 +77,6 @@ macro(genLibBase)
     CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_PATH} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${FEELMODELS_GENLIB_CONFIG_FILENAME_WE}.h  )
   endif()
 
-  #set(LIB_APPLICATION_NAME ${PREFIX_LIB}${APPLICATION_NAME})
   add_custom_target(copy${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
 
   if ( FEELMODELS_GENLIB_BASE_MARKERS )
@@ -92,15 +89,18 @@ macro(genLibBase)
       ${BCMARKER_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
     # bctool
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
-      configure_file( ${PROJECT_SOURCE_DIR}/fsi/fsicore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
+      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
     endif()
     add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${PROJECT_SOURCE_DIR}/fsi/fsicore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
   endif()
   # .bc
   if ( FEELMODELS_GENLIB_BASE_DESC )
     set(BCDESC_FILE ${FEELMODELS_GENLIB_BASE_DESC})
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
+      message( "QQQQQQQQ :  ${FEELMODELS_GENLIB_APPLICATION_DIR}")
+      message( "PPPPPPPP :  ${PREFIX_FILES_TO_COPY}")
+      message( "RRRRRRRR :  ${BCDESC_FILE}")
       configure_file( ${BCDESC_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc COPYONLY)
     endif()
     add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -125,8 +125,8 @@ macro(genLibBase)
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
-  #  message (CODEGEN_SOURCES   :    ${CODEGEN_SOURCES})
-  #  message( CODEGEN_FILES_TO_COPY  ${CODEGEN_FILES_TO_COPY})
+   # message (CODEGEN_SOURCES   :    ${CODEGEN_SOURCES})
+   # message( CODEGEN_FILES_TO_COPY  ${CODEGEN_FILES_TO_COPY})
   # generate library
   add_library(
     ${LIB_APPLICATION_NAME}
@@ -134,7 +134,7 @@ macro(genLibBase)
     ${CODEGEN_SOURCES}
     )
   add_dependencies(${LIB_APPLICATION_NAME} copy${LIB_APPLICATION_NAME})
-  target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} ) #${FEELPP_LIBRARIES} fsimesh fsialg fsicore)
+  target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
 
 endmacro(genLibBase)
@@ -143,12 +143,13 @@ endmacro(genLibBase)
 #############################################################################
 macro(genExecutableBase)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "SRC;LIB_DEPENDS;CONFIG_PATH"
+    "SRC;LIB_DEPENDS;CONFIG_PATH;APPLICATION_DIR"
     ""
     ${ARGN}
     )
   CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
-  CDR(APPLICATION_DIR ${FEELMODELS_APP_DEFAULT_ARGS})
+  #CDR(APPLICATION_DIR ${FEELMODELS_APP_DEFAULT_ARGS})
+  set(APPLICATION_DIR ${FEELMODELS_APP_APPLICATION_DIR})
   set(MAIN_FILE ${FEELMODELS_APP_SRC})
   set(LIB_DEPENDS ${FEELMODELS_APP_LIB_DEPENDS})
 
@@ -158,29 +159,30 @@ macro(genExecutableBase)
     CONFIGURE_FILE( ${GENEXECBASE_CONFIG_PATH} ${APPLICATION_DIR}/${GENEXECBASE_CONFIG_FILENAME_WE}.h  )
   endif()
 
+  if ( NOT EXISTS ${APPLICATION_DIR}/applimanagement.hpp )
+    foreach(filename applimanagement.hpp)
+      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
+    endforeach()
+  endif()
   add_custom_target(copymanage${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
   foreach(filename applimanagement.hpp)
     add_custom_command(TARGET copymanage${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${PROJECT_SOURCE_DIR}/fsi/fsicore/${filename} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${filename} )
+      ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/${filename} ${APPLICATION_DIR}/${filename} )
   endforeach()
-  if ( NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/applimanagement.hpp )
-    foreach(filename applimanagement.hpp)
-      configure_file( ${PROJECT_SOURCE_DIR}/fsi/fsicore/${filename} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${filename} COPYONLY)
-  endforeach()
-  endif()
 
+  if ( NOT EXISTS ${APPLICATION_DIR}/${MAIN_FILE} )
+    foreach(filename ${MAIN_FILE})
+      configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
+    endforeach()
+  endif()
   add_custom_target(copymain${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
   foreach(filename ${MAIN_FILE})
     add_custom_command(TARGET copymain${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${MAIN_FILE} )
+      ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} )
   endforeach()
-  if ( NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${MAIN_FILE} )
-    foreach(filename ${MAIN_FILE})
-      configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
-  endforeach()
-  endif()
 
-  add_executable( ${APPLICATION_NAME} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/${MAIN_FILE} )
+
+  add_executable( ${APPLICATION_NAME} ${APPLICATION_DIR}/${MAIN_FILE} )
   add_dependencies(${APPLICATION_NAME} copymanage${APPLICATION_NAME})
   add_dependencies(${APPLICATION_NAME} copymain${APPLICATION_NAME})
 
@@ -191,19 +193,41 @@ endmacro(genExecutableBase)
 #############################################################################
 #############################################################################
 #############################################################################
-macro(genLibThermoDynamics APPLICATION_NAME APPLICATION_DIR FEELMODELS_DIM FEELMODELS_ORDERPOLY FEELMODELS_ORDERGEO BCMARKER_FILE BCDESC_FILE MESH_FILE )
+macro( genLibThermoDynamics )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;T_ORDER;GEO_ORDER;BC_MARKERS;BC_DESC;GEO_DESC;LIB_NAME;LIB_DIR;"
+    "NO_UPDATE_MODEL_DEF"
+    ${ARGN}
+    )
 
-  set(THERMODYNAMICS_DIM ${FEELMODELS_DIM})
-  set(THERMODYNAMICS_ORDERGEO ${FEELMODELS_ORDERGEO})
-  set(THERMODYNAMICS_ORDERPOLY ${FEELMODELS_ORDERPOLY})
+  if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+    resetToZeroAllPhysicalVariables()
+    SET(THERMODYNAMICS 1 )
+  endif()
+
+  #CAR(LIB_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(THERMODYNAMICS_DIM ${FEELMODELS_APP_DIM})
+  set(THERMODYNAMICS_ORDERGEO ${FEELMODELS_APP_T_ORDER})
+  set(THERMODYNAMICS_ORDERPOLY ${FEELMODELS_APP_GEO_ORDER})
+
+  if (0)
+    MESSAGE("*** Arguments for fluid application ${LIB_NAME}")
+    MESSAGE("*** DIM ${THERMODYNAMICS_DIM}")
+    MESSAGE("*** ORDERPOLY ${THERMODYNAMICS_ORDERPOLY}")
+    MESSAGE("*** ORDERGEO ${THERMODYNAMICS_ORDERGEO}")
+  endif()
 
   set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${THERMODYNAMICS_DIM}dP${THERMODYNAMICS_ORDERPOLY}G${THERMODYNAMICS_ORDERGEO} )
   set(FEELMODELS_MODEL_SPECIFIC_NAME thermodyn${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  #set(SPECIFIC_NAME thermodyn${THERMODYNAMICS_DIM}dP${THERMODYNAMICS_ORDERPOLY}G${THERMODYNAMICS_ORDERGEO})
-  set(LIBBASE_DIR ${PROJECT_BINARY_DIR}/fsi/fsimodel/${FEELMODELS_MODEL_SPECIFIC_NAME} )
 
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/thermodyn/${FEELMODELS_MODEL_SPECIFIC_NAME} )
   set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME fsi_modelbase_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  set(LIBBASE_NAME feelmodels_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
 
@@ -212,66 +236,119 @@ macro(genLibThermoDynamics APPLICATION_NAME APPLICATION_DIR FEELMODELS_DIM FEELM
 
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
-      ${PROJECT_SOURCE_DIR}/fsi/fsimodel/thermodynbase.hpp
-      ${PROJECT_SOURCE_DIR}/fsi/fsimodel/thermodynbase.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/thermodynbase.cpp )
-    set(LIB_DEPENDS fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} ) 
+    set(LIB_DEPENDS feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
-    genLibBase( ${APPLICATION_NAME} ${LIBBASE_DIR}
+    genLibBase(
+      LIB_DIR ${LIBBASE_DIR}
       LIB_DEPENDS ${LIB_DEPENDS}
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       PREFIX_LIBNAME ${LIBBASE_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fsithermodynconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynconfig.h.in
       )
   endif()
 
+  ############################
+  # build lib with bctool
+  ############################
+  if ( FEELMODELS_APP_BC_DESC )
 
-  set(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER 1)
+    #set(BCDESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
+    get_filename_component( BCDESC_FILE ${FEELMODELS_APP_BC_DESC} ABSOLUTE )
 
-  set(PREFIX_FILES_TO_COPY thermodyn)
-  set(PREFIX_LIB thermo)
-  set(CODEGEN_FILES_TO_COPY
-    ${PROJECT_SOURCE_DIR}/fsi/fsimodel/thermodyn.hpp
-    ${PROJECT_SOURCE_DIR}/fsi/fsimodel/thermodyn.cpp) #thermodynupdatelinear.cpp )
-  set(CODEGEN_SOURCES
-    ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/thermodyn.cpp
-    #${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/thermodynupdatelinear.cpp
-    )
-  set(LIB_DEPENDS ${LIBBASE_NAME} fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} ) 
+    if ( FEELMODELS_APP_BC_MARKERS )
+      get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
+      #set(BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS})
+    else()
+      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/default.bcmarkers )
+    endif()
 
-  genLibBase( ${APPLICATION_NAME} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}
-    MARKERS ${BCMARKER_FILE}
-    DESC ${BCDESC_FILE}
-    GEO ${MESH_FILE}
-    LIB_DEPENDS ${LIB_DEPENDS}
-    PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-    PREFIX_LIBNAME ${PREFIX_LIB}${APPLICATION_NAME}
-    FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-    FILES_SOURCES ${CODEGEN_SOURCES}
-    CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
-    )
-  unset(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER)
+    if ( FEELMODELS_APP_GEO_DESC )
+      get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
+      #set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
+    else()
+      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/default.mesh )
+    endif()
+
+    set(PREFIX_FILES_TO_COPY thermodyn)
+    #set(PREFIX_LIB thermo)
+
+    if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
+      message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
+    endif()
+    set(LIB_NAME ${FEELMODELS_APP_LIB_NAME})
+
+    if ( FEELMODELS_APP_LIB_DIR )
+      get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
+      message ("holallalalalla ${THE_LIB_DIR}")
+      #set(THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR})
+    else()
+      set(THE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+
+
+    set(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER 1)
+
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
+    set(CODEGEN_SOURCES
+      ${THE_LIB_DIR}/thermodyn.cpp )
+    set(LIB_DEPENDS ${LIBBASE_NAME} feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+
+    message( "my lib dir : ${THE_LIB_DIR} ")
+    genLibBase(
+      LIB_DIR ${THE_LIB_DIR}
+      MARKERS ${BCMARKER_FILE}
+      DESC ${BCDESC_FILE}
+      GEO ${GEO_FILE}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      PREFIX_LIBNAME ${LIB_NAME} #${PREFIX_LIB}${APPLICATION_NAME}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/feelmodelscoreconfig.h.in
+      )
+    unset(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER)
+
+  endif( FEELMODELS_APP_BC_DESC )
 
 endmacro(genLibThermoDynamics)
 #############################################################################
 #############################################################################
-macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORDERPOLY FEELMODELS_ORDERGEO BCMARKER_FILE BCDESC_FILE MESH_FILE MAIN_FILE)
+macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORDERPOLY FEELMODELS_ORDERGEO BCMARKER_FILE BCDESC_FILE GEO_FILE MAIN_FILE)
 
   resetToZeroAllPhysicalVariables()
   SET(THERMODYNAMICS 1 )
 
-  set(APPLICATION_DIR codeGen_${APPLICATION_NAME})
-  genLibThermoDynamics(${APPLICATION_NAME} ${APPLICATION_DIR}/thermodyn ${FEELMODELS_DIM} ${FEELMODELS_ORDERPOLY} ${FEELMODELS_ORDERGEO} ${BCMARKER_FILE} ${BCDESC_FILE} ${MESH_FILE} )
+  set(THE_APPLICATION_DIR ${CMAKE_CURRENT_BINARY_DIR}/codeGen_${APPLICATION_NAME})
+  #set(APPLICATION_DIR codeGen_${APPLICATION_NAME})
+  #genLibThermoDynamics(${APPLICATION_NAME} ${APPLICATION_DIR}/thermodyn ${FEELMODELS_DIM} ${FEELMODELS_ORDERPOLY} ${FEELMODELS_ORDERGEO} ${BCMARKER_FILE} ${BCDESC_FILE} ${MESH_FILE} )
+  genLibThermoDynamics(
+    LIB_NAME   feelmodels_thermo${APPLICATION_NAME}
+    LIB_DIR    ${THE_APPLICATION_DIR}/thermodyn
+    DIM        ${FEELMODELS_DIM}
+    T_ORDER    ${FEELMODELS_ORDERPOLY}
+    GEO_ORDER  ${FEELMODELS_ORDERGEO}
+    BC_DESC    ${BCDESC_FILE} 
+    BC_MARKERS ${BCMARKER_FILE}
+    GEO_DESC   ${GEO_FILE}
+    )
 
-  set(LIB_DEPENDS thermo${APPLICATION_NAME} fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} ) #fsimesh 
-  genExecutableBase( ${APPLICATION_NAME} ${APPLICATION_DIR}
+  set(LIB_DEPENDS feelmodels_thermo${APPLICATION_NAME} feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) #fsimesh 
+  genExecutableBase(
+    ${APPLICATION_NAME}
+    APPLICATION_DIR ${THE_APPLICATION_DIR}
     SRC ${MAIN_FILE}
     LIB_DEPENDS ${LIB_DEPENDS}
-    CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
+    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/feelmodelscoreconfig.h.in
     )
 
 endmacro(genExecutableThermoDynamics)
@@ -297,19 +374,19 @@ macro(fsi_add_thermo_application)
   if ( FEELMODELS_APP_BC_MARKERS )
     set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
   else()
-    set(BCMARKER_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.bcmarkers )
+    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/default.bcmarkers )
   endif()
 
   if ( FEELMODELS_APP_GEO_DESC )
     set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
   else()
-    set(GEO_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.mesh )
+    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/default.mesh )
   endif()
 
   set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
   set(MAIN_FILE ${FEELMODELS_APP_SRC})
 
-  if (0)
+  if (1)
     MESSAGE("*** Arguments for fluid application ${APPLICATION_NAME}")
     MESSAGE("*** DIM ${FEELMODELS_DIM}")
     MESSAGE("*** ORDERPOLY ${FEELMODELS_ORDERPOLY}")
