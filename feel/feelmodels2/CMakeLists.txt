@@ -1,2 +1,6 @@
+
+SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+
 add_subdirectory (feelmodelscore)
 add_subdirectory (feelmodelsalg)
