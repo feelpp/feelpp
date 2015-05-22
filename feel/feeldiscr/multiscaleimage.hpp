@@ -41,7 +41,7 @@ class MultiScaleImage
 public :
     using value_type = T;
     
-    MultiScaleImage(holo3_image<value_type> /*const&*/ im, int L)
+    MultiScaleImage(holo3_image<value_type> const& im, int L)
         :
         image(im),level(L)
     {
@@ -53,8 +53,8 @@ public :
             double x = c[0];
             double y = c[1];
      
-            int i = x/dx;
-            int j = y/dy;
+            double i = x/dx;
+            double j = y/dy;
 
             return image(level*j,level*i);
         }
