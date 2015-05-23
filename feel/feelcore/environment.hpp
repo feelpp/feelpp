@@ -60,6 +60,7 @@
 
 namespace Feel
 {
+class TimerTable;
 struct MemoryUsage
 {
     MemoryUsage()
@@ -525,6 +526,16 @@ public:
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
 
+    /**
+     * add timer to a map of timers that can be shown using \c displayTimers()
+     */
+    static void addTimer( std::string const& msg, double t );
+
+    /**
+     * display and save timers
+     */
+    static void saveTimers( bool save );
+
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
 
@@ -650,6 +661,8 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+
+    static TimerTable S_timers;
 };
 
 BOOST_PARAMETER_FUNCTION(
