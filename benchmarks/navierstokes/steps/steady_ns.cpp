@@ -251,6 +251,7 @@ int main(int argc, char**argv )
             e->step(fixedpt_iter)->add( "u", u );
             e->step(fixedpt_iter)->add( "p", p );
             e->save();
+            Environment::saveTimers( true );
         }
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }
