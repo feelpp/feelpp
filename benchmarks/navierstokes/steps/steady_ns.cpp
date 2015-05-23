@@ -184,6 +184,7 @@ int main(int argc, char**argv )
     e->step(0)->add( "p", p );
     e->save();
     toc(" - Exporting Stokes results...");
+    Environment::saveTimers( true );
 
     // Picard
     if ( boption("picard") )
