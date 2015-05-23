@@ -32,6 +32,9 @@
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/ginac.hpp>
 
+#include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
+
 #if defined(FEELPP_HAS_HARTS)
 #include "RunTimeSystem/Model/RunTimeSysEnv.h"
 #include "RunTimeSystem/DataMng/DataHandler.h"
@@ -47,30 +50,10 @@
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif
 
-#define USE_BOOST_TEST 1
-#define BOOST_TEST_MODULE multithread
-#include <testsuite/testsuite.hpp>
+using namespace Feel;
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
 
-#if 0
-template<value_type>
-class Task
-{
-    public:
-        void computeCPU(DataArgsType& args)
-        {
-
-        }
-
-        value_type result() const
-        {
-            return M_ret;
-        }
-    private:
-        value_type M_ret;
-}
-#endif
+typedef Mesh<Simplex<3>> MeshType;
 
 void reduceAndCompare( double * array, int n, double refval )
 {
@@ -82,32 +65,12 @@ void reduceAndCompare( double * array, int n, double refval )
     }
 
     std::cout << total << " " << refval << std::endl;
-    BOOST_CHECK_CLOSE_FRACTION(total, refval, 0.00000001);
+    //BOOST_CHECK_CLOSE_FRACTION(total, refval, 1e-8);
 }
 
-#if 1
-BOOST_AUTO_TEST_SUITE(HARTS)
-
-BOOST_AUTO_TEST_CASE(integrate_coarse)
+template<typename MeshTypePtr>
+void integrate_coarse(MeshTypePtr mesh, int nCores)
 {
-    BOOST_CHECK( true );
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-#endif
-
-#if defined(FEELPP_HAS_OPENMP)
-BOOST_AUTO_TEST_SUITE(OpenMP)
-
-BOOST_AUTO_TEST_CASE(integrate_coarse)
-{
-    using namespace Feel;
-
-    typedef Mesh<Simplex<3>> MeshType;
-    // create the mesh (specify the dimension of geometric entity)
-    auto mesh = loadMesh( _mesh=new MeshType );
-
     typedef typename Feel::detail::quadptlocrangetype< decltype(elements(mesh)) >::type range_type;
     typedef decltype(cst(1.0)) expr_type;
     typedef _Q< ExpressionOrder<range_type,expr_type>::value > quad_type;
@@ -116,8 +79,8 @@ BOOST_AUTO_TEST_CASE(integrate_coarse)
 
     //int nbcores = 4;
     //omp_set_num_threads(nbcores);
-    int nbcores = omp_get_num_threads();
-    std::cout << "Using " << nbcores << " threads" << std::endl;
+    std::cout << "Using " << nCores << " threads" << std::endl;
+    omp_set_num_threads(nCores);
 
     //std::cout << "Using " << nbcores << " threads" << std::endl;
     //std::cout << boption( _name="parallel.cpu.enable" ) << " " << soption( _name="parallel.cpu.impl") << " " << ioption( _name="parallel.cpu.restrict") << std::endl;
@@ -140,7 +103,7 @@ BOOST_AUTO_TEST_CASE(integrate_coarse)
     std::cout << Environment::worldComm().globalRank() << " sequential (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
 
     /* parallel with constant */
-    double * res = new double[nbcores];
+    double * res = new double[nCores];
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
@@ -158,7 +121,7 @@ BOOST_AUTO_TEST_CASE(integrate_coarse)
     t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
     std::cout << Environment::worldComm().globalRank() << " parallel max (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
 
-    //reduceAndCompare( res, nbcores, nbcores * 1.0 );
+    reduceAndCompare( res, nCores, intf1(0, 0) );
 #endif
 #if 0
 
@@ -199,10 +162,19 @@ BOOST_AUTO_TEST_CASE(integrate_coarse)
     res = nullptr;
 }
 
-BOOST_AUTO_TEST_CASE(integrate_fine)
+int main(int argc, char ** argv)
 {
-    BOOST_CHECK( true );
-}
+    Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="test_multithread",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
 
-BOOST_AUTO_TEST_SUITE_END()
-#endif
+    // create the mesh (specify the dimension of geometric entity)
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
+
+    int nbcores = omp_get_num_threads();
+
+    integrate_coarse(mesh, nbcores);
+
+    return 0;
+}
