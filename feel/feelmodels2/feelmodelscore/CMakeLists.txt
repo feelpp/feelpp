@@ -77,7 +77,7 @@ macro(genLibBase)
     CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_PATH} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${FEELMODELS_GENLIB_CONFIG_FILENAME_WE}.h  )
   endif()
 
-  add_custom_target(copy${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
+  add_custom_target(codegen_${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
 
   if ( FEELMODELS_GENLIB_BASE_MARKERS )
     # bcmarker
@@ -85,13 +85,13 @@ macro(genLibBase)
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
       configure_file( ${BCMARKER_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp COPYONLY)
     endif()
-    add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${BCMARKER_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
     # bctool
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
       configure_file( ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
     endif()
-    add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
   endif()
   # .bc
@@ -103,7 +103,7 @@ macro(genLibBase)
       message( "RRRRRRRR :  ${BCDESC_FILE}")
       configure_file( ${BCDESC_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc COPYONLY)
     endif()
-    add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${BCDESC_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
   endif()
   # .mesh
@@ -112,7 +112,7 @@ macro(genLibBase)
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
       configure_file( ${MESH_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh COPYONLY)
     endif()
-    add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${MESH_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
   endif()
   # lib files
@@ -121,7 +121,7 @@ macro(genLibBase)
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
       configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
     endif()
-    add_custom_command(TARGET copy${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -133,7 +133,7 @@ macro(genLibBase)
     SHARED
     ${CODEGEN_SOURCES}
     )
-  add_dependencies(${LIB_APPLICATION_NAME} copy${LIB_APPLICATION_NAME})
+  add_dependencies(${LIB_APPLICATION_NAME} codegen_${LIB_APPLICATION_NAME})
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
 
@@ -164,9 +164,9 @@ macro(genExecutableBase)
       configure_file( ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
     endforeach()
   endif()
-  add_custom_target(copymanage${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
+  add_custom_target(codegen_env_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
   foreach(filename applimanagement.hpp)
-    add_custom_command(TARGET copymanage${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_env_${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/${filename} ${APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -175,16 +175,16 @@ macro(genExecutableBase)
       configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
     endforeach()
   endif()
-  add_custom_target(copymain${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
+  add_custom_target(codegen_src_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
   foreach(filename ${MAIN_FILE})
-    add_custom_command(TARGET copymain${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET codegen_src_${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} )
   endforeach()
 
 
   add_executable( ${APPLICATION_NAME} ${APPLICATION_DIR}/${MAIN_FILE} )
-  add_dependencies(${APPLICATION_NAME} copymanage${APPLICATION_NAME})
-  add_dependencies(${APPLICATION_NAME} copymain${APPLICATION_NAME})
+  add_dependencies(${APPLICATION_NAME} codegen_env_${APPLICATION_NAME})
+  add_dependencies(${APPLICATION_NAME} codegen_src_${APPLICATION_NAME})
 
   target_link_libraries(${APPLICATION_NAME} ${LIB_DEPENDS} )
 
@@ -237,9 +237,12 @@ macro( genLibThermoDynamics )
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
       ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.hpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/thermodynbase.cpp )
+      ${LIBBASE_DIR}/thermodynbase.cpp
+      ${LIBBASE_DIR}/thermodyn.cpp )
     set(LIB_DEPENDS feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
@@ -276,7 +279,6 @@ macro( genLibThermoDynamics )
       set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/feelmodelscore/default.mesh )
     endif()
 
-    set(PREFIX_FILES_TO_COPY thermodyn)
     #set(PREFIX_LIB thermo)
 
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
@@ -295,11 +297,12 @@ macro( genLibThermoDynamics )
 
     set(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER 1)
 
+    set(PREFIX_FILES_TO_COPY thermodyn)
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/codegen_thermodyn.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/codegen_thermodyn.cpp )
     set(CODEGEN_SOURCES
-      ${THE_LIB_DIR}/thermodyn.cpp )
+      ${THE_LIB_DIR}/codegen_thermodyn.cpp )
     set(LIB_DEPENDS ${LIBBASE_NAME} feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
 
