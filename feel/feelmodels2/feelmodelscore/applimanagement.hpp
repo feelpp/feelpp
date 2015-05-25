@@ -61,7 +61,7 @@
 #if defined( THERMODYNAMICS )
 #undef APPLICATION_TYPE_NAME
 #define APPLICATION_TYPE_NAME "thermo-dynamics"
-#include "thermodyn/thermodyn.hpp"
+#include "thermodyn/codegen_thermodyn.hpp"
 #endif
 
 

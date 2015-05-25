@@ -20,6 +20,7 @@ namespace FeelModels
         M_bdfSaveInFile( option(_name="bdf.save").as<bool>() ),
         M_bdfSaveFreq( option(_name="bdf.save.freq").as<int>() ),
         M_timeCurrent(M_timeInitial),
+        M_modelProps( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ) ),
         M_parameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS,0)),
         M_geoParameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_GEOPARAMETERS,0)),
         M_ginacExpr(std::vector<std::pair<std::string,std::string> >(FEELMODELS_FSIBASE_NUMBER_OF_GINACEXPR)),
@@ -80,7 +81,7 @@ namespace FeelModels
     }
 
 
-
+#if 0
     AppliBaseNumericalSimulationTransitory::AppliBaseNumericalSimulationTransitory( AppliBaseNumericalSimulationTransitory const& app )
         :
         super_type( app ),
@@ -110,7 +111,7 @@ namespace FeelModels
         M_PsLogger( app.M_PsLogger ),
         M_geomap( app.M_geomap )
     {}
-
+#endif
 
     void
     AppliBaseNumericalSimulationTransitory::setStationary(bool b)
