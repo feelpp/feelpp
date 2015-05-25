@@ -92,6 +92,7 @@ Feel::po::options_description applibaseNumericalSimulationTransitory_options(std
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
+        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
         // mesh
         (prefixvm(prefix,"geofile").c_str(), Feel::po::value< std::string >(), "input geo file")
         (prefixvm(prefix,"mshfile").c_str(), Feel::po::value< std::string >(), "input msh file")

@@ -41,6 +41,8 @@
 #include <boost/fusion/algorithm.hpp>
 #include <feel/feelvf/ginac.hpp>
 
+#include <feel/feelmodels/modelproperties.hpp>
+
 
 namespace Feel
 {
@@ -71,7 +73,7 @@ namespace FeelModels
         AppliBaseNumericalSimulationTransitory( bool _isStationary, std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
                                                 std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 
-        AppliBaseNumericalSimulationTransitory( AppliBaseNumericalSimulationTransitory const& app );
+        AppliBaseNumericalSimulationTransitory( AppliBaseNumericalSimulationTransitory const& app ) = default;
 
         virtual ~AppliBaseNumericalSimulationTransitory() {};
 
@@ -104,17 +106,8 @@ namespace FeelModels
         void setTimeInitial(double v)  { M_timeInitial=v; }
 
 
-        // A supprimer progressivement
-        double getParameter(uint16_type i) const
-            {
-                CHECK( i >=1 && i <=M_parameters.size() ) << "invalid index\n";
-                return M_parameters[i-1];
-            }
-        void setParameter(uint16_type i,double val)
-            {
-                CHECK( i >=1 && i <=M_parameters.size() ) << "invalid index\n";
-                M_parameters[i-1]=val;
-            }
+        ModelProperties const& modelProperties() const { return M_modelProps; }
+
         // cst parameter
         double userCstParameter(uint16_type i) const
             {
@@ -201,6 +194,7 @@ namespace FeelModels
         int M_bdfSaveFreq;
         double M_timeCurrent;
 
+        ModelProperties M_modelProps;
         std::vector<double> M_parameters,M_geoParameters;
         std::vector<std::pair<std::string,std::string> > M_ginacExpr;
         std::string M_ginacExprCompilationDirectory;
