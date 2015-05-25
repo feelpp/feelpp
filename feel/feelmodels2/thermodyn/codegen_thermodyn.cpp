@@ -1,23 +1,26 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
-#include "thermodyn.hpp"
+#include "codegen_thermodyn.hpp"
 
-#include <feel/feelvf/vf.hpp>
-/*#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
- #include <feel/feelvf/operations.hpp>*/
+#include <feel/feelfilters/geotool.hpp>
+
+#undef THERMODYNAMICS_MESH
+#undef THERMODYNAMICS_MESH1
+#undef THERMODYNAMICS_MESH2
+#undef THERMODYNAMICS_MESH3
+#include "thermodyn.mesh"
+
 
 namespace Feel {
 
 namespace FeelModels {
 
     THERMODYNAMICS_CLASS_NAME::THERMODYNAMICS_CLASS_NAME( bool __isStationary,
-                                                          std::string __prefix,
-                                                          WorldComm const& __worldComm,
-                                                          bool __buildMesh,
-                                                          std::string __subPrefix,
-                                                          std::string __appliShortRepository )
+                                                      std::string __prefix,
+                                                      WorldComm const& __worldComm,
+                                                      bool __buildMesh,
+                                                      std::string __subPrefix,
+                                                      std::string __appliShortRepository )
         :
         super_type( __isStationary,__prefix,__worldComm,__buildMesh,__subPrefix,__appliShortRepository)
     {
@@ -42,21 +45,65 @@ namespace FeelModels {
     void
     THERMODYNAMICS_CLASS_NAME::loadConfigBCFile()
     {
+        auto const bcDef = THERMODYNAMICS_BC(this/*->shared_from_this()*/);
         this->clearMarkerDirichletBC();
         this->clearMarkerNeumannBC();
-
-        M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( this->prefix()/*"thermo"*/, "Dirichlet" );
-        for( auto const& d : M_bcDirichlet )
-            this->addMarkerDirichletBC("elimination", marker(d) );
-        M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( this->prefix()/*"thermo"*/, "Neumann" );
-        for( auto const& d : M_bcNeumann )
-            this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+        ForEachBC( bcDef, cl::dirichlet,
+                   this->addMarkerDirichletBC("elimination",PhysicalName) );
+        ForEachBC( bcDef, cl::neumann_scal,
+                   this->addMarkerNeumannBC(NeumannBCShape::SCALAR,PhysicalName) );
     }
 
     void
     THERMODYNAMICS_CLASS_NAME::loadConfigMeshFile(std::string const& geofilename)
     {
-        CHECK( false ) << "not allow";
+        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","loadConfigMeshFile", "start",
+                                            this->worldComm(),this->verboseAllProc());
+
+#if !defined(THERMODYNAMICS_MESH) && !defined(THERMODYNAMICS_MESH1) && !defined(THERMODYNAMICS_MESH2) && !defined(THERMODYNAMICS_MESH3)
+        CHECK( false ) << " THERMODYNAMICS_MESH is not define : probably .mesh is wrong\n";
+#endif
+
+        switch ( this->geotoolMeshIndex() )
+        {
+        default :
+        case 0 :
+        {
+#if defined(THERMODYNAMICS_MESH)
+            THERMODYNAMICS_MESH(this->meshSize(), geofilename );
+            M_mesh=mesh;
+#endif
+        }
+        break;
+        case 1 :
+        {
+#if defined(THERMODYNAMICS_MESH1)
+            THERMODYNAMICS_MESH1(this->meshSize(), geofilename );
+            M_mesh=mesh;
+#endif
+        }
+        break;
+        case 2 :
+        {
+#if defined(THERMODYNAMICS_MESH2)
+            THERMODYNAMICS_MESH2(this->meshSize(), geofilename );
+            M_mesh=mesh;
+#endif
+        }
+        break;
+        {
+#if defined(THERMODYNAMICS_MESH3)
+            THERMODYNAMICS_MESH3(this->meshSize(), geofilename );
+            M_mesh=mesh;
+#endif
+        }
+        break;
+
+        } // switch
+
+        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","loadConfigMeshFile", "finish",
+                                            this->worldComm(),this->verboseAllProc());
+
     }
 
 
@@ -76,26 +123,32 @@ namespace FeelModels {
         auto mesh = this->mesh();
         auto Xh = this->spaceTemperature();
         auto const& u = *this->fieldTemperature();
+
+        auto rowStartInMatrix = this->rowStartInMatrix();
+        auto colStartInMatrix = this->colStartInMatrix();
+        auto rowStartInVector = this->rowStartInVector();
         auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                                   _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
+                                                  _rowstart=rowStartInMatrix,
+                                                  _colstart=colStartInMatrix );
 
-        for( auto const& d : M_bcDirichlet )
-        {
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                    _element=u,_rhs=F,_expr=expression(d) );
-        }
+        auto const bcDef = THERMODYNAMICS_BC(this->shared_from_this());
+
+        ForEachBC( bcDef, cl::dirichlet,
+                   bilinearForm_PatternCoupled +=
+                   /**/ on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",PhysicalName ) /*PhysicalName*/),
+                            _element=u,
+                            _rhs=F,
+                            _expr=Expression ) );
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBCStrongDirichletLinearPDE","finish",
                                                    this->worldComm(),this->verboseAllProc());
+
     }
 
     void
     THERMODYNAMICS_CLASS_NAME::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
     {
-#if 0 // TODO
         if ( M_overwritemethod_updateSourceTermLinearPDE != NULL )
         {
             M_overwritemethod_updateSourceTermLinearPDE(F,buildCstPart);
@@ -123,7 +176,6 @@ namespace FeelModels {
                            _geomap=this->geomap() );
         }
 #endif
-#endif
     }
 
     void
@@ -131,22 +183,26 @@ namespace FeelModels {
     {
         auto mesh = this->mesh();
         auto Xh = this->spaceTemperature();
-        auto const& v = *this->fieldTemperature();
+        auto rowStartInMatrix = this->rowStartInMatrix();
+        auto colStartInMatrix = this->colStartInMatrix();
+        auto rowStartInVector = this->rowStartInVector();
         auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                                   _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
+                                                  _rowstart=rowStartInMatrix,
+                                                  _colstart=colStartInMatrix );
+        auto const& v = *this->fieldTemperature();
+        //boundaries conditions
+        auto const bcDef = THERMODYNAMICS_BC(this->shared_from_this());
 
         if ( !buildCstPart )
         {
-            for( auto const& d : M_bcNeumann )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
-            }
+            ForEachBC( bcDef, cl::neumann_scal,
+                       bilinearForm_PatternCoupled +=
+                       /**/ integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,PhysicalName) ),
+                                       _expr= Expression*id(v),
+                                       _geomap=this->geomap() ) );
         }
+
     }
 
 

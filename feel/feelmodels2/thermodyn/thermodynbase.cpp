@@ -14,7 +14,6 @@ namespace Feel
 namespace FeelModels
 {
 
-
     THERMODYNAMICSBASE_CLASS_NAME::THERMODYNAMICSBASE_CLASS_NAME( bool __isStationary,
                                                                   std::string __prefix,
                                                                   WorldComm const& __worldComm,
@@ -398,6 +397,9 @@ namespace FeelModels
         *_ostr << "\n   Physical Model"
                << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
                << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
+        *_ostr << "\n   Boundary conditions"
+               << this->getInfoDirichletBC()
+               << this->getInfoNeumannBC();
         *_ostr << "\n   Physical Parameters"
                << "\n     -- thermal conductivity : " << this->thermalConductivity()
                << "\n     -- heat capacity        : " << this->heatCapacity()

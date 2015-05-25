@@ -27,30 +27,43 @@
    \date 2014-06-04
  */
 
-#include <boost/preprocessor/cat.hpp>
 
-#define GUARD_FOR_THERMODYNAMICS 1
-#undef GUARD_FOR_THERMODYNAMICSBASE
-#include "thermodynconfig.h"
+#ifndef __THERMODYNAMICS_H
+#define __THERMODYNAMICS_H 1
 
-#if defined( INCLUDE_THERMODYNAMICS_HPP )
+#undef THERMODYNAMICS
+#undef THERMODYNAMICS0
+#undef THERMODYNAMICS1
+#undef THERMODYNAMICS2
+#include "feelmodelscoreconfig.h"
+#undef NUM_THERMO
+#if defined( THERMODYNAMICS )
+#define NUM_THERMO /**/
+#endif
+#if defined( THERMODYNAMICS0 )
+#define NUM_THERMO 0 /**/
+#endif
+#if defined( THERMODYNAMICS1 )
+#define NUM_THERMO 1 /**/
+#endif
+#if defined( THERMODYNAMICS2 )
+#define NUM_THERMO 2 /**/
+#endif
+#define THERMODYNAMICS_CLASS_NAME BOOST_PP_CAT(ThermoDynamics,NUM_THERMO)
 
-#undef THERMODYNAMICS_CLASS_NAME
-#define THERMODYNAMICS_CLASS_NAME BOOST_PP_CAT(ThermoDynamics,THERMODYNAMICSBASE_NAMECLASS_SPEC)
-
-#include "thermodynbase.hpp"
-
-//#include <feel/feelpde/boundaryconditions.hpp>
+#include "bctool.hpp"
+#undef THERMODYNAMICS_BC
+#undef THERMODYNAMICS_VOLUME_FORCE
+#include "thermodyn.bc"
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
-                                  public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
+    class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
+                                      public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
     {
-
     public:
         typedef THERMODYNAMICSBASE_CLASS_NAME super_type;
 
@@ -65,7 +78,7 @@ class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
         // constructor
         THERMODYNAMICS_CLASS_NAME( bool __isStationary,
                                    std::string prefix,
-                                   WorldComm const& _worldComm=Environment::worldComm(),
+                                   WorldComm const& _worldComm=WorldComm(),
                                    bool __buildMesh=true,
                                    std::string subPrefix="",
                                    std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
@@ -86,16 +99,9 @@ class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
         typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
         updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
 
-        //BoundaryConditions const& boundaryConditions() const { return M_bc; }
-
-    private :
-        //BoundaryConditions M_bc;
-        map_scalar_field<2> M_bcDirichlet;
-        map_scalar_field<2> M_bcNeumann;
-
     };
 
 } // namespace FeelModels
 } // namespace Feel
 
-#endif // INCLUDE_THERMODYNAMICS_HPP
+#endif /* __THERMODYNAMICS_H */

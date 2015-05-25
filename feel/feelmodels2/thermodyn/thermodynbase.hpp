@@ -27,14 +27,15 @@
    \date 2014-06-04
  */
 
+#include <boost/preprocessor/cat.hpp>
+
+#undef GUARD_FOR_THERMODYNAMICS
+#define GUARD_FOR_THERMODYNAMICSBASE 1
 #include "thermodynconfig.h"
 #undef THERMODYNAMICSBASE_CLASS_NAME
-#define THERMODYNAMICSBASE_CLASS_NAME BOOST_PP_CAT(ThermoDynamicsBase,__THERMODYNAMICSBASE_NAMECLASS_SPEC)
+#define THERMODYNAMICSBASE_CLASS_NAME BOOST_PP_CAT(ThermoDynamicsBase,THERMODYNAMICSBASE_NAMECLASS_SPEC)
 
-#if defined( __THERMODYNAMICSBASE_H )
-
-//#ifndef __THERMODYNAMICSBASE_H
-//#define __THERMODYNAMICSBASE_H 1
+#if defined( INCLUDE_THERMODYNAMICSBASE_HPP )
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -44,6 +45,7 @@
 #include <feel/feelmodels2/feelmodelscore/applibasenumericalsimulationtransitory.hpp>
 #include <feel/feelmodels2/feelmodelscore/markermanagement.hpp>
 #include <feel/feelmodels2/feelmodelsalg/modelalgebraic.hpp>
+
 
 
 namespace Feel
