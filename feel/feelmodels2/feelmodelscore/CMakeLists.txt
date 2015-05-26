@@ -231,14 +231,20 @@ macro( genLibThermoDynamics )
     file(WRITE ${LIBBASE_CHECK_PATH} "")
 
     # configure libmodelbase
+    # set(CODEGEN_FILES_TO_COPY
+    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.hpp
+    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp
+    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
+    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
+    # set(CODEGEN_SOURCES
+    #   ${LIBBASE_DIR}/thermodynbase.cpp
+    #   ${LIBBASE_DIR}/thermodyn.cpp )
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.hpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn_inst.cpp )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/thermodynbase.cpp
-      ${LIBBASE_DIR}/thermodyn.cpp )
+      ${LIBBASE_DIR}/thermodynbase_inst.cpp
+      ${LIBBASE_DIR}/thermodyn_inst.cpp )
     set(LIB_DEPENDS feelmodelsalg feelmodelscore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
