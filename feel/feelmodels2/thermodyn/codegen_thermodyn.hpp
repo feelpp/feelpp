@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file thermodyn.hpp
+   \file codegen_thermodyn.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2014-06-04
  */
@@ -30,6 +30,8 @@
 
 #ifndef __THERMODYNAMICS_H
 #define __THERMODYNAMICS_H 1
+
+#include <feel/feelmodels2/thermodyn/thermodynbase.hpp>
 
 #undef THERMODYNAMICS
 #undef THERMODYNAMICS0
@@ -56,13 +58,16 @@
 #undef THERMODYNAMICS_VOLUME_FORCE
 #include "thermodyn.bc"
 
+#undef THERMODYNAMICSBASE_CLASS_NAME
+#define THERMODYNAMICSBASE_CLASS_NAME ThermoDynamicsBase< Simplex<THERMODYNAMICS_DIM,THERMODYNAMICS_ORDERGEO,THERMODYNAMICS_DIM>, THERMODYNAMICS_ORDERPOLY >
+
 namespace Feel
 {
 namespace FeelModels
 {
 
-    class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
-                                      public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
+class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
+                                  public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
     {
     public:
         typedef THERMODYNAMICSBASE_CLASS_NAME super_type;
@@ -95,9 +100,6 @@ namespace FeelModels
         void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
         void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
         void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
-
-        typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
-        updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
 
     };
 

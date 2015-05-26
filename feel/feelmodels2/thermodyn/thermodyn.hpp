@@ -27,73 +27,58 @@
    \date 2014-06-04
  */
 
-#include <boost/preprocessor/cat.hpp>
+#ifndef FEELPP_THERMODYNAMICS_HPP
+#define FEELPP_THERMODYNAMICS_HPP 1
 
-#define GUARD_FOR_THERMODYNAMICS 1
-#undef GUARD_FOR_THERMODYNAMICSBASE
-#include "thermodynconfig.h"
-
-#if defined( INCLUDE_THERMODYNAMICS_HPP )
-
-#undef THERMODYNAMICS_CLASS_NAME
-#define THERMODYNAMICS_CLASS_NAME BOOST_PP_CAT(ThermoDynamics,THERMODYNAMICSBASE_NAMECLASS_SPEC)
-
-#include "thermodynbase.hpp"
-
-//#include <feel/feelpde/boundaryconditions.hpp>
+#include <feel/feelmodels2/thermodyn/thermodynbase.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
-                                  public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
-    {
+template< typename ConvexType, int OrderTemp>
+class ThermoDynamics : public ThermoDynamicsBase<ConvexType,OrderTemp>,
+                       public boost::enable_shared_from_this< ThermoDynamics<ConvexType,OrderTemp> >
+{
 
-    public:
-        typedef THERMODYNAMICSBASE_CLASS_NAME super_type;
+public:
+    typedef ThermoDynamicsBase<ConvexType,OrderTemp> super_type;
 
-        typedef THERMODYNAMICS_CLASS_NAME self_type;
-        typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef ThermoDynamics<ConvexType,OrderTemp> self_type;
+    typedef boost::shared_ptr<self_type> self_ptrtype;
 
-        // mesh
-        typedef super_type::mesh_type mesh_type;
-        typedef super_type::mesh_ptrtype mesh_ptrtype;
+    // mesh
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
-        //___________________________________________________________________________________//
-        // constructor
-        THERMODYNAMICS_CLASS_NAME( bool __isStationary,
-                                   std::string prefix,
-                                   WorldComm const& _worldComm=Environment::worldComm(),
-                                   bool __buildMesh=true,
-                                   std::string subPrefix="",
-                                   std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+    //___________________________________________________________________________________//
+    // constructor
+    ThermoDynamics( bool __isStationary,
+                    std::string prefix,
+                    WorldComm const& _worldComm=Environment::worldComm(),
+                    bool __buildMesh=true,
+                    std::string subPrefix="",
+                    std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 
-        // load config files
-        void loadConfigBCFile();
-        void loadConfigMeshFile( std::string const& geofilename );
+    // load config files
+    void loadConfigBCFile();
+    void loadConfigMeshFile( std::string const& geofilename );
 
-        // update for use
-        void init( bool buildMethodNum = true );
+    // update for use
+    void init( bool buildMethodNum = true );
 
-        //___________________________________________________________________________________//
-        // assembly using bc
-        void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-        void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-        void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
+    //___________________________________________________________________________________//
+    // assembly using bc
+    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
 
-        typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
-        updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
+private :
+    map_scalar_field<2> M_bcDirichlet;
+    map_scalar_field<2> M_bcNeumann;
 
-        //BoundaryConditions const& boundaryConditions() const { return M_bc; }
-
-    private :
-        //BoundaryConditions M_bc;
-        map_scalar_field<2> M_bcDirichlet;
-        map_scalar_field<2> M_bcNeumann;
-
-    };
+};
 
 } // namespace FeelModels
 } // namespace Feel
