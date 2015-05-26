@@ -1,6 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
-#include "thermodyn.hpp"
+//#include "thermodyn.hpp"
+#include <feel/feelmodels2/thermodyn/thermodyn.hpp>
 
 #include <feel/feelvf/vf.hpp>
 /*#include <feel/feelvf/form.hpp>
@@ -12,7 +13,8 @@ namespace Feel {
 
 namespace FeelModels {
 
-    THERMODYNAMICS_CLASS_NAME::THERMODYNAMICS_CLASS_NAME( bool __isStationary,
+    template< typename ConvexType, int OrderTemp>
+    ThermoDynamics<ConvexType,OrderTemp>::ThermoDynamics( bool __isStationary,
                                                           std::string __prefix,
                                                           WorldComm const& __worldComm,
                                                           bool __buildMesh,
@@ -39,8 +41,9 @@ namespace FeelModels {
                                             this->worldComm(),this->verboseAllProc());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::loadConfigBCFile()
+    ThermoDynamics<ConvexType,OrderTemp>::loadConfigBCFile()
     {
         this->clearMarkerDirichletBC();
         this->clearMarkerNeumannBC();
@@ -50,25 +53,28 @@ namespace FeelModels {
             this->addMarkerDirichletBC("elimination", marker(d) );
         M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( this->prefix()/*"thermo"*/, "Neumann" );
         for( auto const& d : M_bcNeumann )
-            this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+            this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::loadConfigMeshFile(std::string const& geofilename)
+    ThermoDynamics<ConvexType,OrderTemp>::loadConfigMeshFile(std::string const& geofilename)
     {
         CHECK( false ) << "not allow";
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::init(bool buildMethodNum)
+    ThermoDynamics<ConvexType,OrderTemp>::init(bool buildMethodNum)
     {
         super_type::init( buildMethodNum, this->shared_from_this() );
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+    ThermoDynamics<ConvexType,OrderTemp>::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBCStrongDirichletLinearPDE","start",
                                             this->worldComm(),this->verboseAllProc());
@@ -92,8 +98,9 @@ namespace FeelModels {
                                                    this->worldComm(),this->verboseAllProc());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
+    ThermoDynamics<ConvexType,OrderTemp>::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
     {
 #if 0 // TODO
         if ( M_overwritemethod_updateSourceTermLinearPDE != NULL )
@@ -126,8 +133,9 @@ namespace FeelModels {
 #endif
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICS_CLASS_NAME::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+    ThermoDynamics<ConvexType,OrderTemp>::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
     {
         auto mesh = this->mesh();
         auto Xh = this->spaceTemperature();
@@ -142,7 +150,7 @@ namespace FeelModels {
             for( auto const& d : M_bcNeumann )
             {
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                    integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                                _expr= expression(d)*id(v),
                                _geomap=this->geomap() );
             }

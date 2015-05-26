@@ -27,15 +27,11 @@
    \date 2014-06-04
  */
 
-#include <boost/preprocessor/cat.hpp>
 
-#undef GUARD_FOR_THERMODYNAMICS
-#define GUARD_FOR_THERMODYNAMICSBASE 1
-#include "thermodynconfig.h"
-#undef THERMODYNAMICSBASE_CLASS_NAME
-#define THERMODYNAMICSBASE_CLASS_NAME BOOST_PP_CAT(ThermoDynamicsBase,THERMODYNAMICSBASE_NAMECLASS_SPEC)
+#ifndef FEELPP_THERMODYNAMICSBASE_HPP
+#define FEELPP_THERMODYNAMICSBASE_HPP 1
 
-#if defined( INCLUDE_THERMODYNAMICSBASE_HPP )
+
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -44,34 +40,37 @@
 
 #include <feel/feelmodels2/feelmodelscore/applibasenumericalsimulationtransitory.hpp>
 #include <feel/feelmodels2/feelmodelscore/markermanagement.hpp>
+#include <feel/feelmodels2/feelmodelscore/feelmodelsoptions.hpp>
 #include <feel/feelmodels2/feelmodelsalg/modelalgebraic.hpp>
 
 
 
 namespace Feel
 {
-
 namespace FeelModels
 {
 
-    class THERMODYNAMICSBASE_CLASS_NAME : public AppliBaseNumericalSimulationTransitory,
-                                          public MarkerManagementDirichletBC,
-                                          public MarkerManagementNeumannBC
+
+template< typename ConvexType, int OrderTemp>
+class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
+                           public MarkerManagementDirichletBC,
+                           public MarkerManagementNeumannBC
 
     {
     public:
         typedef AppliBaseNumericalSimulationTransitory super_type;
-        typedef THERMODYNAMICSBASE_CLASS_NAME self_type;
+        typedef ThermoDynamicsBase<ConvexType,OrderTemp> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
         // mesh
-        static const uint16_type nDim = THERMODYNAMICS_DIM;
-        static const uint16_type nOrderGeo = THERMODYNAMICS_ORDERGEO;
-        typedef Simplex<nDim,nOrderGeo,nDim> convex_type;
+        typedef ConvexType convex_type;
+        static const uint16_type nDim = convex_type::nDim;
+        static const uint16_type nOrderGeo = convex_type::nOrder;
+        //typedef Simplex<nDim,nOrderGeo,nDim> convex_type;
         typedef Mesh<convex_type> mesh_type;
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
-        static const uint16_type nOrderPoly = THERMODYNAMICS_ORDERPOLY;
+        static const uint16_type nOrderPoly = OrderTemp;
         typedef Lagrange<nOrderPoly, Scalar,Continuous,PointSetFekete> basis_temperature_type;
         typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete> basis_velocityconvection_type;
         // function space temperature
@@ -96,12 +95,12 @@ namespace FeelModels
         typedef boost::shared_ptr< methodsnum_type > methodsnum_ptrtype;
 
 
-        THERMODYNAMICSBASE_CLASS_NAME( bool __isStationary,
-                                       std::string __prefix,
-                                       WorldComm const& __worldComm,
-                                       bool __buildMesh,
-                                       std::string __subPrefix,
-                                       std::string __appliShortRepository );
+        ThermoDynamicsBase( bool __isStationary,
+                            std::string __prefix,
+                            WorldComm const& __worldComm,
+                            bool __buildMesh,
+                            std::string __subPrefix,
+                            std::string __appliShortRepository );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
         //___________________________________________________________________________________//
@@ -213,9 +212,13 @@ namespace FeelModels
 
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
+
+        typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
+        updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
+
     };
 
 } // namespace FeelModels
 } // namespace Feel
 
-#endif /* __THERMODYNAMICSBASE_H */
+#endif /* FEELPP_THERMODYNAMICSBASE_HPP */

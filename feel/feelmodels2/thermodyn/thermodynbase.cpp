@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
-#include "thermodynbase.hpp"
-
+//#include "thermodynbase.hpp"
+#include <feel/feelmodels2/thermodyn/thermodynbase.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
@@ -14,18 +14,20 @@ namespace Feel
 namespace FeelModels
 {
 
-    THERMODYNAMICSBASE_CLASS_NAME::THERMODYNAMICSBASE_CLASS_NAME( bool __isStationary,
-                                                                  std::string __prefix,
-                                                                  WorldComm const& __worldComm,
-                                                                  bool __buildMesh,
-                                                                  std::string __subPrefix,
-                                                                  std::string __appliShortRepository )
+    template< typename ConvexType, int OrderTemp>
+    ThermoDynamicsBase<ConvexType,OrderTemp>::ThermoDynamicsBase( bool __isStationary,
+                                            std::string __prefix,
+                                            WorldComm const& __worldComm,
+                                            bool __buildMesh,
+                                            std::string __subPrefix,
+                                            std::string __appliShortRepository )
         :
         super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
     {}
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::build()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::build()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","build", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -65,8 +67,9 @@ namespace FeelModels
                                             this->worldComm(),this->verboseAllProc());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::loadMesh( mesh_ptrtype mesh )
+    ThermoDynamicsBase<ConvexType,OrderTemp>::loadMesh( mesh_ptrtype mesh )
     {
         boost::mpi::timer mpiTimer;
         //-----------------------------------------------------------------------------//
@@ -107,8 +110,9 @@ namespace FeelModels
 
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::loadParameterFromOptionsVm()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::loadParameterFromOptionsVm()
     {
         M_meshSize = doption(_name="hsize",_prefix=this->prefix());
         M_thermalConductivity = doption(_name="thermal-conductivity",_prefix=this->prefix()); // [ W/(m*K) ]
@@ -122,8 +126,9 @@ namespace FeelModels
         M_doExportVelocityConvection = boption(_name="do_export_velocity-convection",_prefix=this->prefix());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::createMesh()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::createMesh()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -218,8 +223,9 @@ namespace FeelModels
 
     } // createMesh()
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::createFunctionSpaces()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::createFunctionSpaces()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createFunctionSpaces", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -239,8 +245,9 @@ namespace FeelModels
                                             this->worldComm(),this->verboseAllProc());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::updateForUseFunctionSpacesVelocityConvection()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::updateForUseFunctionSpacesVelocityConvection()
     {
         if ( !M_XhVelocityConvection )
             M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -248,8 +255,9 @@ namespace FeelModels
             M_fieldVelocityConvection.reset( new element_velocityconvection_type(M_XhVelocityConvection,"VelocityConvection"));
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::createTimeDiscretisation()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::createTimeDiscretisation()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createTimeDiscretisation", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -271,8 +279,9 @@ namespace FeelModels
                                             this->worldComm(),this->verboseAllProc());
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::createExporters()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::createExporters()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createExporters", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -289,8 +298,9 @@ namespace FeelModels
 
 
 
+    template< typename ConvexType, int OrderTemp>
     BlocksBaseGraphCSR
-    THERMODYNAMICSBASE_CLASS_NAME::buildBlockMatrixGraph() const
+    ThermoDynamicsBase<ConvexType,OrderTemp>::buildBlockMatrixGraph() const
     {
         int nBlock = this->nBlockMatrixGraph();
         BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
@@ -299,15 +309,17 @@ namespace FeelModels
         return myblockGraph;
     }
 
+    template< typename ConvexType, int OrderTemp>
     size_type
-    THERMODYNAMICSBASE_CLASS_NAME::nLocalDof() const
+    ThermoDynamicsBase<ConvexType,OrderTemp>::nLocalDof() const
     {
         size_type res = this->spaceTemperature()->nLocalDofWithGhost();
         return res;
     }
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::init( bool buildMethodNum, methodsnum_type::appli_ptrtype const& app )
+    ThermoDynamicsBase<ConvexType,OrderTemp>::init( bool buildMethodNum, methodsnum_type::appli_ptrtype const& app )
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","init", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -370,8 +382,9 @@ namespace FeelModels
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::restartExporters()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::restartExporters()
     {
         if (this->doRestart() && this->restartPath().empty() )
         {
@@ -381,8 +394,9 @@ namespace FeelModels
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     boost::shared_ptr<std::ostringstream>
-    THERMODYNAMICSBASE_CLASS_NAME::getInfo() const
+    ThermoDynamicsBase<ConvexType,OrderTemp>::getInfo() const
     {
         boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
         *_ostr << "\n||==============================================||"
@@ -423,8 +437,9 @@ namespace FeelModels
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::solve()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::solve()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","solve", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -439,8 +454,9 @@ namespace FeelModels
 
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::exportResults( double time )
+    ThermoDynamicsBase<ConvexType,OrderTemp>::exportResults( double time )
     {
         if ( !M_exporter->doExport() ) return;
 
@@ -463,8 +479,9 @@ namespace FeelModels
     }
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::updateBdf()
+    ThermoDynamicsBase<ConvexType,OrderTemp>::updateBdf()
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -501,8 +518,9 @@ namespace FeelModels
 
 
 
+    template< typename ConvexType, int OrderTemp>
     void
-    THERMODYNAMICSBASE_CLASS_NAME::updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
+    ThermoDynamicsBase<ConvexType,OrderTemp>::updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
                                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                                     bool _doClose, bool _doBCStrongDirichlet ) const
     {
