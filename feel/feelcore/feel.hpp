@@ -97,13 +97,13 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
 #endif
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-W#warnings"
+#pragma GCC diagnostic ignored "-Wcpp"
 #endif
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic pop
 #endif
 #if defined(__clang__)
