@@ -28,7 +28,7 @@ file(REMOVE_RECURSE ${FEELMODELS_LIBBASE_CHECK_DIR})
 add_library(feelpp_modelcore
   SHARED
   options.cpp log.cpp timertool.cpp
-  applibase.cpp applibasenumericalsimulationtransitory.cpp
+  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp
   markermanagement.cpp
   )
 target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})

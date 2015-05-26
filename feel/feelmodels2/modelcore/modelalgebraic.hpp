@@ -22,112 +22,32 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file applibase.hpp
+ \file modelalgebraic.hpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2012-01-19
  */
 
-#ifndef APPLIBASE_HPP
-#define APPLIBASE_HPP 1
+#ifndef FEELPP_MODELALGEBRAIC_HPP
+#define FEELPP_MODELALGEBRAIC_HPP 1
 
-#include <feel/options.hpp>
+/*#include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feelalg/vectorblock.hpp>
 
 #include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
 #include <feel/feelmodels2/modelcore/log.hpp>
-#include <feel/feelmodels2/modelcore/timertool.hpp>
+ #include <feel/feelmodels2/modelcore/timertool.hpp>*/
+#include <feel/feelmodels2/modelcore/modelbase.hpp>
+
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/vectorblock.hpp>
 
 
 namespace Feel
 {
 namespace FeelModels
 {
-
-
-class ModelBase
-{
-public :
-    ModelBase( std::string _theprefix,
-               WorldComm const& _worldComm=Environment::worldComm(),
-               std::string subPrefix="",
-               std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
-
-    ModelBase( ModelBase const& app ) = default;
-    virtual ~ModelBase();
-
-    // worldcomm
-    WorldComm const& worldComm() const;
-    std::vector<WorldComm> const& worldsComm() const;
-    void setWorldsComm(std::vector<WorldComm> const& _worldsComm);
-    std::vector<WorldComm> const& localNonCompositeWorldsComm() const;
-    void setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm);
-    virtual void createWorldsComm();
-    // prefix
-    std::string prefix() const;
-    std::string subPrefix() const;
-    // vm
-    po::variables_map const& vm() const;
-    // appli repository
-    std::string appliRepositoryWithoutNumProc() const;
-    std::string appliRepository() const;
-    std::string appliShortRepository() const;
-    std::string appliShortRepositoryWithNumProc() const;
-    // verbose
-    bool verbose() const;
-    bool verboseAllProc() const;
-    // info
-    std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string s);
-    virtual boost::shared_ptr<std::ostringstream> getInfo() const;
-    virtual void printInfo() const;
-    virtual void saveInfo() const;
-    virtual void printAndSaveInfo() const;
-    // timer
-    TimerToolBase & timerTool(std::string s);
-    void addTimerTool(std::string s,std::string fileName);
-    // save assembly/solver scalability
-    bool scalabilitySave() const;
-    bool scalabilityReinitSaveFile() const;
-    void setScalabilitySave( bool b );
-    std::string scalabilityPath() const;
-    void setScalabilityPath(std::string s);
-    std::string scalabilityFilename() const;
-    void setScalabilityFilename(std::string s);
-
-private :
-    // worldcomm
-    WorldComm M_worldComm;
-    std::vector<WorldComm> M_worldsComm;
-    std::vector<WorldComm> M_localNonCompositeWorldsComm;
-    // prefix
-    std::string M_prefix;
-    std::string M_subPrefix;
-    // short repository name
-    std::string M_appliShortRepository;
-    // verbose
-    bool M_verbose,M_verboseAllProc;
-    // filename for save info
-    std::string M_filenameSaveInfo;
-    // timertool register by a name id
-    std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
-    bool M_timersActivated;
-    bool M_timersSaveFileMasterRank, M_timersSaveFileMax, M_timersSaveFileMin, M_timersSaveFileMean, M_timersSaveFileAll;
-    // save assembly/solver scalability
-    bool M_scalabilitySave, M_scalabilityReinitSaveFile;
-    std::string M_scalabilityPath;
-    std::string M_scalabilityFilename;
-};
-
-//--------------------------------------------------------
-// null application
-struct ModelBaseNull
-{
-    static const bool is_class_null = true;
-};
 
 //--------------------------------------------------------
 // method num application
@@ -254,4 +174,4 @@ private :
 } // namespace feel
 
 
-#endif //endif APPLIBASE_HPP
+#endif //endif FEELPP_MODELALGEBRAIC_HPP

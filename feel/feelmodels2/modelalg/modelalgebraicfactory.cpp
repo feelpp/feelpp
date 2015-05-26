@@ -22,12 +22,12 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file modelalgebraic.cpp
+ \file modelalgebraicfactory.cpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2012-01-19
  */
 
-#include <feel/feelmodels2/modelalg/modelalgebraic.hpp>
+#include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel {
 

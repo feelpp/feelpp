@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file applibasenumericalsimulationtransitory.hpp
+ \file modelnumerical.hpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2012-01-19
  */
@@ -30,7 +30,7 @@
 #ifndef APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP
 #define APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP 1
 
-#include <feel/feelmodels2/modelcore/applibase.hpp>
+#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
 
 //#include <feel/feelvf/vf.hpp>
 
