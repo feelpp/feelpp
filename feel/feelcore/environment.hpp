@@ -335,7 +335,7 @@ public:
     }
   
     template<typename T>
-    static void vmUp(std::string s,T val)
+    static void setOptionValue(std::string s,T val)
     {
         auto it = S_vm.find( s );
         CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
