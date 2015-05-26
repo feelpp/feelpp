@@ -5,7 +5,7 @@ namespace Feel
 namespace FeelModels
 {
 
-    AppliBaseNumericalSimulationTransitory::AppliBaseNumericalSimulationTransitory(bool _isStationary, std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
+    ModelNumerical::ModelNumerical(bool _isStationary, std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
                                                                                    std::string appliShortRepository )
         :
         super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
@@ -81,40 +81,8 @@ namespace FeelModels
     }
 
 
-#if 0
-    AppliBaseNumericalSimulationTransitory::AppliBaseNumericalSimulationTransitory( AppliBaseNumericalSimulationTransitory const& app )
-        :
-        super_type( app ),
-        M_rebuildMeshPartitions( app.M_rebuildMeshPartitions ),
-        M_isStationary( app.M_isStationary ),
-        M_doRestart( app.M_doRestart ),
-        M_restartPath( app.M_restartPath ),
-        M_restartAtLastSave( app.M_restartAtLastSave ),
-        M_timeInitial( app.M_timeInitial ),
-        M_timeFinal( app.M_timeFinal ),
-        M_timeStep( app.M_timeStep ),
-        M_bdfSaveInFile( app.M_bdfSaveInFile ),
-        M_bdfSaveFreq( app.M_bdfSaveFreq ),
-        M_timeCurrent( app.M_timeCurrent ),
-        M_parameters( app.M_parameters ),
-        M_geoParameters( app.M_geoParameters ),
-        M_ginacExpr( app.M_ginacExpr ),
-        M_ginacExprCompilationDirectory( app.M_ginacExprCompilationDirectory ),
-        M_geotoolSaveDirectory( app.M_geotoolSaveDirectory ),
-        M_geotoolSaveName( app.M_geotoolSaveName ),
-        M_row_startInMatrix( app.M_row_startInMatrix ),
-        M_col_startInMatrix( app.M_col_startInMatrix ),
-        M_row_startInVector( app.M_row_startInVector ),
-        M_mshFileStr( app.M_mshFileStr ),
-        M_geoFileStr( app.M_geoFileStr ),
-        M_exporterPath( app.M_exporterPath ),
-        M_PsLogger( app.M_PsLogger ),
-        M_geomap( app.M_geomap )
-    {}
-#endif
-
     void
-    AppliBaseNumericalSimulationTransitory::setStationary(bool b)
+    ModelNumerical::setStationary(bool b)
     {
         if ( M_isStationary != b)
         {
@@ -125,7 +93,7 @@ namespace FeelModels
 
     // ginac expr
     Expr< GinacEx<2> >
-    AppliBaseNumericalSimulationTransitory::userGinacExpr(uint16_type i, std::map<std::string,double> const& mp ) const
+    ModelNumerical::userGinacExpr(uint16_type i, std::map<std::string,double> const& mp ) const
     {
         CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
         std::string pathGinacExpr = (this->ginacExprCompilationDirectory().empty()) ?
@@ -134,39 +102,39 @@ namespace FeelModels
         return expr( this->userGinacExprStr(i), mp , pathGinacExpr );
     }
     Expr< GinacEx<2> >
-    AppliBaseNumericalSimulationTransitory::userGinacExpr(uint16_type i, std::pair<std::string,double> const& mp ) const
+    ModelNumerical::userGinacExpr(uint16_type i, std::pair<std::string,double> const& mp ) const
     {
         return this->userGinacExpr( i,{ { mp.first, mp.second } } );
     }
     std::string
-    AppliBaseNumericalSimulationTransitory::userGinacExprStr(uint16_type i) const
+    ModelNumerical::userGinacExprStr(uint16_type i) const
     {
         CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
         return M_ginacExpr[i-1].first;
     }
     std::string
-    AppliBaseNumericalSimulationTransitory::userGinacExprName(uint16_type i) const
+    ModelNumerical::userGinacExprName(uint16_type i) const
     {
         CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
         return M_ginacExpr[i-1].second;
     }
     void
-    AppliBaseNumericalSimulationTransitory::setUserGinacExpr(uint16_type i,std::string expr)
+    ModelNumerical::setUserGinacExpr(uint16_type i,std::string expr)
     {
         CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
         M_ginacExpr[i-1]=std::make_pair(expr,(boost::format("defaultNameGinacExpr%1%")%i).str());
     }
     void
-    AppliBaseNumericalSimulationTransitory::setUserGinacExpr(uint16_type i,std::string expr,std::string name)
+    ModelNumerical::setUserGinacExpr(uint16_type i,std::string expr,std::string name)
     {
         CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
         M_ginacExpr[i-1]=std::make_pair(expr,name);
     }
     std::string
-    AppliBaseNumericalSimulationTransitory::ginacExprCompilationDirectory() const { return M_ginacExprCompilationDirectory; }
+    ModelNumerical::ginacExprCompilationDirectory() const { return M_ginacExprCompilationDirectory; }
 
     void
-    AppliBaseNumericalSimulationTransitory::saveMSHfilePath(std::string namePath) const
+    ModelNumerical::saveMSHfilePath(std::string namePath) const
     {
         if ( this->worldComm().isMasterRank() )
         {

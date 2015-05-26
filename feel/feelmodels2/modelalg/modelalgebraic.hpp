@@ -36,13 +36,13 @@
 namespace Feel {
 
 
-    class MethodsNum
+    class ModelAlgebraicFactory
     {
     public :
-        typedef MethodsNum self_type;
+        typedef ModelAlgebraicFactory self_type;
 
         //typedef FeelModels::AppliBase appli_type;
-        typedef FeelModels::AppliBaseMethodsNum appli_type;
+        typedef FeelModels::ModelAlgebraic appli_type;
         typedef boost::shared_ptr<appli_type> appli_ptrtype;
 
         typedef typename appli_type::value_type value_type;
@@ -73,12 +73,12 @@ namespace Feel {
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        MethodsNum(appli_ptrtype const& __app, backend_ptrtype const& __backend);
+        ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend);
 
-        MethodsNum(appli_ptrtype const&__app,
-                   backend_ptrtype const& __backend,
-                   graph_ptrtype const& graph,
-                   indexsplit_ptrtype const& indexSplit );
+        ModelAlgebraicFactory(appli_ptrtype const&__app,
+                              backend_ptrtype const& __backend,
+                              graph_ptrtype const& graph,
+                              indexsplit_ptrtype const& indexSplit );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//

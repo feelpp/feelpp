@@ -16,11 +16,11 @@ namespace FeelModels
 
     template< typename ConvexType, int OrderTemp>
     ThermoDynamicsBase<ConvexType,OrderTemp>::ThermoDynamicsBase( bool __isStationary,
-                                            std::string __prefix,
-                                            WorldComm const& __worldComm,
-                                            bool __buildMesh,
-                                            std::string __subPrefix,
-                                            std::string __appliShortRepository )
+                                                                  std::string __prefix,
+                                                                  WorldComm const& __worldComm,
+                                                                  bool __buildMesh,
+                                                                  std::string __subPrefix,
+                                                                  std::string __appliShortRepository )
         :
         super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
     {}
@@ -319,7 +319,7 @@ namespace FeelModels
 
     template< typename ConvexType, int OrderTemp>
     void
-    ThermoDynamicsBase<ConvexType,OrderTemp>::init( bool buildMethodNum, methodsnum_type::appli_ptrtype const& app )
+    ThermoDynamicsBase<ConvexType,OrderTemp>::init( bool buildMethodNum, model_algebraic_factory_type::appli_ptrtype const& app )
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","init", "start",
                                             this->worldComm(),this->verboseAllProc());
@@ -373,8 +373,8 @@ namespace FeelModels
             // matrix graph of non zero
             auto graph = this->buildBlockMatrixGraph()(0,0);
             // tool for assembly and solver
-            M_methodNum.reset( new methodsnum_type(app,this->backend(),
-                                                   graph, graph->mapRow().indexSplit() ) );
+            M_methodNum.reset( new model_algebraic_factory_type(app,this->backend(),
+                                                                graph, graph->mapRow().indexSplit() ) );
         }
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","init", "finish",

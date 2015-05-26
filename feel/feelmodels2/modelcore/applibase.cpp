@@ -6,7 +6,7 @@ namespace Feel {
 namespace FeelModels {
 
 
-AppliBase::AppliBase( std::string _theprefix,
+ModelBase::ModelBase( std::string _theprefix,
                       WorldComm const& _worldComm,
                       std::string subPrefix,
                       std::string appliShortRepository )
@@ -39,52 +39,52 @@ AppliBase::AppliBase( std::string _theprefix,
     else
         M_scalabilityFilename = this->prefix()+".scalibility";
 }
-AppliBase::~AppliBase()
+ModelBase::~ModelBase()
 {}
 
 WorldComm const&
-AppliBase::worldComm() const { return M_worldComm; }
+ModelBase::worldComm() const { return M_worldComm; }
 std::vector<WorldComm> const&
-AppliBase::worldsComm() const { return M_worldsComm; }
+ModelBase::worldsComm() const { return M_worldsComm; }
 void
-AppliBase::setWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_worldsComm=_worldsComm; }
+ModelBase::setWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_worldsComm=_worldsComm; }
 std::vector<WorldComm> const&
-AppliBase::localNonCompositeWorldsComm() const { return M_localNonCompositeWorldsComm; }
+ModelBase::localNonCompositeWorldsComm() const { return M_localNonCompositeWorldsComm; }
 void
-AppliBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
+ModelBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
 void
-AppliBase::createWorldsComm() {}//warning
+ModelBase::createWorldsComm() {}//warning
 
 std::string
-AppliBase::prefix() const { return M_prefix; }
+ModelBase::prefix() const { return M_prefix; }
 std::string
-AppliBase::subPrefix() const { return M_subPrefix; }
+ModelBase::subPrefix() const { return M_subPrefix; }
 
 po::variables_map const&
-AppliBase::vm() const { return Environment::vm(); }
+ModelBase::vm() const { return Environment::vm(); }
 
 std::string
-AppliBase::appliRepositoryWithoutNumProc() const
+ModelBase::appliRepositoryWithoutNumProc() const
 {
     return Environment::rootRepository()+"/"+
         this->appliShortRepository();
 }
 
 std::string
-AppliBase::appliRepository() const
+ModelBase::appliRepository() const
 {
     return Environment::rootRepository() + "/" + this->appliShortRepositoryWithNumProc();
 }
 
 std::string
-AppliBase::appliShortRepository() const
+ModelBase::appliShortRepository() const
 {
     //return option(_name="exporter.directory").as<std::string>()+"/";
     return M_appliShortRepository+"/";
 }
 
 std::string
-AppliBase::appliShortRepositoryWithNumProc() const
+ModelBase::appliShortRepositoryWithNumProc() const
 {
     return this->appliShortRepository() + (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str() + "/";
 }
@@ -92,29 +92,29 @@ AppliBase::appliShortRepositoryWithNumProc() const
 
 // verbose
 bool
-AppliBase::verbose() const { return M_verbose; }
+ModelBase::verbose() const { return M_verbose; }
 bool
-AppliBase::verboseAllProc() const { return M_verboseAllProc; }
+ModelBase::verboseAllProc() const { return M_verboseAllProc; }
 
 // info
 std::string
-AppliBase::filenameSaveInfo() const
+ModelBase::filenameSaveInfo() const
 {
     return M_filenameSaveInfo;
 }
 void
-AppliBase::setFilenameSaveInfo(std::string s)
+ModelBase::setFilenameSaveInfo(std::string s)
 {
     M_filenameSaveInfo = s;
 }
 boost::shared_ptr<std::ostringstream>
-AppliBase::getInfo() const
+ModelBase::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
 }
 void
-AppliBase::printInfo() const
+ModelBase::printInfo() const
 {
     if ( this->verboseAllProc() )
         std::cout << this->getInfo()->str();
@@ -122,7 +122,7 @@ AppliBase::printInfo() const
         std::cout << this->getInfo()->str();
 }
 void
-AppliBase::saveInfo() const
+ModelBase::saveInfo() const
 {
     if (this->worldComm().isMasterRank() )
     {
@@ -132,7 +132,7 @@ AppliBase::saveInfo() const
     }
 }
 void
-AppliBase::printAndSaveInfo() const
+ModelBase::printAndSaveInfo() const
 {
     this->printInfo();
     this->saveInfo();
@@ -140,7 +140,7 @@ AppliBase::printAndSaveInfo() const
 
 // timer
 TimerToolBase &
-AppliBase::timerTool(std::string key)
+ModelBase::timerTool(std::string key)
 {
     auto itFind = M_mapTimerTool.find( key );
     if ( itFind == M_mapTimerTool.end() )
@@ -153,7 +153,7 @@ AppliBase::timerTool(std::string key)
         return *itFind->second;
 }
 void
-AppliBase::addTimerTool(std::string key,std::string fileName)
+ModelBase::addTimerTool(std::string key,std::string fileName)
 {
     CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
     if ( M_timersActivated )
@@ -175,32 +175,32 @@ AppliBase::addTimerTool(std::string key,std::string fileName)
 
 // save assembly/solver scalability
 bool
-AppliBase::scalabilitySave() const { return M_scalabilitySave; }
+ModelBase::scalabilitySave() const { return M_scalabilitySave; }
 bool
-AppliBase::scalabilityReinitSaveFile() const { return M_scalabilityReinitSaveFile; }
+ModelBase::scalabilityReinitSaveFile() const { return M_scalabilityReinitSaveFile; }
 void
-AppliBase::setScalabilitySave( bool b )  { M_scalabilitySave=b; }
+ModelBase::setScalabilitySave( bool b )  { M_scalabilitySave=b; }
 std::string
-AppliBase::scalabilityPath() const { return M_scalabilityPath; }
+ModelBase::scalabilityPath() const { return M_scalabilityPath; }
 void
-AppliBase::setScalabilityPath(std::string s) { M_scalabilityPath=s; }
+ModelBase::setScalabilityPath(std::string s) { M_scalabilityPath=s; }
 std::string
-AppliBase::scalabilityFilename() const { return M_scalabilityFilename; }
+ModelBase::scalabilityFilename() const { return M_scalabilityFilename; }
 void
-AppliBase::setScalabilityFilename(std::string s)  { M_scalabilityFilename=s; }
+ModelBase::setScalabilityFilename(std::string s)  { M_scalabilityFilename=s; }
 
 
 
 //------------------------------------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------------------------------------//
-// AppliBaseMethodsNum
+// ModelAlgebraic
 //------------------------------------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------------------------------------//
 //------------------------------------------------------------------------------------------------------------//
 
 
-AppliBaseMethodsNum::AppliBaseMethodsNum( std::string _theprefix,
+ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
                                           WorldComm const& _worldComm,
                                           std::string subPrefix,
                                           std::string appliShortRepository )
@@ -227,86 +227,86 @@ AppliBaseMethodsNum::AppliBaseMethodsNum( std::string _theprefix,
         M_printGraphFileName = this->prefix()+".graphPython.py";
 
 }
-AppliBaseMethodsNum::~AppliBaseMethodsNum()
+ModelAlgebraic::~ModelAlgebraic()
 {}
 
 
 
 // verbose
 bool
-AppliBaseMethodsNum::verboseSolverTimer() const { return M_verboseSolverTimer; }
+ModelAlgebraic::verboseSolverTimer() const { return M_verboseSolverTimer; }
 bool
-AppliBaseMethodsNum::verboseSolverTimerAllProc() const { return M_verboseSolverTimerAllProc; }
+ModelAlgebraic::verboseSolverTimerAllProc() const { return M_verboseSolverTimerAllProc; }
 // do rebuild cst part in linear/jacobian or use jac for residual
 bool
-AppliBaseMethodsNum::rebuildCstPartInLinearSystem() const { return M_rebuildCstPartInLinearSystem; }
+ModelAlgebraic::rebuildCstPartInLinearSystem() const { return M_rebuildCstPartInLinearSystem; }
 void
-AppliBaseMethodsNum::setRebuildCstPartInLinearSystem(bool b) { M_rebuildCstPartInLinearSystem=b; }
+ModelAlgebraic::setRebuildCstPartInLinearSystem(bool b) { M_rebuildCstPartInLinearSystem=b; }
 bool
-AppliBaseMethodsNum::useLinearJacobianInResidual() const { return M_useLinearJacobianInResidual; }
+ModelAlgebraic::useLinearJacobianInResidual() const { return M_useLinearJacobianInResidual; }
 void
-AppliBaseMethodsNum::setUseLinearJacobianInResidual(bool b) { M_useLinearJacobianInResidual=b; }
+ModelAlgebraic::setUseLinearJacobianInResidual(bool b) { M_useLinearJacobianInResidual=b; }
 bool
-AppliBaseMethodsNum::rebuildLinearPartInJacobian() const { return M_rebuildLinearPartInJacobian; }
+ModelAlgebraic::rebuildLinearPartInJacobian() const { return M_rebuildLinearPartInJacobian; }
 void
-AppliBaseMethodsNum::setRebuildLinearPartInJacobian(bool b) { M_rebuildLinearPartInJacobian=b; }
+ModelAlgebraic::setRebuildLinearPartInJacobian(bool b) { M_rebuildLinearPartInJacobian=b; }
 // a utiliser avec precaution!!!
 bool
-AppliBaseMethodsNum::rebuildCstPartInResidual() const { return M_rebuildCstPartInResidual; }
+ModelAlgebraic::rebuildCstPartInResidual() const { return M_rebuildCstPartInResidual; }
 void
-AppliBaseMethodsNum::setRebuildCstPartInResidual(bool b) { M_rebuildCstPartInResidual=b; }
+ModelAlgebraic::setRebuildCstPartInResidual(bool b) { M_rebuildCstPartInResidual=b; }
 // define an other matrix/vector to store the cst part
 bool
-AppliBaseMethodsNum::useCstMatrix() const { return M_useCstMatrix; }
+ModelAlgebraic::useCstMatrix() const { return M_useCstMatrix; }
 void
-AppliBaseMethodsNum::setUseCstMatrix(bool b) { M_useCstMatrix = b; }
+ModelAlgebraic::setUseCstMatrix(bool b) { M_useCstMatrix = b; }
 bool
-AppliBaseMethodsNum::useCstVector() const { return M_useCstVector; }
+ModelAlgebraic::useCstVector() const { return M_useCstVector; }
 void
-AppliBaseMethodsNum::setUseCstVector(bool b) { M_useCstVector = b; }
+ModelAlgebraic::setUseCstVector(bool b) { M_useCstVector = b; }
 // allow to rebuild cst part (once at next solve) if some parameters (model,time mode,..) change
 bool
-AppliBaseMethodsNum::needToRebuildCstPart() const { return M_needToRebuildCstPart; }
+ModelAlgebraic::needToRebuildCstPart() const { return M_needToRebuildCstPart; }
 void
-AppliBaseMethodsNum::setNeedToRebuildCstPart(bool b) { M_needToRebuildCstPart = b; }
+ModelAlgebraic::setNeedToRebuildCstPart(bool b) { M_needToRebuildCstPart = b; }
 // an option
 bool
-AppliBaseMethodsNum::errorIfSolverNotConverged() const { return M_errorIfSolverNotConverged; }
+ModelAlgebraic::errorIfSolverNotConverged() const { return M_errorIfSolverNotConverged; }
 void
-AppliBaseMethodsNum::setErrorIfSolverNotConverged( bool b ) { M_errorIfSolverNotConverged= b; }
+ModelAlgebraic::setErrorIfSolverNotConverged( bool b ) { M_errorIfSolverNotConverged= b; }
 // save a python script to view graph
 bool
-AppliBaseMethodsNum::printGraph() const { return M_printGraph; }
+ModelAlgebraic::printGraph() const { return M_printGraph; }
 void
-AppliBaseMethodsNum::setPrintGraph(bool b) { M_printGraph=b; }
+ModelAlgebraic::setPrintGraph(bool b) { M_printGraph=b; }
 std::string
-AppliBaseMethodsNum::printGraphFileName() const { return M_printGraphFileName; }
+ModelAlgebraic::printGraphFileName() const { return M_printGraphFileName; }
 void
-AppliBaseMethodsNum::setPrintGraphFileName(std::string s) { M_printGraphFileName=s; }
+ModelAlgebraic::setPrintGraphFileName(std::string s) { M_printGraphFileName=s; }
 
 /**
  * return false
  */
 bool
-AppliBaseMethodsNum::hasExtendedPattern() const { return false; }
+ModelAlgebraic::hasExtendedPattern() const { return false; }
 
 /**
  * return an empty blockPattern if not overhead
  */
-AppliBaseMethodsNum::block_pattern_type
-AppliBaseMethodsNum::blockPattern() const
+ModelAlgebraic::block_pattern_type
+ModelAlgebraic::blockPattern() const
 {
     return block_pattern_type(0,0);
 }
 
 bool
-AppliBaseMethodsNum::buildMatrixPrecond() const
+ModelAlgebraic::buildMatrixPrecond() const
 {
     return !( Environment::vm()[prefixvm(this->prefix(),"preconditioner.contribution")].as<std::string>() == "same_matrix" );
 }
 
 void
-AppliBaseMethodsNum::updatePreconditioner(const vector_ptrtype& X,
+ModelAlgebraic::updatePreconditioner(const vector_ptrtype& X,
                                           sparse_matrix_ptrtype& A,
                                           sparse_matrix_ptrtype& A_extended,
                                           sparse_matrix_ptrtype& Prec) const
@@ -334,26 +334,26 @@ AppliBaseMethodsNum::updatePreconditioner(const vector_ptrtype& X,
     }
 }
 
-AppliBaseMethodsNum::graph_ptrtype
-AppliBaseMethodsNum::buildMatrixGraph() const
+ModelAlgebraic::graph_ptrtype
+ModelAlgebraic::buildMatrixGraph() const
 {
     return graph_ptrtype();
 }
 
 void
-AppliBaseMethodsNum::updateCLDirichlet(vector_ptrtype& U) const {} // const = 0;
+ModelAlgebraic::updateCLDirichlet(vector_ptrtype& U) const {} // const = 0;
 void
-AppliBaseMethodsNum::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+ModelAlgebraic::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
                                      bool BuildCstPart,
                                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                      bool _doClose, bool _doBCStrongDirichlet) const {}// = 0;
 void
-AppliBaseMethodsNum::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
+ModelAlgebraic::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
                                      bool BuildCstPart, bool UseJacobianLinearTerms,
                                      bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
 
 void
-AppliBaseMethodsNum::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
+ModelAlgebraic::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
                                      bool _buildCstPart,
                                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                      bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
