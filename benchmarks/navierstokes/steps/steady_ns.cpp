@@ -29,7 +29,7 @@ int main(int argc, char**argv )
 {
     constexpr int dim = FEELPP_DIM;
     constexpr int order_p= FEELPP_ORDER_P;
-    
+
     using namespace Feel;
 	po::options_description stokesoptions( "Steady NS options" );
 	stokesoptions.add_options()
@@ -72,23 +72,41 @@ int main(int argc, char**argv )
 
     if ( Environment::isMasterRank() )
     {
-        std::cout << "Re\tFunctionSpace\tVelocity\tPressure\n";
+        std::cout << "Re\tLocalDOF\tFunctionSpace\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;
+        std::cout.width(16);
+        std::cout << std::left << Vh->nLocalDof();
         std::cout.width(16);
         std::cout << std::left << Vh->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
+        if( soption("picard.preconditioner") != "petsc" )
+        {
+            std::cout << "[blockns]\n";
+            std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
+            std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
+            std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
+            std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
+            std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
 
-        std::cout << "[blockns]\n";
-        std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
-        std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
-        std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
-        std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
-        std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n";
+            std::cout << " - Stokes rtol: " << doption( "stokes.ksp-rtol" ) << "\n";
+            std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
 
+            std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
+            std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
+            //std::cout << " - Ap max iteration: " << doption( "Ap.ksp-maxit" ) << "\n\n";
+
+            std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
+            std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
+            //std::cout << " - Mp max iteration: " << doption( "Mp.ksp-maxit" ) << "\n\n";
+
+            std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
+            std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
+            //std::cout << " - Fu max iteration: " << doption( "Fu.ksp-maxit" ) << "\n\n";
+        }
     }
     auto deft = gradt( u );
     auto def = grad( v );
@@ -97,7 +115,7 @@ int main(int argc, char**argv )
     double newtonTol = doption(_name="newton.tol");
     int newtonMaxIt = doption(_name="newton.maxit");
 
-    
+
     BoundaryConditions bcs;
     map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "velocity", "Dirichlet" ) };
 
@@ -124,7 +142,7 @@ int main(int argc, char**argv )
     }
     auto e = exporter( _mesh=mesh );
 
-    
+
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
     at+=a;
@@ -149,7 +167,7 @@ int main(int argc, char**argv )
     tic();
     auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
-    
+
     a_blockns->setMatrix( at.matrixPtr() );
 
     auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
@@ -238,13 +256,13 @@ int main(int argc, char**argv )
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
             fixedpt_iter++;
-            
+
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                            }
+            }
             Un = U;
             Un.close();
 
