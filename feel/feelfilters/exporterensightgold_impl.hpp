@@ -145,6 +145,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::save() const
 {
+    tic();
     if ( !this->worldComm().isActive() ) return;
 
     DVLOG(2) << "checking if frequency is ok\n";
@@ -209,36 +210,30 @@ ExporterEnsightGold<MeshType,N>::save() const
     }
     */
 
-    boost::timer ti;
-    DVLOG(2) << "export in ensight format\n";
-
-    ti.restart();
-    DVLOG(2) << "export geo(mesh) file\n";
+    tic();
     writeGeoFiles();
-    DVLOG(2) << "export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save geo",FLAGS_v>1);
 
-    LOG(INFO) << "Geo File written" << std::endl;
-
-    ti.restart();
-    DVLOG(2) << "export variable file\n";
+    
     /* only try to write variable data when we have time steps */
     if(hasSteps)
-    { writeVariableFiles(); }
-    DVLOG(2) << "export variable files ok, time " << ti.elapsed() << "\n";
-
-    ti.restart();
-    DVLOG(2) << "export time set\n";
+    { 
+        tic();
+        writeVariableFiles(); 
+        toc("ExporterEnsightGold::save variables",FLAGS_v>1);
+    }
+    tic();
     this->saveTimeSet();
-    DVLOG(2) << "export time set ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save timeset",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "export case file\n";
+    tic();
     writeCaseFile();
-    DVLOG(2) << "export case file ok, time " << ti.elapsed() << "\n";
-
-    DVLOG(2) << "export sos\n";
+    toc("ExporterEnsightGold::save case",FLAGS_v>1);
+    
+    tic();
     writeSoSFile();
-    DVLOG(2) << "export sos ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save sos",FLAGS_v>1);
+    toc("ExporterEnsightGold::save", FLAGS_v > 0 );
 }
 
 template<typename MeshType, int N>

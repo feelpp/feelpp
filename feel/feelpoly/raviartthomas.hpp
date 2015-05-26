@@ -606,7 +606,6 @@ public:
                           true );
 
         n *= g->element().faceMeasure(faceId)/ublas::norm_2(n);
-        LOG(INFO) << "[raviart thomas interpolant] N=" << n << "\n";
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
@@ -630,13 +629,15 @@ public:
                     getFaceNormal(expr, f, n);
                 else
                     getFaceNormal(expr, g->faceId(), n);
-
+                
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                              
+                    
                 }
             }
         }
