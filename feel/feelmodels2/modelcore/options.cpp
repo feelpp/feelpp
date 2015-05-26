@@ -21,8 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <feel/feelmodels2/feelmodelscore/feelmodelsoptions.hpp>
-#include <feel/feelmodels2/feelmodelscore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels2/modelcore/options.hpp>
+#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel

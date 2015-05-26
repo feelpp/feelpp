@@ -7,7 +7,7 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels2/feelmodelsmesh/reloadmesh.hpp>
+#include <feel/feelmodels2/modelmesh/reloadmesh.hpp>
 
 namespace Feel
 {

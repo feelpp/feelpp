@@ -30,7 +30,7 @@
 #ifndef APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP
 #define APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP 1
 
-#include <feel/feelmodels2/feelmodelscore/applibase.hpp>
+#include <feel/feelmodels2/modelcore/applibase.hpp>
 
 //#include <feel/feelvf/vf.hpp>
 

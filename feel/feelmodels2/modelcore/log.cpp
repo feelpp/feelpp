@@ -27,7 +27,7 @@
    \date 2011-12-30
  */
 
-#include <feel/feelmodels2/feelmodelscore/feelmodelslog.hpp>
+#include <feel/feelmodels2/modelcore/log.hpp>
 
 namespace Feel {
 namespace FeelModels {
