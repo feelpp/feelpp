@@ -52,7 +52,7 @@ namespace FeelModels
 
 
 template< typename ConvexType, int OrderTemp>
-class ThermoDynamicsBase : public /*AppliBaseNumericalSimulationTransitory,*/ModelNumerical,
+class ThermoDynamicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC
 

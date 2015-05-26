@@ -223,7 +223,7 @@ macro( genLibThermoDynamics )
   #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/thermodyn/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
   set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelmodels_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
 
@@ -231,14 +231,6 @@ macro( genLibThermoDynamics )
     file(WRITE ${LIBBASE_CHECK_PATH} "")
 
     # configure libmodelbase
-    # set(CODEGEN_FILES_TO_COPY
-    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.hpp
-    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase.cpp
-    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.hpp
-    #   ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn.cpp )
-    # set(CODEGEN_SOURCES
-    #   ${LIBBASE_DIR}/thermodynbase.cpp
-    #   ${LIBBASE_DIR}/thermodyn.cpp )
     set(CODEGEN_FILES_TO_COPY
       ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn_inst.cpp )
@@ -264,24 +256,19 @@ macro( genLibThermoDynamics )
   ############################
   if ( FEELMODELS_APP_BC_DESC )
 
-    #set(BCDESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
     get_filename_component( BCDESC_FILE ${FEELMODELS_APP_BC_DESC} ABSOLUTE )
 
     if ( FEELMODELS_APP_BC_MARKERS )
       get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
-      #set(BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS})
     else()
       set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
     endif()
 
     if ( FEELMODELS_APP_GEO_DESC )
       get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
-      #set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
     else()
       set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
     endif()
-
-    #set(PREFIX_LIB thermo)
 
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
       message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
@@ -290,7 +277,6 @@ macro( genLibThermoDynamics )
 
     if ( FEELMODELS_APP_LIB_DIR )
       get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
-      #set(THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR})
     else()
       set(THE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
@@ -335,7 +321,7 @@ macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORD
   #set(APPLICATION_DIR codeGen_${APPLICATION_NAME})
   #genLibThermoDynamics(${APPLICATION_NAME} ${APPLICATION_DIR}/thermodyn ${FEELMODELS_DIM} ${FEELMODELS_ORDERPOLY} ${FEELMODELS_ORDERGEO} ${BCMARKER_FILE} ${BCDESC_FILE} ${MESH_FILE} )
   genLibThermoDynamics(
-    LIB_NAME   feelmodels_thermo${APPLICATION_NAME}
+    LIB_NAME   feelpp_model_thermo${APPLICATION_NAME}
     LIB_DIR    ${THE_APPLICATION_DIR}/thermodyn
     DIM        ${FEELMODELS_DIM}
     T_ORDER    ${FEELMODELS_ORDERPOLY}
@@ -345,7 +331,7 @@ macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORD
     GEO_DESC   ${GEO_FILE}
     )
 
-  set(LIB_DEPENDS feelmodels_thermo${APPLICATION_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) #fsimesh 
+  set(LIB_DEPENDS feelpp_model_thermo${APPLICATION_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) #fsimesh 
   genExecutableBase(
     ${APPLICATION_NAME}
     APPLICATION_DIR ${THE_APPLICATION_DIR}
@@ -403,10 +389,156 @@ macro(fsi_add_thermo_application)
   genExecutableThermoDynamics(${APPLICATION_NAME} ${FEELMODELS_DIM} ${FEELMODELS_ORDERPOLY} ${FEELMODELS_ORDERGEO} ${BCMARKER_FILE} ${DESC_FILE} ${GEO_FILE} ${MAIN_FILE} )
 
 endmacro(fsi_add_thermo_application)
-# #############################################################################
-# #############################################################################
-# #############################################################################
-# #############################################################################
+
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
+macro( genLibSolidMechanics )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;DISP_ORDER;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;DENSITY_COEFFLAME_TYPE;LIB_NAME;LIB_DIR;"
+    "NO_UPDATE_MODEL_DEF"
+    ${ARGN}
+    )
+
+  if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+    resetToZeroAllPhysicalVariables()
+    SET(SOLIDMECHANICS 1 )
+  endif()
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_DISP_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_DISP_ORDER OR FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(SOLIDMECHANICS_DIM ${FEELMODELS_APP_DIM})
+  set(SOLIDMECHANICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(SOLIDMECHANICS_ORDER_DISPLACEMENT ${FEELMODELS_APP_DISP_ORDER})
+
+  if (FEELMODELS_APP_DENSITY_COEFFLAME_TYPE)
+    if ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "Cst" )
+      set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLCst)
+      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 1)
+    elseif ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0d" )
+      set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLP0d)
+      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
+    else()
+      message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} : is not valid! It must be Cst or P0d")
+    endif()
+  else()
+    # default value
+      set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLCst)
+      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 1)
+  endif()
+
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_DENSITY_COEFFLAME_TAG})
+  set(FEELMODELS_MODEL_SPECIFIC_NAME solidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/solid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+
+  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+    #write empty file in orter to check if this lib has already define
+    file(WRITE ${LIBBASE_CHECK_PATH} "")
+
+    # configure libmodelbase
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbasecreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseothers_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatelinear_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatelinear1dreduced_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatejacobian_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdateresidual_inst.cpp
+      #${FEELPP_MODELS_SOURCE_DIR}/solid/solidmec_inst.cpp
+      )
+    set(CODEGEN_SOURCES
+      ${LIBBASE_DIR}/solidmecbasecreate_inst.cpp
+      ${LIBBASE_DIR}/solidmecbaseothers_inst.cpp
+      ${LIBBASE_DIR}/solidmecbaseupdatelinear_inst.cpp
+      ${LIBBASE_DIR}/solidmecbaseupdatelinear1dreduced_inst.cpp
+      ${LIBBASE_DIR}/solidmecbaseupdatejacobian_inst.cpp
+      ${LIBBASE_DIR}/solidmecbaseupdateresidual_inst.cpp
+      #${LIBBASE_DIR}/solidmec_inst.cpp
+      )
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+    # generate libmodelbase
+    genLibBase(
+      LIB_DIR ${LIBBASE_DIR}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      PREFIX_LIBNAME ${LIBBASE_NAME}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecconfig.h.in
+      )
+  endif()
+
+  ############################
+  # build lib with bctool
+  ############################
+  if ( FEELMODELS_APP_BC_DESC )
+
+    get_filename_component( BCDESC_FILE ${FEELMODELS_APP_BC_DESC} ABSOLUTE )
+
+    if ( FEELMODELS_APP_BC_MARKERS )
+      get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
+    else()
+      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+    endif()
+
+    if ( FEELMODELS_APP_GEO_DESC )
+      get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
+    else()
+      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+    endif()
+
+    if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
+      message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
+    endif()
+    set(LIB_NAME ${FEELMODELS_APP_LIB_NAME})
+
+    if ( FEELMODELS_APP_LIB_DIR )
+      get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
+    else()
+      set(THE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+
+
+    set(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER 1)
+
+    set(PREFIX_FILES_TO_COPY solid)
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/codegen_solidmec.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/codegen_solidmec.cpp )
+    set(CODEGEN_SOURCES
+      ${THE_LIB_DIR}/codegen_solidmec.cpp )
+    set(LIB_DEPENDS ${LIBBASE_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+
+    genLibBase(
+      LIB_DIR ${THE_LIB_DIR}
+      MARKERS ${BCMARKER_FILE}
+      DESC ${BCDESC_FILE}
+      GEO ${GEO_FILE}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      PREFIX_LIBNAME ${LIB_NAME}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+      )
+    unset(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER)
+
+  endif( FEELMODELS_APP_BC_DESC )
+
+
+
+
+endmacro( genLibSolidMechanics )
+
 # macro( genLibSolidMechanics APPLICATION_NAME APPLICATION_DIR BCMARKER_FILE FEELMODELS_DIM
 #     FEELMODELS_ORDER_U FEELMODELS_ORDERGEO FEELMODELS_USE_CST_DENSITY_COEFFLAME BCDESC_FILE MESH_FILE )
 
