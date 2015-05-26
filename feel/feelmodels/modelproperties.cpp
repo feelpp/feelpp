@@ -30,6 +30,8 @@ namespace Feel {
 
 ModelProperties::ModelProperties( std::string const& filename )
 {
+    if ( !fs::exists( filename ) ) return;
+
     pt::read_json(filename, M_p);
     try {
         M_name  = M_p.get<std::string>( "Name"  );
