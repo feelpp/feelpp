@@ -37,9 +37,9 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 
-#include <feel/feelmodels2/feelmodelscore/feelmodelscoreconstconfig.h>
-#include <feel/feelmodels2/feelmodelscore/feelmodelslog.hpp>
-#include <feel/feelmodels2/feelmodelscore/feelmodelstimertool.hpp>
+#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels2/modelcore/log.hpp>
+#include <feel/feelmodels2/modelcore/timertool.hpp>
 
 
 namespace Feel

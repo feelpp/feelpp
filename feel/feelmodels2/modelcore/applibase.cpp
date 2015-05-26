@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels2/feelmodelscore/applibase.hpp>
+#include <feel/feelmodels2/modelcore/applibase.hpp>
 
 namespace Feel {
 

@@ -30,7 +30,7 @@
 #ifndef MODELSALGEBRAIC_HPP
 #define MODELSALGEBRAIC_HPP 1
 
-#include <feel/feelmodels2/feelmodelscore/applibase.hpp>
+#include <feel/feelmodels2/modelcore/applibase.hpp>
 
 
 namespace Feel {
