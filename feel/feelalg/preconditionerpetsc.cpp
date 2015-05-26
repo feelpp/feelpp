@@ -1726,14 +1726,10 @@ ConfigureKSP::runConfigureKSP( KSP& ksp ) const
         return;
 
     // get ksp type
-#if PETSC_VERSION_LESS_THAN(3,0,0)
-    KSPType ksp_type;
-#else
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,4,0) && !PETSC_VERSION_LESS_THAN(3,0,0)
     const KSPType ksp_type;
 #else
     KSPType ksp_type;
-#endif
 #endif
     this->check( KSPGetType ( ksp, &ksp_type ) );
 
@@ -1760,7 +1756,13 @@ ConfigureKSP::runConfigureKSP( KSP& ksp ) const
     {
         MatNullSpace nullsp;
         this->check( MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp ) );
+#if PETSC_VERSION_LESS_THAN( 3,5,4 )
         this->check( KSPSetNullSpace( ksp, nullsp ) );
+#else
+        Mat A;
+        this->check( KSPGetOperators( ksp, &A, NULL ) );
+        this->check( MatSetNullSpace( A, nullsp ) );
+#endif
         PETSc::MatNullSpaceDestroy( nullsp );
     }
 
@@ -1805,7 +1807,7 @@ ConfigurePCLU::runConfigurePCLU( PC& pc )
     // set factor package
     //this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
     // allow to tune the factorisation package
     this->check( PCFactorSetUpMatSolverPackage(pc) );
 

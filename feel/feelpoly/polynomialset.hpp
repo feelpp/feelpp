@@ -56,6 +56,8 @@
 
 namespace Feel
 {
+using optimizable_t = mpl::bool_<true>;
+using default_t = mpl::bool_<false>;
 
 /**
  * \class PolynomialSet
@@ -236,7 +238,6 @@ public:
     component_type operator()( uint16_type i, uint16_type j ) const
         {
             BOOST_STATIC_ASSERT( is_tensor2 );
-            
             const int nrows = M_coeff.size1()/nComponents;
             const int ncols = M_coeff.size2();
             return component_type( Poly(), ublas::project( M_coeff,
@@ -591,7 +592,7 @@ public:
 
         return res;
     }
-    
+
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
@@ -1026,7 +1027,7 @@ public:
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
             M_hessian.resize( boost::extents[M_ref_ele->nbDof()][nRealDim][__pts.size2()] );
-            
+
             matrix_type phiv = M_ref_ele->evaluate( __pts );
             ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
             ublas::matrix<matrix_type> __hess( M_ref_ele->derivate2( __pts ) );
@@ -1059,7 +1060,7 @@ public:
                                 {
                                     value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
                                     M_hessian[I*c1+i][l][q]( j,k ) = t;
-                                    M_hessian[I*c1+i][l][q]( k,j ) = t; 
+                                    M_hessian[I*c1+i][l][q]( k,j ) = t;
                                 }
 
 
@@ -1167,7 +1168,6 @@ public:
     {
         typedef typename convex_type::permutation_type permutation_type;
         std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
-        
         for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
         {
             __geopc[__f][permutation_type::NO_PERMUTATION] = boost::make_shared<precompute_type>(  gm, p(__f) );
@@ -1198,7 +1198,18 @@ public:
         static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
         static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
-        static const bool do_opt= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
+        static const bool do_optimization_p1= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
+        using do_optimization_p1_t = mpl::bool_<do_optimization_p1>;
+        using optimization_p1_t = mpl::bool_<true>;
+        using no_optimization_p1_t = mpl::bool_<false>;
+
+
+        static const bool do_optimization_p2= ( nOrder==2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
+        using do_optimization_p2_t = mpl::bool_<do_optimization_p2>;
+        using optimization_p2_t = mpl::bool_<true>;
+        using no_optimization_p2_t = mpl::bool_<false>;
+
+        static const bool do_opt_q1= ( nOrder<=2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_hypercube );
 
         typedef typename Basis_t::polyset_type polyset_type;
         static const uint16_type rank = polyset_type::rank;
@@ -1471,11 +1482,11 @@ public:
             M_dy(),
             M_dz()
         {
-            //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_opt;
+            //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
             {
                 const int ntdof = nDof*nComponents1;
-                if ( do_opt )
+                if ( do_optimization_p1 )
                     M_grad.resize( boost::extents[ntdof][1] );
                 else
                     M_grad.resize( boost::extents[ntdof][M_npoints] );
@@ -1487,7 +1498,7 @@ public:
 
                 if ( vm::has_div<context>::value )
                 {
-                    if ( do_opt )
+                    if ( do_optimization_p1 )
                         M_div.resize( boost::extents[ntdof][1] );
                     else
                         M_div.resize( boost::extents[ntdof][M_npoints] );
@@ -1495,10 +1506,10 @@ public:
 
                 if ( vm::has_curl<context>::value )
                 {
-                    if ( do_opt )
+                    if ( do_optimization_p1 )
                         M_curl.resize( boost::extents[ntdof][1] );
                     else
-                        M_curl.resize( boost::extents[ntdof][M_npoints] );       
+                        M_curl.resize( boost::extents[ntdof][M_npoints] );
                 }
 
                 if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
@@ -1506,7 +1517,7 @@ public:
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                 }
                 if ( vm::has_laplacian<context>::value )
-                {   
+                {
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                     M_laplacian.resize( boost::extents[ntdof][M_npoints] );
                 }
@@ -1580,15 +1591,34 @@ public:
                 std::cout << "M_gradphi[" << i << "]=" << *( M_gradphi.data()+i ) << "\n";
 
 #endif
-            update( __gmc, mpl::int_<rank>(), mpl::bool_<do_opt>() );
+            update( __gmc, mpl::int_<rank>(), do_optimization_p1_t() );
             //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_<true> );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, mpl::bool_<false> );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<true> );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, mpl::bool_<false> );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, mpl::bool_<true> );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, mpl::bool_<false> );
+
+        //
+        // update scalar valued polynomials
+        //
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, optimization_p1_t );
+        // optimization for 2nd order derivative for P <= 1
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t );
+        // optimization for 2nd order derivative for P <= 2
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t, optimization_p2_t );
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t, no_optimization_p2_t );
+
+        //
+        // update vector valued polynomials
+        //
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, optimization_p1_t );
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t );
+        // optimization for 2nd order derivative for P <= 2
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t, optimization_p2_t );
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t, no_optimization_p2_t );
+
+        //
+        // update matrix valued polynomials
+        //
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, optimization_p1_t );
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, no_optimization_p1_t );
 
         /**
          * \return the number of points at which the basis functions
@@ -1673,7 +1703,7 @@ public:
 
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return d( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return d( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1686,7 +1716,7 @@ public:
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dx( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return dx( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1700,7 +1730,7 @@ public:
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dy( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return dy( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1714,7 +1744,7 @@ public:
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dz( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return dz( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1745,7 +1775,7 @@ public:
         }
         grad_type const& grad( uint16_type i, uint32_type q ) const
             {
-                return grad( i, q, mpl::bool_<do_opt>() );
+                return grad( i, q, do_optimization_p1_t() );
             }
         grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1758,7 +1788,7 @@ public:
 
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return grad(i, c1, c2, q, mpl::bool_<do_opt>() );
+                return grad(i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1770,7 +1800,7 @@ public:
             }
         dx_type  dx( uint16_type i, uint32_type q ) const
             {
-                return dx( i, q, mpl::bool_<do_opt>() );
+                return dx( i, q, do_optimization_p1_t() );
             }
         dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1782,7 +1812,7 @@ public:
             }
         dy_type  dy( uint16_type i, uint32_type q ) const
             {
-                return dy( i, q, mpl::bool_<do_opt>() );
+                return dy( i, q, do_optimization_p1_t() );
             }
         dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1794,7 +1824,7 @@ public:
             }
         dz_type  dz( uint16_type i, uint32_type q ) const
             {
-                return dz( i, q, mpl::bool_<do_opt>() );
+                return dz( i, q, do_optimization_p1_t() );
             }
         dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1835,7 +1865,7 @@ public:
 
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
-                return div( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return div( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1880,7 +1910,7 @@ public:
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
-                return curl( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return curl( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1913,7 +1943,7 @@ public:
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
-                return curlx( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return curlx( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1945,7 +1975,7 @@ public:
 
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
-                return curly( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return curly( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1974,10 +2004,10 @@ public:
                 throw std::logic_error( "invalid use of curlz operator, field must be vectorial" );
                 return 0;
             }
-        
+
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
             {
-                return curlz( i, c1, c2, q, mpl::bool_<do_opt>() );
+                return curlz( i, c1, c2, q, do_optimization_p1_t() );
             }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
@@ -1990,9 +2020,9 @@ public:
                 return M_curl[i][q]( 2 );
             }
 
-        hess_type const& hess( uint16_type i, uint32_type q ) const 
+        hess_type const& hess( uint16_type i, uint32_type q ) const
             {
-                return M_hessian[i][q]; 
+                return M_hessian[i][q];
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
