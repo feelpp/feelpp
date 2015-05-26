@@ -20,7 +20,8 @@
 #undef THERMODYNAMICS_INCLUDE_LIBBASE_HEADER
 #cmakedefine THERMODYNAMICS_INCLUDE_LIBBASE_HEADER @THERMODYNAMICS_INCLUDE_LIBBASE_HEADER@
 #if defined ( THERMODYNAMICS_INCLUDE_LIBBASE_HEADER )
-#include <feel/feelmodels2/thermodyn/@FEELMODELS_MODEL_SPECIFIC_NAME@/thermodynbase.hpp>
+//#include <feel/feelmodels2/thermodyn/@FEELMODELS_MODEL_SPECIFIC_NAME@/thermodynbase.hpp>
+#include <feel/feelmodels2/thermodyn/@FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX@/thermodynconfig.h>
 #endif
 
 #undef FLUIDMECHANICS_INCLUDE_LIBBASE_HEADER
