@@ -38,10 +38,10 @@
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelts/bdf.hpp>
 
-#include <feel/feelmodels2/modelcore/applibasenumericalsimulationtransitory.hpp>
+#include <feel/feelmodels2/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels2/modelcore/markermanagement.hpp>
 #include <feel/feelmodels2/modelcore/options.hpp>
-#include <feel/feelmodels2/modelalg/modelalgebraic.hpp>
+#include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
 
 
 

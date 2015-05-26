@@ -22,15 +22,15 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file modelalgebraic.hpp
+ \file modelalgebraicfactory.hpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2012-01-19
  */
 
-#ifndef MODELSALGEBRAIC_HPP
-#define MODELSALGEBRAIC_HPP 1
+#ifndef FEELPP_MODELSALGEBRAICFACTORY_HPP
+#define FEELPP_MODELSALGEBRAICFACTORY_HPP 1
 
-#include <feel/feelmodels2/modelcore/applibase.hpp>
+#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
 
 
 namespace Feel {
@@ -210,4 +210,4 @@ namespace Feel {
 } // end namespace Feel
 
 
-#endif //MODELSALGEBRAIC_HPP
+#endif //FEELPP_MODELSALGEBRAICFACTORY_HPP

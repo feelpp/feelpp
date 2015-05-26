@@ -1,0 +1,223 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+ This file is part of the Feel library
+
+ Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
+ Date: 2012-01-19
+
+ Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 3.0 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+/**
+ \file modelbase.cpp
+ \author Vincent Chabannes <vincent.chabannes@feelpp.org>
+ \date 2012-01-19
+ */
+
+#include <feel/feelmodels2/modelcore/modelbase.hpp>
+
+namespace Feel {
+
+namespace FeelModels {
+
+
+ModelBase::ModelBase( std::string _theprefix,
+                      WorldComm const& _worldComm,
+                      std::string subPrefix,
+                      std::string appliShortRepository )
+    :
+    M_worldComm(_worldComm),
+    M_worldsComm(std::vector<WorldComm>(1,_worldComm)),
+    M_localNonCompositeWorldsComm(std::vector<WorldComm>(1,_worldComm)),
+    M_prefix(_theprefix),
+    M_subPrefix(subPrefix),
+    M_appliShortRepository(appliShortRepository),
+    M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
+    M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
+    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"appli.info")) ),
+    M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix()) ),
+    M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix()) ),
+    M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix()) ),
+    M_timersSaveFileMin( boption(_name="timers.save-min",_prefix=this->prefix()) ),
+    M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix()) ),
+    M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
+    M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
+    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
+{
+    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
+        M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
+    else
+        M_scalabilityPath = this->appliRepositoryWithoutNumProc();
+
+    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-filename")))
+        M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
+    else
+        M_scalabilityFilename = this->prefix()+".scalibility";
+}
+ModelBase::~ModelBase()
+{}
+
+WorldComm const&
+ModelBase::worldComm() const { return M_worldComm; }
+std::vector<WorldComm> const&
+ModelBase::worldsComm() const { return M_worldsComm; }
+void
+ModelBase::setWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_worldsComm=_worldsComm; }
+std::vector<WorldComm> const&
+ModelBase::localNonCompositeWorldsComm() const { return M_localNonCompositeWorldsComm; }
+void
+ModelBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm) { M_localNonCompositeWorldsComm=_worldsComm; }
+void
+ModelBase::createWorldsComm() {}//warning
+
+std::string
+ModelBase::prefix() const { return M_prefix; }
+std::string
+ModelBase::subPrefix() const { return M_subPrefix; }
+
+po::variables_map const&
+ModelBase::vm() const { return Environment::vm(); }
+
+std::string
+ModelBase::appliRepositoryWithoutNumProc() const
+{
+    return Environment::rootRepository()+"/"+
+        this->appliShortRepository();
+}
+
+std::string
+ModelBase::appliRepository() const
+{
+    return Environment::rootRepository() + "/" + this->appliShortRepositoryWithNumProc();
+}
+
+std::string
+ModelBase::appliShortRepository() const
+{
+    //return option(_name="exporter.directory").as<std::string>()+"/";
+    return M_appliShortRepository+"/";
+}
+
+std::string
+ModelBase::appliShortRepositoryWithNumProc() const
+{
+    return this->appliShortRepository() + (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str() + "/";
+}
+
+
+// verbose
+bool
+ModelBase::verbose() const { return M_verbose; }
+bool
+ModelBase::verboseAllProc() const { return M_verboseAllProc; }
+
+// info
+std::string
+ModelBase::filenameSaveInfo() const
+{
+    return M_filenameSaveInfo;
+}
+void
+ModelBase::setFilenameSaveInfo(std::string s)
+{
+    M_filenameSaveInfo = s;
+}
+boost::shared_ptr<std::ostringstream>
+ModelBase::getInfo() const
+{
+    boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    return _ostr;
+}
+void
+ModelBase::printInfo() const
+{
+    if ( this->verboseAllProc() )
+        std::cout << this->getInfo()->str();
+    else if (this->worldComm().isMasterRank() )
+        std::cout << this->getInfo()->str();
+}
+void
+ModelBase::saveInfo() const
+{
+    if (this->worldComm().isMasterRank() )
+    {
+        std::ofstream file(this->filenameSaveInfo().c_str(), std::ios::out);
+        file << this->getInfo()->str();
+        file.close();
+    }
+}
+void
+ModelBase::printAndSaveInfo() const
+{
+    this->printInfo();
+    this->saveInfo();
+}
+
+// timer
+TimerToolBase &
+ModelBase::timerTool(std::string key)
+{
+    auto itFind = M_mapTimerTool.find( key );
+    if ( itFind == M_mapTimerTool.end() )
+    {
+        this->addTimerTool(key,"applibase-defaultname.data");
+        CHECK( M_mapTimerTool.find( key ) != M_mapTimerTool.end() ) << "key not exist";
+        return *M_mapTimerTool[key];
+    }
+    else
+        return *itFind->second;
+}
+void
+ModelBase::addTimerTool(std::string key,std::string fileName)
+{
+    CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
+    if ( M_timersActivated )
+    {
+        auto myTimerTool = std::make_shared<TimerTool>(fileName,this->worldComm());
+        myTimerTool->setReinitSaveFile( this->scalabilityReinitSaveFile() );
+        myTimerTool->setSaveFileMasterRank( M_timersSaveFileMasterRank || M_timersSaveFileAll );
+        myTimerTool->setSaveFileMax( M_timersSaveFileMax || M_timersSaveFileAll );
+        myTimerTool->setSaveFileMin( M_timersSaveFileMin || M_timersSaveFileAll );
+        myTimerTool->setSaveFileMean( M_timersSaveFileMean || M_timersSaveFileAll );
+        M_mapTimerTool.emplace(std::make_pair( key,myTimerTool ) );
+    }
+    else
+    {
+        auto myTimerTool = std::make_shared<TimerToolNull>();
+        M_mapTimerTool.emplace(std::make_pair( key,myTimerTool ) );
+    }
+}
+
+// save assembly/solver scalability
+bool
+ModelBase::scalabilitySave() const { return M_scalabilitySave; }
+bool
+ModelBase::scalabilityReinitSaveFile() const { return M_scalabilityReinitSaveFile; }
+void
+ModelBase::setScalabilitySave( bool b )  { M_scalabilitySave=b; }
+std::string
+ModelBase::scalabilityPath() const { return M_scalabilityPath; }
+void
+ModelBase::setScalabilityPath(std::string s) { M_scalabilityPath=s; }
+std::string
+ModelBase::scalabilityFilename() const { return M_scalabilityFilename; }
+void
+ModelBase::setScalabilityFilename(std::string s)  { M_scalabilityFilename=s; }
+
+
+} // namespace FeelModels
+
+} // namespace Feel
