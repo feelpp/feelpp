@@ -187,14 +187,25 @@ IF ( MPI_FOUND )
 
   # Check if we have the types from the 2.2 standard
   # needed for MPI IO
+  # This minimal sample test for the 2.2 Types (produces garbage if tested)
   CHECK_CXX_SOURCE_COMPILES(
       "
+      #include <stdint.h>
       #include <mpi.h>
-
+      #define SIZE 64
       int main(int argc, char** argv)
       {
-      MPI_INT32_T i32;
-      MPI_INT64_T i64;
+          int32_t buf32[SIZE];
+          int64_t buf64[SIZE];
+          MPI_File file;
+          MPI_Status status;
+
+          MPI_Init(&argc, &argv);
+          MPI_File_open( MPI_COMM_WORLD, \"output.bin\", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file );
+          MPI_File_write( file, buf32, SIZE, MPI_INT32_T, &status );
+          MPI_File_write( file, buf64, SIZE, MPI_INT64_T, &status );
+          MPI_File_close( &file );
+          MPI_Finalize();
       }
       "
       MPIIO_HAS_STD_22_TYPES)
@@ -472,6 +483,8 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 
 endif()
 
+
+
 #
 # submodules
 #
@@ -537,16 +550,6 @@ message(STATUS "[feelpp] Eigen3: ${EIGEN3_INCLUDE_DIR}" )
 #INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 #add_definitions( -DEIGEN_NO_STATIC_ASSERT )
 
-#
-# Metis
-#
-FIND_PACKAGE(Metis)
-if ( METIS_FOUND )
-  INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-  #  LINK_DIRECTORIES(${METIS_LIBRARIES})
-  SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
-endif( METIS_FOUND )
 
 #
 # Ann
@@ -651,19 +654,7 @@ if(PYTHONINTERP_FOUND)
   message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
 endif()
 
-# metis
-FIND_LIBRARY(METIS_LIBRARY
-  NAMES
-  metis
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  #    "/opt/local/lib"
-  )
-message(STATUS "[feelpp] Metis: ${METIS_LIBRARY}" )
-IF( METIS_LIBRARY )
-  SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
+include(feelpp.module.metis)
 
 FIND_LIBRARY(PARMETIS_LIBRARY
   NAMES

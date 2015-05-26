@@ -256,16 +256,12 @@ void
 PreconditionerBlockNS<space_type>::createSubMatrices()
 {
     tic();
-
     M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
     M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
     M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
-
-    toc( "BlockNS create sub matrix done", FLAGS_v > 0 );
-    tic();
     helmOp = op( M_F, "Fu" );
     divOp = op( M_Bt, "Bt");
-    toc( "BlockNS convection-diffusion and gradient operators done ", FLAGS_v > 0 );
+    toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
 
 }
 template < typename space_type >
@@ -284,7 +280,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
         pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_mu, M_rho, M_alpha );
         this->setSide( super::RIGHT );
 
-        toc( "Assembling schur complement done", FLAGS_v > 0 );
+        toc( "Preconditioner::setType PCD", FLAGS_v > 0 );
 
         break;
     case PMM:
@@ -302,8 +298,7 @@ PreconditionerBlockNS<space_type>::setType( std::string t )
             pm = op( M_mass, "Mp" );
         }
         this->setSide( super::RIGHT );
-        
-        toc( "Assembling pressure mass matrix schur complement appoximation done", FLAGS_v > 0 );
+        toc( "Preconditioner::setType PMM", FLAGS_v > 0 );
     }
     break;
     case SIMPLE:
@@ -318,20 +313,18 @@ PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
                                          Expr_convection const& expr_b,
                                          Expr_bc const& g )
 {
-
     tic();
     this->setMatrix( A );
     this->createSubMatrices();
     
-    
-        
-    toc("BlockNS convection-diffusion operator updated", FLAGS_v > 0 );
     if ( type() == PCD )
     {
         tic();
         pcdOp->update( expr_b, g );
-        toc("BlockNS pressure convection-diffusion operator updated", FLAGS_v > 0 );
+        toc( "Preconditioner::update PCD", FLAGS_v > 0 );
+        
     }
+    toc( "Preconditioner::update", FLAGS_v > 0 );
 }
 
 
@@ -340,6 +333,7 @@ template < typename space_type >
 int
 PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
+    tic();
     U = X;
     U.close();
     LOG(INFO) << "Create velocity/pressure component...\n";
@@ -353,9 +347,11 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
     if ( this->type() == PMM )
     {
         LOG(INFO) << "Applying PMM:  pressure mass matrix";
+        tic();
         pm->applyInverse( *M_pin, *M_pout );
         M_pout->scale(-1);
         M_pout->close();
+        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",FLAGS_v>0);
         LOG(INFO) << "Applying PMM done";
     }
     if ( this->type() == PCD )
@@ -366,10 +362,12 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
             CHECK(pcdOp) << "Invalid PCD oeprator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
-            
+            tic();
             pcdOp->applyInverse( *M_pin, *M_pout );
             M_pout->scale(-1);
             M_pout->close();
+            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",FLAGS_v>0);
+            
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
         else
@@ -379,15 +377,21 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         }
     }
     LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
+    tic();
     divOp->apply( *M_pout, *M_vout );
+    
     
     M_aux->add( -1.0, *M_vout );
     M_aux->close();
-
+    toc("PreconditionerBlockNS::applyInverse apply B^T",FLAGS_v>0);
+    
     if ( boption("blockns.cd") )
     {
+        
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
+        tic();
         helmOp->applyInverse(*M_aux, *M_vout);
+        toc("PreconditionerBlockNS::applyInverse Fu^-1",FLAGS_v>0);
     }
     else
     {
@@ -397,13 +401,14 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
 
 
     LOG(INFO) << "Update output velocity/pressure...\n";
-
+    tic();
     U.template element<0>() = *M_vout;
     U.template element<1>() = *M_pout;
     U.close();
     Y=U;
     Y.close();
-
+    toc("PreconditionerBlockNS::applyInverse update solution",FLAGS_v>0);
+    toc("PreconditionerBlockNS::applyInverse" );
     return 0;
 }
 
