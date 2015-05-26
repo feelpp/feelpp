@@ -52,13 +52,13 @@ namespace FeelModels
 
 
 template< typename ConvexType, int OrderTemp>
-class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
+class ThermoDynamicsBase : public /*AppliBaseNumericalSimulationTransitory,*/ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC
 
     {
     public:
-        typedef AppliBaseNumericalSimulationTransitory super_type;
+        typedef ModelNumerical super_type;
         typedef ThermoDynamicsBase<ConvexType,OrderTemp> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
@@ -91,8 +91,8 @@ class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
         typedef boost::shared_ptr<export_type> export_ptrtype;
 
         // algebraic solver
-        typedef MethodsNum methodsnum_type;
-        typedef boost::shared_ptr< methodsnum_type > methodsnum_ptrtype;
+        typedef ModelAlgebraicFactory model_algebraic_factory_type;
+        typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 
         ThermoDynamicsBase( bool __isStationary,
@@ -130,8 +130,8 @@ class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
         BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
         BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
         size_type nLocalDof() const;
-        methodsnum_ptrtype const& methodNum() const { return M_methodNum; }
-        methodsnum_ptrtype & methodNum() { return M_methodNum; }
+        model_algebraic_factory_ptrtype const& methodNum() const { return M_methodNum; }
+        model_algebraic_factory_ptrtype & methodNum() { return M_methodNum; }
         //___________________________________________________________________________________//
         // exporter
         void exportResults() { this->exportResults( this->currentTime() ); }
@@ -157,7 +157,7 @@ class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
         void createExporters();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildMethodNum, methodsnum_type::appli_ptrtype const& app );
+        void init( bool buildMethodNum, model_algebraic_factory_type::appli_ptrtype const& app );
         void updateForUseFunctionSpacesVelocityConvection();
         void restartExporters();
 
@@ -207,7 +207,7 @@ class ThermoDynamicsBase : public AppliBaseNumericalSimulationTransitory,
 
         // algebraic data/tools
         backend_ptrtype M_backend;
-        methodsnum_ptrtype M_methodNum;
+        model_algebraic_factory_ptrtype M_methodNum;
         BlocksBaseVector<double> M_blockVectorSolution;
 
         export_ptrtype M_exporter;

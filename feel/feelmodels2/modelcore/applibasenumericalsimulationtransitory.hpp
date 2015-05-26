@@ -49,10 +49,10 @@ namespace Feel
 namespace FeelModels
 {
 
-    class AppliBaseNumericalSimulationTransitory : public AppliBaseMethodsNum
+class ModelNumerical : public ModelAlgebraic // AppliBaseMethodsNum
     {
     public:
-        typedef AppliBaseMethodsNum super_type;
+        typedef ModelAlgebraic/*AppliBaseMethodsNum*/ super_type;
 
         static const bool is_class_null = false;
 
@@ -70,12 +70,12 @@ namespace FeelModels
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        AppliBaseNumericalSimulationTransitory( bool _isStationary, std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
-                                                std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+        ModelNumerical( bool _isStationary, std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
+                        std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 
-        AppliBaseNumericalSimulationTransitory( AppliBaseNumericalSimulationTransitory const& app ) = default;
+        ModelNumerical( ModelNumerical const& app ) = default;
 
-        virtual ~AppliBaseNumericalSimulationTransitory() {};
+        virtual ~ModelNumerical() {};
 
 
         boost::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }

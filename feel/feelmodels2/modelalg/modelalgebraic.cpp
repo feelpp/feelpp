@@ -32,7 +32,7 @@
 namespace Feel {
 
 
-    MethodsNum::MethodsNum(appli_ptrtype const& __app, backend_ptrtype const& __backend)
+    ModelAlgebraicFactory::ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend)
         :
         M_appli(__app),
         M_backend( __backend ),
@@ -58,7 +58,7 @@ namespace Feel {
 
     //---------------------------------------------------------------------------------------------------------------//
 
-    MethodsNum::MethodsNum(appli_ptrtype const& __app,
+    ModelAlgebraicFactory::ModelAlgebraicFactory(appli_ptrtype const& __app,
                            backend_ptrtype const& __backend,
                            graph_ptrtype const& graph,
                            indexsplit_ptrtype const& indexSplit )
@@ -81,7 +81,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::init(graph_ptrtype const& graph,
+    ModelAlgebraicFactory::init(graph_ptrtype const& graph,
                      indexsplit_ptrtype const& indexSplit)
     {
         this->application()->timerTool("Constructor").start();
@@ -96,7 +96,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::buildMatrixVector(graph_ptrtype const& graph,
+    ModelAlgebraicFactory::buildMatrixVector(graph_ptrtype const& graph,
                                   indexsplit_ptrtype const& indexSplit)
     {
         //vectors
@@ -133,7 +133,7 @@ namespace Feel {
     }
 
     void
-    MethodsNum::buildOthers()
+    ModelAlgebraicFactory::buildOthers()
     {
         M_PrecondManage = preconditioner(_pc=(PreconditionerType) M_backend->pcEnumType() /*LU_PRECOND*/,
                                          _matrix=M_Prec,
@@ -152,7 +152,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::rebuildMatrixVector(graph_ptrtype const& graph,
+    ModelAlgebraicFactory::rebuildMatrixVector(graph_ptrtype const& graph,
                                     indexsplit_ptrtype const& indexSplit)
     {
         M_hasBuildLinearJacobian=false;
@@ -166,7 +166,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::reset(backend_ptrtype __backend,
+    ModelAlgebraicFactory::reset(backend_ptrtype __backend,
                       graph_ptrtype const& graph,
                       indexsplit_ptrtype const& indexSplit)
     {
@@ -180,21 +180,21 @@ namespace Feel {
     }
 
     void
-    MethodsNum::attachNullSpace( NullSpace<value_type> const& nullSpace )
+    ModelAlgebraicFactory::attachNullSpace( NullSpace<value_type> const& nullSpace )
     {
         CHECK( this->backend() ) << "backend not init\n";
         boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->backend(),nullSpace) );
         this->backend()->attachNullSpace( mynullspace );
     }
     void
-    MethodsNum::attachNearNullSpace( NullSpace<value_type> const& nearNullSpace )
+    ModelAlgebraicFactory::attachNearNullSpace( NullSpace<value_type> const& nearNullSpace )
     {
         CHECK( this->backend() ) << "backend not init\n";
         boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         this->backend()->attachNearNullSpace( myNearNullSpace );
     }
     void
-    MethodsNum::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
+    ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
     {
         CHECK( this->backend() ) << "backend not init\n";
         CHECK( M_PrecondManage ) << "preconditioner not init\n";
@@ -208,7 +208,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     boost::shared_ptr<std::ostringstream>
-    MethodsNum::getInfo() const
+    ModelAlgebraicFactory::getInfo() const
     {
         boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
@@ -246,7 +246,7 @@ namespace Feel {
     }
 
     void
-    MethodsNum::printInfo() const
+    ModelAlgebraicFactory::printInfo() const
     {
         if ( this->application()->verboseAllProc() ) std::cout << this->getInfo()->str();
         else if (this->application()->worldComm().isMasterRank() )
@@ -259,9 +259,9 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::linearSolver( vector_ptrtype& U )
+    ModelAlgebraicFactory::linearSolver( vector_ptrtype& U )
     {
-        if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","linearSolver", "start",
+        if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
                                                this->application()->worldComm(),this->application()->verboseAllProc());
 
         this->application()->timerTool("Solve").start();
@@ -321,7 +321,7 @@ namespace Feel {
         double mpiTimerAssembly = this->application()->timerTool("Solve").elapsed("algebraic-assembly");
 
         if (this->application()->verboseSolverTimer())
-          Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","linearSolver",
+          Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","linearSolver",
                          (boost::format("finish assembling in %1% s") % mpiTimerAssembly ).str(),
                          this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
 
@@ -346,7 +346,7 @@ namespace Feel {
 #if 0
         if ( option(_name="clear-preconditioner-after-use",_prefix=this->application()->prefix()).as<bool>() )
         {
-            Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","linearSolver","clear-preconditioner-after-use",
+            Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","linearSolver","clear-preconditioner-after-use",
                            this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
             M_PrecondManage->clear();
             MatrixPetsc<double> * pmatrix = dynamic_cast<MatrixPetsc<double>*>( M_J.get() );
@@ -354,7 +354,7 @@ namespace Feel {
         }
 #endif
         if (this->application()->verboseSolverTimer())
-          Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","linearSolver",
+          Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","linearSolver",
                          (boost::format("finish solve in %1% s")%tElapsed ).str(),
                          this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
     }
@@ -367,7 +367,7 @@ namespace Feel {
 
 
     void
-    MethodsNum::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ )
+    ModelAlgebraicFactory::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ )
     {
         this->application()->timerTool("Solve").start();
 
@@ -390,7 +390,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::updateResidual(const vector_ptrtype& X, vector_ptrtype& R)
+    ModelAlgebraicFactory::updateResidual(const vector_ptrtype& X, vector_ptrtype& R)
     {
         this->application()->timerTool("Solve").start();
 
@@ -420,9 +420,9 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::AlgoNewton2(vector_ptrtype& U)
+    ModelAlgebraicFactory::AlgoNewton2(vector_ptrtype& U)
     {
-        if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","NonLinearSolverNewton", "start",
+        if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton", "start",
                                                this->application()->worldComm(),this->application()->verboseAllProc());
 
         //---------------------------------------------------------------------//
@@ -483,7 +483,7 @@ namespace Feel {
                                                    _residual=M_R,
                                                    _prec=M_PrecondManage );
         if ( false )
-            Feel::FeelModels::Log(this->application()->prefix()+".MethodsNum","NonLinearSolverNewton",
+            Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                            "solver stat :\n" +
                            (boost::format("   - isConverged : %1%\n") %solveStat.isConverged() ).str() +
                            (boost::format("   - nIterations : %1%\n") %solveStat.nIterations() ).str() +
@@ -505,7 +505,7 @@ namespace Feel {
         this->application()->timerTool("Solve").setAdditionalParameter("snes-niter",int(solveStat.nIterations()) );
         this->application()->timerTool("Solve").stop();
 
-        if (this->application()->verboseSolverTimer()) Feel::FeelModels::Log( this->application()->prefix()+".MethodsNum","NonLinearSolverNewton",
+        if (this->application()->verboseSolverTimer()) Feel::FeelModels::Log( this->application()->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                                                                        (boost::format("finish in %1% s")%tElapsed ).str(),
                                                                        this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
     }
@@ -513,7 +513,7 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    MethodsNum::rebuildCstJacobian( vector_ptrtype U )
+    ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
     {
         M_CstJ->zero();
         M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
@@ -522,7 +522,7 @@ namespace Feel {
 
 
     void
-    MethodsNum::rebuildCstLinearPDE( vector_ptrtype U )
+    ModelAlgebraicFactory::rebuildCstLinearPDE( vector_ptrtype U )
     {
         M_CstJ->zero();
         M_CstR->zero();
@@ -541,7 +541,7 @@ namespace Feel {
 
 
     void
-    MethodsNum::AlgoPtFixe(vector_ptrtype U)
+    ModelAlgebraicFactory::AlgoPtFixe(vector_ptrtype U)
     {
 #if 0
         double erreur=UINT_MAX,err_old=UINT_MAX;
@@ -583,7 +583,7 @@ namespace Feel {
 #endif
                         if (erreur>err_old) { diverge=true;*U=*Uold;}
                     }
-                std::cout<<"[MethodsNum] : PtFixe : iter " << cptItPtFixe << " err "  << erreur  <<"\n";
+                std::cout<<"[ModelAlgebraicFactory] : PtFixe : iter " << cptItPtFixe << " err "  << erreur  <<"\n";
 
                 ++cptItPtFixe;
 
@@ -595,10 +595,10 @@ namespace Feel {
     //---------------------------------------------------------------------------------------------------------------//
     //OLD version (without petsc) : not up
     void
-    MethodsNum::AlgoNewton(vector_ptrtype U)
+    ModelAlgebraicFactory::AlgoNewton(vector_ptrtype U)
     {
 #if 0
-        std::cout << "[MethodsNum] : Newton Algo start\n";
+        std::cout << "[ModelAlgebraicFactory] : Newton Algo start\n";
 
         //M_appli->updateCLDirichlet(U);
 
@@ -635,7 +635,7 @@ namespace Feel {
                 if (cpt>0) {*Rold=*M_R;if (nResidu!=0) Rold->scale(1./nResidu);ErrDiff=Rold->l2Norm();}
                 std::cout << "\n Residu " << ErrDiff << "\n";
 
-                std::cout << "[MethodsNum] : Newton solve start\n";
+                std::cout << "[ModelAlgebraicFactory] : Newton solve start\n";
                 /*M_backend->solve( _matrix=J,
                   _solution=DeltaU,
                   _rhs=R,
@@ -645,7 +645,7 @@ namespace Feel {
                   );*/
                 M_backend->solve( M_J, DeltaU, M_R );
 
-                std::cout << "[MethodsNum] : Newton solve finish\n";
+                std::cout << "[ModelAlgebraicFactory] : Newton solve finish\n";
 
                 U->add(1.,DeltaU); //*U += *DeltaU;
 
@@ -659,7 +659,7 @@ namespace Feel {
 
 
 
-                std::cout<<"[MethodsNum] : Newton  : iter " << cpt << " Delta Norm L2 : " << Err << "\n";
+                std::cout<<"[ModelAlgebraicFactory] : Newton  : iter " << cpt << " Delta Norm L2 : " << Err << "\n";
 #if 0
                 auto nUUUold=Uold->l2Norm();
                 Uold->add(-1.,U);
@@ -675,7 +675,7 @@ namespace Feel {
 
             }
 
-        std::cout << "[MethodsNum] : Newton Algo finish\n";
+        std::cout << "[ModelAlgebraicFactory] : Newton Algo finish\n";
 #endif
     }
 

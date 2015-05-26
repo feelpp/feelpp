@@ -48,16 +48,16 @@ namespace FeelModels
 {
 
 
-class AppliBase
+class ModelBase
 {
 public :
-    AppliBase( std::string _theprefix,
+    ModelBase( std::string _theprefix,
                WorldComm const& _worldComm=Environment::worldComm(),
                std::string subPrefix="",
                std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 
-    AppliBase( AppliBase const& app ) = default;
-    virtual ~AppliBase();
+    ModelBase( ModelBase const& app ) = default;
+    virtual ~ModelBase();
 
     // worldcomm
     WorldComm const& worldComm() const;
@@ -124,17 +124,17 @@ private :
 
 //--------------------------------------------------------
 // null application
-struct AppliBaseNull
+struct ModelBaseNull
 {
     static const bool is_class_null = true;
 };
 
 //--------------------------------------------------------
 // method num application
-class AppliBaseMethodsNum : public AppliBase
+class ModelAlgebraic : public ModelBase
 {
 public :
-    typedef AppliBase super_type;
+    typedef ModelBase super_type;
 
     typedef double value_type;
     typedef Backend<value_type> backend_type;
@@ -149,14 +149,14 @@ public :
 
     typedef vf::BlocksBase<size_type> block_pattern_type;
 
-    AppliBaseMethodsNum( std::string _theprefix,
-                         WorldComm const& _worldComm=Environment::worldComm(),
-                         std::string subPrefix="",
-                         std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+    ModelAlgebraic( std::string _theprefix,
+                    WorldComm const& _worldComm=Environment::worldComm(),
+                    std::string subPrefix="",
+                    std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 
-    AppliBaseMethodsNum( AppliBaseMethodsNum const& app ) = default;
+    ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
-    virtual ~AppliBaseMethodsNum();
+    virtual ~ModelAlgebraic();
 
 
     // verbose
