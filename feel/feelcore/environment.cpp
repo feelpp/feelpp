@@ -1567,23 +1567,31 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     fs::path p = dirs.front();
 
-    if ( p.relative_path() != "." )
+    if (fs::path(fmtstr).is_absolute())
+    {
+        rep_path=fs::path("/");
+    }
+    else if ( p.relative_path() != "." )
+    {
         rep_path = Environment::rootRepository();
 
-    if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-    {
-        LOG( INFO ) << "Creating directory " << rep_path << "...";
-        fs::create_directory( rep_path );
+        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
+        {
+            LOG( INFO ) << "Creating directory " << rep_path << "...";
+            fs::create_directory( rep_path );
+        }
     }
-
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
-        //VLOG(2)<< " option: " << s << "\n";
-        rep_path = rep_path / dir;
+        if ( !dir.empty() )
+        {
+            //VLOG(2)<< " option: " << s << "\n";
+            rep_path = rep_path / dir;
 
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-            fs::create_directory( rep_path );
+            if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
+                fs::create_directory( rep_path );
+        }
     }
 
     if ( add_subdir_np )
