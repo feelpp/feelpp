@@ -343,7 +343,7 @@ macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORD
 endmacro(genExecutableThermoDynamics)
 #############################################################################
 #############################################################################
-macro(fsi_add_thermo_application)
+macro(feelpp_add_thermo_application)
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER;BC_MARKERS;BC_DESC;GEO_DESC;SRC"
     ""
@@ -388,7 +388,7 @@ macro(fsi_add_thermo_application)
 
   genExecutableThermoDynamics(${APPLICATION_NAME} ${FEELMODELS_DIM} ${FEELMODELS_ORDERPOLY} ${FEELMODELS_ORDERGEO} ${BCMARKER_FILE} ${DESC_FILE} ${GEO_FILE} ${MAIN_FILE} )
 
-endmacro(fsi_add_thermo_application)
+endmacro(feelpp_add_thermo_application)
 
 
 #############################################################################
@@ -424,7 +424,7 @@ macro( genLibSolidMechanics )
       set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLP0d)
       set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
     else()
-      message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} : is not valid! It must be Cst or P0d")
+      message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE : ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} is not valid! It must be Cst or P0d")
     endif()
   else()
     # default value
@@ -451,7 +451,7 @@ macro( genLibSolidMechanics )
       ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatelinear1dreduced_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatejacobian_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdateresidual_inst.cpp
-      #${FEELPP_MODELS_SOURCE_DIR}/solid/solidmec_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanics_inst.cpp
       )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/solidmecbasecreate_inst.cpp
@@ -460,7 +460,7 @@ macro( genLibSolidMechanics )
       ${LIBBASE_DIR}/solidmecbaseupdatelinear1dreduced_inst.cpp
       ${LIBBASE_DIR}/solidmecbaseupdatejacobian_inst.cpp
       ${LIBBASE_DIR}/solidmecbaseupdateresidual_inst.cpp
-      #${LIBBASE_DIR}/solidmec_inst.cpp
+      ${LIBBASE_DIR}/solidmechanics_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
@@ -534,189 +534,104 @@ macro( genLibSolidMechanics )
 
   endif( FEELMODELS_APP_BC_DESC )
 
-
-
-
 endmacro( genLibSolidMechanics )
+#############################################################################
+#############################################################################
+macro(genExecutableSolidMechanics APPLICATION_NAME
+    FEELMODELS_DIM FEELMODELS_ORDERGEO FEELMODELS_ORDER_DISP FEELMODELS_DENSITY_COEFFLAME_TYPE
+    BCMARKER_FILE BCDESC_FILE GEO_FILE MAIN_FILE ADDITIONAL_LIB_DEPEND )
 
-# macro( genLibSolidMechanics APPLICATION_NAME APPLICATION_DIR BCMARKER_FILE FEELMODELS_DIM
-#     FEELMODELS_ORDER_U FEELMODELS_ORDERGEO FEELMODELS_USE_CST_DENSITY_COEFFLAME BCDESC_FILE MESH_FILE )
+  resetToZeroAllPhysicalVariables()
+  SET(SOLIDMECHANICS 1 )
 
-#   set(SOLIDMECHANICS_DIM ${FEELMODELS_DIM})
-#   set(SOLIDMECHANICS_ORDERGEO ${FEELMODELS_ORDERGEO})
-#   set(SOLIDMECHANICS_ORDER_DISPLACEMENT ${FEELMODELS_ORDER_U})
+  set(THE_APPLICATION_DIR ${CMAKE_CURRENT_BINARY_DIR}/codeGen_${APPLICATION_NAME})
+  genLibSolidMechanics(
+    LIB_NAME   feelpp_model_solid_${APPLICATION_NAME}
+    LIB_DIR    ${THE_APPLICATION_DIR}/solid
+    DIM        ${FEELMODELS_DIM}
+    GEO_ORDER  ${FEELMODELS_ORDERGEO}
+    DISP_ORDER ${FEELMODELS_ORDER_DISP}
+    DENSITY_COEFFLAME_TYPE ${FEELMODELS_DENSITY_COEFFLAME_TYPE}
+    BC_DESC    ${BCDESC_FILE} 
+    BC_MARKERS ${BCMARKER_FILE}
+    GEO_DESC   ${GEO_FILE}
+    )
 
-#   if ("${FEELMODELS_USE_CST_DENSITY_COEFFLAME}" STREQUAL "1" ) 
-#     set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 1)
-#     set(FEELMODELS_USE_CST_DENSITY_COEFFLAME_TAG DCLCst)
-#   else()
-#     set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
-#     set(FEELMODELS_USE_CST_DENSITY_COEFFLAME_TAG DCLP0d)
-#    endif()
+  set(LIB_DEPENDS feelpp_model_solid_${APPLICATION_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${ADDITIONAL_LIB_DEPEND} ) 
+  genExecutableBase(
+    ${APPLICATION_NAME}
+    APPLICATION_DIR ${THE_APPLICATION_DIR}
+    SRC ${MAIN_FILE}
+    LIB_DEPENDS ${LIB_DEPENDS}
+    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+    )
 
-#   set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_USE_CST_DENSITY_COEFFLAME_TAG})
-#   set(FEELMODELS_MODEL_SPECIFIC_NAME solidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-#   set(LIBBASE_DIR ${PROJECT_BINARY_DIR}/fsi/fsimodel/${FEELMODELS_MODEL_SPECIFIC_NAME} )
+endmacro(genExecutableSolidMechanics)
+#############################################################################
+#############################################################################
+macro(feelpp_add_solid_application)
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;DISP_ORDER;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;SRC;DENSITY_COEFFLAME_TYPE;ADDITIONAL_LIB_DEPENDS"
+    ""
+    ${ARGN}
+    )
 
-#   set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-#   set(LIBBASE_NAME fsi_modelbase_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
 
-#   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
-#     #write empty file in orter to check if this lib has already define
-#     file(WRITE ${LIBBASE_CHECK_PATH} "")
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_DISP_ORDER OR FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_DISP_ORDER OR FEELMODELS_APP_GEO_ORDER")
+  endif()
+  set(FEELMODELS_DIM ${FEELMODELS_APP_DIM})
+  set(FEELMODELS_ORDER_DISP ${FEELMODELS_APP_DISP_ORDER})
+  set(FEELMODELS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
-#     set(CODEGEN_FILES_TO_COPY
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbase.hpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbasecreate.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseothers.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseupdateresidual.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseupdatejacobian.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseupdatelinear.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseupdatelinearaxi.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmecbaseupdatelinear1dreduced.cpp )
-#     set(CODEGEN_SOURCES
-#       ${LIBBASE_DIR}/solidmecbasecreate.cpp
-#       ${LIBBASE_DIR}/solidmecbaseothers.cpp
-#       ${LIBBASE_DIR}/solidmecbaseupdateresidual.cpp
-#       ${LIBBASE_DIR}/solidmecbaseupdatejacobian.cpp
-#       ${LIBBASE_DIR}/solidmecbaseupdatelinear.cpp
-#       ${LIBBASE_DIR}/solidmecbaseupdatelinearaxi.cpp
-#       ${LIBBASE_DIR}/solidmecbaseupdatelinear1dreduced.cpp
-#       )
-#     set(LIB_DEPENDS fsialg fsicore fsifilters ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
+  if ( FEELMODELS_APP_BC_MARKERS )
+    set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
+  else()
+    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+  endif()
 
-#     # generate libmodelbase
-#     genLibBase( ${APPLICATION_NAME} ${LIBBASE_DIR}
-#       LIB_DEPENDS ${LIB_DEPENDS}
-#       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-#       PREFIX_LIBNAME ${LIBBASE_NAME}
-#       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-#       FILES_SOURCES ${CODEGEN_SOURCES}
-#       CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fsisolidmecconfig.h.in
-#       )
+  if ( FEELMODELS_APP_GEO_DESC )
+    set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
+  else()
+    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+  endif()
+
+  set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
+  set(MAIN_FILE ${FEELMODELS_APP_SRC})
 
 
-#   endif()
+  if (FEELMODELS_APP_DENSITY_COEFFLAME_TYPE)
+    set( FEELMODELS_DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE})
+  else()
+    # default value
+    set(FEELMODELS_DENSITY_COEFFLAME_TYPE "Cst")
+  endif()
 
-#   set(PREFIX_FILES_TO_COPY solid)
-#   set(PREFIX_LIB sm)
-#   set(CODEGEN_FILES_TO_COPY
-#     ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmec.hpp
-#     ${PROJECT_SOURCE_DIR}/fsi/fsimodel/solidmec.cpp
-#     )
-#   set(CODEGEN_SOURCES
-#     ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/solidmec.cpp
-#     )
-#   set(LIB_DEPENDS ${LIBBASE_NAME} fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
+  if ( FEELMODELS_APP_ADDITIONAL_LIB_DEPENDS )
+    set( ADDITIONAL_LIB_DEPENDS ${FEELMODELS_APP_ADDITIONAL_LIB_DEPENDS} )
+  else()
+    # put feelpp ( duplication but allow to give an arg )
+    set( ADDITIONAL_LIB_DEPENDS ${FEELPP_LIBRARY} )
+  endif()
 
-#   set(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER 1)
+  if (0)
+    MESSAGE("*** Arguments for solid application ${APPLICATION_NAME}")
+    MESSAGE("*** DIM ${FEELMODELS_DIM}")
+    MESSAGE("*** DISP_ORDER ${FEELMODELS_ORDER_DISP}")
+    MESSAGE("*** ORDERGEO ${FEELMODELS_ORDERGEO}")
+    MESSAGE("*** GEO_DESC ${GEO_FILE}")
+    MESSAGE("*** BC_MARKERS ${BCMARKER_FILE}")
+    MESSAGE("*** BC_DESC ${DESC_FILE}")
+    MESSAGE("*** SRC ${MAIN_FILE}")
+    MESSAGE("*** DENSITY_COEFFLAME_TYPE ${FEELMODELS_DENSITY_COEFFLAME_TYPE}")
+  endif()
 
-#   genLibBase( ${APPLICATION_NAME} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}
-#     MARKERS ${BCMARKER_FILE}
-#     DESC ${BCDESC_FILE}
-#     GEO ${MESH_FILE}
-#     LIB_DEPENDS ${LIB_DEPENDS}
-#     PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-#     PREFIX_LIBNAME ${PREFIX_LIB}${APPLICATION_NAME}
-#     FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-#     FILES_SOURCES ${CODEGEN_SOURCES}
-#     CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
-#     )
+  genExecutableSolidMechanics(${APPLICATION_NAME}
+    ${FEELMODELS_DIM} ${FEELMODELS_ORDERGEO} ${FEELMODELS_ORDER_DISP} ${FEELMODELS_DENSITY_COEFFLAME_TYPE}
+    ${BCMARKER_FILE} ${DESC_FILE} ${GEO_FILE} ${MAIN_FILE} ${ADDITIONAL_LIB_DEPENDS} )
 
-#   unset(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER)
-
-# endmacro( genLibSolidMechanics )
-# #############################################################################
-# #############################################################################
-# macro(genExecutableSolidMechanics APPLICATION_NAME BCMARKER_FILE FEELMODELS_DIM
-#     FEELMODELS_ORDER_U FEELMODELS_ORDERGEO FEELMODELS_USE_CST_DENSITY_COEFFLAME BCDESC_FILE MESH_FILE
-#     MAIN_FILE ADDITIONAL_LIB_DEPEND )
-#   resetToZeroAllPhysicalVariables()
-#   SET(SOLIDMECHANICS 1 )
-
-#   set(APPLICATION_DIR codeGen_${APPLICATION_NAME})
-#   genLibSolidMechanics(${APPLICATION_NAME} ${APPLICATION_DIR}/solid ${BCMARKER_FILE} ${FEELMODELS_DIM}
-#     ${FEELMODELS_ORDER_U} ${FEELMODELS_ORDERGEO} ${FEELMODELS_USE_CST_DENSITY_COEFFLAME} ${BCDESC_FILE} ${MESH_FILE} )
-
-#   set(LIB_DEPENDS sm${APPLICATION_NAME} fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} ${ADDITIONAL_LIB_DEPEND} )
-#   genExecutableBase(
-#     ${APPLICATION_NAME} ${APPLICATION_DIR}
-#     SRC ${MAIN_FILE}
-#     LIB_DEPENDS ${LIB_DEPENDS}
-#     CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
-#     )
-
-# endmacro( genExecutableSolidMechanics )
-# #############################################################################
-# #############################################################################
-# macro(fsi_add_solid_application)
-#   PARSE_ARGUMENTS(FEELMODELS_APP
-#     "DIM;U_ORDER;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;SRC;DENSITY_COEFFLAME_TYPE;ADDITIONAL_LIB_DEPENDS"
-#     ""
-#     ${ARGN}
-#     )
-
-#   CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
-
-#   if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_GEO_ORDER ) )
-#     message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_GEO_ORDER")
-#   endif()
-#   set(FEELMODELS_DIM ${FEELMODELS_APP_DIM})
-#   set(FEELMODELS_ORDER_U ${FEELMODELS_APP_U_ORDER})
-#   set(FEELMODELS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
-
-#   if ( FEELMODELS_APP_BC_MARKERS )
-#     set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
-#   else()
-#     set(BCMARKER_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.bcmarkers )
-#   endif()
-
-#   if ( FEELMODELS_APP_GEO_DESC )
-#     set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
-#   else()
-#     set(GEO_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.mesh )
-#   endif()
-
-#   set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
-#   set(MAIN_FILE ${FEELMODELS_APP_SRC})
-
-#   if (FEELMODELS_APP_DENSITY_COEFFLAME_TYPE)
-#     if ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "Cst" )
-#       set(FEELMODELS_USE_CST_DENSITY_COEFFLAME 1)
-#     elseif ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0d" )
-#       set(FEELMODELS_USE_CST_DENSITY_COEFFLAME 0)
-#     else()
-#       message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} : is not valid! It must be Cst or P0d")
-#     endif()
-#   else()
-#     # default value
-#     set(FEELMODELS_USE_CST_DENSITY_COEFFLAME 1)
-#   endif()
-
-#   if ( FEELMODELS_APP_ADDITIONAL_LIB_DEPENDS )
-#     set( ADDITIONAL_LIB_DEPENDS ${FEELMODELS_APP_ADDITIONAL_LIB_DEPENDS} )
-#   else()
-#     # put feelpp ( duplication but allow to give an arg )
-#     set( ADDITIONAL_LIB_DEPENDS ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
-#   endif()
-
-#   if (0)
-#     MESSAGE("*** Arguments for solid application ${APPLICATION_NAME}")
-#     MESSAGE("*** DIM ${FEELMODELS_DIM}")
-#     MESSAGE("*** U_ORDER ${FEELMODELS_ORDER_U}")
-#     MESSAGE("*** ORDERGEO ${FEELMODELS_ORDERGEO}")
-#     MESSAGE("*** GEO_DESC ${GEO_FILE}")
-#     MESSAGE("*** BC_MARKERS ${BCMARKER_FILE}")
-#     MESSAGE("*** BC_DESC ${DESC_FILE}")
-#     MESSAGE("*** SRC ${MAIN_FILE}")
-#     MESSAGE("*** USE_CST_DENSITY_COEFFLAME ${FEELMODELS_USE_CST_DENSITY_COEFFLAME}")
-#   endif()
-
-#   genExecutableSolidMechanics(${APPLICATION_NAME} ${BCMARKER_FILE} ${FEELMODELS_DIM}
-#     ${FEELMODELS_ORDER_U} ${FEELMODELS_ORDERGEO} ${FEELMODELS_USE_CST_DENSITY_COEFFLAME} ${DESC_FILE} ${GEO_FILE}
-#     ${MAIN_FILE} ${ADDITIONAL_LIB_DEPENDS} )
-
-# endmacro(fsi_add_solid_application)
+endmacro(feelpp_add_solid_application)
 # #############################################################################
 # #############################################################################
 # #############################################################################
