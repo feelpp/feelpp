@@ -22,7 +22,7 @@
 #undef APPLICATION_TYPE_NAME
 #define APPLICATION_TYPE_NAME "fluid"
 #if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
-#include "fluid/fluidmec.hpp"
+#include "fluid/codegen_fluidmec.hpp"
 #define APPLI_FLUID_UORDER FLUIDMECHANICS_ORDER_VELOCITY
 #define APPLI_FLUID_PORDER FLUIDMECHANICS_ORDER_PRESSURE
 #define APPLI_FLUID_GORDER FLUIDMECHANICS_ORDERGEO
@@ -36,7 +36,7 @@
 #if defined( SOLIDMECHANICS )
 #undef APPLICATION_TYPE_NAME
 #define APPLICATION_TYPE_NAME "solid"
-#include "solid/solidmec.hpp"
+#include "solid/codegen_solidmec.hpp"
 #define APPLI_SOLID_UORDER SOLIDMECHANICS_ORDER_DISPLACEMENT
 #define APPLI_SOLID_GORDER SOLIDMECHANICS_ORDERGEO
 #endif
