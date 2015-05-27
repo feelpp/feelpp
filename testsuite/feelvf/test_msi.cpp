@@ -83,10 +83,10 @@ class Test
         {
           /// [mesh] 
         auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
-                                    _h=8.9e-3, 
+                                    _h=(pow(2,level)*8.9e-3), 
                                     _desc=domain(_name="polymere",
-                                                 _xmax=8.9e-3*(ima.cols()-1)/level,
-                                                 _ymax=8.9e-3*(ima.rows()-1)/level));
+                                                 _xmax=8.9e-3*(ima.cols()-1),
+                                                 _ymax=8.9e-3*(ima.rows()-1)));
 
         auto Xhc = Pch<1>( mesh );
         auto u=Xhc->element();
@@ -128,8 +128,8 @@ BOOST_AUTO_TEST_SUITE( msi_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
-    Test t0= Test(256,256,"y:x:y") ;
-    t0.resol(16);
+    Test t0= Test(256,256,"x:x:y") ;
+    t0.resol(2);
 }
 
 

@@ -28,6 +28,7 @@
 //#ifndef _MULTISCALEIMAGE_HPP_
 //#define _MULTISCALEIMAGE_HPP_
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/math/special_functions/round.hpp>
 using namespace boost::numeric;
 
 namespace Feel
@@ -55,11 +56,13 @@ public :
     
             std::cout <<" x =" << x <<", y =" << y << std::endl;
  
-            double i = x/dx;
-            double j = y/dy;
+            double i = boost::math::iround(x/dx)*pow(2,level);
+            double j = boost::math::iround(y/dy)*pow(2,level);
             
             std::cout <<" i =" << i <<", j =" << j << std::endl;
-            return image(i,j);
+
+
+            return image(j,i);
         }
 /*
     value_type operator()(ublas::vector<double> const& c, int L)
