@@ -38,6 +38,10 @@
 
 #if defined(FEELPP_HAS_VTK)
 
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
@@ -55,6 +59,9 @@
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
 #endif
 
 #endif /* FEELPP_HAS_VTK */
