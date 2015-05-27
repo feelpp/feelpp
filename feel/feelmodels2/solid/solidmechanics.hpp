@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2011-07-17
+       Date: 2014-06-04
 
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2014 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,47 +22,15 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file codegen_solidmec.hpp
+   \file solidmechanics.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2011-07-17
+   \date 2014-06-04
  */
 
-#ifndef FEELPP_CODEGEN_SOLIDMECHANICS_HPP
-#define FEELPP_CODEGEN_SOLIDMECHANICS_HPP 1
+#ifndef FEELPP_SOLIDMECHANICS_HPP
+#define FEELPP_SOLIDMECHANICS_HPP 1
 
 #include <feel/feelmodels2/solid/solidmecbase.hpp>
-
-#include <feel/feelvf/vf.hpp>
-
-
-#undef SOLIDMECHANICS
-#undef SOLIDMECHANICS0
-#undef SOLIDMECHANICS1
-#undef SOLIDMECHANICS2
-#include "feelmodelscoreconfig.h"
-#undef NUMSOLID
-#if defined( SOLIDMECHANICS )
-#define NUMSOLID /**/
-#endif
-#if defined( SOLIDMECHANICS0 )
-#define NUMSOLID 0 /**/
-#endif
-#if defined( SOLIDMECHANICS1 )
-#define NUMSOLID 1 /**/
-#endif
-#if defined( SOLIDMECHANICS2 )
-#define NUMSOLID 2 /**/
-#endif
-
-#define SOLIDMECHANICS_CLASS_NAME BOOST_PP_CAT(SolidMechanics,NUMSOLID)
-
-#include "bctool.hpp"
-#undef SOLIDMECHANICS_BC
-#undef SOLIDMECHANICS_VOLUME_FORCE
-#include "solid.bc"
-
-#undef SOLIDMECHANICSBASE_CLASS_NAME
-#define SOLIDMECHANICSBASE_CLASS_NAME SolidMechanicsBase< Simplex<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, SOLIDMECHANICS_ORDER_DISPLACEMENT,SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME >
 
 
 namespace Feel
@@ -70,24 +38,24 @@ namespace Feel
 namespace FeelModels
 {
 
-class SOLIDMECHANICS_CLASS_NAME : public SOLIDMECHANICSBASE_CLASS_NAME,
-                                  public boost::enable_shared_from_this< SOLIDMECHANICS_CLASS_NAME >
+template< typename ConvexType, int OrderDisp,bool UseCstMechProp=true >
+class SolidMechanics : public SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>,
+                       public boost::enable_shared_from_this< SolidMechanics<ConvexType,OrderDisp,UseCstMechProp> >
 {
 public:
-    typedef SOLIDMECHANICSBASE_CLASS_NAME super_type;
+    typedef SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp> super_type;
 
-    typedef SOLIDMECHANICS_CLASS_NAME self_type;
+    typedef SolidMechanics<ConvexType,OrderDisp,UseCstMechProp> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    //___________________________________________________________________________________//
+    using element_displacement_type = typename super_type::element_displacement_type;
 
-    SOLIDMECHANICS_CLASS_NAME( bool __isStationary,
-                               std::string prefix,
-                               WorldComm const& _worldComm=WorldComm(),
-                               bool __buildMesh=true,
-                               std::string subPrefix="",
-                               std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
-
+    SolidMechanics( bool __isStationary,
+                    std::string prefix,
+                    WorldComm const& _worldComm=Environment::worldComm(),
+                    bool __buildMesh=true,
+                    std::string subPrefix="",
+                    std::string appliShortRepository=soption(_name="exporter.directory") );
 
     //___________________________________________________________________________________//
     // load config files
@@ -96,7 +64,8 @@ public:
     void loadConfigMeshFile1dReduced( std::string const& geofilename );
 
     // update for use
-    void init( bool buildMethodNum = true );
+    void init( bool buildModelAlgebraicFactory = true );
+    void solve( bool upVelAcc=true );
 
     //___________________________________________________________________________________//
     // assembly using bc
@@ -113,11 +82,16 @@ public:
     void updateSourceTermResidual( vector_ptrtype& R ) const;
     void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
+private :
+    map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
+    map_scalar_field<2> M_bcDirichletX,M_bcDirichletY,M_bcDirichletZ;
+    map_scalar_field<2> M_bcNeumannScalar;
+    map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
+    map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
-}; // SolidMechanics
+};
 
+} // namespace FeelModels
+} // namespace Feel
 
-
-} // FeelModels
-} // Feel
-#endif /* FEELPP_CODEGEN_SOLIDMECHANICS_HPP */
+#endif // INCLUDE_SOLIDMECHANICS_HPP

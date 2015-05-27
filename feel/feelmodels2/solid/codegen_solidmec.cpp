@@ -1,3 +1,32 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+  This file is part of the Feel library
+
+  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
+       Date: 2011-07-17
+
+  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file codegen_solidmec.cpp
+   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
+   \date 2011-07-17
+ */
+
 #include "codegen_solidmec.hpp"
 
 #include <feel/feelfilters/geotool.hpp>
@@ -216,11 +245,6 @@ SOLIDMECHANICS_CLASS_NAME::updateBCDirichletStrongResidual(vector_ptrtype& R) co
         for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::dirichlet_z>() )
             modifVec( markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",PhysicalName, Component::Z ) ),
                       u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
-#if 0
-        ForEachBC( bcDef,cl::dirichlet_vec,
-                   modifVec(markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",PhysicalName ) /*PhysicalName*/),
-                            u,R, 0*vf::one()) );
-#endif
     }
 }
 void
@@ -236,12 +260,6 @@ SOLIDMECHANICS_CLASS_NAME::updateBCDirichletStrongJacobian( sparse_matrix_ptrtyp
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldDisplacement();
-#if 0
-    ForEachBC( bcDef,cl::dirichlet_vec,
-               bilinearForm_PatternCoupled +=
-               /**/ on( _range=markedfaces(this->mesh(), PhysicalName),
-                        _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ ) );
-#endif
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::dirichlet_vec>() )
         bilinearForm_PatternCoupled +=
             /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",PhysicalName ) ),
@@ -301,7 +319,7 @@ SOLIDMECHANICS_CLASS_NAME::updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtyp
         //WARNING : fixed at zero
         ForEachBC( bcDef,cl::dirichlet_vec,
                    bilinearForm +=
-                   /**/ on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",PhysicalName ) /*PhysicalName*/),
+                   /**/ on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",PhysicalName ) ),
                             _element=u, _rhs=F,
                             _expr=cst(0.) );
                    );
@@ -323,19 +341,18 @@ SOLIDMECHANICS_CLASS_NAME::updateBCNeumannResidual(vector_ptrtype& R) const
 
     if ( bcDef.hasNeumannScal() )
     {
-        // neumann boundary condition
         ForEachBC( bcDef,cl::neumann_scal,
                    form1( _test=this->functionSpace(), _vector=R) +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= -alpha_f*trans( Expression*N())*id(v),
+                   /**/ integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,PhysicalName) ),
+                                   _expr= -alpha_f*Expression*inner( N(),id(v) ),
                                    _geomap=this->geomap() ) );
     }
     if ( bcDef.hasNeumannVec() )
     {
         ForEachBC( bcDef,cl::neumann_vec,
                    form1( _test=this->functionSpace(), _vector=R) +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= -alpha_f*trans( Expression )*id(v),
+                   /**/ integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,PhysicalName) ),
+                                   _expr= -alpha_f*inner( Expression, id(v) ),
                                    _geomap=this->geomap() ) );
     }
 }
@@ -353,19 +370,18 @@ SOLIDMECHANICS_CLASS_NAME::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 
     if ( bcDef.hasNeumannScal() )
     {
-        // neumann boundary condition
         ForEachBC( bcDef,cl::neumann_scal,
                    form1( _test=this->functionSpace(), _vector=F) +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= alpha_f*trans( Expression*N())*id(v),
+                   /**/ integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,PhysicalName) ),
+                                   _expr= alpha_f*Expression*inner( N(),id(v) ),
                                    _geomap=this->geomap() ) );
     }
     if ( bcDef.hasNeumannVec() )
     {
         ForEachBC( bcDef,cl::neumann_vec,
                    form1( _test=this->functionSpace(), _vector=F) +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= alpha_f*trans( Expression )*id(v),
+                   /**/ integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,PhysicalName) ),
+                                   _expr= alpha_f*inner( Expression,id(v) ),
                                    _geomap=this->geomap() ) );
     }
 }
