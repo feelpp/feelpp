@@ -167,6 +167,10 @@ namespace FeelModels
     {
         if ( this->worldComm().isMasterRank() )
         {
+            fs::path thedir = fs::path( namePath ).parent_path();
+            if ( !fs::exists(thedir))
+                fs::create_directories(thedir);
+
             //std::string nameFile = prefixvm(this->prefix(),namePath);
             std::ofstream file(namePath.c_str(), std::ios::out);
             //M_mshFileStr = this->application()->vm()[prefixvm(this->prefix(),"mshfile")].as< std::string >() ;
