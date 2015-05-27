@@ -88,10 +88,10 @@ macro(genLibBase)
       ${BCMARKER_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
     # bctool
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
-      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
+      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
   endif()
   # .bc
   if ( FEELMODELS_GENLIB_BASE_DESC )
@@ -157,13 +157,13 @@ macro(genExecutableBase)
 
   if ( NOT EXISTS ${APPLICATION_DIR}/applimanagement.hpp )
     foreach(filename applimanagement.hpp)
-      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
+      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
     endforeach()
   endif()
   add_custom_target(codegen_env_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
   foreach(filename applimanagement.hpp)
     add_custom_command(TARGET codegen_env_${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/${filename} ${APPLICATION_DIR}/${filename} )
+      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} )
   endforeach()
 
   if ( NOT EXISTS ${APPLICATION_DIR}/${MAIN_FILE} )
@@ -233,10 +233,10 @@ macro( genLibThermoDynamics )
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
       ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodyn_inst.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynamics_inst.cpp )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/thermodynbase_inst.cpp
-      ${LIBBASE_DIR}/thermodyn_inst.cpp )
+      ${LIBBASE_DIR}/thermodynamics_inst.cpp )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
@@ -261,13 +261,13 @@ macro( genLibThermoDynamics )
     if ( FEELMODELS_APP_BC_MARKERS )
       get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
     else()
-      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
     endif()
 
     if ( FEELMODELS_APP_GEO_DESC )
       get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
     else()
-      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
     endif()
 
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
@@ -303,7 +303,7 @@ macro( genLibThermoDynamics )
       PREFIX_LIBNAME ${LIB_NAME} #${PREFIX_LIB}${APPLICATION_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
       )
     unset(THERMODYNAMICS_INCLUDE_LIBBASE_HEADER)
 
@@ -337,7 +337,7 @@ macro(genExecutableThermoDynamics APPLICATION_NAME FEELMODELS_DIM FEELMODELS_ORD
     APPLICATION_DIR ${THE_APPLICATION_DIR}
     SRC ${MAIN_FILE}
     LIB_DEPENDS ${LIB_DEPENDS}
-    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
     )
 
 endmacro(genExecutableThermoDynamics)
@@ -363,13 +363,13 @@ macro(feelpp_add_thermo_application)
   if ( FEELMODELS_APP_BC_MARKERS )
     set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
   else()
-    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
   endif()
 
   if ( FEELMODELS_APP_GEO_DESC )
     set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
   else()
-    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
   endif()
 
   set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
@@ -486,13 +486,13 @@ macro( genLibSolidMechanics )
     if ( FEELMODELS_APP_BC_MARKERS )
       get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
     else()
-      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
     endif()
 
     if ( FEELMODELS_APP_GEO_DESC )
       get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
     else()
-      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
     endif()
 
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
@@ -528,7 +528,7 @@ macro( genLibSolidMechanics )
       PREFIX_LIBNAME ${LIB_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
       )
     unset(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER)
 
@@ -563,7 +563,7 @@ macro(genExecutableSolidMechanics APPLICATION_NAME
     APPLICATION_DIR ${THE_APPLICATION_DIR}
     SRC ${MAIN_FILE}
     LIB_DEPENDS ${LIB_DEPENDS}
-    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/feelmodelscoreconfig.h.in
+    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
     )
 
 endmacro(genExecutableSolidMechanics)
@@ -588,13 +588,13 @@ macro(feelpp_add_solid_application)
   if ( FEELMODELS_APP_BC_MARKERS )
     set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
   else()
-    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.bcmarkers )
+    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
   endif()
 
   if ( FEELMODELS_APP_GEO_DESC )
     set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
   else()
-    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/default.mesh )
+    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
   endif()
 
   set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
