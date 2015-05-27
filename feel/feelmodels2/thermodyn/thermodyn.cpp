@@ -48,12 +48,14 @@ namespace FeelModels {
         this->clearMarkerDirichletBC();
         this->clearMarkerNeumannBC();
 
-        M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( this->prefix()/*"thermo"*/, "Dirichlet" );
+        M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
         for( auto const& d : M_bcDirichlet )
             this->addMarkerDirichletBC("elimination", marker(d) );
-        M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( this->prefix()/*"thermo"*/, "Neumann" );
+        M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
         for( auto const& d : M_bcNeumann )
             this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
+
+        M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
     }
 
     template< typename ConvexType, int OrderTemp>
@@ -71,11 +73,22 @@ namespace FeelModels {
         super_type::init( buildMethodNum, this->shared_from_this() );
     }
 
+    template< typename ConvexType, int OrderTemp>
+    void
+    ThermoDynamics<ConvexType,OrderTemp>::solve()
+    {
+        M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        M_bcNeumann.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        super_type::solve();
+    }
 
     template< typename ConvexType, int OrderTemp>
     void
     ThermoDynamics<ConvexType,OrderTemp>::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
     {
+        if ( M_bcDirichlet.empty() ) return;
+
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBCStrongDirichletLinearPDE","start",
                                             this->worldComm(),this->verboseAllProc());
 
@@ -102,51 +115,51 @@ namespace FeelModels {
     void
     ThermoDynamics<ConvexType,OrderTemp>::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
     {
-#if 0 // TODO
-        if ( M_overwritemethod_updateSourceTermLinearPDE != NULL )
+        if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
         {
-            M_overwritemethod_updateSourceTermLinearPDE(F,buildCstPart);
+            this->M_overwritemethod_updateSourceTermLinearPDE(F,buildCstPart);
             return;
         }
 
-#if defined(THERMODYNAMICS_VOLUME_FORCE)
-        auto mesh = this->mesh();
-        auto Xh = this->spaceTemperature();
-        auto rowStartInVector = this->rowStartInVector();
-        auto myLinearForm = form1( _test=Xh, _vector=F,
-                                   _rowstart=rowStartInVector );
-        auto const& v = *this->fieldTemperature();
-        auto f = THERMODYNAMICS_VOLUME_FORCE(this->shared_from_this()) ;
+        if ( M_volumicForcesProperties.empty() ) return;
 
         if ( !buildCstPart )
         {
-            myLinearForm +=
-                integrate( _range=elements(mesh),
-                           _expr= f*id(v),
-#if defined(THERMODYNAMICS_VOLUME_FORCE_QUADORDER)
-                           _quad=_Q<THERMODYNAMICS_VOLUME_FORCE_QUADORDER>(),
-                           _quad1=_Q<THERMODYNAMICS_VOLUME_FORCE_QUADORDER>(),
-#endif
-                           _geomap=this->geomap() );
+            auto myLinearForm = form1( _test=this->spaceTemperature(), _vector=F,
+                                       _rowstart=this->rowStartInVector() );
+            auto const& v = *this->fieldTemperature();
+
+            for( auto const& d : M_volumicForcesProperties )
+            {
+                if ( marker(d).empty() )
+                    myLinearForm +=
+                        integrate( _range=elements(this->mesh()),
+                                   _expr= expression(d)*id(v),
+                                   _geomap=this->geomap() );
+                else
+                    myLinearForm +=
+                        integrate( _range=markedelements(this->mesh(),marker(d)),
+                                   _expr= expression(d)*id(v),
+                                   _geomap=this->geomap() );
+            }
         }
-#endif
-#endif
     }
 
     template< typename ConvexType, int OrderTemp>
     void
     ThermoDynamics<ConvexType,OrderTemp>::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
     {
-        auto mesh = this->mesh();
-        auto Xh = this->spaceTemperature();
-        auto const& v = *this->fieldTemperature();
-        auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                                  _pattern=size_type(Pattern::COUPLED),
-                                                  _rowstart=this->rowStartInMatrix(),
-                                                  _colstart=this->colStartInMatrix() );
+        if ( M_bcNeumann.empty() ) return;
 
         if ( !buildCstPart )
         {
+            auto mesh = this->mesh();
+            auto Xh = this->spaceTemperature();
+            auto const& v = *this->fieldTemperature();
+            auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                                      _pattern=size_type(Pattern::COUPLED),
+                                                      _rowstart=this->rowStartInMatrix(),
+                                                      _colstart=this->colStartInMatrix() );
             for( auto const& d : M_bcNeumann )
             {
                 bilinearForm_PatternCoupled +=

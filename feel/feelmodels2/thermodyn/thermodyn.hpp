@@ -68,6 +68,8 @@ public:
     // update for use
     void init( bool buildMethodNum = true );
 
+    void solve();
+
     //___________________________________________________________________________________//
     // assembly using bc
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
@@ -77,6 +79,7 @@ public:
 private :
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
+    map_scalar_field<2> M_volumicForcesProperties;
 
 };
 
