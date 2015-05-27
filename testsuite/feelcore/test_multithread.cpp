@@ -70,31 +70,29 @@ double getElapsedTime(struct timespec start, struct timespec end)
 
 #if defined(FEELPP_HAS_OPENMP)
 template<typename MeshTypePtr>
-void omp_integrate_coarse(MeshTypePtr mesh, int nCores)
+void omp_integrate(MeshTypePtr mesh, int nCores)
 {
-    typedef typename Feel::detail::quadptlocrangetype< decltype(elements(mesh)) >::type range_type;
-    typedef decltype(cst(1.0)) expr_type;
-    typedef _Q< ExpressionOrder<range_type,expr_type>::value > quad_type;
-    typedef _Q< ExpressionOrder<range_type,expr_type>::value_1 > quad1_type;
-    typedef Integrator<range_type, quad_type, expr_type, quad1_type> int_type;
-
-    //int nbcores = 4;
-    //omp_set_num_threads(nbcores);
-    std::cout << "Using " << nCores << " threads" << std::endl;
-    omp_set_num_threads(nCores);
-
-    //std::cout << boption( _name="parallel.cpu.enable" ) << " " << soption( _name="parallel.cpu.impl") << " " << ioption( _name="parallel.cpu.restrict") << std::endl;
-
     double seqRes, seqTime;
     struct timespec ts1, ts2;
-    double * parRes = new double[nCores];
-    double * parTime = new double[nCores];
+    double * coarseParRes, * coarseParTime;
+    double fineParRes, fineParTime;
+
+    /* store option values */
+    bool parCPUEnable = boption( _name="parallel.cpu.enable" );
+    std::string parCPUImpl = soption( _name="parallel.cpu.impl" );
+    int parCPURestrict = ioption( _name="parallel.cpu.restrict" );
+    
+    /* Set the number of threads to use */
+    omp_set_num_threads(nCores);
+
+    coarseParRes = new double[nCores];
+    coarseParTime = new double[nCores];
 
     /* sequential with a constant */
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intf1 = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
-    seqRes = intf1(0 , 0);
+    auto intfCst = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    seqRes = intfCst(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
     seqTime = getElapsedTime(ts1, ts2);
@@ -106,27 +104,42 @@ void omp_integrate_coarse(MeshTypePtr mesh, int nCores)
         clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
 
         auto intf = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
-        parRes[omp_get_thread_num()] = intf(0, 0);
+        coarseParRes[omp_get_thread_num()] = intf(0, 0);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
-        parTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
     }
 
     for(int i = 0; i < nCores; i++)
-    {
-        CHECK( parRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << parRes[i] << " != " << seqRes << ")" << std::endl;
-    }
+    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")" << std::endl; }
 
-    std::cout << "Test OK: seqTime=" << seqTime << ", parTime=";
+    /* paralel implementation in Feel++ with a constant */
+    Environment::setOptionValue("parallel.cpu.enable", bool(true));
+    Environment::setOptionValue("parallel.cpu.impl", std::string("openmp"));
+    Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+
+    auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    fineParRes = intfCstPar(0 , 0);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+    fineParTime = getElapsedTime(ts1, ts2);
+
+    Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
+    Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
+    Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+
+    CHECK( fineParRes  == seqRes ) << "Test failed (" << __FUNCTION__ << ") (" << fineParRes << " != " << seqRes << ")" << std::endl;
+
+    std::cout << "Test OK: seqTime=" << seqTime << ", coarseParTime=";
     if(nCores > 0)
     {
-        std::cout << parTime[0];
+        std::cout << coarseParTime[0];
         for(int i = 1; i < nCores; i++)
-        {
-            std::cout << ", " << parTime[i];
-        }
+        { std::cout << ", " << coarseParTime[i]; }
     }
-    std::cout << ")" << std::endl;
+    std::cout << "), fineParTime=" << fineParTime << std::endl;
 
     /* sequential with an expression */
     // our function to integrate
@@ -134,8 +147,8 @@ void omp_integrate_coarse(MeshTypePtr mesh, int nCores)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intf2 = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
-    seqRes = intf2(0 , 0);
+    auto intfExpr = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+    seqRes = intfExpr(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
     seqTime = getElapsedTime(ts1, ts2);
@@ -148,32 +161,40 @@ void omp_integrate_coarse(MeshTypePtr mesh, int nCores)
         // our function to integrate
         auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
         auto intf = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
-        parRes[omp_get_thread_num()] = intf(0, 0);
+        coarseParRes[omp_get_thread_num()] = intf(0, 0);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
-        parTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
     }
 
     for(int i = 0; i < nCores; i++)
-    {
-        CHECK( parRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << parRes[i] << " != " << seqRes << ")\n";
-    }
+    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")\n"; }
 
     std::cout << "Test OK: seqTime=" << seqTime << ", parTime=(";
     if(nCores > 0)
     {
-        std::cout << parTime[0];
+        std::cout << coarseParTime[0];
         for(int i = 1; i < nCores; i++)
-        {
-            std::cout << ", " << parTime[i];
-        }
+        { std::cout << ", " << coarseParTime[i]; }
     }
     std::cout << ")" << std::endl;
 
-    delete[] parRes;
-    parRes = nullptr;
-    delete[] parTime;
-    parTime = nullptr;
+    delete[] coarseParRes;
+    coarseParRes = nullptr;
+    delete[] coarseParTime;
+    coarseParTime = nullptr;
+}
+#endif
+
+#if defined(FEELPP_HAS_HARTS)
+template<typename MeshTypePtr>
+void harts_integrate(MeshTypePtr mesh, int nCores)
+{
+    typedef typename Feel::detail::quadptlocrangetype< decltype(elements(mesh)) >::type range_type;
+    typedef decltype(cst(1.0)) expr_type;
+    typedef _Q< ExpressionOrder<range_type,expr_type>::value > quad_type;
+    typedef _Q< ExpressionOrder<range_type,expr_type>::value_1 > quad1_type;
+    typedef Integrator<range_type, quad_type, expr_type, quad1_type> int_type;
 }
 #endif
 
@@ -187,11 +208,22 @@ int main(int argc, char ** argv)
     // create the mesh (specify the dimension of geometric entity)
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
 
-    int nbcores = 4;//omp_get_num_threads();
+    int nCores = 4;//omp_get_num_threads();
+    std::cout << "Using " << nCores << " threads" << std::endl;
 
 #ifdef FEELPP_HAS_OPENMP
-    omp_integrate_coarse(mesh, nbcores);
+    omp_integrate(mesh, nCores);
+#else
+    std::cout << "OpenMP is not activated. Skipping associated tests." << std::endl;
 #endif 
+
+#if 0
+#ifdef FEELPP_HAS_HARTS
+    harts_integrate(mesh, nCores);
+#else
+    std::cout << "HARTS is not activated. Skipping associated tests." << std::endl;
+#endif 
+#endif
 
     return 0;
 }
