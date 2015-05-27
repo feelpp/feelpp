@@ -41,22 +41,25 @@ class MultiScaleImage
 public :
     using value_type = T;
     
-    MultiScaleImage(holo3_image<value_type> const& im, int L)
+    MultiScaleImage(holo3_image<value_type> const& im, float L)
         :
         image(im),level(L)
     {
     }
 
     value_type 
-    operator()(ublas::vector<double> const& c) const&
+    operator()(ublas::vector<double> const& c) const
         {
             double x = c[0];
             double y = c[1];
-     
+    
+            std::cout <<" x =" << x <<", y =" << y << std::endl;
+ 
             double i = x/dx;
             double j = y/dy;
-
-            return image(level*j,level*i);
+            
+            std::cout <<" i =" << i <<", j =" << j << std::endl;
+            return image(i,j);
         }
 /*
     value_type operator()(ublas::vector<double> const& c, int L)
