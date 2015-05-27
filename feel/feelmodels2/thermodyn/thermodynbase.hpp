@@ -167,7 +167,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
-        void solve();
+        virtual void solve();
 
         virtual void updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
                                       sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
