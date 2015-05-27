@@ -62,6 +62,7 @@ extern "C"
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelcore/feelpetsc.hpp>
+#include <feel/feelcore/timertable.hpp>
 #include <feel/options.hpp>
 
 #define stringize2(x) #x
@@ -1960,6 +1961,20 @@ Environment::expand( std::string const& expr )
     return res;
 }
 
+void
+Environment::addTimer( std::string const& msg, double t )
+{
+    S_timers.add( msg, t );
+}
+
+void
+Environment::saveTimers( bool display )
+{
+    //S_timers.save( Environment::about().appName(), display );
+    S_timers.save( display );
+}
+
+
 
 AboutData Environment::S_about;
 boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
@@ -1988,6 +2003,8 @@ std::vector<std::string> Environment::olAutoloadFiles;
 #if defined(FEELPP_HAS_HARTS)
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
+
+TimerTable Environment::S_timers;
 
 }
 
