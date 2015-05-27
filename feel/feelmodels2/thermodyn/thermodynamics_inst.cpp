@@ -1,6 +1,6 @@
 
 
-#include <feel/feelmodels2/thermodyn/thermodyn.cpp>
+#include <feel/feelmodels2/thermodyn/thermodynamics.cpp>
 
 namespace Feel {
 namespace FeelModels {

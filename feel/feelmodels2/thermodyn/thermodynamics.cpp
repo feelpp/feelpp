@@ -1,7 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
-//#include "thermodyn.hpp"
-#include <feel/feelmodels2/thermodyn/thermodyn.hpp>
+#include <feel/feelmodels2/thermodyn/thermodynamics.hpp>
 
 #include <feel/feelvf/vf.hpp>
 /*#include <feel/feelvf/form.hpp>
