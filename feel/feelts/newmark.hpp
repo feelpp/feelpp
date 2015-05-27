@@ -298,7 +298,8 @@ template <typename SpaceType>
 void
 Newmark<SpaceType>::init()
 {
-    this->setPathSave( (boost::format("newmark_dt_%1%")%this->timeStep()).str() );
+    if ( this->path().empty() )
+        this->setPathSave( (boost::format("newmark_dt_%1%")%this->timeStep()).str() );
 
     super::init();
 
