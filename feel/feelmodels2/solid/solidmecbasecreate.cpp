@@ -291,18 +291,15 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::createMesh()
 
     //this->changeRepository();
 
-    auto smpath = this->fileNameMeshPath();//prefixvm(this->prefix(),"SolidMechanicsMesh.path");
+    //auto smpath = this->fileNameMeshPath();//prefixvm(this->prefix(),"SolidMechanicsMesh.path");
+    std::string smpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
     if (this->doRestart())
     {
         if ( !this->restartPath().empty() )
         {
-            M_mesh = reloadMesh<mesh_type>(this->restartPath()+"/"+smpath,this->worldComm());
+            smpath = (fs::path( this->restartPath() ) / fs::path(this->fileNameMeshPath())).string();
         }
-        else
-        {
-            M_mesh = reloadMesh<mesh_type>(smpath,this->worldComm());
-        }
-
+        M_mesh = reloadMesh<mesh_type>(smpath,this->worldComm());
     }
     else
     {
@@ -326,8 +323,22 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::createMesh()
             std::string path = this->appliRepository();
             std::string mshfile = path + "/" + this->prefix() + ".msh";
             this->setMshfileStr(mshfile);
+
+            fs::path curPath=fs::current_path();
+            bool hasChangedRep=false;
+            if ( curPath != fs::path(this->appliRepository()) )
+            {
+                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh",
+                                                     "change repository (temporary) for build mesh from geo : "+ this->appliRepository(),
+                                                     this->worldComm(),this->verboseAllProc());
+                bool hasChangedRep=true;
+                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
+            }
             M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),M_meshSize,1,
                                                                this->worldComm().localSize(),this->worldComm());
+            // go back to previous repository
+            if ( hasChangedRep )
+                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
         else
         {
@@ -613,6 +624,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::createTimeDiscretisatio
                                       _initial_time=ti, _final_time=tf, _time_step=dt,
                                       _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                       _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+    M_newmark_displ_struct->setPathSave( (fs::path(this->appliRepository()) /
+                                          fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
+
     if ( M_useDisplacementPressureFormulation )
     {
         M_savetsPressure = bdf( _vm=Environment::vm(), _space=this->functionSpacePressure(),
@@ -621,6 +635,8 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::createTimeDiscretisatio
                                 _initial_time=ti, _final_time=tf, _time_step=dt,
                                 _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                 _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+        M_savetsPressure->setPathSave( (fs::path(this->appliRepository()) /
+                                        fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
     }
 
 

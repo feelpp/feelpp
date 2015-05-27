@@ -292,7 +292,7 @@ public:
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1d_reduced_ptrtype mesh = mesh_1d_reduced_ptrtype() );
 
-    virtual void loadConfigBCFile() = 0;
+    //virtual void loadConfigBCFile() = 0;
     virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
     virtual void loadConfigMeshFile1dReduced(std::string const& geofilename) = 0;
     //void loadConfigBCFile();
@@ -562,8 +562,8 @@ public :
                               sparse_matrix_ptrtype& A_extended,
                               sparse_matrix_ptrtype& Prec) const;
 #endif
-    void solve() { this->solve(true); }
-    void solve( bool upVelAcc );
+    //void solve() { this->solve(true); }
+    virtual void solve( bool upVelAcc=true );
 
 
     //-----------------------------------------------------------------------------------//
