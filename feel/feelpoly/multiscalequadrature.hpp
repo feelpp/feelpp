@@ -193,19 +193,19 @@ public :
         weights_type px( 16*16 );
 
         double tmpx=-1.;
-        double tmpy=-1.;
-        for ( int i = 0,  k = 0; i < 16; i++ )
+        double tmpy=1.;
+        for ( double i = 0,  k = 0; i < 16; i++ )
         {
-            for ( int j = 0; j < 16; j++, ++k )
+            for ( double j = 0; j < 16; j++, ++k )
             {
                 // computes the weight of the k-th node
                 this->M_w( k ) = 4./(16.*16.) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./16;
+                tmpx+=2./16;
             }
-            tmpy=-1.;
-            tmpx+=2./16;
+            tmpx=-1.;
+            tmpy-=2./16;
         }
 
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
