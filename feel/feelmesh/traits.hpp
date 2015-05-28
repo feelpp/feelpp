@@ -131,6 +131,15 @@ struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim 
 template<typename T>
 struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/> {};
 
+template<typename T>
+struct is_3d_real : mpl::bool_< decay_type<T>::nRealDim ==3 > {};
+template<typename T>
+struct is_2d_real : mpl::bool_< decay_type<T>::nRealDim ==2 > {};
+template<typename T>
+struct is_1d_real : mpl::bool_< decay_type<T>::nRealDim ==1 > {};
+template<typename T>
+struct is_0d_real : mpl::bool_< decay_type<T>::nRealDim ==0 > {};
+
 
 template<typename T>
 struct is_topological_face : mpl::bool_<(decay_type<T>::nDim==decay_type<T>::nRealDim-1)> {};
