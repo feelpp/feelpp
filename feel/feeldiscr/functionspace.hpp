@@ -2263,7 +2263,7 @@ public:
         }
         template<typename EltType>
         void assign( EltType const& e, local_interpolant_type const& Ihloc,
-                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
@@ -2321,7 +2321,7 @@ public:
         }
         template<typename EltType>
         void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
-                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
