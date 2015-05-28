@@ -521,7 +521,9 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
         {
+            tic();
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
         template<typename TSet>
