@@ -4,13 +4,15 @@
 #include <feel/feelvf/vf.hpp>
 
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                                                                                           sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+                                                                  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
 {
 #if (defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE) )
 
@@ -178,10 +180,10 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
-                                                                                                                             bool BuildCstPart, bool UseJacobianLinearTerms) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
+                                                                    bool BuildCstPart, bool UseJacobianLinearTerms) const
 {
 #if (defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;
@@ -354,11 +356,11 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //--------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateJacobianStabilisation(element_fluid_type const& U,
-                                                                                                                             sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                                                                                                             bool BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_fluid_type const& U,
+                                                                    sparse_matrix_ptrtype& J , vector_ptrtype& R,
+                                                                    bool BuildCstPart ) const
 {
 #if (defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;

@@ -7,14 +7,17 @@
 #include <feel/feelmodels2/modelvf/fluidmecconvection.hpp>
 
 
-namespace Feel {
-namespace FeelModels {
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+namespace Feel
+{
+namespace FeelModels
+{
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateJacobian( const vector_ptrtype& XVec, sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                                                                                 bool _BuildCstPart,
-                                                                                                                 sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                                                                 bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XVec, sparse_matrix_ptrtype& J, vector_ptrtype& R,
+                                                        bool _BuildCstPart,
+                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
+                                                        bool _doClose, bool _doBCStrongDirichlet ) const
 {
 #if defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
@@ -113,12 +116,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && BuildCstPart)
     {
-    bilinearForm_PatternCoupled +=
-        //bilinearForm_PatternDefault +=
-        integrate (_range=elements(mesh),
-        _expr= -trans(gradt(u)*idv(*M_P0Rho)*idv( this->meshVelocity() ))*id(v),
-        _geomap=this->geomap() );
-}
+        bilinearForm_PatternCoupled +=
+            //bilinearForm_PatternDefault +=
+            integrate (_range=elements(mesh),
+                       _expr= -trans(gradt(u)*idv(*M_P0Rho)*idv( this->meshVelocity() ))*id(v),
+                       _geomap=this->geomap() );
+    }
 #endif
 
 #if 0

@@ -10,19 +10,18 @@
 
 #include <feel/feelmodels2/modelmesh/reloadmesh.hpp>
 
-
 namespace Feel {
 namespace FeelModels {
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::FluidMechanicsBase( bool __isStationary,
-                                                                                                                     std::string __prefix,
-                                                                                                                     WorldComm const& __worldComm,
-                                                                                                                     bool __buildMesh,
-                                                                                                                     std::string __subPrefix,
-                                                                                                                     std::string __appliShortRepository )
-:
-super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( bool __isStationary,
+                                                            std::string __prefix,
+                                                            WorldComm const& __worldComm,
+                                                            bool __buildMesh,
+                                                            std::string __subPrefix,
+                                                            std::string __appliShortRepository )
+    :
+    super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -36,12 +35,12 @@ super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortReposito
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::build()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","build", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
     //-----------------------------------------------------------------------------//
     // create or reload mesh
@@ -64,18 +63,18 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","build", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::loadMesh( mesh_ptrtype __mesh )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadMesh", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
     //-----------------------------------------------------------------------------//
     // create or reload mesh
@@ -99,17 +98,17 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadMesh", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::loadParameterFromOptionsVm()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadParameterFromOptionsVm", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
     M_meshSize = doption(_name="hsize",_prefix=this->prefix());
 #if defined(FEELPP_HAS_VTK)
@@ -120,7 +119,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     M_isHOVisu=false;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "WARNING : hovisu disable because VTK not find",
-                       this->worldComm(),this->verboseAllProc());
+                        this->worldComm(),this->verboseAllProc());
 #endif
     M_doExportMeshALE = boption(_name="do_export_meshale",_prefix=this->prefix());
     M_doExportVorticity = boption(_name="do_export_vorticity",_prefix=this->prefix());
@@ -228,17 +227,17 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     M_CstNu = M_CstMu/M_CstRho;
 
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadParameterFromOptionsVm", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createWorldsComm()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createWorldsComm", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
     if (this->worldComm().localSize()==this->worldComm().globalSize())
     {
@@ -279,17 +278,17 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
     }
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createWorldsComm", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createMesh()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
 
     // save path of file mesh
@@ -298,8 +297,8 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     if (this->doRestart())
     {
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh",
-                                            "restart with : "+fmpath,
-                                            this->worldComm(),this->verboseAllProc());
+                                             "restart with : "+fmpath,
+                                             this->worldComm(),this->verboseAllProc());
 
         if ( !this->restartPath().empty() )
         {
@@ -315,7 +314,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
             std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
 
             if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "load msh file : " + this->mshfileStr(),
-                                                this->worldComm(),this->verboseAllProc());
+                                                 this->worldComm(),this->verboseAllProc());
 
             M_mesh = loadGMSHMesh(_mesh=new mesh_type,
                                   _filename=this->mshfileStr(),
@@ -341,7 +340,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
                 if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory(),
-                                                    this->worldComm(),this->verboseAllProc());
+                                                     this->worldComm(),this->verboseAllProc());
                 Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
 
                 geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
@@ -361,7 +360,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
                 if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "change rep -> " + this->appliRepository() ,
-                                                    this->worldComm(),this->verboseAllProc());
+                                                     this->worldComm(),this->verboseAllProc());
                 Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
             }
 
@@ -372,19 +371,19 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
     double timeElapsedCreateMesh = this->timerTool("Constructor").stop("createMesh");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh",
-                                        (boost::format("finish in %1% s") % timeElapsedCreateMesh).str(),
-                                        this->worldComm(),this->verboseAllProc());
+                                         (boost::format("finish in %1% s") % timeElapsedCreateMesh).str(),
+                                         this->worldComm(),this->verboseAllProc());
 
 } // createMesh()
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createFunctionSpaces()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
 
     // maybe build extended dof table
@@ -392,13 +391,13 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
     {
         FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity",
-                       this->worldComm(),this->verboseAllProc());
+                        this->worldComm(),this->verboseAllProc());
         extendedDT[0] = true;
     }
     if ( this->doCIPStabPressure() )
     {
         FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure",
-                       this->worldComm(),this->verboseAllProc());
+                        this->worldComm(),this->verboseAllProc());
         extendedDT[1] = true;
     }
     // fluid mix space : velocity and pressure
@@ -450,17 +449,17 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
     this->timerTool("Constructor").stop("createSpaces");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createTimeDiscretisation()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createTimeDiscretisation", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
 
     // bdf time schema
@@ -481,21 +480,21 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
     this->timerTool("Constructor").stop("createTimeDiscr");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createTimeDiscretisation", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createALE()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
     {
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "start",
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
         this->timerTool("Constructor").start();
 
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
@@ -511,7 +510,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
         if ( this->verbose() && moveGhostEltFromExtendedStencil )
             FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil",
-                           this->worldComm(),this->verboseAllProc());
+                            this->worldComm(),this->verboseAllProc());
 
         M_meshALE.reset(new mesh_ale_type( M_mesh,
                                            this->prefix(),
@@ -525,7 +524,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
         this->timerTool("Constructor").stop("createALE");
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "finish",
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
     }
 #endif
 
@@ -533,12 +532,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createExporters()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
 
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
@@ -617,7 +616,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
             else
                 meshVisuHO = this->mesh()->createP1mesh();
 #else
-                meshVisuHO = this->mesh()->createP1mesh();
+            meshVisuHO = this->mesh()->createP1mesh();
 #endif
         }
         else CHECK( false ) << "invalid hovisu.space-used " << hovisuSpaceUsed;
@@ -643,7 +642,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         if (M_doExportWallShearStress) M_wallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
 
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "start opInterpolation",
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
         boost::mpi::timer timerOpI;
 
         M_opIvelocity = opInterpolation(_domainSpace=M_Xh->template functionSpace<0>(),
@@ -653,7 +652,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
                                         _type=InterpolationNonConforme(false,true,false,15) );
 
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "step1 done",
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
 
         M_opIpressure = opInterpolation(_domainSpace=M_Xh->template functionSpace<1>(),
                                         _imageSpace=M_XhScalarVisuHO,
@@ -671,7 +670,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         }
 
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "step2 done",
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
 
         if (M_isMoveDomain )
         {
@@ -695,7 +694,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
         double timeElapsedOpI = timerOpI.elapsed();
         if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "finish all opInterpolation in " + (boost::format("%1% s") % timeElapsedOpI).str(),
-                                            this->worldComm(),this->verboseAllProc());
+                                             this->worldComm(),this->verboseAllProc());
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (M_isMoveDomain) this->getMeshALE()->revertMovingMesh();
@@ -706,18 +705,18 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
     this->timerTool("Constructor").stop("createExporters");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 
 } // createExporters
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createOthers()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createOthers", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
     //----------------------------------------------------------------------------//
     // rho, mu, nu with scalar P0 space
@@ -850,14 +849,14 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
     this->timerTool("Constructor").stop("createOthers");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createOthers", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                         this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createFunctionSpacesNormalStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 {
     M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
     M_normalBoundaryStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
@@ -869,9 +868,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createFunctionSpacesVorticity()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 {
     M_Xh_vorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
     M_vorticity.reset( new element_vorticity_type(M_Xh_vorticity));
@@ -879,9 +878,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::createFunctionSpacesSourceAdded()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
     M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh );
     M_SourceAdded.reset( new element_vectorial_PN_type(M_XhSourceAdded,"SourceAdded"));

@@ -4,21 +4,22 @@
 
 #include <feel/feelvf/vf.hpp>
 
-//#include <fsi/fsialg/functionSup.cpp>
 #include <feel/feelmodels2/modelvf/fluidmecstresstensor.hpp>
 
 #define FSI_FLUID_USE_OPT_EXPR 1
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateResidualModel( element_fluid_type const& U,
-                                                                                                                      vector_ptrtype& R,
-                                                                                                                      bool BuildCstPart,
-                                                                                                                      bool UseJacobianLinearTerms ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type const& U,
+                                                             vector_ptrtype& R,
+                                                             bool BuildCstPart,
+                                                             bool UseJacobianLinearTerms ) const
 {
 #if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;

@@ -4,15 +4,14 @@
 
 #include <feel/feelvf/vf.hpp>
 
-//#include <fsi/fsicore/variousfunctions.hpp>
+namespace Feel
+{
+namespace FeelModels
+{
 
-namespace Feel {
-namespace FeelModels {
-
-
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
 {
 #if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
     using namespace Feel::vf;

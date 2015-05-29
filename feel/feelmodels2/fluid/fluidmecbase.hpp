@@ -755,7 +755,7 @@ public :
 #endif
     //___________________________________________________________________________________//
 
-    void solve();
+    virtual void solve();
 
     //___________________________________________________________________________________//
 
@@ -974,6 +974,10 @@ protected:
     //----------------------------------------------------
     std::set<std::string> M_nameFilesPressureAtPoints;
     //----------------------------------------------------
+    typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
+    updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
+    typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
+    updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
 
 }; // FluidMechanics
 
@@ -1180,12 +1184,12 @@ intersectionList( std::list<T> const& list1,std::list<T> const& list2 )
 {
     std::list<T> intersecList;
     for ( std::string const& marker1 : list1 )
-        {
-            auto it = std::find_if( list2.begin(), list2.end(),
-                                    [&marker1]( T const& marker2 ) { return marker2 == marker1; } );
-            if ( it != list2.end() )
-                intersecList.push_back( marker1 );
-        }
+    {
+        auto it = std::find_if( list2.begin(), list2.end(),
+                                [&marker1]( T const& marker2 ) { return marker2 == marker1; } );
+        if ( it != list2.end() )
+            intersecList.push_back( marker1 );
+    }
     return intersecList;
 }
 
