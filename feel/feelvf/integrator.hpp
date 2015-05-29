@@ -5020,7 +5020,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         // Compute Number of MPI processes
         char * str = NULL;
-        int nMPIProc = Environment::worldComm().size();
+        int nbMPIProc = Environment::worldComm().size();
 
         // Compute a number of available cores for computation
         // Taking into account the number of MPI processes launched for this app on this node
@@ -5028,34 +5028,33 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
 
         // Compute Number of available CPU cores
-        int paramNbCores = ioption(_name="parallel.cpu.restrict");
-        int nTotalCoresNode = numaAffMng.get_num_cores();
-        int nAvailCores = nTotalCoresNode - nMPIProc;
-        int coresPerProcess = 0;
-        int remainder = 0;
+        int restrictNbCores = ioption(_name="parallel.cpu.restrict");
+        int nbCores = numaAffMng.get_num_cores();
+        int nbCoresPerProcess = 0;
+        int nbUnusedCores = 0;
 
         // TOFIX: Have a repartition taking into account the NUMA architecture
         // Guess the number of threads that can be spawned
-        if(paramNbCores <= 0)
+        if(restrictNbCores <= 0)
         {
-            coresPerProcess = nAvailCores / nMPIProc;
-            remainder = nAvailCores % nMPIProc;
+            nbCoresPerProcess = std::max(nbCores / nbMPIProc, 1);
+            nbUnusedCores = nbCores % nbMPIProc;
         }
         // Try to match the nb of cores in parameter
         else
         {
-            int nWantedCores = nMPIProc * paramNbCores;
-            if(nAvailCores - nWantedCores >= 0)
+            int nbWantedCores = nbMPIProc * restrictNbCores;
+            if(nbCores - nbWantedCores >= 0)
             {
-                coresPerProcess = paramNbCores;
-                remainder = nAvailCores - nMPIProc * paramNbCores;
+                nbCoresPerProcess = restrictNbCores;
+                nbUnusedCores = nbCores - nbWantedCores;
             }
             /* if we can't match the asked number of cores */
             /* Then guess the maximal occupation repartition */
             else
             {
-                coresPerProcess = nAvailCores / nMPIProc;
-                remainder = nAvailCores % nMPIProc;
+                nbCoresPerProcess = std::max(nbCores / nbMPIProc, 1);
+                nbUnusedCores = nbCores % nbMPIProc;
             }
         }
 
@@ -5068,7 +5067,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         std::vector<int> taskList;
 
         /* Using pthread */
-        int nbThreads = coresPerProcess;
+        int nbThreads = nbCoresPerProcess;
 
         //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
 
@@ -5272,52 +5271,44 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
 
         // Compute Number of MPI processes
-        char * str = NULL;
-        int nMPIProc = Environment::worldComm().size();
+        int nbMPIProc = Environment::worldComm().size();
 
         // Compute a number of available cores for computation
-        // Taking into account the number of MPI processes launched for this app on this node
-        //std::cout << "omp_get_num_procs()=" << omp_get_num_procs() << std::endl;
-
         // Compute Number of available CPU cores
-        int paramNbCores = ioption(_name="parallel.cpu.restrict");
-        int nTotalCoresNode = omp_get_num_procs();
-        int nAvailCores = nTotalCoresNode - nMPIProc;
-        int coresPerProcess = 0;
-        int remainder = 0;
+        int restrictNbCores = ioption(_name="parallel.cpu.restrict");
+        int nbCores = Environment::getNumberOfCores();
+        int nbCoresPerProcess = 0;
+        int nbUnusedCores = 0;
 
         // TOFIX: Have a repartition taking into account the NUMA architecture
         // Guess the number of threads that can be spawned
-        if(paramNbCores <= 0)
+        if(restrictNbCores <= 0)
         {
-            coresPerProcess = nAvailCores / nMPIProc;
-            remainder = nAvailCores % nMPIProc;
+            nbCoresPerProcess = std::max(nbCores / nbMPIProc, 1);
+            nbUnusedCores = nbCores % nbMPIProc;
         }
         // Try to match the nb of cores in parameter
         else
         {
-            int nWantedCores = nMPIProc * paramNbCores;
-            if(nAvailCores - nWantedCores >= 0)
+            int nbWantedCores = nbMPIProc * restrictNbCores;
+            if(nbCores - nbWantedCores >= 0)
             {
-                coresPerProcess = paramNbCores;
-                remainder = nAvailCores - nMPIProc * paramNbCores;
+                nbCoresPerProcess = restrictNbCores;
+                nbUnusedCores = nbCores - nbWantedCores;
             }
             /* if we can't match the asked number of cores */
             /* Then guess the maximal occupation repartition */
             else
             {
-                coresPerProcess = nAvailCores / nMPIProc;
-                remainder = nAvailCores % nMPIProc;
+                nbCoresPerProcess = std::max(nbCores / nbMPIProc, 1);
+                nbUnusedCores = nbCores % nbMPIProc;
             }
         }
 
-        /* create a task list */
-        std::vector<harts_context_type * > hce;
-
         /* Using pthread */
-        int nbThreads = coresPerProcess;
+        int nbThreads = nbCoresPerProcess;
 
-        std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
+        DLOG(INFO) << "OpenMP configuration: nMPIProc=" << nbMPIProc << ", nbCores=" << nbCores << ", nbCoresPerProcess=" << nbCoresPerProcess << ", nbUnusedCores=" << nbUnusedCores << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("init0") ;
@@ -5348,14 +5339,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
                 int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
 
-                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+                DLOG(INFO) << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
 
                 /* save the current iterator position */
                 cit = sit;
                 /* advance the iterator and save the new position */
                 std::advance(sit, nb);
                 //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
-                std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                DLOG(INFO) << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
                 j = j + nb;
                 _v.at(i).push_back(std::make_pair(cit, sit));
             }
@@ -5411,7 +5402,18 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         /* Save the previous count of openmp threads */
         /* in case the use set OMP_NUM_THREADS */
         /* and we don't want to influence the next omp loop */
-        int prevThreadCount = omp_get_num_threads();
+        /* (potentially locate din other libraries) */
+        int prevThreadCount = 1;
+        /* we need to launch a parallel section to get the current number of threads */
+        /* to save it, otherwise omp_get_num_threads return 1 outside of the paralle sections */
+        /* Can be removed, if the number of threads does not need to be saved */ 
+        #pragma omp parallel
+        {
+            #pragma omp master
+            {
+                prevThreadCount = omp_get_num_threads();
+            }
+        }
         omp_set_num_threads(nbThreads);
 
         value_type * out = new value_type[nbThreads];
@@ -5436,27 +5438,29 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             //local_perf_mng.stop("Creation") ;
 
 #if defined(FEELPP_HAS_HARTS)
-            std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+            #pragma omp critical
+            {
+                DLOG(INFO) << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+            }
 #endif
 
-#if defined(FEELPP_HAS_HARTS)
-        struct timespec ts1;
-        struct timespec ts2;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
-#endif
+            struct timespec ts1;
+            struct timespec ts2;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
             t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
             out[id] = t->result();
 
-#if defined(FEELPP_HAS_HARTS)
-        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-        double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-        double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-        std::cout << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
-#endif
+            clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+            double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+            double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
 
-            std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
-            t->printPerfInfo();
+            #pragma omp critical
+            {
+                DLOG(INFO) << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+                DLOG(INFO) << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
+                //t->printPerfInfo();
+            }
 
             delete t;
         }
@@ -5477,7 +5481,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
         
-        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+        DLOG(INFO)<< Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
@@ -5731,7 +5735,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                       << " min=" << min << " max=" << max << std::endl;
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
-        std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+        DLOG(INFO) << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
