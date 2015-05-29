@@ -72,21 +72,25 @@ class Test
                 for (int j=0;j<=ny;j++)
                 {
                     std::map<std::string,double> m {{"x",i*8.9e-3},{"y",j*8.9e-3}};
-                    ima(i,j)=f.evaluate(m);
+                    ima(j,i)=f.evaluate(m);
                 }
             }
         }
        
            
-     void resol( float level )
+     void resol( int level )
 
         {
           /// [mesh] 
+        auto pas = pow(2.,level)*8.9e-3;
+        std::cout << pas << std::endl;  
         auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
-                                    _h=(pow(2,level)*8.9e-3), 
-                                    _desc=domain(_name="polymere",
+                                    _h=pas, 
+                                    _desc=domain(_name="msitest",
                                                  _xmax=8.9e-3*(ima.cols()-1),
                                                  _ymax=8.9e-3*(ima.rows()-1)));
+
+        
 
         auto Xhc = Pch<1>( mesh );
         auto u=Xhc->element();
@@ -128,8 +132,8 @@ BOOST_AUTO_TEST_SUITE( msi_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
-    Test t0= Test(256,256,"x:x:y") ;
-    t0.resol(2);
+    Test t0=Test(512,512,"x:x:y") ;
+    t0.resol(4);
 }
 
 
