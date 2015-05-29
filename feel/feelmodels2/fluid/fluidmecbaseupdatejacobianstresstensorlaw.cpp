@@ -88,11 +88,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_type 
 #endif
 
             //pressure bc condition
-            if ( M_pressureBCType.size() > 0 )
+            if ( !this->markerPressureBC().empty() )
             {
                 //ForEachBC( bcDef,cl::pressure,
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,M_pressureBCType),
+                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
                                _expr= -inner( 2*sigma_newtonian_viscous*N(),id(v) ),
                                _geomap=this->geomap() );
             }
@@ -125,11 +125,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_type 
                            _expr= inner( StressTensorExprJac,grad(v) ),
                            _geomap=this->geomap() );
             //pressure bc condition
-            if ( M_pressureBCType.size() > 0 )
+            if ( !this->markerPressureBC().empty() )
             {
                 //ForEachBC( bcDef,cl::pressure,
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,M_pressureBCType),
+                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
                                _expr= -inner(StressTensorExprJac*N(),id(v)),
                                _geomap=this->geomap() );
             }

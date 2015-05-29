@@ -77,10 +77,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
     this->clearMarkerALEMeshBC();
-    this->M_pressureBCType.clear();
-    this->M_slipBCType.clear();
+    this->clearMarkerSlipBC();
+    this->clearMarkerPressureBC();
     this->M_fluidOutletsBCType.clear();
-
 
     // boundary conditions
     this->M_isMoveDomain = false;
@@ -105,15 +104,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
         this->addMarkerALEMeshBC("fixed",marker(d));
     }
-#if 0
-    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "Dirichlet" );
-    for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::pressure>() )
-        M_pressureBCType.push_back(PhysicalName);
-#endif
+    M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
+    for( auto const& d : M_bcPressure )
+    {
+        this->addMarkerPressureBC(marker(d));
+        this->addMarkerALEMeshBC("fixed",marker(d));
+    }
     M_bcSlip = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "slip" );
     for( auto const& d : M_bcSlip )
     {
-        this->M_slipBCType.push_back(marker(d));
+        this->addMarkerSlipBC(marker(d));
+        this->addMarkerALEMeshBC("fixed",marker(d));
     }
 
     this->M_hasFluidOutlet=false;
@@ -172,7 +173,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
 
     boost::mpi::timer timerBCnewton;
 
-    auto const& u = this->getSolution()->template element<0>();
+    auto const& u = this->fieldVelocity();
     auto Xh = this->functionSpace();
     auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
@@ -217,7 +218,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
     boost::mpi::timer timerBClinear;
 
     auto Xh = this->functionSpace();
-    auto const& u = this->getSolution()->template element<0>();
+    auto const& u = this->fieldVelocity();
 
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
@@ -266,7 +267,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
-    auto const& u = this->getSolution()->template element<0>();
+    auto const& u = this->fieldVelocity();
     auto RBis = this->backend()->newVector( J->mapRowPtr() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
@@ -305,7 +306,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
     size_type rowStartInVector = this->rowStartInVector();
-    auto const& u = this->getSolution()->template element<0>();
+    auto const& u = this->fieldVelocity();
 
     R->close();
     if (Xh->worldsComm()[0].isActive()) // only on Velocity Proc
@@ -349,8 +350,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
     {
         auto myLinearForm =form1( _test=this->functionSpace(), _vector=F,
                                   _rowstart=this->rowStartInVector() );
-        auto const& U = *this->getSolution();
-        auto v = U.template element<0>();
+        auto const& v = this->fieldVelocity();
         for( auto const& d : M_volumicForcesProperties )
         {
             if ( marker(d).empty() )
@@ -381,8 +381,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& F 
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                _rowstart=this->rowStartInVector() );
-    auto const& U = *this->getSolution();
-    auto v = U.template element<0>();
+    auto const& v = this->fieldVelocity();
     for( auto const& d : M_volumicForcesProperties )
     {
         if ( marker(d).empty() )
@@ -406,8 +405,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                _rowstart=this->rowStartInVector() );
-    auto const& U = *this->getSolution();
-    auto v = U.template element<0>();
+    auto const& v = this->fieldVelocity();
     for( auto const& d : M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
@@ -423,8 +421,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R )
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
                                _rowstart=this->rowStartInVector() );
-    auto const& U = *this->getSolution();
-    auto v = U.template element<0>();
+    auto const& v = this->fieldVelocity();
     for( auto const& d : M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
@@ -442,8 +439,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureLinearPDE( vector_ptrtype& F
     {
         auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                    _rowstart=this->rowStartInVector() );
-        auto const& U = *this->getSolution();
-        auto v = U.element<0>();
+        auto const& v = this->fieldVelocity();
         ForEachBC( bcDef,cl::pressure,
                    myLinearForm +=
                    /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
@@ -463,8 +459,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCPressureResidual( vector_ptrtype& R 
     {
         auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
                                    _rowstart=this->rowStartInVector() );
-        auto const& U = *this->getSolution();
-        auto v = U.element<0>();
+        auto const& v = this->fieldVelocity();
         ForEachBC( bcDef,cl::pressure,
                    myLinearForm +=
                    /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
@@ -515,8 +510,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletNitscheLinearPDE( vector_pt
     if ( M_bcDirichlet.empty() ) return;
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                _rowstart=this->rowStartInVector() );
-    auto const& U = *this->getSolution();
-    auto v = U.template element<0>();
+    auto const& v = this->fieldVelocity();
     for( auto const& d : M_bcDirichlet )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",marker(d) ) ),
@@ -531,8 +525,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletNitscheResidual( vector_ptr
     if ( M_bcDirichlet.empty() ) return;
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
                                _rowstart=this->rowStartInVector() );
-    auto const& U = *this->getSolution();
-    auto v = U.template element<0>();
+    auto const& v = this->fieldVelocity();
     for( auto const& d : M_bcDirichlet )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",marker(d) ) ),

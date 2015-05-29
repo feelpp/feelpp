@@ -331,8 +331,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string path = this->appliRepository();
             std::string mshfile = path + "/" + this->prefix() + ".msh";
             this->setMshfileStr(mshfile);
+
+            fs::path curPath=fs::current_path();
+            bool hasChangedRep=false;
+            if ( curPath != fs::path(this->appliRepository()) )
+            {
+                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh",
+                                                     "change repository (temporary) for build mesh from geo : "+ this->appliRepository(),
+                                                     this->worldComm(),this->verboseAllProc());
+                bool hasChangedRep=true;
+                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
+            }
+
             M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),M_meshSize,1,
                                                                this->worldComm().localSize(),this->worldComm());
+            // go back to previous repository
+            if ( hasChangedRep )
+                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
         else
         {
@@ -477,6 +492,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
                        _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+
+    M_bdf_fluid->setPathSave( (fs::path(this->appliRepository()) /
+                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
     this->timerTool("Constructor").stop("createTimeDiscr");
     if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createTimeDiscretisation", "finish",
@@ -721,11 +739,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     //----------------------------------------------------------------------------//
     // rho, mu, nu with scalar P0 space
     std::vector<bool> extendedDT(1,this->useExtendedDofTable() );
-    M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+    M_XhScalarP0 = space_densityviscosity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
                                               _extended_doftable=extendedDT );
-    M_P0Rho.reset( new element_scalar_P0_type(M_XhScalarP0,"rho"));
-    M_P0Mu.reset( new element_scalar_P0_type(M_XhScalarP0,"mu"));
-    M_P0Nu.reset( new element_scalar_P0_type(M_XhScalarP0,"nu"));
+    M_P0Rho.reset( new element_densityviscosity_type(M_XhScalarP0,"rho"));
+    M_P0Mu.reset( new element_densityviscosity_type(M_XhScalarP0,"mu"));
+    M_P0Nu.reset( new element_densityviscosity_type(M_XhScalarP0,"nu"));
     *M_P0Rho= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
                           _expr=vf::cst(M_CstRho),_geomap=this->geomap());
     *M_P0Mu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),

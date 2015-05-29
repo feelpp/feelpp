@@ -84,7 +84,7 @@ public:
     void updateBCPressureLinearPDE( vector_ptrtype& F ) const;
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
-    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcSlip, M_bcFluidOutlets;
+    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
 }; // FluidMechanics

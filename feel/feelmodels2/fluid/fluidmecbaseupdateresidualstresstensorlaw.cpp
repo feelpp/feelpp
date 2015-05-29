@@ -104,11 +104,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
                            _geomap=this->geomap() );
 #endif
 
-            //ForEachBC( bcDef,cl::pressure,
-            if ( M_pressureBCType.size() > 0 )
+            if ( !this->markerPressureBC().empty() )
             {
                 linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,M_pressureBCType),
+                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
                                //_expr= -inner( ViscousStressTensorExpr*N(),id(v) ),
                                _expr= -inner( 2*mu_newtonian*defv*N(),id(v) ),
                                _geomap=this->geomap() );
@@ -144,11 +143,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
                            _expr= inner( StressTensorExpr,grad(v) ),
                            _geomap=this->geomap() );
             //pressure condition
-            //ForEachBC( bcDef,cl::pressure,
-            if ( M_pressureBCType.size() > 0 )
+            if ( !this->markerPressureBC().empty() )
             {
                 linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,M_pressureBCType),
+                    integrate( _range=markedfaces(mesh,this->markerPressureBC()),
                                _expr= -inner( StressTensorExpr*N(),id(v) ),
                                _geomap=this->geomap() );
             }
