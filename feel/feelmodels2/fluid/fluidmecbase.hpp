@@ -66,14 +66,15 @@ template< typename ConvexType, typename BasisVelocityType, typename BasisPressur
 class FluidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC,
-                           public MarkerManagementALEMeshBC
+                           public MarkerManagementALEMeshBC,
+                           public MarkerManagementSlipBC,
+                           public MarkerManagementPressureBC
 {
 public:
     typedef ModelNumerical super_type;
 
     typedef FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
-    static const bool velocityIsVectorialField = true;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -92,22 +93,10 @@ public:
     //___________________________________________________________________________________//
     // basis fluid
     static const bool useMixedBasis = true;
-    static const uint16_type nOrderVelocity = BasisVelocityType::nOrder;//FLUIDMECHANICS_ORDER_VELOCITY;
-    static const uint16_type nOrderPressure = BasisPressureType::nOrder;//FLUIDMECHANICS_ORDER_PRESSURE;
-
-#if 0
-    //#if defined(FLUIDMECHANICS_USE_DISCONTINUOUS_PRESSURE)
-#if FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS
-    typedef Continuous continuity_pressure_type;
-#else
-    typedef Discontinuous continuity_pressure_type;
-#endif
-    typedef Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> basis_fluid_u_type;
-    typedef Lagrange<nOrderPressure, Scalar,continuity_pressure_type,PointSetFekete> basis_fluid_p_type;
-#else
+    static const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
+    static const uint16_type nOrderPressure = BasisPressureType::nOrder;
     typedef BasisVelocityType basis_fluid_u_type;
     typedef BasisPressureType basis_fluid_p_type;
-#endif
     typedef Lagrange<0, Scalar,Continuous> basis_l_type;
     //___________________________________________________________________________________//
     // mixed basis
@@ -123,12 +112,12 @@ public:
     typedef typename space_fluid_type::element_type element_fluid_type;
     typedef boost::shared_ptr<element_fluid_type> element_fluid_ptrtype;
     // subspace velocity
-    typedef typename space_fluid_type::template sub_functionspace<0>::type/*::element_type*/ space_fluid_velocity_type;
+    typedef typename space_fluid_type::template sub_functionspace<0>::type space_fluid_velocity_type;
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
     // subspace pressure
-    typedef typename space_fluid_type::template sub_functionspace<1>::type/*::element_type*/ space_fluid_pressure_type;
+    typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
     typedef typename element_fluid_type::template sub_element<1>::type element_fluid_pressure_type;
     typedef boost::shared_ptr<element_fluid_pressure_type> element_fluid_pressure_ptrtype;
@@ -195,23 +184,15 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // functionspace for rho mu, nu
-#if 0
-    static const uint16_type nOrderDensityViscosity = FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY;
-#if FLUIDMECHANICS_USE_CST_DENSITY
-    typedef bases<Lagrange<nOrderDensityViscosity, Scalar,Continuous> > basis_scalar_P0_type;
-#else
-    typedef bases<Lagrange<nOrderDensityViscosity, Scalar,Discontinuous> > basis_scalar_P0_type;
-#endif
-#endif
-    typedef bases<BasisDVType> basis_scalar_P0_type;
+    // functionspace for rho, mu, nu
+    typedef bases<BasisDVType> basis_densityviscosity_type;
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
-    typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-    typedef typename space_scalar_P0_type::element_type element_scalar_P0_type;
-    typedef boost::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
+    typedef FunctionSpace<mesh_type, basis_densityviscosity_type> space_densityviscosity_type;
+    typedef boost::shared_ptr<space_densityviscosity_type> space_densityviscosity_ptrtype;
+    typedef typename space_densityviscosity_type::element_type element_densityviscosity_type;
+    typedef boost::shared_ptr<element_densityviscosity_type> element_densityviscosity_ptrtype;
     // viscosity model desc
-    typedef ViscosityModelDescription<element_scalar_P0_type> viscosity_model_type;
+    typedef ViscosityModelDescription<space_densityviscosity_type> viscosity_model_type;
     typedef boost::shared_ptr<viscosity_model_type> viscosity_model_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
@@ -222,7 +203,7 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // methodsnum tool
+    // algebraic tools
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
@@ -328,14 +309,6 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
-    //typedef decltype( FLUIDMECHANICS_BC( self_ptrtype() ) ) bcdef_type;
-    //typedef mpl::bool_<bcdef_type::hasThisType<cl::paroi_mobile>::value> hasBcParoiMobile_type;
-
-
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
-
     //___________________________________________________________________________________//
     // constructor
     FluidMechanicsBase( bool __isStationary,
@@ -343,16 +316,8 @@ public:
                         WorldComm const& _worldComm=WorldComm(),
                         bool __buildMesh=true,
                         std::string subPrefix="",
-                        std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
-    //___________________________________________________________________________________//
-    // constructor by copy
-    FluidMechanicsBase( self_type const & M )
-        :
-        super_type(M)
-        {
-            std::cout <<"\nWARNING constructeur copie\n";
-        }
-
+                        std::string appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
     void build();
@@ -380,22 +345,32 @@ public:
     void loadMesh(mesh_ptrtype __mesh );
 
 
+    boost::shared_ptr<std::ostringstream> getInfo() const;
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
     //___________________________________________________________________________________//
 
-    mesh_ptrtype mesh() { return M_mesh; }
+    //mesh_ptrtype mesh() { return M_mesh; }
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
-    space_fluid_ptrtype functionSpace() { return M_Xh; }
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
+    space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
+    space_fluid_pressure_ptrtype const/*&*/ functionSpacePressure() const { return M_Xh->template functionSpace<1>(); }
 
-    element_fluid_ptrtype getSolution() { return M_Solution; }
-    element_fluid_ptrtype const& getSolution() const { return M_Solution; }
+    FEELPP_DEPRECATED element_fluid_ptrtype getSolution() { return M_Solution; }
+    FEELPP_DEPRECATED element_fluid_ptrtype const& getSolution() const { return M_Solution; }
+    FEELPP_DEPRECATED element_fluid_velocity_type getVelocity() { return M_Solution->template element<0>(); }
+    FEELPP_DEPRECATED element_fluid_velocity_type getVelocity() const { return M_Solution->template element<0>(); }
+    FEELPP_DEPRECATED element_fluid_pressure_type getPressure() { return M_Solution->template element<1>(); }
+    FEELPP_DEPRECATED element_fluid_pressure_type getPressure() const { return M_Solution->template element<1>(); }
 
-    element_fluid_velocity_type getVelocity() { return M_Solution->template element<0>(); }
-    element_fluid_velocity_type getVelocity() const { return M_Solution->template element<0>(); }
-    element_fluid_pressure_type getPressure() { return M_Solution->template element<1>(); }
-    element_fluid_pressure_type getPressure() const { return M_Solution->template element<1>(); }
+    element_fluid_ptrtype & fieldVelocityPressurePtr() { return M_Solution; }
+    element_fluid_ptrtype const& fieldVelocityPressurePtr() const { return M_Solution; }
+    element_fluid_type & fieldVelocityPressure() { return *M_Solution; }
+    element_fluid_type const& fieldVelocityPressure() const { return *M_Solution; }
+    element_fluid_velocity_type & fieldVelocity() { return M_Solution->template element<0>(); }
+    element_fluid_velocity_type const& fieldVelocity() const { return M_Solution->template element<0>(); }
+    element_fluid_pressure_type & fieldPressure() { return M_Solution->template element<1>(); }
+    element_fluid_pressure_type const& fieldPressure() const { return M_Solution->template element<1>(); }
 
     element_stress_ptrtype getNormalStress() { return M_normalBoundaryStress; }
     element_stress_ptrtype const& getNormalStress() const { return M_normalBoundaryStress; }
@@ -409,7 +384,6 @@ public:
     backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backend() const { return  M_backend; }
     block_pattern_type blockPattern() const;
-    //bool hasExtendedPattern() const { return ( this->doCIPStabConvection() || this->doCIPStabDivergence() ); }
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
     int nBlockMatrixGraph() const;
@@ -525,10 +499,10 @@ public :
     double mu() const { return M_CstMu; }
     double nu() const { return M_CstNu; }
     double rho() const { return M_CstRho; }
-    space_scalar_P0_ptrtype const& XhP0() const { return M_XhScalarP0; }
-    element_scalar_P0_ptrtype const& rhoP0() const { return M_P0Rho; } //density
-    element_scalar_P0_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
-    element_scalar_P0_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
+    space_densityviscosity_ptrtype const& XhP0() const { return M_XhScalarP0; }
+    element_densityviscosity_ptrtype const& rhoP0() const { return M_P0Rho; } //density
+    element_densityviscosity_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
+    element_densityviscosity_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
 
     viscosity_model_ptrtype & viscosityModel() { return M_viscosityModelDesc; }
     viscosity_model_ptrtype const& viscosityModel() const { return M_viscosityModelDesc; }
@@ -609,21 +583,12 @@ public :
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
     //___________________________________________________________________________________//
-    //bcdef_type bcDef() const;
-    //self_ptrtype selfPtr() { return this->shared_from_this(); }
-    //auto bcDescription( FLUIDMECHANICS_CLASS_NAME const& myobject ) ->decltype( FLUIDMECHANICS_BC(myobject.time()) ) // const
-    //{ return FLUIDMECHANICS_BC(this->time()); }
-    //auto bcDescription() const { return FLUIDMECHANICS_BC(this->time()); }
-
-
-
 
 
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ velocityDiv() { return M_velocityDiv; }
     bool velocityDivIsEqualToZero() const { return M_velocityDivIsEqualToZero; }
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
 
     //___________________________________________________________________________________//
 
@@ -873,10 +838,10 @@ protected:
     double M_CstRho;//densite
     double M_CstMu;//viscosité dynamqiue
     double M_CstNu;//viscosité cinematique
-    space_scalar_P0_ptrtype M_XhScalarP0;
-    element_scalar_P0_ptrtype M_P0Rho;//densite
-    element_scalar_P0_ptrtype M_P0Mu;//viscosité dynamqiue
-    element_scalar_P0_ptrtype M_P0Nu;//viscosité cinematique
+    space_densityviscosity_ptrtype M_XhScalarP0;
+    element_densityviscosity_ptrtype M_P0Rho;//densite
+    element_densityviscosity_ptrtype M_P0Mu;//viscosité dynamqiue
+    element_densityviscosity_ptrtype M_P0Nu;//viscosité cinematique
     //----------------------------------------------------
     viscosity_model_ptrtype M_viscosityModelDesc;
     //----------------------------------------------------
@@ -891,7 +856,7 @@ protected:
     std::string M_pdeSolver;
     std::string M_stressTensorLaw;
     // type dirichlet bc -> list of markers
-    std::list<std::string> /*M_neumannBCType,*/ M_pressureBCType, M_slipBCType;
+    //std::list<std::string> /*M_neumannBCType,*/ M_pressureBCType/*, M_slipBCType*/;
     std::map<std::string,std::list<std::string> > M_fluidOutletsBCType;
     //std::list<std::string> /*M_markersNameDirichlet,*/M_markersNameMovingBoundary;
     //std::map<std::string,std::list<std::string> > M_meshAleBCType;

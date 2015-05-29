@@ -55,10 +55,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 
     //--------------------------------------------------------------------------------------------------//
 
-    if (BuildNonCstPart && M_slipBCType.size() > 0 )//bcDef.hasSlipBoundary() /*this->worldComm().globalSize()==1*/)
+    if (BuildNonCstPart && !this->markerSlipBC().empty() )
     {
-        std::cout << "\n\n hasSlipBoundary() \n\n";
-
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
@@ -71,13 +69,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
         auto Ctau = gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
         bilinearForm_PatternCoupled +=
-            integrate( _range= markedfaces(mesh,M_slipBCType),
+            integrate( _range= markedfaces(mesh,this->markerSlipBC()),
                        _expr= val(Cn)*(trans(idt(u))*N())*(trans(id(v))*N())+
                        val(Ctau)*trans(idt(u))*id(v),
                        //+ trans(idt(p)*Id*N())*id(v)
                        //- trans(id(v))*N()* trans(2*idv(*M_P0Mu)*deft*N())*N()
                        _geomap=this->geomap()
-                       );// );
+                       );
 
     }
 

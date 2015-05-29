@@ -171,7 +171,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if (BuildCstPart && M_slipBCType.size() > 0 )//bcDef.hasSlipBoundary()/*this->worldComm().globalSize()==1*/)
+    if (BuildCstPart && !this->markerSlipBC().empty() )
     {
         // slip condition :
         auto P = Id-N()*trans(N());
@@ -186,7 +186,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         auto Ctau = val(gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
 
         bilinearForm_PatternCoupled +=
-            integrate( _range= markedfaces(mesh,M_slipBCType),
+            integrate( _range= markedfaces(mesh,this->markerSlipBC()),
                        _expr= Cn*(trans(idt(u))*N())*(trans(id(v))*N())+
                        Ctau*trans(idt(u))*id(v),
                        //+ trans(idt(p)*Id*N())*id(v)

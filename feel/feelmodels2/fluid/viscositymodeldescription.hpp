@@ -35,14 +35,15 @@ namespace Feel
 namespace FeelModels
 {
 
-template<class ElementMuP0Type>
+template<class SpaceType>
 class ViscosityModelDescription
 {
 public :
-    typedef ElementMuP0Type element_muP0_type;
+    typedef SpaceType space_type;
+    typedef typename space_type::element_type element_type;
 
     ViscosityModelDescription( std::string const& _viscosityModel,
-                               ElementMuP0Type const& muP0,
+                               element_type const& muP0,
                                std::string prefix )
         :
         M_viscosityModelName( _viscosityModel ), M_muP0( muP0 ),
@@ -73,7 +74,7 @@ public :
         }
 
     ViscosityModelDescription( std::string const& _viscosityModel,
-                               ElementMuP0Type const& muP0,
+                               element_type const& muP0,
                                double _powerLaw_n, double _powerLaw_k, double _mu_0, double _mu_inf,
                                double _carreau_lambda, double _carreau_n,
                                double _carreauYasuda_lambda, double _carreauYasuda_n, double _carreauYasuda_a,
@@ -115,7 +116,7 @@ public :
     std::string const& name() const { return M_viscosityModelName; }
     void name( std::string s ) { M_viscosityModelName=s; }
 
-    element_muP0_type const& muP0() const { return M_muP0; }
+    element_type const& muP0() const { return M_muP0; }
 
     double powerLaw_n() const { return M_powerLaw_n; }
     void powerLaw_n( double d ) { M_powerLaw_n=d; }
@@ -215,7 +216,7 @@ public :
 
 private :
     std::string M_viscosityModelName;
-    boost::reference_wrapper<const element_muP0_type> M_muP0;
+    boost::reference_wrapper<const element_type> M_muP0;
     double M_powerLaw_n, M_powerLaw_k, M_powerLaw_n_generic, M_powerLaw_k_generic;
     double M_mu_0, M_mu_inf;
     double M_carreau_lambda, M_carreau_n;
@@ -229,22 +230,22 @@ private :
 
 
 
-template<class ElementMuP0Type>
-ViscosityModelDescription<ElementMuP0Type>
+template<class SpaceType>
+ViscosityModelDescription<SpaceType>
 viscosityModelDesc( std::string const& _viscosityModel,
-                    ElementMuP0Type const& muP0,
+                    typename SpaceType::element_type const& muP0,
                     double _powerLaw_n, double _powerLaw_k, double _mu_0, double _mu_inf,
                     double _carreau_lambda, double _carreau_n,
                     double _carreauYasuda_lambda, double _carreauYasuda_n, double _carreauYasuda_a,
                     double _walburnSchneck_C1, double _walburnSchneck_C2, double _walburnSchneck_C3, double _walburnSchneck_C4,
                     double _non_newtonian_hematocrit, double _non_newtonian_TPMA )
 {
-    ViscosityModelDescription<ElementMuP0Type> res(_viscosityModel, muP0,
-                                                   _powerLaw_n,_powerLaw_k,_mu_0,_mu_inf,
-                                                   _carreau_lambda,_carreau_n,
-                                                   _carreauYasuda_lambda,_carreauYasuda_n,_carreauYasuda_a,
-                                                   _walburnSchneck_C1, _walburnSchneck_C2, _walburnSchneck_C3, _walburnSchneck_C4,
-                                                   _non_newtonian_hematocrit, _non_newtonian_TPMA);
+    ViscosityModelDescription<SpaceType> res(_viscosityModel, muP0,
+                                             _powerLaw_n,_powerLaw_k,_mu_0,_mu_inf,
+                                             _carreau_lambda,_carreau_n,
+                                             _carreauYasuda_lambda,_carreauYasuda_n,_carreauYasuda_a,
+                                             _walburnSchneck_C1, _walburnSchneck_C2, _walburnSchneck_C3, _walburnSchneck_C4,
+                                             _non_newtonian_hematocrit, _non_newtonian_TPMA);
     return res;
 }
 

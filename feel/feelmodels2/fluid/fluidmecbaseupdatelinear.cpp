@@ -47,8 +47,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
-    auto const& U = *this->getSolution();//Xh->element("u");
-    //auto V = Xh->element("v");
+    auto const& U = this->fieldVelocityPressure();
     auto u = U.template element<0>();
     auto v = U.template element<0>();
     auto p = U.template element<1>();
@@ -186,10 +185,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 
     //--------------------------------------------------------------------------------------------------//
     //pressure fix condition
-    if (BuildCstPart)
+    if (BuildCstPart && !this->markerPressureBC().empty() )
     {
         bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,M_pressureBCType),
+            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
                        _expr= -trans(2*idv(*M_P0Mu)*deft*N())*id(v),
                        _geomap=this->geomap() );
     }

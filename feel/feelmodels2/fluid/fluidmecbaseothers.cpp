@@ -904,7 +904,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // prepare block vector
     int nBlock = this->nBlockMatrixGraph();
     M_blockVectorSolution.resize( nBlock );
-    M_blockVectorSolution(0) = this->getSolution();
+    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
     int cptBlock=1;
     // impose mean pressure by lagrange multiplier
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -1112,7 +1112,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
                                                this->worldComm(),this->verboseAllProc());
 
     // current solution
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
 
@@ -1261,7 +1261,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
                                                this->worldComm(),this->verboseAllProc());
 
     // current solution
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
 
@@ -1306,7 +1306,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
     if ( !M_wallShearStress ) this->createFunctionSpacesNormalStress();
 
     // current solution
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
 
@@ -1476,7 +1476,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,
                 M_nameFilesPressureAtPoints.insert(nameFile);
             }
         }
-        auto const pressureOnPt = this->getSolution()->template element<1>()(boost::get<1>(*it),extrapolate);
+        auto const pressureOnPt = this->fieldVelocityPressurePtr()->template element<1>()(boost::get<1>(*it),extrapolate);
 
         if (this->worldComm().globalRank()==this->worldComm().masterRank())
         {
@@ -1501,7 +1501,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string markerName)
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
     //Tenseur des deformations
@@ -1525,7 +1525,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string marker)
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
 
     double res = integrate(_range=markedfaces(this->mesh(),marker),
@@ -1544,7 +1544,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
     using namespace Feel::vf;
 
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto p = solFluid->template element<1>();
 
     double area = integrate(_range=elements(this->mesh()),
@@ -1563,7 +1563,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanDivergence()
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
 
     double area = integrate(_range=elements(this->mesh()),
@@ -1582,7 +1582,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeNormL2Divergence()
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
 
     double res = math::sqrt(integrate(_range=elements(this->mesh()),
@@ -1605,7 +1605,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<me
     int nbSlice = setMeshSlices.size();
     std::vector<double> res(nbSlice);
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto p = solFluid->template element<1>();
 
     bool computeOnRefMesh2 = this->isMoveDomain() && computeOnRefMesh;
@@ -1680,7 +1680,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d
     std::vector<double> res(nbSlice);
     std::vector<double> res2(nbSlice);
 
-    auto solFluid = this->getSolution();
+    auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto dirVelocity = oneX();//vec(cst(1.0),cst(0.));
 

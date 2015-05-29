@@ -276,19 +276,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if (!BuildCstPart && !UseJacobianLinearTerms && M_slipBCType.size() > 0 )//bcDef.hasSlipBoundary()/*this->worldComm().globalSize()==1*/ )
+    if (!BuildCstPart && !UseJacobianLinearTerms && !this->markerSlipBC().empty() )
     {
         // slip condition :
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
         auto Beta = M_bdf_fluid->poly();
-        auto beta = vf::project( Beta.template element<0>().functionSpace(), boundaryfaces(Beta.template element<0>().mesh()), idv(*M_P0Rho)*idv(Beta.template element<0>()) );
+        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
+                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
+                                 _expr=idv(*M_P0Rho)*idv(Beta.template element<0>()) );
         auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(M_P0Mu)/vf::h());
         auto Ctau = gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
         linearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,M_slipBCType),
+            integrate( _range=markedfaces(mesh,this->markerSlipBC()),
                        _expr= val(Cn*(trans(idv(u))*N()))*(trans(id(v))*N())+
                        val(Ctau*trans(idv(u)))*id(v),
                        //+ trans(idv(p)*Id*N())*id(v)
