@@ -103,8 +103,7 @@ class Test
         // our function to integrate 
         auto a = form2( _trial=Xhc, _test=Xhc );
         a=integrate( _range=elements( mesh ),
-                     _expr=idt(u)*id(v),
-                     _quad=_Q<1,MultiScaleQuadrature>() );
+                     _expr=idt(u)*id(v) );
 
 
         auto l = form1( _test=Xhc );
@@ -119,6 +118,11 @@ class Test
                             _range=elements(mesh),
                             _expr=expr(ex));
         std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(fP)) << std::endl;
+        auto e = exporter(_mesh=mesh);
+        e->add("u",u);
+        e->add("ex",fP);
+        e->save();
+        
 
        }
 
