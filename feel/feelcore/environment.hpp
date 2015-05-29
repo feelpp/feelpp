@@ -394,6 +394,7 @@ public:
     }
 
 #if defined(FEELPP_HAS_HARTS)
+
     /**
      * Init Hwloc topology structure
      */
@@ -417,9 +418,19 @@ public:
     static void bindToCore( unsigned int id );
 
     /**
-     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     * Counts the number of cores on the current server
+     * Calls countCoresInSubtree done on the whole topology
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
      */
-    static int countCoresInSubtree( hwloc_obj_t node );
+    static int getNumberOfCores( bool logical = false );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
+     */
+    static int countCoresInSubtree( hwloc_obj_t node, bool logical = false );
 
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes
@@ -431,8 +442,8 @@ public:
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
     static void writeCPUData( std::string fname = "CPUData.dat" );
-#endif
 
+#endif
 
     //@}
 
