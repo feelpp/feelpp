@@ -52,7 +52,7 @@ public :
     ModelBase( std::string _theprefix,
                WorldComm const& _worldComm=Environment::worldComm(),
                std::string subPrefix="",
-               std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+               std::string appliShortRepository=soption(_name="exporter.directory") );
 
     ModelBase( ModelBase const& app ) = default;
     virtual ~ModelBase();

@@ -30,14 +30,6 @@
 #ifndef FEELPP_MODELALGEBRAIC_HPP
 #define FEELPP_MODELALGEBRAIC_HPP 1
 
-/*#include <feel/options.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/pslogger.hpp>
-#include <feel/feelcore/worldcomm.hpp>
-
-#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
-#include <feel/feelmodels2/modelcore/log.hpp>
- #include <feel/feelmodels2/modelcore/timertool.hpp>*/
 #include <feel/feelmodels2/modelcore/modelbase.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -49,8 +41,6 @@ namespace Feel
 namespace FeelModels
 {
 
-//--------------------------------------------------------
-// method num application
 class ModelAlgebraic : public ModelBase
 {
 public :
@@ -72,7 +62,7 @@ public :
     ModelAlgebraic( std::string _theprefix,
                     WorldComm const& _worldComm=Environment::worldComm(),
                     std::string subPrefix="",
-                    std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+                    std::string appliShortRepository=soption(_name="exporter.directory") );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -146,8 +136,6 @@ public :
                                  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                  bool _doClose=true, bool _doBCStrongDirichlet=true ) const;// {}// = 0;
 
-    //virtual void solve() {} // = 0;
-
     //----------------------------------------------------------------------------------//
 
 private :
@@ -168,10 +156,8 @@ private :
 };
 
 
-//--------------------------------------------------------
-
 } // namespace FeelModels
 } // namespace feel
 
 
-#endif //endif FEELPP_MODELALGEBRAIC_HPP
+#endif // FEELPP_MODELALGEBRAIC_HPP

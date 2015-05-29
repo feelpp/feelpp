@@ -27,12 +27,10 @@
  \date 2012-01-19
  */
 
-#ifndef APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP
-#define APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP 1
+#ifndef FEELPP_MODELNUMERICAL_HPP
+#define FEELPP_MODELNUMERICAL_HPP 1
 
 #include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
-
-//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 
@@ -49,10 +47,10 @@ namespace Feel
 namespace FeelModels
 {
 
-class ModelNumerical : public ModelAlgebraic // AppliBaseMethodsNum
+class ModelNumerical : public ModelAlgebraic
     {
     public:
-        typedef ModelAlgebraic/*AppliBaseMethodsNum*/ super_type;
+        typedef ModelAlgebraic super_type;
 
         static const bool is_class_null = false;
 
@@ -219,4 +217,4 @@ class ModelNumerical : public ModelAlgebraic // AppliBaseMethodsNum
 } // namespace FeelModels
 } // namespace feel
 
-#endif //endif APPLIBASENUMERICALSIMULATIONTRANSITORY_HPP
+#endif // FEELPP_MODELNUMERICAL_HPP
