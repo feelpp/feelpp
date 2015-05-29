@@ -44,23 +44,21 @@ public :
     
     MultiScaleImage(holo3_image<value_type> const& im, float L)
         :
-        image(im),level(L)
+        dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
     }
 
     value_type 
-    operator()(ublas::vector<double> const& c) const
+    operator()(ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
-            double x = c[0];
-            double y = c[1];
-    
-            std::cout <<" x =" << x <<", y =" << y << std::endl;
- 
-            double i = boost::math::iround(x/*pow(2,level)*//dx);
-            double j = boost::math::iround(y/*pow(2,level)*//dy);
+            double x = real[0];
+            double y = real[1];
+             
+            int i = boost::math::iround(x/dx);
+            int j = im.cols()-boost::math::iround(y/dy);
             
-            std::cout <<" i =" << i <<", j =" << j << std::endl;
-
+            std::cout << "Coarse real x =" << x <<", y =" << y << " Ref x :"<< ref[0] << " ,y : " << ref[1]  << " Fine image coord. i =" << i <<", j =" << j << std::endl;
+           
 
             return image(j,i);
         }
@@ -77,8 +75,8 @@ public :
         }
   */   
 private :
-    double dx =8.9e-3;
-    double dy =8.9e-3;
+    double dx;
+    double dy;
     holo3_image<value_type> image;
     int level;
 };
