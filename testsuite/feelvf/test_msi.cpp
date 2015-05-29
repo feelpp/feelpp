@@ -117,6 +117,7 @@ class Test
         auto fP=vf::project(_space=Xhc,
                             _range=elements(mesh),
                             _expr=expr(ex));
+
         std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(fP)) << std::endl;
         auto e = exporter(_mesh=mesh);
         e->add("u",u);
@@ -139,7 +140,9 @@ BOOST_AUTO_TEST_SUITE( msi_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
-    Test t0=Test(4,4,"x:x:y") ;
+    Test t0=Test(boost::math::iround(doption("parameters.m")),
+                 boost::math::iround(doption("parameters.n")),
+                 soption("functions.f"));
     t0.resol(ioption("msi.level"));
 }
 
