@@ -55,7 +55,7 @@ public :
             double y = real[1];
              
             int i = boost::math::iround(x/dx);
-            int j = im.cols()-boost::math::iround(y/dy);
+            int j = image.cols()-boost::math::iround(y/dy);
             
             std::cout << "Coarse real x =" << x <<", y =" << y << " Ref x :"<< ref[0] << " ,y : " << ref[1]  << " Fine image coord. i =" << i <<", j =" << j << std::endl;
            

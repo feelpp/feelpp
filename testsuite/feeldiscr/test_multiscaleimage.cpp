@@ -86,7 +86,7 @@ class Test_MultiScale
                 v(0)=x;
                 v(1)=y;
                 MultiScaleImage<float> m(ima,l);
-                int tmp=m(v);
+                int tmp=m(v,v);
                 std::cout << "coord x : " << x << " / coord y : " << y << " / Res :" << tmp << std::endl;
             }
      
