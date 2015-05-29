@@ -18,19 +18,14 @@
 
 #include <feel/feelmodels2/modelvf/fluidmecstresstensor.hpp>
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-
-/*bcdef_type
- FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::bcDef() const
- {
- return FLUIDMECHANICS_BC( this->shared_from_this() );
- }*/
-
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::useExtendedDofTable() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 {
     if ( this->worldComm().localSize() == 1 ) return false;
     bool useExtendedDofTable=false;
@@ -41,9 +36,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::restartExporters()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
 {
     if (this->doRestart() && this->restartPath().empty() )
     {
@@ -70,9 +65,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::getInfo() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string ALEmode;if (M_isMoveDomain) ALEmode="Yes"; else ALEmode="No";
     std::string StateTemporal;if (this->isStationary()) StateTemporal="Stationary"; else StateTemporal="Transient";
@@ -206,7 +201,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 //---------------------------------------------------------------------------------------------------------//
 #if 0
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::printInfo() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::printInfo() const
 {
     if ( this->verboseAllProc() ) std::cout << this->getInfo()->str();
     else if (this->worldComm().isMasterRank() )
@@ -216,7 +211,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 //---------------------------------------------------------------------------------------------------------//
 
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::saveInfo() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveInfo() const
 {
     std::string nameFile = prefixvm(this->prefix(),"FluidMechanics.info");
     this->saveInfo( nameFile );
@@ -231,9 +226,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::pdeType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
 {
     // if pde change -> force to rebuild all algebraic data at next solve
     if ( __type != M_pdeType )
@@ -260,17 +255,17 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::string
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::pdeType() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType() const
 {
     return M_pdeType;
 }
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::pdeSolver(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
 {
     // if solver change -> force to rebuild all algebraic data at next solve
     if ( __type != M_pdeSolver )
@@ -288,18 +283,18 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::string
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::pdeSolver() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver() const
 {
     return M_pdeSolver;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::stressTensorLawType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType(std::string __type)
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
     if ( __type != M_stressTensorLaw )
@@ -324,18 +319,18 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::string
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::stressTensorLawType() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType() const
 {
     return M_stressTensorLaw;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::setDoExport(bool b)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 {
     if (!M_isHOVisu)
     {
@@ -353,9 +348,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::exportResults( double time )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults",
                                                (boost::format("start at time %1%")%time).str(),
@@ -411,9 +406,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 } // FluidMechanics::exportResult
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::exportResultsImpl( double time )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     //if (this->worldComm().globalSize()==1) this->updateVorticity(mpl::int_<nDim>());
 
@@ -424,9 +419,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     if (this->verbose())
     {
         if (M_isMoveDomain) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "M_isMoveDomain",
-                                           this->worldComm(),this->verboseAllProc());
+                                                  this->worldComm(),this->verboseAllProc());
         else Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "not M_isMoveDomain",
-                            this->worldComm(),this->verboseAllProc());
+                                   this->worldComm(),this->verboseAllProc());
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -439,7 +434,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
                                    M_Solution->template element<0>() );
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "velocity done",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
@@ -500,7 +495,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     //----------------------//
     M_exporter->save();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "save done",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     //----------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -509,9 +504,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
 }
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::exportResultsImplHO( double time )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
 #if defined(FEELPP_HAS_VTK)
     if ( !M_exporter_ho->doExport() ) return;
@@ -624,19 +619,19 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::solve()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
     this->timerTool("Solve").start();
 
     if ( this->startBySolveStokesStationary() && !this->isStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start by solve stokes stationary",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
 
         std::string saveStressTensorLawType = this->stressTensorLawType();
         std::string savePdeType = this->pdeType();
@@ -665,7 +660,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start by solve newtonian",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
 
         std::string saveStressTensorLawType = this->stressTensorLawType();
         this->stressTensorLawType("newtonian");
@@ -729,16 +724,16 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         this->timerTool("Solve").save();
     }
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", (boost::format("finish in %1% s")%tElapsed).str(),
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,bool _buildCstPart,
-                                                                                                                 sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                                                                 bool _doClose, bool _doBCStrongDirichlet) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,bool _buildCstPart,
+                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
+                                                        bool _doClose, bool _doBCStrongDirichlet) const
 {
     if ( M_pdeType == "Stokes" || M_pdeType == "Oseen" )
         updateOseen(A,F,_buildCstPart,A_extended,_BuildExtendedPart,_doClose,_doBCStrongDirichlet);
@@ -748,13 +743,13 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::init( bool buildMethodNum,
-                                                                                                       typename model_algebraic_factory_type::appli_ptrtype const& app )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
+                                              typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
     this->timerTool("Constructor").start();
 
     boost::timer thetimer;
@@ -781,7 +776,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         }
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "methodNum done",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
     }
 #endif
 
@@ -816,7 +811,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         }
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "meshALE done",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
 #endif
     }
 
@@ -881,7 +876,7 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         } // for (int k=0;k<M_nFluidOutlet;++k)
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "restart windkessel done",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
 
     } // if (M_hasFluidOutlet)
 
@@ -944,15 +939,15 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init",
-                                        (boost::format("finish in %1% s")%tElapsedInit).str(),
-                                        this->worldComm(),this->verboseAllProc());
+                                               (boost::format("finish in %1% s")%tElapsedInit).str(),
+                                               this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::initTimeStep()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     // start or restart time step scheme
     if (!this->doRestart())
@@ -980,13 +975,13 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         this->updateTime( M_bdf_fluid->time() );
 
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","initTimeStep", "restart bdf/exporter done",
-                                            this->worldComm(),this->verboseAllProc());
+                                                   this->worldComm(),this->verboseAllProc());
     }
 }
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateVorticity(mpl::int_<2> /***/)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity(mpl::int_<2> /***/)
 {
 
     if (!M_Xh_vorticity) this->createFunctionSpacesVorticity();
@@ -997,12 +992,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
                                _expr=vf::abs(vf::dxv(M_Solution->template element<0>().template comp<ComponentType::Y>())
                                              -vf::dyv(M_Solution->template element<0>().template comp<ComponentType::X>())),
                                _geomap=this->geomap() );
-                    //std::cout << "\nWARNING UPDATE VORTICITY\n"
-                    //);
+    //std::cout << "\nWARNING UPDATE VORTICITY\n"
+    //);
 }
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateVorticity(mpl::int_<3> /***/)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity(mpl::int_<3> /***/)
 {
 #if 0
     if (!M_Xh_vorticity) this->createFunctionSpacesVorticity();
@@ -1019,12 +1014,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateBdf()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -1075,13 +1070,13 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
         if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
             if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "do rebuildCstJacobian",
-                                                this->worldComm(),this->verboseAllProc());
+                                                       this->worldComm(),this->verboseAllProc());
             M_methodNum->rebuildCstJacobian(M_Solution);
         }
         else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
             if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "do rebuildCstLinearPDE",
-                                                this->worldComm(),this->verboseAllProc());
+                                                       this->worldComm(),this->verboseAllProc());
             M_methodNum->rebuildCstLinearPDE(M_Solution);
         }
     }
@@ -1089,14 +1084,14 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateNormalStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStress()
 {
     if (this->useFSISemiImplicitScheme())
         this->updateNormalStressUseAlePart();
@@ -1106,15 +1101,15 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateNormalStressStandard()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     // current solution
     auto solFluid = this->getSolution();
@@ -1173,21 +1168,21 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 #endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateAlePartUsedByNormalStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateAlePartUsedByNormalStress", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
@@ -1249,21 +1244,21 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateAlePartUsedByNormalStress", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 #endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateNormalStressUseAlePart()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     // current solution
     auto solFluid = this->getSolution();
@@ -1292,21 +1287,21 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 #endif
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 #endif
 }
 
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateWallShearStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 {
     using namespace Feel::vf;
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateWallShearStress", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     if ( !M_wallShearStress ) this->createFunctionSpacesNormalStress();
 
@@ -1327,15 +1322,15 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
                           _geomap=this->geomap() );
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateWallShearStress", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 }
 
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2)
 {
     using namespace Feel::vf;
 
@@ -1361,12 +1356,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateALEmesh()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     //-------------------------------------------------------------------//
     // compute ALE map
@@ -1426,8 +1421,8 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
             double normDisp = M_meshALE->displacement()->l2Norm();
             double normDispImposed = M_meshDisplacementOnInterface->l2Norm();
             Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh",
-                           (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str(),
-                           this->worldComm(),this->verboseAllProc());
+                                  (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str(),
+                                  this->worldComm(),this->verboseAllProc());
         }
     }
 
@@ -1453,13 +1448,13 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 }
 #endif
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FluidMechanicsBase< ConvexType,BasisVelocityType,
                     BasisPressureType,BasisDVType,UsePeriodicity >::savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt,
@@ -1499,10 +1494,10 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
-Eigen::Matrix<typename FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::value_type,
-              FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::nDim,1>
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeForce(std::string markerName)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+Eigen::Matrix<typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::value_type,
+              FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nDim,1>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string markerName)
 {
     using namespace Feel::vf;
 
@@ -1524,9 +1519,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeFlowRate(std::string marker)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string marker)
 {
     using namespace Feel::vf;
 
@@ -1542,9 +1537,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeMeanPressure()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
 {
     using namespace Feel::vf;
 
@@ -1562,9 +1557,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeMeanDivergence()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanDivergence()
 {
     using namespace Feel::vf;
 
@@ -1581,9 +1576,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeNormL2Divergence()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeNormL2Divergence()
 {
     using namespace Feel::vf;
 
@@ -1600,12 +1595,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::vector<double>
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                                                                                                           std::vector<op_interp_pressure_ptrtype> const& opInterp,
-                                                                                                                           bool computeOnRefMesh,
-                                                                                                                           std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
+                                                                  std::vector<op_interp_pressure_ptrtype> const& opInterp,
+                                                                  bool computeOnRefMesh,
+                                                                  std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
 {
     int nbSlice = setMeshSlices.size();
     std::vector<double> res(nbSlice);
@@ -1674,12 +1669,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     return res;
 
 }
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::vector<double>
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                                                                                                 std::vector<op_interp_velocity_ptrtype> const& opInterp,
-                                                                                                                 bool computeOnRefMesh,
-                                                                                                                 std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
+                                                        std::vector<op_interp_velocity_ptrtype> const& opInterp,
+                                                        bool computeOnRefMesh,
+                                                        std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
 {
     int nbSlice = setMeshSlices.size();
     std::vector<double> res(nbSlice);
@@ -1745,9 +1740,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
-typename FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::block_pattern_type
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::blockPattern() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::block_pattern_type
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
 #if 0
 
@@ -1804,9 +1799,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 int
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::nBlockMatrixGraph() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -1818,12 +1813,12 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     return nBlock;
 }
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::buildBlockMatrixGraph() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","buildBlockMatrixGraph", "start",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
     int nBlock = this->nBlockMatrixGraph();
 
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
@@ -1907,16 +1902,16 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
     myblockGraph.close();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","buildBlockMatrixGraph", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+                                               this->worldComm(),this->verboseAllProc());
 
     return myblockGraph;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
-typename FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::graph_ptrtype
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::buildMatrixGraph() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
@@ -1927,9 +1922,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
-typename FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::indexsplit_ptrtype
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::buildIndexSplit() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::indexsplit_ptrtype
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
 {
     // WARNING : this function is not use now
 
@@ -1978,9 +1973,9 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 //---------------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 size_type
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::nLocalDof() const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -1996,27 +1991,27 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
 
 /*void
- FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
  bool _doClose, bool _doBCStrongDirichlet ) const
  {
  }*/
 /*    void
- FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
  bool BuildCstPart,sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
  bool _doClose, bool _doBCStrongDirichlet ) const
  {}
  void
- FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
+ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
  bool BuildCstPart, bool UseJacobianLinearTerms,
  bool _doClose, bool _doBCStrongDirichlet ) const
  {}
  */
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                                                                              bool _buildCstPart,
-                                                                                                              bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
+                                                     bool _buildCstPart,
+                                                     bool _doClose, bool _doBCStrongDirichlet ) const
 {}
 
 

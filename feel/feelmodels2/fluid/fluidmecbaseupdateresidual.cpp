@@ -5,18 +5,18 @@
 
 #include <feel/feelvf/vf.hpp>
 
-//#include <fsi/fsicore/variousfunctions.hpp>
-//#include <fsi/fsialg/functionSup.cpp>
 #include <feel/feelmodels2/modelvf/fluidmecconvection.hpp>
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateResidual( const vector_ptrtype& XVec, vector_ptrtype& R, bool BuildCstPart,
-                                                                                                                 bool UseJacobianLinearTerms,
-                                                                                                                 bool _doClose, bool _doBCStrongDirichlet) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XVec, vector_ptrtype& R, bool BuildCstPart,
+                                                        bool UseJacobianLinearTerms,
+                                                        bool _doClose, bool _doBCStrongDirichlet) const
 {
 #if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
@@ -351,11 +351,11 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
          #endif*/
         if (M_haveSourceAdded)
         {
-        linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-            _expr= -trans(idv(*M_SourceAdded))*id(v),
-            _geomap=this->geomap() );
-    }
+            linearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= -trans(idv(*M_SourceAdded))*id(v),
+                           _geomap=this->geomap() );
+        }
     }
 
     //------------------------------------------------------------------------------------//
@@ -368,21 +368,21 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
 
         if (Build_TransientTerm) //  !BuildCstPart && !UseJacobianLinearTerms )
         {
-        linearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
-            _expr= val(idv(*M_P0Rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
-            _geomap=this->geomap() );
-    }
+            linearForm_PatternDefault +=
+                integrate( _range=elements(mesh),
+                           _expr= val(idv(*M_P0Rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
+                           _geomap=this->geomap() );
+        }
 
         if (BuildCstPart)
         {
-        auto Buzz = M_bdf_fluid->polyDeriv();
-        auto buzz = Buzz.template element<0>();
-        linearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
-            _expr= val(-idv(*M_P0Rho)*trans(idv(buzz)))*id(v),
-            _geomap=this->geomap() );
-    }
+            auto Buzz = M_bdf_fluid->polyDeriv();
+            auto buzz = Buzz.template element<0>();
+            linearForm_PatternDefault +=
+                integrate( _range=elements(mesh),
+                           _expr= val(-idv(*M_P0Rho)*trans(idv(buzz)))*id(v),
+                           _geomap=this->geomap() );
+        }
     }
 
     //------------------------------------------------------------------------------------//
@@ -391,171 +391,171 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,U
     {
         if ( this->definePressureCstMethod() == "penalisation" && !BuildCstPart && !UseJacobianLinearTerms )
         {
-        double beta = this->definePressureCstPenalisationBeta();
-        linearForm_PatternCoupled +=
-            integrate( _range=elements(Xh->mesh()),
-            _expr=beta*idv(p)*id(q),
-            _geomap=this->geomap() );
-    }
-        if ( this->definePressureCstMethod() == "lagrange-multiplier" )
-        {
-        CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
-            << " start dof index for define-pressure-cst-lm is not present\n";
-        size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
-
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-        auto therange = boundaryfaces(mesh);
-#else
-        auto therange = elements(mesh);
-#endif
-        if ( !BuildCstPart && !UseJacobianLinearTerms )
-        {
-        auto lambda = M_XhMeanPressureLM->element();
-        for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
-            lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
-
-        form1( _test=M_XhMeanPressureLM,_vector=R,
-            _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
-            integrate( _range=therange,//elements(mesh),
-            _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
-            _geomap=this->geomap() );
-    }
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
-        if (BuildCstPart)
-        {
-            auto lambda = M_XhMeanPressureLM->element();
-            form1( _test=M_XhMeanPressureLM,_vector=R,
-                   _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
-                integrate( _range=elements(mesh),
-                           _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
+            double beta = this->definePressureCstPenalisationBeta();
+            linearForm_PatternCoupled +=
+                integrate( _range=elements(Xh->mesh()),
+                           _expr=beta*idv(p)*id(q),
                            _geomap=this->geomap() );
         }
+        if ( this->definePressureCstMethod() == "lagrange-multiplier" )
+        {
+            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
+                << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
+            auto therange = boundaryfaces(mesh);
+#else
+            auto therange = elements(mesh);
 #endif
+            if ( !BuildCstPart && !UseJacobianLinearTerms )
+            {
+                auto lambda = M_XhMeanPressureLM->element();
+                for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
+                    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
+
+                form1( _test=M_XhMeanPressureLM,_vector=R,
+                       _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
+                    integrate( _range=therange,//elements(mesh),
+                               _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
+                               _geomap=this->geomap() );
+            }
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
+            if (BuildCstPart)
+            {
+                auto lambda = M_XhMeanPressureLM->element();
+                form1( _test=M_XhMeanPressureLM,_vector=R,
+                       _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
+                    integrate( _range=elements(mesh),
+                               _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
+                               _geomap=this->geomap() );
+            }
+#endif
+        }
     }
-}
 
 
     //------------------------------------------------------------------------------------//
 
     this->updateResidualStabilisation(U/*XVec*/, R, BuildCstPart, UseJacobianLinearTerms);
 
-//------------------------------------------------------------------------------------//
-if (this->hasMarkerDirichletBClm())
- {
-     CHECK( this->startDofIndexFieldsInMatrix().find("dirichletlm") != this->startDofIndexFieldsInMatrix().end() )
-         << " start dof index for dirichletlm is not present\n";
-     size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
+    //------------------------------------------------------------------------------------//
+    if (this->hasMarkerDirichletBClm())
+    {
+        CHECK( this->startDofIndexFieldsInMatrix().find("dirichletlm") != this->startDofIndexFieldsInMatrix().end() )
+            << " start dof index for dirichletlm is not present\n";
+        size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
 
-     auto lambdaBC = this->XhDirichletLM()->element();
-     if ( !BuildCstPart && !UseJacobianLinearTerms )
-     {
-         //size_type rowStartDirichletLM = startDofIndexDirichletLM;
-         for ( size_type kk=0;kk<this->XhDirichletLM()->nLocalDofWithGhost();++kk )
-             lambdaBC( kk ) = XVec->operator()( startDofIndexDirichletLM + kk);
+        auto lambdaBC = this->XhDirichletLM()->element();
+        if ( !BuildCstPart && !UseJacobianLinearTerms )
+        {
+            //size_type rowStartDirichletLM = startDofIndexDirichletLM;
+            for ( size_type kk=0;kk<this->XhDirichletLM()->nLocalDofWithGhost();++kk )
+                lambdaBC( kk ) = XVec->operator()( startDofIndexDirichletLM + kk);
 
-         form1( _test=Xh,_vector=R,
-                _rowstart=rowStartInVector )+=
-             integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ), //elements(this->meshDirichletLM()),
-                        _expr= inner( idv(lambdaBC),id(u) ) );
+            form1( _test=Xh,_vector=R,
+                   _rowstart=rowStartInVector )+=
+                integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ), //elements(this->meshDirichletLM()),
+                           _expr= inner( idv(lambdaBC),id(u) ) );
 
-         form1( _test=this->XhDirichletLM(),_vector=R,
-                _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-             integrate( _range=elements(this->meshDirichletLM()),
-                        _expr= inner(idv(u),id(lambdaBC) ) );
-     }
+            form1( _test=this->XhDirichletLM(),_vector=R,
+                   _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                integrate( _range=elements(this->meshDirichletLM()),
+                           _expr= inner(idv(u),id(lambdaBC) ) );
+        }
 
-     if ( BuildCstPart )
-     {
-         this->updateBCDirichletLagMultResidual( R );
+        if ( BuildCstPart )
+        {
+            this->updateBCDirichletLagMultResidual( R );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-         if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
-         {
-             std::list<std::string> movingBCmarkers = Feel::FSI::detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                           this->markerDirichletBClm() );
-             form1( _test=this->XhDirichletLM(),_vector=R,
-                    _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-                 integrate( _range=markedfaces(mesh,movingBCmarkers), //markedelements(this->meshDirichletLM(),movingBCmarkers),
-                            _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
-         }
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
+            {
+                std::list<std::string> movingBCmarkers = Feel::FSI::detail::intersectionList( this->markersNameMovingBoundary(),
+                                                                                              this->markerDirichletBClm() );
+                form1( _test=this->XhDirichletLM(),_vector=R,
+                       _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                    integrate( _range=markedfaces(mesh,movingBCmarkers), //markedelements(this->meshDirichletLM(),movingBCmarkers),
+                               _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
+            }
 #endif
-     }
+        }
 
- }
+    }
 
-//------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-if ( this->isMoveDomain() && this->couplingFSIcondition() == "robin" )
- {
-     double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-     double muFluid = this->mu();//0.03;
+    if ( this->isMoveDomain() && this->couplingFSIcondition() == "robin" )
+    {
+        double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
+        double muFluid = this->mu();//0.03;
 
-     if ( (!BuildCstPart && !UseJacobianLinearTerms) )
-     {
-         linearForm_PatternCoupled +=
-             integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                        _expr= gammaRobinFSI*muFluid*inner(idv(u),id(v))/hFace(),
-                        _geomap=this->geomap() );
-     }
+        if ( (!BuildCstPart && !UseJacobianLinearTerms) )
+        {
+            linearForm_PatternCoupled +=
+                integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                           _expr= gammaRobinFSI*muFluid*inner(idv(u),id(v))/hFace(),
+                           _geomap=this->geomap() );
+        }
 
-     if ( !BuildCstPart )
-     {
-         linearForm_PatternCoupled +=
-             integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                        _expr= -gammaRobinFSI*muFluid*inner(idv(this->meshVelocity2()),id(u))/hFace(),
-                        _geomap=this->geomap() );
+        if ( !BuildCstPart )
+        {
+            linearForm_PatternCoupled +=
+                integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                           _expr= -gammaRobinFSI*muFluid*inner(idv(this->meshVelocity2()),id(u))/hFace(),
+                           _geomap=this->geomap() );
 
-         //Deformations tensor (trial)
-         auto uEval = this->getSolution()->template element<0>();
-         auto pEval = this->getSolution()->template element<1>();
-         auto defv = sym(gradv(uEval));
-         // Strain tensor (trial)
-         auto Sigmav = -idv(pEval)*Id + 2*idv(*M_P0Mu)*defv;
-         linearForm_PatternCoupled +=
-             integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                        _expr= -inner( Sigmav*N(),id(u)),
-                        _geomap=this->geomap() );
-     }
- }
+            //Deformations tensor (trial)
+            auto uEval = this->getSolution()->template element<0>();
+            auto pEval = this->getSolution()->template element<1>();
+            auto defv = sym(gradv(uEval));
+            // Strain tensor (trial)
+            auto Sigmav = -idv(pEval)*Id + 2*idv(*M_P0Mu)*defv;
+            linearForm_PatternCoupled +=
+                integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                           _expr= -inner( Sigmav*N(),id(u)),
+                           _geomap=this->geomap() );
+        }
+    }
 #endif
-//------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 
 #if FLUIDMECHANICS_USE_PERIODICITY
-if ( !BuildCstPart )
- {
-     std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
-     double pressureJump = doption(_name="periodicity.pressure-jump",_prefix=this->prefix());
-     linearForm_PatternCoupled +=
-         integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
-                    _expr=-inner(pressureJump*N(),id(v) ) );
- }
+    if ( !BuildCstPart )
+    {
+        std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
+        double pressureJump = doption(_name="periodicity.pressure-jump",_prefix=this->prefix());
+        linearForm_PatternCoupled +=
+            integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
+                       _expr=-inner(pressureJump*N(),id(v) ) );
+    }
 #endif
 
-//------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 
 
-//if ( _doClose ) R->close();
+    //if ( _doClose ) R->close();
 
-if (this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
- {
-     this->updateBCStrongDirichletResidual(R);
- }
+    if (this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
+    {
+        this->updateBCStrongDirichletResidual(R);
+    }
 
-//if ( _doClose ) R->close();
+    //if ( _doClose ) R->close();
 
-//------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 
-double timeElapsed=thetimer.elapsed();
-if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
-                                           "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str()+
-                                           "\n--------------------------------------------------",
-                                           this->worldComm(),this->verboseAllProc());
+    double timeElapsed=thetimer.elapsed();
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
+                                               "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str()+
+                                               "\n--------------------------------------------------",
+                                               this->worldComm(),this->verboseAllProc());
 
 #endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
 
 } // namespace FeelModels
-      } // namespace Feel
+} // namespace Feel
 
 

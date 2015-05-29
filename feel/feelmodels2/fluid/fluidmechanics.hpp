@@ -22,74 +22,49 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file codegen_fluidmec.hpp
+ \file fluidmechanics.hpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2011-07-17
  */
 
 
-#ifndef FEELPP_CODEGEN_FLUIDMECHANICS_HPP
-#define FEELPP_CODEGEN_FLUIDMECHANICS_HPP 1
+#ifndef FEELPP_FLUIDMECHANICS_HPP
+#define FEELPP_FLUIDMECHANICS_HPP 1
 
 #include <feel/feelmodels2/fluid/fluidmecbase.hpp>
 
-#include <feel/feelvf/vf.hpp>
-
-#undef FLUIDMECHANICS
-#undef FLUIDMECHANICS0
-#undef FLUIDMECHANICS1
-#undef FLUIDMECHANICS2
-#include "feelmodelscoreconfig.h"
-#undef NUMFLUID
-#if defined( FLUIDMECHANICS )
-#define NUMFLUID /**/
-#endif
-#if defined( FLUIDMECHANICS0 )
-#define NUMFLUID 0 /**/
-#endif
-#if defined( FLUIDMECHANICS1 )
-#define NUMFLUID 1 /**/
-#endif
-#if defined( FLUIDMECHANICS2 )
-#define NUMFLUID 2 /**/
-#endif
-#define FLUIDMECHANICS_CLASS_NAME BOOST_PP_CAT(FluidMechanics,NUMFLUID)
-
-#include "bctool.hpp"
-#undef FLUIDMECHANICS_BC
-#undef FLUIDMECHANICS_VOLUME_FORCE
-#include "fluid.bc"
 
 namespace Feel
 {
 namespace FeelModels
 {
-
-class FLUIDMECHANICS_CLASS_NAME : public FLUIDMECHANICSBASE_CLASS_TYPE,
-                                  public boost::enable_shared_from_this< FLUIDMECHANICS_CLASS_NAME >
+template< typename ConvexType, typename BasisVelocityType,
+          typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
+          typename BasisDVType=Lagrange<0, Scalar,Continuous/*,PointSetFekete*/>,
+          bool UsePeriodicity=false>
+class FluidMechanics : public FluidMechanicsBase<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity>,
+                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >
 {
 public:
-    typedef FLUIDMECHANICSBASE_CLASS_TYPE super_type;
-    typedef FLUIDMECHANICS_CLASS_NAME self_type;
+    typedef FluidMechanicsBase<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> super_type;
+    typedef FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
-    //typedef decltype( FLUIDMECHANICS_BC( self_ptrtype() ) ) bcdef_type;
-    //typedef mpl::bool_<bcdef_type::hasThisType<cl::paroi_mobile>::value> hasBcParoiMobile_type;
-    //___________________________________________________________________________________//
     // constructor
-    FLUIDMECHANICS_CLASS_NAME( bool __isStationary,
-                               std::string prefix,
-                               WorldComm const& _worldComm=Environment::worldComm(),
-                               bool __buildMesh=true,
-                               std::string subPrefix="",
-                               std::string appliShortRepository=soption(_name="exporter.directory") );
-    FLUIDMECHANICS_CLASS_NAME( self_type const& FM ) = default;
+    FluidMechanics( bool __isStationary,
+                    std::string prefix,
+                    WorldComm const& _worldComm=Environment::worldComm(),
+                    bool __buildMesh=true,
+                    std::string subPrefix="",
+                    std::string appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanics( self_type const& FM ) = default;
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
     void loadConfigMeshFile( std::string const& geofilename );
     // update for use
-    void init(bool buildMethodNum=true);
+    void init( bool buildModelAlgebraicFactory=true );
+    void solve();
     //___________________________________________________________________________________//
     // assembly using bc
     void updateSourceTermResidual( vector_ptrtype& R ) const;
@@ -107,11 +82,15 @@ public:
     void updateBCDirichletNitscheLinearPDE( vector_ptrtype& F ) const;
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
     void updateBCPressureLinearPDE( vector_ptrtype& F ) const;
+private :
+    map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
+    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcSlip, M_bcFluidOutlets;
+    map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
 }; // FluidMechanics
 
 } // namespace FeelModels
 } // namespace Feel
 
-#endif /* FEELPP_CODEGEN_FLUIDMECHANICS_HPP */
+#endif /* FEELPP_FLUIDMECHANICS_HPP */
 

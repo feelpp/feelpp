@@ -5,15 +5,16 @@
 #include <feel/feelvf/vf.hpp>
 
 
-namespace Feel {
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
-
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity>
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity >::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                                                                              sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                                                              bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+                                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
+                                                     bool _doClose, bool _doBCStrongDirichlet ) const
 {
 #if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
     using namespace Feel::vf;
