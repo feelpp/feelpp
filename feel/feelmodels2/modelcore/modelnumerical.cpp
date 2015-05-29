@@ -165,6 +165,10 @@ namespace FeelModels
     void
     ModelNumerical::saveMSHfilePath(std::string namePath) const
     {
+        if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMSHfilePath",
+                                             "namePath "+ namePath + "\nwrite :\n" + M_mshFileStr,
+                                             this->worldComm(),this->verboseAllProc());
+
         if ( this->worldComm().isMasterRank() )
         {
             fs::path thedir = fs::path( namePath ).parent_path();

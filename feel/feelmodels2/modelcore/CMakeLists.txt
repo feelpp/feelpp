@@ -1,6 +1,10 @@
 #############################################################################
+option(FEELMODELS_ENABLE_MESHALE "Enable/Disable mesh ALE" OFF)
+if ( FEELMODELS_ENABLE_MESHALE )
+  set( FEELPP_MODELS_HAS_MESHALE 1)
+endif()
+
 option(FEELMODELS_ENABLE_FLUID_MECHANICS "Enable/Disable FluidMechanics" ON)
-option(FEELMODELS_ENABLE_STOKES_VARIANTS "Enable/Disable StokesVariants" OFF)
 
 option(FEELMODELS_FLUID_BUILD_LINEAR_CODE "Enable/Disable" ON)
 option(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE "Enable/Disable" ON)
@@ -55,7 +59,7 @@ endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;PREFIX_LIBNAME;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_NAME;LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
     ""
     ${ARGN}
     )
@@ -65,7 +69,7 @@ macro(genLibBase)
 
   set(LIB_DEPENDS           ${FEELMODELS_GENLIB_BASE_LIB_DEPENDS})
   set(PREFIX_FILES_TO_COPY  ${FEELMODELS_GENLIB_BASE_PREFIX_INCLUDE_USERCONFIG})
-  set(LIB_APPLICATION_NAME ${FEELMODELS_GENLIB_BASE_PREFIX_LIBNAME})
+  set(LIB_APPLICATION_NAME ${FEELMODELS_GENLIB_BASE_LIB_NAME})
 
   set(CODEGEN_FILES_TO_COPY ${FEELMODELS_GENLIB_BASE_FILES_TO_COPY})
   set(CODEGEN_SOURCES       ${FEELMODELS_GENLIB_BASE_FILES_SOURCES})
@@ -241,10 +245,10 @@ macro( genLibThermoDynamics )
 
     # generate libmodelbase
     genLibBase(
+      LIB_NAME ${LIBBASE_NAME}
       LIB_DIR ${LIBBASE_DIR}
       LIB_DEPENDS ${LIB_DEPENDS}
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      PREFIX_LIBNAME ${LIBBASE_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynconfig.h.in
@@ -273,7 +277,7 @@ macro( genLibThermoDynamics )
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
       message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
     endif()
-    set(LIB_NAME ${FEELMODELS_APP_LIB_NAME})
+    set(THE_LIB_NAME ${FEELMODELS_APP_LIB_NAME})
 
     if ( FEELMODELS_APP_LIB_DIR )
       get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
@@ -294,13 +298,13 @@ macro( genLibThermoDynamics )
 
 
     genLibBase(
+      LIB_NAME ${THE_LIB_NAME}
       LIB_DIR ${THE_LIB_DIR}
       MARKERS ${BCMARKER_FILE}
       DESC ${BCDESC_FILE}
       GEO ${GEO_FILE}
       LIB_DEPENDS ${LIB_DEPENDS}
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      PREFIX_LIBNAME ${LIB_NAME} #${PREFIX_LIB}${APPLICATION_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
@@ -466,10 +470,10 @@ macro( genLibSolidMechanics )
 
     # generate libmodelbase
     genLibBase(
+      LIB_NAME ${LIBBASE_NAME}
       LIB_DIR ${LIBBASE_DIR}
       LIB_DEPENDS ${LIB_DEPENDS}
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      PREFIX_LIBNAME ${LIBBASE_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecconfig.h.in
@@ -498,7 +502,7 @@ macro( genLibSolidMechanics )
     if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
       message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
     endif()
-    set(LIB_NAME ${FEELMODELS_APP_LIB_NAME})
+    set(THE_LIB_NAME ${FEELMODELS_APP_LIB_NAME})
 
     if ( FEELMODELS_APP_LIB_DIR )
       get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
@@ -519,13 +523,13 @@ macro( genLibSolidMechanics )
 
 
     genLibBase(
+      LIB_NAME ${THE_LIB_NAME}
       LIB_DIR ${THE_LIB_DIR}
       MARKERS ${BCMARKER_FILE}
       DESC ${BCDESC_FILE}
       GEO ${GEO_FILE}
       LIB_DEPENDS ${LIB_DEPENDS}
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      PREFIX_LIBNAME ${LIB_NAME}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
@@ -636,249 +640,335 @@ endmacro(feelpp_add_solid_application)
 # #############################################################################
 # #############################################################################
 # #############################################################################
-# macro( genLibFluidMechanics APPLICATION_NAME APPLICATION_DIR BCMARKER_FILE FEELMODELS_DIM
-#     FEELMODELS_ORDER_U FEELMODELS_ORDER_P FEELMODELS_ORDERGEO FEELMODELS_PRESSURE_IS_CONTINUOUS FEELMODELS_USE_CST_DENSITY_VISCOSITY FEELMODELS_DENSITY_VISCOSITY_ORDER FEELMODELS_USE_PERIODICITY BCDESC_FILE MESH_FILE )
+macro(genLibFluidMechanics)
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;SRC;CFG;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS;LIB_NAME;LIB_DIR;"
+    "USE_PERIODICITY;NO_UPDATE_MODEL_DEF"
+    ${ARGN}
+    )
 
-#   set(FLUIDMECHANICS_DIM ${FEELMODELS_DIM})
-#   set(FLUIDMECHANICS_ORDERGEO ${FEELMODELS_ORDERGEO})
-#   set(FLUIDMECHANICS_ORDER_VELOCITY ${FEELMODELS_ORDER_U})
-#   set(FLUIDMECHANICS_ORDER_PRESSURE ${FEELMODELS_ORDER_P})
-#   if ("${FEELMODELS_PRESSURE_IS_CONTINUOUS}" STREQUAL "1" ) 
-#     set(FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS 1)
-#     set(FEELMODELS_PRESSURE_CONTINUITY_TAG  c)
-#   else()
-#     set(FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS 0)
-#     set(FEELMODELS_PRESSURE_CONTINUITY_TAG  d)
-#    endif()
+  if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+    resetToZeroAllPhysicalVariables()
+    SET(FLUIDMECHANICS 1 )
+  endif()
 
-#    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY ${FEELMODELS_DENSITY_VISCOSITY_ORDER})
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_GEO_ORDER OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_GEO_ORDER OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER")
+  endif()
 
-#   if ("${FEELMODELS_USE_CST_DENSITY_VISCOSITY}" STREQUAL "1" ) 
-#     set(FLUIDMECHANICS_USE_CST_DENSITY_VISCOSITY 1)
-#     if ("${FEELMODELS_DENSITY_VISCOSITY_ORDER}" STREQUAL "0" ) 
-#       set(FEELMODELS_USE_CST_DENSITY_VISCOSITY_TAG DVCst)
-#     else()
-#       set(FEELMODELS_USE_CST_DENSITY_VISCOSITY_TAG DVP${FEELMODELS_DENSITY_VISCOSITY_ORDER}c)
-#     endif()
-#   else()
-#     set(FLUIDMECHANICS_USE_CST_DENSITY_VISCOSITY 0)
-#     set(FEELMODELS_USE_CST_DENSITY_VISCOSITY_TAG DVP${FEELMODELS_DENSITY_VISCOSITY_ORDER}d)
-#    endif()
+  set(FLUIDMECHANICS_DIM ${FEELMODELS_APP_DIM})
+  set(FLUIDMECHANICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(FLUIDMECHANICS_ORDER_VELOCITY ${FEELMODELS_APP_U_ORDER})
+  set(FLUIDMECHANICS_ORDER_PRESSURE ${FEELMODELS_APP_P_ORDER})
 
-#    if ( FEELMODELS_USE_PERIODICITY )
-#      set(FLUIDMECHANICS_USE_PERIODICITY 1)
-#      set(FLUIDMECHANICS_USE_PERIODICITY_TAG Periodic)
-#    else()
-#      set(FLUIDMECHANICS_USE_PERIODICITY 0)
-#      unset(FLUIDMECHANICS_USE_PERIODICITY_TAG)
-#    endif()
-
-#   set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FEELMODELS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FEELMODELS_USE_CST_DENSITY_VISCOSITY_TAG}${FLUIDMECHANICS_USE_PERIODICITY_TAG})
-#   set(FEELMODELS_MODEL_SPECIFIC_NAME fluidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-#   set(LIBBASE_DIR ${PROJECT_BINARY_DIR}/fsi/fsimodel/${FEELMODELS_MODEL_SPECIFIC_NAME} )
-
-#   set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-#   set(LIBBASE_NAME fsi_modelbase_${FEELMODELS_MODEL_SPECIFIC_NAME})
-
-#   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
-#     #write empty file in orter to check if this lib has already define
-#     file(WRITE ${LIBBASE_CHECK_PATH} "")
-
-#     set(CODEGEN_FILES_TO_COPY
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbase.hpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbasecreate.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseothers.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdatelinear.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdatelinearweakbc.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdateresidual.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdateresidualstresstensorlaw.cpp
-#       # ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecupdateptfixed.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdatejacobian.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdatejacobianstresstensorlaw.cpp
-#       ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmecbaseupdatestabilisation.cpp )
-#     set(CODEGEN_SOURCES
-#       ${LIBBASE_DIR}/fluidmecbasecreate.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseothers.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdatelinear.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdatelinearweakbc.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdateresidual.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdatejacobian.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdatejacobianstresstensorlaw.cpp
-#       ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation.cpp )
-#     set(LIB_DEPENDS fsimesh fsialg fsicore fsifilters ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
-
-#     # generate libmodelbase
-#     genLibBase( ${APPLICATION_NAME} ${LIBBASE_DIR}
-#       LIB_DEPENDS ${LIB_DEPENDS}
-#       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-#       PREFIX_LIBNAME ${LIBBASE_NAME}
-#       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-#       FILES_SOURCES ${CODEGEN_SOURCES}
-#       CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fsifluidmecconfig.h.in
-#       )
-
-#   endif()
+  #######################################################
+  if ( FEELMODELS_APP_P_CONTINUITY )
+    if ("${FEELMODELS_APP_P_CONTINUITY}" STREQUAL "Continuous" )
+      set(FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS 1)
+      set(FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG  c)
+    elseif("${FEELMODELS_APP_P_CONTINUITY}" STREQUAL "Discontinuous" )
+      set(FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS 0)
+      set(FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG  d)
+    else()
+      message(FATAL_ERROR "P_CONTINUITY ${FEELMODELS_APP_P_CONTINUITY} : is not valid! It must be Continuous or Discontinuous")
+    endif()
+  else()
+    # default value
+    set(FLUIDMECHANICS_PRESSURE_IS_CONTINUOUS 1)
+    set(FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG  c)
+  endif()
+  #######################################################
+  if (FEELMODELS_APP_DENSITY_VISCOSITY_ORDER)
+    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY ${FEELMODELS_APP_DENSITY_VISCOSITY_ORDER} )
+  else()
+    # default value
+    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY 0)
+  endif()
+  #######################################################
+  if (FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY)
+    if ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Continuous" )
+      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 1)
+      set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}c)
+    elseif ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Discontinuous" )
+      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 0)
+      set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}d)
+    else()
+      message(FATAL_ERROR "DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_DENSITY_VISCOSITY}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
+    endif()
+  else()
+    # default value
+    set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 1)
+    set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}c)
+  endif()
+  #######################################################
+   if ( FEELMODELS_APP_USE_PERIODICITY )
+     set(FLUIDMECHANICS_USE_PERIODICITY 1)
+     set(FLUIDMECHANICS_USE_PERIODICITY_TAG Periodic)
+   else()
+     set(FLUIDMECHANICS_USE_PERIODICITY 0)
+     unset(FLUIDMECHANICS_USE_PERIODICITY_TAG)
+   endif()
+   # allow to owerwrite USE_PERIODICITY (used in genExecutable )
+   if( FEELMODELS_APP_USE_PERIODICITY_BIS )
+     set(FLUIDMECHANICS_USE_PERIODICITY ${FEELMODELS_APP_USE_PERIODICITY_BIS} )
+     if ( FLUIDMECHANICS_USE_PERIODICITY )
+       set(FLUIDMECHANICS_USE_PERIODICITY_TAG Periodic)
+     else()
+       unset(FLUIDMECHANICS_USE_PERIODICITY_TAG)
+     endif()
+   endif()
+  #######################################################
 
 
-#   set(PREFIX_FILES_TO_COPY fluid)
-#   set(PREFIX_LIB fm)
-#   set(CODEGEN_FILES_TO_COPY
-#     ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmec.hpp
-#     ${PROJECT_SOURCE_DIR}/fsi/fsimodel/fluidmec.cpp
-#     )
-#   set(CODEGEN_SOURCES
-#     ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}/fluidmec.cpp
-#     )
-#   set(LIB_DEPENDS ${LIBBASE_NAME} fsimesh fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG}${FLUIDMECHANICS_USE_PERIODICITY_TAG})
+  set(FEELMODELS_MODEL_SPECIFIC_NAME fluidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
-#   set(FLUIDMECHANICS_INCLUDE_LIBBASE_HEADER 1)
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/fluid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
-#   genLibBase( ${APPLICATION_NAME} ${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_DIR}
-#     MARKERS ${BCMARKER_FILE}
-#     DESC ${BCDESC_FILE}
-#     GEO ${MESH_FILE}
-#     LIB_DEPENDS ${LIB_DEPENDS}
-#     PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-#     PREFIX_LIBNAME ${PREFIX_LIB}${APPLICATION_NAME}
-#     FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-#     FILES_SOURCES ${CODEGEN_SOURCES}
-#     CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
-#     )
+  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+    #write empty file in orter to check if this lib has already define
+    file(WRITE ${LIBBASE_CHECK_PATH} "")
 
-#   unset(FLUIDMECHANICS_INCLUDE_LIBBASE_HEADER)
+    # configure libmodelbase
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbasecreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseothers_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinear_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinearweakbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobian_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidual_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisation_inst.cpp
+      #${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
+      )
+    set(CODEGEN_SOURCES
+      ${LIBBASE_DIR}/fluidmecbasecreate_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseothers_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatelinear_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatelinearweakbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatejacobian_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdateresidual_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
+      #${LIBBASE_DIR}/fluidmechanics_inst.cpp
+      )
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
 
-# endmacro( genLibFluidMechanics )
-# #############################################################################
-# #############################################################################
-# macro(genExecutableFluidMechanics APPLICATION_NAME BCMARKER_FILE FEELMODELS_DIM
-#     FEELMODELS_ORDER_U FEELMODELS_ORDER_P FEELMODELS_ORDERGEO FEELMODELS_PRESSURE_IS_CONTINUOUS FEELMODELS_USE_CST_DENSITY_VISCOSITY FEELMODELS_DENSITY_VISCOSITY_ORDER FEELMODELS_USE_PERIODICITY BCDESC_FILE MESH_FILE MAIN_FILE )
+    # generate libmodelbase
+    genLibBase(
+      LIB_NAME ${LIBBASE_NAME}
+      LIB_DIR ${LIBBASE_DIR}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecconfig.h.in
+      )
+  endif()
 
-#   resetToZeroAllPhysicalVariables()
-#   SET(FLUIDMECHANICS 1 )
+  ############################
+  # build lib with bctool
+  ############################
+  if ( FEELMODELS_APP_BC_DESC )
 
-#   set(APPLICATION_DIR codeGen_${APPLICATION_NAME})
-#   genLibFluidMechanics(${APPLICATION_NAME} ${APPLICATION_DIR}/fluid ${BCMARKER_FILE} ${FEELMODELS_DIM}
-#     ${FEELMODELS_ORDER_U} ${FEELMODELS_ORDER_P} ${FEELMODELS_ORDERGEO} ${FEELMODELS_PRESSURE_IS_CONTINUOUS} ${FEELMODELS_USE_CST_DENSITY_VISCOSITY} ${FEELMODELS_DENSITY_VISCOSITY_ORDER} ${FEELMODELS_USE_PERIODICITY} ${BCDESC_FILE} ${MESH_FILE} )
+    get_filename_component( BCDESC_FILE ${FEELMODELS_APP_BC_DESC} ABSOLUTE )
 
-#   set(LIB_DEPENDS fm${APPLICATION_NAME} fsimesh fsialg fsicore ${FEELMODELS_LIBRARIES_TO_LINK_FROM_FEELPP} )
-#   genExecutableBase(
-#     ${APPLICATION_NAME} ${APPLICATION_DIR}
-#     SRC ${MAIN_FILE}
-#     LIB_DEPENDS ${LIB_DEPENDS}
-#     CONFIG_PATH ${PROJECT_SOURCE_DIR}/fsi/fsicore/fsicoreconfig.h.in
-#     )
+    if ( FEELMODELS_APP_BC_MARKERS )
+      get_filename_component( BCMARKER_FILE ${FEELMODELS_APP_BC_MARKERS} ABSOLUTE )
+    else()
+      set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
+    endif()
 
-# endmacro( genExecutableFluidMechanics )
-# #############################################################################
-# #############################################################################
-# macro(fsi_add_fluid_application)
-#   PARSE_ARGUMENTS(FEELMODELS_APP
-#     "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;SRC;CFG;DENSITY_VISCOSITY_TYPE;DENSITY_VISCOSITY_ORDER"
-#     "USE_PERIODICITY"
-#     ${ARGN}
-#     )
+    if ( FEELMODELS_APP_GEO_DESC )
+      get_filename_component( GEO_FILE ${FEELMODELS_APP_GEO_DESC} ABSOLUTE )
+    else()
+      set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
+    endif()
 
-#   CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
+    if ( NOT ( FEELMODELS_APP_LIB_NAME  ) )
+      message(FATAL_ERROR "miss argument! FEELMODELS_APP_LIB_NAME")
+    endif()
+    set(THE_LIB_NAME ${FEELMODELS_APP_LIB_NAME})
 
-#   if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER ) )
-#     message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER")
-#   endif()
-#   set(FEELMODELS_DIM ${FEELMODELS_APP_DIM})
-#   set(FEELMODELS_ORDER_U ${FEELMODELS_APP_U_ORDER})
-#   set(FEELMODELS_ORDER_P ${FEELMODELS_APP_P_ORDER})
-#   set(FEELMODELS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+    if ( FEELMODELS_APP_LIB_DIR )
+      get_filename_component( THE_LIB_DIR ${FEELMODELS_APP_LIB_DIR} ABSOLUTE )
+    else()
+      set(THE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
 
-#   if ( FEELMODELS_APP_BC_MARKERS )
-#     set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
-#   else()
-#     set(BCMARKER_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.bcmarkers )
-#   endif()
 
-#   if ( FEELMODELS_APP_GEO_DESC )
-#     set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
-#   else()
-#     set(GEO_FILE ${PROJECT_SOURCE_DIR}/fsi/fsicore/default.mesh )
-#   endif()
+    set(FLUIDMECHANICS_INCLUDE_LIBBASE_HEADER 1)
 
-#   if ( NOT FEELMODELS_APP_BC_DESC )
-#     message(FATAL_ERROR "miss argument! FEELMODELS_APP_BC_DESC")
-#   endif()
-#   set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
-#   set(MAIN_FILE ${FEELMODELS_APP_SRC})
+    set(PREFIX_FILES_TO_COPY fluid)
+    set(CODEGEN_FILES_TO_COPY
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/codegen_fluidmec.hpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/codegen_fluidmec.cpp )
+    set(CODEGEN_SOURCES
+      ${THE_LIB_DIR}/codegen_fluidmec.cpp )
+    set(LIB_DEPENDS ${LIBBASE_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
-#   if ( FEELMODELS_APP_P_CONTINUITY )
-#     if ("${FEELMODELS_APP_P_CONTINUITY}" STREQUAL "Continuous" )
-#       set(FEELMODELS_PRESSURE_IS_CONTINUOUS 1)
-#     elseif("${FEELMODELS_APP_P_CONTINUITY}" STREQUAL "Discontinuous" )
-#       set(FEELMODELS_PRESSURE_IS_CONTINUOUS 0)
-#     else()
-#       message(FATAL_ERROR "P_CONTINUITY ${FEELMODELS_APP_P_CONTINUITY} : is not valid! It must be Continuous or Discontinuous")
-#     endif()
-#   else()
-#     # default value
-#     set(FEELMODELS_PRESSURE_IS_CONTINUOUS 1)
-#   endif()
 
-#   if (FEELMODELS_APP_DENSITY_VISCOSITY_TYPE)
-#     if ("${FEELMODELS_APP_DENSITY_VISCOSITY_TYPE}" STREQUAL "Cst" )
-#       set(FEELMODELS_USE_CST_DENSITY_VISCOSITY 1)
-#     elseif ("${FEELMODELS_APP_DENSITY_VISCOSITY_TYPE}" STREQUAL "P0d" )
-#       set(FEELMODELS_USE_CST_DENSITY_VISCOSITY 0)
-#     else()
-#       message(FATAL_ERROR "DENSITY_VISCOSITY_TYPE ${FEELMODELS_APP_DENSITY_VISCOSITY_TYPE} : is not valid! It must be Cst or P0d")
-#     endif()
-#   else()
-#     # default value
-#     set(FEELMODELS_USE_CST_DENSITY_VISCOSITY 1)
-#   endif()
+    genLibBase(
+      LIB_NAME ${THE_LIB_NAME}
+      LIB_DIR ${THE_LIB_DIR}
+      MARKERS ${BCMARKER_FILE}
+      DESC ${BCDESC_FILE}
+      GEO ${GEO_FILE}
+      LIB_DEPENDS ${LIB_DEPENDS}
+      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
+      )
+    unset(SOLIDMECHANICS_INCLUDE_LIBBASE_HEADER)
 
-#   if (FEELMODELS_APP_DENSITY_VISCOSITY_ORDER)
-#     set(FEELMODELS_DENSITY_VISCOSITY_ORDER ${FEELMODELS_APP_DENSITY_VISCOSITY_ORDER} )
-#   else()
-#     # default value
-#     set(FEELMODELS_DENSITY_VISCOSITY_ORDER 0)
-#   endif()
+  endif( FEELMODELS_APP_BC_DESC )
 
-#   if ( FEELMODELS_APP_CFG )
-#     foreach(  cfg ${FEELMODELS_APP_CFG} )
-#       #      if ( EXISTS ${cfg} )
-#       # extract cfg filename  to be copied in binary dir
-#       get_filename_component( CFG_NAME ${cfg} NAME )
-#       configure_file( ${cfg} ${CFG_NAME} )
-#       #INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
-#       #      else()
-#       #        message(WARNING "Executable ${FEELMODELS_APP_NAME}: configuration file ${cfg} does not exist")
-#       #      endif()
-#     endforeach()
-#   endif(FEELMODELS_APP_CFG)
 
-#   if ( FEELMODELS_APP_USE_PERIODICITY )
-#     set( FEELMODELS_USE_PERIODICITY 1 )
-#   else()
-#     set( FEELMODELS_USE_PERIODICITY 0 )
-#   endif()
+ endmacro( genLibFluidMechanics )
+#############################################################################
+#############################################################################
+macro(genExecutableFluidMechanics APPLICATION_NAME
+    FEELMODELS_DIM FEELMODELS_ORDERGEO
+    FEELMODELS_ORDER_U FEELMODELS_ORDER_P FEELMODELS_P_CONTINUITY
+    FEELMODELS_DENSITY_VISCOSITY_ORDER FEELMODELS_DENSITY_VISCOSITY_CONTINUITY FEELMODELS_USE_PERIODICITY
+    BCMARKER_FILE BCDESC_FILE GEO_FILE MAIN_FILE )
 
-#   if (0)
-#     MESSAGE("*** Arguments for fluid application ${APPLICATION_NAME}")
-#     MESSAGE("*** DIM ${FEELMODELS_DIM}")
-#     MESSAGE("*** ORDER_U ${FEELMODELS_ORDER_U}")
-#     MESSAGE("*** ORDER_P ${FEELMODELS_ORDER_P}")
-#     MESSAGE("*** ORDERGEO ${FEELMODELS_ORDERGEO}")
-#     MESSAGE("*** PRESSURE_IS_CONTINUOUS ${FEELMODELS_PRESSURE_IS_CONTINUOUS}")
-#     MESSAGE("*** USE_CST_DENSITY_VISCOSITY ${FEELMODELS_USE_CST_DENSITY_VISCOSITY}")
-#     MESSAGE("*** MARKERS ${BCMARKER_FILE}")
-#     MESSAGE("*** DESC ${DESC_FILE}")
-#     MESSAGE("*** GEO ${GEO_FILE}")
-#     MESSAGE("*** SRC ${MAIN_FILE}")
-#   endif()
+  resetToZeroAllPhysicalVariables()
+  SET(FLUIDMECHANICS 1 )
 
-#   genExecutableFluidMechanics(${APPLICATION_NAME} ${BCMARKER_FILE} ${FEELMODELS_DIM}
-#     ${FEELMODELS_ORDER_U} ${FEELMODELS_ORDER_P} ${FEELMODELS_ORDERGEO} ${FEELMODELS_PRESSURE_IS_CONTINUOUS} ${FEELMODELS_USE_CST_DENSITY_VISCOSITY} ${FEELMODELS_DENSITY_VISCOSITY_ORDER} ${FEELMODELS_USE_PERIODICITY}  ${DESC_FILE} ${GEO_FILE}
-#     ${MAIN_FILE}
-#      )
+  set(THE_APPLICATION_DIR ${CMAKE_CURRENT_BINARY_DIR}/codeGen_${APPLICATION_NAME})
 
-# endmacro(fsi_add_fluid_application)
+  genLibFluidMechanics(
+    LIB_NAME   feelpp_model_fluid_${APPLICATION_NAME}
+    LIB_DIR    ${THE_APPLICATION_DIR}/fluid
+    DIM        ${FEELMODELS_DIM}
+    GEO_ORDER  ${FEELMODELS_ORDERGEO}
+    U_ORDER    ${FEELMODELS_ORDER_U}
+    P_ORDER    ${FEELMODELS_ORDER_P}
+    P_CONTINUITY            ${FEELMODELS_P_CONTINUITY}
+    DENSITY_VISCOSITY_CONTINUITY  ${FEELMODELS_DENSITY_VISCOSITY_CONTINUITY}
+    DENSITY_VISCOSITY_ORDER ${FEELMODELS_DENSITY_VISCOSITY_ORDER}
+    USE_PERIODICITY_BIS     ${FEELMODELS_USE_PERIODICITY}
+    BC_DESC    ${BCDESC_FILE} 
+    BC_MARKERS ${BCMARKER_FILE}
+    GEO_DESC   ${GEO_FILE}
+    )
+
+  set(LIB_DEPENDS feelpp_model_fluid_${APPLICATION_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+  genExecutableBase(
+    ${APPLICATION_NAME}
+    APPLICATION_DIR ${THE_APPLICATION_DIR}
+    SRC ${MAIN_FILE}
+    LIB_DEPENDS ${LIB_DEPENDS}
+    CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/feelmodelscoreconfig.h.in
+    )
+
+endmacro( genExecutableFluidMechanics )
+#############################################################################
+#############################################################################
+
+macro(feelpp_add_fluid_application)
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;SRC;CFG;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER"
+    "USE_PERIODICITY"
+    ${ARGN}
+    )
+
+  CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER")
+  endif()
+  set(FEELMODELS_DIM ${FEELMODELS_APP_DIM})
+  set(FEELMODELS_ORDER_U ${FEELMODELS_APP_U_ORDER})
+  set(FEELMODELS_ORDER_P ${FEELMODELS_APP_P_ORDER})
+  set(FEELMODELS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  if ( FEELMODELS_APP_BC_MARKERS )
+    set(BCMARKER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_MARKERS})
+  else()
+    set(BCMARKER_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.bcmarkers )
+  endif()
+
+  if ( FEELMODELS_APP_GEO_DESC )
+    set(GEO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_GEO_DESC})
+  else()
+    set(GEO_FILE ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/default.mesh )
+  endif()
+
+  if ( NOT FEELMODELS_APP_BC_DESC )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_BC_DESC")
+  endif()
+  set(DESC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FEELMODELS_APP_BC_DESC})
+  set(MAIN_FILE ${FEELMODELS_APP_SRC})
+
+
+  if ( FEELMODELS_APP_P_CONTINUITY )
+    set( FEELMODELS_P_CONTINUITY ${FEELMODELS_APP_P_CONTINUITY})
+  else()
+    set( FEELMODELS_P_CONTINUITY "Continuous")
+  endif()
+
+  if (FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY)
+    set(FEELMODELS_DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY} )
+  else()
+    set(FEELMODELS_DENSITY_VISCOSITY_CONTINUITY "Continuous" )
+  endif()
+
+  if (FEELMODELS_APP_DENSITY_VISCOSITY_ORDER)
+    set(FEELMODELS_DENSITY_VISCOSITY_ORDER ${FEELMODELS_APP_DENSITY_VISCOSITY_ORDER} )
+  else()
+    set(FEELMODELS_DENSITY_VISCOSITY_ORDER 0)
+  endif()
+
+  if ( FEELMODELS_APP_USE_PERIODICITY )
+    set( FEELMODELS_USE_PERIODICITY 1 )
+  else()
+    set( FEELMODELS_USE_PERIODICITY 0 )
+  endif()
+
+  if ( FEELMODELS_APP_CFG )
+    foreach(  cfg ${FEELMODELS_APP_CFG} )
+      #      if ( EXISTS ${cfg} )
+      # extract cfg filename  to be copied in binary dir
+      get_filename_component( CFG_NAME ${cfg} NAME )
+      configure_file( ${cfg} ${CFG_NAME} )
+      #INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
+      #      else()
+      #        message(WARNING "Executable ${FEELMODELS_APP_NAME}: configuration file ${cfg} does not exist")
+      #      endif()
+    endforeach()
+  endif(FEELMODELS_APP_CFG)
+
+
+  if (0)
+    MESSAGE("*** Arguments for fluid application ${APPLICATION_NAME}")
+    MESSAGE("*** DIM ${FEELMODELS_DIM}")
+    MESSAGE("*** ORDER_U ${FEELMODELS_ORDER_U}")
+    MESSAGE("*** ORDER_P ${FEELMODELS_ORDER_P}")
+    MESSAGE("*** ORDERGEO ${FEELMODELS_ORDERGEO}")
+    MESSAGE("*** P_CONTINUITY ${FEELMODELS_P_CONTINUITY}")
+    MESSAGE("*** DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_DENSITY_VISCOSITY_CONTINUITY}")
+    MESSAGE("*** MARKERS ${BCMARKER_FILE}")
+    MESSAGE("*** DESC ${DESC_FILE}")
+    MESSAGE("*** GEO ${GEO_FILE}")
+    MESSAGE("*** SRC ${MAIN_FILE}")
+  endif()
+
+  genExecutableFluidMechanics(${APPLICATION_NAME}
+    ${FEELMODELS_DIM} ${FEELMODELS_ORDERGEO}
+    ${FEELMODELS_ORDER_U} ${FEELMODELS_ORDER_P} ${FEELMODELS_P_CONTINUITY}
+    ${FEELMODELS_DENSITY_VISCOSITY_ORDER} ${FEELMODELS_DENSITY_VISCOSITY_CONTINUITY}  ${FEELMODELS_USE_PERIODICITY}
+    ${BCMARKER_FILE} ${DESC_FILE} ${GEO_FILE} ${MAIN_FILE}
+    )
+
+endmacro(feelpp_add_fluid_application)
 # #############################################################################
 # #############################################################################
 # #############################################################################
