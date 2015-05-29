@@ -57,7 +57,7 @@ public:
     /** @name Typedefs
      */
     //@{
-    static const size_type context = 0;
+    static const size_type context = vm::POINT;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
