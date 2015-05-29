@@ -154,7 +154,8 @@ ModelBase::saveInfo() const
 {
     if (this->worldComm().isMasterRank() )
     {
-        std::ofstream file(this->filenameSaveInfo().c_str(), std::ios::out);
+        fs::path thepath = fs::path(this->appliRepository())/fs::path(this->filenameSaveInfo());
+        std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
         file.close();
     }

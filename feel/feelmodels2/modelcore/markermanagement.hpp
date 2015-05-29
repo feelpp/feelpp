@@ -117,6 +117,36 @@ private :
     std::map<std::string,std::list<std::string> > M_containerMarkers;
 };
 
+class MarkerManagementSlipBC
+{
+public :
+
+    MarkerManagementSlipBC();
+    MarkerManagementSlipBC( MarkerManagementSlipBC const& op ) = default;
+    void clearMarkerSlipBC();
+    void setMarkerSlipBC( std::list<std::string> const& markers );
+    void addMarkerSlipBC( std::string markerName);
+    std::list<std::string> const& markerSlipBC() const;
+    std::string getInfoSlipBC() const;
+private :
+    std::list<std::string> M_containerMarkers;
+};
+
+class MarkerManagementPressureBC
+{
+public :
+
+    MarkerManagementPressureBC();
+    MarkerManagementPressureBC( MarkerManagementPressureBC const& op ) = default;
+    void clearMarkerPressureBC();
+    void setMarkerPressureBC( std::list<std::string> const& markers );
+    void addMarkerPressureBC( std::string markerName);
+    std::list<std::string> const& markerPressureBC() const;
+    std::string getInfoPressureBC() const;
+private :
+    std::list<std::string> M_containerMarkers;
+};
+
 } // namespace FeelModels
 } // namespace Feel
 

@@ -288,6 +288,72 @@ MarkerManagementALEMeshBC::getInfoALEMeshBC() const
     return _ostr.str();
 }
 
+//--------------------------------------------------------------//
+
+MarkerManagementSlipBC::MarkerManagementSlipBC()
+    :
+    M_containerMarkers()
+{}
+void
+MarkerManagementSlipBC::clearMarkerSlipBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementSlipBC::setMarkerSlipBC( std::list<std::string> const& markers )
+{
+    M_containerMarkers = markers;
+}
+void
+MarkerManagementSlipBC::addMarkerSlipBC( std::string markerName )
+{
+    if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
+        M_containerMarkers.push_back(markerName);
+}
+std::list<std::string> const&
+MarkerManagementSlipBC::markerSlipBC() const
+{
+    return M_containerMarkers;
+}
+std::string
+MarkerManagementSlipBC::getInfoSlipBC() const
+{
+    std::ostringstream _ostr;
+    return _ostr.str();
+}
+//--------------------------------------------------------------//
+
+MarkerManagementPressureBC::MarkerManagementPressureBC()
+    :
+    M_containerMarkers()
+{}
+void
+MarkerManagementPressureBC::clearMarkerPressureBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementPressureBC::setMarkerPressureBC( std::list<std::string> const& markers )
+{
+    M_containerMarkers = markers;
+}
+void
+MarkerManagementPressureBC::addMarkerPressureBC( std::string markerName )
+{
+    if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
+        M_containerMarkers.push_back(markerName);
+}
+std::list<std::string> const&
+MarkerManagementPressureBC::markerPressureBC() const
+{
+    return M_containerMarkers;
+}
+std::string
+MarkerManagementPressureBC::getInfoPressureBC() const
+{
+    std::ostringstream _ostr;
+    return _ostr.str();
+}
 
 } // namespace FeelModels
 } // namespace Feel
