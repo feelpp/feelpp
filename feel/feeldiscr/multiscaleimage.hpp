@@ -56,8 +56,8 @@ public :
     
             std::cout <<" x =" << x <<", y =" << y << std::endl;
  
-            double i = boost::math::iround(x/dx)*pow(2,level);
-            double j = boost::math::iround(y/dy)*pow(2,level);
+            double i = boost::math::iround(x/*pow(2,level)*//dx);
+            double j = boost::math::iround(y/*pow(2,level)*//dy);
             
             std::cout <<" i =" << i <<", j =" << j << std::endl;
 
