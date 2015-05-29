@@ -742,7 +742,7 @@ macro(genLibFluidMechanics)
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidual_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisation_inst.cpp
-      #${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
       )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/fluidmecbasecreate_inst.cpp
@@ -755,7 +755,7 @@ macro(genLibFluidMechanics)
       ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
-      #${LIBBASE_DIR}/fluidmechanics_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanics_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
 
