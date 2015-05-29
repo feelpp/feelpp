@@ -126,9 +126,9 @@ public:
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
 
-    value_type coarse2fine( ublas::vector<T> const& n  ) const
+    value_type coarse2fine( ublas::vector<T> const& real, ublas::vector<T> const& ref   ) const
     {
-        return M_coarse2fine( n );
+        return M_coarse2fine( real, ref );
     }
 
 private:
@@ -243,7 +243,8 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_expr.coarse2fine( M_gmc->xReal(q) );
+            std::cout << "id : " << M_gmc->id() << " ,coarse :" << M_gmc->G() << std::endl; 
+            return M_expr.coarse2fine( M_gmc->xReal(q), M_gmc->xRef(q) );
         }
         this_type M_expr;
         gmc_ptrtype M_gmc;

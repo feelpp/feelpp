@@ -64,14 +64,14 @@ class Test
 
         Test(int nx,int ny, std::string s)
         {
-            ima=holo3_image<float>(ny,nx);
+            ima=holo3_image<float>(ny+1,nx+1);
             ex=s;
             auto f = expr(s);
             for (int i=0;i<=nx;i++)
             {
                 for (int j=0;j<=ny;j++)
                 {
-                    std::map<std::string,double> m {{"x",i*8.9e-3},{"y",j*8.9e-3}};
+                    std::map<std::string,double> m {{"x",i*doption("msi.pixelsize")},{"y",j*doption("msi.pixelsize")}};
                     ima(j,i)=f.evaluate(m);
                 }
             }
@@ -82,14 +82,17 @@ class Test
 
         {
           /// [mesh] 
-        auto pas = pow(2.,level)*8.9e-3;
+        auto pas = pow(2.,level)*doption("msi.pixelsize");
         std::cout << pas << std::endl;  
         auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
                                     _h=pas, 
                                     _desc=domain(_name="msitest",
-                                                 _xmax=8.9e-3*(ima.cols()-1),
-                                                 _ymax=8.9e-3*(ima.rows()-1)));
+                                                 _h=pas,
+                                                 _xmax=doption("msi.pixelsize")*(ima.cols()-1),
+                                                 _ymax=doption("msi.pixelsize")*(ima.rows()-1)));
+    std::cout << "h : " << pas << " xmax : " << doption("msi.pixelsize")*(ima.cols()-1) << " ymax :" << doption("msi.pixelsize")*(ima.rows()-1) << " cols : "<< ima.cols()-1 << " rows : " << ima.rows()-1 <<  std::endl;
 
+  
         
 
         auto Xhc = Pch<1>( mesh );
@@ -132,8 +135,8 @@ BOOST_AUTO_TEST_SUITE( msi_suite )
 
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
-    Test t0=Test(512,512,"x:x:y") ;
-    t0.resol(4);
+    Test t0=Test(4,4,"x:x:y") ;
+    t0.resol(ioption("msi.level"));
 }
 
 
