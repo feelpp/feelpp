@@ -46,8 +46,15 @@ makeOptions()
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "k1", po::value<double>()->default_value( 0.0 ), "k1 : k1=0 corresponds to homogeneous case" )
         ( "k2", po::value<double>()->default_value( 1.0 ), "k2" )
+        ( "k_2D", po::value<std::string>()->default_value( "k1*(x-2)*x*(y-2)*y+k2:x:y:k1:k2" ), "k" )
+        ( "u_exact_2D", po::value<std::string>()->default_value( "{-1/(2*Pi)*cos( Pi*x )*sin( Pi*y ), -1/(2*Pi)*sin( Pi*x )*cos( Pi*y )}:x:y" ), "u exact" )
+        ( "p_exact_2D", po::value<std::string>()->default_value( "(1/(2*Pi*Pi))*sin( Pi*x )*sin( Pi*y ):x:y" ), "p exact" )
+        ( "k_3D", po::value<std::string>()->default_value( "k1*(x-2)*x*(y-2)*y*(z-2)*z+k2:x:y:z:k1:k2" ), "k" )
+        ( "u_exact_3D", po::value<std::string>()->default_value( "{-1/(2*Pi)*cos( Pi*x )*sin( Pi*y )*sin( Pi*z ),-1/(2*Pi)*sin( Pi*x )*cos( Pi*y )*sin( Pi*z ),-1/(2*Pi)*sin( Pi*x )*sin( Pi*y )*cos( Pi*z )}:x:y:z" ), "u exact" )
+        ( "p_exact_3D", po::value<std::string>()->default_value( "(1/(2*Pi*Pi))*sin( Pi*x )*sin( Pi*y )*sin( Pi*z ):x:y:z" ), "p exact" )
         ( "d1", po::value<double>()->default_value( 0.0 ), "d1 (stabilization term)" )
         ( "d2", po::value<double>()->default_value( 0.0 ), "d2 (stabilization term)" )
+        ( "nb_refine", po::value<int>()->default_value( 5 ), "nb_refine" )
         ;
     return testhdivoptions.add( Feel::feel_options() );
 }
@@ -143,7 +150,7 @@ public:
     /**
      * run the application
      */
-    void convergence(int nb_refine);
+    void convergence();
 
 private:
     //! linear algebra backend
@@ -159,7 +166,7 @@ private:
 
 template<int Dim, int OrderU, int OrderP>
 void
-Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
+Darcy<Dim, OrderU, OrderP>::convergence()
 {
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -167,86 +174,25 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
     auto k1 = cst(M_k1);
     auto k2 = cst(M_k2);
 
-#if defined(FEELPP_2D)
-    auto k = k1*(Px()-2)*Px()*(Py()-2)*Py() + k2;
+    auto k = expr(soption((boost::format( "k_%1%D" ) % Dim ).str()));
     auto lambda = cst(1.)/k;
+    std::cout << "k : " << k << std::endl;
 
-    auto f = k*sin( Pi*Px() )*sin( Pi*Py() )
-        -(k1/Pi)*( (Px()-1)*(Py()-2)*Py()*cos( Pi*Px() )*sin( Pi*Py() ) + (Px()-2)*Px()*(Py()-1)*sin( Pi*Px() )*cos( Pi*Py() ) );
+    // Exact solutions
+    auto u_exact = expr<Dim,1>(soption((boost::format( "u_exact_%1%D" ) % Dim ).str()));
+    auto divu_exact = div(u_exact);
+    auto gradu_exact = grad(u_exact);
+    // auto graddivu_exact = grad<Dim>(div(u_exact));
+    auto f = divu_exact;
+    std::cout << "u : " << u_exact << std::endl;
+    std::cout << "divu : " << divu_exact << std::endl;
+    std::cout << "gradu : " << gradu_exact << std::endl;
 
-    // Exact solution
-    auto dkdx = 2*k1*(Px()-1)*Py()*(Py()-2);
-    auto dkdy = 2*k1*(Py()-1)*Px()*(Px()-2);
-    auto coeff_uex = -k/(2*Pi); //c
-    auto dcdx = -k1*(Px()-1)*(Py()-2)*Py()/Pi;
-    auto dcdy = -k1*(Py()-1)*(Px()-2)*Px()/Pi;
+    auto p_exact = expr(soption((boost::format( "p_exact_%1%D" ) % Dim ).str()));
+    auto gradp_exact = grad<Dim>(p_exact);
+    std::cout << "p : " << p_exact << std::endl;
+    std::cout << "gradp : " << gradp_exact << std::endl;
 
-    auto u_exact = coeff_uex*vec(cos( Pi*Px() )*sin( Pi*Py() ), sin( Pi*Px() )*cos( Pi*Py() ));
-    auto p_exact = (1/(2*Pi*Pi))*sin( Pi*Px() )*sin( Pi*Py() );
-    auto divu_exact = f;
-
-    auto gradu_exact = mat<2,2>( dcdx*cos(Pi*Px())*sin(Pi*Py()) + (k/2)*sin(Pi*Px())*sin(Pi*Py()),
-                                 dcdy*cos(Pi*Px())*sin(Pi*Py()) - (k/2)*cos(Pi*Px())*cos(Pi*Py()),
-                                 dcdx*sin(Pi*Px())*cos(Pi*Py()) - (k/2)*cos(Pi*Px())*cos(Pi*Py()),
-                                 dcdy*sin(Pi*Px())*cos(Pi*Py()) + (k/2)*sin(Pi*Px())*sin(Pi*Py()) );
-    auto gradp_exact = -lambda*u_exact;
-    auto graddivu_exact = vec( dkdx*sin(Pi*Px())*sin(Pi*Py()) + k*Pi*cos(Pi*Px())*sin(Pi*Py())
-                               -(k1/Pi)*( Py()*(Py()-2)*sin(Pi*Py())*( cos(Pi*Px())-Pi*(Px()-1)*sin(Pi*Px()) )
-                                          + (Py()-1)*cos(Pi*Py())*( 2*(Px()-1)*sin(Pi*Px()) + Pi*Px()*(Px()-2)*cos(Pi*Px()) )),
-                               dkdy*sin(Pi*Px())*sin(Pi*Py()) + k*Pi*sin(Pi*Px())*cos(Pi*Py())
-                               -(k1/Pi)*( (Px()-1)*cos(Pi*Px())*( 2*(Py()-1)*sin(Pi*Py()) + Pi*Py()*(Py()-2)*cos(Pi*Py()) )
-                                          + Px()*(Px()-2)*sin(Pi*Px())*( cos(Pi*Py()) - Pi*(Py()-1)*sin(Pi*Py()) )) );
-
-#elif defined(FEELPP_3D)
-    auto k = k1*(Px()-2)*Px()*(Py()-2)*Py()*(Pz()-2)*Pz() + k2;
-    auto lambda = cst(1.)/k;
-
-    auto f = (3/2)*k*sin( Pi*Px() )*sin( Pi*Py() )*sin( Pi*Pz() )
-        -(k1/Pi)*( (Px()-1)*(Py()-2)*Py()*(Pz()-2)*Pz()*cos( Pi*Px() )*sin( Pi*Py() )*sin( Pi*Pz() )
-                   + (Px()-2)*Px()*(Py()-1)*(Pz()-2)*Pz()*sin( Pi*Px() )*cos( Pi*Py() )*sin( Pi*Pz() )
-                   + (Px()-2)*Px()*(Py()-2)*Py()*(Pz()-1)*sin( Pi*Px() )*sin( Pi*Py() )*cos( Pi*Pz() ) );
-
-    // Exact solution
-    auto dkdx = 2*k1*(Px()-1)*Py()*(Py()-2)*Pz()*(Pz()-2);
-    auto dkdy = 2*k1*(Py()-1)*Px()*(Px()-2)*Pz()*(Pz()-2);
-    auto dkdz = 2*k1*(Pz()-1)*Px()*(Px()-2)*Py()*(Py()-2);
-    auto coeff_uex = -k/(2*Pi); //c
-    auto dcdx = -k1*(Px()-1)*Py()*(Py()-2)*Pz()*(Pz()-2)/Pi;
-    auto dcdy = -k1*(Py()-1)*Px()*(Px()-2)*Pz()*(Pz()-2)/Pi;
-    auto dcdz = -k1*(Pz()-1)*Px()*(Px()-2)*Py()*(Py()-2)/Pi;
-
-    auto u_exact = coeff_uex*vec(cos( Pi*Px() )*sin( Pi*Py() )*sin( Pi*Pz() ),
-                                 sin( Pi*Px() )*cos( Pi*Py() )*sin( Pi*Pz() ),
-                                 sin( Pi*Px() )*sin( Pi*Py() )*cos( Pi*Pz() ));
-    auto p_exact = (1/(2*Pi*Pi))*sin( Pi*Px() )*sin( Pi*Py() )*sin( Pi*Pz() );
-    auto divu_exact = f;
-
-    auto gradu_exact = mat<3,3>( dcdx*cos(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) + (k/2)*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()),
-                                 dcdy*cos(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) - (k/2)*cos(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()),
-                                 dcdz*cos(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) - (k/2)*cos(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()),
-                                 dcdx*sin(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()) - (k/2)*cos(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()),
-                                 dcdy*sin(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()) + (k/2)*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()),
-                                 dcdz*sin(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()) - (k/2)*sin(Pi*Px())*cos(Pi*Py())*cos(Pi*Pz()),
-                                 dcdx*sin(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()) - (k/2)*cos(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()),
-                                 dcdy*sin(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()) - (k/2)*sin(Pi*Px())*cos(Pi*Py())*cos(Pi*Pz()),
-                                 dcdz*sin(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()) + (k/2)*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) );
-    auto gradp_exact = -lambda*u_exact;
-    auto graddivu_exact = vec( (3/2)*( dkdx*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) + k*Pi*cos(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) )
-                               -(k1/Pi)*( Py()*(Py()-2)*(Pz()-2)*Pz()*sin(Pi*Py())*sin(Pi*Pz())*( cos(Pi*Px())-Pi*(Px()-1)*sin(Pi*Px()) )
-                                          + (Py()-1)*(Pz()-2)*Pz()*cos(Pi*Py())*sin(Pi*Pz())*( 2*(Px()-1)*sin(Pi*Px()) + Pi*Px()*(Px()-2)*cos(Pi*Px()) )
-                                          + (Py()-2)*Py()*(Pz()-1)*sin(Pi*Py())*cos(Pi*Pz())*( 2*(Px()-1)*sin(Pi*Px()) + Pi*Px()*(Px()-2)*cos(Pi*Px()) )),
-                               (3/2)*( dkdy*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) + k*Pi*sin(Pi*Px())*cos(Pi*Py())*sin(Pi*Pz()) )
-                               -(k1/Pi)*( (Px()-1)*(Pz()-2)*Pz()*cos(Pi*Px())*sin(Pi*Pz())*( 2*(Py()-1)*sin(Pi*Py()) + Pi*Py()*(Py()-2)*cos(Pi*Py()) )
-                                          + Px()*(Px()-2)*(Pz()-2)*Pz()*sin(Pi*Px())*sin(Pi*Pz())*( cos(Pi*Py()) - Pi*(Py()-1)*sin(Pi*Py()) )
-                                          + Px()*(Px()-2)*(Pz()-1)*sin(Pi*Px())*cos(Pi*Pz())*( 2*(Py()-1)*sin(Pi*Py()) + Pi*Py()*(Py()-2)*cos(Pi*Py()) )),
-                               (3/2)*( dkdz*sin(Pi*Px())*sin(Pi*Py())*sin(Pi*Pz()) + k*Pi*sin(Pi*Px())*sin(Pi*Py())*cos(Pi*Pz()) )
-                               -(k1/Pi)*( (Px()-1)*(Py()-2)*Py()*cos(Pi*Px())*sin(Pi*Py())*( 2*(Pz()-1)*sin(Pi*Pz()) + Pi*Pz()*(Pz()-2)*cos(Pi*Pz()) )
-                                          + Px()*(Px()-2)*(Py()-1)*sin(Pi*Px())*cos(Pi*Py())*( 2*(Pz()-1)*sin(Pi*Pz()) + Pi*Pz()*(Pz()-2)*cos(Pi*Pz()) )
-                                          + Px()*(Px()-2)*Py()*(Py()-2)*sin(Pi*Px())*sin(Pi*Py())*( cos(Pi*Pz()) - Pi*(Pz()-1)*sin(Pi*Pz()) )) );
-#endif
-
-    auto K = k*eye<2>();
-    auto Lambda = lambda*eye<2>();
 
     // Coeff for stabilization terms
     auto d1 = cst(M_d1);
@@ -271,7 +217,7 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
         }
 
     double current_hsize = meshSize;
-    for(int i=0; i<nb_refine; i++)
+    for(int i=0; i<ioption("nb_refine"); i++)
         {
             mesh_ptrtype mesh;
             std::string mesh_name = (boost::format( "%1%-%2%D" ) % "hypercube" % Dim ).str();
@@ -284,7 +230,6 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
                                            _desc=domain( _name = mesh_name ,
                                                          _shape = "hypercube",
                                                          _usenames = true,
-                                                         //_dim = 2,
                                                          _dim = Dim,
                                                          _h = meshSize,
                                                          _xmin=0,_xmax=2,
@@ -309,9 +254,9 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto U_rt = Yh->element( "(u,p)" ); //trial
             auto V_rt = Yh->element( "(v,q)" ); //test
 
-            auto u_rt = U_rt.template element<0>( "u" ); //velocity field
-            auto v_rt = V_rt.template element<0>( "v" ); // potential field
-            auto p_rt = U_rt.template element<1>( "p" );
+            auto u_rt = U_rt.template element<0>( "u" ); // velocity field
+            auto v_rt = V_rt.template element<0>( "v" );
+            auto p_rt = U_rt.template element<1>( "p" ); // potential field
             auto q_rt = V_rt.template element<1>( "q" );
 
             // Number of dofs associated with each space U and P
@@ -337,6 +282,11 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             darcyRT += integrate( _range=elements(mesh), _expr = d1*k*(trans(lambda*idt(u_rt)+trans(gradt(p_rt)))*(lambda*id(v_rt)+trans(grad(q_rt)))) );
             darcyRT += integrate( _range=elements(mesh), _expr = -d2*( lambda*divt(u_rt)*div(v_rt) ));
 
+            darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
+            // Be careful that p is in L^2 and hence does not necessarily admit a trace
+            // to get Dirichlet condition on p we need to change the formulation
+            //darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=p_rt,  _expr=p_exact );
+
             // Solve problem
             backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
 
@@ -348,9 +298,9 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto l2err_divu = normL2( _range=elements(mesh), _expr=divu_exact - divv(u_rt) );
 
             auto h1err_u = normH1( _range=elements(mesh), _expr=u_exact - idv(u_rt), _grad_expr=gradu_exact - gradv(u_rt) );
-            auto h1err_p = normH1( _range=elements(mesh), _expr=p_exact - idv(p_rt), _grad_expr=gradp_exact - trans(gradv(p_rt)) );
+            auto h1err_p = normH1( _range=elements(mesh), _expr=p_exact - idv(p_rt), _grad_expr=trans(gradp_exact) - trans(gradv(p_rt)) );
             auto divu_rt = vf::project(Xh, elements(mesh), divv(u_rt) ); //TODO : Raviart-Thomas interpolant !
-            auto h1err_divu = normH1( _range=elements(mesh), _expr=divu_exact - divv(u_rt), _grad_expr=graddivu_exact - trans(gradv(divu_rt)) );
+            // auto h1err_divu = normH1( _range=elements(mesh), _expr=divu_exact - divv(u_rt), _grad_expr=graddivu_exact - trans(gradv(divu_rt)) );
 
             // ****** Projection Operators (L2 - HDIV) : check proj( div u ) = proj( f ) ******
             // L2 projection
@@ -371,11 +321,11 @@ Darcy<Dim, OrderU, OrderP>::convergence(int nb_refine)
 
                     std::cout << "[" << i << "]||u_exact - u||_H1 = " << h1err_u << std::endl;
                     std::cout << "[" << i << "]||p_exact - p||_H1 = " << h1err_p << std::endl;
-                    std::cout << "[" << i << "]||divu_exact - divu||_H1 = " << h1err_divu << std::endl;
+                    // std::cout << "[" << i << "]||divu_exact - divu||_H1 = " << h1err_divu << std::endl;
 
                     cvg_u << current_hsize << "\t" << nDofu << "\t" << l2err_u << "\t" << h1err_u << "\n";
                     cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
-                    cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\t" << h1err_divu << "\n";
+                    // cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\t" << h1err_divu << "\n";
                     cvg_projL2 << current_hsize << "\t" << Xhvec->nDof() << "\t" << l2error_L2 << "\n";
                     cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
                 }

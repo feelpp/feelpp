@@ -308,7 +308,7 @@ DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEP
 DebugStream Debug( int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
 DebugStream Debug( bool cond, int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
 #else
-#define Debug Ndebug
+//#define Debug Ndebug
 inline NdebugStream Ndebug( int = 0, NdebugStream::stprintf = &printf )
 {
     return NdebugStream();

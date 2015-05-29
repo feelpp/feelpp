@@ -145,6 +145,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::save() const
 {
+    tic();
     if ( !this->worldComm().isActive() ) return;
 
     DVLOG(2) << "checking if frequency is ok\n";
@@ -209,36 +210,30 @@ ExporterEnsightGold<MeshType,N>::save() const
     }
     */
 
-    boost::timer ti;
-    DVLOG(2) << "export in ensight format\n";
-
-    ti.restart();
-    DVLOG(2) << "export geo(mesh) file\n";
+    tic();
     writeGeoFiles();
-    DVLOG(2) << "export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save geo",FLAGS_v>1);
 
-    LOG(INFO) << "Geo File written" << std::endl;
-
-    ti.restart();
-    DVLOG(2) << "export variable file\n";
+    
     /* only try to write variable data when we have time steps */
     if(hasSteps)
-    { writeVariableFiles(); }
-    DVLOG(2) << "export variable files ok, time " << ti.elapsed() << "\n";
-
-    ti.restart();
-    DVLOG(2) << "export time set\n";
+    { 
+        tic();
+        writeVariableFiles(); 
+        toc("ExporterEnsightGold::save variables",FLAGS_v>1);
+    }
+    tic();
     this->saveTimeSet();
-    DVLOG(2) << "export time set ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save timeset",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "export case file\n";
+    tic();
     writeCaseFile();
-    DVLOG(2) << "export case file ok, time " << ti.elapsed() << "\n";
-
-    DVLOG(2) << "export sos\n";
+    toc("ExporterEnsightGold::save case",FLAGS_v>1);
+    
+    tic();
     writeSoSFile();
-    DVLOG(2) << "export sos ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save sos",FLAGS_v>1);
+    toc("ExporterEnsightGold::save", FLAGS_v > 0 );
 }
 
 template<typename MeshType, int N>
@@ -1427,7 +1422,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // material
     memset(buffer, '\0', sizeof(buffer));
     //sprintf(buffer, "Material %d", part->first);
-    sprintf(buffer, "Material %d", (int)(markerid));
+    // Restrict the marker name to 32 chars to avoid buffer overflow (48 chars left for text + id)
+    sprintf(buffer, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
     if( this->worldComm().isMasterRank() )
     { size = sizeof(buffer); }
     else
@@ -1855,6 +1851,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 nComponents = 3;
                 VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
             }
+            if ( __var->second.is_tensor2 )
+            {
+                nComponents = 9;
+                VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
+            }
 
             /* we get that from the local processor */
             /* We do not need the renumbered global index */
@@ -1870,6 +1871,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = npts;
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
+            if ( __var->second.is_tensor2 )
+                __field_size *= 9;
             ublas::vector<float> __field( __field_size, 0.0 );
             size_type e = 0;
             VLOG(1) << "field size=" << __field_size;
@@ -2084,6 +2087,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
             if ( __evar->second.is_vectorial )
                 nComponents = 3;
+            if ( __evar->second.is_tensor2 )
+                nComponents = 9;
 
             size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
             ublas::vector<float> __field( __field_size );

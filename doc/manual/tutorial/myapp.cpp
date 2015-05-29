@@ -30,10 +30,14 @@ int main( int argc, char* argv[] )
 {
     using namespace Feel;
 
+    //boost::mpi::environment(argc, argv);
+    std::cout << "main: " << boost::mpi::environment::initialized() << std::endl;
     Environment env( _argc=argc, _argv=argv,
                      _about=about( _name="myapp",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
+    std::cout << "main: " << boost::mpi::environment::initialized() << std::endl;
+    return 0;
     std::cout << "proc " << Environment::rank()
               <<" of "<< Environment::numberOfProcessors()
               << std::endl;

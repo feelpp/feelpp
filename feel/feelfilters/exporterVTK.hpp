@@ -42,6 +42,15 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
 #include <vtkIntArray.h>
@@ -88,11 +97,17 @@
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 
-//#include <feel/feelfilters/vtkCPVTKPipeline.h>
-#endif
+#include <feel/feelfilters/vtkBaseInsituPipeline.h>
+#endif // FEELPP_VTK_INSITU_ENABLED
 
-#endif
+#endif // VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
 
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 namespace Feel
 {

@@ -153,14 +153,14 @@ public:
     static const uint16_type imorder = OnExpr::imorder;
     static const bool imIsPoly = OnExpr::imIsPoly;
 
-    typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
+    using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
+    using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
 
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
     typedef value_type evaluate_type;
     typedef typename element_type::return_type return_type;
-    typedef boost::function<return_type ( node_type const& )> bc_type;
     typedef OnExpr expression_type;
 
     template<typename Func>
@@ -274,9 +274,9 @@ public:
         typedef typename Elem::functionspace_type functionspace_type;
         static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
         static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                 << mpl::bool_<is_same_space||is_comp_space>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>() );
+        VLOG(2) << "[IntegratorOn::assemble()] is_same: "
+                << is_same_space << " is_comp_space:" << is_comp_space << "\n";
+        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>(), on_type() );
     }
     //@}
 private:
@@ -284,12 +284,22 @@ private:
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                    boost::shared_ptr<Elem2> const& /*__v*/,
-                   FormType& /*__f*/, mpl::bool_<false> ) const {}
+                   FormType& /*__f*/, mpl::bool_<false>, on_type ) const {}
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_FACES> ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true> ) const;
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_POINTS> ) const;
 
 private:
 
@@ -309,7 +319,8 @@ void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                                                                   boost::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
-                                                                  mpl::bool_<true> ) const
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_FACES>) const
 {
 #if 0
 
@@ -321,7 +332,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-    DVLOG(2) << "call on::assemble() " << "\n";
+    VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
+    
     //
     // a few typedefs
     //
@@ -516,8 +528,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
-                    //std::cout << " on " << theface.id() << " thedof "<< thedof << " = " << __value
-                    //<< " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
+                    DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
+                             << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
@@ -566,6 +578,305 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
     x.reset();
 }
+
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_EDGES>) const
+{
+
+
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
+
+    // make sure that the form is close, ie the associated matrix is assembled
+    __form.matrix().close();
+    // make sure that the right hand side is closed, ie the associated vector is assembled
+    M_rhs->close();
+
+    //
+    // start
+    //
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
+    boost::timer __timer;
+
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    auto edge_it = this->beginElement();
+    auto edge_en = this->endElement();
+
+    bool findAEdge = false;
+    for( auto& lit : M_elts )
+    {
+        edge_it = lit.template get<1>();
+        edge_en = lit.template get<2>();
+        if ( edge_it != edge_en )
+        {
+            findAEdge=true;
+            break;
+        }
+    }
+    if ( findAEdge )
+    {
+        auto const& edgeForInit = boost::unwrap_ref( *edge_it );
+
+        auto const* __dof = M_u.functionSpace()->dof().get();
+        auto const* __fe = M_u.functionSpace()->fe().get();
+        auto const* mesh = M_u.functionSpace()->mesh().get();
+        auto gm = mesh->gm();
+        size_type eid = edgeForInit.elements().begin()->first;
+        size_type edgeid_in_element = edgeForInit.elements().begin()->second;
+        auto const& elt = mesh->element( eid );
+        //auto geopc = gm->preComputeOnEdges([&__fe]( int f ){ return __fe->edgePoints(f); } );
+        auto geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+        // TODO: create context for edge associated to element
+        auto ctx =  gm->template context<context>( elt, geopc);
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = __fe->edgeLocalInterpolant();
+
+        for( auto& lit : M_elts )
+        {
+            edge_it = lit.template get<1>();
+            edge_en = lit.template get<2>();
+            DVLOG(2) << "edge " << edge_it->id() << " with marker " << edge_it->marker() << " nb: " << std::distance(edge_it,edge_en);
+            for ( ;
+                  edge_it != edge_en;//this->endElement();
+                  ++edge_it )
+            {
+                auto const& theedge = boost::unwrap_ref( *edge_it );
+                // do not process the edge if it is a ghost edge: belonging to two
+                // processes and being in a process id greater than the one
+                // corresponding edge
+                if ( theedge.isGhostCell() )
+                {
+                    LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
+                    continue;
+                }
+
+                size_type eid = theedge.elements().begin()->first;
+                size_type edgeid_in_element = theedge.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+                ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
+                //ctx->update( elt, edgeid_in_element, geopc );
+                ctx->update( elt, geopc );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->edgeInterpolate( expr_evaluator, IhLoc );
+
+                for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
+                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                            // this can be quite expensive depending on the
+                            // matrix storage format.
+                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
+
+                            // only the real dof ( not the ghosts )
+                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                            {
+                                dofs.push_back( thedof );
+                                values.push_back(  __value );
+                            }
+
+                            //M_rhs.set( thedof, __value );
+                        }
+
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            __form.set( thedof, thedof, 1.0*1e30 );
+                            M_rhs->set( thedof, __value*1e30 );
+                        }
+                }
+        }// edge_it != edge_en
+
+        } // for( auto& lit : M_elts )
+
+    }// findAEdge
+
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto& itd : dofs)
+            itd+=thedofshift;
+    }
+
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
+
+}
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_POINTS>) const
+{
+#if 0
+
+    if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
+         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+        return;
+
+#endif
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_product = functionspace_type::is_product;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(MESH_POINTS): " << is_comp_space<< "\n";
+
+    VLOG(2) << "On::assemble on Mesh Points";
+    // TODO : check that we do not use hdiv hcurl or other type of elements
+    const size_type context = OnExpr::context|vm::POINT;
+    VLOG(2)  << "assembling Dirichlet conditions\n";
+    auto mesh = M_u.functionSpace()->mesh().get();
+    auto const* dof = M_u.functionSpace()->dof().get();
+    auto const* __fe = M_u.functionSpace()->fe().get();
+    auto gm = mesh->gm();
+
+    // make sure that the form is close, ie the associated matrix is assembled
+    __form.matrix().close();
+    // make sure that the right hand side is closed, ie the associated vector is assembled
+    M_rhs->close();
+    
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    auto pt_it = this->beginElement();
+    auto pt_en = this->endElement();
+
+    bool findAPt = false;
+    for( auto& lit : M_elts )
+    {
+        pt_it = lit.template get<1>();
+        pt_en = lit.template get<2>();
+        if ( pt_it != pt_en )
+        {
+            findAPt=true;
+            break;
+        }
+    }
+    if ( findAPt )
+    {
+        // get the first pt properly connected
+        bool findAPtToInit=false;
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            for( ; pt_it != pt_en; ++pt_it )
+            {
+                if ( pt_it->elements().size() )
+                {
+                    findAPtToInit=true;
+                    break;
+                }
+            }
+            if ( findAPtToInit ) break;
+        }
+        CHECK( findAPtToInit ) << "a point to initialize the Dirichlet constraint\n";
+
+        auto const& thept = boost::unwrap_ref( *pt_it );
+            
+        size_type eid = thept.elements().begin()->first;
+        size_type ptid_in_element = thept.elements().begin()->second;
+
+        auto const& elt = mesh->element( eid );
+        auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        auto ctx = gm->template context<context>( elt, geopc );
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = __fe->vertexLocalInterpolant();
+
+        
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            DVLOG(2) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
+            
+            if ( pt_it == pt_en )
+                continue;
+
+            for ( ;
+                  pt_it != pt_en;
+                  ++pt_it )
+            {
+                auto const& thept = boost::unwrap_ref( *pt_it );
+                
+                size_type eid = thept.elements().begin()->first;
+                size_type ptid_in_element = thept.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+                ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->vertexInterpolate( expr_evaluator, IhLoc );
+
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = dof->localToGlobal( eid, ptid_in_element, c ).index();
+                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*index; // global dof
+                    double __value = IhLoc( c );
+                    
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        DVLOG(3) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        
+                        dofs.push_back( thedof );
+                        values.push_back(  __value );
+                    }
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        __form.set( thedof, thedof, 1.0*1e30 );
+                        M_rhs->set( thedof, __value*1e30 );
+                    }
+                }
+            }// pt_it != pt_en
+        } // for( auto& lit : M_elts )
+    }// findAFace
+
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto& itd : dofs)
+            itd+=thedofshift;
+    }
+
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
+}
+
 
 
 namespace detail

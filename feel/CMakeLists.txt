@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -37,6 +37,7 @@ add_subdirectory (feelcore)
 add_subdirectory (feelmath)
 add_subdirectory (feelalg)
 add_subdirectory (feelmesh)
+add_subdirectory (feelpartition)
 add_subdirectory (feelpoly)
 add_subdirectory (feelopt)
 add_subdirectory (feelcrb)

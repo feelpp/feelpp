@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 30 Sep 2014
  
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2014-2015 Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -216,8 +216,10 @@ public:
     int apply( const vector_type& X, vector_type& Y ) const
     {
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
+        tic();
         M_F->multVector( X, Y );
         Y.close();
+        toc((boost::format("OperatorMatrix::apply %1%")%this->label()).str(),FLAGS_v>0);
         return !hasApply();
     }
     
@@ -225,6 +227,7 @@ public:
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
         LOG(INFO) << "OperatorMatrix: applyInverse(X,Y)";
+        tic();
         auto xx = backend(_name=this->label())->newVector( X.mapPtr() );
         *xx = X;
         xx->close();
@@ -233,6 +236,7 @@ public:
         auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
         Y=*yy;
         Y.close();
+        toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
         return r.isConverged();
     }
 
@@ -427,13 +431,15 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        
+        tic();
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->apply( X,*M_ZG );
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->apply( *M_ZG,Y );
 
+        toc((boost::format("OperatorCompose::apply %1%")%this->label()).str(),FLAGS_v>0);
+        
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
         return !hasApply();
@@ -445,10 +451,12 @@ public:
 
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " ...\n";
 
+        tic();
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->applyInverse( X,*M_ZF );
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->applyInverse( *M_ZF,Y );
+        toc((boost::format("OperatorCompose::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
         LOG(INFO) << "OperatorCompose applyInverse operator " << this->label() << " done.\n";
         return hasInverse();
     }

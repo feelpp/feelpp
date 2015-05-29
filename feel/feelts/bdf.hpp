@@ -6,6 +6,7 @@
    Date: 2006-12-30
 
    Copyright (C) 2006-2008 Université Joseph Fourier (Grenoble)
+   Copyright (C) 2011-2015 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -308,6 +309,10 @@ public:
     //! Return a vector with the last n state vectors
     element_type& unknown( int i );
 
+    element_type const& prior() const { return *M_unknowns[0]; }
+
+    element_type& prior() { return *M_unknowns[0]; }
+    
     template<typename container_type>
     void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {
@@ -496,29 +501,35 @@ Bdf<SpaceType>::init()
 
     if ( this->isRestart() )
     {
+        fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
+
         for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
         {
-            // create and open a character archive for output
-            std::ostringstream ostr;
+            if ( fileFormat() == "hdf5")
+            {
+#ifdef FEELPP_HAS_HDF5
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
+            }
+            else if ( this->fileFormat() == "binary")
+            {
+                // create and open a character archive for output
+                std::ostringstream ostr;
+                if( M_rankProcInNameOfFiles )
+                    ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                else
+                    ostr << M_name << "-" << M_iteration-p;
+                DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
-            if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-            else
-                ostr << M_name << "-" << M_iteration-p;
+                fs::ifstream ifs;
+                ifs.open( dirPath/ostr.str() );
 
-            DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
-
-            fs::ifstream ifs;
-
-            if ( this->restartPath().empty() ) ifs.open( this->path()/ostr.str() );
-
-            else ifs.open( this->restartPath()/this->path()/ostr.str() );
-
-            //fs::ifstream ifs (this->restartPath() / this->path() / ostr.str(), std::ios::binary);
-
-            // load data from archive
-            boost::archive::binary_iarchive ia( ifs );
-            ia >> *M_unknowns[p];
+                // load data from archive
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *M_unknowns[p];
+            }
         }
     }
 }
@@ -688,19 +699,29 @@ Bdf<SpaceType>::saveCurrent()
     bdfsaver.save();
 
     {
-        std::ostringstream ostr;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+        if ( this->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->fileFormat() == "binary")
+        {
+            std::ostringstream ostr;
 
-        fs::ofstream ofs( M_path_save / ostr.str() );
+            if( M_rankProcInNameOfFiles )
+                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_name << "-" << M_iteration;
+            // load data from archive
+            fs::ofstream ofs( M_path_save / ostr.str() );
+            boost::archive::binary_oarchive oa( ofs );
+            oa << *M_unknowns[0];
+        }
 
-
-        // load data from archive
-        boost::archive::binary_oarchive oa( ofs );
-        oa << *M_unknowns[0];
     }
 }
 
@@ -712,18 +733,31 @@ Bdf<SpaceType>::loadCurrent()
     //bdfsaver.save();
 
     {
-        std::ostringstream ostr;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+        if ( this->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->fileFormat() == "binary")
+        {
 
-        fs::ifstream ifs( M_path_save / ostr.str() );
+            std::ostringstream ostr;
 
-        // load data from archive
-        boost::archive::binary_iarchive ia( ifs );
-        ia >> *M_unknowns[0];
+            if( M_rankProcInNameOfFiles )
+                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_name << "-" << M_iteration;
+
+            fs::ifstream ifs( M_path_save / ostr.str() );
+
+            // load data from archive
+            boost::archive::binary_iarchive ia( ifs );
+            ia >> *M_unknowns[0];
+        }
     }
 }
 

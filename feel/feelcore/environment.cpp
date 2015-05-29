@@ -62,6 +62,7 @@ extern "C"
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelcore/feelpetsc.hpp>
+#include <feel/feelcore/timertable.hpp>
 #include <feel/options.hpp>
 
 #define stringize2(x) #x
@@ -509,6 +510,12 @@ Environment::Environment( int argc, char** argv,
     }
 
     freeargv( envargv );
+
+    /* Initialize hwloc topology */
+    /* to extract info about architecture */
+#if defined(FEELPP_HAS_HARTS)
+    Environment::initHwlocTopology();
+#endif
 
 }
 void
@@ -1682,9 +1689,6 @@ void Environment::bindToCore( unsigned int id )
     hwloc_cpuset_t set;
     hwloc_obj_t coren;
 
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
-
     /* get the nth core object */
     coren = hwloc_get_obj_by_type( Environment::S_hwlocTopology, HWLOC_OBJ_CORE, id );
     /* get the cpu mask of the nth core */
@@ -1696,7 +1700,24 @@ void Environment::bindToCore( unsigned int id )
     hwloc_bitmap_free( set );
 }
 
-int Environment::countCoresInSubtree( hwloc_obj_t node )
+int Environment::getNumberOfCores(bool logical)
+{
+    int nCores = -1;
+    int depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+    if(logical)
+    { depth = hwloc_get_type_depth( Environment::S_hwlocTopology, HWLOC_OBJ_PU ); }
+    else
+    { depth = hwloc_get_type_depth( Environment::S_hwlocTopology, HWLOC_OBJ_CORE ); }
+
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nCores = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
+    }
+
+    return nCores;
+}
+
+int Environment::countCoresInSubtree( hwloc_obj_t node, bool logical )
 {
     int res = 0;
 
@@ -1707,7 +1728,10 @@ int Environment::countCoresInSubtree( hwloc_obj_t node )
     }
 
     /* if we are a core node, we increment the counter */
-    if ( node->type == HWLOC_OBJ_CORE )
+    /* count the number of real cores or logical cores */
+    /* according to the logical parameter */
+    if ( (logical && node->type == HWLOC_OBJ_PU) 
+    || (!logical && node->type == HWLOC_OBJ_CORE) )
     {
         res++;
     }
@@ -1723,9 +1747,6 @@ void Environment::bindNumaRoundRobin( int lazy )
     hwloc_obj_t numaNode;
 
     std::cout << "Round Robin Numa" << std::endl;
-
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
 
     /* get the first numa node */
     numaNode = hwloc_get_obj_by_type( Environment::S_hwlocTopology, HWLOC_OBJ_NODE, 0 );
@@ -1815,9 +1836,6 @@ void Environment::writeCPUData( std::string fname )
 
     std::ostringstream oss;
 
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
-
     /* get a cpuset object */
     set = hwloc_bitmap_alloc();
 
@@ -1883,6 +1901,7 @@ void Environment::writeCPUData( std::string fname )
         MPI_File_close( &fh );
     }
 }
+
 #endif
 
 MemoryUsage
@@ -1923,6 +1942,9 @@ Environment::expand( std::string const& expr )
               << "\n";
 
     std::string res=expr;
+    boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
+    boost::replace_all( res, "$feelpp_builddir", topBuildDir );
+    boost::replace_all( res, "$feelpp_databasesdir", topSrcDir + "/databases/" );
     boost::replace_all( res, "$top_srcdir", topSrcDir );
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
@@ -1930,8 +1952,46 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
+    
+
+    typedef std::vector< std::string > split_vector_type;
+
+#if defined FEELPP_ENABLED_PROJECTS
+    split_vector_type SplitVec; // #2: Search for tokens
+    boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on ); 
+    for( auto const& s : SplitVec )
+    {
+        std::ostringstream o1,o2,o3;
+        o1 << "$" << s << "_srcdir";
+        o2 << "$" << s << "_builddir";
+        o3 << "$" << s << "_databasesdir";
+        
+        boost::replace_all( res, o1.str(), topSrcDir + "/research/" + s );
+        VLOG(2) << o1.str() << " : " << topSrcDir + "/research/" + s;
+        boost::replace_all( res, o2.str(),  topBuildDir + "/research/" + s );
+        VLOG(2) << o2.str() << " : " << topBuildDir + "/research/" + s;
+        boost::replace_all( res, o3.str(),  topSrcDir + "/research/" + s + "/databases/" );
+        VLOG(2) << o3.str() << " : " << topSrcDir + "/research/" + s + "/databases/";;
+    }
+#endif
+
+    VLOG(1) << "Expand " << expr << " to "  << res;
     return res;
 }
+
+void
+Environment::addTimer( std::string const& msg, double t )
+{
+    S_timers.add( msg, t );
+}
+
+void
+Environment::saveTimers( bool display )
+{
+    //S_timers.save( Environment::about().appName(), display );
+    S_timers.save( display );
+}
+
 
 
 AboutData Environment::S_about;
@@ -1961,6 +2021,8 @@ std::vector<std::string> Environment::olAutoloadFiles;
 #if defined(FEELPP_HAS_HARTS)
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
+
+TimerTable Environment::S_timers;
 
 }
 

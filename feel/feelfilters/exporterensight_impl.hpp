@@ -312,7 +312,10 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
 
             while ( __itt != __ent )
             {
-                __out << "tensor per node: "
+                std::cout << "tensor asym per node: "
+                          << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                          << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << std::endl; // important localRank !!
+                __out << "tensor asym per node: "
                     << __ts->index() << " " // << *__ts_it->beginStep() << " "
                     << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
                 ++__itt;
@@ -556,6 +559,8 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 
         if ( __var->second.is_vectorial )
             nComponents = 3;
+        if ( __var->second.is_tensor2 )
+            nComponents = 9;
 
         /**
          * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -763,7 +768,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Material %d",p_it->first );
+        sprintf( buffer, "Marker %d (%s)", p_it->first, __mesh->markerName(p_it->first).substr(0, 32).c_str());
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         strcpy( buffer, this->elementType().c_str() );

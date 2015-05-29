@@ -96,6 +96,7 @@
 
 namespace Feel
 {
+class TimerTable;
 struct MemoryUsage
 {
     MemoryUsage()
@@ -368,6 +369,14 @@ public:
     {
         return S_vm;
     }
+  
+    template<typename T>
+    static void setOptionValue(std::string s,T val)
+    {
+        auto it = S_vm.find( s );
+        CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
+        S_vm.at(s).value() = val;
+    } 
 
     static AboutData const& about()
     {
@@ -421,6 +430,7 @@ public:
     }
 
 #if defined(FEELPP_HAS_HARTS)
+
     /**
      * Init Hwloc topology structure
      */
@@ -444,9 +454,19 @@ public:
     static void bindToCore( unsigned int id );
 
     /**
-     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     * Counts the number of cores on the current server
+     * Calls countCoresInSubtree done on the whole topology
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
      */
-    static int countCoresInSubtree( hwloc_obj_t node );
+    static int getNumberOfCores( bool logical = false );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
+     */
+    static int countCoresInSubtree( hwloc_obj_t node, bool logical = false );
 
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes
@@ -458,8 +478,8 @@ public:
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
     static void writeCPUData( std::string fname = "CPUData.dat" );
-#endif
 
+#endif
 
     //@}
 
@@ -552,6 +572,16 @@ public:
      * \param message message to print to identity the associated memory operation
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
+
+    /**
+     * add timer to a map of timers that can be shown using \c displayTimers()
+     */
+    static void addTimer( std::string const& msg, double t );
+
+    /**
+     * display and save timers
+     */
+    static void saveTimers( bool save );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -678,6 +708,8 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+
+    static TimerTable S_timers;
 };
 
 BOOST_PARAMETER_FUNCTION(

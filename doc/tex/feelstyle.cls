@@ -2,7 +2,7 @@
 \def\fileversion{1}
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{lifestyle}[2003/10/29]
-\message{`lifestyle v\fileversion, \filedate\space (Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>)}
+\message{`lifestyle v\fileversion, \filedate\space (Christophe Prud'homme <christophe.prudhomme@feelpp.org>)}
 
 \RequirePackage{ifthen}
 

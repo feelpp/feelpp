@@ -584,6 +584,16 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
                               mesh.beginInternalEdge(),
                               mesh.endInternalEdge() );
 }
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_const_iterator,
+             typename MeshTraits<MeshType>::point_const_iterator>
+points( MeshType const& mesh, mpl::bool_<false> )
+{
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
+                              mesh.beginPoint(),
+                              mesh.endPoint() );
+}
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
@@ -592,16 +602,6 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
       points( MeshType const& mesh, mpl::bool_<true> )
 {
     return points( *mesh, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::point_const_iterator,
-      typename MeshTraits<MeshType>::point_const_iterator>
-      points( MeshType const& mesh, mpl::bool_<false> )
-{
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPoint(),
-                              mesh.endPoint() );
 }
 
 template<typename MeshType>
@@ -664,6 +664,12 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 } // detail
 /// \endcond
+
+template<typename MeshType>
+rank_type meshrank ( MeshType const& mesh )
+{
+    return meshrank( mesh, is_ptr_or_shared_ptr<MeshType>() );
+}
 
 template<typename MeshType>
 rank_type meshrank ( MeshType const& mesh, mpl::bool_<true> )
@@ -1277,8 +1283,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
       markededges( MeshType const& mesh,
                    flag_type __marker )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::markededges( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markededges( mesh, __marker, meshrank( mesh ), is_ptr_or_shared_ptr<MeshType>() );
 }
 
 template<typename MeshType>
@@ -1286,10 +1291,29 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
       typename MeshTraits<MeshType>::marker_edge_const_iterator,
       typename MeshTraits<MeshType>::marker_edge_const_iterator>
       markededges( MeshType const& mesh,
-                   std::string const& __marker )
+                   std::string const& __marker,
+                   typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
 {
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return Feel::detail::markededges( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markededges( mesh,
+                                      mesh->markerName( __marker ),
+                                      meshrank( mesh ),
+                                      is_ptr_or_shared_ptr<MeshType>() );
+}
+
+/**
+ * this function in 2D is a no-op
+ */
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename MeshTraits<MeshType>::marker_face_const_iterator,
+             typename MeshTraits<MeshType>::marker_face_const_iterator>
+markededges( MeshType const& mesh,
+             std::string const& __marker,
+             typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+{
+    return boost::make_tuple(mpl::size_t<MESH_EDGES>(),
+                             mesh->endFaceWithMarker(),
+                             mesh->endFaceWithMarker() );
 }
 
 /**
