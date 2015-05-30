@@ -75,57 +75,76 @@ class Test
                     ima(j,i)=f.evaluate(m);
                 }
             }
+
+            std::cout << "ima= " << ima << "\n";
         }
        
            
-     void resol( int level )
+    void resol( int level )
 
         {
-          /// [mesh] 
-        auto pas = pow(2.,level)*doption("msi.pixelsize");
-        std::cout << pas << std::endl;  
-        auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
-                                    _h=pas, 
-                                    _desc=domain(_name="msitest",
-                                                 _h=pas,
-                                                 _xmax=doption("msi.pixelsize")*(ima.cols()-1),
-                                                 _ymax=doption("msi.pixelsize")*(ima.rows()-1)));
-    std::cout << "h : " << pas << " xmax : " << doption("msi.pixelsize")*(ima.cols()-1) << " ymax :" << doption("msi.pixelsize")*(ima.rows()-1) << " cols : "<< ima.cols()-1 << " rows : " << ima.rows()-1 <<  std::endl;
+            using Feel::vf::msi;
+
+            /// [mesh] 
+            auto pas = pow(2.,level)*doption("msi.pixelsize");
+            std::cout << pas << std::endl;  
+            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
+                                        _h=pas, 
+                                        _desc=domain(_name="msitest",
+                                                     _h=pas,
+                                                     _xmax=doption("msi.pixelsize")*(ima.cols()-1),
+                                                     _ymax=doption("msi.pixelsize")*(ima.rows()-1)));
+            std::cout << "h : " << pas << " xmax : " << doption("msi.pixelsize")*(ima.cols()-1) << " ymax :" << doption("msi.pixelsize")*(ima.rows()-1) << " cols : "<< ima.cols()-1 << " rows : " << ima.rows()-1 <<  std::endl;
 
   
-        
+            auto i = integrate( _range=elements( mesh ),
+                                _expr=vf::msi<float>(ima,level),
+                                _quad=_Q<1,MultiScaleQuadrature>() ).evaluate(); 
+            std::cout << "I= " << i << "\n";
 
-        auto Xhc = Pch<1>( mesh );
-        auto u=Xhc->element();
-        auto v=Xhc->element();
+            auto Xhc = Pch<1>( mesh );
+            auto u=Xhc->element();
+            auto v=Xhc->element();
          
-        /// [expression]
-        // our function to integrate 
-        auto a = form2( _trial=Xhc, _test=Xhc );
-        a=integrate( _range=elements( mesh ),
-                     _expr=idt(u)*id(v) );
+            /// [expression]
+            // our function to integrate 
+            auto a = form2( _trial=Xhc, _test=Xhc );
+            a=integrate( _range=elements( mesh ),
+                         _expr=idt(u)*id(v) );
 
 
-        auto l = form1( _test=Xhc );
-        l= integrate( _range=elements( mesh ),
-                      _expr=vf::msi<float>(ima,level)*id(v),
-                      _quad=_Q<1,MultiScaleQuadrature>() ); 
-
+            auto l = form1( _test=Xhc );
+            l= integrate( _range=elements( mesh ),
+                          _expr=msi(ima,level)*id(v),
+                          _quad=_Q<1,MultiScaleQuadrature>() ); 
+            v.on(_range=elements(mesh),_expr=cst(1.));
+            std::cout << "l(1)=" << l(v) << std::endl;
+            auto l2 = form1( _test=Xhc );
+            l2= integrate( _range=elements( mesh ),
+                           _expr=msi(ima,level)*id(v) );
+            v.on(_range=elements(mesh),_expr=cst(1.));
+            std::cout << "l2(1)=" << l(v) << std::endl;
       
-        a.solve( _rhs=l, _solution=u );
+            a.solve( _rhs=l, _solution=u );
+            auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-expr(ex));
+            std::cout << "|| umsiq-f ||^2 =" << n << std::endl;
+            
+            a.solve( _rhs=l2, _solution=u );
+            n = normL2 ( _range=elements( mesh ), _expr=idv(u)-expr(ex));
+            std::cout << "|| umsi-f ||^2 =" << n << std::endl;
 
-        auto fP=vf::project(_space=Xhc,
-                            _range=elements(mesh),
-                            _expr=expr(ex));
-
-        std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(fP)) << std::endl;
-        auto e = exporter(_mesh=mesh);
-        e->add("u",u);
-        e->add("ex",fP);
-        e->save();
+            auto e = exporter(_mesh=mesh);
+            e->add("u",u);
+            v.on( _range=elements(mesh), _expr=idv(u)-expr(ex));
+            e->add("error",v);
+            v.on( _range=elements(mesh), _expr=msi(ima,level));
+            e->add("Interp",v);
+            v.on( _range=elements(mesh), _expr=expr(ex));
+            e->add("ex",v);
+            e->save();
         
 
-       }
+        }
 
     private :
 
