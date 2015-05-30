@@ -30,7 +30,8 @@
 #define FEELPP_MODELS_VF_FLUIDMEC_STRESSTENSOR_H 1
 
 #include <feel/feelmodels2/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+//#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+//template<class SpaceType> class DynamicViscosityModel;
 
 namespace Feel
 {
@@ -272,23 +273,23 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                                           Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
-            M_locMuP0( this->expr().viscosityModelDesc().muP0().idExtents(*this->gmc()) )
+            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(), this->gmc()->xRefs() ) ),
+            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
+            M_locMuP0( this->expr().viscosityModelDesc().fieldMu().idExtents(*this->gmc()) )
         {}
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
-            M_locMuP0( this->expr().viscosityModelDesc().muP0().idExtents(*this->gmc()) )
+            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(), this->gmc()->xRefs() ) ),
+            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
+            M_locMuP0( this->expr().viscosityModelDesc().fieldMu().idExtents(*this->gmc()) )
         {}
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().muP0().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
-            M_locMuP0( this->expr().viscosityModelDesc().muP0().idExtents(*this->gmc()) )
+            M_pcMuP0( new pc_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(), this->gmc()->xRefs() ) ),
+            M_ctxMuP0( new ctx_muP0_type( this->expr().viscosityModelDesc().fieldMu().functionSpace()->fe(),this->gmc(),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
+            M_locMuP0( this->expr().viscosityModelDesc().fieldMu().idExtents(*this->gmc()) )
         {}
 
         void update( Geo_t const& geom )
@@ -299,7 +300,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
             M_ctxMuP0->update( this->gmc(),  (pc_muP0_ptrtype const&) M_pcMuP0 );
             std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), /*typename*/ super_type::loc_scalar_type::Zero() );
-            this->expr().viscosityModelDesc().muP0().id( *M_ctxMuP0, M_locMuP0 );
+            this->expr().viscosityModelDesc().fieldMu().id( *M_ctxMuP0, M_locMuP0 );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::loc_res_type::Zero() );
             updateImpl( mpl::int_<gmc_type::nDim>()/*, expr_type::specific_expr_type()*/ );
@@ -1163,7 +1164,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
  * @author Vincent Chabannes
  * @see
  */
-template<typename ElementVelocityType, typename ElementPressureType, typename ElementMuP0Type, typename SpecificExprType, int QuadOrder>
+template<typename ElementVelocityType, typename ElementPressureType, typename ViscosityModelType, typename SpecificExprType, int QuadOrder>
 class FluidMecStressTensorImpl
 {
 public:
@@ -1172,7 +1173,7 @@ public:
      */
     //@{
 
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,SpecificExprType,QuadOrder> this_type;
+    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,SpecificExprType,QuadOrder> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
@@ -1181,9 +1182,9 @@ public:
 
     typedef ElementVelocityType element_velocity_type;
     typedef ElementPressureType element_pressure_type;
-    typedef ElementMuP0Type element_muP0_type;
+    typedef ViscosityModelType viscosity_model_type;
+    typedef typename viscosity_model_type::element_type element_muP0_type;
     typedef SpecificExprType specific_expr_type;
-    typedef Feel::FeelModels::ViscosityModelDescription<element_muP0_type> viscosity_model_desc_type;
     //------------------------------------------------------------------------------//
     // displacement functionspace
     typedef typename element_velocity_type::functionspace_type functionspace_velocity_type;
@@ -1257,13 +1258,11 @@ public:
      */
     //@{
 
-    FluidMecStressTensorImpl( element_velocity_type const & u, element_pressure_type const& p, /*element_muP0_type const& muP0, std::string const& stressTensorLaw,*/
-                              Feel::FeelModels::ViscosityModelDescription<element_muP0_type> const& viscosityModelDesc, bool withPressure )
+    FluidMecStressTensorImpl( element_velocity_type const & u, element_pressure_type const& p,
+                              viscosity_model_type const& viscosityModelDesc, bool withPressure )
         :
         M_velocity( boost::cref(u) ),
         M_pressure( boost::cref(p) ),
-        //M_muP0( boost::cref( muP0 ) ),
-        //M_stressTensorLaw( stressTensorLaw ),
         M_viscosityModelDesc( viscosityModelDesc ),
         M_withPressureTerm( withPressure )
     {}
@@ -1308,7 +1307,7 @@ public:
 
     element_velocity_type const& velocity() const { return M_velocity; }
     element_pressure_type const& pressure() const { return M_pressure; }
-    viscosity_model_desc_type const& viscosityModelDesc() const { return M_viscosityModelDesc; }
+    viscosity_model_type const& viscosityModelDesc() const { return M_viscosityModelDesc; }
     bool withPressureTerm() const { return M_withPressureTerm; }
     //@}
 
@@ -1368,44 +1367,44 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.viscosityModelDesc().name() == "newtonian" )
+            if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "newtonian" )
                 M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev,feu) );
-            else if ( expr.viscosityModelDesc().name() == "power_law" || expr.viscosityModelDesc().name() == "walburn-schneck_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "power_law" || expr.viscosityModelDesc().dynamicViscosityLaw() == "walburn-schneck_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev,feu) );
-            else if ( expr.viscosityModelDesc().name() == "carreau_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreau<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev,feu) );
-            else if ( expr.viscosityModelDesc().name() == "carreau-yasuda_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau-yasuda_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreauYasuda<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev,feu) );
             else
-                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().name() <<"\n";
+                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().dynamicViscosityLaw() <<"\n";
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.viscosityModelDesc().name() == "newtonian" )
+            if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "newtonian" )
                 M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev) );
-            else if ( expr.viscosityModelDesc().name() == "power_law" || expr.viscosityModelDesc().name() == "walburn-schneck_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "power_law" || expr.viscosityModelDesc().dynamicViscosityLaw() == "walburn-schneck_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev) );
-            else if ( expr.viscosityModelDesc().name() == "carreau_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreau<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev) );
-            else if ( expr.viscosityModelDesc().name() == "carreau-yasuda_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau-yasuda_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreauYasuda<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev) );
             else
-                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().name() <<"\n";
+                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().dynamicViscosityLaw() <<"\n";
         }
         tensor( this_type const& expr, Geo_t const& geom )
         {
-            if ( expr.viscosityModelDesc().name() == "newtonian" )
+            if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "newtonian" )
                 M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom) );
-            else if ( expr.viscosityModelDesc().name() == "power_law" || expr.viscosityModelDesc().name() == "walburn-schneck_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "power_law" || expr.viscosityModelDesc().dynamicViscosityLaw() == "walburn-schneck_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom) );
-            else if ( expr.viscosityModelDesc().name() == "carreau_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreau<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom) );
-            else if ( expr.viscosityModelDesc().name() == "carreau-yasuda_law" )
+            else if ( expr.viscosityModelDesc().dynamicViscosityLaw() == "carreau-yasuda_law" )
                 M_tensorbase.reset( new tensorFluidStressTensorCarreauYasuda<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom) );
             else
-                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().name() <<"\n";
+                CHECK ( false ) << "invalid viscosity model : "<< expr.viscosityModelDesc().dynamicViscosityLaw() <<"\n";
         }
 
         template<typename IM>
@@ -1460,7 +1459,7 @@ public:
 private:
     boost::reference_wrapper<const element_velocity_type> M_velocity;
     boost::reference_wrapper<const element_pressure_type> M_pressure;
-    viscosity_model_desc_type const& M_viscosityModelDesc;
+    viscosity_model_type const& M_viscosityModelDesc;
     bool M_withPressureTerm;
 };
 /// \endcond
@@ -1469,33 +1468,33 @@ private:
  * \brief det of the expression tensor
  */
 
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ElementMuP0Type >
+template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
 inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>,QuadOrder > >
-fluidMecNewtonianStressTensor( ElementVelocityType const& u, ElementPressureType const& p,/*, ElementMuP0Type const& muP0, std::string const& stressTensorLaw,*/
-                               Feel::FeelModels::ViscosityModelDescription<ElementMuP0Type> const& viscosityModelDesc, bool withPressure )
+Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>,QuadOrder > >
+fluidMecNewtonianStressTensor( ElementVelocityType const& u, ElementPressureType const& p,
+                               ViscosityModelType const& viscosityModelDesc, bool withPressure )
 {
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>, QuadOrder > fmstresstensor_t;
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p/*,muP0,stressTensorLaw*/,viscosityModelDesc, withPressure ) );
-}
-
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ElementMuP0Type >
-inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>,QuadOrder > >
-fluidMecNewtonianStressTensorJacobian( ElementVelocityType const& u, ElementPressureType const& p,
-                                       Feel::FeelModels::ViscosityModelDescription<ElementMuP0Type> const& viscosityModelDesc, bool withPressure )
-{
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>, QuadOrder > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_EVAL>, QuadOrder > fmstresstensor_t;
     return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc, withPressure ) );
 }
 
-template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ElementMuP0Type >
+template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
 inline
-Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>,QuadOrder > >
-fluidMecViscosity( ElementVelocityType const& u, ElementPressureType const& p,
-                   Feel::FeelModels::ViscosityModelDescription<ElementMuP0Type> const& viscosityModelDesc )
+Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>,QuadOrder > >
+fluidMecNewtonianStressTensorJacobian( ElementVelocityType const& u, ElementPressureType const& p,
+                                       ViscosityModelType const& viscosityModelDesc, bool withPressure )
 {
-    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ElementMuP0Type,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>, QuadOrder > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN>, QuadOrder > fmstresstensor_t;
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc, withPressure ) );
+}
+
+template<int QuadOrder=-1,class ElementVelocityType,class ElementPressureType, class ViscosityModelType >
+inline
+Expr< FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>,QuadOrder > >
+fluidMecViscosity( ElementVelocityType const& u, ElementPressureType const& p,
+                   ViscosityModelType const& viscosityModelDesc )
+{
+    typedef FluidMecStressTensorImpl<ElementVelocityType,ElementPressureType,ViscosityModelType,mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL>, QuadOrder > fmstresstensor_t;
     return Expr< fmstresstensor_t >(  fmstresstensor_t( u,p,viscosityModelDesc, false ) );
 }
 
