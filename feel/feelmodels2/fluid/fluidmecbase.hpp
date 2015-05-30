@@ -49,7 +49,8 @@
 #include <feel/feelmodels2/modelcore/options.hpp>
 #include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+//#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+#include <feel/feelmodels2/fluid/densityviscositymodel.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <fsi/fsimesh/meshale.hpp>
@@ -192,8 +193,8 @@ public:
     typedef typename space_densityviscosity_type::element_type element_densityviscosity_type;
     typedef boost::shared_ptr<element_densityviscosity_type> element_densityviscosity_ptrtype;
     // viscosity model desc
-    typedef ViscosityModelDescription<space_densityviscosity_type> viscosity_model_type;
-    typedef boost::shared_ptr<viscosity_model_type> viscosity_model_ptrtype;
+    typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
+    typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
@@ -444,7 +445,7 @@ public :
     void pdeSolver(std::string __type);
     std::string pdeSolver() const;
     void stressTensorLawType(std::string __type);
-    std::string stressTensorLawType() const;
+    //std::string stressTensorLawType() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -496,56 +497,62 @@ public :
 
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu
-    double mu() const { return M_CstMu; }
-    double nu() const { return M_CstNu; }
-    double rho() const { return M_CstRho; }
+    //double mu() const { return M_CstMu; }
+    //double nu() const { return M_CstNu; }
+    //double rho() const { return M_CstRho; }
     space_densityviscosity_ptrtype const& XhP0() const { return M_XhScalarP0; }
-    element_densityviscosity_ptrtype const& rhoP0() const { return M_P0Rho; } //density
-    element_densityviscosity_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
-    element_densityviscosity_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
+    //element_densityviscosity_ptrtype const& rhoP0() const { return M_P0Rho; } //density
+    //element_densityviscosity_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
+    //element_densityviscosity_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
 
-    viscosity_model_ptrtype & viscosityModel() { return M_viscosityModelDesc; }
-    viscosity_model_ptrtype const& viscosityModel() const { return M_viscosityModelDesc; }
+    densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
+    densityviscosity_model_ptrtype const& densityViscosityModel() const { return M_densityViscosityModel; }
 
     void updateRho(double rho)
         {
-            M_CstRho = rho;
-            this->updateRho(vf::cst(rho));
-            this->updateNu();
+            this->densityViscosityModel()->setCstDensity(rho);
+            //M_CstRho = rho;
+            //this->updateRho(vf::cst(rho));
+            //this->updateNu();
         }
     void updateMu(double mu)
         {
-            M_CstMu = mu;
-            this->updateMu(vf::cst(mu));
-            this->updateNu();
+            this->densityViscosityModel()->setCstDynamicViscosity(mu);
+            //M_CstMu = mu;
+            //this->updateMu(vf::cst(mu));
+            //this->updateNu();
         }
     void updateRhoMu(double rho,double mu)
         {
-            M_CstRho = rho;
-            M_CstMu = mu;
-            this->updateRho(vf::cst(rho));
-            this->updateMu(vf::cst(mu));
-            this->updateNu();
+            //M_CstRho = rho;
+            this->densityViscosityModel()->setCstDensity(rho);
+            this->densityViscosityModel()->setCstDynamicViscosity(mu);
+            //M_CstMu = mu;
+            //this->updateRho(vf::cst(rho));
+            //this->updateMu(vf::cst(mu));
+            //this->updateNu();
         }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
         {
-            if ( M_XhScalarP0 )
-                *M_P0Rho= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()), _expr=__expr );
+            //if ( M_XhScalarP0 )
+            //    *M_P0Rho= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()), _expr=__expr );
+            this->densityViscosityModel()->updateDensity( __expr );
+
         }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
         {
-            if ( M_XhScalarP0 )
-                *M_P0Mu= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()),_expr=__expr );
+            this->densityViscosityModel()->updateDynamicViscosity( __expr );
         }
+#if 0
     void updateNu()
         {
-            M_CstNu = M_CstMu/M_CstRho;
+            M_CstNu = this->viscosityModel()->cstMu()/M_CstRho;
             if ( M_XhScalarP0 )
-                *M_P0Nu= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()),_expr=vf::idv(*M_P0Mu)/vf::idv(*M_P0Rho) );
+                *M_P0Nu= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()),_expr=vf::idv(this->viscosityModel()->fieldMu())/vf::idv(*M_P0Rho) );
         }
-
+#endif
     //___________________________________________________________________________________//
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
@@ -835,15 +842,15 @@ protected:
     model_algebraic_factory_ptrtype M_methodNum;
     //----------------------------------------------------
     // physical parameter and space
-    double M_CstRho;//densite
-    double M_CstMu;//viscosité dynamqiue
-    double M_CstNu;//viscosité cinematique
+    //double M_CstRho;//densite
+    //double M_CstMu;//viscosité dynamqiue
+    //double M_CstNu;//viscosité cinematique
     space_densityviscosity_ptrtype M_XhScalarP0;
-    element_densityviscosity_ptrtype M_P0Rho;//densite
-    element_densityviscosity_ptrtype M_P0Mu;//viscosité dynamqiue
-    element_densityviscosity_ptrtype M_P0Nu;//viscosité cinematique
+    //element_densityviscosity_ptrtype M_P0Rho;//densite
+    //element_densityviscosity_ptrtype M_P0Mu;//viscosité dynamqiue
+    //element_densityviscosity_ptrtype M_P0Nu;//viscosité cinematique
     //----------------------------------------------------
-    viscosity_model_ptrtype M_viscosityModelDesc;
+    densityviscosity_model_ptrtype M_densityViscosityModel;
     //----------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
@@ -854,7 +861,7 @@ protected:
     //----------------------------------------------------
     std::string M_pdeType;
     std::string M_pdeSolver;
-    std::string M_stressTensorLaw;
+    //std::string M_stressTensorLaw;
     // type dirichlet bc -> list of markers
     //std::list<std::string> /*M_neumannBCType,*/ M_pressureBCType/*, M_slipBCType*/;
     std::map<std::string,std::list<std::string> > M_fluidOutletsBCType;

@@ -117,14 +117,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Appli Repository : " << this->appliRepository()
            << "\n   Physical Model"
            << "\n     -- pde name  : " << M_pdeType
-           << "\n     -- stress tensor law  : " << M_stressTensorLaw
+           << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
            << "\n   Physical Parameters"
-           << "\n     -- rho : " << M_CstRho
-           << "\n     -- mu  : " << M_CstMu
-           << "\n     -- nu  : " << M_CstNu;
-    *_ostr << this->viscosityModel()->getInfo()->str();
+           << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
+           << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()
+           << "\n     -- nu  : " << this->densityViscosityModel()->cstNu();
+    *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC();
@@ -291,41 +291,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType(std::string __type)
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
-    if ( __type != M_stressTensorLaw )
+    if ( __type != this->densityViscosityModel()->dynamicViscosityLaw() )
         this->setNeedToRebuildCstPart(true);
 
-    if ( __type == "newtonian" )
-        M_stressTensorLaw  = "newtonian";
-    else if ( __type == "power_law" )
-        M_stressTensorLaw  = "power_law";
-    else if ( __type == "walburn-schneck_law" )
-        M_stressTensorLaw  = "walburn-schneck_law";
-    else if ( __type == "carreau_law")
-        M_stressTensorLaw  = "carreau_law";
-    else if (  __type == "carreau-yasuda_law")
-        M_stressTensorLaw  = "carreau-yasuda_law";
-    else
-        CHECK( false ) << "invalid stressTensorLawType\n";
-
-    if ( M_viscosityModelDesc )
-        M_viscosityModelDesc->name( M_stressTensorLaw );
+    this->densityViscosityModel()->setDynamicViscosityLaw( __type );
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 std::string
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType() const
 {
     return M_stressTensorLaw;
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -352,9 +337,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults",
-                                               (boost::format("start at time %1%")%time).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
     if (this->isMoveDomain() && (M_doExportMeshALE || M_doExportAll ) )
@@ -400,8 +383,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","exportResults", "finish" );
 
 } // FluidMechanics::exportResult
 
@@ -416,13 +398,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     //{
     if ( !M_exporter->doExport() ) return;
 
-    if (this->verbose())
-    {
-        if (M_isMoveDomain) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "M_isMoveDomain",
-                                                  this->worldComm(),this->verboseAllProc());
-        else Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "not M_isMoveDomain",
-                                   this->worldComm(),this->verboseAllProc());
-    }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     // because write geofile at each step ( TODO fix !!! )
@@ -433,8 +408,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
                                    M_Solution->template element<0>() );
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "velocity done",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","exportResults", "velocity done" );
 
     M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
@@ -464,7 +438,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
         auto uCur = M_Solution->template element<0>();
         auto pCur = M_Solution->template element<1>();
-        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->viscosityModel());
+        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->densityViscosityModel());
         auto viscosityField = M_XhNormalBoundaryStress->compSpace()->element(myViscosity);
         M_exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"viscosity")),
@@ -494,8 +468,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
     //----------------------//
     M_exporter->save();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","exportResults", "save done",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","exportResults", "save done" );
 
     //----------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -623,17 +596,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
     if ( this->startBySolveStokesStationary() && !this->isStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start by solve stokes stationary",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","solve", "start by solve stokes stationary" );
 
-        std::string saveStressTensorLawType = this->stressTensorLawType();
+        std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
         std::string savePdeType = this->pdeType();
         // prepare Stokes-stationary config
         this->stressTensorLawType( "newtonian" );
@@ -656,13 +627,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         this->initTimeStep();
     }
 
-    if ( this->startBySolveNewtonian() && this->stressTensorLawType() != "newtonian" &&
+    if ( this->startBySolveNewtonian() && this->densityViscosityModel()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
     {
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", "start by solve newtonian",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","solve", "start by solve newtonian" );
 
-        std::string saveStressTensorLawType = this->stressTensorLawType();
+        std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
         this->stressTensorLawType("newtonian");
         this->solve();
         this->hasSolveNewtonianAtKickOff( true );
@@ -723,8 +693,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
             this->timerTool("Solve").setAdditionalParameter("time",this->currentTime());
         this->timerTool("Solve").save();
     }
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","solve", (boost::format("finish in %1% s")%tElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -748,8 +717,7 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
                                               typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
     boost::timer thetimer;
@@ -775,8 +743,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             M_methodNum->initFromFunctionSpace(this->functionSpace());
         }
 
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "methodNum done",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","init", "methodNum done" );
     }
 #endif
 
@@ -810,8 +777,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             }
         }
 
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "meshALE done",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","init", "meshALE done" );
 #endif
     }
 
@@ -875,8 +841,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             mpi::broadcast( this->worldComm().globalComm(), M_fluidOutletWindkesselPressureDistal_old, this->worldComm().masterRank() );
         } // for (int k=0;k<M_nFluidOutlet;++k)
 
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init", "restart windkessel done",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","init", "restart windkessel done" );
 
     } // if (M_hasFluidOutlet)
 
@@ -938,9 +903,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","init",
-                                               (boost::format("finish in %1% s")%tElapsedInit).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -974,8 +937,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
         // up current time
         this->updateTime( M_bdf_fluid->time() );
 
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","initTimeStep", "restart bdf/exporter done",
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
 }
 
@@ -1018,8 +980,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateBdf", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -1069,22 +1030,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     {
         if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "do rebuildCstJacobian",
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("FluidMechanics","updateBdf", "do rebuildCstJacobian" );
             M_methodNum->rebuildCstJacobian(M_Solution);
         }
         else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "do rebuildCstLinearPDE",
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("FluidMechanics","updateBdf", "do rebuildCstLinearPDE" );
             M_methodNum->rebuildCstLinearPDE(M_Solution);
         }
     }
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBdf", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateBdf", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1108,8 +1066,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateNormalStress", "start" );
 
     // current solution
     auto solFluid = this->fieldVelocityPressurePtr();
@@ -1167,8 +1124,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
                                           _geomap=this->geomap() );
 #endif
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateNormalStress", "finish" );
 #endif
 }
 
@@ -1181,8 +1137,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateAlePartUsedByNormalStress", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateAlePartUsedByNormalStress", "start" );
 
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
@@ -1243,8 +1198,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
 
 #endif
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateAlePartUsedByNormalStress", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateAlePartUsedByNormalStress", "finish" );
 #endif
 }
 
@@ -1257,8 +1211,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateNormalStress", "start" );
 
     // current solution
     auto solFluid = this->fieldVelocityPressurePtr();
@@ -1286,8 +1239,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
                                           _geomap=this->geomap() );
 #endif
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateNormalStress", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateNormalStress", "finish" );
 #endif
 }
 
@@ -1300,8 +1252,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 {
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateWallShearStress", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateWallShearStress", "start" );
 
     if ( !M_wallShearStress ) this->createFunctionSpacesNormalStress();
 
@@ -1315,14 +1266,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(*M_P0Mu)*defv);
+    auto Sigmav = (-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
 
     M_wallShearStress->on(_range=boundaryfaces(this->mesh()),
                           _expr=Sigmav*vf::N() - (trans(Sigmav*vf::N())*vf::N())*vf::N(),
                           _geomap=this->geomap() );
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateWallShearStress", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateWallShearStress", "finish" );
 }
 
 
@@ -1360,8 +1310,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateALEmesh", "start");
 
     //-------------------------------------------------------------------//
     // compute ALE map
@@ -1420,9 +1369,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
             double normWind = M_fluidOutletWindkesselMeshDisp->l2Norm();
             double normDisp = M_meshALE->displacement()->l2Norm();
             double normDispImposed = M_meshDisplacementOnInterface->l2Norm();
-            Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh",
-                                  (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str(),
-                                  this->worldComm(),this->verboseAllProc());
+            this->log("FluidMechanics","updateALEmesh",
+                      (boost::format( "normWind %1% normDisp %2% normDispImposed %3% ") %normWind %normDisp %normDispImposed ).str() );
         }
     }
 
@@ -1447,8 +1395,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 #endif
 
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateALEmesh", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateALEmesh", "finish");
 }
 #endif
 
@@ -1509,7 +1456,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string markerName)
     // Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes
-    auto Sigmav = val(-idv(p)*Id + 2*idv(*M_P0Mu)*defv);
+    auto Sigmav = val(-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= Sigmav*N(),
@@ -1817,8 +1764,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","buildBlockMatrixGraph", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
 
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
@@ -1901,8 +1847,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     }
 
     myblockGraph.close();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","buildBlockMatrixGraph", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;
 }

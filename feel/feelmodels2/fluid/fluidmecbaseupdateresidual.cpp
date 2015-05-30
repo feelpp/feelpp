@@ -35,9 +35,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
-    auto const rowStartInMatrix = this->rowStartInMatrix();
-    auto const colStartInMatrix = this->colStartInMatrix();
-    auto const rowStartInVector = this->rowStartInVector();
+    //auto const rowStartInMatrix = this->rowStartInMatrix();
+    //auto const colStartInMatrix = this->colStartInMatrix();
+    size_type rowStartInVector = this->rowStartInVector();
     auto linearForm_PatternDefault = form1( _test=Xh, _vector=R,
                                             _pattern=size_type(Pattern::DEFAULT),
                                             _rowstart=rowStartInVector );
@@ -61,19 +61,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     auto defv = sym(gradv(u));
     // identity Matrix
     auto Id = eye<nDim,nDim>();
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& rho = this->densityViscosityModel()->fieldRho();
     // stress tensor (eval)
-    auto Sigmav = -idv(p)*Id + 2*idv(*M_P0Mu)*defv;
-    // volume force
-    //#if defined(FLUIDMECHANICS_VOLUME_FORCE)
-    //auto f = FLUIDMECHANICS_VOLUME_FORCE(this->shared_from_this());
-    //#endif
-    // boundaries conditions
-    //auto const& bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
+    auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
 
     double timeElapsedBis=thetimerBis.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
-                                               "init done in "+(boost::format("%1% s") % timeElapsedBis ).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateResidual","init done in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -85,7 +80,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             linearForm_PatternCoupled +=
                 integrate( _range=elements(mesh),
                            //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                           _expr=inner( Feel::vf::FeelModels::fluidMecConvectionWithEnergyStab(u,*M_P0Rho), id(v) ),
+                           _expr=inner( Feel::vf::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
                            _geomap=this->geomap() );
 
             /*if (this->isMoveDomain()  && !BuildCstPart && !UseJacobianLinearTerms)
@@ -100,9 +95,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         {
             // convection term
 #if 0
-            auto convecTerm = val( idv(*M_P0Rho)*trans( gradv(u)*idv(u) ))*id(v);
+            auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
 #else
-            auto convecTerm = inner( Feel::vf::FeelModels::fluidMecConvection(u,*M_P0Rho),id(v) );
+            auto convecTerm = inner( Feel::vf::FeelModels::fluidMecConvection(u,rho),id(v) );
 #endif
             linearForm_PatternCoupled +=
                 integrate( _range=elements(mesh),
@@ -113,9 +108,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     }
 
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
-                                               "build convective--1-- term in "+(boost::format("%1% s") % timeElapsedBis ).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateResidual","build convective--1-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (M_isMoveDomain && !BuildCstPart && !UseJacobianLinearTerms )
@@ -123,14 +116,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         // mesh velocity (convection) term
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -val(idv(*M_P0Rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
+                       _expr= -val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
                        _geomap=this->geomap() );
     }
 #endif
     timeElapsedBis=thetimerBis.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
-                                               "build convective--2-- term in "+(boost::format("%1% s") % timeElapsedBis ).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateResidual","build convective--2-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -285,16 +276,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         auto Beta = M_bdf_fluid->poly();
         auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
                                  _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(*M_P0Rho)*idv(Beta.template element<0>()) );
-        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(M_P0Mu)/vf::h());
-        auto Ctau = gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
+                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h());
+        auto Ctau = gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
         linearForm_PatternCoupled +=
             integrate( _range=markedfaces(mesh,this->markerSlipBC()),
                        _expr= val(Cn*(trans(idv(u))*N()))*(trans(id(v))*N())+
                        val(Ctau*trans(idv(u)))*id(v),
                        //+ trans(idv(p)*Id*N())*id(v)
-                       //- trans(id(v))*N()* trans(2*idv(*M_P0Mu)*defv*N())*N()
+                       //- trans(id(v))*N()* trans(2*idv(mu)*defv*N())*N()
                        _geomap=this->geomap()
                        );
     }
@@ -372,7 +363,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         {
             linearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
-                           _expr= val(idv(*M_P0Rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
+                           _expr= val(idv(rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -382,7 +373,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             auto buzz = Buzz.template element<0>();
             linearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
-                           _expr= val(-idv(*M_P0Rho)*trans(idv(buzz)))*id(v),
+                           _expr= val(-idv(rho)*trans(idv(buzz)))*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -512,7 +503,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             auto pEval = this->getSolution()->template element<1>();
             auto defv = sym(gradv(uEval));
             // Strain tensor (trial)
-            auto Sigmav = -idv(pEval)*Id + 2*idv(*M_P0Mu)*defv;
+            auto Sigmav = -idv(pEval)*Id + 2*idv(mu)*defv;
             linearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                            _expr= -inner( Sigmav*N(),id(u)),

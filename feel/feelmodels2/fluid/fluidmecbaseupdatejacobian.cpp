@@ -35,16 +35,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     //bool BuildNonCstPart_robinFSI = BuildNonCstPart;
     //if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
 
-    //this->changeRepository();
-
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
-    auto const rowStartInMatrix = this->rowStartInMatrix();
-    auto const colStartInMatrix = this->colStartInMatrix();
-    auto const rowStartInVector = this->rowStartInVector();
+    size_type rowStartInMatrix = this->rowStartInMatrix();
+    size_type colStartInMatrix = this->colStartInMatrix();
+    size_type rowStartInVector = this->rowStartInVector();
     auto bilinearForm_PatternDefault = form2( _test=Xh,_trial=Xh,_matrix=J,
                                               _pattern=size_type(Pattern::DEFAULT),
                                               _rowstart=rowStartInMatrix,
@@ -70,11 +68,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     auto const Id = eye<nDim,nDim>();
     // strain tensor
     auto const deft = sym(gradt(u));
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& rho = this->densityViscosityModel()->fieldRho();
     // stress tensor
-    auto const Sigmat = -idt(p)*Id + 2*idv(*M_P0Mu)*deft;
-    // boundaries conditions
-    //auto const bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-
+    auto const Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
@@ -91,7 +89,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
             // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
             // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
 
-            auto const convecTerm = Feel::vf::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,*M_P0Rho);
+            auto const convecTerm = Feel::vf::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
                 integrate ( _range=elements(mesh),
@@ -101,9 +99,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         else
         {
 #if 0
-            auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
+            auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
 #else
-            auto const convecTerm = Feel::vf::FeelModels::fluidMecConvectionJacobian(u,*M_P0Rho);
+            auto const convecTerm = Feel::vf::FeelModels::fluidMecConvectionJacobian(u,rho);
 #endif
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
@@ -119,7 +117,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         bilinearForm_PatternCoupled +=
             //bilinearForm_PatternDefault +=
             integrate (_range=elements(mesh),
-                       _expr= -trans(gradt(u)*idv(*M_P0Rho)*idv( this->meshVelocity() ))*id(v),
+                       _expr= -trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
                        _geomap=this->geomap() );
     }
 #endif
@@ -133,7 +131,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         {
             bilinearForm_PatternCoupled +=
                 integrate (_range=elements(mesh),
-                           _expr= trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v),
+                           _expr= trans(divt(u)*val(0.5*idv(rho)*idv(u))+val(0.5*idv(rho)*divv(u))*idt(u))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -181,16 +179,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         //auto beta = Beta.element<0>();
         auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
                                  _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(*M_P0Rho)*idv(Beta.template element<0>()) );
-        auto Cn = val(gammaN*max(abs(trans(idv(beta))*N()),idv(M_P0Mu)/vf::h()));
-        auto Ctau = val(gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
+                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto Cn = val(gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h()));
+        auto Ctau = val(gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
 
         bilinearForm_PatternCoupled +=
             integrate( _range= markedfaces(mesh,this->markerSlipBC()),
                        _expr= Cn*(trans(idt(u))*N())*(trans(id(v))*N())+
                        Ctau*trans(idt(u))*id(v),
                        //+ trans(idt(p)*Id*N())*id(v)
-                       //- trans(id(v))*N()* trans(2*idv(*M_P0Mu)*deft*N())*N()
+                       //- trans(id(v))*N()* trans(2*idv(mu)*deft*N())*N()
                        _geomap=this->geomap()
                        );
     }
@@ -282,7 +280,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     {
         bilinearForm_PatternDefault +=
             integrate( _range=elements(mesh),
-                       _expr= idv(*M_P0Rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
                        _geomap=this->geomap() );
     }
 
@@ -357,13 +355,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     if ( this->isMoveDomain() && this->couplingFSIcondition() == "robin" )
     {
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-        double muFluid = this->mu();//0.03;
+        //double muFluid = this->mu();//0.03;
 
         if ( BuildCstPart /*BuildNonCstPart_robinFSI*/ )
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
+                           _expr= gammaRobinFSI*idv(mu)/*muFluid*/*inner(idt(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
     }

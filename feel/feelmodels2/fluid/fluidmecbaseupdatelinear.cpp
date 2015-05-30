@@ -20,8 +20,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseen", "start"+sc,
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseen", "start"+sc );
     boost::mpi::timer thetimer;
 
     bool BuildNonCstPart = !_BuildCstPart;
@@ -57,10 +56,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     auto deft = sym(gradt(u));
     //Deformations tensor (test)
     //auto def = sym(gradv(u));
+    auto const& rho = this->densityViscosityModel()->fieldRho();
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Strain tensor (trial)
-    auto Sigmat = -idt(p)*Id + 2*idv(*M_P0Mu)*deft;
+    auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -163,8 +163,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
             if (BuildNonCstPart)
             {
-                if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseen", "also add nonzero MEANPRESSURE",
-                                                           this->worldComm(),this->verboseAllProc());
+                this->log("FluidMechanics","updateOseen", "also add nonzero MEANPRESSURE" );
                 form1( _test=M_XhMeanPressureLM, _vector=F,
                        _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
                     integrate( _range=therange,//elements(mesh),
@@ -189,7 +188,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
-                       _expr= -trans(2*idv(*M_P0Mu)*deft*N())*id(v),
+                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
                        _geomap=this->geomap() );
     }
     if (BuildNonCstPart)
@@ -235,7 +234,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
-                           _expr= idv(*M_P0Rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
+                           _expr= idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
                            _geomap=this->geomap() );
 #endif
         }
@@ -243,7 +242,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
         {
             bilinearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
-                           _expr= idv(*M_P0Rho)*trans( gradt(u)*idv(betaU) )*id(v),
+                           _expr= idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -251,7 +250,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=elements(mesh),
-                           _expr= 0.5*idv(*M_P0Rho)*divt(u)*trans(idv(betaU))*id(v),
+                           _expr= 0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -260,7 +259,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         bilinearForm_PatternDefault +=
             integrate( _range=elements(mesh),
-                       _expr= -idv(*M_P0Rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
+                       _expr= -idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
                        _geomap=this->geomap() );
 #endif
     }
@@ -281,7 +280,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
         {
             bilinearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
-                           _expr= idv(*M_P0Rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                           _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
                            _geomap=this->geomap() );
         }
 
@@ -291,7 +290,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
             auto buzz = Buzz.template element<0>();
             myLinearForm +=
                 integrate( _range=elements(mesh),
-                           _expr= idv(*M_P0Rho)*trans(idv(buzz))*id(v),
+                           _expr= idv(rho)*trans(idv(buzz))*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -306,7 +305,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
                        _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
-        auto coeffDiv = (2./3.)*idv(*M_P0Mu); //(eps-2mu/3)
+        auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
         myLinearForm +=
             integrate( _range=elements(mesh),
                        _expr= val(coeffDiv*gradv(this->velocityDiv()))*id(v),
@@ -318,7 +317,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
             auto betaU = BetaU.template element<0>();
             myLinearForm +=
                 integrate( _range=elements(mesh),
-                           _expr= 0.5*idv(M_P0Rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
+                           _expr= 0.5*idv(rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -338,9 +337,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     }
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseen",
-                                               "finish in "+(boost::format("%1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseen","finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
 #endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
 } // updateOseen

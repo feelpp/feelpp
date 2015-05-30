@@ -17,8 +17,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseenWeakBC", "start"+sc,
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseenWeakBC", "start"+sc );
 
     boost::timer thetimer;
 
@@ -50,8 +49,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     auto deft = sym(gradt(u));
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& rho = this->densityViscosityModel()->fieldRho();
     // Strain tensor (trial)
-    auto Sigmat = -idt(p)*Id + 2*idv(*M_P0Mu)*deft;
+    auto Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -63,10 +65,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
         auto Beta = M_bdf_fluid->poly();
         auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
                                  _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(*M_P0Rho)*idv(Beta.template element<0>()) );
+                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
         //auto beta = Beta.element<0>();
-        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(M_P0Mu)/vf::h());
-        auto Ctau = gammaTau*idv(M_P0Mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
+        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h());
+        auto Ctau = gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
         bilinearForm_PatternCoupled +=
             integrate( _range= markedfaces(mesh,this->markerSlipBC()),
@@ -298,7 +300,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             auto pEval = this->getSolution()->template element<1>();
             auto defv = sym(gradv(uEval));
             // Strain tensor (trial)
-            auto Sigmav = -idv(pEval)*Id + 2*idv(*M_P0Mu)*defv;
+            auto Sigmav = -idv(pEval)*Id + 2*idv(mu)*defv;
             form1( _test=Xh, _vector=F,
                    _rowstart=rowStartInVector ) +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
@@ -323,8 +325,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     //--------------------------------------------------------------------------------------------------//
 
     std::ostringstream ostr;ostr<<thetimer.elapsed()<<"s";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str() );
 
 
 #endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
