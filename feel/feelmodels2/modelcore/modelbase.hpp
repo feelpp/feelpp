@@ -77,6 +77,7 @@ public :
     // verbose
     bool verbose() const;
     bool verboseAllProc() const;
+    void log( std::string _className,std::string _functionName,std::string _msg ) const;
     // info
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string s);
