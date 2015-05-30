@@ -123,6 +123,12 @@ bool
 ModelBase::verbose() const { return M_verbose; }
 bool
 ModelBase::verboseAllProc() const { return M_verboseAllProc; }
+void
+ModelBase::log( std::string _className,std::string _functionName,std::string _msg ) const
+{
+    if (this->verbose()) FeelModels::Log( prefixvm(this->prefix(),_className),_functionName, _msg,
+                                         this->worldComm(),this->verboseAllProc());
+}
 
 // info
 std::string
