@@ -55,12 +55,17 @@ public :
             double y = real[1];
              
             int i = boost::math::iround(x/dx);
-            int j = image.cols()-boost::math::iround(y/dy);
+            //int j = image.cols()-1-boost::math::iround(y/dy);
+            int j = boost::math::iround(y/dy);
             
-            std::cout << "Coarse real x =" << x <<", y =" << y << " Ref x :"<< ref[0] << " ,y : " << ref[1]  << " Fine image coord. i =" << i <<", j =" << j << std::endl;
+            double v=  image(j,i);
+
+            std::cout << "Value " << v << " Coarse real (" << x <<"," << y 
+                      << ") Ref : ("<< ref[0] << "," << ref[1]  
+                      << ") Fine image coord. i =" << i <<", j =" << j << std::endl;
            
 
-            return image(j,i);
+            return v;
         }
 /*
     value_type operator()(ublas::vector<double> const& c, int L)

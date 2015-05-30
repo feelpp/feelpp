@@ -195,7 +195,7 @@ public :
         // build rules in x and y direction
         weights_type wx( (gridsize+1)*(gridsize+1) );
         //weights_type px( (gridsize*gridsize );
-        std::cout << this->M_points.size2() << std::endl; 
+        
         double tmpx=-1.;
         double tmpy=1.;
         for ( int i = 0,  k = 0; i <= gridsize; i++ )
@@ -211,7 +211,7 @@ public :
             tmpx=-1.;
             tmpy-=2./gridsize;
         }
-
+        std::cout << "quadrature points:" << this->M_points << std::endl; 
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures
