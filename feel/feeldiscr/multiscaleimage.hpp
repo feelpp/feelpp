@@ -59,11 +59,11 @@ public :
             int j = boost::math::iround(y/dy);
             
             double v=  image(j,i);
-
+#if 0
             std::cout << "Value " << v << " Coarse real (" << x <<"," << y 
                       << ") Ref : ("<< ref[0] << "," << ref[1]  
                       << ") Fine image coord. i =" << i <<", j =" << j << std::endl;
-           
+#endif
 
             return v;
         }
