@@ -21,7 +21,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( bool __isStationary,
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository),
+    M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -39,9 +40,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","build", "start",
-                                         this->worldComm(),this->verboseAllProc());
-
+    this->log("FluidMechanics","build", "start");
     //-----------------------------------------------------------------------------//
     // create or reload mesh
     this->createMesh();
@@ -61,10 +60,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
     //export
     this->createExporters();
     //-----------------------------------------------------------------------------//
-
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","build", "finish",
-                                         this->worldComm(),this->verboseAllProc());
-
+    this->log("FluidMechanics","build", "finish");
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -73,9 +69,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadMesh", "start",
-                                         this->worldComm(),this->verboseAllProc());
-
+    this->log("FluidMechanics","loadMesh", "start");
     //-----------------------------------------------------------------------------//
     // create or reload mesh
     if (this->doRestart()) this->createMesh();
@@ -96,9 +90,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
     //export
     this->createExporters();
     //-----------------------------------------------------------------------------//
-
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadMesh", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","loadMesh", "finish");
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -107,8 +99,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadParameterFromOptionsVm", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","loadParameterFromOptionsVm", "start");
 
     M_meshSize = doption(_name="hsize",_prefix=this->prefix());
 #if defined(FEELPP_HAS_VTK)
@@ -137,7 +128,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     this->pdeType( soption(_name="model",_prefix=this->prefix()) ); // up M_pdeType
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
-    M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
+    //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet";
     M_gammaNitschFSI = 2500;
@@ -222,12 +213,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 
     // physical parameters
-    M_CstRho = doption(_name="rho",_prefix=this->prefix());
-    M_CstMu = doption(_name="mu",_prefix=this->prefix());
-    M_CstNu = M_CstMu/M_CstRho;
+    //M_CstRho = doption(_name="rho",_prefix=this->prefix());
+    //M_CstMu = doption(_name="mu",_prefix=this->prefix());
+    //M_CstNu = this->viscosityModel()->cstMu()/M_CstRho;
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","loadParameterFromOptionsVm", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -236,8 +226,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createWorldsComm", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createWorldsComm", "start");
 
     if (this->worldComm().localSize()==this->worldComm().globalSize())
     {
@@ -277,8 +266,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
         this->setWorldsComm(vecWorldComm);
         this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
     }
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createWorldsComm", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createWorldsComm", "finish");
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -287,8 +275,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createMesh", "start");
+
     this->timerTool("Constructor").start();
 
     // save path of file mesh
@@ -296,9 +284,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     std::string fmpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
     if (this->doRestart())
     {
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh",
-                                             "restart with : "+fmpath,
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createMesh", "restart with : "+fmpath);
 
         if ( !this->restartPath().empty() )
         {
@@ -313,8 +299,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string path = this->appliRepository();
             std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
 
-            if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "load msh file : " + this->mshfileStr(),
-                                                 this->worldComm(),this->verboseAllProc());
+            this->log("FluidMechanics","createMesh", "load msh file : " + this->mshfileStr());
 
             M_mesh = loadGMSHMesh(_mesh=new mesh_type,
                                   _filename=this->mshfileStr(),
@@ -336,9 +321,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             bool hasChangedRep=false;
             if ( curPath != fs::path(this->appliRepository()) )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh",
-                                                     "change repository (temporary) for build mesh from geo : "+ this->appliRepository(),
-                                                     this->worldComm(),this->verboseAllProc());
+                this->log("FluidMechanics","createMesh", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
                 bool hasChangedRep=true;
                 Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
             }
@@ -354,10 +337,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string geotoolSavePath;
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory(),
-                                                     this->worldComm(),this->verboseAllProc());
+                this->log("FluidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
                 Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
-
                 geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
             }
             else
@@ -374,8 +355,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh", "change rep -> " + this->appliRepository() ,
-                                                     this->worldComm(),this->verboseAllProc());
+                this->log("FluidMechanics","createMesh", "change rep -> " + this->appliRepository() );
                 Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
             }
 
@@ -385,10 +365,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
 
     double timeElapsedCreateMesh = this->timerTool("Constructor").stop("createMesh");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createMesh",
-                                         (boost::format("finish in %1% s") % timeElapsedCreateMesh).str(),
-                                         this->worldComm(),this->verboseAllProc());
-
+    this->log("FluidMechanics","createMesh", (boost::format("finish in %1% s") % timeElapsedCreateMesh).str() );
 } // createMesh()
 
 //---------------------------------------------------------------------------------------------------------//
@@ -397,25 +374,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createFunctionSpaces","start");
     this->timerTool("Constructor").start();
 
     // maybe build extended dof table
     std::vector<bool> extendedDT( space_fluid_type::nSpaces,false );
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
     {
-        FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity",
-                        this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
         extendedDT[0] = true;
     }
     if ( this->doCIPStabPressure() )
     {
-        FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure",
-                        this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
         extendedDT[1] = true;
     }
     // fluid mix space : velocity and pressure
+#warning TODOhere!!!
 #if !FLUIDMECHANICS_USE_PERIODICITY
     M_Xh = space_fluid_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
                                   _extended_doftable=extendedDT );
@@ -450,7 +425,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         //std::cout << "createTraceMesh\n"<<std::endl;
         bool useSubMeshRelation = boption(_name="dirichletbc.lm.use-submesh-relation",_prefix=this->prefix());
         size_type useSubMeshRelationKey = (useSubMeshRelation)? EXTRACTION_KEEP_MESH_RELATION : 0;
-        M_meshDirichletLM = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerDirichletBClm()/*M_dirichletBCType["lm"]*/), useSubMeshRelationKey );
+        M_meshDirichletLM = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerDirichletBClm()), useSubMeshRelationKey );
         if ( boption(_name="dirichletbc.lm.savemesh",_prefix=this->prefix()) )
         {
             std::string nameMeshDirichletLM = "nameMeshDirichletLM.msh";
@@ -463,8 +438,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     }
 
     this->timerTool("Constructor").stop("createSpaces");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createFunctionSpaces", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log(this->prefix()+".FluidMechanics","createFunctionSpaces", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -473,8 +447,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createTimeDiscretisation", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createTimeDiscretisation", "start" );
     this->timerTool("Constructor").start();
 
     // bdf time schema
@@ -497,8 +470,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
     this->timerTool("Constructor").stop("createTimeDiscr");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createTimeDiscretisation", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createTimeDiscretisation", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -511,8 +483,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
     {
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "start",
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createALE", "start" );
         this->timerTool("Constructor").start();
 
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
@@ -526,9 +497,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
 #else
         bool moveGhostEltFromExtendedStencil = this->useExtendedDofTable();
 #endif
-        if ( this->verbose() && moveGhostEltFromExtendedStencil )
-            FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil",
-                            this->worldComm(),this->verboseAllProc());
+        if ( moveGhostEltFromExtendedStencil )
+            this->log("FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil" );
 
         M_meshALE.reset(new mesh_ale_type( M_mesh,
                                            this->prefix(),
@@ -541,8 +511,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
 
         this->timerTool("Constructor").stop("createALE");
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createALE", "finish",
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createALE", "finish");
     }
 #endif
 
@@ -554,8 +523,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createExporters", "start" );
     this->timerTool("Constructor").start();
 
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
@@ -659,8 +627,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
         if (M_doExportNormalStress) M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
         if (M_doExportWallShearStress) M_wallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
 
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "start opInterpolation",
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createExporters", "start opInterpolation" );
         boost::mpi::timer timerOpI;
 
         M_opIvelocity = opInterpolation(_domainSpace=M_Xh->template functionSpace<0>(),
@@ -669,8 +636,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
 
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "step1 done",
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createExporters", "step1 done" );
 
         M_opIpressure = opInterpolation(_domainSpace=M_Xh->template functionSpace<1>(),
                                         _imageSpace=M_XhScalarVisuHO,
@@ -687,8 +653,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
                                           _type=InterpolationNonConforme(false,true,false,15) );
         }
 
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "step2 done",
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createExporters", "step2 done" );
 
         if (M_isMoveDomain )
         {
@@ -711,8 +676,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 
 
         double timeElapsedOpI = timerOpI.elapsed();
-        if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "finish all opInterpolation in " + (boost::format("%1% s") % timeElapsedOpI).str(),
-                                             this->worldComm(),this->verboseAllProc());
+        this->log("FluidMechanics","createExporters", "finish all opInterpolation in " + (boost::format("%1% s") % timeElapsedOpI).str() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (M_isMoveDomain) this->getMeshALE()->revertMovingMesh();
@@ -722,8 +686,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
     }
 
     this->timerTool("Constructor").stop("createExporters");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createExporters", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createExporters", "finish" );
 
 } // createExporters
 
@@ -733,114 +696,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createOthers", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createOthers", "start" );
     this->timerTool("Constructor").start();
     //----------------------------------------------------------------------------//
     // rho, mu, nu with scalar P0 space
     std::vector<bool> extendedDT(1,this->useExtendedDofTable() );
     M_XhScalarP0 = space_densityviscosity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
                                               _extended_doftable=extendedDT );
-    M_P0Rho.reset( new element_densityviscosity_type(M_XhScalarP0,"rho"));
-    M_P0Mu.reset( new element_densityviscosity_type(M_XhScalarP0,"mu"));
-    M_P0Nu.reset( new element_densityviscosity_type(M_XhScalarP0,"nu"));
-    *M_P0Rho= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-                          _expr=vf::cst(M_CstRho),_geomap=this->geomap());
-    *M_P0Mu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-                         _expr=vf::cst(M_CstMu),_geomap=this->geomap());
-    *M_P0Nu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-                         _expr=vf::cst(M_CstNu),_geomap=this->geomap());
+    //M_P0Rho.reset( new element_densityviscosity_type(M_XhScalarP0,"rho"));
+    //M_P0Mu.reset( new element_densityviscosity_type(M_XhScalarP0,"mu"));
+    //M_P0Nu.reset( new element_densityviscosity_type(M_XhScalarP0,"nu"));
+    //*M_P0Rho= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
+    //                        _expr=vf::cst(M_CstRho),_geomap=this->geomap());
+    //*M_P0Mu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
+    //                     _expr=vf::cst(M_CstMu),_geomap=this->geomap());
+    //*M_P0Nu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
+    //                       _expr=vf::cst(M_CstNu),_geomap=this->geomap());
     // viscosity model
-    M_viscosityModelDesc.reset( new viscosity_model_type( this->stressTensorLawType(), *M_P0Mu, this->prefix() ) );
+    //M_viscosityModelDesc.reset( new viscosity_model_type( this->stressTensorLawType(), *M_P0Mu, this->prefix() ) );
+    M_densityViscosityModel->initFromSpace(M_XhScalarP0);//,this->fieldVelocity(),this->fieldPressure());
     //----------------------------------------------------------------------------//
     // space usefull to tranfert sigma*N()
     if (this->isMoveDomain()) this->createFunctionSpacesNormalStress();
     //----------------------------------------------------------------------------//
     // fluid outlet
-#if 0
-    if ( this->hasFluidOutlet() )
-    {
-
-        if ( this->fluidOutletType()=="windkessel")
-        {
-            M_fluidOutletWindkesselPressureDistal.resize(M_nFluidOutlet,0);
-            M_fluidOutletWindkesselPressureDistal_old.resize(M_nFluidOutlet,std::vector<double>(Feel::BDF_MAX_ORDER));
-            M_fluidOutletWindkesselPressureProximal.resize(M_nFluidOutlet,0);
-            M_fluidOutletMarkerName.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselRd.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselRp.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselCd.resize(M_nFluidOutlet);
-
-            //std::list<std::string> markerNameBFOutlet;
-            //ForEachBC( bcDef, cl::fluid_outlet,markerNameBFOutlet.push_back(PhysicalName));
-            //M_fluidOutletsBCType["windkessel"]
-            //std::string markerNameBFOutletBase = markerNameBFOutlet.front();
-
-            auto itMarkerFluidOutlet = M_fluidOutletsBCType["windkessel"].begin();
-            CHECK( itMarkerFluidOutlet != M_fluidOutletsBCType["windkessel"].end() ) << "no fluid outlet bc found\n";
-
-            std::string markerNameBFOutletBase = *itMarkerFluidOutlet;
-
-            // list usefull to create the outlets submesh
-            std::list<std::string> markerNameBFOutletForSubmesh;
-
-            bool useGenericMarkerName = (M_fluidOutletsBCType["windkessel"].size() == 1) && (M_nFluidOutlet > 1);
-
-            if ( !useGenericMarkerName )
-                CHECK( M_fluidOutletsBCType["windkessel"].size() == M_nFluidOutlet )  << "invalid nFluidOutlet : "
-                                                                                      << M_fluidOutletsBCType["windkessel"].size() << " and "
-                                                                                      << M_nFluidOutlet << "\n";
-
-            for (int k=0;k<M_nFluidOutlet;++k)
-            {
-                if ( useGenericMarkerName )
-                {
-                    M_fluidOutletMarkerName[k] = markerNameBFOutletBase+(boost::format("%1%") %k).str();
-                }
-                else
-                {
-                    M_fluidOutletMarkerName[k] = *itMarkerFluidOutlet;
-                    ++itMarkerFluidOutlet;
-                    //M_fluidOutletMarkerName[k] = markerNameBFOutletBase;
-                }
-
-                markerNameBFOutletForSubmesh.push_back(M_fluidOutletMarkerName[k]);
-
-                M_fluidOutletWindkesselRd[k] = option(_name=(boost::format("fluid-outlet.windkessel.Rd%1%")%k).str(), _prefix=this->prefix()).as<double>();
-                M_fluidOutletWindkesselRp[k] = option(_name=(boost::format("fluid-outlet.windkessel.Rp%1%")%k).str(), _prefix=this->prefix()).as<double>();
-                M_fluidOutletWindkesselCd[k] = option(_name=(boost::format("fluid-outlet.windkessel.Cd%1%")%k).str(), _prefix=this->prefix()).as<double>();
-
-                //std::cout << "M_fluidOutletMarkerName["<<k<<"] "<<M_fluidOutletMarkerName[k]<<std::endl;
-                //std::cout << "M_fluidOutletWindkesselRd["<<k<<"] "<<M_fluidOutletWindkesselRd[k]<<std::endl;
-                //std::cout << "M_fluidOutletWindkesselRp["<<k<<"] "<<M_fluidOutletWindkesselRp[k]<<std::endl;
-                //std::cout << "M_fluidOutletWindkesselCd["<<k<<"] "<<M_fluidOutletWindkesselCd[k]<<std::endl;
-            }
-            if ( this->fluidOutletWindkesselCoupling() == "implicit" )
-            {
-                M_fluidOutletWindkesselMesh = createSubmesh( this->mesh(), markedfaces(this->mesh(),markerNameBFOutletForSubmesh) );
-                M_fluidOutletWindkesselSpace = space_fluidoutlet_windkessel_type::New( _mesh=M_fluidOutletWindkesselMesh,
-                                                                                       _worldscomm=std::vector<WorldComm>(2,this->worldComm()) );
-                if ( M_isMoveDomain )
-                {
-                    M_fluidOutletWindkesselSpaceMeshDisp = space_fluidoutlet_windkessel_mesh_disp_type::New( _mesh=M_fluidOutletWindkesselMesh,
-                                                                                                             _worldscomm=this->localNonCompositeWorldsComm() );
-
-                    M_fluidOutletWindkesselMeshDisp = M_fluidOutletWindkesselSpaceMeshDisp->elementPtr();
-                    M_fluidOutletWindkesselOpMeshDisp = opInterpolation(_domainSpace=M_meshALE->functionSpace(),
-                                                                        _imageSpace=M_fluidOutletWindkesselSpaceMeshDisp,
-                                                                        _range=elements(M_fluidOutletWindkesselMesh),
-                                                                        _backend=M_backend );
-                }
-
-            }
-
-        }
-
-
-
-    } // if ( this->hasFluidOutlet() )
-    else { M_nFluidOutlet=0; }
-#else
     if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
     {
         // list usefull to create the outlets submesh
@@ -864,10 +743,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 #endif
         }
     }
-#endif
     this->timerTool("Constructor").stop("createOthers");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".FluidMechanics","createOthers", "finish",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","createOthers", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//

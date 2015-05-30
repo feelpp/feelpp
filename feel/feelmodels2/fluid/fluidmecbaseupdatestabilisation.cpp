@@ -19,8 +19,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseenStabilisation", "start"+sc,
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseenStabilisation", "start"+sc );
     boost::mpi::timer thetimer;
 
     //----------------------------------------------------------------------------------------------------//
@@ -46,6 +45,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
     auto v = V.template element<0>();
     auto p = U.template element<1>();
     auto q = V.template element<1>();
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
@@ -111,7 +112,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(*M_P0Mu);
+        auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         bilinearForm_PatternExtended +=
             integrate( _range=marked3faces(Xh->mesh(),1),
@@ -129,10 +130,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
 #if 1
         //double order_scaling = math::pow( double(nOrderPressure), 3.5 );
         //auto beta_abs = vf::sqrt( trans(idv(u_extrapoled))*idv(u_extrapoled));
-        //auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(*M_P0Mu)) )/cst(order_scaling);
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(*M_P0Mu)) );
+        //auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) )/cst(order_scaling);
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
 #else
-        auto Re = beta_abs*hFace()/idv(*M_P0Mu);
+        auto Re = beta_abs*hFace()/idv(mu);
         auto cip_stab_coeff_expr =  gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)/max(beta_abs,cst(1e-6)); //last max in order to not divide by 0
 #endif
         bilinearForm_PatternExtended +=
@@ -170,9 +171,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
 
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateOseenStabilisation",
-                                               (boost::format("finish in %1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateOseenStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
 #endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
 } // updateOseenStabilisation
 
@@ -188,8 +187,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
 #if (defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidualStabilisation", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateResidualStabilisation", "start" );
     boost::mpi::timer thetimer;
 
     bool BuildTermStabCIP = !BuildCstPart;
@@ -207,6 +205,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     auto v = U.template element<0>();
     auto p = U.template element<1>();
     auto q = U.template element<1>();
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -269,7 +269,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(*M_P0Mu);
+        auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         linearForm_PatternExtended +=
             integrate( _range=marked3faces(Xh->mesh(),1),
@@ -283,7 +283,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(*M_P0Mu)) );
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
         linearForm_PatternExtended +=
             integrate( _range=marked3faces(Xh->mesh(),1),
                        _expr=val(cip_stab_coeff_expr)*( jumpv(gradv(p))*jump(grad(q)) ),
@@ -301,7 +301,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     auto pspg_c = cst(100.);
 
     auto u_norm = max(cst(1e-16),sqrt(trans(idv(u))*idv(u)));
-    auto Reh = u_norm*vf::h()*idv(M_P0Rho)/(2*idv(M_P0Mu));
+    auto Reh = u_norm*vf::h()*idv(M_P0Rho)/(2*idv(mu));
     auto chiSupg = supg_c1/(idv(M_P0Rho)*sqrt( cst(1.) + (cst(3.)/Reh)*(cst(3.)/Reh) ) );
     //auto chiSupg =max(cst(0.),min(Reh/cst(6.),cst(1.) ) );
     //auto chiSupg =chi(Reh>=cst(0.) && Reh <=cst(3.))*Reh/cst(3.) + chi(Reh>cst(3.));
@@ -346,9 +346,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     //------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidualStabilisation",
-                                               (boost::format("finish in %1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateResidualStabilisation",
+              (boost::format("finish in %1% s") % timeElapsed).str() );
 
 #endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
 
@@ -365,8 +364,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
 #if (defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobianStabilisation", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;
 
     //--------------------------------------------------------------------------------------------------//
@@ -389,6 +387,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
     auto v = U.template element<0>();
     auto p = U.template element<1>();
     auto q = U.template element<1>();
+    // dynamic viscosity
+    auto const& mu = this->densityViscosityModel()->fieldMu();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
@@ -445,7 +445,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
             auto cip_stab_coeff_expr = gamma*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
 #else
             auto beta_abs = vf::norm2(idv(u_extrapoled));
-            auto Re = beta_abs*hFace()/idv(*M_P0Mu);
+            auto Re = beta_abs*hFace()/idv(mu);
             auto cip_stab_coeff_expr = gamma*min(cst(1.),Re)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
 #endif
             bilinearForm_PatternExtended +=
@@ -462,7 +462,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(*M_P0Mu);
+        auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         bilinearForm_PatternExtended +=
             integrate( _range=marked3faces(Xh->mesh(),1),
@@ -476,7 +476,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
         auto U_extrapoled = this->timeStepBDF()->poly();
         auto u_extrapoled = U_extrapoled.template element<0>();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(*M_P0Mu)) );
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
 
         bilinearForm_PatternExtended +=
             integrate( _range=marked3faces(Xh->mesh(),1),
@@ -486,9 +486,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
     //----------------------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobianStabilisation",
-                                               (boost::format("finish in %1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateJacobianStabilisation",
+              (boost::format("finish in %1% s") % timeElapsed).str() );
 
 #endif //  defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
 } // updateJacobianStabilisation
