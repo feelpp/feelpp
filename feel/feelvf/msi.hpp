@@ -243,7 +243,6 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            std::cout << "id : " << M_gmc->id() << " ,coarse :" << M_gmc->G() << std::endl; 
             return M_expr.coarse2fine( M_gmc->xReal(q), M_gmc->xRef(q) );
         }
         this_type M_expr;
@@ -260,7 +259,7 @@ public:
 template<typename T>
 inline
 Expr<vf::detail::MSI<T> >
-msi( typename vf::detail::MSI<T>::image_type const& f, int level )
+msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, int level )
 {
     return Expr<vf::detail::MSI<T> >( vf::detail::MSI<T>(f,level ));
 }
