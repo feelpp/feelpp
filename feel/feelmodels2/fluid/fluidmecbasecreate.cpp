@@ -369,7 +369,34 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 } // createMesh()
 
 //---------------------------------------------------------------------------------------------------------//
+namespace detail
+{
+template <typename FMtype>
+typename FMtype::space_fluid_ptrtype
+createFluidFunctionSpaces( FMtype const& FM, std::vector<bool> const& extendedDT, mpl::false_)
+{
+    return FMtype::space_fluid_type::New( _mesh=FM.mesh(), _worldscomm=FM.worldsComm(),
+                                          _extended_doftable=extendedDT );
+}
+template <typename FMtype>
+typename FMtype::space_fluid_ptrtype
+createFluidFunctionSpaces( FMtype const& FM, std::vector<bool> const& extendedDT, mpl::true_)
+{
+    node_type translat( FMtype::nDim );
+    translat[0] = doption(_name="periodicity.translate-x",_prefix=FM.prefix());
+    if ( FMtype::nDim >=2 )
+        translat[1] = doption(_name="periodicity.translate-y",_prefix=FM.prefix());
+    if ( FMtype::nDim == 3 )
+        translat[2]= doption(_name="periodicity.translate-z",_prefix=FM.prefix());
+    std::string marker1 = soption(_name="periodicity.marker1",_prefix=FM.prefix());
+    std::string marker2 = soption(_name="periodicity.marker2",_prefix=FM.prefix());
+    auto theperiodicity = periodicity( Periodic<>( FM.mesh()->markerName(marker1),FM.mesh()->markerName(marker2), translat), NoPeriodicity() );
+    return FMtype::space_fluid_type::New( _mesh=FM.mesh(), _worldscomm=FM.worldsComm(),
+                                          _extended_doftable=extendedDT,
+                                          _periodicity=theperiodicity );
+}
 
+} // namespace detail
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
@@ -390,6 +417,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         extendedDT[1] = true;
     }
     // fluid mix space : velocity and pressure
+#if 1
+    M_Xh = detail::createFluidFunctionSpaces(*this,extendedDT,mpl::bool_<UsePeriodicity>());
+#else
 #warning TODOhere!!!
 #if !FLUIDMECHANICS_USE_PERIODICITY
     M_Xh = space_fluid_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
@@ -407,6 +437,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_Xh = space_fluid_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
                                   _extended_doftable=extendedDT,
                                   _periodicity=theperiodicity );
+#endif
 #endif
     M_Solution.reset( new element_fluid_type(M_Xh,"U"));
 
@@ -700,9 +731,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     this->timerTool("Constructor").start();
     //----------------------------------------------------------------------------//
     // rho, mu, nu with scalar P0 space
-    std::vector<bool> extendedDT(1,this->useExtendedDofTable() );
-    M_XhScalarP0 = space_densityviscosity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-                                              _extended_doftable=extendedDT );
+    //std::vector<bool> extendedDT(1,this->useExtendedDofTable() );
+    //M_XhScalarP0 = space_densityviscosity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+    //                                                 _extended_doftable=extendedDT );
     //M_P0Rho.reset( new element_densityviscosity_type(M_XhScalarP0,"rho"));
     //M_P0Mu.reset( new element_densityviscosity_type(M_XhScalarP0,"mu"));
     //M_P0Nu.reset( new element_densityviscosity_type(M_XhScalarP0,"nu"));
@@ -714,7 +745,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     //                       _expr=vf::cst(M_CstNu),_geomap=this->geomap());
     // viscosity model
     //M_viscosityModelDesc.reset( new viscosity_model_type( this->stressTensorLawType(), *M_P0Mu, this->prefix() ) );
-    M_densityViscosityModel->initFromSpace(M_XhScalarP0);//,this->fieldVelocity(),this->fieldPressure());
+    //M_densityViscosityModel->initFromSpace(M_XhScalarP0);//,this->fieldVelocity(),this->fieldPressure());
+    M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
     //----------------------------------------------------------------------------//
     // space usefull to tranfert sigma*N()
     if (this->isMoveDomain()) this->createFunctionSpacesNormalStress();

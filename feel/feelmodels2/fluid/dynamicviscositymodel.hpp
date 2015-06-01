@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file viscositymodeldescription.hpp
+ \file dynamicviscositymodel.hpp
  \author Vincent Chabannes <vincent.chabannes@feelpp.org>
  \date 2014-03-21
  */
@@ -45,6 +45,8 @@ public :
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     DynamicViscosityModel( std::string prefix )
         :
@@ -79,13 +81,17 @@ public :
     DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
 
 
-    //template<typename VelType,typename PresType>
-    void initFromSpace( space_ptrtype const& space/*, VelType const& u,PresType const& p*/ )
-        {
-            M_space = space;
-            M_fieldDynamicViscosity = space->elementPtr( cst( this->cstDynamicViscosity() ) );
-            //M_fieldDynamicViscosity = space->elementPtr( Feel::vf::FeelModels::fluidMecViscosity(u,p,*this) );
-        }
+    void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
+    {
+        M_space = space_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+                                   _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
+    }
+    void initFromSpace( space_ptrtype const& space )
+    {
+        M_space = space;
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
+    }
 
     bool checkDynamicViscosityLaw() const
     {

@@ -189,9 +189,9 @@ public:
     typedef bases<BasisDVType> basis_densityviscosity_type;
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, basis_densityviscosity_type> space_densityviscosity_type;
-    typedef boost::shared_ptr<space_densityviscosity_type> space_densityviscosity_ptrtype;
+    /*typedef boost::shared_ptr<space_densityviscosity_type> space_densityviscosity_ptrtype;
     typedef typename space_densityviscosity_type::element_type element_densityviscosity_type;
-    typedef boost::shared_ptr<element_densityviscosity_type> element_densityviscosity_ptrtype;
+     typedef boost::shared_ptr<element_densityviscosity_type> element_densityviscosity_ptrtype;*/
     // viscosity model desc
     typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
     typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
@@ -500,7 +500,7 @@ public :
     //double mu() const { return M_CstMu; }
     //double nu() const { return M_CstNu; }
     //double rho() const { return M_CstRho; }
-    space_densityviscosity_ptrtype const& XhP0() const { return M_XhScalarP0; }
+    //space_densityviscosity_ptrtype const& XhP0() const { return M_XhScalarP0; }
     //element_densityviscosity_ptrtype const& rhoP0() const { return M_P0Rho; } //density
     //element_densityviscosity_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
     //element_densityviscosity_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
@@ -522,6 +522,7 @@ public :
             //this->updateMu(vf::cst(mu));
             //this->updateNu();
         }
+#if 0
     void updateRhoMu(double rho,double mu)
         {
             //M_CstRho = rho;
@@ -532,6 +533,7 @@ public :
             //this->updateMu(vf::cst(mu));
             //this->updateNu();
         }
+#endif
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
         {
@@ -845,7 +847,7 @@ protected:
     //double M_CstRho;//densite
     //double M_CstMu;//viscosité dynamqiue
     //double M_CstNu;//viscosité cinematique
-    space_densityviscosity_ptrtype M_XhScalarP0;
+    //space_densityviscosity_ptrtype M_XhScalarP0;
     //element_densityviscosity_ptrtype M_P0Rho;//densite
     //element_densityviscosity_ptrtype M_P0Mu;//viscosité dynamqiue
     //element_densityviscosity_ptrtype M_P0Nu;//viscosité cinematique
