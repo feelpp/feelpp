@@ -38,7 +38,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters1dReduced()
 {
     if (this->doRestart() && this->restartPath().empty())
     {
-        if ( M_exporter_1d_reduced->doExport() ) M_exporter_1d_reduced->restart(this->timeInitial());
+        if ( M_exporter_1dReduced->doExport() ) M_exporter_1dReduced->restart(this->timeInitial());
     }
 }
 
@@ -53,16 +53,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (isStandardModel()) {nElt=M_mesh->numGlobalElements(); nDof=M_Xh->nDof();}
-    else {nElt=M_mesh_1d_reduced->numGlobalElements(); nDof=M_Xh_1d_reduced->nDof();}
+    else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
 
     std::string SchemaTimeType = soption(_name="time-schema",_prefix=this->prefix());
     std::string ResartMode;
     if (this->doRestart()) ResartMode = "Yes";
     else ResartMode = "No";
-
-    std::string isIncomp = (M_useDisplacementPressureFormulation)?"Yes":"No";
-    //if (self_type::isIncompressible) isIncomp="Yes";
-    //else isIncomp="No";
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq=1;
@@ -90,8 +86,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     else
     {
         hovisuMode = "OFF";
-        myexporterType = M_exporter_1d_reduced->type();
-        myexporterFreq = M_exporter_1d_reduced->freq();
+        myexporterType = M_exporter_1dReduced->type();
+        myexporterFreq = M_exporter_1dReduced->freq();
     }
 
 
@@ -105,7 +101,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Physical Model"
            << "\n     -- pde name : " << M_pdeType
            << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
-           << "\n     -- incompressibility : " << isIncomp
+           << "\n     -- use displacement-pressure formulation : " << std::boolalpha << M_useDisplacementPressureFormulation
            << "\n     -- time mode : " << StateTemporal
            << "\n   Physical Parameters"
            << "\n     -- rho : " << this->mechanicalProperties()->cstRho()
@@ -151,41 +147,16 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_pdeSolver;
-    if (this->isStandardModel() && M_methodNum)
-        *_ostr << M_methodNum->getInfo()->str();
-    else if (this->is1dReducedModel() && M_methodNum_1d_reduced)
-        *_ostr << M_methodNum_1d_reduced->getInfo()->str();
+    if (this->isStandardModel() && M_algebraicFactory)
+        *_ostr << M_algebraicFactory->getInfo()->str();
+    else if (this->is1dReducedModel() && M_algebraicFactory_1dReduced)
+        *_ostr << M_algebraicFactory_1dReduced->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n";
 
     this->log("SolidMechanics","getInfo", "finish" );
 
     return _ostr;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::printInfo() const
-{
-    if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
-        std::cout << this->getInfo()->str();
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveInfo() const
-{
-    if (this->worldComm().isMasterRank() )
-    {
-        std::string nameFile = prefixvm(this->prefix(),"SolidMechanics.info");
-        std::ofstream file(nameFile.c_str(), std::ios::out);
-        file << this->getInfo()->str();
-        file.close();
-    }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -336,14 +307,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     else
     {
-        if ( !M_exporter_1d_reduced->doExport() ) return;
+        if ( !M_exporter_1dReduced->doExport() ) return;
 
-        //M_exporter_1d_reduced->step( time )->setMesh( M_mesh_1d_reduced );
-        M_exporter_1d_reduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-displacement"), *M_disp_1d_reduced );
-        if (M_doExportVelocity) M_exporter_1d_reduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-velocity"), *M_velocity_1d_reduced );
-        if (M_doExportNormalStress) M_exporter_1d_reduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1d_reduced );
-        //M_exporter_1d_reduced->step( time )->add( "structure-1d-reduced-stressvec",*M_stress_vect_1d_reduced);
-        M_exporter_1d_reduced->save();
+        //M_exporter_1dReduced->step( time )->setMesh( M_mesh_1dReduced );
+        M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-displacement"), *M_disp_1dReduced );
+        if (M_doExportVelocity) M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-velocity"), *M_velocity_1dReduced );
+        if (M_doExportNormalStress) M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced );
+        //M_exporter_1dReduced->step( time )->add( "structure-1d-reduced-stressvec",*M_stress_vect_1dReduced);
+        M_exporter_1dReduced->save();
     }
 }
 
@@ -368,7 +339,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         if ( M_doExportVelocity )
         {
             auto velocityVisuHO = M_XhVectorialVisuHO->element();
-            M_opIdisplacement->apply( this->getVelocity(),velocityVisuHO );
+            M_opIdisplacement->apply( this->fieldVelocity(),velocityVisuHO );
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity-ho"), velocityVisuHO );
         }
         if ( M_doExportNormalStress )
@@ -426,7 +397,7 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
@@ -440,7 +411,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
         if (this->isStandardModel())
         {
             // start time step
-            M_newmark_displ_struct->start(*U_displ_struct);
+            M_newmark_displ_struct->start(*M_fieldDisplacement);
             if ( M_useDisplacementPressureFormulation ) M_savetsPressure->start( M_XhPressure );
             // up current time
             this->updateTime( M_newmark_displ_struct->time() );
@@ -448,9 +419,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
         else if (this->is1dReducedModel())
         {
             // start time step
-            M_newmark_displ_1d_reduced->start(*M_disp_1d_reduced);
+            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
             // up current time
-            this->updateTime( M_newmark_displ_1d_reduced->time() );
+            this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
     else if (!this->isStationary()) // do a restart and transient mode
@@ -461,7 +432,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
             M_newmark_displ_struct->restart();
             if ( M_useDisplacementPressureFormulation ) M_savetsPressure->restart();
             // load a previous solution as current solution
-            *U_displ_struct = M_newmark_displ_struct->previousUnknown();
+            *M_fieldDisplacement = M_newmark_displ_struct->previousUnknown();
             if ( M_useDisplacementPressureFormulation ) *M_fieldPressure = M_savetsPressure->unknown(0);
             // up initial time
             this->setTimeInitial(M_newmark_displ_struct->timeInitial());
@@ -474,15 +445,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
         else  if (this->is1dReducedModel())
         {
             // restart time step
-            M_newmark_displ_1d_reduced->restart();
+            M_newmark_displ_1dReduced->restart();
             // load a previous solution as current solution
-            *M_disp_1d_reduced = M_newmark_displ_1d_reduced->previousUnknown();
+            *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
             // up initial time
-            this->setTimeInitial(M_newmark_displ_1d_reduced->timeInitial());
+            this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
             // restart exporter
             this->restartExporters1dReduced();
             // up current time
-            this->updateTime( M_newmark_displ_1d_reduced->time() );
+            this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
 
@@ -514,36 +485,36 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
     }
 
     // update algebraic model
-    if (buildMethodNum)
+    if (buildAlgebraicFactory)
     {
         if (this->isStandardModel())
         {
-            M_methodNum.reset( new model_algebraic_factory_type(app,this->backend() ) );
+            M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend() ) );
 
             if ( this->nBlockMatrixGraph() == 1 )
             {
                 NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceDisplacement(), mpl::int_<nDim>() ) ;
                 if ( boption(_name="use-null-space",_prefix=this->prefix() ) )
-                    M_methodNum->attachNullSpace( userNullSpace );
+                    M_algebraicFactory->attachNullSpace( userNullSpace );
                 if ( boption(_name="use-near-null-space",_prefix=this->prefix() ) )
-                    M_methodNum->attachNearNullSpace( userNullSpace );
+                    M_algebraicFactory->attachNearNullSpace( userNullSpace );
             }
             else
             {
                 NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceDisplacement(), mpl::int_<nDim>() ) ;
-                NullSpace<double> userNullSpaceFull = detail::extendNullSpace( userNullSpace, M_methodNum->backend(), M_methodNum->sparsityMatrixGraph()->mapRowPtr() );
+                NullSpace<double> userNullSpaceFull = detail::extendNullSpace( userNullSpace, M_algebraicFactory->backend(), M_algebraicFactory->sparsityMatrixGraph()->mapRowPtr() );
                 if ( boption(_name="use-near-null-space",_prefix=this->prefix() ) )
                 {
-                    M_methodNum->attachNearNullSpace( 0,userNullSpace ); // for block disp in fieldsplit
-                    M_methodNum->attachNearNullSpace( userNullSpaceFull ); // for multigrid on full system
+                    M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block disp in fieldsplit
+                    M_algebraicFactory->attachNearNullSpace( userNullSpaceFull ); // for multigrid on full system
                 }
             }
 
         }
         else if (this->is1dReducedModel())
         {
-            M_methodNum_1d_reduced.reset( new model_algebraic_factory_type(app,this->backend()) );
-            M_methodNum_1d_reduced->initFromFunctionSpace( this->functionSpace1dReduced() );
+            M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type(app,this->backend1dReduced()) );
+            M_algebraicFactory_1dReduced->initFromFunctionSpace( this->functionSpace1dReduced() );
         }
     }
 
@@ -565,7 +536,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if (this->isStandardModel())
     {
         // next time step
-        M_newmark_displ_struct->next( *U_displ_struct );
+        M_newmark_displ_struct->next( *M_fieldDisplacement );
         if ( M_useDisplacementPressureFormulation ) M_savetsPressure->next(*M_fieldPressure);
         // up current time
         this->updateTime( M_newmark_displ_struct->time() );
@@ -573,9 +544,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     else if (this->is1dReducedModel())
     {
         // next time step
-        M_newmark_displ_1d_reduced->next( *M_disp_1d_reduced );
+        M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
         // up current time
-        this->updateTime( M_newmark_displ_1d_reduced->time() );
+        this->updateTime( M_newmark_displ_1dReduced->time() );
     }
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
@@ -593,7 +564,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
     this->log("SolidMechanics","predictorDispl", "start" );
 
     //order 0:
-    //U_displ_struct = U_displ_struct
+    //M_fieldDisplacement = M_fieldDisplacement
 
     if (isStandardModel())
     {
@@ -615,11 +586,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
                 this->fieldDisplacement().add((-1./2.)*M_newmark_displ_struct->timeStep(), M_newmark_displ_struct->previousVelocity());
             }
         }
-        //*U_displ_struct = M_bdf_displ_struct->poly();
+        //*M_fieldDisplacement = M_bdf_displ_struct->poly();
     }
     else
     {
-        this->getDisplacementScal1dReduced().add(M_newmark_displ_1d_reduced->timeStep(),M_newmark_displ_1d_reduced->currentVelocity() );
+        this->fieldDisplacementScal1dReduced().add(M_newmark_displ_1dReduced->timeStep(),M_newmark_displ_1dReduced->currentVelocity() );
     }
 
     this->log("SolidMechanics","predictorDispl", "finish" );
@@ -638,11 +609,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     {
         if (M_pdeSolver=="LinearSystem")
         {
-            M_methodNum->linearSolver( M_blockVectorSolution.vector() );
+            M_algebraicFactory->linearSolver( M_blockVectorSolution.vector() );
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_methodNum->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
         }
     }
     else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
@@ -653,24 +624,24 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_methodNum->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
         }
     }
     else if (M_pdeType=="Generalised-String")
     {
-        auto Uvec = M_backend->newVector( M_Xh_1d_reduced );
-        *Uvec = *M_disp_1d_reduced;
+        auto Uvec = this->backend1dReduced()->newVector( M_Xh_1dReduced );
+        *Uvec = *M_disp_1dReduced;
         //Uvec->close();
         if (M_pdeSolver=="LinearSystem")
         {
-            M_methodNum_1d_reduced->linearSolver(Uvec);
+            M_algebraicFactory_1dReduced->linearSolver(Uvec);
         }
         else if (M_pdeSolver == "Newton")
         {
             CHECK(false) <<" M_pdeType " << M_pdeType << "can not be used with Newton\n";
         }
         Uvec->close();
-        *M_disp_1d_reduced=*Uvec;
+        *M_disp_1dReduced=*Uvec;
     }
 
     if (this->isStandardModel())
@@ -744,11 +715,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
 
     if (this->isStandardModel())
     {
-        M_newmark_displ_struct->updateFromDisp(*U_displ_struct);
+        M_newmark_displ_struct->updateFromDisp(*M_fieldDisplacement);
     }
     else if (this->is1dReducedModel())
     {
-        M_newmark_displ_1d_reduced->updateFromDisp(*M_disp_1d_reduced);
+        M_newmark_displ_1dReduced->updateFromDisp(*M_disp_1dReduced);
     }
 
     this->log("SolidMechanics","updateVelocityAndAcceleration", "finish" );
@@ -798,8 +769,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_pt
 
     boost::timer btime; btime.restart();
 
-    //this->changeRepository();
-
     // maybe just pointer??
     *M_normalStressFromFluid = *stressN;
 #if 0
@@ -835,11 +804,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
     }
     else if(this->is1dReducedModel())
     {
-        res = this->getDisplacementScal1dReduced().max();
+        res = this->fieldDisplacementScal1dReduced().max();
     }
 
     //if(this->isStandardModel()) res = this->fieldDisplacement().max();
-    //else if(this->is1dReducedModel()) res = this->getDisplacementScal1dReduced().max();
+    //else if(this->is1dReducedModel()) res = this->fieldDisplacementScal1dReduced().max();
 
     return res;
 }
@@ -858,7 +827,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __m
     res = dispMagnOnBoundary.max();
 
     //if(this->isStandardModel()) res = this->fieldDisplacement().max();
-    //else if(this->is1dReducedModel()) res = this->getDisplacementScal1dReduced().max();
+    //else if(this->is1dReducedModel()) res = this->fieldDisplacementScal1dReduced().max();
 
     return res;
 }
@@ -892,9 +861,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 {
-    *M_disp_vect_1d_reduced = vf::project( _space=M_Xh_vect_1d_reduced,
-                                           _range=elements(M_mesh_1d_reduced),
-                                           _expr=vf::idv(M_disp_1d_reduced)*vf::oneY());
+    *M_disp_vect_1dReduced = vf::project( _space=M_Xh_vect_1dReduced,
+                                           _range=elements(M_mesh_1dReduced),
+                                           _expr=vf::idv(M_disp_1dReduced)*vf::oneY());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -903,9 +872,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
 {
-    *M_stress_1d_reduced = vf::project( _space=M_stress_1d_reduced->functionSpace(),
-                                        _range=elements(M_mesh_1d_reduced),
-                                        _expr=-vf::trans(vf::idv(M_stress_vect_1d_reduced))*vf::oneY() );
+    *M_stress_1dReduced = vf::project( _space=M_stress_1dReduced->functionSpace(),
+                                        _range=elements(M_mesh_1dReduced),
+                                        _expr=-vf::trans(vf::idv(M_stress_vect_1dReduced))*vf::oneY() );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -914,9 +883,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 {
-    *M_velocity_vect_1d_reduced = vf::project(_space=M_Xh_vect_1d_reduced,
-                                              _range=elements(M_mesh_1d_reduced),
-                                              _expr=vf::idv(M_newmark_displ_1d_reduced->currentVelocity())*vf::oneY());
+    *M_velocity_vect_1dReduced = vf::project(_space=M_Xh_vect_1dReduced,
+                                              _range=elements(M_mesh_1dReduced),
+                                              _expr=vf::idv(M_newmark_displ_1dReduced->currentVelocity())*vf::oneY());
 }
 
 //---------------------------------------------------------------------------------------------------//

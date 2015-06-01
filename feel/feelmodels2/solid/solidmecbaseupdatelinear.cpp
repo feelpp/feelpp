@@ -49,7 +49,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     using namespace Feel::vf;
 
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
-    boost::timer thetimer;
+    this->timerTool("Solve").start();
+    //boost::timer thetimer;
 
     //---------------------------------------------------------------------------------------//
 
@@ -265,8 +266,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     }
 
     //---------------------------------------------------------------------------------------//
-
-    double timeElapsed = thetimer.elapsed();
+    double timeElapsed = this->timerTool("Solve").stop("createMesh");
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha",
               (boost::format("finish in %1% s") % timeElapsed).str() );
 

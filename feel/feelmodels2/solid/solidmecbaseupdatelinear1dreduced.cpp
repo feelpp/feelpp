@@ -22,8 +22,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
 
-    auto mesh = M_mesh_1d_reduced;
-    auto Xh1 = M_Xh_1d_reduced;
+    auto mesh = M_mesh_1dReduced;
+    auto Xh1 = M_Xh_1dReduced;
     auto u = Xh1->element(), v = Xh1->element();
 
     double epp=0.1;
@@ -46,8 +46,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
     //double gamma=0.5+alpha_m-alpha_f;
     double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
 
-    auto deltaT =  M_newmark_displ_1d_reduced->timeStep();
-    auto const& buzz1 = M_newmark_displ_1d_reduced->previousUnknown();
+    auto deltaT =  M_newmark_displ_1dReduced->timeStep();
+    auto const& buzz1 = M_newmark_displ_1dReduced->previousUnknown();
 
     // coef acceleration term
     double coef_disp=alpha_m/(beta*std::pow(deltaT,2));
@@ -81,7 +81,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
         {
             linearForm1dreduced +=
                 integrate( _range=elements(mesh),
-                           _expr=rho*epp*idv(M_newmark_displ_1d_reduced->polyDeriv() )*id(v) );
+                           _expr=rho*epp*idv(M_newmark_displ_1dReduced->polyDeriv() )*id(v) );
         }
     }
     //---------------------------------------------------------------------------------------//
@@ -125,7 +125,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
     {
         linearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=alpha_vel*gammav*dxv(M_newmark_displ_1d_reduced->previousUnknown())*dx(v) );
+                       _expr=alpha_vel*gammav*dxv(M_newmark_displ_1dReduced->previousUnknown())*dx(v) );
     }
 
     //---------------------------------------------------------------------------------------//
@@ -134,7 +134,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
     {
         linearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=idv(*M_stress_1d_reduced)*id(v) );
+                       _expr=idv(*M_stress_1dReduced)*id(v) );
     }
     //---------------------------------------------------------------------------------------//
     if (_doClose)

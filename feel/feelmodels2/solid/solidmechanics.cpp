@@ -280,7 +280,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
                                    _rowstart=this->rowStartInMatrix(),
                                    _colstart=this->colStartInMatrix() );
-        auto const& u = this->getDisplacementScal1dReduced();
+        auto const& u = this->fieldDisplacementScal1dReduced();
         //WARNING : fixed at zero
         for( auto const& d : M_bcDirichlet )
             bilinearForm +=
