@@ -79,8 +79,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","initStandardModel", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","initStandardModel", "start" );
     //-----------------------------------------------------------------------------//
     M_isStandardModel=true;
     M_is1dReducedModel=false;
@@ -103,8 +102,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
     // exporters
     this->createExporters();
     //-----------------------------------------------------------------------------//
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","initStandardModel", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","initStandardModel", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -125,8 +123,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1d_reduced_ptrtype mesh )
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init1dReducedModel", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","init1dReducedModel", "start" );
     //-----------------------------------------------------------------------------//
     M_isStandardModel=false;
     M_is1dReducedModel=true;
@@ -142,8 +139,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1d_reduced_ptr
     //-----------------------------------------------------------------------------//
     this->createExporters1dReduced();
     //-----------------------------------------------------------------------------//
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init1dReducedModel", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","init1dReducedModel", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -152,8 +148,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","loadParameterFromOptionsVm", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","loadParameterFromOptionsVm", "start" );
 
     M_meshSize = doption(_name="hsize",_prefix=this->prefix());
     M_useDisplacementPressureFormulation = boption(_name="use-incompressibility-constraint",_prefix=this->prefix());
@@ -216,8 +211,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //-----------------------------------------------//
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","loadParameterFromOptionsVm", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","loadParameterFromOptionsVm", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -225,8 +219,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createWorldsComm", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createWorldsComm", "start" );
 
     if (this->worldComm().localSize()==this->worldComm().globalSize())
     {
@@ -273,8 +266,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
 
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createWorldsComm", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createWorldsComm", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -285,8 +277,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createMesh", "start" );
     this->timerTool("Constructor").start();
 
     //this->changeRepository();
@@ -328,9 +319,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             bool hasChangedRep=false;
             if ( curPath != fs::path(this->appliRepository()) )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh",
-                                                     "change repository (temporary) for build mesh from geo : "+ this->appliRepository(),
-                                                     this->worldComm(),this->verboseAllProc());
+                this->log( "SolidMechanics","createMesh",
+                           "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
                 bool hasChangedRep=true;
                 Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
             }
@@ -345,8 +335,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string geotoolSavePath;
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory(),
-                                                    this->worldComm(),this->verboseAllProc());
+                this->log("SolidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
                 Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
 
                 geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
@@ -369,8 +358,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh", "change rep -> " + this->appliRepository() ,
-                                                    this->worldComm(),this->verboseAllProc());
+                this->log("SolidMechanics","createMesh", "change rep -> " + this->appliRepository() );
                 Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
             }
 
@@ -379,9 +367,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     }
 
     this->timerTool("Constructor").stop("createMesh");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh", "finish",
-                                        this->worldComm(),this->verboseAllProc());
-
+    this->log("SolidMechanics","createMesh", "finish" );
 } // createMesh()
 
 //---------------------------------------------------------------------------------------------------//
@@ -390,15 +376,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh1dReduced", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createMesh1dReduced", "start" );
     auto name = prefixvm(this->prefix(),"1dreduced");
 
     std::string smpath = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
     if (this->doRestart())
     {
-        if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh1dReduced", "reload mesh (because restart)",
-                                            this->worldComm(),this->verboseAllProc());
+        this->log("SolidMechanics","createMesh1dReduced", "reload mesh (because restart)" );
 
         if ( !this->restartPath().empty() ) smpath = this->restartPath()+"/"+smpath;
 
@@ -424,9 +408,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 
         if (Environment::vm().count(prefixvm(this->prefix(),"1dreduced-geofile")))
         {
-            if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile",
-                                                this->worldComm(),this->verboseAllProc());
-
+            this->log("SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile" );
             std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
             auto mesh = GeoTool::createMeshFromGeoFile<mesh_1d_reduced_type>(geofile,name,M_meshSize);
             M_mesh_1d_reduced = mesh;
@@ -444,9 +426,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createMesh1dReduced", "finish",
-                                        this->worldComm(),this->verboseAllProc());
-
+    this->log("SolidMechanics","createMesh1dReduced", "finish" );
 } // createMesh1dReduced
 
 
@@ -458,8 +438,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createFunctionSpaces", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
     //--------------------------------------------------------//
@@ -487,8 +466,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
 
     this->timerTool("Constructor").stop("createSpaces");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createFunctionSpaces", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createFunctionSpaces", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -497,8 +475,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createFunctionSpaces1dReduced", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createFunctionSpaces1dReduced", "start" );
 
     // function space and elements
     M_Xh_vect_1d_reduced = space_vect_1d_reduced_type::New(_mesh=M_mesh_1d_reduced,
@@ -534,8 +511,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
     // backend : use worldComm of Xh_1d_reduced
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1d_reduced->worldComm() );
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createFunctionSpaces1dReduced", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createFunctionSpaces1dReduced", "finish" );
 }
 
 
@@ -559,8 +535,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "start" );
 
     //--------------------------------------------------------//
     // function space for normal stress
@@ -576,8 +551,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandar
         M_velocityInterfaceFromFluid.reset( new element_vectorial_type( M_XhVectorial, "velocityInterfaceFromFluid" ));
 
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -586,8 +560,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
 
     // normal stress as source term
     M_XhStressVect_1d_reduced = space_stress_vect_1d_reduced_type::New(_mesh=M_mesh_1d_reduced,
@@ -595,8 +568,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduc
     M_stress_1d_reduced.reset( new element_stress_scal_1d_reduced_type( M_XhStressVect_1d_reduced->compSpace(), "structure stress" ));
     M_stress_vect_1d_reduced.reset(new element_stress_vect_1d_reduced_type( M_XhStressVect_1d_reduced, "stress 1d vect displacement" ));
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -607,8 +579,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createTimeDiscretisation", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createTimeDiscretisation", "start" );
     this->timerTool("Constructor").start();
 
     auto ti = this->timeInitial();
@@ -641,8 +612,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 
 
     this->timerTool("Constructor").stop("createTimeDiscr");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createTimeDiscretisation", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createTimeDiscretisation", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -651,8 +621,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createTimeDiscretisation1dReduced", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "start" );
 
     auto ti = this->timeInitial();
     auto tf = this->timeFinal();
@@ -669,8 +638,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
                                           _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                           _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createTimeDiscretisation1dReduced", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -681,8 +649,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createExporters", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createExporters", "start" );
     this->timerTool("Constructor").start();
 
     // maybe need to build additional spaces
@@ -774,8 +741,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 #endif // FEELPP_HAS_VTK
     }
     this->timerTool("Constructor").stop("createExporters");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createExporters", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createExporters", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -784,8 +750,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createExporters1dReduced", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createExporters1dReduced", "start" );
 
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";
@@ -797,8 +762,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
                                       _worldcomm=M_Xh_1d_reduced->worldComm(),
                                       _path=this->exporterPath() );
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createExporters1dReduced", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createExporters1dReduced", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -809,8 +773,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createOthers", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log(this->prefix()+".SolidMechanics","createOthers", "start" );
     this->timerTool("Constructor").start();
 
     M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
@@ -832,8 +795,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 #endif
 
     this->timerTool("Constructor").stop("createOthers");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","createOthers", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","createOthers", "finish" );
 }
 
 

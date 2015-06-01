@@ -141,9 +141,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
     }
 
     double timeElapsedBis=thetimerBis.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateJacobian",
-                                        "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str(),
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateJacobian",
+              "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
     // discretisation acceleration term
@@ -231,8 +230,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     using namespace Feel::vf;
 
     boost::mpi::timer thetimer;
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateJacobianIncompressibilityTerms", "start ",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateJacobianIncompressibilityTerms", "start " );
 
     auto mesh = M_Xh->mesh();
     auto v = u;
@@ -319,9 +317,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     //--------------------------------------------------------------------------------------------//
 
     double timeElapsed=thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateJacobianIncompressibilityTerms",
-                                               "finish in "+(boost::format("%1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateJacobianIncompressibilityTerms",
+              "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 #endif //FEELMODELS_SOLID_BUILD_JACOBIAN_CODE
 }
 
