@@ -58,19 +58,16 @@
 #undef THERMODYNAMICS_VOLUME_FORCE
 #include "thermodyn.bc"
 
-#undef THERMODYNAMICSBASE_CLASS_NAME
-#define THERMODYNAMICSBASE_CLASS_NAME ThermoDynamicsBase< Simplex<THERMODYNAMICS_DIM,THERMODYNAMICS_ORDERGEO,THERMODYNAMICS_DIM>, THERMODYNAMICS_ORDERPOLY >
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
+class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_TYPE,
                                   public boost::enable_shared_from_this< THERMODYNAMICS_CLASS_NAME >
     {
     public:
-        typedef THERMODYNAMICSBASE_CLASS_NAME super_type;
+        typedef THERMODYNAMICSBASE_CLASS_TYPE super_type;
 
         typedef THERMODYNAMICS_CLASS_NAME self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -83,10 +80,10 @@ class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_NAME,
         // constructor
         THERMODYNAMICS_CLASS_NAME( bool __isStationary,
                                    std::string prefix,
-                                   WorldComm const& _worldComm=WorldComm(),
+                                   WorldComm const& _worldComm=Environment::worldComm(),
                                    bool __buildMesh=true,
                                    std::string subPrefix="",
-                                   std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+                                   std::string appliShortRepository=soption(_name="exporter.directory") );
 
         // load config files
         void loadConfigBCFile();

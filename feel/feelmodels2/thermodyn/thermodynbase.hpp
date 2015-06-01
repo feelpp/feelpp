@@ -51,7 +51,7 @@ namespace FeelModels
 {
 
 
-template< typename ConvexType, int OrderTemp>
+template< typename ConvexType, typename BasisTemperatureType>
 class ThermoDynamicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC
@@ -59,19 +59,18 @@ class ThermoDynamicsBase : public ModelNumerical,
     {
     public:
         typedef ModelNumerical super_type;
-        typedef ThermoDynamicsBase<ConvexType,OrderTemp> self_type;
+        typedef ThermoDynamicsBase<ConvexType,BasisTemperatureType> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
         // mesh
         typedef ConvexType convex_type;
         static const uint16_type nDim = convex_type::nDim;
         static const uint16_type nOrderGeo = convex_type::nOrder;
-        //typedef Simplex<nDim,nOrderGeo,nDim> convex_type;
         typedef Mesh<convex_type> mesh_type;
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
-        static const uint16_type nOrderPoly = OrderTemp;
-        typedef Lagrange<nOrderPoly, Scalar,Continuous,PointSetFekete> basis_temperature_type;
+        static const uint16_type nOrderPoly = BasisTemperatureType::nOrder;
+        typedef BasisTemperatureType basis_temperature_type;
         typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete> basis_velocityconvection_type;
         // function space temperature
         typedef FunctionSpace<mesh_type, bases<basis_temperature_type> > space_temperature_type;

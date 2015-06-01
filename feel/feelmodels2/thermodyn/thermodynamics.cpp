@@ -12,13 +12,13 @@ namespace Feel {
 
 namespace FeelModels {
 
-    template< typename ConvexType, int OrderTemp>
-    ThermoDynamics<ConvexType,OrderTemp>::ThermoDynamics( bool __isStationary,
-                                                          std::string __prefix,
-                                                          WorldComm const& __worldComm,
-                                                          bool __buildMesh,
-                                                          std::string __subPrefix,
-                                                          std::string __appliShortRepository )
+THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
+THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( bool __isStationary,
+                                                    std::string __prefix,
+                                                    WorldComm const& __worldComm,
+                                                    bool __buildMesh,
+                                                    std::string __subPrefix,
+                                                    std::string __appliShortRepository )
         :
         super_type( __isStationary,__prefix,__worldComm,__buildMesh,__subPrefix,__appliShortRepository)
     {
@@ -40,9 +40,9 @@ namespace FeelModels {
                                             this->worldComm(),this->verboseAllProc());
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::loadConfigBCFile()
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     {
         this->clearMarkerDirichletBC();
         this->clearMarkerNeumannBC();
@@ -57,24 +57,24 @@ namespace FeelModels {
         M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::loadConfigMeshFile(std::string const& geofilename)
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile(std::string const& geofilename)
     {
         CHECK( false ) << "not allow";
     }
 
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::init(bool buildMethodNum)
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::init(bool buildMethodNum)
     {
         super_type::init( buildMethodNum, this->shared_from_this() );
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::solve()
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::solve()
     {
         M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
         M_bcNeumann.setParameterValues( this->modelProperties().parameters().toParameterValues() );
@@ -82,9 +82,9 @@ namespace FeelModels {
         super_type::solve();
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
     {
         if ( M_bcDirichlet.empty() ) return;
 
@@ -110,9 +110,9 @@ namespace FeelModels {
                                                    this->worldComm(),this->verboseAllProc());
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F, bool buildCstPart ) const
     {
         if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
         {
@@ -144,9 +144,9 @@ namespace FeelModels {
         }
     }
 
-    template< typename ConvexType, int OrderTemp>
+    THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
     void
-    ThermoDynamics<ConvexType,OrderTemp>::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+    THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
     {
         if ( M_bcNeumann.empty() ) return;
 
