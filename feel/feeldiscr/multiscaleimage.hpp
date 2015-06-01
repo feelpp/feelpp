@@ -28,6 +28,7 @@
 //#ifndef _MULTISCALEIMAGE_HPP_
 //#define _MULTISCALEIMAGE_HPP_
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/math/special_functions/round.hpp>
 using namespace boost::numeric;
 
 namespace Feel
@@ -41,24 +42,32 @@ class MultiScaleImage
 public :
     using value_type = T;
     
-    MultiScaleImage(holo3_image<value_type> const& im)
+    MultiScaleImage(holo3_image<value_type> const& im, float L)
         :
-        image(im)
+        dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
     }
 
     value_type 
-    operator()(ublas::vector<double> const& c)
+    operator()(ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
-            double x = c[0];
-            double y = c[1];
-     
-            int i = x/dx;
-            int j = y/dy;
+            double x = real[0];
+            double y = real[1];
+             
+            int i = boost::math::iround(x/dx);
+            //int j = image.cols()-1-boost::math::iround(y/dy);
+            int j = boost::math::iround(y/dy);
+            
+            double v=  image(j,i);
+#if 0
+            std::cout << "Value " << v << " Coarse real (" << x <<"," << y 
+                      << ") Ref : ("<< ref[0] << "," << ref[1]  
+                      << ") Fine image coord. i =" << i <<", j =" << j << std::endl;
+#endif
 
-            return image(j,i);
+            return v;
         }
-
+/*
     value_type operator()(ublas::vector<double> const& c, int L)
         {     
             double x = c[0];
@@ -69,11 +78,12 @@ public :
             
             return image(L*j,L*i);
         }
-     
+  */   
 private :
-    double dx =8.9e-3;
-    double dy =8.9e-3;
+    double dx;
+    double dy;
     holo3_image<value_type> image;
+    int level;
 };
 
 } // Feel
