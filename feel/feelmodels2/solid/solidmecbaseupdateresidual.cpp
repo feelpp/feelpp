@@ -12,9 +12,9 @@ namespace FeelModels
 {
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
                                                                          bool _buildCstPart, bool UseJacobianLinearTerms,
                                                                          bool _doClose, bool _doBCStrongDirichlet ) const
 {
@@ -335,9 +335,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateResidual( const v
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const
 {
 #if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
@@ -421,9 +421,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateResidualIncompres
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateResidualViscoElasticityTerms( /*const*/ element_displacement_type& U, vector_ptrtype& R) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( /*const*/ element_displacement_type& U, vector_ptrtype& R) const
 {
 #if 0
 #if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)

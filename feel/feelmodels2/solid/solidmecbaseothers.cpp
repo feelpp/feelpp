@@ -11,9 +11,9 @@ namespace FeelModels
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::restartExporters()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
 {
     if (this->doRestart() && this->restartPath().empty())
     {
@@ -32,9 +32,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::restartExporters()
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::restartExporters1dReduced()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters1dReduced()
 {
     if (this->doRestart() && this->restartPath().empty())
     {
@@ -44,9 +44,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::restartExporters1dReduc
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::getInfo() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","getInfo", "start",
                                         this->worldComm(),this->verboseAllProc());
@@ -167,9 +167,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::getInfo() const
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::printInfo() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::printInfo() const
 {
     if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
         std::cout << this->getInfo()->str();
@@ -177,9 +177,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::printInfo() const
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::saveInfo() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveInfo() const
 {
     if (this->worldComm().isMasterRank() )
     {
@@ -192,9 +192,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::saveInfo() const
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::pdeType(std::string __type)
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
 {
     if ( __type == "Elasticity" )                      { M_pdeType="Elasticity"; M_pdeSolver="LinearSystem"; }
     else if ( __type == "Elasticity-Large-Deformation" ) { M_pdeType="Elasticity-Large-Deformation"; M_pdeSolver="Newton"; }
@@ -209,9 +209,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::pdeType(std::string __t
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::pdeSolver(std::string __type)
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
 {
     if ( __type == "LinearSystem" )
         M_pdeSolver="LinearSystem";
@@ -223,9 +223,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::pdeSolver(std::string _
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 int
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::nBlockMatrixGraph() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( M_useDisplacementPressureFormulation )
@@ -233,9 +233,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::nBlockMatrixGraph() con
     return nBlock;
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::buildBlockMatrixGraph() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","buildBlockMatrixGraph", "start",
                                         this->worldComm(),this->verboseAllProc());
@@ -268,9 +268,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::buildBlockMatrixGraph()
     return myblockGraph;
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
-typename SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::graph_ptrtype
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::buildMatrixGraph() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     if (this->isStandardModel())
     {
@@ -288,9 +288,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::buildMatrixGraph() cons
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::exportResults( double time )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","exportResults",
                                         (boost::format("start at time %1%")%time).str(),
@@ -318,9 +318,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::exportResults( double t
                                         this->worldComm(),this->verboseAllProc());
 
 } // SolidMechanics::export
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::exportResultsImpl( double time )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     if (this->isStandardModel())
     {
@@ -354,9 +354,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::exportResultsImpl( doub
     }
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::exportResultsImplHO( double time )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
     if (this->isStandardModel())
     {
@@ -431,9 +431,9 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 }
 } // detail
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
 
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init", "start",
@@ -566,9 +566,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::init( bool buildMethodN
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateTimeStep()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateTimeStep", "start",
                                         this->worldComm(),this->verboseAllProc());
@@ -600,9 +600,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateTimeStep()
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::predictorDispl()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","predictorDispl", "start",
                                         this->worldComm(),this->verboseAllProc());
@@ -644,9 +644,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::predictorDispl()
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::solve( bool upVelAcc )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
     //this->psLogger()->log("before SOLVE");
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","solve", "start",
@@ -713,9 +713,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::solve( bool upVelAcc )
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::saveDataInPoint(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate)
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveDataInPoint(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate)
 {
     auto it = __listPt.begin();
     auto en = __listPt.end();
@@ -756,9 +756,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::saveDataInPoint(const s
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateVelocity()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
     if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateVelocityAndAcceleration", "start",
                                         this->worldComm(),this->verboseAllProc() );
@@ -778,9 +778,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateVelocity()
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateNormalStressFromStruct()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 {
     using namespace Feel::vf;
 
@@ -798,9 +798,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateNormalStressFromS
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
-typename SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::block_pattern_type
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::blockPattern() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::block_pattern_type
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
     if (M_useDisplacementPressureFormulation)
         return BlocksStencilPattern(2,2) << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED)
@@ -811,9 +811,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::blockPattern() const
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateStressTensorBis( element_stress_ptrtype stressN)
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_ptrtype stressN)
 {
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor start\n";
@@ -842,9 +842,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateStressTensorBis( 
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeMaxDisp() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
 {
     double res = 0;
     if(this->isStandardModel())
@@ -868,9 +868,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeMaxDisp() const
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeMaxDispOnBoundary(std::string __marker) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __marker) const
 {
     double res = 0;
     auto u = this->fieldDisplacement();
@@ -887,9 +887,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeMaxDispOnBoundar
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeIncompressibility() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeIncompressibility() const
 {
     using namespace Feel::vf;
 
@@ -910,9 +910,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::computeIncompressibilit
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateInterfaceDispFrom1dDisp()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 {
     *M_disp_vect_1d_reduced = vf::project( _space=M_Xh_vect_1d_reduced,
                                            _range=elements(M_mesh_1d_reduced),
@@ -921,9 +921,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateInterfaceDispFrom
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateInterfaceScalStressDispFromVectStress()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
 {
     *M_stress_1d_reduced = vf::project( _space=M_stress_1d_reduced->functionSpace(),
                                         _range=elements(M_mesh_1d_reduced),
@@ -932,9 +932,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateInterfaceScalStre
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateInterfaceVelocityFrom1dVelocity()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 {
     *M_velocity_vect_1d_reduced = vf::project(_space=M_Xh_vect_1d_reduced,
                                               _range=elements(M_mesh_1d_reduced),

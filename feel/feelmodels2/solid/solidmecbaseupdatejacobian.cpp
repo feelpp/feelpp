@@ -12,9 +12,9 @@ namespace FeelModels
 {
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateJacobian( const vector_ptrtype& X,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
                                                                          sparse_matrix_ptrtype& J, vector_ptrtype& R,
                                                                          bool BuildCstPart,
                                                                          sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
@@ -223,9 +223,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateJacobian( const v
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const
 {
 #if defined(FEELMODELS_SOLID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
@@ -329,9 +329,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateJacobianIncompres
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateJacobianViscoElasticityTerms( /*const*/ element_displacement_type& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( /*const*/ element_displacement_type& u, sparse_matrix_ptrtype& J) const
 {
 #if 0
 #if defined(FEELMODELS_SOLID_BUILD_JACOBIAN_CODE)

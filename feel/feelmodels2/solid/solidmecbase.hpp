@@ -54,7 +54,7 @@ namespace Feel
 {
 namespace FeelModels
 {
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp >
 class SolidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC
@@ -62,7 +62,7 @@ class SolidMechanicsBase : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
 
-    typedef SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp> self_type;
+    typedef SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //___________________________________________________________________________________//
@@ -76,15 +76,15 @@ public:
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
-     //typedef Simplex<nDim,nOrderGeo,nDim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
-    static const uint16_type nOrder = OrderDisp;
+    static const uint16_type nOrder = BasisDisplacementType::nOrder;//OrderDisp;
     static const uint16_type nOrderDisplacement = nOrder;
     static const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
-    typedef Lagrange<nOrderDisplacement, Vectorial,Continuous,PointSetFekete> basis_u_type;
+    typedef BasisDisplacementType basis_u_type;
+    //typedef Lagrange<nOrderDisplacement, Vectorial,Continuous,PointSetFekete> basis_u_type;
     typedef Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete> basis_l_type;
     //typedef Lagrange<nOrder, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
     typedef Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
