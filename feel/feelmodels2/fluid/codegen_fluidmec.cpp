@@ -44,14 +44,13 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICS_CLASS_NAME::FLUIDMECHANICS_CLASS_NAME( bool __isStationary,
-                                                      std::string __prefix,
-                                                      WorldComm const& __worldComm,
+FLUIDMECHANICS_CLASS_NAME::FLUIDMECHANICS_CLASS_NAME( std::string __prefix,
                                                       bool __buildMesh,
+                                                      WorldComm const& __worldComm,
                                                       std::string __subPrefix,
                                                       std::string __appliShortRepository )
     :
-    super_type( __isStationary,__prefix,__worldComm, __buildMesh, __subPrefix,__appliShortRepository)
+    super_type( __prefix,__worldComm, __buildMesh, __subPrefix,__appliShortRepository)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());

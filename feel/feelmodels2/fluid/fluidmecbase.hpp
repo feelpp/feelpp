@@ -312,10 +312,10 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanicsBase( bool __isStationary,
+    FluidMechanicsBase( //bool __isStationary,
                         std::string prefix,
-                        WorldComm const& _worldComm=WorldComm(),
                         bool __buildMesh=true,
+                        WorldComm const& _worldComm=Environment::worldComm(),
                         std::string subPrefix="",
                         std::string appliShortRepository=soption(_name="exporter.directory") );
     FluidMechanicsBase( self_type const & M ) = default;

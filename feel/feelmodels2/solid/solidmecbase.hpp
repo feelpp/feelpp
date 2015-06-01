@@ -279,10 +279,10 @@ public:
     //___________________________________________________________________________________//
 
 
-    SolidMechanicsBase( bool __isStationary,
+    SolidMechanicsBase( //bool __isStationary,
                         std::string prefix,
-                        WorldComm const& _worldComm=WorldComm(),
                         bool __buildMesh=true,
+                        WorldComm const& _worldComm=WorldComm(),
                         std::string subPrefix="",
                         std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
 

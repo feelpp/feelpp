@@ -51,10 +51,10 @@ public:
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( bool __isStationary,
+    FluidMechanics( //bool __isStationary,
                     std::string prefix,
-                    WorldComm const& _worldComm=Environment::worldComm(),
                     bool __buildMesh=true,
+                    WorldComm const& _worldComm=Environment::worldComm(),
                     std::string subPrefix="",
                     std::string appliShortRepository=soption(_name="exporter.directory") );
     FluidMechanics( self_type const& FM ) = default;

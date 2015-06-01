@@ -77,10 +77,9 @@ public:
     //typedef mpl::bool_<bcdef_type::hasThisType<cl::paroi_mobile>::value> hasBcParoiMobile_type;
     //___________________________________________________________________________________//
     // constructor
-    FLUIDMECHANICS_CLASS_NAME( bool __isStationary,
-                               std::string prefix,
-                               WorldComm const& _worldComm=Environment::worldComm(),
+    FLUIDMECHANICS_CLASS_NAME( std::string prefix,
                                bool __buildMesh=true,
+                               WorldComm const& _worldComm=Environment::worldComm(),
                                std::string subPrefix="",
                                std::string appliShortRepository=soption(_name="exporter.directory") );
     FLUIDMECHANICS_CLASS_NAME( self_type const& FM ) = default;

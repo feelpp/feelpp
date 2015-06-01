@@ -14,14 +14,14 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( bool __isStationary,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationary,
                                                             std::string __prefix,
-                                                            WorldComm const& __worldComm,
                                                             bool __buildMesh,
+                                                            WorldComm const& __worldComm,
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository),
+    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository),
     M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";

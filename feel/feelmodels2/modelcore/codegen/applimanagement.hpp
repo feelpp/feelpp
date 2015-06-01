@@ -422,8 +422,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            FluidMechanics_ptrtype fm(new FluidMechanics_type( M_isStationary,"fluid",
-                                                               worldcomm, buildMesh, subPrefix,
+            FluidMechanics_ptrtype fm(new FluidMechanics_type( /*M_isStationary,*/"fluid",
+                                                               buildMesh, worldcomm,  subPrefix,
                                                                this->appliShortRepository() ) );
             return fm;
         }
@@ -439,8 +439,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            FluidMechanics0_ptrtype fm(new FluidMechanics0_type( M_isStationary,"fluid0",
-                                                                 worldcomm, buildMesh, subPrefix,
+            FluidMechanics0_ptrtype fm(new FluidMechanics0_type( /*M_isStationary,*/"fluid0",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return fm;
         }
@@ -456,8 +456,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            FluidMechanics1_ptrtype fm(new FluidMechanics1_type( M_isStationary,"fluid1",
-                                                                 worldcomm, buildMesh, subPrefix,
+            FluidMechanics1_ptrtype fm(new FluidMechanics1_type( /*M_isStationary,*/"fluid1",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return fm;
         }
@@ -473,8 +473,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            FluidMechanics2_ptrtype fm(new FluidMechanics2_type( M_isStationary,"fluid2",
-                                                                 worldcomm, buildMesh, subPrefix,
+            FluidMechanics2_ptrtype fm(new FluidMechanics2_type( /*M_isStationary,*/"fluid2",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return fm;
         }
@@ -493,8 +493,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            SolidMechanics_ptrtype sm(new SolidMechanics_type( M_isStationary,"struct",
-                                                               worldcomm, buildMesh, subPrefix,
+            SolidMechanics_ptrtype sm(new SolidMechanics_type( /*M_isStationary,*/"struct",
+                                                               buildMesh, worldcomm, subPrefix,
                                                                this->appliShortRepository() ) );
             return sm;
         }
@@ -510,8 +510,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            SolidMechanics0_ptrtype sm(new SolidMechanics0_type( M_isStationary,"struct0",
-                                                                 worldcomm, buildMesh, subPrefix,
+            SolidMechanics0_ptrtype sm(new SolidMechanics0_type( /*M_isStationary,*/"struct0",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return sm;
         }
@@ -527,8 +527,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            SolidMechanics1_ptrtype sm(new SolidMechanics1_type( M_isStationary,"struct1",
-                                                                 worldcomm, buildMesh, subPrefix,
+            SolidMechanics1_ptrtype sm(new SolidMechanics1_type( /*M_isStationary,*/"struct1",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return sm;
         }
@@ -544,8 +544,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            SolidMechanics2_ptrtype sm(new SolidMechanicsé_type( M_isStationary,"struct2",
-                                                                 worldcomm, buildMesh, subPrefix,
+            SolidMechanics2_ptrtype sm(new SolidMechanicsé_type( /*M_isStationary,*/"struct2",
+                                                                 buildMesh, worldcomm, subPrefix,
                                                                  this->appliShortRepository() ) );
             return sm;
         }
@@ -581,8 +581,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            ThermoDynamics_ptrtype thermoDyn(new ThermoDynamics_type( M_isStationary,prefix,
-                                                                      worldcomm, buildMesh, subPrefix,
+            ThermoDynamics_ptrtype thermoDyn(new ThermoDynamics_type( /*M_isStationary,*/prefix,
+                                                                      buildMesh, worldcomm, subPrefix,
                                                                       this->appliShortRepository() ) );
             return thermoDyn;
         }
@@ -599,8 +599,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            ThermoDynamics0_ptrtype thermoDyn(new ThermoDynamics0_type( M_isStationary,prefix,
-                                                                        worldcomm, buildMesh, subPrefix,
+            ThermoDynamics0_ptrtype thermoDyn(new ThermoDynamics0_type( /*M_isStationary,*/prefix,
+                                                                        buildMesh, worldcomm, subPrefix,
                                                                         this->appliShortRepository() ) );
             return thermoDyn;
         }
@@ -617,8 +617,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            ThermoDynamics1_ptrtype thermoDyn(new ThermoDynamics1_type( M_isStationary,prefix,
-                                                                        worldcomm, buildMesh, subPrefix,
+            ThermoDynamics1_ptrtype thermoDyn(new ThermoDynamics1_type( /*M_isStationary,*/prefix,
+                                                                        buildMesh, worldcomm, subPrefix,
                                                                         this->appliShortRepository() ) );
             return thermoDyn;
         }
@@ -635,8 +635,8 @@ namespace Feel
                                           (subPrefix, (std::string), "" ) ) //optional
                                          )
         {
-            ThermoDynamics2_ptrtype thermoDyn(new ThermoDynamics2_type( M_isStationary,prefix,
-                                                                        worldcomm, buildMesh, subPrefix,
+            ThermoDynamics2_ptrtype thermoDyn(new ThermoDynamics2_type( /*M_isStationary,*/prefix,
+                                                                        buildMesh, worldcomm, subPrefix,
                                                                         this->appliShortRepository() ) );
             return thermoDyn;
         }

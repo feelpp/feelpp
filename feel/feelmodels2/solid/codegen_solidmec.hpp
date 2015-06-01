@@ -77,10 +77,9 @@ public:
 
     //___________________________________________________________________________________//
 
-    SOLIDMECHANICS_CLASS_NAME( bool __isStationary,
-                               std::string prefix,
-                               WorldComm const& _worldComm=Environment::worldComm(),
+    SOLIDMECHANICS_CLASS_NAME( std::string prefix,
                                bool __buildMesh=true,
+                               WorldComm const& _worldComm=Environment::worldComm(),
                                std::string subPrefix="",
                                std::string appliShortRepository=soption(_name="exporter.directory") );
 
