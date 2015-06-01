@@ -86,8 +86,8 @@ public :
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;
     // timer
-    TimerToolBase & timerTool(std::string s);
-    void addTimerTool(std::string s,std::string fileName);
+    TimerToolBase & timerTool(std::string s) const;
+    void addTimerTool(std::string s,std::string fileName) const;
     // save assembly/solver scalability
     bool scalabilitySave() const;
     bool scalabilityReinitSaveFile() const;
@@ -112,7 +112,7 @@ private :
     // filename for save info
     std::string M_filenameSaveInfo;
     // timertool register by a name id
-    std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
+    mutable std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
     bool M_timersActivated;
     bool M_timersSaveFileMasterRank, M_timersSaveFileMax, M_timersSaveFileMin, M_timersSaveFileMean, M_timersSaveFileAll;
     // save assembly/solver scalability

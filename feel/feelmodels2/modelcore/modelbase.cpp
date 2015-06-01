@@ -175,7 +175,7 @@ ModelBase::printAndSaveInfo() const
 
 // timer
 TimerToolBase &
-ModelBase::timerTool(std::string key)
+ModelBase::timerTool(std::string key) const
 {
     auto itFind = M_mapTimerTool.find( key );
     if ( itFind == M_mapTimerTool.end() )
@@ -188,7 +188,7 @@ ModelBase::timerTool(std::string key)
         return *itFind->second;
 }
 void
-ModelBase::addTimerTool(std::string key,std::string fileName)
+ModelBase::addTimerTool(std::string key,std::string fileName) const
 {
     CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
     if ( M_timersActivated )
