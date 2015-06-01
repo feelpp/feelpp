@@ -21,11 +21,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
 #if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
-    std::string sc=(_buildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
-                                         this->prefix()+".SolidMechanics","updateResidual", "start"+sc,
-                                         this->worldComm(),this->verboseAllProc());
-    boost::mpi::timer thetimer,thetimerBis;
+    std::string sc=(_buildCstPart)?" (cst part)":" (non cst part)";
+    this->log("SolidMechanics","updateResidual", "start"+sc );
+    this->timerTool("Solve").start();
 
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
@@ -80,46 +78,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
     auto Sv_elastic = idv(coeffLame1)*trace(Ev_elastic)*Id + 2*idv(coeffLame2)*Ev_elastic;
 
     //--------------------------------------------------------------------------------------------------//
-#if 0
-#if (SOLIDMECHANICS_DIM==2)
-    auto Fv11 = Fv(0,0);
-    auto Fv12 = Fv(0,1);
-    auto Fv21 = Fv(1,0);
-    auto Fv22 = Fv(1,1);
-    auto detFv = Fv11*Fv22-Fv12*Fv21;
-    auto InvFv = (cst(1.)/detFv)*mat<2,2>( Fv22,-Fv12,-Fv21,Fv11);
-    auto traceCv = pow(Fv11,2) + pow(Fv21,2) + pow(Fv12,2) + pow(Fv22,2);
-#endif
-#if (SOLIDMECHANICS_DIM==3)
-    auto Fv11 = Fv(0,0);
-    auto Fv12 = Fv(0,1);
-    auto Fv13 = Fv(0,2);
-    auto Fv21 = Fv(1,0);
-    auto Fv22 = Fv(1,1);
-    auto Fv23 = Fv(1,2);
-    auto Fv31 = Fv(2,0);
-    auto Fv32 = Fv(2,1);
-    auto Fv33 = Fv(2,2);
-    auto detFv = Fv11*(Fv22*Fv33-Fv23*Fv32) - Fv21*(Fv12*Fv33-Fv13*Fv32) + Fv31*(Fv12*Fv23 - Fv13*Fv22);
-    auto InvFv = (cst(1.)/detFv)*mat<3,3>( Fv22*Fv33-Fv23*Fv32 , Fv13*Fv32-Fv12*Fv33 , Fv12*Fv23-Fv13*Fv22,
-                                           Fv23*Fv31-Fv21*Fv33 , Fv11*Fv33-Fv13*Fv31 , Fv13*Fv21-Fv11*Fv23,
-                                           Fv21*Fv32-Fv22*Fv31 , Fv12*Fv31-Fv11*Fv32 , Fv11*Fv22-Fv12*Fv21
-                                           );
-    auto traceCv = pow(Fv11,2) + pow(Fv21,2) + pow(Fv31,2) + pow(Fv12,2) + pow(Fv22,2) + pow(Fv32,2) + pow(Fv13,2) + pow(Fv23,2) + pow(Fv33,2);
-#endif
-
-    //--------------------------------------------------------------------------------------------------//
-
-    double C10=this->mechanicalProperties()->cstYoungModulus()/6.;//approximation
-    // 2(C01+C10) = M_coefflame2 <=> C01 = M_coefflame2/2 -C10
-    double C01=this->mechanicalProperties()->cstCoeffLame2()/2.-C10;
-    //auto FSv_mooneyrivlin = Fv*2(C10 + C01*traceCv) - 2*C01*Fv*trans(Fv)*Fv;
-    auto Sv_mooneyrivlin = 2*(C10 + C01*traceCv)*Id - 2*C01*trans(Fv)*Fv;
-    auto FSv_mooneyrivlin = Fv*Sv_mooneyrivlin;
-#endif
     //--------------------------------------------------------------------------------------------------//
     // stress tensor terms
-    thetimerBis.restart();
+    this->timerTool("Solve").start();
+
     if (M_pdeType=="Hyper-Elasticity")
     {
         if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
@@ -149,18 +111,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
                                _geomap=this->geomap() );
             }
         }
-#if 0
-        else if (this->mechanicalProperties()->materialLaw() == "MooneyRivlin")
-        {
-            if (!BuildCstPart)
-            {
-                linearFormDisplacement +=
-                    integrate( _range=elements(mesh),
-                               _expr= trace(val(FSv_mooneyrivlin)*trans(grad(v))),
-                               _geomap=this->geomap() );
-            }
-        }
-#endif
     } // if (M_pdeType=="Hyper-Elasticity")
     else if (M_pdeType=="Elasticity-Large-Deformation")
     {
@@ -178,8 +128,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
                            _expr= trace( Sv_elastic*trans(grad(v))),
                            _geomap=this->geomap() );
     }
-
-    double timeElapsedBis=thetimerBis.elapsed();
+    double timeElapsedBis = this->timerTool("Solve").stop();
     this->log("SolidMechanics","updateResidual",
               "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
@@ -289,17 +238,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
     {
         double alpha_robin = 1e4;
         linearFormDisplacement +=
-            /**/ integrate( _range=markedfaces(mesh,M_markerNameBCRobin),
-                            _expr= alpha_robin*trans(idv(u))*id(v),
-                            _geomap=this->geomap() );
-
-#if 0
-        ForEachBC( bcDef,cl::robin_vec,
-                   form1( _test=M_Xh, _vector=R) +=
-                   /**/ integrate( _range=markedfaces(mesh,PhysicalName),
-                                   _expr= alpha_robin*trans(idv(u))*id(v),
-                                   _geomap=this->geomap() ) );
-#endif
+            integrate( _range=markedfaces(mesh,M_markerNameBCRobin),
+                       _expr= alpha_robin*trans(idv(u))*id(v),
+                       _geomap=this->geomap() );
     }
     // TODO up second membre
     /*if (BuildCstPart)
@@ -322,11 +263,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
         this->updateBCDirichletStrongResidual( R );
     }
 
-    double timeElapsed=thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateResidual",
-                                         "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str()+
-                                         "\n--------------------------------------------------",
-                                         this->worldComm(),this->verboseAllProc());
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("SolidMechanics","updateResidual",
+              "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str() );
 #endif //FEELMODELS_SOLID_BUILD_RESIDUAL_CODE
 }
 
@@ -420,7 +359,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( /*const*/ element_displacement_type& U, vector_ptrtype& R) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_type const& u, vector_ptrtype& R) const
 {
 #if 0
 #if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)

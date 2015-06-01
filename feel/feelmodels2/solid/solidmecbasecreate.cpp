@@ -15,8 +15,7 @@ namespace FeelModels
 {
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( //bool __isStationary,
-                                                            std::string __prefix,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix,
                                                             bool __buildMesh,
                                                             WorldComm const& __worldComm,
                                                             std::string __subPrefix,
@@ -41,10 +40,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
 {
-    if ( M_pdeType == "Elasticity" )                      { buildStandardModel(); }
+    /**/ if ( M_pdeType == "Elasticity" )                   { buildStandardModel(); }
     else if ( M_pdeType == "Elasticity-Large-Deformation" ) { buildStandardModel(); }
-    else if ( M_pdeType == "Hyper-Elasticity" )           { buildStandardModel(); }
-    else if ( M_pdeType == "Generalised-String" )         { build1dReducedModel(); }
+    else if ( M_pdeType == "Hyper-Elasticity" )             { buildStandardModel(); }
+    else if ( M_pdeType == "Generalised-String" )           { build1dReducedModel(); }
     else
         CHECK(false) << "invalid pdeType" << M_pdeType;
 }
@@ -65,7 +64,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype mesh )
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_1d_reduced_ptrtype mesh )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_1dreduced_ptrtype mesh )
 {
     if ( M_pdeType == "Generalised-String" )
         this->build1dReducedModel(mesh);
@@ -121,7 +120,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1d_reduced_ptrtype mesh )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype mesh )
 {
     this->log("SolidMechanics","init1dReducedModel", "start" );
     //-----------------------------------------------------------------------------//
@@ -129,7 +128,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1d_reduced_ptr
     M_is1dReducedModel=true;
     //-----------------------------------------------------------------------------//
     if ( mesh )
-        M_mesh_1d_reduced = mesh;
+        M_mesh_1dReduced = mesh;
     else
         this->createMesh1dReduced();
     //-----------------------------------------------------------------------------//
@@ -159,8 +158,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "neumann";
     M_gammaNitschFSI = 2500;
-    //M_weakCL = boption(_name="useweakbc",_prefix=this->prefix());
-    M_penalbc = doption(_name="weakbccoeff",_prefix=this->prefix());
+    //M_penalbc = doption(_name="weakbccoeff",_prefix=this->prefix());
     M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
@@ -168,28 +166,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_doExportAcceleration = boption(_name="do_export_acceleration",_prefix=this->prefix());
     M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
     M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
-
-    //-----------------------------------------------//
-#if 0 // ASUP
-    M_rho = doption(_name="rho",_prefix=this->prefix());// rho
-    M_materialLaw = soption(_name="material_law",_prefix=this->prefix());
-    M_youngmodulus = doption(_name="youngmodulus",_prefix=this->prefix());// E
-    M_coeffpoisson = doption(_name="coeffpoisson",_prefix=this->prefix());// sigma
-    this->updateLameCoeffFromYoungPoisson();
-#endif
-#if 0
-    if (std::abs(0.5-M_coeffpoisson) > 1e-6 )
-    {
-        M_coefflame2 = M_youngmodulus/(2*(1+M_coeffpoisson));// mu
-        M_coefflame1 = M_youngmodulus*M_coeffpoisson/((1+M_coeffpoisson)*(1-2*M_coeffpoisson));// lambda
-    }
-    else
-    {
-        M_coefflame2 = -M_coeffpoisson/M_youngmodulus; // mu
-        M_coefflame1 = 0.5*(1+M_coeffpoisson)/M_youngmodulus; // lambda
-    }
-#endif
-    //-----------------------------------------------//
 
     //time schema parameters
     std::string timeSchema = soption(_name="time-schema",_prefix=this->prefix());
@@ -209,12 +185,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
     M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
 
-    //-----------------------------------------------//
-
     this->log("SolidMechanics","loadParameterFromOptionsVm", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
+
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
@@ -280,9 +255,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     this->log("SolidMechanics","createMesh", "start" );
     this->timerTool("Constructor").start();
 
-    //this->changeRepository();
-
-    //auto smpath = this->fileNameMeshPath();//prefixvm(this->prefix(),"SolidMechanicsMesh.path");
     std::string smpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
     if (this->doRestart())
     {
@@ -389,29 +361,19 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 #if defined(SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH)
         auto meshSM2dClass = reloadMesh<mesh_type>(smpath,this->worldComm());
         SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH(meshSM2dClass);
-        M_mesh_1d_reduced=mesh;
+        M_mesh_1dReduced=mesh;
 #else
-        M_mesh_1d_reduced = reloadMesh<mesh_1d_reduced_type>(smpath,this->worldComm());
+        M_mesh_1dReduced = reloadMesh<mesh_1dreduced_type>(smpath,this->worldComm());
 #endif
     }
     else
     {
-#if 0
-        // create a worldcomm only on master rank proc (no partition in 1d struct)
-        std::vector<int> MapWorld(this->worldComm().globalSize(),0);
-        MapWorld[this->worldComm().masterRank()] = 1;
-        auto worldComm1dReduced = WorldComm(MapWorld,
-                                            this->worldComm().localRank(),
-                                            this->worldComm().globalComm(),
-                                            this->worldComm().godComm()).subWorldComm(1);
-#endif
-
         if (Environment::vm().count(prefixvm(this->prefix(),"1dreduced-geofile")))
         {
             this->log("SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile" );
             std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
-            auto mesh = GeoTool::createMeshFromGeoFile<mesh_1d_reduced_type>(geofile,name,M_meshSize);
-            M_mesh_1d_reduced = mesh;
+            auto mesh = GeoTool::createMeshFromGeoFile<mesh_1dreduced_type>(geofile,name,M_meshSize);
+            M_mesh_1dReduced = mesh;
         }
         else
         {
@@ -446,7 +408,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_Xh = space_displacement_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     //--------------------------------------------------------//
     // displacement
-    U_displ_struct.reset( new element_displacement_type( M_Xh, "structure displacement" ));
+    M_fieldDisplacement.reset( new element_displacement_type( M_Xh, "structure displacement" ));
     //--------------------------------------------------------//
     if ( M_useDisplacementPressureFormulation )
     {
@@ -478,38 +440,19 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
     this->log("SolidMechanics","createFunctionSpaces1dReduced", "start" );
 
     // function space and elements
-    M_Xh_vect_1d_reduced = space_vect_1d_reduced_type::New(_mesh=M_mesh_1d_reduced,
-                                                           _worldscomm=std::vector<WorldComm>(1,M_mesh_1d_reduced->worldComm()));
-#if 0
-    M_Xh_1d_reduced = space_1d_reduced_type::New(_mesh=M_mesh_1d_reduced,
-                                                 _worldscomm=std::vector<WorldComm>(1,M_mesh_1d_reduced->worldComm()));
-#else
-    M_Xh_1d_reduced = M_Xh_vect_1d_reduced->compSpace();
-#endif
+    M_Xh_vect_1dReduced = space_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
+                                                         _worldscomm=std::vector<WorldComm>(1,M_mesh_1dReduced->worldComm()));
+    M_Xh_1dReduced = M_Xh_vect_1dReduced->compSpace();
     // scalar field
-    M_disp_1d_reduced.reset( new element_1d_reduced_type( M_Xh_1d_reduced, "structure displacement" ));
-    M_velocity_1d_reduced.reset( new element_1d_reduced_type( M_Xh_1d_reduced, "structure velocity" ));
-    M_acceleration_1d_reduced.reset( new element_1d_reduced_type( M_Xh_1d_reduced, "structure acceleration" ));
+    M_disp_1dReduced.reset( new element_1dreduced_type( M_Xh_1dReduced, "structure displacement" ));
+    M_velocity_1dReduced.reset( new element_1dreduced_type( M_Xh_1dReduced, "structure velocity" ));
+    M_acceleration_1dReduced.reset( new element_1dreduced_type( M_Xh_1dReduced, "structure acceleration" ));
     // vectorial field
-    M_disp_vect_1d_reduced.reset(new element_vect_1d_reduced_type( M_Xh_vect_1d_reduced, "structure vect 1d displacement" ));
-    M_velocity_vect_1d_reduced.reset(new element_vect_1d_reduced_type( M_Xh_vect_1d_reduced, "velocity vect 1d displacement" ));
+    M_disp_vect_1dReduced.reset(new element_vect_1dreduced_type( M_Xh_vect_1dReduced, "structure vect 1d displacement" ));
+    M_velocity_vect_1dReduced.reset(new element_vect_1dreduced_type( M_Xh_vect_1dReduced, "velocity vect 1d displacement" ));
 
-#if 0
-#if 0 // with intersection if 1d mesh is on middle surface
-    M_map_stress_1d_reduced.reset(new std::vector<mesh_type::node_type>(M_disp_1d_reduced->nDof()));
-    M_map_disp_1d_reduced.reset(new std::vector<mesh_type::node_type>(M_Xh->nDof()));
-    auto bcDef = SOLIDMECHANICS_BC(this);
-    ForEachBC( bcDef,cl::paroi_mobile,
-               precomputeTransfertStress2dTo1d(PhysicalName);
-               precomputeTransfertDisp1dTo2d(PhysicalName); );
-#else // with interpolation if 1d mesh is on boundary
-    //precomputeDisp1dTo2dWithInterpolation();
-    //precomputeNormalStress2dTo1dWithInterpolation();
-#endif
-#endif
-
-    // backend : use worldComm of Xh_1d_reduced
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1d_reduced->worldComm() );
+    // backend : use worldComm of Xh_1dReduced
+    M_backend_1dReduced = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1dReduced->worldComm() );
 
     this->log("SolidMechanics","createFunctionSpaces1dReduced", "finish" );
 }
@@ -563,10 +506,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduc
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
 
     // normal stress as source term
-    M_XhStressVect_1d_reduced = space_stress_vect_1d_reduced_type::New(_mesh=M_mesh_1d_reduced,
-                                                                       _worldscomm=std::vector<WorldComm>(1,M_mesh_1d_reduced->worldComm()));
-    M_stress_1d_reduced.reset( new element_stress_scal_1d_reduced_type( M_XhStressVect_1d_reduced->compSpace(), "structure stress" ));
-    M_stress_vect_1d_reduced.reset(new element_stress_vect_1d_reduced_type( M_XhStressVect_1d_reduced, "stress 1d vect displacement" ));
+    M_XhStressVect_1dReduced = space_stress_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
+                                                                       _worldscomm=std::vector<WorldComm>(1,M_mesh_1dReduced->worldComm()));
+    M_stress_1dReduced.reset( new element_stress_scal_1dreduced_type( M_XhStressVect_1dReduced->compSpace(), "structure stress" ));
+    M_stress_vect_1dReduced.reset(new element_stress_vect_1dreduced_type( M_XhStressVect_1dReduced, "stress 1d vect displacement" ));
 
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "finish" );
 }
@@ -630,8 +573,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
     std::string suffixName = "";
     if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_newmark_displ_1d_reduced = newmark( _vm=Environment::vm(),
-                                          _space=M_Xh_1d_reduced,
+    M_newmark_displ_1dReduced = newmark( _vm=Environment::vm(),
+                                          _space=M_Xh_1dReduced,
                                           _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"structure-1dreduced."+suffixName)),
                                           _prefix=this->prefix(),
                                           _initial_time=ti, _final_time=tf, _time_step=dt,
@@ -755,11 +698,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";
 
-    M_exporter_1d_reduced = exporter( _mesh=this->mesh1dReduced(),
+    M_exporter_1dReduced = exporter( _mesh=this->mesh1dReduced(),
                                       //_name=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export-1dReduced")),
                                       _name="Export-1dReduced",
                                       _geo=geoExportType,
-                                      _worldcomm=M_Xh_1d_reduced->worldComm(),
+                                      _worldcomm=M_Xh_1dReduced->worldComm(),
                                       _path=this->exporterPath() );
 
     this->log("SolidMechanics","createExporters1dReduced", "finish" );
@@ -777,22 +720,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     this->timerTool("Constructor").start();
 
     M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
-    //M_P0Rho.reset( new element_scalar_P0_type(M_XhScalarP0,"rho"));
-    //M_P0Coefflame1.reset( new element_scalar_P0_type(M_XhScalarP0,"coefflame1"));
-    //M_P0Coefflame2.reset( new element_scalar_P0_type(M_XhScalarP0,"coefflame2"));
-#if 0
-    this->updateRho( vf::cst(M_rho) );
-    this->updateCoefflame1( vf::cst(M_coefflame1) );
-    this->updateCoefflame2( vf::cst(M_coefflame2) );
-#endif
-#if 0
-    M_mechanicalProperties.reset( new mechanicalproperties_type( M_XhScalarP0,this->useDisplacementPressureFormulation(),this->prefix() ) );
-    /*this->materialLaw(),M_useDisplacementPressureFormulation,
-     this->youngModulus(),this->coeffPoisson(),*/
-    /**M_P0Coefflame1,*M_P0Coefflame2*/
-#else
     M_mechanicalProperties->initFromSpace( M_XhScalarP0 );
-#endif
 
     this->timerTool("Constructor").stop("createOthers");
     this->log("SolidMechanics","createOthers", "finish" );
