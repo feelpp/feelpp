@@ -129,19 +129,15 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     boost::timer thetimer;
 
     // save path of file mesh
-    auto fmpath = this->fileNameMeshPath();
+    std::string tdpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
     if (this->doRestart())
     {
-        this->log("ThermoDynamics","createMesh","restart with : "+fmpath );
-
+        this->log("ThermoDynamics","createMesh","restart with : "+tdpath );
         if ( !this->restartPath().empty() )
         {
-            this->M_mesh = reloadMesh<mesh_type>(this->restartPath()+"/"+fmpath,this->worldComm());
+            tdpath = (fs::path( this->restartPath() ) / fs::path(this->fileNameMeshPath())).string();
         }
-        else
-        {
-            this->M_mesh = reloadMesh<mesh_type>(fmpath,this->worldComm());
-        }
+        M_mesh = reloadMesh<mesh_type>(tdpath,this->worldComm());
     }
     else
     {
@@ -201,7 +197,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             }
 
         }
-        this->saveMSHfilePath(fmpath);
+        this->saveMSHfilePath(tdpath);
     }
 
     double tElpased = thetimer.elapsed();
@@ -257,6 +253,9 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+
+    M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
+                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
     this->log("ThermoDynamics","createTimeDiscretisation", "finish");
 }
