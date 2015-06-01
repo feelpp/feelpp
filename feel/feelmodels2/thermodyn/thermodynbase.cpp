@@ -14,14 +14,13 @@ namespace FeelModels
 {
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( bool __isStationary,
-                                                            std::string __prefix,
-                                                            WorldComm const& __worldComm,
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix,
                                                             bool __buildMesh,
+                                                            WorldComm const& __worldComm,
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type( __isStationary,__prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
 {}
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS

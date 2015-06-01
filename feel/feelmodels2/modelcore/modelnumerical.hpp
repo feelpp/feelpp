@@ -68,8 +68,8 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( bool _isStationary, std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
-                        std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+        ModelNumerical( std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
+                        std::string appliShortRepository=soption(_name="exporter.directory") );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 

@@ -34,29 +34,29 @@ namespace Feel
 namespace FeelModels
 {
 
-    ModelNumerical::ModelNumerical(bool _isStationary, std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
+ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
                                                                                    std::string appliShortRepository )
         :
         super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
-        M_rebuildMeshPartitions( option(_name="rebuild_mesh_partitions",_prefix=this->prefix()).as<bool>() ),
-        M_isStationary(_isStationary),
-        M_doRestart( option(_name="bdf.restart").as<bool>() ),
-        M_restartPath( option(_name="bdf.restart.path").as<std::string>() ),
-        M_restartAtLastSave( option(_name="bdf.restart.at-last-save").as<bool>() ),
-        M_timeInitial( option(_name="bdf.time-initial").as<double>() ),
-        M_timeFinal( option(_name="bdf.time-final").as<double>() ),
-        M_timeStep( option(_name="bdf.time-step").as<double>() ),
-        M_bdfSaveInFile( option(_name="bdf.save").as<bool>() ),
-        M_bdfSaveFreq( option(_name="bdf.save.freq").as<int>() ),
+        M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
+        M_isStationary( false /*_isStationary*/),
+        M_doRestart( boption(_name="bdf.restart") ),
+        M_restartPath( soption(_name="bdf.restart.path") ),
+        M_restartAtLastSave( boption(_name="bdf.restart.at-last-save") ),
+        M_timeInitial( doption(_name="bdf.time-initial") ),
+        M_timeFinal( doption(_name="bdf.time-final") ),
+        M_timeStep( doption(_name="bdf.time-step") ),
+        M_bdfSaveInFile( boption(_name="bdf.save") ),
+        M_bdfSaveFreq( ioption(_name="bdf.save.freq") ),
         M_timeCurrent(M_timeInitial),
         M_modelProps( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ) ),
         M_parameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS,0)),
         M_geoParameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_GEOPARAMETERS,0)),
         M_ginacExpr(std::vector<std::pair<std::string,std::string> >(FEELMODELS_FSIBASE_NUMBER_OF_GINACEXPR)),
         M_ginacExprCompilationDirectory( "" ),
-        M_geotoolMeshIndex( option(_name="geotool-mesh-index",_prefix=this->prefix()).as<int>() ),
-        M_geotoolSaveDirectory( option(_name="geotool-save-directory",_prefix=this->prefix()).as<std::string>() ),
-        M_geotoolSaveName( option(_name="geotool-save-name",_prefix=this->prefix()).as<std::string>() ),
+        M_geotoolMeshIndex( ioption(_name="geotool-mesh-index",_prefix=this->prefix()) ),
+        M_geotoolSaveDirectory( soption(_name="geotool-save-directory",_prefix=this->prefix()) ),
+        M_geotoolSaveName( soption(_name="geotool-save-name",_prefix=this->prefix()) ),
         M_row_startInMatrix(0),
         M_col_startInMatrix(0),
         M_row_startInVector(0),
@@ -65,6 +65,11 @@ namespace FeelModels
         M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
+
+        // move in stationary mode if we have this relation
+        if ( M_timeInitial + M_timeStep == M_timeFinal)
+            M_isStationary=true;
+
         //-----------------------------------------------------------------------//
         // init user cst parameters
         for ( uint16_type k=1;k<=M_parameters.size();++k )
@@ -83,8 +88,8 @@ namespace FeelModels
         // init user ginac expr
         for ( uint16_type k=1;k<M_ginacExpr.size();++k )
             {
-                std::string gexpr= option(_prefix=this->prefix(),_name=(boost::format("ginac-expr%1%") %k ).str()).as<std::string>();
-                std::string gname= option(_prefix=this->prefix(),_name=(boost::format("ginac-name%1%") %k ).str()).as<std::string>();
+                std::string gexpr= soption(_prefix=this->prefix(),_name=(boost::format("ginac-expr%1%") %k ).str());
+                std::string gname= soption(_prefix=this->prefix(),_name=(boost::format("ginac-name%1%") %k ).str());
                 this->setUserGinacExpr(k,gexpr,gname);
             }
         if ( Environment::vm().count(prefixvm(this->prefix(),"ginac-expr-directory").c_str()) )
@@ -94,15 +99,15 @@ namespace FeelModels
         //-----------------------------------------------------------------------//
         // mesh file : .msh
         if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
-            M_mshFileStr = Environment::vm()[prefixvm(this->prefix(),"mshfile")].as< std::string >();
+            M_mshFileStr = soption(_prefix=this->prefix(),_name="mshfile");
         // mesh file : .geo
         if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
-            M_geoFileStr = Environment::vm()[prefixvm(this->prefix(),"geofile")].as< std::string >();
+            M_geoFileStr = soption(_prefix=this->prefix(),_name="geofile");
         // mesh file : geotool with .mesh file
         if (M_geotoolSaveDirectory.empty()) M_geotoolSaveDirectory = this->appliShortRepository();//this->appliRepository();
         if (M_geotoolSaveName.empty()) M_geotoolSaveName = this->prefix();
         //-----------------------------------------------------------------------//
-        if (Environment::vm()[prefixvm(this->prefix(),"geomap")].as<std::string>()=="opt")
+        if (soption(_prefix=this->prefix(),_name="geomap")=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;

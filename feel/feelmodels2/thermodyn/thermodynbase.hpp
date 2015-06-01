@@ -94,10 +94,9 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 
-        ThermoDynamicsBase( bool __isStationary,
-                            std::string __prefix,
-                            WorldComm const& __worldComm,
+        ThermoDynamicsBase( std::string __prefix,
                             bool __buildMesh,
+                            WorldComm const& __worldComm,
                             std::string __subPrefix,
                             std::string __appliShortRepository );
 

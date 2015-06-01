@@ -13,14 +13,13 @@ namespace Feel {
 namespace FeelModels {
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( bool __isStationary,
-                                                    std::string __prefix,
-                                                    WorldComm const& __worldComm,
+THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string __prefix,
                                                     bool __buildMesh,
+                                                    WorldComm const& __worldComm,
                                                     std::string __subPrefix,
                                                     std::string __appliShortRepository )
         :
-        super_type( __isStationary,__prefix,__worldComm,__buildMesh,__subPrefix,__appliShortRepository)
+        super_type( __prefix,__worldComm,__buildMesh,__subPrefix,__appliShortRepository)
     {
         if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","constructor", "start",
                                             this->worldComm(),this->verboseAllProc());

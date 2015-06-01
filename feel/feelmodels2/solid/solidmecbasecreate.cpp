@@ -15,14 +15,14 @@ namespace FeelModels
 {
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( bool __isStationary,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( //bool __isStationary,
                                                             std::string __prefix,
-                                                            WorldComm const& __worldComm,
                                                             bool __buildMesh,
+                                                            WorldComm const& __worldComm,
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type(__isStationary,__prefix,__worldComm,__subPrefix, __appliShortRepository),
+    super_type(__prefix,__worldComm,__subPrefix, __appliShortRepository),
     M_mechanicalProperties( new mechanicalproperties_type( __prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsConstructor.data";

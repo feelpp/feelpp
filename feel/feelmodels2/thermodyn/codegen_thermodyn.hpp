@@ -78,10 +78,9 @@ class THERMODYNAMICS_CLASS_NAME : public THERMODYNAMICSBASE_CLASS_TYPE,
 
         //___________________________________________________________________________________//
         // constructor
-        THERMODYNAMICS_CLASS_NAME( bool __isStationary,
-                                   std::string prefix,
-                                   WorldComm const& _worldComm=Environment::worldComm(),
+        THERMODYNAMICS_CLASS_NAME( std::string prefix,
                                    bool __buildMesh=true,
+                                   WorldComm const& _worldComm=Environment::worldComm(),
                                    std::string subPrefix="",
                                    std::string appliShortRepository=soption(_name="exporter.directory") );
 
