@@ -48,8 +48,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","getInfo", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","getInfo", "start" );
 
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
@@ -159,8 +158,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n||==============================================||"
            << "\n";
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","getInfo", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","getInfo", "finish" );
 
     return _ostr;
 }
@@ -237,8 +235,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","buildBlockMatrixGraph", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
 
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
@@ -263,8 +260,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     myblockGraph.close();
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","buildBlockMatrixGraph", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","buildBlockMatrixGraph", "finish" );
     return myblockGraph;
 }
 
@@ -292,9 +288,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","exportResults",
-                                        (boost::format("start at time %1%")%time).str(),
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","exportResults",(boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
     if (!M_isHOVisu)
@@ -314,8 +308,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","exportResults", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","exportResults", "finish" );
 
 } // SolidMechanics::export
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -435,10 +428,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
-
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init", "start",
-                                        this->worldComm(),this->verboseAllProc());
-
+    this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
     if ( this->getMarkerNameFSI().size()>0 )
@@ -496,8 +486,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
         }
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init", "start/restart timeStep scheme done",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
 
     // update block vector (index + data struct)
     if (this->isStandardModel())
@@ -560,8 +549,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, typename mode
 
     this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","init", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","init", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -570,8 +558,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateTimeStep", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -594,8 +581,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").stop("updateTimeStep");
 
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateTimeStep", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateTimeStep", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -604,8 +590,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","predictorDispl", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","predictorDispl", "start" );
 
     //order 0:
     //U_displ_struct = U_displ_struct
@@ -637,9 +622,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
         this->getDisplacementScal1dReduced().add(M_newmark_displ_1d_reduced->timeStep(),M_newmark_displ_1d_reduced->currentVelocity() );
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","predictorDispl", "finish",
-                                        this->worldComm(),this->verboseAllProc());
-
+    this->log("SolidMechanics","predictorDispl", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -648,9 +631,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
-    //this->psLogger()->log("before SOLVE");
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","solve", "start",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
     if (M_pdeType=="Elasticity")
@@ -707,8 +688,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         this->timerTool("Solve").save();
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","solve", (boost::format("finish in %1% s")%tElapsed).str(),
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -760,8 +740,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateVelocityAndAcceleration", "start",
-                                        this->worldComm(),this->verboseAllProc() );
+    this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
 
     if (this->isStandardModel())
     {
@@ -772,8 +751,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
         M_newmark_displ_1d_reduced->updateFromDisp(*M_disp_1d_reduced);
     }
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateVelocityAndAcceleration", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateVelocityAndAcceleration", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//

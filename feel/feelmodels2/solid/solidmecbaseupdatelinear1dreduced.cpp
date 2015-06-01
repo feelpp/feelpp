@@ -17,7 +17,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
 #if (SOLIDMECHANICS_DIM==2)
     using namespace Feel::vf;
 
-    if (this->verbose()) std::cout << "[SolidMechanics] : updateLinearGeneralisedStringGeneralisedAlpha start\n";
+    this->log( "SolidMechanics","updateLinearGeneralisedStringGeneralisedAlpha","start");
 
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
@@ -162,8 +162,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
 #endif
     //---------------------------------------------------------------------------------------//
 
-
-    if (this->verbose()) std::cout << "[SolidMechanics] : updateLinearGeneralisedStringGeneralisedAlpha finish\n";
+    this->log( "SolidMechanics","updateLinearGeneralisedStringGeneralisedAlpha","finish");
 #endif
 }
 

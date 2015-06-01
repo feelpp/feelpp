@@ -48,8 +48,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
 
     using namespace Feel::vf;
 
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
     boost::timer thetimer;
 
     //---------------------------------------------------------------------------------------//
@@ -268,9 +267,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     //---------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) FeelModels::Log(this->prefix()+".SolidMechanics","updateLinearElasticityGeneralisedAlpha",
-                                         (boost::format("finish in %1% s") % timeElapsed).str(),
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha",
+              (boost::format("finish in %1% s") % timeElapsed).str() );
 
 #endif // FEELMODELS_SOLID_BUILD_LINEAR_CODE
 } // updateLinearElasticityGeneralisedAlpha

@@ -180,9 +180,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
     }
 
     double timeElapsedBis=thetimerBis.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateResidual",
-                                         "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str(),
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateResidual",
+              "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
@@ -343,8 +342,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
     using namespace Feel::vf;
 
     boost::mpi::timer thetimer;
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateResidualIncompressibilityTerms", "start",
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateResidualIncompressibilityTerms", "start" );
 
     auto mesh = M_Xh->mesh();
     auto v = u;
@@ -410,9 +408,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
 
 
     double timeElapsed=thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateResidualIncompressibilityTerms",
-                                         "finish in "+(boost::format("%1% s") % timeElapsed).str(),
-                                         this->worldComm(),this->verboseAllProc());
+    this->log("SolidMechanics","updateResidualIncompressibilityTerms",
+              "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
 #endif //FEELMODELS_SOLID_BUILD_RESIDUAL_CODE
 }
