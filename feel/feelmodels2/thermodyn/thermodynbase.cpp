@@ -21,7 +21,16 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix
                                                             std::string __appliShortRepository )
     :
     super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
-{}
+{
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsSolve.data";
+    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsPostProcessing.data";
+    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsTimeStepping.data";
+    this->addTimerTool("Constructor",nameFileConstructor);
+    this->addTimerTool("Solve",nameFileSolve);
+    this->addTimerTool("PostProcessing",nameFilePostProcessing);
+    this->addTimerTool("TimeStepping",nameFileTimeStepping);
+}
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -29,36 +38,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("ThermoDynamics","build", "start" );
 
-    boost::mpi::timer mpiTimer;
-    //-----------------------------------------------------------------------------//
     // create or reload mesh
     this->createMesh();
-    double timeMesh = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     // functionSpaces and elements
     this->createFunctionSpaces();
-    double timeFunctionSpaces = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     // bdf time schema
     this->createTimeDiscretisation();
-    double timeDiscretisation = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // ALE mode (maybe)
-    //this->createALE();
-    //double timeALE = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // physical parameters
-    //this->createOthers();
-    //double timeOthers = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     //export
     this->createExporters();
-    double timeExporters = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // save timers
-    //if ( this->scalabilitySave() ) this->saveTimerBuild(timeMesh,timeFunctionSpaces,timeDiscretisation,
-    //                                                    timeOthers,timeALE,timeExporters);
-    //-----------------------------------------------------------------------------//
 
     this->log("ThermoDynamics","build", "finish" );
 }
@@ -67,39 +54,19 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
 {
-    boost::mpi::timer mpiTimer;
-    //-----------------------------------------------------------------------------//
+    this->log("ThermoDynamics","loadMesh", "start" );
+
     // create or reload mesh
     if (this->doRestart()) this->createMesh();
     else this->M_mesh = mesh;
-    double timeMesh = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     // functionSpaces and elements
     this->createFunctionSpaces();
-    double timeFunctionSpaces = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     // bdf time schema
     this->createTimeDiscretisation();
-    double timeDiscretisation = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // ALE mode (maybe)
-    //this->createALE();
-    //double timeALE = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // physical parameters
-    //this->createOthers();
-    //double timeOthers = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
     //export
     this->createExporters();
-    double timeExporters = mpiTimer.elapsed();mpiTimer.restart();
-    //-----------------------------------------------------------------------------//
-    // save timers
-    //if ( this->scalabilitySave() ) this->saveTimerBuild(timeMesh,timeFunctionSpaces,timeDiscretisation,
-    //                                                    timeOthers,timeALE,timeExporters);
-    //-----------------------------------------------------------------------------//
 
-    this->log("ThermoDynamics","build", "finish" );
+    this->log("ThermoDynamics","loadMesh", "finish" );
 }
 
 
@@ -125,7 +92,7 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("ThermoDynamics","createMesh", "start");
-    boost::timer thetimer;
+    this->timerTool("Constructor").start();
 
     // save path of file mesh
     std::string tdpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
@@ -147,13 +114,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
             this->log("ThermoDynamics","createMesh", "load msh file : " + this->mshfileStr() );
 
-            this->M_mesh = loadGMSHMesh(_mesh=new mesh_type,
-                                        _filename=this->mshfileStr(),
-                                        _worldcomm=this->worldComm(),
-                                        _rebuild_partitions=this->rebuildMeshPartitions(),
-                                        _rebuild_partitions_filename=mshfileRebuildPartitions,
-                                        _partitions=this->worldComm().localSize(),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
+            M_mesh = loadGMSHMesh(_mesh=new mesh_type,
+                                  _filename=this->mshfileStr(),
+                                  _worldcomm=this->worldComm(),
+                                  _rebuild_partitions=this->rebuildMeshPartitions(),
+                                  _rebuild_partitions_filename=mshfileRebuildPartitions,
+                                  _partitions=this->worldComm().localSize(),
+                                  _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
 
             if (this->rebuildMeshPartitions()) this->setMshfileStr(mshfileRebuildPartitions);
         }
@@ -162,8 +129,22 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string path = this->appliRepository();
             std::string mshfile = path + "/" + this->prefix() + ".msh";
             this->setMshfileStr(mshfile);
-            this->M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),this->meshSize(),1,
-                                                                     this->worldComm().localSize(),this->worldComm());
+
+            fs::path curPath=fs::current_path();
+            bool hasChangedRep=false;
+            if ( curPath != fs::path(this->appliRepository()) )
+            {
+                this->log("ThermoDynamics","createMesh", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
+                bool hasChangedRep=true;
+                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
+            }
+
+            M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),this->meshSize(),1,
+                                                               this->worldComm().localSize(),this->worldComm());
+
+            // go back to previous repository
+            if ( hasChangedRep )
+                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
         else
         {
@@ -199,7 +180,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
         this->saveMSHfilePath(tdpath);
     }
 
-    double tElpased = thetimer.elapsed();
+    double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("ThermoDynamics","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
@@ -209,6 +190,7 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     this->log("ThermoDynamics","createFunctionSpaces", "start" );
+    this->timerTool("Constructor").start();
 
     // functionspace
     M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -221,7 +203,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
 
-    this->log("ThermoDynamics","createFunctionSpaces", "finish");
+    double tElpased = this->timerTool("Constructor").stop("createSpaces");
+    this->log("ThermoDynamics","createFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -239,6 +222,7 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
     this->log("ThermoDynamics","createTimeDiscretisation", "start" );
+    this->timerTool("Constructor").start();
 
     std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_bdfTemperature = bdf( _vm=Environment::vm(), _space=this->spaceTemperature(),
@@ -256,7 +240,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
-    this->log("ThermoDynamics","createTimeDiscretisation", "finish");
+    double tElpased = this->timerTool("Constructor").stop("createSpaces");
+    this->log("ThermoDynamics","createTimeDiscretisation",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -264,6 +249,7 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
     this->log("ThermoDynamics","createExporters", "start");
+    this->timerTool("Constructor").start();
 
     std::string geoExportType="static";//change_coords_only, change, static
     M_exporter = exporter( _mesh=this->mesh(),
@@ -271,7 +257,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
                            _geo=geoExportType,
                            _path=this->exporterPath() );
 
-    this->log("ThermoDynamics","createExporters", "finish");
+    double tElpased = this->timerTool("Constructor").stop("createExporters");
+    this->log("ThermoDynamics","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 
@@ -297,32 +284,19 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, model_algebraic_factory_type::appli_ptrtype const& app )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
 {
     this->log("ThermoDynamics","init", "start" );
+    this->timerTool("Constructor").start();
 
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
-    //-------------------------------------------------//
     // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperature();
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
-#if 0
-    if ( buildMethodNum )
-    {
-        // matrix graph of non zero
-        //auto graph = stencil(_test=this->spaceTemperature(),
-        //                     _trial=this->spaceTemperature() )->graph();
-        auto graph = this->buildBlockMatrixGraph()(0,0);
-        // tool for assembly and solver
-        M_methodNum.reset( new methodsnum_type(this->shared_from_this(),this->backend(),
-                                               graph, graph->mapRow().indexSplit() ) );
-    }
-#endif
-    //-------------------------------------------------//
     // start or restart time step scheme and exporter
     if (!this->doRestart())
     {
@@ -344,17 +318,19 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, model_algebra
         // up current time
         this->updateTime( M_bdfTemperature->time() );
     }
-    //-------------------------------------------------//
-    if ( buildMethodNum )
+    // algebraic solver
+    if ( buildModelAlgebraicFactory )
     {
         // matrix graph of non zero
         auto graph = this->buildBlockMatrixGraph()(0,0);
         // tool for assembly and solver
-        M_methodNum.reset( new model_algebraic_factory_type(app,this->backend(),
-                                                            graph, graph->mapRow().indexSplit() ) );
+        M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend(),
+                                                                   graph, graph->mapRow().indexSplit() ) );
     }
 
-    this->log("ThermoDynamics","init", "finish");
+    double tElapsedInit = this->timerTool("Constructor").stop("init");
+    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    this->log("ThermoDynamics","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
 
@@ -404,6 +380,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->fieldVelocityConvectionIsUsedAndOperational() )
         *_ostr << "\n   Space Velocity Convection Discretization"
                << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
+    if ( M_algebraicFactory )
+        *_ostr << M_algebraicFactory->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -418,11 +396,19 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("ThermoDynamics","solve", "start");
+    this->timerTool("Solve").start();
 
-    M_methodNum->linearSolver(this->blockVectorSolution().vector());
+    M_algebraicFactory->linearSolver(this->blockVectorSolution().vector());
     M_blockVectorSolution.localize();
 
-    this->log("ThermoDynamics","solve", "finish");
+    double tElapsed = this->timerTool("Solve").stop("solve");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("Solve").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("Solve").save();
+    }
+    this->log("ThermoDynamics","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 
@@ -434,6 +420,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     if ( !M_exporter->doExport() ) return;
 
     this->log("ThermoDynamics","exportResults", "start");
+    this->timerTool("PostProcessing").start();
 
     M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
@@ -446,6 +433,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     }
     M_exporter->save();
 
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
     this->log("ThermoDynamics","exportResults", "finish");
 }
 
@@ -455,6 +449,9 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 {
     this->log("ThermoDynamics","updateBdf", "start");
+    this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
+    this->timerTool("TimeStepping").start();
+
     int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
 
     M_bdfTemperature->next( *this->fieldTemperature() );
@@ -464,7 +461,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     this->updateTime( this->timeStepBdfTemperature()->time() );
 
     // maybe rebuild cst jacobian or linear
-    if ( M_methodNum &&
+    if ( M_algebraicFactory &&
          previousTimeOrder!=currentTimeOrder &&
          this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
@@ -472,9 +469,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
         {
             if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "do rebuildCstLinearPDE",
                                                        this->worldComm(),this->verboseAllProc());
-            M_methodNum->rebuildCstLinearPDE(this->blockVectorSolution().vector());
+            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vector());
         }
     }
+
+    this->timerTool("TimeStepping").stop("updateBdf");
+    if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("ThermoDynamics","updateBdf", "finish");
 }
 
@@ -496,29 +496,17 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
     this->log("ThermoDynamics","updateLinearPDE", "start"+sc);
     boost::mpi::timer thetimer;
 
-    //--------------------------------------------------------------------------------------------------//
-
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
-
     auto const& u = *this->fieldTemperature();
     auto const& v = *this->fieldTemperature();
 
-    //boundaries conditions
-    //auto const bcDef = THERMODYNAMICS_BC(this->shared_from_this());
-
-    //--------------------------------------------------------------------------------------------------//
-
-    auto rowStartInMatrix = this->rowStartInMatrix();
-    auto colStartInMatrix = this->colStartInMatrix();
-    auto rowStartInVector = this->rowStartInVector();
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
     auto myLinearForm = form1( _test=Xh, _vector=F,
-                               _rowstart=rowStartInVector );
-
+                               _rowstart=this->rowStartInVector() );
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -545,8 +533,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
                            _geomap=this->geomap() );
         }
     }
-
-    this->updateSourceTermLinearPDE(F, buildCstPart);
 
     if (!this->isStationary())
     {
@@ -578,15 +564,16 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
         }
     }
 
-    // update neumann bc
-    this->updateWeakBCLinearPDE(A,F,buildCstPart);
-
-    if (/*this->hasDirichletBCelimination()  &&*/ !buildCstPart && _doBCStrongDirichlet)
-    {
-        this->updateBCStrongDirichletLinearPDE(A,F);
-    }
-
     //--------------------------------------------------------------------------------------------------//
+
+    // update source term
+    this->updateSourceTermLinearPDE(F, buildCstPart);
+
+    // update bc
+    this->updateWeakBCLinearPDE(A,F,buildCstPart);
+    if ( !buildCstPart && _doBCStrongDirichlet)
+        this->updateBCStrongDirichletLinearPDE(A,F);
+
 
     double timeElapsed = thetimer.elapsed();
     this->log("ThermoDynamics","updateLinearPDE",

@@ -128,8 +128,8 @@ class ThermoDynamicsBase : public ModelNumerical,
         BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
         BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
         size_type nLocalDof() const;
-        model_algebraic_factory_ptrtype const& methodNum() const { return M_methodNum; }
-        model_algebraic_factory_ptrtype & methodNum() { return M_methodNum; }
+        model_algebraic_factory_ptrtype const& methodNum() const { return M_algebraicFactory; }
+        model_algebraic_factory_ptrtype & methodNum() { return M_algebraicFactory; }
         //___________________________________________________________________________________//
         // exporter
         void exportResults() { this->exportResults( this->currentTime() ); }
@@ -155,7 +155,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         void createExporters();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildMethodNum, model_algebraic_factory_type::appli_ptrtype const& app );
+        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
         void updateForUseFunctionSpacesVelocityConvection();
         void restartExporters();
 
@@ -205,7 +205,7 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         // algebraic data/tools
         backend_ptrtype M_backend;
-        model_algebraic_factory_ptrtype M_methodNum;
+        model_algebraic_factory_ptrtype M_algebraicFactory;
         BlocksBaseVector<double> M_blockVectorSolution;
 
         export_ptrtype M_exporter;
