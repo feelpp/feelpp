@@ -61,20 +61,16 @@
 #undef SOLIDMECHANICS_VOLUME_FORCE
 #include "solid.bc"
 
-#undef SOLIDMECHANICSBASE_CLASS_NAME
-#define SOLIDMECHANICSBASE_CLASS_NAME SolidMechanicsBase< Simplex<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, SOLIDMECHANICS_ORDER_DISPLACEMENT,SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME >
-
-
 namespace Feel
 {
 namespace FeelModels
 {
 
-class SOLIDMECHANICS_CLASS_NAME : public SOLIDMECHANICSBASE_CLASS_NAME,
+class SOLIDMECHANICS_CLASS_NAME : public SOLIDMECHANICSBASE_CLASS_TYPE,
                                   public boost::enable_shared_from_this< SOLIDMECHANICS_CLASS_NAME >
 {
 public:
-    typedef SOLIDMECHANICSBASE_CLASS_NAME super_type;
+    typedef SOLIDMECHANICSBASE_CLASS_TYPE super_type;
 
     typedef SOLIDMECHANICS_CLASS_NAME self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -83,10 +79,10 @@ public:
 
     SOLIDMECHANICS_CLASS_NAME( bool __isStationary,
                                std::string prefix,
-                               WorldComm const& _worldComm=WorldComm(),
+                               WorldComm const& _worldComm=Environment::worldComm(),
                                bool __buildMesh=true,
                                std::string subPrefix="",
-                               std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+                               std::string appliShortRepository=soption(_name="exporter.directory") );
 
 
     //___________________________________________________________________________________//

@@ -38,14 +38,14 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp=true >
-class SolidMechanics : public SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>,
-                       public boost::enable_shared_from_this< SolidMechanics<ConvexType,OrderDisp,UseCstMechProp> >
+template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=true >
+class SolidMechanics : public SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp>,
+                       public boost::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >
 {
 public:
-    typedef SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp> super_type;
+    typedef SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> super_type;
 
-    typedef SolidMechanics<ConvexType,OrderDisp,UseCstMechProp> self_type;
+    typedef SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using element_displacement_type = typename super_type::element_displacement_type;

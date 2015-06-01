@@ -6,13 +6,13 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateLinearGeneralisedStringGeneralisedAlpha(const vector_ptrtype& X,
-                                                                                                       sparse_matrix_ptrtype& A ,
-                                                                                                       vector_ptrtype& F,
-                                                                                                       bool _buildCstPart,
-                                                                                                       bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha(const vector_ptrtype& X,
+                                                                                      sparse_matrix_ptrtype& A ,
+                                                                                      vector_ptrtype& F,
+                                                                                      bool _buildCstPart,
+                                                                                      bool _doClose, bool _doBCStrongDirichlet ) const
 {
 #if (SOLIDMECHANICS_DIM==2)
     using namespace Feel::vf;

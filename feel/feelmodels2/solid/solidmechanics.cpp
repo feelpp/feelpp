@@ -37,13 +37,13 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::SolidMechanics( bool __isStationary,
-                                                                     std::string __prefix,
-                                                                     WorldComm const& __worldComm,
-                                                                     bool __buildMesh,
-                                                                     std::string __subPrefix,
-                                                                     std::string __appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( bool __isStationary,
+                                                    std::string __prefix,
+                                                    WorldComm const& __worldComm,
+                                                    bool __buildMesh,
+                                                    std::string __subPrefix,
+                                                    std::string __appliShortRepository )
     :
     super_type(__isStationary,__prefix,__buildMesh,__worldComm,__subPrefix, __appliShortRepository)
 {
@@ -69,9 +69,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::SolidMechanics( bool __isSt
 }
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::loadConfigBCFile()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
@@ -110,35 +110,35 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::loadConfigBCFile()
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::loadConfigMeshFile( std::string const& geofilename )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile( std::string const& geofilename )
 {
     CHECK( false ) << "not allow";
 }
 
 //---------------------------------------------------------------------------------------------------//
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::loadConfigMeshFile1dReduced( std::string const& geofilename )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile1dReduced( std::string const& geofilename )
 {
     CHECK( false ) << "not allow";
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::init( bool buildModelAlgebraicFactory )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::solve( bool upVelAcc )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
     M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_bcDirichletX.setParameterValues( this->modelProperties().parameters().toParameterValues() );
@@ -153,9 +153,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::solve( bool upVelAcc )
 
 //---------------------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateCLDirichlet( vector_ptrtype& U ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet( vector_ptrtype& U ) const
 {
     if ( M_bcDirichlet.empty() && M_bcDirichletX.empty() && M_bcDirichletY.empty() && M_bcDirichletZ.empty() ) return;
 
@@ -188,9 +188,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateCLDirichlet( vector_p
                                         this->worldComm(),this->verboseAllProc());
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrtype& R) const
 {
     if ( M_bcDirichlet.empty() && M_bcDirichletX.empty() && M_bcDirichletY.empty() && M_bcDirichletZ.empty() ) return;
 
@@ -214,9 +214,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongResi
                       u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
     }
 }
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J ) const
 {
     if ( M_bcDirichlet.empty() && M_bcDirichletX.empty() && M_bcDirichletY.empty() && M_bcDirichletZ.empty() ) return;
 
@@ -243,9 +243,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongJaco
             /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::Z ) ),
                      _element=u[Component::Z],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
 }
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
     if ( this->isStandardModel() )
     {
@@ -292,9 +292,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCDirichletStrongLine
 }
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCNeumannResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) const
 {
     if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() ) return;
 
@@ -315,9 +315,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCNeumannResidual(vec
                        _geomap=this->geomap() );
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
     if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() ) return;
 
@@ -339,9 +339,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCNeumannLinearPDE( v
 }
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCRobinResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(vector_ptrtype& R) const
 {
 #if 0 // TODO
 #if 0
@@ -361,9 +361,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCRobinResidual(vecto
 }
 
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateSourceTermResidual( vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R ) const
 {
 
     if ( M_volumicForcesProperties.empty() ) return;
@@ -387,9 +387,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateSourceTermResidual( v
     }
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateSourceTermLinearPDE( vector_ptrtype& F ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F ) const
 {
     if ( M_volumicForcesProperties.empty() ) return;
 
@@ -412,9 +412,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateSourceTermLinearPDE( 
     }
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCFollowerPressureResidual( typename super_type::element_displacement_type const& u, vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_type const& u, vector_ptrtype& R ) const
 {
 #if 0 // TODO
     auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
@@ -430,9 +430,9 @@ SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCFollowerPressureRes
 #endif
 }
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanics<ConvexType,OrderDisp,UseCstMechProp>::updateBCFollowerPressureJacobian( typename super_type::element_displacement_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_type const& u, sparse_matrix_ptrtype& J) const
 {
 #if 0 // TODO
     auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());

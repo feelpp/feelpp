@@ -10,9 +10,9 @@ namespace FeelModels
 
 //-------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateLinearPDE(const vector_ptrtype& X,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,
                                                                          sparse_matrix_ptrtype& A ,
                                                                          vector_ptrtype& F,
                                                                          bool _buildCstPart,
@@ -36,9 +36,9 @@ SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateLinearPDE(const v
 
 //-------------------------------------------------------------------------------------//
 
-template< typename ConvexType, int OrderDisp,bool UseCstMechProp >
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SolidMechanicsBase<ConvexType,OrderDisp,UseCstMechProp>::updateLinearElasticityGeneralisedAlpha(const vector_ptrtype& X,
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(const vector_ptrtype& X,
                                                                                                 sparse_matrix_ptrtype& A,
                                                                                                 vector_ptrtype& F,
                                                                                                 bool _buildCstPart,
