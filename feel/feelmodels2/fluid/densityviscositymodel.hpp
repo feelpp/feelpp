@@ -30,7 +30,7 @@
 #ifndef FEELPP_FLUIDMECHANICS_DENSITYVISCOSITYMODEL_H
 #define FEELPP_FLUIDMECHANICS_DENSITYVISCOSITYMODEL_H 1
 
-#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+#include <feel/feelmodels2/fluid/dynamicviscositymodel.hpp>
 
 namespace Feel
 {
@@ -45,7 +45,9 @@ public :
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
     typedef typename SpaceType::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
-    typedef DynamicViscosityModel<SpaceType> super_type;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef DynamicViscosityModel<space_type> super_type;
 
     DensityViscosityModel( std::string prefix )
         :
@@ -55,12 +57,19 @@ public :
         {}
     DensityViscosityModel( DensityViscosityModel const& app  ) = default;
 
+    void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
+    {
+        super_type::initFromMesh(mesh,useExtendedDofTable);
+        M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity() ) );
+        M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity() ) );
+    }
+
     void initFromSpace( space_ptrtype const& space )
-        {
-            super_type::initFromSpace(space);
-            M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity() ) );
-            M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity() ) );
-        }
+    {
+        super_type::initFromSpace(space);
+        M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity() ) );
+        M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity() ) );
+    }
 
 
     double cstRho() const { return this->cstDensity(); }
