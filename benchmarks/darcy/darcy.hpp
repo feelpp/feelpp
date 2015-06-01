@@ -282,8 +282,10 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             darcyRT += integrate( _range=elements(mesh), _expr = d1*k*(trans(lambda*idt(u_rt)+trans(gradt(p_rt)))*(lambda*id(v_rt)+trans(grad(q_rt)))) );
             darcyRT += integrate( _range=elements(mesh), _expr = -d2*( lambda*divt(u_rt)*div(v_rt) ));
 
-            // darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
-            darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=p_rt,  _expr=p_exact );
+            darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
+            // Be careful that p is in L^2 and hence does not necessarily admit a trace
+            // to get Dirichlet condition on p we need to change the formulation
+            //darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=p_rt,  _expr=p_exact );
 
             // Solve problem
             backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
