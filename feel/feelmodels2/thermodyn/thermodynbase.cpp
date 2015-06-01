@@ -28,8 +28,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::build()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","build", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","build", "start" );
 
     boost::mpi::timer mpiTimer;
     //-----------------------------------------------------------------------------//
@@ -62,8 +61,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::build()
     //                                                    timeOthers,timeALE,timeExporters);
     //-----------------------------------------------------------------------------//
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","build", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","build", "finish" );
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -102,9 +100,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
     //                                                    timeOthers,timeALE,timeExporters);
     //-----------------------------------------------------------------------------//
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","build", "finish",
-                                               this->worldComm(),this->verboseAllProc());
-
+    this->log("ThermoDynamics","build", "finish" );
 }
 
 
@@ -129,17 +125,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createMesh", "start");
     boost::timer thetimer;
 
     // save path of file mesh
     auto fmpath = this->fileNameMeshPath();
     if (this->doRestart())
     {
-        if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh",
-                                                   "restart with : "+fmpath,
-                                                   this->worldComm(),this->verboseAllProc());
+        this->log("ThermoDynamics","createMesh","restart with : "+fmpath );
 
         if ( !this->restartPath().empty() )
         {
@@ -157,8 +150,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string path = this->appliRepository();
             std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
 
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "load msh file : " + this->mshfileStr(),
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("ThermoDynamics","createMesh", "load msh file : " + this->mshfileStr() );
 
             this->M_mesh = loadGMSHMesh(_mesh=new mesh_type,
                                         _filename=this->mshfileStr(),
@@ -184,8 +176,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "change rep -> "+ this->geotoolSaveDirectory(),
-                                                           this->worldComm(),this->verboseAllProc());
+                this->log("ThermoDynamics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
                 Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
 
                 geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
@@ -199,15 +190,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             std::string mshfilename = geotoolSavePath + "/" + geotoolSaveName + ".msh";
             this->setMshfileStr(mshfilename);
 
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "build mesh by using geotool desc",
-                                                       this->worldComm(),this->verboseAllProc());
+            this->log("ThermoDynamics","createMesh", "build mesh by using geotool desc" );
 
             this->loadConfigMeshFile(geofilename);
 
             if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
             {
-                if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createMesh", "change rep -> " + this->appliRepository() ,
-                                                           this->worldComm(),this->verboseAllProc());
+                this->log("ThermoDynamics","createMesh", "change rep -> " + this->appliRepository() );
                 Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
             }
 
@@ -216,9 +205,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     }
 
     double tElpased = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log( this->prefix()+".ThermoDynamics","createMesh",
-                                                (boost::format("finish in %1% s")%tElpased).str(),
-                                                this->worldComm(),this->verboseAllProc() );
+    this->log("ThermoDynamics","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -226,8 +213,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createFunctionSpaces", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createFunctionSpaces", "start" );
 
     // functionspace
     M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -240,8 +226,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createFunctionSpaces", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createFunctionSpaces", "finish");
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -258,8 +243,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createTimeDiscretisation", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createTimeDiscretisation", "start" );
 
     std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_bdfTemperature = bdf( _vm=Environment::vm(), _space=this->spaceTemperature(),
@@ -274,16 +258,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createTimeDiscretisation", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createTimeDiscretisation", "finish");
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createExporters", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createExporters", "start");
 
     std::string geoExportType="static";//change_coords_only, change, static
     M_exporter = exporter( _mesh=this->mesh(),
@@ -291,8 +273,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
                            _geo=geoExportType,
                            _path=this->exporterPath() );
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","createExporters", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","createExporters", "finish");
 }
 
 
@@ -320,8 +301,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, model_algebraic_factory_type::appli_ptrtype const& app )
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","init", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","init", "start" );
 
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
@@ -376,8 +356,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum, model_algebra
                                                             graph, graph->mapRow().indexSplit() ) );
     }
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","init", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","init", "finish");
 }
 
 
@@ -440,15 +419,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","solve", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","solve", "start");
 
     M_methodNum->linearSolver(this->blockVectorSolution().vector());
     M_blockVectorSolution.localize();
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","solve", "finish",
-                                               this->worldComm(),this->verboseAllProc());
-
+    this->log("ThermoDynamics","solve", "finish");
 }
 
 
@@ -459,8 +435,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     if ( !M_exporter->doExport() ) return;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","exportResults", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","exportResults", "start");
 
     M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
@@ -473,8 +448,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     }
     M_exporter->save();
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","exportResults", "finish",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","exportResults", "finish");
 }
 
 
@@ -482,8 +456,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "start",
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","updateBdf", "start");
     int previousTimeOrder = this->timeStepBdfTemperature()->timeOrder();
 
     M_bdfTemperature->next( *this->fieldTemperature() );
@@ -504,9 +477,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
             M_methodNum->rebuildCstLinearPDE(this->blockVectorSolution().vector());
         }
     }
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "finish",
-                                               this->worldComm(),this->verboseAllProc());
-
+    this->log("ThermoDynamics","updateBdf", "finish");
 }
 
 
@@ -524,8 +495,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
                                                          bool _doClose, bool _doBCStrongDirichlet ) const
 {
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateLinearPDE", "start"+sc,
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","updateLinearPDE", "start"+sc);
     boost::mpi::timer thetimer;
 
     //--------------------------------------------------------------------------------------------------//
@@ -618,13 +588,11 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
         this->updateBCStrongDirichletLinearPDE(A,F);
     }
 
-
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateLinearPDE",
-                                               "finish in "+(boost::format("%1% s") % timeElapsed).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("ThermoDynamics","updateLinearPDE",
+              "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 }
 
 
