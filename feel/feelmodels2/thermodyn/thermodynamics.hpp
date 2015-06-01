@@ -37,15 +37,15 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, int OrderTemp>
-class ThermoDynamics : public ThermoDynamicsBase<ConvexType,OrderTemp>,
-                       public boost::enable_shared_from_this< ThermoDynamics<ConvexType,OrderTemp> >
+template< typename ConvexType, typename BasisTemperatureType>
+class ThermoDynamics : public ThermoDynamicsBase<ConvexType,BasisTemperatureType>,
+                       public boost::enable_shared_from_this< ThermoDynamics<ConvexType,BasisTemperatureType> >
 {
 
 public:
-    typedef ThermoDynamicsBase<ConvexType,OrderTemp> super_type;
+    typedef ThermoDynamicsBase<ConvexType,BasisTemperatureType> super_type;
 
-    typedef ThermoDynamics<ConvexType,OrderTemp> self_type;
+    typedef ThermoDynamics<ConvexType,BasisTemperatureType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     // mesh
@@ -59,7 +59,7 @@ public:
                     WorldComm const& _worldComm=Environment::worldComm(),
                     bool __buildMesh=true,
                     std::string subPrefix="",
-                    std::string appliShortRepository=option(_name="exporter.directory").as<std::string>() );
+                    std::string appliShortRepository=soption(_name="exporter.directory") );
 
     // load config files
     void loadConfigBCFile();
