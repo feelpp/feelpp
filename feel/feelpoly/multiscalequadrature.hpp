@@ -100,15 +100,15 @@ public :
 
     MultiScaleQuadrature()
         :
-        super( pow(2,ioption("msi.level"))+1  )
+        super( std::pow(2,ioption("msi.level"))+1  )
     {
-        auto  gridsize = pow(2,ioption("msi.level"));
+        int  gridsize = std::pow(2,ioption("msi.level"));
         // build rules in x and y direction
         weights_type wx( gridsize+1  );
         weights_type px( gridsize+1  );
 
         double tmp=-1;
-        for ( double i = 0; i <=gridsize ; i++ )
+        for ( int i = 0; i <=gridsize ; i++ )
         {
             // computes the weight of the k-th node
             this->M_w( i ) = 2./(gridsize+1) ;// wx( i );
@@ -189,9 +189,9 @@ public :
 
     MultiScaleQuadrature( )
         :
-        super( (1+pow(2,ioption("msi.level")))*(pow(2,ioption("msi.level"))+1) )
+        super( (1+std::pow(2,ioption("msi.level")))*(std::pow(2,ioption("msi.level"))+1) )
     {
-        auto gridsize=pow(2,ioption("msi.level"));
+        int gridsize=std::pow(2,ioption("msi.level"));
         // build rules in x and y direction
         weights_type wx( (gridsize+1)*(gridsize+1) );
         //weights_type px( (gridsize*gridsize );
