@@ -110,8 +110,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
             {
-                std::list<std::string> movingBCmarkers = FSI::detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                        this->markerDirichletBClm() );
+                std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
+                                                                                   this->markerDirichletBClm() );
                 form1( _test=this->XhDirichletLM(),_vector=F,
                        _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
                     integrate( _range=markedfaces(mesh,movingBCmarkers ), //markedelements(this->meshDirichletLM(),movingBCmarkers),
@@ -140,8 +140,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
             {
-                std::list<std::string> movingBCmarkers = FSI::detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                        this->markerDirichletBCnitsche() );
+                std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
+                                                                                   this->markerDirichletBCnitsche() );
                 form1( _test=Xh, _vector=F,
                        _rowstart=rowStartInVector) +=
                     integrate( _range=markedfaces(mesh,movingBCmarkers ),
@@ -278,12 +278,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-        double muFluid = this->mu();//0.03;
+        //double muFluid = this->mu();//0.03;
         if ( BuildNonCstPart_robinFSI )
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= gammaRobinFSI*muFluid*inner(idt(u),id(u))/hFace(),
+                           _expr= gammaRobinFSI*idv(mu)*inner(idt(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
 
@@ -292,12 +292,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             form1( _test=Xh, _vector=F,
                    _rowstart=rowStartInVector ) +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= gammaRobinFSI*muFluid*inner(idv(this->meshVelocity2()),id(u))/hFace(),
+                           _expr= gammaRobinFSI*idv(mu)*inner(idv(this->meshVelocity2()),id(u))/hFace(),
                            _geomap=this->geomap() );
 
             //Deformations tensor (trial)
-            auto uEval = this->getSolution()->template element<0>();
-            auto pEval = this->getSolution()->template element<1>();
+            auto const& uEval = this->fieldVelocity();
+            auto const& pEval = this->fieldPressure();
             auto defv = sym(gradv(uEval));
             // Strain tensor (trial)
             auto Sigmav = -idv(pEval)*Id + 2*idv(mu)*defv;

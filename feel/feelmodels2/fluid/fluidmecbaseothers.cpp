@@ -516,7 +516,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         if ( M_doExportAll )
         {
             auto themeshvelocityOnInterfaceVisuHO = M_XhVectorialVisuHO->element();
-            auto hola2 = vf::project(_space=M_Xh->functionSpace<0>(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity2Ptr()));
+            auto hola2 = vf::project(_space=this->functionSpaceVelocity(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity2Ptr()));
             //auto hola2 = vf::project(_space=M_Xh->functionSpace<0>(),_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
             //                         _expr=vf::idv(this->meshVelocity2Ptr()));
             M_opIvelocity->apply( hola2/* *this->meshVelocity2Ptr()*/,themeshvelocityOnInterfaceVisuHO);
@@ -524,7 +524,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
                                               prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshVelocityOnInterface_ho")),
                                               themeshvelocityOnInterfaceVisuHO );
             auto themeshvelocityOnVolumeHO = M_XhVectorialVisuHO->element();
-            auto hola = vf::project(_space=M_Xh->functionSpace<0>(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity()));
+            auto hola = vf::project(_space=this->functionSpaceVelocity(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity()));
             M_opIvelocity->apply( hola/* *this->meshVelocity2Ptr()*/,themeshvelocityOnVolumeHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshVelocityOnVolume_ho"),
                                               prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshVelocityOnVolume_ho")),
@@ -1078,7 +1078,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(*M_P0Mu)*defv);
+    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
 
     // Deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
@@ -1223,7 +1223,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(*M_P0Mu)*defv);
+    auto Sigmav = (-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
 
 #if 0
     auto const& bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
