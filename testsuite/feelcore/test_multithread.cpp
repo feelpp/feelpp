@@ -68,9 +68,9 @@ double getElapsedTime(struct timespec start, struct timespec end)
     return (te - ts);
 }
 
-#if defined(FEELPP_HAS_OPENMP)
+#if defined(FEELPP_HAS_OPENMP) || defined(FEELPP_HAS_HARTS)
 template<typename MeshTypePtr>
-void omp_integrate(MeshTypePtr mesh, int nCores)
+void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 {
     double seqRes, seqTime;
     struct timespec ts1, ts2;
@@ -81,9 +81,6 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
     bool parCPUEnable = boption( _name="parallel.cpu.enable" );
     std::string parCPUImpl = soption( _name="parallel.cpu.impl" );
     int parCPURestrict = ioption( _name="parallel.cpu.restrict" );
-    
-    /* Set the number of threads to use */
-    omp_set_num_threads(nCores);
 
     coarseParRes = new double[nCores];
     coarseParTime = new double[nCores];
@@ -97,8 +94,13 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
     seqTime = getElapsedTime(ts1, ts2);
 
+/* Do this section only if we have OPENMP */
+#if defined(FEELPP_HAS_OPENMP)
+    /* Set the number of threads to use */
+    omp_set_num_threads(nCores);
+
     /* parallel with constant */
-#pragma omp parallel
+    #pragma omp parallel
     {
         struct timespec tts1, tts2;
         clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
@@ -112,10 +114,11 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
 
     for(int i = 0; i < nCores; i++)
     { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")" << std::endl; }
+#endif
 
-    /* paralel implementation in Feel++ with a constant */
+    /* parallel implementation in Feel++ with a constant */
     Environment::setOptionValue("parallel.cpu.enable", bool(true));
-    Environment::setOptionValue("parallel.cpu.impl", std::string("openmp"));
+    Environment::setOptionValue("parallel.cpu.impl", mtImpl);
     Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
@@ -151,6 +154,8 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
     seqTime = getElapsedTime(ts1, ts2);
 
+/* Do this section only if we have OPENMP */
+#if defined(FEELPP_HAS_OPENMP)
     /* Reset the number of threads, as we previously modified it in fine parallelism */
     omp_set_num_threads(nCores);
 
@@ -170,6 +175,24 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
 
     for(int i = 0; i < nCores; i++)
     { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")\n"; }
+#endif
+
+    /* parallel implementation in Feel++ with a constant */
+    Environment::setOptionValue("parallel.cpu.enable", bool(true));
+    Environment::setOptionValue("parallel.cpu.impl", mtImpl);
+    Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+
+    auto intfExprPar = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+    fineParRes = intfExprPar(0 , 0);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+    fineParTime = getElapsedTime(ts1, ts2);
+
+    Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
+    Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
+    Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
 
     std::cout << "Test OK: seqTime=" << seqTime << ", parTime=(";
     if(nCores > 0)
@@ -178,7 +201,7 @@ void omp_integrate(MeshTypePtr mesh, int nCores)
         for(int i = 1; i < nCores; i++)
         { std::cout << ", " << coarseParTime[i]; }
     }
-    std::cout << ")" << std::endl;
+    std::cout << "), fineParTime=" << fineParTime << std::endl;
 
     delete[] coarseParRes;
     coarseParRes = nullptr;
@@ -213,9 +236,16 @@ int main(int argc, char ** argv)
     std::cout << "Using " << nCores << " threads" << std::endl;
 
 #ifdef FEELPP_HAS_OPENMP
-    omp_integrate(mesh, nCores);
+    std::cout << "*** TESTING OpenMP ***" << std::endl;
+    test_integrate(mesh, nCores, std::string("openmp"));
 #else
     std::cout << "OpenMP is not activated. Skipping associated tests." << std::endl;
+#endif 
+#ifdef FEELPP_HAS_HARTS
+    std::cout << "*** TESTING Harts ***" << std::endl;
+    test_integrate(mesh, nCores, std::string("harts.pthreads"));
+#else
+    std::cout << "Harts is not activated. Skipping associated tests." << std::endl;
 #endif 
 
 #if 0
