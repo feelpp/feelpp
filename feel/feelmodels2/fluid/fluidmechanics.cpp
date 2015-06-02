@@ -91,10 +91,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
         this->addMarkerALEMeshBC("fixed",marker(d));
     }
-    M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "moving_boundary" );
+    M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "interface_fsi"/*"moving_boundary"*/ );
     for( auto const& d : M_bcMovingBoundary )
     {
-        this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT ); // ??
+        //this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT ); // ??
         this->addMarkerALEMeshBC("moving",marker(d));
         this->M_isMoveDomain=true;
     }
@@ -189,11 +189,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
         {
-            std::list<std::string> movingBCmarkers = FSI::detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                    this->markerDirichletBCelimination() );
+#if 0
+            std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
+                                                                               this->markerDirichletBCelimination() );
             // modif vector with BC
             for ( std::string const& marker : movingBCmarkers )
                 modifVec(markedfaces(mesh, marker), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );
+#else
+            modifVec(markedfaces(mesh, this->markersNameMovingBoundary()), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );
+#endif
         }
 #endif
     }
@@ -223,14 +227,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
     {
-        ForEachBC( bcDef, cl::paroi_mobile,
-                   form2( _test=Xh, _trial=Xh, _matrix=A,
-                          _rowstart=this->rowStartInMatrix(),
-                          _colstart=this->colStartInMatrix() ) +=
-                   on( _range=markedfaces(this->mesh(),PhysicalName),
-                       _element=u,
-                       _rhs=F,
-                       _expr=idv(this->meshVelocity2()) ) );
+        form2( _test=Xh, _trial=Xh, _matrix=A,
+               _rowstart=this->rowStartInMatrix(),
+               _colstart=this->colStartInMatrix() ) +=
+            on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                _element=u,
+                _rhs=F,
+                _expr=idv(this->meshVelocity2()) );
     }
 #endif
 
@@ -273,12 +276,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
     {
-        ForEachBC( bcDef,cl::paroi_mobile,
-                   bilinearForm_PatternCoupled +=
-                   /**/ on( _range=markedfaces(mesh, PhysicalName),
-                            _element=u,
-                            _rhs=RBis,
-                            _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ ) );
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, this->markersNameMovingBoundary()),
+                _element=u,
+                _rhs=RBis,
+                _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
     }
 #endif
     for( auto const& d : M_bcDirichlet )
@@ -318,8 +320,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
         {
-            ForEachBC( bcDef,cl::paroi_mobile,
-                       modifVec(markedfaces(mesh,PhysicalName), u, R, 0*vf::one(),rowStartInVector ) );
+            modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
         }
 #endif
     }

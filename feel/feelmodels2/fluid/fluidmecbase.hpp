@@ -53,7 +53,7 @@
 #include <feel/feelmodels2/fluid/densityviscositymodel.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-#include <fsi/fsimesh/meshale.hpp>
+#include <feel/feelmodels2/modelmesh/meshale.hpp>
 #endif
 
 
@@ -227,7 +227,7 @@ public:
     typedef typename space_fluidoutlet_windkessel_type::element_type element_fluidoutlet_windkessel_type;
     typedef boost::shared_ptr<element_fluidoutlet_windkessel_type> element_fluidoutlet_windkessel_ptrtype;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    typedef MeshALE<trace_mesh_type::shape_type>::ale_map_functionspace_type space_fluidoutlet_windkessel_mesh_disp_type;
+    typedef typename MeshALE<typename trace_mesh_type::shape_type>::ale_map_functionspace_type space_fluidoutlet_windkessel_mesh_disp_type;
     typedef boost::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
     typedef typename space_fluidoutlet_windkessel_mesh_disp_type::element_type element_fluidoutlet_windkessel_mesh_disp_type;
     typedef boost::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
