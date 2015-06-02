@@ -33,21 +33,50 @@ using namespace boost::numeric;
 
 namespace Feel
 {
+enum { ComputeGradient = 2 << 0  };
+
 template <typename T = float>
 using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
 
-template<typename T>
+template<typename T, int _Options = 0>
 class MultiScaleImage
 {
 public :
     using value_type = T;
-    
+    static const int Options = _Options;
+    using needs_gradient_t = mpl::bool_<Options&ComputeGradient>;
+    using do_compute_gradient_t = mpl::bool_<true>;
+    using no_compute_gradient_t = mpl::bool_<false>;    
+    // true if must compute gradient, false otherwise.
+    static const bool needs_gradient = needs_gradient_t::value;
+
     MultiScaleImage(holo3_image<value_type> const& im, float L)
         :
         dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
     }
-
+    /**
+     * @return the component \c c of the gradient of the image at point \c real
+     * in the coarse grid
+     */
+    value_type 
+    operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
+        {
+            double x = real[0];
+            double y = real[1];
+             
+            int i = boost::math::iround(x/dx);
+            //int j = image.cols()-1-boost::math::iround(y/dy);
+            int j = boost::math::iround(y/dy);
+            
+            double v=  image(j,i);
+            // v has the value if the image, now must compute the basis functions
+            // note that it would be differently handled if we use the fft and ifft
+            return v;
+        }
+    /**
+     * @return the value of the image at point \c real in the coarse grid
+     */
     value_type 
     operator()(ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
