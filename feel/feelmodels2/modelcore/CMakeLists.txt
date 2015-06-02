@@ -1,8 +1,4 @@
 #############################################################################
-option(FEELMODELS_ENABLE_MESHALE "Enable/Disable mesh ALE" OFF)
-if ( FEELMODELS_ENABLE_MESHALE )
-  set( FEELPP_MODELS_HAS_MESHALE 1)
-endif()
 
 option(FEELMODELS_ENABLE_FLUID_MECHANICS "Enable/Disable FluidMechanics" ON)
 

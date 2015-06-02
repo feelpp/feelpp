@@ -718,6 +718,9 @@ macro(genLibFluidMechanics)
       ${LIBBASE_DIR}/fluidmechanics_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+    if (FEELMODELS_ENABLE_MESHALE )
+      set(LIB_DEPENDS feelpp_modelmesh ${LIB_DEPENDS})
+    endif()
 
     # generate libmodelbase
     genLibBase(
@@ -771,7 +774,6 @@ macro(genLibFluidMechanics)
     set(CODEGEN_SOURCES
       ${THE_LIB_DIR}/codegen_fluidmec.cpp )
     set(LIB_DEPENDS ${LIBBASE_NAME} feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
-
 
     genLibBase(
       LIB_NAME ${THE_LIB_NAME}
