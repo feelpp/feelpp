@@ -9,6 +9,7 @@
 //#include <feel/feelvf/inv.hpp>
 
 #include <feel/feelmodels2/modelmesh/reloadmesh.hpp>
+#include <feel/feelmodels2/modelmesh/markedmeshtool.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -815,6 +816,268 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
+                                              typename model_algebraic_factory_type::appli_ptrtype const& app )
+{
+    this->log("FluidMechanics","init", "start" );
+    this->timerTool("Constructor").start();
+
+    boost::timer thetimer;
+
+    // build definePressureCst space if not done yet
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+
+    // update marker in mesh (mainly used with CIP stab)
+    if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
+        this->updateMarkedZonesInMesh();
+
+    //-------------------------------------------------//
+    // add ALE markers
+    if (M_isMoveDomain)
+    {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+        auto itAleBC = this->markerALEMeshBC().begin();
+        auto const enAleBC = this->markerALEMeshBC().end();
+        for ( ; itAleBC!=enAleBC ; ++itAleBC )
+        {
+            std::string bcName = itAleBC->first;
+            auto itAleMark = itAleBC->second.begin();
+            auto const enAleMark = itAleBC->second.end();
+            for ( ; itAleMark!=enAleMark ; ++itAleMark )
+                M_meshALE->addBoundaryFlags( bcName, *itAleMark );
+        }
+
+        M_meshALE->init();
+
+        // if restart else move submesh define from fluid mesh
+        if (this->doRestart())
+        {
+            if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+            {
+                // interpolate disp
+                M_fluidOutletWindkesselOpMeshDisp->apply( *M_meshALE->displacement(), *M_fluidOutletWindkesselMeshDisp );
+                // apply disp
+                M_fluidOutletWindkesselMeshMover.apply( /*this->*/M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
+            }
+        }
+
+        this->log("FluidMechanics","init", "meshALE done" );
+#endif
+    }
+
+    //-------------------------------------------------//
+    // start or restart time step scheme
+    if ( !this->isStationary() )
+        this->initTimeStep();
+
+    //-------------------------------------------------//
+    // windkessel outlet
+    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" )
+    {
+        for (int k=0;k<M_nFluidOutlet;++k)
+        {
+            //std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"bloodFlowOutlet.windkessel.data");
+            //std::string nameFile =boost::format(this->appliRepository() + "/" + prefixvm(this->prefix(),"bloodFlowOutlet.windkessel%1%.data") %k ).str();
+            std::string nameFile =this->appliRepository() + "/" + prefixvm(this->prefix(),(boost::format("bloodFlowOutlet.windkessel%1%.data") %k ).str());
+
+            if (!this->doRestart())
+            {
+                M_fluidOutletWindkesselPressureDistal[k] = 0;
+                M_fluidOutletWindkesselPressureProximal[k] = 0;
+                for (int l=0;l<M_fluidOutletWindkesselPressureDistal_old[k].size();++l)
+                    M_fluidOutletWindkesselPressureDistal_old[k][l] = 0;
+                if (this->worldComm().isMasterRank())
+                {
+                    std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::trunc);
+                    file << 0 << " " << this->timeInitial() << " " << M_fluidOutletWindkesselPressureDistal[k] << " " << M_fluidOutletWindkesselPressureProximal[k] << "\n";
+                    file.close();
+                }
+            }
+            else
+            {
+                if (this->worldComm().isMasterRank())
+                {
+                    std::ifstream fileI(nameFile.c_str(), std::ios::in);
+                    int cptIter=0; double timeIter=0;double valPresDistal=0,valPresProximal=0;
+                    int askedIter = M_bdf_fluid->iteration() - 1;
+                    bool find=false; std::ostringstream buffer;
+                    while ( !fileI.eof() && !find )
+                    {
+                        fileI >> cptIter >> timeIter >> valPresDistal >> valPresProximal;
+                        buffer << cptIter << " " << timeIter << " " << valPresDistal << " " << valPresProximal << "\n";
+
+                        for (int l=0 ; l< M_fluidOutletWindkesselPressureDistal_old[k].size() ; ++l)
+                            if (cptIter == askedIter - l) M_fluidOutletWindkesselPressureDistal_old[k][l] = valPresDistal;
+
+                        if (cptIter == askedIter) find=true;
+
+                        //if (cptIter == askedIter) { M_fluidOutletWindkesselPressureDistal_old[k][0]; find=true;}
+                        //if (cptIter == askedIter-1) { M_fluidOutletWindkesselPressureDistal_old[k][1]; find=true;}
+                    }
+                    fileI.close();
+                    std::ofstream fileW(nameFile.c_str(), std::ios::out | std::ios::trunc);
+                    fileW << buffer.str();
+                    fileW.close();
+                    //std::cout << cptIter <<" " << timeIter << " " << valPresDistal << std::endl;
+                    //M_fluidOutletWindkesselPressureDistal_old[k][0] = valPresDistal;
+                }
+            }
+            mpi::broadcast( this->worldComm().globalComm(), M_fluidOutletWindkesselPressureDistal_old, this->worldComm().masterRank() );
+        } // for (int k=0;k<M_nFluidOutlet;++k)
+
+        this->log("FluidMechanics","init", "restart windkessel done" );
+
+    } // if (M_hasFluidOutlet)
+
+    //-------------------------------------------------//
+    // define start dof index ( lm , windkessel )
+    size_type currentStartIndex = 0;
+    currentStartIndex += M_Xh->nLocalDofWithGhost();
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_startDofIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
+        currentStartIndex += M_XhMeanPressureLM->nLocalDofWithGhost() ;
+    }
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_startDofIndexFieldsInMatrix["dirichletlm"] = currentStartIndex;
+        currentStartIndex += this->XhDirichletLM()->nLocalDofWithGhost() ;
+    }
+    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    {
+        M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
+        currentStartIndex += 2*this->nFluidOutlet();
+    }
+
+    //-------------------------------------------------//
+    // prepare block vector
+    int nBlock = this->nBlockMatrixGraph();
+    M_blockVectorSolution.resize( nBlock );
+    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
+    int cptBlock=1;
+    // impose mean pressure by lagrange multiplier
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_XhMeanPressureLM );
+        ++cptBlock;
+    }
+    // lagrange multiplier for Dirichlet BC
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
+        ++cptBlock;
+    }
+    // windkessel outel with implicit scheme
+    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" &&
+         this->fluidOutletWindkesselCoupling() == "implicit" )
+    {
+        for (int k=0;k<this->nFluidOutlet();++k)
+        {
+            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
+            ++cptBlock;
+        }
+    }
+    // init vector associated to the block
+    M_blockVectorSolution.buildVector( this->backend() );
+    //-------------------------------------------------//
+    if (buildMethodNum)
+    {
+        M_methodNum.reset( new model_algebraic_factory_type(app,this->backend()) );
+    }
+
+    double tElapsedInit = this->timerTool("Constructor").stop("init");
+    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    this->log("FluidMechanics","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
+{
+    this->log("FluidMechanics","updateMarkedZonesInMesh", "start" );
+
+    MarkedMeshTool<mesh_type> markMesh( this->mesh() );
+
+    if ( Environment::vm().count( prefixvm(this->prefix(),"marked-zones.markedfaces" ) ) )
+    {
+        std::vector<std::string> mymarkedfaces = Environment::vm()[prefixvm(this->prefix(),"marked-zones.markedfaces").c_str()].template as<std::vector<std::string> >();
+        markMesh.setFaceMarker( mymarkedfaces );
+        markMesh.updateFaceMarker3FromFaceMarker();
+        this->applyCIPStabOnlyOnBoundaryFaces( true );
+    }
+    if ( Environment::vm().count( prefixvm(this->prefix(),"marked-zones.elements-from-markedfaces" ) ) )
+    {
+        std::vector<std::string> mymarkedfaces = Environment::vm()[prefixvm(this->prefix(),"marked-zones.elements-from-markedfaces").c_str()].template as<std::vector<std::string> >();
+        markMesh.setFaceMarker( mymarkedfaces );
+        markMesh.updateFaceMarker3FromEltConnectedToFaceMarker();
+        this->applyCIPStabOnlyOnBoundaryFaces( false );
+    }
+    if ( Environment::vm().count( prefixvm(this->prefix(),"marked-zones.expressions" ) ) )
+    {
+        std::vector<std::string> myexpressions = Environment::vm()[prefixvm(this->prefix(),"marked-zones.expressions").c_str()].template as<std::vector<std::string> >();
+        for ( std::string const& mystringexpr : myexpressions )
+        {
+            auto myexpr = expr( mystringexpr );
+            markMesh.updateFaceMarker3FromExpr(myexpr,false);
+            this->applyCIPStabOnlyOnBoundaryFaces( false );
+        }
+        if ( myexpressions.size() >0 )
+            markMesh.updateForUseFaceMarker3();
+    }
+    if ( this->verbose() )
+    {
+        markMesh.verbose();
+    }
+
+    if ( false )
+    {
+        markMesh.saveSubMeshFromMarked3Faces();
+        markMesh.exportP0EltMarkerFromFaceMarker();
+    }
+
+    this->log("FluidMechanics","updateMarkedZonesInMesh", "finish" );
+}
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+{
+    // start or restart time step scheme
+    if (!this->doRestart())
+    {
+        if ( ( !this->startBySolveStokesStationary() ) ||
+             ( this->startBySolveStokesStationary() && this->hasSolveStokesStationaryAtKickOff() ) )
+        {
+            // start time step
+            M_bdf_fluid->start(*M_Solution);
+            // up current time
+            this->updateTime( M_bdf_fluid->time() );
+        }
+    }
+    else
+    {
+        // start time step
+        M_bdf_fluid->restart();
+        // load a previous solution as current solution
+        *M_Solution = M_bdf_fluid->unknown(0);
+        // up initial time
+        this->setTimeInitial( M_bdf_fluid->timeInitial() );
+        // restart exporter
+        this->restartExporters();
+        // up current time
+        this->updateTime( M_bdf_fluid->time() );
+
+        this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------//
 
 } // namespace FeelModels
 } // namespace Feel

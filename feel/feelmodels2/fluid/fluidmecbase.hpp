@@ -345,6 +345,7 @@ public:
 
     void loadMesh(mesh_ptrtype __mesh );
 
+    void updateMarkedZonesInMesh();
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
@@ -560,14 +561,7 @@ public :
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
 
-    //std::list<std::string> const& markersNameDirichlet() const { return M_markersNameDirichlet; }
     std::list<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); /* M_markersNameMovingBoundary;*/ }
-#if 0
-    // mesh ale bc : fixed,moving or free
-    std::map<std::string,std::list<std::string> > const& meshAleBC() const { return M_meshAleBCType; }
-    std::list<std::string> const& meshAleBC(std::string key) const { return M_meshAleBCType.find(key)->second; }
-    void meshAleBC(std::string key,std::list<std::string> markers) { M_meshAleBCType[key] = markers; }
-#endif
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
@@ -593,11 +587,9 @@ public :
 
     //___________________________________________________________________________________//
 
-
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ velocityDiv() { return M_velocityDiv; }
     bool velocityDivIsEqualToZero() const { return M_velocityDivIsEqualToZero; }
-
 
     //___________________________________________________________________________________//
 
@@ -613,7 +605,7 @@ public :
         {
             M_mesh->updateMarker3( v );
             M_mesh->updateMarkersFromElements();
-            if (false)
+            if (true)
             {
                 std::cout << "number of marked 3 elements: " << std::distance( marked3elements( M_mesh, 1 ).template get<1>(),
                                                                                marked3elements( M_mesh, 1 ).template get<2>() ) << "\n";
