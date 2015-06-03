@@ -52,8 +52,8 @@ Feel::po::options_description applibase_options(std::string const& prefix)
     appliBaseOptions.add_options()
         (prefixvm(prefix,"verbose").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose")
         (prefixvm(prefix,"verbose_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
-        (prefixvm(prefix,"verbose_solvertimer").c_str(), Feel::po::value<bool>()->default_value( false/*true*/ ), "true or false to view verbose")
-        (prefixvm(prefix,"verbose_solvertimer_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
+        //(prefixvm(prefix,"verbose_solvertimer").c_str(), Feel::po::value<bool>()->default_value( false/*true*/ ), "true or false to view verbose")
+        //(prefixvm(prefix,"verbose_solvertimer_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
         (prefixvm(prefix,"timers.activated").c_str(), Feel::po::value<bool>()->default_value( true ), "timers.activated")
         (prefixvm(prefix,"timers.save-master-rank").c_str(), Feel::po::value<bool>()->default_value( true ), "timers.save-master-rank")
         (prefixvm(prefix,"timers.save-max").c_str(), Feel::po::value<bool>()->default_value( false ), "timers.save-max")
@@ -72,6 +72,8 @@ Feel::po::options_description applibaseMethodsNum_options(std::string const& pre
 {
     Feel::po::options_description appliBaseOptions("Application Base Methods Num options");
     appliBaseOptions.add_options()
+        (prefixvm(prefix,"verbose_solvertimer").c_str(), Feel::po::value<bool>()->default_value( false/*true*/ ), "true or false to view verbose")
+        (prefixvm(prefix,"verbose_solvertimer_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
         (prefixvm(prefix,"linearsystem-cst-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update matrix and rhs cst part")
         (prefixvm(prefix,"jacobian-linear-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the jacobian")
         (prefixvm(prefix,"residual-uselinearjac").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the residual with linear jacobian")
@@ -260,6 +262,9 @@ fluidStructInteraction_options( std::string const& prefix )
 {
     Feel::po::options_description FSIoptions("FSI options");
     FSIoptions.add_options()
+        (prefixvm(prefix,"solid-mesh.extract-1d-from-fluid-mesh").c_str(), Feel::po::value<bool>()->default_value( false ), "solid-mesh.extract-1d-from-fluid-mesh")
+        //(prefixvm(prefix,"solid-mesh.extract-1d-from-fluid-mesh.boundary-markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "boundary-markers")
+
         (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
         (prefixvm(prefix,"coupling-bc").c_str(),Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
         (prefixvm(prefix,"fixpoint.tol").c_str(), Feel::po::value<double>()->default_value( 1.e-6 ), "tolerance pt fixe")
@@ -274,7 +279,7 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-robin.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-robin-robin.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         ;
-    return FSIoptions.add( applibase_options(prefix) );/*FSIoptions.add(alemesh_options());*/
+    return FSIoptions.add( applibaseMethodsNum_options(prefix) );/*FSIoptions.add(alemesh_options());*/
 }
 
 
