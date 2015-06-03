@@ -469,7 +469,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     }
 
     this->timerTool("Constructor").stop("createSpaces");
-    this->log(this->prefix()+".FluidMechanics","createFunctionSpaces", "finish" );
+    this->log("FluidMechanics","createFunctionSpaces", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//

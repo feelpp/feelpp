@@ -92,8 +92,8 @@ public:
     //___________________________________________________________________________________//
     // assembly using bc
     void updateSourceTermResidual( vector_ptrtype& R ) const;
-    void updateCLDirichlet(vector_ptrtype& U) const;
-    void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J) const;
+    void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const;
+    void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
     void updateBCStrongDirichletResidual(vector_ptrtype& R) const;
     void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const;
     void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const;

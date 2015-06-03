@@ -118,10 +118,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             integrate( _range=elements(mesh),
                        _expr= -val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
                        _geomap=this->geomap() );
+        timeElapsedBis=thetimerBis.elapsed();
+        this->log("FluidMechanics","updateResidual","build convective--2-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
     }
 #endif
-    timeElapsedBis=thetimerBis.elapsed();
-    this->log("FluidMechanics","updateResidual","build convective--2-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -320,11 +320,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                     if ( it != this->markerDirichletBCnitsche().end() )
                         movingBCmarkers.push_back( marker );
                 }
-
-                linearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,movingBCmarkers),
-                               _expr= - this->dirichletBCnitscheGamma()*inner( idv(this->meshVelocity2()),id(v) )/hFace(),
-                               _geomap=this->geomap() );
+                if ( !movingBCmarkers.empty() )
+                    linearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(mesh,movingBCmarkers),
+                                   _expr= - this->dirichletBCnitscheGamma()*inner( idv(this->meshVelocity2()),id(v) )/hFace(),
+                                   _geomap=this->geomap() );
             }
 #endif
         }
@@ -336,12 +336,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     if (BuildCstPart)
     {
         this->updateSourceTermResidual( R );
-        /*#if defined(FLUIDMECHANICS_VOLUME_FORCE)
-         linearForm_PatternCoupled +=
-         integrate( _range=elements(mesh),
-         _expr= -trans(f)*id(v),
-         _geomap=this->geomap() );
-         #endif*/
+
         if (M_haveSourceAdded)
         {
             linearForm_PatternCoupled +=
@@ -466,10 +461,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             {
                 std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
                                                                                    this->markerDirichletBClm() );
-                form1( _test=this->XhDirichletLM(),_vector=R,
-                       _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-                    integrate( _range=markedfaces(mesh,movingBCmarkers), //markedelements(this->meshDirichletLM(),movingBCmarkers),
-                               _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
+                if ( !movingBCmarkers.empty() )
+                    form1( _test=this->XhDirichletLM(),_vector=R,
+                           _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                        integrate( _range=markedfaces(mesh,movingBCmarkers), //markedelements(this->meshDirichletLM(),movingBCmarkers),
+                                   _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
             }
 #endif
         }
@@ -513,8 +509,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 #endif
     //------------------------------------------------------------------------------------//
 
-#if FLUIDMECHANICS_USE_PERIODICITY
-    if ( !BuildCstPart )
+    if ( UsePeriodicity && !BuildCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
         double pressureJump = doption(_name="periodicity.pressure-jump",_prefix=this->prefix());
@@ -522,16 +517,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=-inner(pressureJump*N(),id(v) ) );
     }
-#endif
 
     //------------------------------------------------------------------------------------//
 
 
     //if ( _doClose ) R->close();
 
-    if (this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
+    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" );
+#endif
+    if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
     {
-        this->updateBCStrongDirichletResidual(R);
+        R->close();
+
+        if (this->hasMarkerDirichletBCelimination() )
+            this->updateBCStrongDirichletResidual(R);
+
+#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+        {
+            this->log("FluidMechanics","updateResidual","update moving boundary with strong Dirichlet");
+            modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
+        }
+#endif
     }
 
     //if ( _doClose ) R->close();
@@ -547,6 +556,33 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 #endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
+{
+    this->log("FluidMechanics","updateCLDirichlet","start");
+
+    auto const& u = this->fieldVelocity();
+    auto Xh = this->functionSpace();
+    auto mesh = this->mesh();
+    size_type rowStartInVector = this->rowStartInVector();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+    {
+        this->log("FluidMechanics","updateCLDirichlet","update moving boundary with strong Dirichlet");
+        modifVec(markedfaces(mesh, this->markersNameMovingBoundary()), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );
+    }
+#endif
+    this->updateInitialNewtonSolutionBCDirichlet(U);
+
+    U->close();
+
+    this->log("FluidMechanics","updateCLDirichlet","finish");
+}
+
+
+
 
 } // namespace FeelModels
 } // namespace Feel

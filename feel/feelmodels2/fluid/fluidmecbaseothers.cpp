@@ -127,7 +127,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
+           << this->getInfoNeumannBC()
+           << this->getInfoALEMeshBC();
     if ( M_fluidOutletsBCType.size()>0 )
     {
         for ( auto itBC = M_fluidOutletsBCType.begin(), enBC = M_fluidOutletsBCType.end() ; itBC!=enBC ; ++itBC )

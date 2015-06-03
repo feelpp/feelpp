@@ -331,9 +331,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
      }*/
 
     // strong formulation of the boundaries conditions
-    if (this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)
+    if ( BuildNonCstPart && _doBCStrongDirichlet)
     {
-        this->updateBCStrongDirichletLinearPDE(A,F);
+        if (this->hasMarkerDirichletBCelimination() )
+            this->updateBCStrongDirichletLinearPDE(A,F);
+
+#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+        {
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                    _element=u,
+                    _rhs=F,
+                    _expr=idv(this->meshVelocity2()) );
+        }
+#endif
     }
 
     double timeElapsed = thetimer.elapsed();
