@@ -1,9 +1,7 @@
 
-#include_directories(./)
-#configure_file( ${PROJECT_SOURCE_DIR}/fsi/fsimesh/fsimeshconfig.h.in ${PROJECT_SOURCE_DIR}/fsi/fsimesh/fsimeshconfig.h )
 
 if( FEELPP_MODELS_HAS_MESHALE )
-message( "build lib meshale")
+
 if( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
   set(HARMONICEXTENSION_SRC
     harmonicextension.cpp
@@ -17,8 +15,6 @@ if( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
     winslowgen3d.cpp
     winslowptfixe.cpp
     winslownewton.cpp
-    #winslowptfixe1.cpp
-    #winslownewton1.cpp
     )
 endif()
 
