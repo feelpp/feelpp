@@ -180,7 +180,8 @@ MarkerManagementDirichletBC::getInfoDirichletBC() const
 
 MarkerManagementNeumannBC::MarkerManagementNeumannBC()
     :
-    M_containerMarkers()
+    M_containerMarkers(),
+    M_listMarkerEmpty()
 {}
 
 void
@@ -246,7 +247,8 @@ MarkerManagementNeumannBC::getInfoNeumannBC() const
 
 MarkerManagementALEMeshBC::MarkerManagementALEMeshBC()
     :
-    M_containerMarkers()
+    M_containerMarkers(),
+    M_listMarkerEmpty()
 {}
 
 void
@@ -278,6 +280,8 @@ std::list<std::string> const&
 MarkerManagementALEMeshBC::markerALEMeshBC( std::string type ) const
 {
     CHECK( type == "fixed" || type == "moving" || type == "free" ) << "error ALE type " << type;
+    if ( M_containerMarkers.find(type) == M_containerMarkers.end() )
+        return M_listMarkerEmpty;
     return M_containerMarkers.find(type)->second;
 }
 
@@ -285,14 +289,33 @@ std::string
 MarkerManagementALEMeshBC::getInfoALEMeshBC() const
 {
     std::ostringstream _ostr;
+    for ( auto const& markAleMeshBase : M_containerMarkers )
+    {
+        std::string shapeStr = "["+ markAleMeshBase.first +"]";
+        if ( markAleMeshBase.second.empty() ) continue;
+        _ostr << "\n       -- MeshALE" << shapeStr << " : ";
+        bool doFirstMarker = false;
+        for ( auto const& markAleMesh : markAleMeshBase.second )
+        {
+            if ( !doFirstMarker)
+            {
+                _ostr << markAleMesh;
+                doFirstMarker=true;
+            }
+            else
+                _ostr << " , " << markAleMesh;
+        }
+    }
     return _ostr.str();
+
 }
 
 //--------------------------------------------------------------//
 
 MarkerManagementSlipBC::MarkerManagementSlipBC()
     :
-    M_containerMarkers()
+    M_containerMarkers(),
+    M_listMarkerEmpty()
 {}
 void
 MarkerManagementSlipBC::clearMarkerSlipBC()
@@ -325,7 +348,8 @@ MarkerManagementSlipBC::getInfoSlipBC() const
 
 MarkerManagementPressureBC::MarkerManagementPressureBC()
     :
-    M_containerMarkers()
+    M_containerMarkers(),
+    M_listMarkerEmpty()
 {}
 void
 MarkerManagementPressureBC::clearMarkerPressureBC()

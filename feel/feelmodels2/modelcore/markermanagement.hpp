@@ -94,6 +94,7 @@ public :
 
 private :
     std::map<NeumannBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementALEMeshBC
@@ -115,6 +116,7 @@ public :
 
 private :
     std::map<std::string,std::list<std::string> > M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementSlipBC
@@ -130,6 +132,7 @@ public :
     std::string getInfoSlipBC() const;
 private :
     std::list<std::string> M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
 };
 
 class MarkerManagementPressureBC
@@ -145,6 +148,7 @@ public :
     std::string getInfoPressureBC() const;
 private :
     std::list<std::string> M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
 };
 
 } // namespace FeelModels
