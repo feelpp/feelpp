@@ -112,7 +112,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && BuildCstPart)
+    if (this->isMoveDomain() && BuildCstPart )
     {
         bilinearForm_PatternCoupled +=
             //bilinearForm_PatternDefault +=
@@ -369,9 +369,28 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //if (_doClose ) J->close();
 
-    if (this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)
+    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" );
+#endif
+    if ( BuildNonCstPart && _doBCStrongDirichlet && hasStrongDirichletBC )
     {
-        this->updateBCStrongDirichletJacobian(J);
+        auto RBis = this->backend()->newVector( J->mapRowPtr() );
+
+        if ( this->hasMarkerDirichletBCelimination() )
+            this->updateBCStrongDirichletJacobian(J,RBis);
+
+#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+        {
+            this->log("FluidMechanics","updateJacobian","update moving boundary with strong Dirichlet");
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, this->markersNameMovingBoundary()),
+                    _element=u,
+                    _rhs=RBis,
+                    _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
+        }
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//

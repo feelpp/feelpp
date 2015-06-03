@@ -164,12 +164,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const
 {
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateCLDirichlet", "start",
-                                               this->worldComm(),this->verboseAllProc());
-
     if ( !this->hasMarkerDirichletBCelimination() && !this->hasMarkerDirichletBClm() ) return;
+
+    this->log("FluidMechanics","updateInitialNewtonSolutionBCDirichlet", "start");
 
     boost::mpi::timer timerBCnewton;
 
@@ -186,6 +185,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
             modifVec(markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ), u, U, expression(d), rowStartInVector );
             modifVec(markedfaces(mesh, this->markerDirichletBCByNameId( "lm",marker(d) ) ), u, U, expression(d), rowStartInVector );
         }
+#if 0 // ASUP
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
         {
@@ -200,13 +200,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
 #endif
         }
 #endif
+#endif
     }
-    U->close();
+    //U->close();
 
     double t1=timerBCnewton.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateCLDirichlet",
-                                               "finish in "+(boost::format("%1% s") % t1).str(),
-                                               this->worldComm(),this->verboseAllProc());
+    this->log("FluidMechanics","updateInitialNewtonSolutionBCDirichlet","finish in "+(boost::format("%1% s") % t1).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -224,6 +223,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
     auto Xh = this->functionSpace();
     auto const& u = this->fieldVelocity();
 
+#if 0 // ASUP
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
     {
@@ -236,7 +236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
                 _expr=idv(this->meshVelocity2()) );
     }
 #endif
-
+#endif
     for( auto const& d : M_bcDirichlet )
         form2( _test=Xh, _trial=Xh, _matrix=A,
                _rowstart=this->rowStartInMatrix(),
@@ -256,7 +256,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletJacobian", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -271,8 +271,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldVelocity();
-    auto RBis = this->backend()->newVector( J->mapRowPtr() );
+    //auto RBis = this->backend()->newVector( J->mapRowPtr() );
 
+#if 0 // ASUP
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
     {
@@ -282,6 +283,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
                 _rhs=RBis,
                 _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
     }
+#endif
 #endif
     for( auto const& d : M_bcDirichlet )
         bilinearForm_PatternCoupled +=
@@ -310,18 +312,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
     size_type rowStartInVector = this->rowStartInVector();
     auto const& u = this->fieldVelocity();
 
-    R->close();
+    //R->close();
     if (Xh->worldsComm()[0].isActive()) // only on Velocity Proc
     {
         // Zero because is know
         for( auto const& d : M_bcDirichlet )
             modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) )),
                      u, R, 0.*vf::one(),rowStartInVector );
+#if 0 // ASUP
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
         {
             modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
         }
+#endif
 #endif
     }
 

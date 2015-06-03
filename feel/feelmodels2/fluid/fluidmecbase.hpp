@@ -733,7 +733,7 @@ public :
 
     //___________________________________________________________________________________//
 
-    virtual void updateCLDirichlet(vector_ptrtype& U) const = 0;
+    void updateCLDirichlet(vector_ptrtype& U) const;
 
     // non linear (newton)
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
@@ -747,8 +747,9 @@ public :
     void updateResidualModel( element_fluid_type const& U/*const vector_ptrtype& X*/, vector_ptrtype& R,
                               bool BuildCstPart, bool UseJacobianLinearTerms ) const;
 
+    virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J) const = 0;
+    virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
     virtual void updateBCStrongDirichletResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const = 0;
