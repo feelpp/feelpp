@@ -256,25 +256,25 @@ solidMechanics_options(std::string const& prefix)
 }
 
 Feel::po::options_description
-fluidStructInteraction_options( std::string const& /*prefix*/ )
+fluidStructInteraction_options( std::string const& prefix )
 {
     Feel::po::options_description FSIoptions("FSI options");
     FSIoptions.add_options()
-        ("fsi.coupling-type",Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
-        ("fsi.coupling-bc",Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
-        ("fsi.fixpoint.tol", Feel::po::value<double>()->default_value( 1.e-6 ), "tolerance pt fixe")
-        ("fsi.fixpoint.initialtheta", Feel::po::value<double>()->default_value( 1. ), "relax aitken parameter")
-        ("fsi.fixpoint.min_theta", Feel::po::value<double>()->default_value( 1.e-4 ), "min theta parameter")
-        ("fsi.fixpoint.maxit", Feel::po::value<int>()->default_value( 1000 ), "max iteration")
-        ("fsi.conforming-interface", Feel::po::value<bool>()->default_value( false ), " fsi interface is conforme?")
-        ("fsi.fluid.reuse-prec.rebuild-at-first-fsi-step", Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
-        ("fsi.solid.reuse-prec.rebuild-at-first-fsi-step", Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
-        ("fsi.fluid.reuse-jac.rebuild-at-first-fsi-step", Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
-        ("fsi.solid.reuse-jac.rebuild-at-first-fsi-step", Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
-        ("fsi.coupling-robin-robin.gamma", Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
-        ("fsi.coupling-robin-robin.gamma0", Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
+        (prefixvm(prefix,"coupling-bc").c_str(),Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
+        (prefixvm(prefix,"fixpoint.tol").c_str(), Feel::po::value<double>()->default_value( 1.e-6 ), "tolerance pt fixe")
+        (prefixvm(prefix,"fixpoint.initialtheta").c_str(), Feel::po::value<double>()->default_value( 1. ), "relax aitken parameter")
+        (prefixvm(prefix,"fixpoint.min_theta").c_str(), Feel::po::value<double>()->default_value( 1.e-4 ), "min theta parameter")
+        (prefixvm(prefix,"fixpoint.maxit").c_str(), Feel::po::value<int>()->default_value( 1000 ), "max iteration")
+        (prefixvm(prefix,"conforming-interface").c_str(), Feel::po::value<bool>()->default_value( false ), " fsi interface is conforme?")
+        (prefixvm(prefix,"fluid.reuse-prec.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
+        (prefixvm(prefix,"solid.reuse-prec.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
+        (prefixvm(prefix,"fluid.reuse-jac.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
+        (prefixvm(prefix,"solid.reuse-jac.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
+        (prefixvm(prefix,"coupling-robin-robin.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-robin-robin.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         ;
-    return FSIoptions;/*FSIoptions.add(alemesh_options());*/
+    return FSIoptions.add( applibase_options(prefix) );/*FSIoptions.add(alemesh_options());*/
 }
 
 
