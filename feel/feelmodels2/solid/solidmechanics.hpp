@@ -84,7 +84,7 @@ public:
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
     map_scalar_field<2> M_bcDirichletX,M_bcDirichletY,M_bcDirichletZ;
-    map_scalar_field<2> M_bcNeumannScalar;
+    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 

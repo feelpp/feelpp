@@ -78,7 +78,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
 {
-    this->log("SolidMechanics","initStandardModel", "start" );
+    this->log("SolidMechanics","buildStandardModel", "start" );
     //-----------------------------------------------------------------------------//
     M_isStandardModel=true;
     M_is1dReducedModel=false;
@@ -101,7 +101,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
     // exporters
     this->createExporters();
     //-----------------------------------------------------------------------------//
-    this->log("SolidMechanics","initStandardModel", "finish" );
+    this->log("SolidMechanics","buildStandardModel", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -115,6 +115,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
     else
         this->build(mesh);
 }
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_1dreduced_ptrtype mesh )
+{
+    // no restart case here :
+    // we consider that the mesh given is identicaly (from createsubmesh of fluid mesh)
+    this->build(mesh);
+}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -122,7 +130,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype mesh )
 {
-    this->log("SolidMechanics","init1dReducedModel", "start" );
+    this->log("SolidMechanics","build1dReducedModel", "start" );
     //-----------------------------------------------------------------------------//
     M_isStandardModel=false;
     M_is1dReducedModel=true;
@@ -138,7 +146,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrt
     //-----------------------------------------------------------------------------//
     this->createExporters1dReduced();
     //-----------------------------------------------------------------------------//
-    this->log("SolidMechanics","init1dReducedModel", "finish" );
+    this->log("SolidMechanics","build1dReducedModel", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -503,6 +511,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
 {
+    if ( M_XhStressVect_1dReduced ) return;
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
 
     // normal stress as source term

@@ -275,6 +275,7 @@ public:
 
     void build();
     void loadMesh(mesh_ptrtype __mesh );
+    void loadMesh(mesh_1dreduced_ptrtype __mesh );
 protected :
     void build(mesh_ptrtype mesh );
     void build( mesh_1dreduced_ptrtype mesh );
@@ -361,6 +362,14 @@ public :
 
     block_pattern_type blockPattern() const;
 
+    backend_ptrtype const& backend() const
+    {
+        if (this->isStandardModel())
+            return this->backendStandard();
+        else// if (this->is1dReducedModel())
+            return this->backend1dReduced();
+    }
+
     //-----------------------------------------------------------------------------------//
     // standart model
     //-----------------------------------------------------------------------------------//
@@ -398,7 +407,7 @@ public :
 
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return M_backend; }
+    backend_ptrtype const& backendStandard() const { return M_backend; }
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;

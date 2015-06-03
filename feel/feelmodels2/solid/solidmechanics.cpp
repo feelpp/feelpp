@@ -96,12 +96,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_vectorial" );
     for( auto const& d : M_bcNeumannVectorial )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d));
+    M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
+    for( auto const& d : M_bcInterfaceFSI )
+        this->M_markerNameFSI.push_back(marker(d));
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
 
 #if 0 // TODO
-    for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::paroi_mobile>() )
-        M_markerNameFSI.push_back(PhysicalName);
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::robin_vec>() )
         M_markerNameBCRobin.push_back(PhysicalName);
 #endif
