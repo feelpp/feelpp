@@ -99,10 +99,10 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         //-----------------------------------------------------------------------//
         // mesh file : .msh
         if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
-            M_mshFileStr = soption(_prefix=this->prefix(),_name="mshfile");
+            M_mshFileStr = Environment::expand( soption(_prefix=this->prefix(),_name="mshfile") );
         // mesh file : .geo
         if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
-            M_geoFileStr = soption(_prefix=this->prefix(),_name="geofile");
+            M_geoFileStr = Environment::expand( soption(_prefix=this->prefix(),_name="geofile") );
         // mesh file : geotool with .mesh file
         if (M_geotoolSaveDirectory.empty()) M_geotoolSaveDirectory = this->appliShortRepository();//this->appliRepository();
         if (M_geotoolSaveName.empty()) M_geotoolSaveName = this->prefix();

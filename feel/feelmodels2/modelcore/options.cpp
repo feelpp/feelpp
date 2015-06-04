@@ -265,9 +265,11 @@ fluidStructInteraction_options( std::string const& prefix )
 {
     Feel::po::options_description FSIoptions("FSI options");
     FSIoptions.add_options()
+        (prefixvm(prefix,"hsize").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size")
+        (prefixvm(prefix,"fluid-mesh.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "solid-mesh.markers" )
+        (prefixvm(prefix,"solid-mesh.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "solid-mesh.markers" )
         (prefixvm(prefix,"solid-mesh.extract-1d-from-fluid-mesh").c_str(), Feel::po::value<bool>()->default_value( false ), "solid-mesh.extract-1d-from-fluid-mesh")
-        //(prefixvm(prefix,"solid-mesh.extract-1d-from-fluid-mesh.boundary-markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "boundary-markers")
-
+        (prefixvm(prefix,"mesh-save.tag").c_str(),Feel::po::value< std::string >()->default_value(""), "mesh-tag")
         (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
         (prefixvm(prefix,"coupling-bc").c_str(),Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
         (prefixvm(prefix,"fixpoint.tol").c_str(), Feel::po::value<double>()->default_value( 1.e-6 ), "tolerance pt fixe")
@@ -282,7 +284,7 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-robin.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-robin-robin.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         ;
-    return FSIoptions.add( applibaseMethodsNum_options(prefix) );/*FSIoptions.add(alemesh_options());*/
+    return FSIoptions.add( applibaseNumericalSimulationTransitory_options(prefix) );
 }
 
 
@@ -343,14 +345,16 @@ feelmodels_options(std::string type)
     if (type == "fluid")
         FSIoptions.add(fluidMechanics_options("fluid"));
     else if (type == "solid")
-        FSIoptions.add(solidMechanics_options("struct"));
+        FSIoptions.add(solidMechanics_options("solid"));
     else if ( type == "thermo-dynamics" )
         FSIoptions.add( thermoDynamics_options("thermo") );
     else if (type == "fsi")
         FSIoptions
             .add(fluidMechanics_options("fluid"))
-            .add(solidMechanics_options("struct"))
+            .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
+    else
+        CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
 
     return FSIoptions
         .add( Feel::feel_options() );
