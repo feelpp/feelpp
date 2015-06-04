@@ -36,7 +36,8 @@
 #include <feel/feelmodels2/fsi/interpolationfsi.hpp>
 #include <feel/feelmodels2/fsi/aitkenrelaxationfsi.hpp>
 //#include <feel/feelmodels2/modelcore/modelbase.hpp>
-#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
+//#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels2/modelcore/modelnumerical.hpp>
 #include <feel/feelts/tsbase.hpp>
 
 namespace Feel
@@ -46,10 +47,10 @@ namespace FeelModels
 
 
 template< class FluidType, class SolidType >
-class FSI : public ModelAlgebraic//ModelBase
+class FSI : public ModelNumerical
 {
 public :
-    typedef ModelAlgebraic super_type;
+    typedef ModelNumerical super_type;
     typedef FSI<FluidType,SolidType> self_type;
 
     typedef FluidType fluid_type;
@@ -65,13 +66,12 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string prefix,
-         //bool __buildMesh=true,
-         WorldComm const& _worldComm=Environment::worldComm() );
-    //FSI(fluid_ptrtype fluid, solid_ptrtype solid);
+    FSI( std::string prefix, WorldComm const& _worldComm = Environment::worldComm() );
     FSI( self_type const & M ) = default;
 
     //---------------------------------------------------------------------------------------------------------//
+
+    double meshSize() const { return M_meshSize; }
 
     fluid_ptrtype const& fluidAppli() const { return M_fluid; }
     solid_ptrtype const& solidAppli() const { return M_solid; }
@@ -95,6 +95,8 @@ public :
     aitkenrelaxationFSI_ptrtype const& aitkenRelaxTool() const { return M_aitkenFSI; }
 
     //---------------------------------------------------------------------------------------------------------//
+
+    boost::shared_ptr<std::ostringstream> getInfo() const;
 
     void
     printInfo() const
@@ -130,6 +132,7 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
+    void createMesh();
     void init();
     void solve();
 
@@ -161,16 +164,18 @@ private :
     void solveImpl1();
     void solveImpl2();
 
-
-    boost::shared_ptr<std::ostringstream> getInfo() const;
-
     //---------------------------------------------------------------------------------------------------------//
 
 private :
 
     fluid_ptrtype M_fluid;
     solid_ptrtype M_solid;
-    //bool M_verbose,M_verboseAllProc;
+
+    double M_meshSize;
+    fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
+    fs::path M_mshfilepathFluidPartN,M_mshfilepathSolidPartN;
+    std::set<std::string> M_markersNameFluid,M_markersNameSolid;
+    std::string M_tagFileNameMeshGenerated;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-neumann
