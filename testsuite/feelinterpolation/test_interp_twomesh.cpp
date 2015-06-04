@@ -146,7 +146,7 @@ run_test_geomap()
         {
 
             // get phi for one point
-            typename mesh_type::node_type n = ublas::column( __c->xReal(), i );
+            typename mesh_type::node_type n = Feel::ublas::column( __c->xReal(), i );
 
             //compute phi^{-1}
             gic.setXReal( n );
@@ -154,7 +154,7 @@ run_test_geomap()
             //verify that : phi°phi^{-1}=Id
             for ( uint32_type j=0; j<n.size(); ++j )
             {
-                double err = std::abs( ublas::column( im.points(),i )( j ) - gic.xRef()( j ) );
+                double err = std::abs( Feel::ublas::column( im.points(),i )( j ) - gic.xRef()( j ) );
                 //if ( err> 1e-9) std::cout<< "\nProb : "<< err;
 #if USE_BOOST_TEST
                 BOOST_CHECK( err<1e-9 );
