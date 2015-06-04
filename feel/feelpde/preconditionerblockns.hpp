@@ -44,7 +44,7 @@ public:
     enum Type
     {
         PCD = 0, // pressure convection diffusion
-        PMM=1, // pressure mass matrix
+        PMM = 1, // pressure mass matrix
         SIMPLE=2 // 
     };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
