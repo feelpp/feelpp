@@ -438,6 +438,11 @@ public:
     static void bindNumaRoundRobin( int lazy = false );
 
     /**
+     * Get information about the last CPU bound. You must use --bind-to core with MPI for this feature to work.
+     */
+    static void getLastBoundCPU( std::vector<int> * cpuAffinity, std::vector<int> * lastCPU );
+
+    /**
      * Writes data about processor affinity and last location of the different processes/threads
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
