@@ -95,6 +95,7 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
 #include <feel/feelvf/evaluatorcontext.hpp>
+#include <feel/feelvf/msi.hpp>
 
 
 
