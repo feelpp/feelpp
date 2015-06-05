@@ -517,7 +517,7 @@ namespace parallel
 #endif
             double meanPerElt;
             PCM_GET(meanPerElt, perf_mng, "0. loop", -1.0);
-            std::cout << threadId << ": mean time per elt (" << meanPerElt << "/" << elts->size() << ")" << ": " << meanPerElt / (double)(elts->size()) << std::endl;
+            DVLOG(2) << threadId << ": mean time per elt (" << meanPerElt << "/" << elts->size() << ")" << ": " << meanPerElt / (double)(elts->size()) << std::endl;
 
             PCM_STOP(perf_mng, "cpu");
             PCM_GET(M_cpuTime, perf_mng, "cpu", -1.0);

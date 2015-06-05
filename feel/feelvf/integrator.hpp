@@ -5096,7 +5096,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
                 int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
 
-                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+                DVLOG(2) << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
 
                 /* save the current iterator position */
                 cit = sit;
@@ -5198,7 +5198,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         for(int i = 0; i < nbThreads; i++)
         {
-            std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
+            DVLOG(2) << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
             hce[i]->printPerfInfo();
         }
 
@@ -5233,18 +5233,18 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         f.close();
 #endif
 
-        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+        DVLOG(2)  << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 
-        std::cout << Environment::worldComm().rank() <<  " Evaluation " 
+        DVLOG(2)  << Environment::worldComm().rank() <<  " Evaluation " 
                   << perf_mng.getValueInSeconds("init2.2.0") << " "
                   << perf_mng.getValueInSeconds("init2.2.1") << " "
                   << perf_mng.getValueInSeconds("init2.2.2") << " "
                   << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+        DVLOG(2) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
     else
@@ -5308,7 +5308,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         /* Using pthread */
         int nbThreads = nbCoresPerProcess;
 
-        DLOG(INFO) << "OpenMP configuration: nMPIProc=" << nbMPIProc << ", nbCores=" << nbCores << ", nbCoresPerProcess=" << nbCoresPerProcess << ", nbUnusedCores=" << nbUnusedCores << std::endl;
+        DVLOG(2) << "OpenMP configuration: nMPIProc=" << nbMPIProc << ", nbCores=" << nbCores << ", nbCoresPerProcess=" << nbCoresPerProcess << ", nbUnusedCores=" << nbUnusedCores << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("init0") ;
@@ -5339,14 +5339,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
                 int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
 
-                DLOG(INFO) << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+                DVLOG(2) << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
 
                 /* save the current iterator position */
                 cit = sit;
                 /* advance the iterator and save the new position */
                 std::advance(sit, nb);
                 //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
-                DLOG(INFO) << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                DVLOG(2) << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
                 j = j + nb;
                 _v.at(i).push_back(std::make_pair(cit, sit));
             }
@@ -5440,7 +5440,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(FEELPP_HAS_HARTS)
             #pragma omp critical
             {
-                DLOG(INFO) << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+                DVLOG(2) << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
             }
 #endif
 
@@ -5457,8 +5457,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
             #pragma omp critical
             {
-                DLOG(INFO) << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
-                DLOG(INFO) << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
+                DVLOG(2) << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+                DVLOG(2) << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
                 //t->printPerfInfo();
             }
 
@@ -5481,13 +5481,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
         
-        DLOG(INFO)<< Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+        DVLOG(2)<< Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
                   << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
                   << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
                   << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+        DVLOG(2) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
     else
@@ -5730,9 +5730,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
         }
 
-        std::cout << Environment::worldComm().globalRank() << " 2.1 count=" << std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>()) << std::endl;
-            std::cout << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>())) 
-                      << " min=" << min << " max=" << max << std::endl;
+        DVLOG(2) << Environment::worldComm().globalRank() << " 2.1 count=" << std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>()) << std::endl;
+        DVLOG(2)  << Environment::worldComm().globalRank() << " 2.1 mean=" <<  (mean / std::distance(M_elts.begin()->template get<1>(), M_elts.begin()->template get<2>())) 
+                  << " min=" << min << " max=" << max << std::endl;
 #if defined(FEELPP_HAS_HARTS)
         perf_mng.stop("total") ;
         DLOG(INFO) << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
