@@ -96,6 +96,19 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
     CHECK( !this->mshPathFSI().empty() ) << "mshPathFSI must be specified";
     fs::path meshesdirectories = this->mshPathFSI().parent_path();
 
+#if 1
+        // go in output path directory for launch loadMesh
+        fs::path curPath=fs::current_path();
+        bool hasChangedRep=false;
+        if ( curPath != meshesdirectories )
+        {
+            std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
+            bool hasChangedRep=true;
+            Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
+                                           _worldcomm=this->worldComm() );
+        }
+#endif
+
     if ( this->worldComm().isMasterRank() &&
          (!fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) ) )
     {
@@ -110,7 +123,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 #elif BOOST_FILESYSTEM_VERSION == 2
         fs::copy_file( this->geoPathFSI(), geoPathFSIcopy, fs::copy_option::overwrite_if_exists );
 #endif
-
+#if 0
         // go in output path directory for launch loadMesh
         fs::path curPath=fs::current_path();
         bool hasChangedRep=false;
@@ -121,7 +134,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
             Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
                                            _worldcomm=this->worldComm().subWorldCommSeq() );
         }
-
+#endif
         std::cout << "[FSIMesh] : build fsi mesh ....\n";
         auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
                                  _filename=geoPathFSIcopy.string(),
@@ -132,14 +145,21 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
                                  );
         std::cout << "[FSIMesh] : build fsi mesh finish\n";
         CHECK( fs::exists( this->mshPathFSI() ) ) << "mesh file not exist : " << this->mshPathFSI();
-
+#if 0
         // go back to previous repository
         if ( hasChangedRep )
             Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false,
                                            _worldcomm=this->worldComm().subWorldCommSeq() );
-
+#endif
         this->buildSubMesh( meshFSI );
     }
+
+#if 1
+        // go back to previous repository
+        if ( hasChangedRep )
+            Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false,
+                                           _worldcomm=this->worldComm() );
+#endif
 
     // wait writing meshes done
     this->worldComm().globalComm().barrier();
