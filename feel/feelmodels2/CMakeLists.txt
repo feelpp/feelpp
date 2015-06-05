@@ -10,6 +10,13 @@ set(FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION 1)
 #set(FEELPP_MODELS_HAS_MESHALE_WINSLOW 1)
 
 
-add_subdirectory (modelcore)
-add_subdirectory (modelalg)
-add_subdirectory (modelmesh)
+add_subdirectory(modelcore)
+add_subdirectory(modelalg)
+add_subdirectory(modelmesh)
+
+
+# generate models lib
+add_subdirectory(thermodyn)
+add_subdirectory(solid)
+add_subdirectory(fluid)
+add_subdirectory(fsi)
