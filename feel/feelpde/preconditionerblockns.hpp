@@ -359,7 +359,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         if ( boption("blockns.pcd") )
         {
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion...\n";
-            CHECK(pcdOp) << "Invalid PCD oeprator\n";
+            CHECK(pcdOp) << "Invalid PCD operator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
             tic();
