@@ -309,7 +309,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             this->updateBCDirichletNitscheResidual( R );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
             {
                 // compute integrate range (intersection with nitsche and moving marker)
                 std::list<std::string> movingBCmarkers;
@@ -457,15 +457,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             this->updateBCDirichletLagMultResidual( R );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
             {
-                std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                   this->markerDirichletBClm() );
-                if ( !movingBCmarkers.empty() )
-                    form1( _test=this->XhDirichletLM(),_vector=R,
-                           _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-                        integrate( _range=markedfaces(mesh,movingBCmarkers), //markedelements(this->meshDirichletLM(),movingBCmarkers),
-                                   _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
+                form1( _test=this->XhDirichletLM(),_vector=R,
+                       _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
+                               _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
             }
 #endif
         }

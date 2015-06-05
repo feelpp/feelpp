@@ -108,13 +108,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             this->updateBCDirichletLagMultLinearPDE( F );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
             {
-                std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                   this->markerDirichletBClm() );
                 form1( _test=this->XhDirichletLM(),_vector=F,
                        _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-                    integrate( _range=markedfaces(mesh,movingBCmarkers ), //markedelements(this->meshDirichletLM(),movingBCmarkers),
+                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
                                _expr= inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
             }
 #endif
@@ -138,13 +136,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             this->updateBCDirichletNitscheLinearPDE( F );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
             {
-                std::list<std::string> movingBCmarkers = detail::intersectionList( this->markersNameMovingBoundary(),
-                                                                                   this->markerDirichletBCnitsche() );
                 form1( _test=Xh, _vector=F,
                        _rowstart=rowStartInVector) +=
-                    integrate( _range=markedfaces(mesh,movingBCmarkers ),
+                    integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
                                _expr= this->dirichletBCnitscheGamma()*trans(idv(this->meshVelocity2()))*id(v)/hFace(),
                                _geomap=this->geomap() );
             }

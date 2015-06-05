@@ -32,16 +32,13 @@
 
 
 #include <feel/feeldiscr/functionspace.hpp>
-//#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-//#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/projectors.hpp>
-//#include <feel/feelvf/one.hpp>
 
 
 #include <feel/feelmodels2/modelcore/modelnumerical.hpp>
@@ -49,7 +46,6 @@
 #include <feel/feelmodels2/modelcore/options.hpp>
 #include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
 
-//#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
 #include <feel/feelmodels2/fluid/densityviscositymodel.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -189,9 +185,6 @@ public:
     typedef bases<BasisDVType> basis_densityviscosity_type;
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, basis_densityviscosity_type> space_densityviscosity_type;
-    /*typedef boost::shared_ptr<space_densityviscosity_type> space_densityviscosity_ptrtype;
-    typedef typename space_densityviscosity_type::element_type element_densityviscosity_type;
-     typedef boost::shared_ptr<element_densityviscosity_type> element_densityviscosity_ptrtype;*/
     // viscosity model desc
     typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
     typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
@@ -358,13 +351,6 @@ public:
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
     space_fluid_pressure_ptrtype const/*&*/ functionSpacePressure() const { return M_Xh->template functionSpace<1>(); }
 
-    FEELPP_DEPRECATED element_fluid_ptrtype getSolution() { return M_Solution; }
-    FEELPP_DEPRECATED element_fluid_ptrtype const& getSolution() const { return M_Solution; }
-    FEELPP_DEPRECATED element_fluid_velocity_type getVelocity() { return M_Solution->template element<0>(); }
-    FEELPP_DEPRECATED element_fluid_velocity_type getVelocity() const { return M_Solution->template element<0>(); }
-    FEELPP_DEPRECATED element_fluid_pressure_type getPressure() { return M_Solution->template element<1>(); }
-    FEELPP_DEPRECATED element_fluid_pressure_type getPressure() const { return M_Solution->template element<1>(); }
-
     element_fluid_ptrtype & fieldVelocityPressurePtr() { return M_Solution; }
     element_fluid_ptrtype const& fieldVelocityPressurePtr() const { return M_Solution; }
     element_fluid_type & fieldVelocityPressure() { return *M_Solution; }
@@ -497,71 +483,34 @@ public :
     double definePressureCstPenalisationBeta() const { return M_definePressureCstPenalisationBeta; }
 
     //___________________________________________________________________________________//
-    // physical parameters rho,mu,nu
-    //double mu() const { return M_CstMu; }
-    //double nu() const { return M_CstNu; }
-    //double rho() const { return M_CstRho; }
-    //space_densityviscosity_ptrtype const& XhP0() const { return M_XhScalarP0; }
-    //element_densityviscosity_ptrtype const& rhoP0() const { return M_P0Rho; } //density
-    //element_densityviscosity_ptrtype const& muP0() const { return M_P0Mu; } // dynamic viscosity
-    //element_densityviscosity_ptrtype const& nuP0() const { return M_P0Nu; }// cinematic viscosity
-
+    // physical parameters rho,mu,nu,...
     densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
     densityviscosity_model_ptrtype const& densityViscosityModel() const { return M_densityViscosityModel; }
 
     void updateRho(double rho)
-        {
-            this->densityViscosityModel()->setCstDensity(rho);
-            //M_CstRho = rho;
-            //this->updateRho(vf::cst(rho));
-            //this->updateNu();
-        }
+    {
+        this->densityViscosityModel()->setCstDensity(rho);
+    }
     void updateMu(double mu)
-        {
-            this->densityViscosityModel()->setCstDynamicViscosity(mu);
-            //M_CstMu = mu;
-            //this->updateMu(vf::cst(mu));
-            //this->updateNu();
-        }
-#if 0
-    void updateRhoMu(double rho,double mu)
-        {
-            //M_CstRho = rho;
-            this->densityViscosityModel()->setCstDensity(rho);
-            this->densityViscosityModel()->setCstDynamicViscosity(mu);
-            //M_CstMu = mu;
-            //this->updateRho(vf::cst(rho));
-            //this->updateMu(vf::cst(mu));
-            //this->updateNu();
-        }
-#endif
+    {
+        this->densityViscosityModel()->setCstDynamicViscosity(mu);
+    }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
-        {
-            //if ( M_XhScalarP0 )
-            //    *M_P0Rho= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()), _expr=__expr );
-            this->densityViscosityModel()->updateDensity( __expr );
-
-        }
+    {
+        this->densityViscosityModel()->updateDensity( __expr );
+    }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
-        {
-            this->densityViscosityModel()->updateDynamicViscosity( __expr );
-        }
-#if 0
-    void updateNu()
-        {
-            M_CstNu = this->viscosityModel()->cstMu()/M_CstRho;
-            if ( M_XhScalarP0 )
-                *M_P0Nu= Feel::vf::project(_space=M_XhScalarP0,_range=elements(this->mesh()),_expr=vf::idv(this->viscosityModel()->fieldMu())/vf::idv(*M_P0Rho) );
-        }
-#endif
+    {
+        this->densityViscosityModel()->updateDynamicViscosity( __expr );
+    }
     //___________________________________________________________________________________//
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
 
-    std::list<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); /* M_markersNameMovingBoundary;*/ }
+    std::list<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
@@ -599,7 +548,7 @@ public :
     void updateAlePartUsedByNormalStress();
 
     void updateWallShearStress();
-
+#if 0
     template<typename FuncT>
     void updateMarker3( FuncT const& v )
         {
@@ -613,42 +562,39 @@ public :
                                                                             marked3faces( M_mesh, 1 ).template get<2>() ) << "\n";
             }
         }
-
+#endif
     void updateVorticity(mpl::int_<2> /***/);
     void updateVorticity(mpl::int_<3> /***/);
 
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
-        {
-            //M_Solution->element<0>() = vf::project(_space=M_Xh->functionSpace<0>(),_range=elements( this->mesh()),_expr=__expr );
-            M_Solution->template elementPtr<0>()->on(_range=elements( this->mesh()),_expr=__expr );
-        }
+    {
+        M_Solution->template elementPtr<0>()->on(_range=elements( this->mesh()),_expr=__expr );
+    }
 
     template < typename ExprT >
     void updatePressure(vf::Expr<ExprT> const& __expr)
-        {
-            //M_Solution->element<1>() = vf::project(_space=M_Xh->functionSpace<1>(),_range=elements( this->mesh()),_expr=__expr );
-            M_Solution->template elementPtr<1>()->on(_range=elements( this->mesh()),_expr=__expr );
-        }
+    {
+        M_Solution->template elementPtr<1>()->on(_range=elements( this->mesh()),_expr=__expr );
+    }
 
     template < typename ExprT >
     void updateSourceAdded(vf::Expr<ExprT> const& __expr)
-        {
-            if (!M_XhSourceAdded) this->createFunctionSpacesSourceAdded();
-            //*M_SourceAdded= vf::project(_space=M_XhSourceAdded,_range=elements( this->mesh()),_expr=__expr );
-            M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr );
-            M_haveSourceAdded=true;
-        }
+    {
+        if (!M_XhSourceAdded) this->createFunctionSpacesSourceAdded();
+        M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr );
+        M_haveSourceAdded=true;
+    }
 
     template < typename ExprT >
     void updateVelocityDiv(vf::Expr<ExprT> const& __expr)
-        {
-            //if (!M_velocityDiv) M_velocityDiv=M_Xh->template functionSpace<1>()->elementPtr();
-            if (!M_velocityDiv)
-                M_velocityDiv.reset(new typename space_fluid_pressure_type::element_type/*element_fluid_pressure_type*/(M_Xh->template functionSpace<1>(),"velocityDiv") );
-            //*M_velocityDiv = vf::project(_space=M_Xh->template functionSpace<1>(),_range=elements( this->mesh()),_expr=__expr);
-            M_velocityDiv->on(_range=elements(this->mesh()),_expr=__expr);
-            M_velocityDivIsEqualToZero=false;
+    {
+        //if (!M_velocityDiv) M_velocityDiv=M_Xh->template functionSpace<1>()->elementPtr();
+        if (!M_velocityDiv)
+            M_velocityDiv.reset(new typename space_fluid_pressure_type::element_type/*element_fluid_pressure_type*/(M_Xh->template functionSpace<1>(),"velocityDiv") );
+        //*M_velocityDiv = vf::project(_space=M_Xh->template functionSpace<1>(),_range=elements( this->mesh()),_expr=__expr);
+        M_velocityDiv->on(_range=elements(this->mesh()),_expr=__expr);
+        M_velocityDivIsEqualToZero=false;
         }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -836,15 +782,7 @@ protected:
     // tool solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_methodNum;
     //----------------------------------------------------
-    // physical parameter and space
-    //double M_CstRho;//densite
-    //double M_CstMu;//viscosité dynamqiue
-    //double M_CstNu;//viscosité cinematique
-    //space_densityviscosity_ptrtype M_XhScalarP0;
-    //element_densityviscosity_ptrtype M_P0Rho;//densite
-    //element_densityviscosity_ptrtype M_P0Mu;//viscosité dynamqiue
-    //element_densityviscosity_ptrtype M_P0Nu;//viscosité cinematique
-    //----------------------------------------------------
+    // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;
     //----------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
@@ -856,12 +794,9 @@ protected:
     //----------------------------------------------------
     std::string M_pdeType;
     std::string M_pdeSolver;
-    //std::string M_stressTensorLaw;
-    // type dirichlet bc -> list of markers
-    //std::list<std::string> /*M_neumannBCType,*/ M_pressureBCType/*, M_slipBCType*/;
+    // fluid outlets bc
     std::map<std::string,std::list<std::string> > M_fluidOutletsBCType;
-    //std::list<std::string> /*M_markersNameDirichlet,*/M_markersNameMovingBoundary;
-    //std::map<std::string,std::list<std::string> > M_meshAleBCType;
+
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
@@ -941,6 +876,7 @@ protected:
     //----------------------------------------------------
     std::set<std::string> M_nameFilesPressureAtPoints;
     //----------------------------------------------------
+    // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
     updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
@@ -1141,7 +1077,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMesh
 }
 #endif
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 namespace detail
 {
 
@@ -1170,7 +1106,7 @@ isInList( T marker, std::list<T> const& list )
 }
 
 } // namespace detail
-
+#endif
 
 } // namespace FeelModels
 } // namespace Feel
