@@ -118,7 +118,8 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
         {
             std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
             bool hasChangedRep=true;
-            Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false );
+            Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
+                                           _worldcomm=this->worldComm().subWorldCommSeq() );
         }
 
         std::cout << "[FSIMesh] : build fsi mesh ....\n";
@@ -134,7 +135,8 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 
         // go back to previous repository
         if ( hasChangedRep )
-            Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
+            Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false,
+                                           _worldcomm=this->worldComm().subWorldCommSeq() );
 
         this->buildSubMesh( meshFSI );
     }
@@ -165,7 +167,7 @@ FSIMesh<ConvexType>::buildSubMesh( mesh_ptrtype const& fsimesh )
     saveGMSHMesh(_mesh=fluidMesh_temp,_filename=this->mshPathFluidPart1().string());
     // create struct submesh
     std::list<std::string> mySolidMarkers( this->markersNameSolidVolume().begin(),this->markersNameSolidVolume().end() );
-    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,this->markersNameSolidVolume()));
+    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers));
     std::cout << "solid mesh -> numGlobalElements : " << solidMesh_temp->numGlobalElements()<<"\n";
     saveGMSHMesh(_mesh=solidMesh_temp,_filename=this->mshPathSolidPart1().string());
 
