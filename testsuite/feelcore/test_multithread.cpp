@@ -94,6 +94,24 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
     seqTime = getElapsedTime(ts1, ts2);
 
+    std::vector<int> affinity;
+    std::vector<int> lastCPU;
+    Environment::getLastBoundCPU(&lastCPU, &affinity);
+
+    std::cout << Environment::worldComm().globalRank() << " Affinity=";
+    for(int i = 0; i < affinity.size(); i++)
+    {
+        std::cout << affinity.at(i) << " "; 
+    }
+    std::cout << std::endl;
+    std::cout << Environment::worldComm().globalRank() << " lastCPU=";
+    for(int i = 0; i < lastCPU.size(); i++)
+    {
+        std::cout << lastCPU.at(i) << " "; 
+    }
+    std::cout << std::endl;
+
+
 /* Do this section only if we have OPENMP */
 #if defined(FEELPP_HAS_OPENMP)
     /* Set the number of threads to use */
@@ -136,11 +154,11 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     std::cout << "Test OK: seqTime=" << seqTime << ", coarseParTime=";
     if(nCores > 0)
     {
-        std::cout << coarseParTime[0];
+        std::cout << coarseParTime[0] << " (" << seqTime / coarseParTime[0] << ")";
         for(int i = 1; i < nCores; i++)
-        { std::cout << ", " << coarseParTime[i]; }
+        { std::cout << ", " << coarseParTime[i] << " (" << seqTime / coarseParTime[i] << ")"; }
     }
-    std::cout << "), fineParTime=" << fineParTime << std::endl;
+    std::cout << "), fineParTime=" << fineParTime <<  " (" << seqTime / fineParTime << ")" << std::endl;
 
     /* sequential with an expression */
     // our function to integrate
@@ -165,7 +183,7 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
         clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
 
         // our function to integrate
-        auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
+        // auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
         auto intf = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
         coarseParRes[omp_get_thread_num()] = intf(0, 0);
 
@@ -194,14 +212,14 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
     Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
 
-    std::cout << "Test OK: seqTime=" << seqTime << ", parTime=(";
+    std::cout << "Test OK: seqTime=" << seqTime << ", coarseParTime=";
     if(nCores > 0)
     {
-        std::cout << coarseParTime[0];
+        std::cout << coarseParTime[0] << " (" << seqTime / coarseParTime[0] << ")";
         for(int i = 1; i < nCores; i++)
-        { std::cout << ", " << coarseParTime[i]; }
+        { std::cout << ", " << coarseParTime[i] << " (" << seqTime / coarseParTime[i] << ")"; }
     }
-    std::cout << "), fineParTime=" << fineParTime << std::endl;
+    std::cout << "), fineParTime=" << fineParTime <<  " (" << seqTime / fineParTime << ")" << std::endl;
 
     delete[] coarseParRes;
     coarseParRes = nullptr;
