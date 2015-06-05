@@ -257,9 +257,10 @@ private:
 
     bool M_hasInverse, M_hasApply;
 };
+
 /**
  * \param M matrix
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
@@ -357,7 +358,7 @@ private:
 
 /**
  * \param op an operator
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
