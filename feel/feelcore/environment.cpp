@@ -1826,6 +1826,50 @@ void Environment::bindNumaRoundRobin( int lazy )
     hwloc_bitmap_free( set );
 }
 
+void Environment::getLastBoundCPU( std::vector<int> * lastCPU, std::vector<int> * cpuAffinity )
+{
+    int cid;
+    hwloc_cpuset_t set;
+
+    /* get a cpuset object */
+    set = hwloc_bitmap_alloc();
+
+    if(cpuAffinity)
+    {
+        /* Get the cpu thread affinity info of the current process/thread */
+        hwloc_get_cpubind( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            cpuAffinity->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
+
+    hwloc_bitmap_zero(set);
+
+    if(lastCPU)
+    {
+        /* Get the latest core location of the current process/thread */
+        hwloc_get_last_cpu_location( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            lastCPU->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
+
+    /* free memory */
+    hwloc_bitmap_free( set );
+}
+
 void Environment::writeCPUData( std::string fname )
 {
     hwloc_cpuset_t set;
