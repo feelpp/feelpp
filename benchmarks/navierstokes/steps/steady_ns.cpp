@@ -72,13 +72,19 @@ int main(int argc, char**argv )
 
     if ( Environment::isMasterRank() )
     {
-        std::cout << "Re\tLocalDOF\tFunctionSpace\tVelocity\tPressure\n";
+        std::cout<<"\n\n\nMesh name: "<<soption("gmsh.filename")<<"\n\n";
+        std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;
         std::cout.width(16);
-        std::cout << std::left << Vh->nLocalDof();
+        std::cout << std::left << order_p+1;
+        std::cout.width(16);
+        std::cout << std::left << order_p;
+        std::cout << std::left << doption( "gmsh.hsize" )<<"\t";
         std::cout.width(16);
         std::cout << std::left << Vh->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->nLocalDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
@@ -97,15 +103,15 @@ int main(int argc, char**argv )
 
             std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
             std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
-            //std::cout << " - Ap max iteration: " << doption( "Ap.ksp-maxit" ) << "\n\n";
+            std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
 
             std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
             std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
-            //std::cout << " - Mp max iteration: " << doption( "Mp.ksp-maxit" ) << "\n\n";
+            std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
 
             std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
             std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
-            //std::cout << " - Fu max iteration: " << doption( "Fu.ksp-maxit" ) << "\n\n";
+            std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";
         }
     }
     auto deft = gradt( u );
