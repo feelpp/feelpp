@@ -1747,6 +1747,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
     this->buildIndexSplit();
 
+    // build splits with components
+    if ( is_product && nComponents > 1 )
+        this->buildIndexSplitWithComponents( nComponents );
 
     VLOG(2) << "[Dof::build] done building the map\n";
 }
