@@ -652,20 +652,23 @@ public:
         {
             auto g = expr.geom();
             ublas::vector<value_type> n( nDim ); //normal
-
+            Ihloc.setZero();
             for( int f = 0; f < face_type::numFaces; ++f )
             {
                 if( g->faceId() == invalid_uint16_type_value)
                     getFaceNormal(expr, f, n);
                 else
                     getFaceNormal(expr, g->faceId(), n);
-
+                
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    {
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                    }
+                    
                 }
             }
         }
