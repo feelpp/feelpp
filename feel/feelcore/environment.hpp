@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -436,6 +436,11 @@ public:
      * Binds the MPI processes in Round Robin on the NUMA nodes
      */
     static void bindNumaRoundRobin( int lazy = false );
+
+    /**
+     * Get information about the last CPU bound. You must use --bind-to core with MPI for this feature to work.
+     */
+    static void getLastBoundCPU( std::vector<int> * cpuAffinity, std::vector<int> * lastCPU );
 
     /**
      * Writes data about processor affinity and last location of the different processes/threads
