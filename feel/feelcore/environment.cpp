@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -1829,6 +1829,50 @@ void Environment::bindNumaRoundRobin( int lazy )
 
     /* bind the process thread to this core */
     err = hwloc_set_cpubind( Environment::S_hwlocTopology, set, 0 );
+
+    /* free memory */
+    hwloc_bitmap_free( set );
+}
+
+void Environment::getLastBoundCPU( std::vector<int> * lastCPU, std::vector<int> * cpuAffinity )
+{
+    int cid;
+    hwloc_cpuset_t set;
+
+    /* get a cpuset object */
+    set = hwloc_bitmap_alloc();
+
+    if(cpuAffinity)
+    {
+        /* Get the cpu thread affinity info of the current process/thread */
+        hwloc_get_cpubind( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            cpuAffinity->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
+
+    hwloc_bitmap_zero(set);
+
+    if(lastCPU)
+    {
+        /* Get the latest core location of the current process/thread */
+        hwloc_get_last_cpu_location( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            lastCPU->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
 
     /* free memory */
     hwloc_bitmap_free( set );
