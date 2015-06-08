@@ -734,19 +734,33 @@ void PreconditionerPetsc<T>::init ()
 
             is = pmatrix->indexSplit();
             //is.showMe();
-
+            bool useComponentsSplit = boption( _prefix=this->name(), _name="fieldsplit-use-components" );
             std::string fieldsDefStr = soption( _prefix=this->name(), _name="fieldsplit-fields" );
             auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
             if ( fieldsDef.size() == 0 )
             {
-                pmatrix->updatePCFieldSplit( M_pc );
-                for ( int splitId=0;splitId<is->size();++splitId )
-                    fieldsDef[splitId].insert(splitId);
+                if ( useComponentsSplit )
+                {
+                    auto const& isComponents = pmatrix->mapRow().indexSplitWithComponents();
+                    pmatrix->updatePCFieldSplit( M_pc, isComponents );
+                    for ( int splitId=0;splitId<isComponents->size();++splitId )
+                        fieldsDef[splitId].insert(splitId);
+                }
+                else
+                {
+                    pmatrix->updatePCFieldSplit( M_pc );
+                    for ( int splitId=0;splitId<is->size();++splitId )
+                        fieldsDef[splitId].insert(splitId);
+                }
             }
             else
             {
                 //fieldsDef.showMe();
-                auto isUsed = pmatrix->indexSplit()->applyFieldsDef( fieldsDef  );
+                indexsplit_ptrtype isUsed;
+                if ( useComponentsSplit )
+                    isUsed = pmatrix->mapRow().indexSplitWithComponents()->applyFieldsDef( fieldsDef  );
+                else
+                    isUsed = pmatrix->indexSplit()->applyFieldsDef( fieldsDef  );
                 //isUsed->showMe();
                 pmatrix->updatePCFieldSplit( M_pc,isUsed );
             }
@@ -1599,8 +1613,8 @@ getOptionsDescFieldSplit( std::string const& prefix, std::string const& sub )
     _options.add_options()
         ( prefixvm( prefix,pcctx+"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ),
           "type of fieldsplit (additive, multiplicative, symmetric-multiplicative, schur)" )
-        ( prefixvm( prefix,pcctx+"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ),
-          "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
+        //( prefixvm( prefix,pcctx+"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ),
+        //  "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
         ;
     // schur complement options
     _options.add_options()
@@ -1640,6 +1654,7 @@ getOptionsDescSplitInFieldSplit( int nSplit, std::string const& prefix, std::str
         _options.add_options()
             ( prefixvm( prefixfieldsplit,"fieldsplit-fields" ).c_str(), Feel::po::value<std::string>()->default_value( "" ),
               "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
+            ( prefixvm( prefixfieldsplit,"fieldsplit-use-components" ).c_str(), Feel::po::value<bool>()->default_value( false ),"split also with components" )
             ;
         _options.add( getOptionsDescPrecBase(prefixfieldsplit,"",true,(i==0)?"lu":"none") );
     }
@@ -2697,11 +2712,17 @@ ConfigurePCFieldSplit::ConfigureSubKSP::runConfigureSubKSP(KSP& ksp, Preconditio
             CHECK( is ) << "index split is not initialized\n";
 
             std::string fieldsDefStr = option(_name="fieldsplit-fields",_prefix=prefixSplit,_vm=this->vm()).as<std::string>();
+            bool useComponentsSplit = option( _name="fieldsplit-use-components",_prefix=prefixSplit,_vm=this->vm() ).as<bool>();
+
             auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
             //std::cout << "fieldsplit fieldsDefStr " << fieldsDefStr << "\n";
             //auto isUsed = is.applyFieldsDef( IndexSplit::FieldsDef(  {  { 0 , { 0 } }, { 1 , { 2 } } } ) );
             //is->showMe();
-            auto isUsed = is->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
+            PreconditionerPetsc<double>::indexsplit_ptrtype isUsed;
+            if ( useComponentsSplit )
+                isUsed = this->precFeel()->matrix()->mapRow().indexSplitWithComponents()->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
+            else
+                isUsed = is->applyFieldsDef( IndexSplit::FieldsDef( fieldsDef ) );
             //isUsed->showMe();
 
             std::vector<IS> isPetsc;

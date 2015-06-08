@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -663,6 +663,18 @@ po::options_description aitken_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+msi_options( std::string const& prefix )
+{
+    po::options_description _options( "Multiscale image " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"msi.level" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "Coarsening level to pass from a fine grid to a coarse one" )
+        ( prefixvm( prefix,"msi.pixelsize" ).c_str(), Feel::po::value<double>()->default_value( 8.9e-3  ), " Pixel size " )
+
+               ;
+    return _options;
+}
+
 
 po::options_description
 feel_options( std::string const& prefix  )
@@ -738,6 +750,8 @@ feel_options( std::string const& prefix  )
         .add( functionspace_options( prefix ) )
 #endif
         .add( aitken_options( prefix ) )
+
+        .add (msi_options(prefix))
         ;
 
     return opt;

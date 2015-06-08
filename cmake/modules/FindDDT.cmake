@@ -24,9 +24,8 @@
 FIND_LIBRARY(DDT_DMALLOC_LIBRARY
   NAMES dmalloc
   PATHS
+  /opt/allinea/forge/lib
   /opt/allinea/tools/lib
-  /opt/allinea/tools/4.0/lib
-  /opt/allinea/tools/4.1/lib
   PATH_SUFFIXES
   64
   )

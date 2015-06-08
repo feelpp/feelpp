@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -1170,15 +1170,25 @@ struct computeStartOfFieldSplit
             }
         return boost::make_tuple( ++cptSpaces, start );
     }
+};
 
+struct hasSubSpaceWithComponentsSplit
+{
+    typedef bool result_type;
+    template<typename T>
+    result_type operator()( result_type const &  previousRes, T const& t )
+    {
+        //return ( T::element_type::dof_type::is_product && T::element_type::dof_type::nComponents > 1 ) || previousRes;
+        return t->map().hasIndexSplitWithComponents() || previousRes;
+    }
 };
 
 // compute split
+template<bool UseComponentsSplit>
 struct computeNDofForEachSpace
 {
-
     computeNDofForEachSpace(size_type startSplit)
-    :
+        :
         M_indexSplit( new IndexSplit() ),
         M_startSplit(startSplit)
     {}
@@ -1187,35 +1197,21 @@ struct computeNDofForEachSpace
 
     typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
 
-#if 0
-    template<typename T>
-    result_type operator()( result_type const & previousRes, T const& t )
-    {
-        const size_type nDofWithoutGhost = t->dof()->nLocalDofWithoutGhost();
-        const size_type nDofWithGhost = t->dof()->nLocalDofWithGhost();
-        const size_type firstDof = t->dof()->firstDofGlobalCluster();
-        uint16_type cptSpaces = previousRes.get<0>();
-        const size_type start = previousRes.get<1>();
-        auto is = previousRes.get<2>();
-
-        is[cptSpaces].resize(nDofWithoutGhost);
-
-        for ( size_type i=0; i<nDofWithGhost; ++i )
-        {
-            if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
-            const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            M_is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
-        }
-
-        return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
-    }
-#else
     template<typename T>
     void operator()( T const& t ) const
     {
+        this->operator()( t, mpl::bool_<UseComponentsSplit>() );
+    }
+    template<typename T>
+    void operator()( T const& t, mpl::false_ ) const
+    {
         M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
     }
-#endif
+    template<typename T>
+    void operator()( T const& t, mpl::true_ ) const
+    {
+        M_indexSplit->addSplit( M_startSplit, t->map().indexSplitWithComponents() );
+    }
 
     mutable boost::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
@@ -2263,7 +2259,7 @@ public:
         }
         template<typename EltType>
         void assign( EltType const& e, local_interpolant_type const& Ihloc,
-                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
@@ -2321,7 +2317,7 @@ public:
         }
         template<typename EltType>
         void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
-                     typename std::enable_if<is_3d<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
@@ -4197,10 +4193,23 @@ public:
     buildDofIndexSplit()
     {
         auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-        auto computeSplit = Feel::detail::computeNDofForEachSpace(startSplit);
+        auto computeSplit = Feel::detail::computeNDofForEachSpace<false>(startSplit);
         boost::fusion::for_each( functionSpaces(), computeSplit );
         return computeSplit.indexSplit();
-
+    }
+    boost::shared_ptr<IndexSplit>
+    buildDofIndexSplitWithComponents()
+    {
+        bool hasCompSplit = boost::fusion::fold( functionSpaces(), false, Feel::detail::hasSubSpaceWithComponentsSplit() );
+        if ( hasCompSplit )
+        {
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
+            auto computeSplit = Feel::detail::computeNDofForEachSpace<true>(startSplit);
+            boost::fusion::for_each( functionSpaces(), computeSplit );
+            return computeSplit.indexSplit();
+        }
+        else
+            return boost::shared_ptr<IndexSplit>();
     }
 
     boost::shared_ptr<IndexSplit> const&
@@ -4743,6 +4752,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         M_dofOnOff->setNDof( this->nDof() );
     }
     M_dof->setIndexSplit( this->buildDofIndexSplit() );
+    M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
     //M_dof->indexSplit().showMe();
 
 }

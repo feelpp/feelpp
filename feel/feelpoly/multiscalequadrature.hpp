@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -28,6 +28,8 @@
 #define __TestMultiScale_H 1
 
 #include <feel/feelpoly/quadpoint.hpp>
+
+
 
 namespace Feel
 {
@@ -98,19 +100,20 @@ public :
 
     MultiScaleQuadrature()
         :
-        super( 8 )
+        super( pow(2,ioption("msi.level"))+1  )
     {
+        auto  gridsize = pow(2,ioption("msi.level"));
         // build rules in x and y direction
-        weights_type wx( 8 );
-        weights_type px( 8 );
+        weights_type wx( gridsize+1  );
+        weights_type px( gridsize+1  );
 
         double tmp=-1;
-        for ( double i = 0; i < 8; i++ )
+        for ( double i = 0; i <=gridsize ; i++ )
         {
             // computes the weight of the k-th node
-            this->M_w( i ) = 2./8 ;// wx( i );
+            this->M_w( i ) = 2./(gridsize+1) ;// wx( i );
             this->M_points( 0, i ) = tmp ;
-            tmp+=2./8;
+            tmp+=2./gridsize ;
         }
 
         boost::shared_ptr<GT_Lagrange<1,1,1, Hypercube,T> > gm( new GT_Lagrange<1, 1, 1, Hypercube, T> );
@@ -186,28 +189,29 @@ public :
 
     MultiScaleQuadrature( )
         :
-        super( 16*16 )
+        super( (1+pow(2,ioption("msi.level")))*(pow(2,ioption("msi.level"))+1) )
     {
+        auto gridsize=pow(2,ioption("msi.level"));
         // build rules in x and y direction
-        weights_type wx( 16*16 );
-        weights_type px( 16*16 );
-
+        weights_type wx( (gridsize+1)*(gridsize+1) );
+        //weights_type px( (gridsize*gridsize );
+        
         double tmpx=-1.;
-        double tmpy=-1.;
-        for ( int i = 0,  k = 0; i < 16; i++ )
+        double tmpy=1.;
+        for ( int i = 0,  k = 0; i <= gridsize; i++ )
         {
-            for ( int j = 0; j < 16; j++, ++k )
+            for ( int j = 0; j <=  gridsize; j++, ++k )
             {
                 // computes the weight of the k-th node
-                this->M_w( k ) = 4./(16.*16.) ;//wx( i ) * wx( j );
+                this->M_w( k ) = 4./( (gridsize+1)*(gridsize+1)) ;//wx( i ) * wx( j );
                 this->M_points( 0, k ) = tmpx ;
                 this->M_points( 1, k ) = tmpy ;
-                tmpy+=2./16;
+                tmpx+=2./gridsize;
             }
-            tmpy=-1.;
-            tmpx+=2./16;
+            tmpx=-1.;
+            tmpy-=2./gridsize;
         }
-
+        std::cout << "quadrature points:" << this->M_points << std::endl; 
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type());
         // construct face quadratures

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(METIS)
 
+set(C_FLAGS "-O3 -Wall -fPIC")
+
 set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/contrib/metis/GKlib CACHE PATH "path to GKlib")
 set(SHARED FALSE CACHE BOOL "build a shared library")
 

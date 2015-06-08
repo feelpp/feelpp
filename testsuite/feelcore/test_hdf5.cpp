@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,8 +46,15 @@ void run1()
     std::string FILE = "SDS.h5";
     int RANK = 2;
     std::string DATASETNAME = "IntArray";
-    int         data[NX][NY];          /* data to write */
+    int **      data;          /* data to write */
     int         i, j;
+
+    /* allocate data */
+    data = new int*[NX];
+    for(i = 0; i < NX; i++)
+    {
+        data[i] = new int[NY];
+    }
 
     /*
      * Data  and output buffer initialization.
@@ -110,6 +117,15 @@ void run1()
     H5Tclose(datatype);
     H5Dclose(dataset);
     H5Fclose(file);
+
+    /*
+     * Release memory
+     */
+    for(i = 0; i < NX; i++)
+    {
+        delete[] data[i];
+    }
+    delete[] data;
 }
 
 void run2()
@@ -127,11 +143,23 @@ void run2()
 
     hdf5.openFile( filename, Environment::worldComm(), false );
     int rank=2;
-    hsize_t dims[rank];
+    hsize_t * dims;
+    hsize_t * dims2;
+    hsize_t * offset;
+    hsize_t * dimsElt;
+    hsize_t * dimsElt2;
+    hsize_t * offsetElt;
+
+    /* memory allocation */
+    dims = new hsize_t[rank];
+    dims2 = new hsize_t[rank];
+    offset = new hsize_t[rank];
+    dimsElt = new hsize_t[rank];
+    dimsElt2 = new hsize_t[rank];
+    offsetElt = new hsize_t[rank];
+
     dims[0] = mycomm.size();dims[1] = 1;
-    hsize_t dims2[rank];
     dims2[0] = sizeValues.size();dims2[1] = 1;
-    hsize_t offset[rank];
     offset[0] = mycomm.rank(); offset[1] = 0;
 
     // create size tab
@@ -139,15 +167,12 @@ void run2()
     hdf5.write( "size", H5T_NATIVE_UINT, dims2, offset, sizeValues.data() );
     hdf5.closeTable( "size" );
 
-    hsize_t dimsElt[rank];
     if ( (mycomm.size()%2) == 0 )
         dimsElt[0] = (mycomm.size()/2)*(eltValues.size()+eltValues2.size());
     else
         dimsElt[0] = ((mycomm.size()-1)/2)*(eltValues.size()+eltValues2.size())+eltValues.size();
     dimsElt[1] = 1;
 
-    hsize_t dimsElt2[rank];
-    hsize_t offsetElt[rank];
     if  ( (mycomm.rank()%2) == 0 )
     {
         offsetElt[0] = (mycomm.rank()/2)*(eltValues.size()+eltValues2.size());
@@ -205,6 +230,15 @@ void run2()
             BOOST_CHECK_CLOSE( eltValues2[k], eltValuesReload[k], 1e-9 );
     }
 
+    /*
+     * Release memory
+     */
+    delete[] dims;
+    delete[] dims2;
+    delete[] offset;
+    delete[] dimsElt;
+    delete[] dimsElt2;
+    delete[] offsetElt;
 }
 
 } // namespace test_hdf5
