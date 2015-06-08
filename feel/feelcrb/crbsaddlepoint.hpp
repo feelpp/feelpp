@@ -268,6 +268,9 @@ public:
 
 private :
     void exportBasisFunctions();
+    template<int Row> void offlineResidual( int N0, int N1, int Nadded0, int Nadded1 );
+    void initResidualVectors();
+
     struct ComputeADElements
     {
         ComputeADElements( self_ptrtype crb ) : M_crb( crb ) {}
@@ -445,6 +448,12 @@ private :
     blockvectorN_type M_blockFqm_pr;
     blockvectorN_type M_blockLqm_pr;
 
+    std::vector< std::vector< std::vector< std::vector< std::vector< double >>>>> M_R_RhsRhs;
+    std::vector< std::vector< std::vector< std::vector< std::vector< vectorN_type >>>>> M_R_RhsLhs0;
+    std::vector< std::vector< std::vector< std::vector< std::vector< vectorN_type >>>>> M_R_RhsLhs1;
+    std::vector< std::vector< std::vector< std::vector< std::vector< matrixN_type >>>>> M_R_Lhs0Lhs0;
+    std::vector< std::vector< std::vector< std::vector< std::vector< matrixN_type >>>>> M_R_Lhs0Lhs1;
+    std::vector< std::vector< std::vector< std::vector< std::vector< matrixN_type >>>>> M_R_Lhs1Lhs1;
 
 
     friend class boost::serialization::access;
@@ -637,6 +646,10 @@ CRBSaddlePoint<TruthModelType>::offline()
         fusion::for_each( matrixrange, compute_elements );
 
 
+        offlineResidual<0>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
+        offlineResidual<1>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
+
+
         if ( ! use_predefined_WNmu )
         {
             bool already_exist;
@@ -733,6 +746,440 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
 
 
 template<typename TruthModelType>
+template<int Row>
+void
+CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, int Nadded1 )
+{
+    boost::timer ti;
+    bool transpose = boption("crb.saddlepoint.transpose");
+    bool optimize = boption(_name="crb.optimize-offline-residual") ;
+
+    if ( M_R_LhsLhs.size()==0 )
+    {
+        initResidualVectors<0>();
+        initResidualVectors<1>();
+    }
+
+    int QRhs = M_model->Ql<Row>( 0 );
+    int QLhs0 = M_model->Qa<Row,0>();
+    int QLhs1 = M_model->Qa<Row,1>();
+    if ( Row==1 && transpose && QLhs0==0 )
+        QLhs0 = M_model->Qa<0,Row>();
+    if ( Row==0 && transpose && QLhs1==0 )
+        QLhs1 = M_model->Qa<1,Row>();
+
+    vector_ptrtype Z1 = M_model->newVector<Row>();
+    vector_ptrtype Z2 = M_model->newVector<Row>();
+    vector_ptrtype X0 = M_model->newVector<0>();
+    vector_ptrtype X1 = M_model->newVector<1>();
+    vector_ptrtype Y0 = M_model->newVector<0>();
+    vector_ptrtype Y1 = M_model->newVector<1>();
+    vector_ptrtype W = M_model->newVector<Row>();
+
+    std::vector< std::vector< vector_ptrtype >> Fqm = M_model->Fqm<Row>(0);
+    std::vector< std::vector< sparse_matrix_ptrtype >> Lhs0 = M_model->Aqm<Row,0>();
+    std::vector< std::vector< sparse_matrix_ptrtype >> Lhs1 = M_model->Aqm<Row,1>();
+
+    if ( N==M_Nm )
+    {
+        ti.restart();
+        LOG(INFO) << "[offlineResidual] Compute residual data\n";
+        LOG(INFO) << "[offlineResidual] M_R_0x0\n";
+
+        for ( int q1=0; q1<QRhs; q1++ )
+        {
+            for ( int m1=0; m1< M_model->template mMaxF<Row>(0,q1); m1++ )
+            {
+                M_model->l2solve( Z1, Fqm[q1][m1], Row )
+                for ( int q2=0; q2<QRhs; q2++ )
+                {
+                    for ( int m2=0; q2<M_model->template mMaxF<Row>(0,q2); m2++ )
+                    {
+                        M_model->l2solve( Z2, Fqm[q2][m2], Row );
+                        M_R_RhsRhs[Row][q1][m1][q2][m2] = M_model->sclarProduct( Z1, Z2, Row );
+                    } // m2 loop
+                } // q2 loop
+            } // m1 loop
+        } // q1 loop
+    } //N==M_Nm
+
+
+    // LHS0 LOOP ON I
+    for ( int i=N0-Nadded0; i<N0; i++ )
+    {
+        *X0 = M_model->rBFunctionSpace<0>()->primalBasisElement( i );
+        for ( int q1=0; q1<QLhs0; q1++ )
+        {
+            for ( int m1=0; m1<M_model->template mMaxA<Row,0>(q1); m1++ )
+            {
+                Lhs0[q1][m1]->mutlVector( X0, W );
+                W->scale(-1.);
+                M_model->l2solve( Z1, W, Row );
+
+                // RHS LOOP
+                for ( int q2=0; q2<QRhs; q2++ )
+                {
+                    for ( int m2=0; m2<M_model->template mMaxF<Row>(0,q1); m2++ )
+                    {
+                        M_R_Lhs0Rhs[q1][m1][q2][m2].conservativeResize(N0);
+                        M_model->l2solve( Z2, Fqm[q2][m2], Row );
+                        M_R_Lhs0Rhs[q1][m1][q2][m2]( i ) = 2.0*M_model->sclarProduct( Z1, Z2, Row );
+                    } // m2 loop Rhs
+                } // q2 loop Rhs
+
+                // LHS0 LOOP ON J
+                for ( int j=0; j<N0; j++ )
+                {
+                    *Y0 = M_model->rBFunctionsSpace<0>()->primalBasisElement(j);
+                    if ( optimize )
+                    {
+                        for ( int q2=0; q2<q1; q2++ )
+                        {
+                            for ( int m2=0; m2<M_model->template mMaxA<Row,0>(q2); m2++ )
+                            {
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1].conservativeResize( N0, N0 );
+                                Lhs0[q2][m2]->mutlVector( Y0, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                double prod = M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1].conservativeResize( N0, N0 );
+                        Lhs0[q1][m1]->multVector( Y0, W );
+                        W->scale(-1.);
+                        M_model->l2solve( Z2, W );
+                        double prod = M_model->scalarProduct( Z1, Z2, Row );
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( i, j ) = prod;
+                        M_R_Lhs0Lhs0[Row][q1][m1][q1][m1]( j, i ) = prod;
+                    } //optimize
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs0; q2++ )
+                        {
+                            for( int m2=0; m2<M_model->template mMaxA<Row,0>(q2); m2++ )
+                            {
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].conservativeResize( N0, N0 );
+                                Lhs0[q2][m2]->mutlVector( Y0, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
+                                    = M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    } // !optimize
+                } // j loop Lhs0
+
+                // LHS1 LOOP ON J
+                for ( int j=0; j<N1; j++ )
+                {
+                    *Y1 = M_model->rbFunctionSpace<1>()primalBasisElement(j);
+                    for ( int q2=0; q2<QLhs1; q2++ )
+                    {
+                        for( int m2=0; m2<M_model->template mMaxA<Row,1>(q2); m2++ )
+                        {
+                            M_R_Lhs0Lhs1[Row][q1][m1][q2][m2].conservativeResize( N0, N1 );
+                            Lhs1[q2][m2]->mutlVector( Y1, W );
+                            W->scale( -1. );
+                            M_model->l2solve( Z2, W, Row );
+                            M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                = M_model->scalarProduct( Z1, Z2, Row );
+                        } // m2 loop Lhs1
+                    } // q2 loop Lhs1
+                } // j loop Lhs1
+
+            } // m1 loop Lhs0
+        } // q1 loop Lhs0
+    } // i loop Lhs0
+
+
+    // LHS0 LOOP ON J
+    for ( int j=N0-Nadded0; j<N0; j++ )
+    {
+        *X0 = M_model->rBFunctionSpace<0>()->primalBasisElement( j );
+        for ( int q1=0; q1<QLhs0; q1++ )
+        {
+            for ( int m1=0; m1<M_model->template mMaxA<Row,0>(q1); m1++ )
+            {
+                Lhs0[q1][m1]->mutlVector( X0, W );
+                W->scale(-1.);
+                M_model->l2solve( Z1, W, Row );
+
+                // LHS0 LOOP ON I
+                for ( int i=0; i<N0; i++ )
+                {
+                    *Y0 = M_model->rBFunctionsSpace<0>()->primalBasisElement(i);
+                    if ( optimize )
+                    {
+                        for ( int q2=0; q2<q1; q2++ )
+                        {
+                            for ( int m2=0; m2<M_model->template mMaxA<Row,0>(q2); m2++ )
+                            {
+                                Lhs0[q2][m2]->mutlVector( Y0, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                double prod = M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs0Lhs0[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    } //optimize
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs0; q2++ )
+                        {
+                            for( int m2=0; m2<M_model->template mMaxA<Row,0>(q2); m2++ )
+                            {
+                                Lhs0[q2][m2]->mutlVector( Y0, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                M_R_Lhs0Lhs0[Row][q1][m1][q2][m2]( i, j )
+                                    = M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+                    } // !optimize
+                } // i loop Lhs0
+
+            } // m1 loop Lhs0
+        } // q1 loop Lhs0
+    } // j loop Lhs0
+
+
+    // LHS1 LOOP ON I
+    for ( int i=N1-Nadded1; i<N1; i++ )
+    {
+        *X1 = M_model->rbFunctionSpace<1>()->primalBasisElement( i );
+        for ( int q1=0; q1<QLhs1; q1++ )
+        {
+            for ( int m1=0; m1<M_model->template mMaxA<Row,1>(q1); m1++ )
+            {
+                Lhs1[q1][m1]->multVector( X1, W );
+                W->scale(-1.);
+                M_mode->l2solve( Z1, W, Row );
+
+                // RHS LOOP
+                for ( int q2=0; q2<QRhs; q2++ )
+                {
+                    for ( int m2=0; m2<M_model->template mMaxF<Row>(0,q1); m2++ )
+                    {
+                        M_R_Lhs1Rhs[q1][m1][q2][m2].conservativeResize(N1);
+                        M_model->l2solve( Z2, Fqm[q2][m2], Row );
+                        M_R_Lhs1Rhs[q1][m1][q2][m2]( i ) = 2.0*M_model->sclarProduct( Z1, Z2, Row );
+                    } // m2 loop Rhs
+                } // q2 loop Rhs
+
+                // LHS1 LOOP ON J
+                for ( int j=0; j<N1; j++ )
+                {
+                    *Y1 = M_model->rBFunctionsSpace<1>()->primalBasisElement(j);
+                    if ( optimize )
+                    {
+                        for ( int q2=0; q2<q1; q2++ )
+                        {
+                            for ( int m2=0; m2<M_model->template mMaxA<Row,1>(q2); m2++ )
+                            {
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1].conservativeResize( N1, N1 );
+                                Lhs1[q2][m2]->mutlVector( Y1, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                double prod = M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs0
+                        } // q2 loop Lhs0
+
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
+                        Lhs1[q1][m1]->multVector( Y1, W );
+                        W->scale(-1.);
+                        M_model->l2solve( Z2, W );
+                        double prod = M_model->scalarProduct( Z1, Z2, Row );
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                    } //optimize
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs1; q2++ )
+                        {
+                            for( int m2=0; m2<M_model->template mMaxA<Row,1>(q2); m2++ )
+                            {
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].conservativeResize( N1, N1 );
+                                Lhs1[q2][m2]->mutlVector( Y1, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                    = M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+                    } // !optimize
+                } // j loop Lhs1
+
+            } // m1 loop Lhs1
+        } // q1 loop Lhs1
+    } // i loop Lhs1
+
+
+    // LHS1 LOOP ON J
+    for ( int j=N1-Nadded1; j<N1; j++ )
+    {
+        *X1 = M_model->rbFunctionSpace<1>()->primalBasisElement( j );
+        for ( int q1=0; q1<QLhs1; q1++ )
+        {
+            for ( int m1=0; m1<M_mode->template mMaxA<Row,1>(q1); m1++ )
+            {
+                Lhs1[q1][m1]->multVector( X1, W );
+                W->scale(-1.);
+                M_model->l2solve( Z1, W, Row );
+
+                // LHS0 LOOP ON I
+                for ( int i=0; i<N0; i++ )
+                {
+                    *Y0 = M_model->rbFunctionSpace<0>()->primalBasisElement( i );
+                    for ( int q2=0; q2<QLhs0; q2++ )
+                    {
+                        for ( int m2=0; m2<M_model->template mMaxA<Row,0>(q2); m2++ )
+                        {
+                            Lhs0[q2][m2]->multVector( Y0, W );
+                            W->scale(-1.);
+                            M_model->l2solve( Z2, W, Row );
+                            M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
+                                = M_model->scalarProduct( Z1, Z2, Row );
+                        }
+                    } // q1 loop Lhs0
+                } // i loop Lhs0
+
+                // LHS1 LOOP ON I
+                for ( int i=0; i<N1; i++ )
+                {
+                    *Y1 = M_model->rBFunctionsSpace<1>()->primalBasisElement(i);
+                    if ( optimize )
+                    {
+                        for ( int q2=0; q2<q1; q2++ )
+                        {
+                            for ( int m2=0; m2<M_model->template mMaxA<Row,1>(q2); m2++ )
+                            {
+                                Lhs1[q2][m2]->mutlVector( Y1, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                double prod = M_model->scalarProduct( Z1, Z2, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j ) = prod;
+                                M_R_Lhs1Lhs1[Row][q2][m2][q1][m1]( j, i ) = prod;
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1].conservativeResize( N1, N1 );
+                        Lhs1[q1][m1]->multVector( Y1, W );
+                        W->scale(-1.);
+                        M_model->l2solve( Z2, W );
+                        double prod = M_model->scalarProduct( Z1, Z2, Row );
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( i, j ) = prod;
+                        M_R_Lhs1Lhs1[Row][q1][m1][q1][m1]( j, i ) = prod;
+                    } //optimize
+                    else
+                    {
+                        for ( int q2=0; q2<QLhs1; q2++ )
+                        {
+                            for( int m2=0; m2<M_model->template mMaxA<Row,1>(q2); m2++ )
+                            {
+                                Lhs1[q2][m2]->mutlVector( Y1, W );
+                                W->scale( -1. );
+                                M_model->l2solve( Z2, W, Row );
+                                M_R_Lhs1Lhs1[Row][q1][m1][q2][m2]( i, j )
+                                    = M_model->scalarProduct( Z1, Z2, Row );
+                            } // m2 loop Lhs1
+                        } // q2 loop Lhs1
+                    } // !optimize
+                } // j loop Lhs1
+
+            } // m1 loop Lhs1
+        } // q1 loop Lhs1
+    } // j loop Lhs1
+
+}
+
+
+/**
+ * Initialize the vectors to stock data of the residual evaluation
+ */
+template<typename TruthModelType>
+template<int Row>
+void
+CRBSaddlePoint<TruthModelType>::initResidualVectors()
+{
+    int QRhs = M_model->Ql<Row>( 0 );
+    int QLhs0 = M_model->Qa<Row,0>();
+    int QLhs1 = M_model->Qa<Row,1>();
+
+    if ( M_R_RhsRhs.size()==0 )
+    {
+        M_R_RhsRhs.resize(2);
+        M_R_RhsLhs0.resize(2);
+        M_R_RhsLhs1.resize(2);
+        M_R_Lhs0Lhs0.resize(2);
+        M_R_Lhs0Lhs1.resize(2);
+        M_R_Lhs1Lhs1.resize(2);
+    }
+
+    M_R_RhsRhs[Row].resize(QRhs);
+    M_R_RhsLhs0[Row].resize(QRhs);
+    M_R_RhsLhs1[Row].resize(QRhs);
+    for ( int q1=0; q1<QRhs; q1++ )
+    {
+        int mMax1 = M_model->template mMaxF<Row>(0,q1);
+        M_R_RhsRhs[Row][q1].resize(mMax1);
+        M_R_LhsRhs0[Row][q1].resize(mMax1);
+        M_R_LhsRhs1[Row][q1].resize(mMax1);
+        for ( int m1=0; m1<mMax1; m1++ )
+        {
+            M_R_RhsRhs[Row][q1][m1].resize(QRhs);
+            M_R_RhsLhs0[Row][q1][m1].resize(QLhs0);
+            M_R_RhsLhs1[Row][q1][m1].resize(QLhs0);
+            for ( int q2=0; q2<QRhs; q2++ )
+                M_R_RhsRhs[Row][q1][m1][q2].resize( M_model->template mMaxF<Row>(0,q2) );
+            for ( int q2=0; q2<QLhs0; q2++ )
+                M_R_RhsLhs0[Row][q1][m1][q2].resize( M_model->template mMaxA<Row,0>(q2) );
+            for ( int q2=0; q2<QLhs1; q2++ )
+                M_R_RhsLhs1[Row][q1][m1][q2].resize( M_model->template mMaxA<Row,1>(q2) );
+        }
+    }
+
+    M_R_Lhs0Lhs0[Row].resize(QLhs0);
+    M_R_Lhs0Lhs1[Row].resize(QLhs0);
+    for ( int q1=0; q1<QLhs0; q1++ )
+    {
+        int mMax1 = M_model->template mMaxA<Row,0>(q1);
+        M_R_Lhs0Lhs0[Row][q1].resize(mMax1);
+        M_R_Lhs0Lhs1[Row][q1].resize(mMax1);
+        for ( int m1=0; m1<mMax1; m1++ )
+        {
+            M_R_Lhs0Lhs0[Row][q1][m1].resize(QLhs0);
+            M_R_Lhs0Lhs1[Row][q1][m1].resize(QLhs1);
+            for ( int q2=0; q2<QLhs0; q2++ )
+                M_R_Lhs0Lhs0[Row][q1][m1][q2].resize( M_model->template mMaxA<Row,0>(q2) );
+            for ( int q2=0; q2<QLhs1; q2++ )
+                M_R_Lhs0Lhs1[Row][q1][m1][q2].resize( M_model->template mMaxA<Row,1>(q2) );
+        }
+    }
+
+    M_R_Lhs1Lhs1[Row].resize(QLhs1);
+    for ( int q1=0; q1<QLhs1; q1++ )
+    {
+        int mMax1 = M_model->template mMaxA<Row,1>(q1);
+        M_R_Lhs1Lhs1[Row][q1].resize(mMax1);
+        for ( int m1=0; m1<QLhs1; m1++ )
+        {
+            M_R_Lhs1Lhs1[Row][q1][m1].resize(QLhs1);
+            for ( int q2=0; q2<QLhs1; q2++ )
+                M_R_Lhs1Lhs1[Row][q1][m1][q2].resize( M_model->template mMaxA<Row,1>(q2) );
+        }
+    }
+}
+
+
+template<typename TruthModelType>
 void
 CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
 {
@@ -816,7 +1263,6 @@ CRBSaddlePoint<TruthModelType>::expansionSaddlePoint( vectorN_type const& U_coef
 
     return U;
 }
-
 
 
 template<typename TruthModelType>

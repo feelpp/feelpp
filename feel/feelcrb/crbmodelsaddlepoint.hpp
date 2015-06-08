@@ -246,6 +246,8 @@ public :
 
             XN0 = rbspace_type<0>::New( _space=Xh0 );
             XN1 = rbspace_type<1>::New( _space=Xh1 );
+            XN_vec( XN0, XN1 );
+
             if (Environment::isMasterRank() )
                 std::cout << "Number of dof : " << this->Xh->nDof() << std::endl
                           << "Number of local dof : " << this->Xh->nLocalDof() << std::endl
@@ -255,8 +257,20 @@ public :
     template<int T>
     rbspace_ptrtype<T> rBFunctionSpace()
         {
-            fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1> > v( XN0, XN1 );
-            return fusion::at_c<T>( v );
+            return fusion::at_c<T>( XN_vec );
+        }
+
+    template<int NSpace>
+    vector_ptrtype newVector()
+        {
+            return this->M_backend_l2[NSpace]->newVector( this->Xh->template functionSpace<NSpace>() );
+        }
+
+    template<int Row, int Col>
+    sparse_matrix_ptrtype newMatrix()
+        {
+            return this->M_backend_l2[Row]->newMatrix( _test=this->Xh->template functionSpace<Row>()
+                                                       _trial=this->Xh->template functionSpace<Col>() );
         }
 
 
@@ -340,8 +354,7 @@ protected :
 
     rbspace_ptrtype<0> XN0;
     rbspace_ptrtype<1> XN1;
-
-    backend_ptrtype M_backend0;
+    fusion::vector<rbspace_ptrtype<0>,rbspace_ptrtype<1> > XN_vec;
 
 }; // class CRBModelSaddlepoint
 

@@ -22,6 +22,7 @@
 
 #include "affinedecomposition.hpp"
 
+
 namespace Feel
 {
 
@@ -256,7 +257,7 @@ public:
 
             M_A = matrix_ad_type( this->shared_from_this() );
             M_M = matrix_ad_type( this->shared_from_this() );
-            M_F.push_back( vector_ad_type(this->shared_from_this() ) );
+            M_F.push_back( vector_ad_type( this->shared_from_this() ) );
 
             LOG(INFO)<< "Model Initialization";
             initModel();
@@ -327,6 +328,10 @@ public:
     matrix_ad_type getA()
         {
             return M_A;
+        }
+    matrix_ad_type getM()
+        {
+            return M_M;
         }
     std::vector< vector_ad_type > getF()
         {
@@ -633,6 +638,8 @@ public:
             auto A = M_A.template get<Row,Col>();
             if ( A )
                 return A->Q();
+            else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() )
+                return M_A.template get<Col,Row>()->Q();
             return 0;
         }
     template<int Row=0>
@@ -662,6 +669,9 @@ public:
             auto A=M_A.template get<Row,Col>();
             if(A)
                 return A->mMax(q);
+            else if (boption("crb.saddlpoint.transpose") && M_A.template get<Col,Row>() )
+                return M_A.template get <Col,Row>()->mMAx(q);
+
             return 0;
         }
     template<int Row=0>
@@ -671,6 +681,12 @@ public:
             if(F)
                 return F->mMax(q);
             return 0;
+        }
+
+    template<int Row=0, int Col=0>
+    std::vector< std::vector< sparse_matrix_ptrtype >> Mqm()
+        {
+            return M_M.template get<Row,Col>()->compute();
         }
 
     template<int Row=0,int Col=0>
@@ -684,6 +700,34 @@ public:
         {
             return Mqm<Row,Col>( q, m, transpose )->energy( xi_j, xi_i );
         }
+    template<int Row=0, int Col=0>
+    std::vector< std::vector< sparse_matrix_ptrtype >> Aqm()
+        {
+            auto A = M_A.template get<Row,Col>();
+
+            if (A)
+               return A->compute();
+            else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() )
+            {
+                std::vector< std::vector< sparse_matrix_ptrtype >> Aqm = M_A.template get<Col,Row>();
+                std::vector< std::vector< sparse_matrix_ptrtype >> out;
+                out.resize( Aqm.size() );
+                for ( int q=0; q<out.size(); q++ )
+                {
+                    mMax = Aqm[q].size();
+                    out[q].resize(mMax);
+                    for ( int m=0; m<mMax; m++ )
+                        out[q][m] = Aqm[q][m]->transpose();
+                }
+                return out;
+            }
+            else
+            {
+                std::vector< std::vector< sparse_matrix_ptrtype >> out;
+                return out;
+            }
+        }
+
     template<int Row=0,int Col=0>
     sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
         {
@@ -706,6 +750,12 @@ public:
         {
             return M_F[output].template get<Row>()->compute(q,m);
         }
+    template<int Row=0>
+    std::vector< std::vector< vector_ptrtype >> Fqm( int const& output )
+        {
+            return M_F[output].template get<Row>->compute();
+        }
+
     template<int Row=0, typename Type>
     value_type Fqm( uint16_type output, uint16_type q,  uint16_type m, Type const& xi )
         {
