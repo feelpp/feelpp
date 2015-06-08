@@ -44,7 +44,7 @@ public:
     enum Type
     {
         PCD = 0, // pressure convection diffusion
-        PMM=1, // pressure mass matrix
+        PMM = 1, // pressure mass matrix
         SIMPLE=2 // 
     };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -359,7 +359,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         if ( boption("blockns.pcd") )
         {
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion...\n";
-            CHECK(pcdOp) << "Invalid PCD oeprator\n";
+            CHECK(pcdOp) << "Invalid PCD operator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
             tic();
