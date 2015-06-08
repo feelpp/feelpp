@@ -257,6 +257,9 @@ PreconditionerBlockNS<space_type>::createSubMatrices()
 {
     tic();
     M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
+    M_F->mapRowPtr()->setIndexSplit( M_Vh->dof()->indexSplit() );
+    if ( M_Vh->dof()->hasIndexSplitWithComponents() )
+        M_F->mapRowPtr()->setIndexSplitWithComponents( M_Vh->dof()->indexSplitWithComponents() );
     M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
     M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
     helmOp = op( M_F, "Fu" );
