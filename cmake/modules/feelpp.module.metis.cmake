@@ -28,6 +28,10 @@
 OPTION( FEELPP_ENABLE_METIS "Enable METIS" ON )
 
 if ( FEELPP_ENABLE_METIS )
+  FIND_PACKAGE(Metis)
+  if ( METIS_FOUND )
+    MESSAGE( STATUS "should chekc metis version")
+  else()
     #
     # Metis
     #
@@ -36,9 +40,10 @@ if ( FEELPP_ENABLE_METIS )
     SET(FEELPP_HAS_METIS 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} METIS" )
     ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
+    ADD_DEFINITIONS( -fPIC )
     
     SET(FEELPP_LIBRARIES metis ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
     add_subdirectory(contrib/metis)
-  
+  endif()
 endif()

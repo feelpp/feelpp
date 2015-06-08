@@ -128,7 +128,7 @@ public:
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "\n";
             }
-            os << std::resetiosflags;
+            os << std::resetiosflags(os.flags());
             if ( display )
                 if ( Environment::isMasterRank() )
                     std::cout << os.str() << std::endl;
