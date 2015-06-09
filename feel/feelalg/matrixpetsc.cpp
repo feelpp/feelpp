@@ -979,7 +979,7 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     datamap_ptrtype subMapCol = ( useSameDataMap )? subMapRow : this->mapColPtr()->createSubDataMap( cols, false );
 
     // build submatrix petsc
-    Mat subMatPetsc;
+    Mat subMatPetsc = NULL;
     this->getSubMatrixPetsc( rows,cols,subMatPetsc );
 
     // build matrixsparse object
@@ -989,6 +989,17 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     else
         subMat.reset( new MatrixPetsc<T>( subMatPetsc,subMapRow,subMapCol,true ) );
     return subMat;
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                                 std::vector<size_type> const& rows,
+                                 std::vector<size_type> const& cols )
+{
+    CHECK( submatrix ) << "submatrix is not init";
+    boost::shared_ptr<MatrixPetsc<T> > submatrixPetsc = boost::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
+    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() );
 }
 
 
@@ -1058,7 +1069,10 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
-    ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    if ( submat == NULL )
+        ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    else
+        ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
     CHKERRABORT( this->comm(),ierr );
 
     ierr = PETSc::ISDestroy( isrow );
