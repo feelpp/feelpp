@@ -1548,6 +1548,8 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "relative threshold to use for dropping edges in aggregation graph" )
         ( prefixvm( prefix,pcctx+"gamg-set-sym-graph" ).c_str(), Feel::po::value<bool>()->default_value( true ),
           "set for asymmetric matrice (if the matrix is sym, put to false)" )
+        ( prefixvm( prefix,pcctx+"gamg-reuse-interpolation").c_str(), Feel::po::value<bool>()->default_value( false ),
+          "reuse prolongation operator" )
         ;
 
     // coarse ksp/pc
@@ -2173,6 +2175,7 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
     M_coarseEqLim(option(_name="pc-gamg-coarse-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_reuseInterpolation( option(_name="pc-gamg-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2222,6 +2225,8 @@ ConfigurePCGAMG::run( PC& pc )
         this->check( PCGAMGSetThreshold( pc, M_threshold ) );
         // not works!!(seems to be missing PetscObjectComposeFunction with this function)
         //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
+        // Reuse prolongation operator
+        this->check( PCGAMGSetReuseProl( pc, ( M_reuseInterpolation )?PETSC_TRUE : PETSC_FALSE ) );
     }
 
     // setup sub-pc
