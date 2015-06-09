@@ -668,6 +668,19 @@ public:
     }
 
     /**
+     * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
+     * row and column indices given in the "rows" and "cols" entries.
+     */
+    virtual
+    void
+    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                     std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols )
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+    }
+
+    /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
