@@ -51,8 +51,8 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     typedef ExprType expr_type;
     typedef typename expr_type::spec_expr_type SpecificExprType;
     typedef typename expr_type::value_type value_type;
-    typedef typename expr_type::gm_type gm_type;
     typedef typename expr_type::geoelement_type geoelement_type;
+    typedef typename super_type::gm_type gm_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
     typedef typename super_type::gmc_type gmc_type;
     typedef typename super_type::shape_type shape;
@@ -79,9 +79,9 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
         M_ctxDisp( new ctx_disp_type( expr.disp().functionSpace()->fe(), this->gmc(),(pc_disp_ptrtype const&)M_pcDisp ) ),
         M_pcPressure( new pc_pressure_type( expr.pressure().functionSpace()->fe(), this->gmc()->xRefs() ) ),
         M_ctxPressure( new ctx_pressure_type( expr.pressure().functionSpace()->fe(), this->gmc(),(pc_pressure_ptrtype const&)M_pcPressure ) ),
-        M_locRes( expr.disp().gradExtents( *this->gmc()) ),
-        M_locGradDisplacement( expr.disp().gradExtents( *this->gmc()) ),
-        M_locIdPressure( expr.pressure().idExtents( *this->gmc()) )
+        M_locRes( boost::extents[ this->gmc()->xRefs().size2()] ),
+        M_locGradDisplacement( boost::extents[ this->gmc()->xRefs().size2()] ),
+        M_locIdPressure( boost::extents[ this->gmc()->xRefs().size2()] )
         {}
 
     tensorSolidMecPressureFormulationMultiplierBase( expr_type const& expr,
@@ -758,8 +758,8 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     typedef ExprType expr_type;
     typedef typename expr_type::spec_expr_type SpecificExprType;
     typedef typename expr_type::value_type value_type;
-    typedef typename expr_type::gm_type gm_type;
     typedef typename expr_type::geoelement_type geoelement_type;
+    typedef typename super_type::gm_type gm_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
     typedef typename super_type::gmc_type gmc_type;
     typedef typename super_type::shape_type shape;
