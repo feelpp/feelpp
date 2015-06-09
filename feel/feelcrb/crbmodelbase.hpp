@@ -633,12 +633,12 @@ public:
             return 0;
         }
     template<int Row=0,int Col=0>
-    size_type Qa() const
+    size_type Qa( bool get_transpose=true ) const
         {
             auto A = M_A.template get<Row,Col>();
             if ( A )
                 return A->Q();
-            else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() )
+            else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() && get_transpose )
                 return M_A.template get<Col,Row>()->Q();
             return 0;
         }
@@ -664,13 +664,13 @@ public:
             return 0;
         }
     template<int Row=0,int Col=0>
-    int mMaxA( int q )
+    int mMaxA( int q, bool get_transpose=true )
         {
             auto A=M_A.template get<Row,Col>();
             if(A)
                 return A->mMax(q);
-            else if (boption("crb.saddlpoint.transpose") && M_A.template get<Col,Row>() )
-                return M_A.template get <Col,Row>()->mMAx(q);
+            else if (boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() && get_transpose )
+                return M_A.template get <Col,Row>()->mMax(q);
 
             return 0;
         }
@@ -709,15 +709,20 @@ public:
                return A->compute();
             else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() )
             {
-                std::vector< std::vector< sparse_matrix_ptrtype >> Aqm = M_A.template get<Col,Row>();
+                std::vector< std::vector< sparse_matrix_ptrtype >> Aqm =
+                    M_A.template get<Col,Row>()->compute();
                 std::vector< std::vector< sparse_matrix_ptrtype >> out;
                 out.resize( Aqm.size() );
                 for ( int q=0; q<out.size(); q++ )
                 {
-                    mMax = Aqm[q].size();
+                    int mMax = Aqm[q].size();
                     out[q].resize(mMax);
                     for ( int m=0; m<mMax; m++ )
-                        out[q][m] = Aqm[q][m]->transpose();
+                    {
+                        out[q][m] = M_backend->newMatrix( _test=this->Xh->template functionSpace<Row>(),
+                                                          _trial=this->Xh->template functionSpace<Col>() );
+                        Aqm[q][m]->transpose( out[q][m] );
+                    }
                 }
                 return out;
             }
@@ -753,7 +758,7 @@ public:
     template<int Row=0>
     std::vector< std::vector< vector_ptrtype >> Fqm( int const& output )
         {
-            return M_F[output].template get<Row>->compute();
+            return M_F[output].template get<Row>()->compute();
         }
 
     template<int Row=0, typename Type>

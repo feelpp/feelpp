@@ -246,7 +246,8 @@ public :
 
             XN0 = rbspace_type<0>::New( _space=Xh0 );
             XN1 = rbspace_type<1>::New( _space=Xh1 );
-            XN_vec( XN0, XN1 );
+            fusion::at_c<0>(XN_vec) = XN0;
+            fusion::at_c<1>(XN_vec) = XN1;
 
             if (Environment::isMasterRank() )
                 std::cout << "Number of dof : " << this->Xh->nDof() << std::endl
@@ -261,15 +262,15 @@ public :
         }
 
     template<int NSpace>
-    vector_ptrtype newVector()
+    vector_ptrtype newL2Vector()
         {
             return this->M_backend_l2[NSpace]->newVector( this->Xh->template functionSpace<NSpace>() );
         }
 
     template<int Row, int Col>
-    sparse_matrix_ptrtype newMatrix()
+    sparse_matrix_ptrtype newL2Matrix()
         {
-            return this->M_backend_l2[Row]->newMatrix( _test=this->Xh->template functionSpace<Row>()
+            return this->M_backend_l2[Row]->newMatrix( _test=this->Xh->template functionSpace<Row>(),
                                                        _trial=this->Xh->template functionSpace<Col>() );
         }
 
