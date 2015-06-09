@@ -98,7 +98,7 @@ public:
     void initialize();
 
     template < typename ExprConvection, typename ExprBC >
-    void update( ExprConvection const& expr_b, ExprBC const& ebc );
+    void update( ExprConvection const& expr_b, ExprBC const& ebc, bool hasConvection=true );
 
     void setProblemType( std::string prob_type )
         {
@@ -205,13 +205,15 @@ template < typename space_type>
 template < typename ExprConvection, typename ExprBC >
 void
 OperatorPCD<space_type>::update( ExprConvection const& expr_b,
-                                 ExprBC const& ebc )
+                                 ExprBC const& ebc,
+                                 bool hasConvection )
 {
     tic();
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
     G->zero();
 
-    conv = integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
+    if ( hasConvection )
+        conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
     conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
