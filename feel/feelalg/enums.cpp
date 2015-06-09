@@ -82,7 +82,8 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="shell" )        return PreconditionerType::SHELL_PRECOND;
     else if ( type=="fieldsplit" )   return PreconditionerType::FIELDSPLIT_PRECOND;
     else if ( type=="lsc" )          return PreconditionerType::LSC_PRECOND;
-    else if ( type=="lsc2" )          return PreconditionerType::LSC2_PRECOND;
+    else if ( type=="lsc2" )         return PreconditionerType::LSC2_PRECOND;
+    else if ( type=="blockns" )      return PreconditionerType::FEELPP_BLOCKNS_PRECOND;
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
