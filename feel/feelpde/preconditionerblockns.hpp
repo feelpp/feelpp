@@ -238,7 +238,6 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
     
     initialize();
 
-    tic();    
     this->setType ( t );
     toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
 }
@@ -260,7 +259,7 @@ PreconditionerBlockNS<space_type>::createSubMatrices()
     M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
     M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
     helmOp = op( M_F, "Fu" );
-    divOp = op( M_Bt, "Bt");
+    divOp  = op( M_Bt, "Bt");
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
 
 }
