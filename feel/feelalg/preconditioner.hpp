@@ -228,10 +228,15 @@ public:
     }
 
     bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
-    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key )
+    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
     {
         CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
         return M_inHousePreconditioners.find(key)->second;
+    }
+    preconditioner_ptrtype & inHousePreconditioners( std::string const& key )
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners[key];
     }
 
     //@}
