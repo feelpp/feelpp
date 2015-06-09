@@ -46,6 +46,7 @@ extern "C" {
 #endif
 
 #include <feel/feelalg/preconditionerpetsclsc.cpp>
+#include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
 
 //------------------------------------------------------------------------------//
@@ -707,6 +708,7 @@ void PreconditionerPetsc<T>::init ()
     if ( !petscPCInHouseIsInit )
     {
         check( PCRegister("lsc2",PCCreate_LSC2) );
+        check( PCRegister("blockns",PCCreate_FEELPP) );
         petscPCInHouseIsInit=true;
     }
 
@@ -1045,6 +1047,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case FEELPP_BLOCKNS_PRECOND:
+        ierr = PCSetType( pc, "blockns" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case ML_PRECOND:
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1227,6 +1234,11 @@ ConfigurePC::run( PC& pc )
     else if ( std::string(pctype) == "lsc2" )
     {
         ConfigurePCLSC( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), "in-house" );
+    }
+    else if ( std::string(pctype) == "blockns" )
+    {
+        CHECK( this->precFeel()->hasInHousePreconditioners( "blockns") ) << "blockns in-house prec not attached";
+        this->check( PCSetPrecond_FEELPP(pc, this->precFeel()->inHousePreconditioners( "blockns") ) );
     }
     else if ( std::string(pctype) == "hypre" )
     {
