@@ -175,6 +175,11 @@ ModelAlgebraic::buildMatrixGraph() const
 }
 
 void
+ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
+                                             vector_ptrtype const& vecSol ) const
+{}
+
+void
 ModelAlgebraic::updateCLDirichlet(vector_ptrtype& U) const {} // const = 0;
 void
 ModelAlgebraic::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
