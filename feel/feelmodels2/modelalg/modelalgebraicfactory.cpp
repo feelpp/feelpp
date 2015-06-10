@@ -433,7 +433,7 @@ namespace Feel {
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         this->application()->timerTool("Solve").start();
-        M_appli->updateCLDirichlet(U);
+        M_appli->updateNewtonInitialGuess(U);
         this->application()->timerTool("Solve").elapsed("algebraic-newton-bc");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
@@ -604,7 +604,7 @@ namespace Feel {
 #if 0
         std::cout << "[ModelAlgebraicFactory] : Newton Algo start\n";
 
-        //M_appli->updateCLDirichlet(U);
+        //M_appli->updateNewtonInitialGuess(U);
 
 
         //vector_ptrtype R( M_backend->newVector( M_Xh ) );

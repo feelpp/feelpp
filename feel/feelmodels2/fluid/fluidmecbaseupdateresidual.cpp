@@ -556,9 +556,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) const
 {
-    this->log("FluidMechanics","updateCLDirichlet","start");
+    this->log("FluidMechanics","updateNewtonInitialGuess","start");
 
     auto const& u = this->fieldVelocity();
     auto Xh = this->functionSpace();
@@ -567,7 +567,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) con
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
     {
-        this->log("FluidMechanics","updateCLDirichlet","update moving boundary with strong Dirichlet");
+        this->log("FluidMechanics","updateNewtonInitialGuess","update moving boundary with strong Dirichlet");
         modifVec(markedfaces(mesh, this->markersNameMovingBoundary()), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );
     }
 #endif
@@ -575,7 +575,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateCLDirichlet(vector_ptrtype& U) con
 
     U->close();
 
-    this->log("FluidMechanics","updateCLDirichlet","finish");
+    this->log("FluidMechanics","updateNewtonInitialGuess","finish");
 }
 
 

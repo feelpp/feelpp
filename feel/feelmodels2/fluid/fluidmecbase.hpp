@@ -376,8 +376,8 @@ public:
     graph_ptrtype buildMatrixGraph() const;
     int nBlockMatrixGraph() const;
     indexsplit_ptrtype buildIndexSplit() const;
-    model_algebraic_factory_ptrtype methodNum() { return M_methodNum; }
-    model_algebraic_factory_ptrtype const& methodNum() const { return M_methodNum; }
+    model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
+    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     size_type nLocalDof() const;
     std::map<std::string,size_type> const& startDofIndexFieldsInMatrix() const { return M_startDofIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
@@ -548,21 +548,6 @@ public :
     void updateAlePartUsedByNormalStress();
 
     void updateWallShearStress();
-#if 0
-    template<typename FuncT>
-    void updateMarker3( FuncT const& v )
-        {
-            M_mesh->updateMarker3( v );
-            M_mesh->updateMarkersFromElements();
-            if (true)
-            {
-                std::cout << "number of marked 3 elements: " << std::distance( marked3elements( M_mesh, 1 ).template get<1>(),
-                                                                               marked3elements( M_mesh, 1 ).template get<2>() ) << "\n";
-                std::cout << "number of marked 3 faces: " << std::distance( marked3faces( M_mesh, 1 ).template get<1>(),
-                                                                            marked3faces( M_mesh, 1 ).template get<2>() ) << "\n";
-            }
-        }
-#endif
     void updateVorticity(mpl::int_<2> /***/);
     void updateVorticity(mpl::int_<3> /***/);
 
@@ -571,7 +556,6 @@ public :
     {
         M_Solution->template elementPtr<0>()->on(_range=elements( this->mesh()),_expr=__expr );
     }
-
     template < typename ExprT >
     void updatePressure(vf::Expr<ExprT> const& __expr)
     {
@@ -585,7 +569,6 @@ public :
         M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr );
         M_haveSourceAdded=true;
     }
-
     template < typename ExprT >
     void updateVelocityDiv(vf::Expr<ExprT> const& __expr)
     {
@@ -595,7 +578,7 @@ public :
         //*M_velocityDiv = vf::project(_space=M_Xh->template functionSpace<1>(),_range=elements( this->mesh()),_expr=__expr);
         M_velocityDiv->on(_range=elements(this->mesh()),_expr=__expr);
         M_velocityDivIsEqualToZero=false;
-        }
+    }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     template <typename element_mecasol_ptrtype>
@@ -674,7 +657,7 @@ public :
 
     //___________________________________________________________________________________//
 
-    void updateCLDirichlet(vector_ptrtype& U) const;
+    void updateNewtonInitialGuess(vector_ptrtype& U) const;
 
     // non linear (newton)
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
@@ -784,9 +767,7 @@ protected:
     //----------------------------------------------------
 #endif
     // tool solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_methodNum;
-    //boost::shared_ptr<BoundaryConditions> M_bcPrecPCD;
-    //typename Feel::meta::blockns<space_fluid_type>::ptrtype M_precondBlockNS;
+    model_algebraic_factory_ptrtype M_algebraicFactory;
     //----------------------------------------------------
     // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;

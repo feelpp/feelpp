@@ -994,7 +994,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     //-------------------------------------------------//
     if (buildMethodNum)
     {
-        M_methodNum.reset( new model_algebraic_factory_type(app,this->backend()) );
+        M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend()) );
 
     }
     M_isUpdatedForUse = true;

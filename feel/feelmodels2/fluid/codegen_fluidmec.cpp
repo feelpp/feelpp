@@ -194,7 +194,7 @@ FLUIDMECHANICS_CLASS_NAME::init(bool buildMethodNum)
 void
 FLUIDMECHANICS_CLASS_NAME::updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const
 {
-    this->log("FluidMechanics","updateCLDirichlet", "start");
+    this->log("FluidMechanics","updateInitialNewtonSolutionBCDirichlet", "start");
 
     if ( !this->hasMarkerDirichletBCelimination() && !this->hasMarkerDirichletBClm() ) return;
 
@@ -229,7 +229,7 @@ FLUIDMECHANICS_CLASS_NAME::updateInitialNewtonSolutionBCDirichlet(vector_ptrtype
     //U->close();
 
     double t1=timerBCnewton.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateCLDirichlet",
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateInitialNewtonSolutionBCDirichlet",
                                                "finish in "+(boost::format("%1% s") % t1).str(),
                                                this->worldComm(),this->verboseAllProc());
 }
