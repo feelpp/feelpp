@@ -2238,7 +2238,11 @@ ConfigurePCGAMG::run( PC& pc )
         // not works!!(seems to be missing PetscObjectComposeFunction with this function)
         //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
         // Reuse prolongation operator
+#if PETSC_VERSION_LESS_THAN( 3,5,5 )
         this->check( PCGAMGSetReuseProl( pc, ( M_reuseInterpolation )?PETSC_TRUE : PETSC_FALSE ) );
+#else
+        this->check( PCGAMGSetReuseInterpolation( pc, ( M_reuseInterpolation )?PETSC_TRUE : PETSC_FALSE ) );
+#endif
     }
 
     // setup sub-pc
