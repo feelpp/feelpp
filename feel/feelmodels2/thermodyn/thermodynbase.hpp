@@ -128,8 +128,8 @@ class ThermoDynamicsBase : public ModelNumerical,
         BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
         BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
         size_type nLocalDof() const;
-        model_algebraic_factory_ptrtype const& methodNum() const { return M_algebraicFactory; }
-        model_algebraic_factory_ptrtype & methodNum() { return M_algebraicFactory; }
+        model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
+        model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
         //___________________________________________________________________________________//
         // exporter
         void exportResults() { this->exportResults( this->currentTime() ); }

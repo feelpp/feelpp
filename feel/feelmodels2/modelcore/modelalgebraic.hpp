@@ -125,7 +125,7 @@ public :
 
     //----------------------------------------------------------------------------------//
 
-    virtual void updateCLDirichlet(vector_ptrtype& U) const;// {} // const = 0;
+    virtual void updateNewtonInitialGuess(vector_ptrtype& U) const;// {} // const = 0;
     virtual void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
                                  bool BuildCstPart,
                                  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,

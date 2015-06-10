@@ -505,7 +505,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     // assembly methods
-    virtual void updateCLDirichlet(vector_ptrtype& U) const = 0;
+    virtual void updateNewtonInitialGuess(vector_ptrtype& U) const = 0;
 
     void updateLinearPDE(const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F,
                          bool _buildCstPart,

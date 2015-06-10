@@ -155,11 +155,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet( vector_ptrtype& U ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
     if ( M_bcDirichlet.empty() && M_bcDirichletX.empty() && M_bcDirichletY.empty() && M_bcDirichletZ.empty() ) return;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateCLDirichlet", "start",
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
                                                this->worldComm(),this->verboseAllProc());
 
     auto const& u = this->fieldDisplacement();
@@ -184,8 +184,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateCLDirichlet( vector_ptrtype& U ) const
     }
     U->close();
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateCLDirichlet", "finish",
-                                        this->worldComm(),this->verboseAllProc());
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
+                                               this->worldComm(),this->verboseAllProc());
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

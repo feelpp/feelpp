@@ -184,13 +184,13 @@ SOLIDMECHANICS_CLASS_NAME::init( bool buildMethodNum )
 //---------------------------------------------------------------------------------------------------//
 
 void
-SOLIDMECHANICS_CLASS_NAME::updateCLDirichlet( vector_ptrtype& U ) const
+SOLIDMECHANICS_CLASS_NAME::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
     auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
     if ( !bcDef.hasDirichletVec() && !bcDef.hasDirichletX() && !bcDef.hasDirichletY() && !bcDef.hasDirichletZ() )
         return;
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateCLDirichlet", "start",
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
                                         this->worldComm(),this->verboseAllProc());
 
     auto const& u = this->fieldDisplacement();
@@ -215,7 +215,7 @@ SOLIDMECHANICS_CLASS_NAME::updateCLDirichlet( vector_ptrtype& U ) const
     }
     U->close();
 
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateCLDirichlet", "finish",
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
                                         this->worldComm(),this->verboseAllProc());
 }
 

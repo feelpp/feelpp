@@ -68,7 +68,7 @@ public:
 
     //___________________________________________________________________________________//
     // assembly using bc
-    void updateCLDirichlet( vector_ptrtype& U ) const;
+    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
     void updateBCRobinResidual( vector_ptrtype& R ) const;

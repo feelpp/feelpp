@@ -185,8 +185,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_pdeSolver;
-    if ( M_methodNum )
-        *_ostr << M_methodNum->getInfo()->str();
+    if ( M_algebraicFactory )
+        *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
         *_ostr << this->getMeshALE()->getInfo()->str();
@@ -648,16 +648,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
     // run solver
     if (M_pdeSolver=="LinearSystem")
     {
-        M_methodNum->linearSolver(this->blockVectorSolution().vector()/*Uvec*/);
+        M_algebraicFactory->linearSolver(this->blockVectorSolution().vector()/*Uvec*/);
     }
     else if ( M_pdeSolver == "PtFixe")
     {
-        M_methodNum->AlgoPtFixe(this->blockVectorSolution().vector()/*Uvec*/);
+        M_algebraicFactory->AlgoPtFixe(this->blockVectorSolution().vector()/*Uvec*/);
     }
     else if ( M_pdeSolver == "Newton")
     {
         //Uvec->close(); //????????
-        M_methodNum->AlgoNewton2(this->blockVectorSolution().vector()/*Uvec*/);
+        M_algebraicFactory->AlgoNewton2(this->blockVectorSolution().vector()/*Uvec*/);
     }
 
     //Uvec->close();
@@ -705,7 +705,7 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
                                                                      vector_ptrtype const& vecSol ) const
 {
-    if ( this->methodNum() && this->methodNum()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
@@ -810,19 +810,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     this->updateTime( M_bdf_fluid->time() );
 
     // maybe rebuild cst jacobian or linear
-    if ( M_methodNum &&
+    if ( M_algebraicFactory &&
          previousTimeOrder!=currentTimeOrder &&
          this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
         if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
             this->log("FluidMechanics","updateBdf", "do rebuildCstJacobian" );
-            M_methodNum->rebuildCstJacobian(M_Solution);
+            M_algebraicFactory->rebuildCstJacobian(M_Solution);
         }
         else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
             this->log("FluidMechanics","updateBdf", "do rebuildCstLinearPDE" );
-            M_methodNum->rebuildCstLinearPDE(M_Solution);
+            M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
         }
     }
 
