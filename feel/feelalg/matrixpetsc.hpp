@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -451,6 +451,16 @@ public:
                      std::vector<size_type> const& cols,
                      bool useSameDataMap=false,
                      bool checkAndFixRange=true ) const;
+
+    /**
+     * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
+     * row and column indices given in the "rows" and "cols" entries.
+     */
+    void
+    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                     std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols );
+
 
     /**
      * This function creates a matrix called "submatrix" which is defined

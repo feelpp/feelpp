@@ -25,26 +25,26 @@ rm -rf $FEELPP_SCRATCHDIR
 if [ ! -z "$do_gcc47" -a -x /usr/bin/g++-4.7 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc47
     rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.7,FEELPP_CXX=/usr/bin/g++-4.7
+    $COMMON,FEELPP_CXXNAME=gcc-4.7,FEELPP_CXX=/usr/bin/g++-4.7,FEELPP_C=/usr/bin/gcc-4.7
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc48" -a -x /usr/bin/g++-4.8 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc48
     rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/bin/g++-4.8 
+    $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/bin/g++-4.8,FEELPP_C=/usr/bin/gcc-4.8 
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc49" -a -x /usr/bin/g++-4.9 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc49
     rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9 
+    $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9,FEELPP_C=/usr/bin/gcc-4.9 
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang35" -a -x /usr/bin/clang++-3.5 ]; then
     export FEELPP_WORKDIR=/tmp/feel-clang
     rm -rf $FEELPP_WORKDIR 
     #clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
-    $COMMON,FEELPP_CXXNAME=clang-3.5,FEELPP_CXX=/usr/bin/clang++-3.5
+    $COMMON,FEELPP_CXXNAME=clang-3.5,FEELPP_CXX=/usr/bin/clang++-3.5,FEELPP_C=/usr/bin/clang-3.5
     rm -rf $FEELPP_WORKDIR 
 fi
 rm -rf $FEELPP_SCRATCHDIR

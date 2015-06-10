@@ -175,6 +175,7 @@ public:
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
+    typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
 
     OperatorMatrix()
         :
@@ -187,6 +188,7 @@ public:
         M_hasInverse( 1 ),
         M_hasApply( 1 )
     {
+        hasPc = false;
         auto b = backend(_name=this->label(),_rebuild=true);
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
     }
@@ -212,6 +214,10 @@ public:
         return M_hasApply;
     }
 
+    void setPc(pc_ptrtype p){
+      hasPc=true;
+      pc = p;
+    }
 
     int apply( const vector_type& X, vector_type& Y ) const
     {
@@ -233,11 +239,19 @@ public:
         xx->close();
         auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
+        bool cv;
+        if(!hasPc){
         auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+        cv = r.isConverged();
+        }
+        else{
+        auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=pc );
+        cv = r.isConverged();
+        }
         Y=*yy;
         Y.close();
         toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
-        return r.isConverged();
+        return cv;
     }
 
 
@@ -256,10 +270,14 @@ private:
     sparse_matrix_ptrtype M_F;
 
     bool M_hasInverse, M_hasApply;
+
+    pc_ptrtype pc;
+    bool hasPc;
 };
+
 /**
  * \param M matrix
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
@@ -357,7 +375,7 @@ private:
 
 /**
  * \param op an operator
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */

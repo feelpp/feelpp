@@ -44,7 +44,7 @@ public:
     enum Type
     {
         PCD = 0, // pressure convection diffusion
-        PMM=1, // pressure mass matrix
+        PMM = 1, // pressure mass matrix
         SIMPLE=2 // 
     };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -111,7 +111,10 @@ public:
     void assembleSchurApp( double mu, double rho, double alpha = 0 );
 
     template< typename Expr_convection, typename Expr_bc >
-    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, Expr_bc const& g );
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, Expr_bc const& g, bool hasConvection=true );
+    template< typename Expr_convection >
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, bool hasConvection=true );
+    void update( sparse_matrix_ptrtype A );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -238,7 +241,6 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
     
     initialize();
 
-    tic();    
     this->setType ( t );
     toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
 }
@@ -256,13 +258,24 @@ void
 PreconditionerBlockNS<space_type>::createSubMatrices()
 {
     tic();
-    M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
-    M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
-    M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
-    helmOp = op( M_F, "Fu" );
-    divOp = op( M_Bt, "Bt");
+    if ( !M_F )
+    {
+        M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
+        M_F->mapRowPtr()->setIndexSplit( M_Vh->dof()->indexSplit() );
+        if ( M_Vh->dof()->hasIndexSplitWithComponents() )
+            M_F->mapRowPtr()->setIndexSplitWithComponents( M_Vh->dof()->indexSplitWithComponents() );
+        M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
+        helmOp = op( M_F, "Fu" );
+        divOp = op( M_Bt, "Bt");
+    }
+    else
+    {
+        this->matrix()->updateSubMatrix( M_F, M_Vh_indices, M_Vh_indices );
+        this->matrix()->updateSubMatrix( M_B, M_Qh_indices, M_Vh_indices );
+        this->matrix()->updateSubMatrix( M_Bt, M_Vh_indices, M_Qh_indices );
+    }
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
-
 }
 template < typename space_type >
 void
@@ -310,23 +323,37 @@ template < typename space_type >
 template< typename Expr_convection, typename Expr_bc >
 void
 PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
-                                         Expr_convection const& expr_b,
-                                         Expr_bc const& g )
+                                           Expr_convection const& expr_b,
+                                           Expr_bc const& g,
+                                           bool hasConvection )
 {
     tic();
     this->setMatrix( A );
     this->createSubMatrices();
-    
     if ( type() == PCD )
     {
         tic();
-        pcdOp->update( expr_b, g );
+        pcdOp->update( expr_b, g, hasConvection );
         toc( "Preconditioner::update PCD", FLAGS_v > 0 );
-        
     }
     toc( "Preconditioner::update", FLAGS_v > 0 );
 }
-
+template < typename space_type >
+template< typename Expr_convection >
+void
+PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
+                                           Expr_convection const& expr_b,
+                                           bool hasConvection )
+{
+    map_vector_field<Dim,1,2> m_dirichlet { M_bcFlags.template getVectorFields<Dim> ( std::string(M_prefix), "Dirichlet" ) };
+    this->update( A, expr_b, m_dirichlet, hasConvection );
+}
+template < typename space_type >
+void
+PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A )
+{
+    this->update( A, zero<Dim,1>(), false );
+}
 
 
 template < typename space_type >
@@ -359,7 +386,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
         if ( boption("blockns.pcd") )
         {
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion...\n";
-            CHECK(pcdOp) << "Invalid PCD oeprator\n";
+            CHECK(pcdOp) << "Invalid PCD operator\n";
             CHECK(M_aux) << "Invalid aux vector\n";
             CHECK(M_pout) << "Invalid aux vector\n";
             tic();
