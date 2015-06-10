@@ -23,3 +23,5 @@ feelpp_add_test( hypercubeinterpolation )
 feelpp_add_test( interpolation_RT CFG test_interpolation_RT.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG test_interpolation_Nedelec.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO_MPI_TEST TIMEOUT 40)
+
+feelpp_add_test( darcy_on CFG darcy_on.cfg DEFS FEELPP_DIM=2 )
