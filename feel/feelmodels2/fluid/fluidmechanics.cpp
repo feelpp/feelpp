@@ -31,6 +31,7 @@
 
 #include <feel/feelmodels2/modelalg/functionSup.cpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 namespace Feel
 {
@@ -38,8 +39,7 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( //bool __isStationary,
-                                                    std::string __prefix,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
                                                     bool __buildMesh,
                                                     WorldComm const& __worldComm,
                                                     std::string __subPrefix,
@@ -144,7 +144,137 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+
+    if ( buildModelAlgebraicFactory && ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" ) )
+    {
+        BoundaryConditions bcPrecPCD;
+        bcPrecPCD.clear();
+
+        auto itFindFieldVelocity = this->modelProperties().boundaryConditions().find("velocity");
+        bool hasFindFieldVelocity = itFindFieldVelocity != this->modelProperties().boundaryConditions().end();
+        if ( hasFindFieldVelocity )
+        {
+            auto itFindDirichletType = itFindFieldVelocity->second.find("Dirichlet");
+            if ( itFindDirichletType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindDirichletType->second )
+                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc );
+            }
+            auto itFindNeumannScalType = itFindFieldVelocity->second.find("Neumann_scalar");
+            if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannScalType->second )
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+            }
+        }
+        auto itFindFieldFluid = this->modelProperties().boundaryConditions().find("fluid");
+        if ( itFindFieldFluid != this->modelProperties().boundaryConditions().end() )
+        {
+            auto itFindOutletType = itFindFieldFluid->second.find("outlet");
+            if ( itFindOutletType != itFindFieldFluid->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindOutletType->second )
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+            }
+        }
+        // TODO other bc (fsi,...)
+#if 1
+        if ( Environment::isMasterRank() )
+        {
+            for( auto const& s : bcPrecPCD )
+            {
+                std::cout << "field " << s.first << "\n";
+                for( auto const& t : s.second )
+                {
+                    std::cout << " - type " << t.first << "\n";
+                    for( auto const& c : t.second )
+                    {
+                        if ( c.hasExpression2() )
+                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                        else
+                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                    }
+                }
+            }
+        }
+#endif
+        CHECK( this->methodNum()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
+        double myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        auto a_blockns = Feel::blockns( _space=this->functionSpace(),
+                                        _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
+                                        _bc=bcPrecPCD,
+                                        _matrix=this->methodNum()->preconditionerTool()->matrix(),
+                                        _prefix="velocity",
+                                        _mu=this->densityViscosityModel()->cstMu(),
+                                        _rho=this->densityViscosityModel()->cstRho(),
+                                        _alpha=myalpha );
+        this->methodNum()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+    }
+
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
+{
+    if ( this->methodNum()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    {
+        this->log("FluidMechanics","updateInHousePreconditionerPCD", "start");
+
+        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->methodNum()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+
+        if ( this->isStationary() )
+            myPrecBlockNs->setAlpha( 0. );
+        else
+            myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
+
+        if ( this->pdeType() == "Stokes" )
+        {
+            myPrecBlockNs->update( mat );
+        }
+        else if ( this->pdeType() == "Oseen" )
+        {
+            auto BetaU = this->timeStepBDF()->poly();
+            auto betaU = BetaU.template element<0>();
+            auto const& rho = this->densityViscosityModel()->fieldRho();
+
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myPrecBlockNs->update( mat, idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ) );
+#endif
+            }
+            else
+            {
+                myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
+            }
+        }
+        else if ( this->pdeType() == "Navier-Stokes" )
+        {
+            auto U = this->functionSpace()->element();
+            // copy vector values in fluid element
+            for ( size_type k=0;k<this->functionSpace()->nLocalDofWithGhost();++k )
+                U(k) = vecSol->operator()(/*rowStartInVector+*/k);
+            auto u = U.template element<0>();
+            auto const& rho = this->densityViscosityModel()->fieldRho();
+
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myPrecBlockNs->update( mat, idv(rho)*( idv(u)-idv(this->meshVelocity()) ) );
+#endif
+            }
+            else
+            {
+                myPrecBlockNs->update( mat, idv(rho)*idv(u) );
+            }
+        }
+
+        this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish");
+    }
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -157,6 +287,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     M_bcNeumannScalar.setParameterValues( mySymbolsValues );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_volumicForcesProperties.setParameterValues( mySymbolsValues );
+
+    if ( this->methodNum() && this->methodNum()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    {
+        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->methodNum()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        myPrecBlockNs->setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        myPrecBlockNs->setParameterValues( mySymbolsValues );
+    }
+
     super_type::solve();
 }
 
