@@ -99,7 +99,10 @@ public:
     
     Type type() const { return M_type; }
     void setType( std::string t );
-    
+
+    BoundaryConditions const& bcFlags() const { return M_bcFlags; }
+    void setParameterValues( std::map<std::string,double> const& pv ) { M_bcExprParameterValues=pv; }
+
     void initialize();
 
     void assembleHelmholtz( double mu, double rho, double alpha = 0 );
@@ -184,6 +187,7 @@ private:
     op_ptrtype pm;
     
     BoundaryConditions M_bcFlags;
+    std::map<std::string,double> M_bcExprParameterValues;
     std::string M_prefix;
     op_mat_ptrtype precHelm;
 };
@@ -346,6 +350,8 @@ PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
                                            bool hasConvection )
 {
     map_vector_field<Dim,1,2> m_dirichlet { M_bcFlags.template getVectorFields<Dim> ( std::string(M_prefix), "Dirichlet" ) };
+    if ( !M_bcExprParameterValues.empty() )
+        m_dirichlet.setParameterValues( M_bcExprParameterValues );
     this->update( A, expr_b, m_dirichlet, hasConvection );
 }
 template < typename space_type >
