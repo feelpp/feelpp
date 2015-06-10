@@ -33,7 +33,7 @@ using namespace boost::numeric;
 
 namespace Feel
 {
-enum { ComputeGradient = 2 << 0  };
+enum { ComputeGradient = 1 << 0  };
 
 template <typename T = float>
 using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
@@ -69,10 +69,113 @@ public :
             //int j = image.cols()-1-boost::math::iround(y/dy);
             int j = boost::math::iround(y/dy);
             
-            double v=  image(j,i);
+            double v = image(j,i);
+            double v2 = 0;
+            // x component
+            if (c==0)
+            {
+            if (j==0)
+            {
+                if (i==0)
+                {
+                 v2=(-image(j,i)+image(j,i+2)/2+2*image(j,i+1))/doption("msi.pixelsize");   
+                }
+                else if (i==image.cols()-1)
+                {
+                v2=((3./2)*image(j,i)+image(j,i-2)/2+2*image(j,i-1))/doption("msi.pixelsize");     
+                }
+                else
+                {
+                v2=(-image(j,i-1)-image(j,i+1))/(2*doption("msi.pixelsize"));
+                }
+            }
+            else if (j==image.rows()-1)
+            {
+                if (i==0)
+                {
+                v2=(image(j,i)-image(j,i+2)/2-2*image(j,i+1))/doption("msi.pixelsize");
+                }
+                else if (i==image.cols()-1)
+                {
+                v2=(image(j,i)-image(j,i-2)/2+2*image(j,i-1))/doption("msi.pixelsize");
+                }
+                else
+                {
+                v2=(image(j,i-1)+image(j,i+1))/(2*doption("msi.pixelsize"));
+    
+                }
+            }
+            else 
+            {
+                if (i==0)
+                {
+                v2=(-3*image(j,i)+image(j,i+2)+4*image(j,i+1))/(2*doption("msi.pixelsize")); 
+                }
+                else if (i==image.cols()-1)
+                {
+                v2=(-3*image(j,i)+image(j,i-2)-4*image(j,i-1))/(2*doption("msi.pixelsize")); 
+                }
+                else
+                {
+                v2=(image(j,i+1)-image(j,i-1))/(2*doption("msi.pixelsize"));
+                }
+            }            
+            }
+            // y component 
+            else if (c==1)
+            {
+            if (j==0)
+            {
+                if (i==0)
+                {
+                v2=(-image(j,i)+image(j+2,i)/2+2*image(j+1,i))/doption("msi.pixelsize");       
+                }
+                else if (i==image.cols()-1)
+                {
+                v2=((3./2)*image(j,i)-image(j+2,i)/2-2*image(j+1,i))/doption("msi.pixelsize");    
+                }
+                else
+                {
+                v2=(-3*image(j,i)+image(j+2,i)+4*image(j+1,i))/(2*doption("msi.pixelsize"));
+    
+                }
+            }
+            else if (j==image.rows()-1)
+            {
+                if (i==0)
+                {
+                v2=(-image(j,i)+image(j-2,i)/2-2*image(j-1,i))/doption("msi.pixelsize");       
+                }
+                else if (i==image.cols()-1)
+                {
+                v2=(image(j,i)+image(j-2,i)/2+2*image(j-1,i))/doption("msi.pixelsize");    
+                }
+                else
+                {
+                v2=(-3*image(j,i)+image(j-2,i)-4*image(j-1,i))/(2*doption("msi.pixelsize"));
+    
+                }
+            }
+            else 
+            {
+                if (i==0)
+                {
+                v2=(-image(j+1,i)+image(j-1,i))/(2*doption("msi.pixelsize")); 
+                }
+                else if (i==image.cols()-1)
+                {
+                 v2=(-image(j-1,i)+image(j+1,i))/(2*doption("msi.pixelsize")); 
+                }
+                else
+                {
+                v2=(image(j+1,i)-image(j-1,i))/(2*doption("msi.pixelsize"));
+                }
+            }
+
+           }            
             // v has the value if the image, now must compute the basis functions
             // note that it would be differently handled if we use the fft and ifft
-            return v;
+            return v2;
         }
     /**
      * @return the value of the image at point \c real in the coarse grid
@@ -96,18 +199,7 @@ public :
 
             return v;
         }
-/*
-    value_type operator()(ublas::vector<double> const& c, int L)
-        {     
-            double x = c[0];
-            double y = c[1];
-            
-            int i = x/dx;
-            int j = y/dy;
-            
-            return image(L*j,L*i);
-        }
-  */   
+
 private :
     double dx;
     double dy;
