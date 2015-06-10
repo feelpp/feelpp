@@ -669,6 +669,9 @@ public :
 
     virtual void solve();
 
+    void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    virtual void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const = 0;
+
     //___________________________________________________________________________________//
 
     void updateCLDirichlet(vector_ptrtype& U) const;
@@ -741,6 +744,7 @@ public :
 
 protected:
 
+    bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
     backend_ptrtype M_backend;
     //----------------------------------------------------
@@ -781,6 +785,8 @@ protected:
 #endif
     // tool solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_methodNum;
+    //boost::shared_ptr<BoundaryConditions> M_bcPrecPCD;
+    //typename Feel::meta::blockns<space_fluid_type>::ptrtype M_precondBlockNS;
     //----------------------------------------------------
     // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;

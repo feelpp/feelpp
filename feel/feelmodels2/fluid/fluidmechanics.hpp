@@ -82,6 +82,10 @@ public:
     void updateBCDirichletNitscheLinearPDE( vector_ptrtype& F ) const;
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
     void updateBCPressureLinearPDE( vector_ptrtype& F ) const;
+
+
+    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
+
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
     map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;

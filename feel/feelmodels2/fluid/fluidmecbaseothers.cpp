@@ -699,6 +699,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 //---------------------------------------------------------------------------------------------------------//
 
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
+                                                                     vector_ptrtype const& vecSol ) const
+{
+    if ( this->methodNum() && this->methodNum()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    {
+        this->updateInHousePreconditionerPCD( mat,vecSol );
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,bool _buildCstPart,

@@ -23,6 +23,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationar
                                                             std::string __appliShortRepository )
     :
     super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository),
+    M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
     M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
@@ -61,6 +62,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
     //export
     this->createExporters();
     //-----------------------------------------------------------------------------//
+    M_hasBuildFromMesh = true;
     this->log("FluidMechanics","build", "finish");
 }
 
@@ -91,6 +93,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
     //export
     this->createExporters();
     //-----------------------------------------------------------------------------//
+    M_hasBuildFromMesh = true;
     this->log("FluidMechanics","loadMesh", "finish");
 }
 
@@ -821,10 +824,16 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
                                               typename model_algebraic_factory_type::appli_ptrtype const& app )
 {
+    if ( M_isUpdatedForUse ) return;
+
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
     boost::timer thetimer;
+
+    if ( !M_hasBuildFromMesh )
+        this->build();
+
 
     // build definePressureCst space if not done yet
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
@@ -986,7 +995,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if (buildMethodNum)
     {
         M_methodNum.reset( new model_algebraic_factory_type(app,this->backend()) );
+
     }
+    M_isUpdatedForUse = true;
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
