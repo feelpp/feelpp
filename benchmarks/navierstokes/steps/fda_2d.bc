@@ -1,0 +1,45 @@
+// -*- mode: javascript -*-
+{
+    "velocity":
+    {
+        
+        "Dirichlet":
+        {
+            "inlet":
+            {
+                "expr":"{0, 0.069187973*(x-0.006)*(x+0.006)}:x"
+            },
+            "wall":
+            {
+                "expr":"{0,0}"
+            }
+        },
+        "Neumann":
+        {
+            "outlet":
+            {}
+        }
+    },
+    "increment":
+    {
+        "Dirichlet":
+        {
+            "inlet":
+            {
+                "expr":"{0,0}"
+            },
+            "wall":
+            {
+                "expr":"{0,0}"
+            }
+        },
+        "Neumann":
+        {
+            "outlet":
+            {
+                
+            }
+        }
+    }
+}
+        

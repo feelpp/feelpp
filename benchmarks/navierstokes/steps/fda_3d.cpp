@@ -52,7 +52,7 @@ int main(int argc, char**argv )
          .add( backend_options( "picard" ) );
 	Environment env( _argc=argc, _argv=argv,
                      _desc=steadyfdaoptions,
-                     _about=about(_name=(boost::format("steady_ns_%1%d")%dim).str(),
+                     _about=about(_name=(boost::format("steady_fda_%1%d")%dim).str(),
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<dim>>);
@@ -91,6 +91,9 @@ int main(int argc, char**argv )
     }
     auto deft = gradt( u );
     auto def = grad( v );
+    
+    auto mybdf = bdf( _space=Vh, _name="mybdf" );
+    
     double fixPtTol = doption(_name="picard.tol");
     int fixPtMaxIt = doption(_name="picard.maxit");
     double newtonTol = doption(_name="newton.tol");
@@ -146,17 +149,26 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh,
+                             _type=soption("stokes.preconditioner"),
+                             _bc=bcs,
+                             _matrix= at.matrixPtr(),
+                             _alpha=rho*mybdf->polyDerivCoefficient(0),
+                             _mu=mu,
+                             _rho=rho,
+                             _prefix="velocity" );
+
+    
     toc(" - Setting up Precondition Blockns...");
     
     a_blockns->setMatrix( at.matrixPtr() );
 
     tic();
+    
+    
     if ( soption("stokes.preconditioner") != "petsc" )
     {
         a_blockns->update( at.matrixPtr(), zero<dim,1>(), m_dirichlet );
-
-
         at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
     }
     else
@@ -168,159 +180,83 @@ int main(int argc, char**argv )
     e->step(0)->add( "p", p );
     e->save();
     toc(" - Exporting Stokes results...");
-    double Rey = mean(markedfaces(mesh,"inlet"),_expr=idv(u))*0.012*rho/mu;
-    double meanP = mean(markedfaces(mesh,"inlet"),_expr=idv(p));
-    if ( Environment::isMasterRank()  )
-    {
-        std::cout<<"Reynolds calcule after stokes iteration = "<< Rey << " \n";
-        std::cout<<"Error over p = "<< meanP << " \n";
-    }
-    // Picard
-    if ( boption("picard") )
+    
+    Un = U;
+    for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
     {
         int fixedpt_iter = 0;
 
         double res = 0;
+        
         auto deltaU = Vh->element();
-        do
-        {
-            tic();
-            r.zero();
-            at.zero();
-            at += a;
-            at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(u)) );
-            toc( " - Picard:: Assemble nonlinear terms  ..." );
+        auto bdf_poly = mybdf->polyDeriv();
+        auto rhsu =  bdf_poly.element<0>();
+        auto extrap = mybdf->poly();
+        auto extrapu = extrap.element<0>();
 
-            tic();
-            for( auto const& c : m_dirichlet )
+        tic();
+        r.zero();
+        at.zero();
+        // add BDF term to the right hand side from previous time steps
+        r = integrate( _range=elements(mesh), _expr=rho*(trans(idv(rhsu))*id(u) ) );
+        
+        at += a;
+        at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(extrapu)) );
+        toc( " - Picard:: Assemble nonlinear terms  ..." );
+        tic();
+        
+        for( auto const& c : m_dirichlet )
+        {
+            LOG(INFO) << "Applying Dirichlet condition " << c.second << " on " << c.first;
+            if ( boption( "blockns.weakdir" ) )
             {
-                LOG(INFO) << "Applying Dirichlet condition " << c.second << " on " << c.first;
-                if ( boption( "blockns.weakdir" ) )
-                {
-                    at += integrate( _range=markedfaces( mesh, c.first ),
-                                     _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
-                    r += integrate( _range=markedfaces( mesh, c.first ),
+                at += integrate( _range=markedfaces( mesh, c.first ),
+                                    _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+                r += integrate( _range=markedfaces( mesh, c.first ),
                                     _expr=trans(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
-                }
-                else
-                {
-                    at+=on(_range=markedfaces(mesh,c.first), _rhs=r, _element=u,
+            }
+            else
+            {
+                at+=on(_range=markedfaces(mesh,c.first), _rhs=r, _element=u,
                            _expr=c.second ) ;
-                }
             }
-            toc(" - Picard:: Assemble BC   ...");
-            if ( Environment::isMasterRank() )
-            {
-                std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
-            }
-            tic();
-            if ( soption("picard.preconditioner") != "petsc" )
-            {
-                a_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
-                at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
-            }
-            else
-                at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
-            toc(" - Picard:: Solve   ...");
-            incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
-            incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-            fixedpt_iter++;
-            
-            if ( Environment::isMasterRank() )
-            {
-                std::cout << "Iteration "  << fixedpt_iter << "\n";
-                std::cout << " . ||u-un|| = " << incru << std::endl;
-                std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                            }
-            Un = U;
-            Un.close();
-
-            e->step(fixedpt_iter)->add( "u", u );
-            e->step(fixedpt_iter)->add( "p", p );
-            e->save();
         }
-        while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
-    }
+        toc(" - Picard:: Assemble BC   ...");
 
-    // Newton
-    if ( boption("newton") )
-    {
-        int newton_iter = 0;
-
-        double res = 0;
-        auto deltaU = Vh->element();
-        auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
-        map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "increment", "Dirichlet" ) } ;
-        do
+            
+            
+        /*u=vf::project(Vh->template functionSpace<0>(), elements(mesh), zero<3,1>());
+        p=vf::project(Vh->template functionSpace<1>(), elements(mesh), constant(0.0));*/
+            
+            
+        if ( soption("picard.preconditioner") != "petsc" )
         {
-            if ( Environment::isMasterRank() )
-                std::cout << " - Assemble nonlinear terms  ...\n";
-            at.zero();
-            at += a;
-            at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(u)) );
-            at += integrate( _range=elements(mesh), _expr=rho*trans(id(v))*gradv(u)*idt(u) );
-
-            if ( Environment::isMasterRank() )
-                std::cout << " - Assemble residual  ...\n";
-            r = integrate( _range=elements( mesh ), _expr=mu*inner( gradv(u),def ) );
-            r +=integrate( _range=elements( mesh ), _expr=-div( v )*idv( p ) - divv( u )*id( q ) );
-            r += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradv(u)*idv(u)) );
-            if ( Environment::isMasterRank() )
-                std::cout << " - Assemble BC   ...\n";
-            
-            for( auto const& d : m_dirichlet )
-            {
-                if ( boption( "blockns.weakdir" ) )
-                {
-                    r += integrate( _range=markedfaces( mesh, d.first ),
-                                    _expr=(trans(-mu*gradv(u)*N()+idv(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idv(v)+doption("penaldir")*trans(idv(u))*id(v)/hFace() );
-                }
-                else
-                {
-                    at+=on(_range=markedfaces(mesh,d.first), _rhs=r, _element=u,
-                           _expr=d.second ) ;
-                }
-            }
-            r.scale(-1);
-            if ( Environment::isMasterRank() )
-            {
-                std::cout << "non linear iteration " << newton_iter << " \n";
-            }
-            if ( Environment::isMasterRank() )
-                std::cout << " - Solve   ...\n";
-            if ( soption("newton.preconditioner") != "petsc" )
-            {
-                at_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
-                //backend(_name="Fu",_rebuild=true);
-                //backend(_name="Fp",_rebuild=true);
-                deltaU.zero();
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_name="newton",_rebuild=true),_prec=at_blockns );
-            }
-            else
-                at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
-            U.add(1.,deltaU);
-            incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
-            incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-            newton_iter++;
-            res = r( U );
-
-            if ( Environment::isMasterRank() )
-            {
-                std::cout << "Iteration "  << newton_iter << "\n";
-                std::cout << " . ||u-un|| = " << incru << std::endl;
-                std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                std::cout << " . residual = " << std::abs(res) << std::endl;
-            }
-
-            Un = U;
-            Un.close();
-
-            e->step(newton_iter)->add( "u", u );
-            e->step(newton_iter)->add( "p", p );
-            e->save();
+            a_blockns->update( at.matrixPtr(), idv(extrapu), m_dirichlet );
+            at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
         }
-        while ( ( std::abs(res) > newtonTol ) && ( newton_iter < newtonMaxIt ) );
-        //while ( ( incru > newtonTol && incrp > newtonTol ) && ( newton_iter < newtonMaxIt ) );
+        else
+            at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
+        
+        toc(" - Picard:: Solve   ...");
+        incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
+        incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
+        fixedpt_iter++;
+            
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "Iteration "  << fixedpt_iter << "\n";
+            std::cout << " . ||u-un|| = " << incru << std::endl;
+            std::cout << " . ||p-pn|| = " << incrp << std::endl;
+        }
+        Un = U;
+        Un.close();
+
+        e->step(mybdf->time())->add( "u", u );
+        e->step(mybdf->time())->add( "p", p );
+        auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
+        e->step(mybdf->time())->addScalar( "mean_p", mean_p );
+        e->save();
+
     }
-    return 0;
+return 0;
 }
