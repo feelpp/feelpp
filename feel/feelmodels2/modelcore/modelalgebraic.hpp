@@ -119,7 +119,10 @@ public :
                          sparse_matrix_ptrtype& A_extended,
                          sparse_matrix_ptrtype& Prec) const;
 
+    virtual void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+
     virtual graph_ptrtype buildMatrixGraph() const;
+
     //----------------------------------------------------------------------------------//
 
     virtual void updateCLDirichlet(vector_ptrtype& U) const;// {} // const = 0;
