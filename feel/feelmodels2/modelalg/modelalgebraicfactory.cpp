@@ -330,6 +330,8 @@ namespace Feel {
         // set preconditioner
         //M_PrecondManage->setMatrix(M_Prec);
 
+        this->application()->updateInHousePreconditioner( M_J, U );
+
         // solve linear system
         auto const solveStat = M_backend->solve( _matrix=M_J,
                                                  _solution=U,
@@ -383,6 +385,8 @@ namespace Feel {
                 this->application()->updateJacobian( X, J, R, true, M_Extended,false );
             }
         M_appli->updateJacobian(X,J,R,false, M_Extended,false);
+
+        this->application()->updateInHousePreconditioner( J, X );
 
         double tElapsed = this->application()->timerTool("Solve").stop();
         this->application()->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
