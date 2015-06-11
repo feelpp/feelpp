@@ -157,7 +157,7 @@ namespace detail
 
 template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
+createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
     auto submeshStruct = createSubmesh( FM->getMeshALE()->referenceMesh(), markedfaces( FM->getMeshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
     auto hola = boundaryfaces(submeshStruct);
@@ -182,7 +182,7 @@ createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl
 
 template <typename FluidType,typename SolidType>
 typename FluidType::mesh_type::trace_mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
+createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
 {
     auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
     auto hola = boundaryfaces(submeshStruct);
@@ -194,10 +194,25 @@ createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl
 
 template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM )
+createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<2> /**/ )
 {
   static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::mesh_1dreduced_type::nOrder;
-  return createMeshStruct1dFromFluidMesh<FluidType,SolidType>(FM, mpl::bool_<hasSameOrderGeo>() );
+  return createMeshStruct1dFromFluidMesh2d<FluidType,SolidType>(FM, mpl::bool_<hasSameOrderGeo>() );
+}
+
+template <typename FluidType,typename SolidType>
+typename SolidType::mesh_1dreduced_ptrtype
+createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<3> /**/ )
+{
+    CHECK( false ) << "not possible";
+    return typename SolidType::mesh_1dreduced_ptrtype();
+}
+
+template <typename FluidType,typename SolidType>
+typename SolidType::mesh_1dreduced_ptrtype
+createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM )
+{
+  return createMeshStruct1dFromFluidMesh<FluidType,SolidType>( FM, mpl::int_<SolidType::nDim>() );
 }
 
 } // namespace detail
@@ -611,8 +626,10 @@ FSI<FluidType,SolidType>::solveImpl2()
             residualConvergence = residualDisp->l2Norm()/oldEltL2Norm;
         else
             residualConvergence = residualDisp->l2Norm();
-        if (M_fluid->worldComm().isMasterRank() )
-            std::cout << " cptFSI " << cptFSI << " residualConvergence " << residualConvergence << "\n";
+
+        if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
+            std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
+                      << " residualConvergence " << std::scientific << residualConvergence << "\n";
 #endif
 #if 0
         this->aitkenRelaxTool()->applyRelaxation();
