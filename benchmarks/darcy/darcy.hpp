@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -132,7 +132,7 @@ public:
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
         meshSize( doption("hsize") ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) ),
+        exporter( Exporter<mesh_type>::New( Environment::about().appName() ) ),
         M_k1( doption("k1") ),
         M_k2( doption("k2") ),
         M_d1( doption("d1") ),
@@ -340,7 +340,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             auto u_ex_proj = vf::project(Xhvec, elements(mesh), u_exact );
             auto p_ex_proj = vf::project(p_rt.functionSpace(), elements(mesh), p_exact );
 
-            export_ptrtype exporter_cvg( export_type::New( this->vm(), exportName ) );
+            export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
             exporter_cvg->step( 0 )->setMesh( mesh );
             exporter_cvg->step( 0 )->add( uName, u_rt );

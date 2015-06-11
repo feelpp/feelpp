@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -435,17 +435,28 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
-        //const uint16_type nRow = blockgraph.nRow();
         boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
         const size_type firstDofGC = this->mapRow().firstDofGlobalCluster();
         for ( uint16_type i=0; i<nRow; ++i )
-        {
             indexSplit->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplit() );
-        }
         //indexSplit->showMe();
         this->mapRowPtr()->setIndexSplit( indexSplit );
-    }
 
+        bool hasComponentsSplit = false;
+        for ( uint16_type i=0; i<nRow; ++i )
+            if ( blockSet(i,0)->mapRow().hasIndexSplitWithComponents() )
+            {
+                hasComponentsSplit = true;
+                break;
+            }
+        if ( hasComponentsSplit )
+        {
+            boost::shared_ptr<IndexSplit> indexSplitWithComponents( new IndexSplit() );
+            for ( uint16_type i=0; i<nRow; ++i )
+                indexSplitWithComponents->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplitWithComponents() );
+            this->mapRowPtr()->setIndexSplitWithComponents( indexSplitWithComponents );
+        }
+    }
 
 
 }
