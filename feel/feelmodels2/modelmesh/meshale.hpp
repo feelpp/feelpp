@@ -145,8 +145,8 @@ public :
     /**
      * \return true is reverted on reference mesh, else false
      */
-    bool isRevertedOnReferenceMesh() const { return M_isRevertedOnReferenceMesh; }
-
+    bool isOnReferenceMesh() const { return M_isOnReferenceMesh; }
+    bool isOnMovingMesh() const { return M_isOnMovingMesh; }
     /**
      * \return the functionspace
      */
@@ -224,6 +224,8 @@ public :
     template< typename elem_type >
     void update( elem_type const& polyDisplacementSet );
 
+    void updateImpl( Vector<double> const& dispInput );
+
     /**
      * \Revert mesh_ho in reference state
      */
@@ -258,7 +260,7 @@ private :
     mesh_ref_ptrtype M_referenceMesh;
     mesh_ptrtype M_movingMesh;
 
-    bool M_isRevertedOnReferenceMesh;
+    bool M_isOnReferenceMesh, M_isOnMovingMesh;
 
     ale_map_ptrtype M_aleFactory;
 
@@ -309,11 +311,11 @@ MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplace
 {
     this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start");
 
-    CHECK( !M_isRevertedOnReferenceMesh ) << "meshALE is reverted on reference mesh\n";
+    CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
 
     //---------------------------------------------------------------------------------------------//
     // reset to 0
-    M_displacementOnMovingBoundary_HO_ref->zero();
+    //M_displacementOnMovingBoundary_HO_ref->zero();
 
     //---------------------------------------------------------------------------------------------//
     // interp disp to ref_ho
@@ -330,64 +332,11 @@ MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplace
 #endif
     }
     vecDisp->close();
-    *M_displacementOnMovingBoundary_HO_ref = *vecDisp;
-    //---------------------------------------------------------------------------------------------//
-    // transform disp from ref_ho -> ref_p1
-    for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
-        (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]) + (*M_dispP1ToHO_ref)(i);
+    //*M_displacementOnMovingBoundary_HO_ref = *vecDisp;
 
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    boost::mpi::timer mpiTimer;
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start generateMap");
-    //---------------------------------------------------------------------------------------------//
-    //generate the ale map
-    M_aleFactory->generateMap( *M_displacementOnMovingBoundary_P1_ref, M_bdf_ale_displacement_ref->unknown(0) );
-    //---------------------------------------------------------------------------------------------//
-    std::ostringstream ostrTime; ostrTime << "boost::mpi::timer :" << mpiTimer.elapsed() << "s";
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish generateMap in "+ostrTime.str());
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
+    this->updateImpl( *vecDisp );
 
-    //---------------------------------------------------------------------------------------------//
-    //usefull for implicit fsi coupling (reset when we are in ptfixe cycle)
-    auto resetDisp = *M_displacement;
-    resetDisp.scale(-1.);
-    M_mesh_mover.apply(M_movingMesh, resetDisp );
-
-    //---------------------------------------------------------------------------------------------//
-    // get displacement on ref mesh
-    *M_displacement_ref = M_aleFactory->displacement();
-
-    //---------------------------------------------------------------------------------------------//
-    // transfert to the move mesh
-    for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        (*M_displacement)(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);/////
-#if 0
-    //---------------------------------------------------------------------------------------------//
-    // update to real move
-    auto const& dispRefPrevious = M_bdf_ale_displacement_ref->unknown(0);
-    for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        (*M_displacement)(M_drm->dofRelMap()[i]) -= dispRefPrevious(i) - (*M_dispP1ToHO_ref)(i);//////
-#endif
-    //---------------------------------------------------------------------------------------------//
-    //move the mesh
-    M_mesh_mover.apply(M_movingMesh, *M_displacement );
-
-    // rebuild dof point (necessary in updateIdentityMap with extended dof table)
-    M_Xhmove->rebuildDofPoints();
-
-    // up identity
-    this->updateIdentityMap();
-
-    // compute mesh velocity
-    *M_meshVelocity = *M_identity_ale;
-    M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
-    M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
-
-    //std::cout << "MeshALE<Convex>::update finish" << std::endl;
+    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish");
 }
 
 //------------------------------------------------------------------------------------------------//
