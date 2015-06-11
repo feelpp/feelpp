@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -178,19 +178,19 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     {
         auto SigmaNv = ( -idv( p )*N()+cst_ref( sqgr )*gradv( u )*N() );
         auto SigmaN = ( -id( q )*N()+cst_ref( sqgr )*grad( v )*N() );
-        form1( Xh, R ) +=
+        form1( Xh, _vector=R ) +=
             integrate ( marked2faces( mesh, "F.wall" ),
                         // weak Dirichlet condition at the walls (u=0)
                         -trans( SigmaNv )*id( v )
                         -trans( SigmaN )*idv( u )
                         +gamma*trans( idv( u ) )*id( v )/hFace() );
 
-        form1( Xh, R ) +=
+        form1( Xh, _vector=R ) +=
             integrate ( markedfaces( mesh, "Tfixed" ),
                         // weak dirichlet condition T=T_0 | left side
                         -gradv( t )*N()*id( s )*cst_ref( sqgrpr )
                         -grad( s )*N()*idv( t )*cst_ref( sqgrpr ) );
-        form1( Xh,R ) 	+=
+        form1( Xh, _vector=R ) 	+=
             integrate ( markedfaces( mesh, "Tfixed"  ),
                         cst_ref( gamma )*idv( t )*id( s )/hFace() );
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -92,8 +92,8 @@ public:
     BackendPetsc( WorldComm const& worldComm=Environment::worldComm() )
         :
         super( worldComm ),
-        M_solver_petsc( worldComm ),
-        M_nl_solver_petsc( worldComm )
+        M_solver_petsc( worldComm )
+        //M_nl_solver_petsc( "",worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
     }
@@ -102,8 +102,8 @@ public:
                   WorldComm const& worldComm=Environment::worldComm() )
         :
         super( vm, prefix, worldComm ),
-        M_solver_petsc( vm, worldComm ),
-        M_nl_solver_petsc( worldComm )
+        M_solver_petsc( vm, worldComm )
+        //M_nl_solver_petsc( prefix,worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
 
@@ -316,30 +316,58 @@ public:
 
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b ) const
+               vector_type& b, bool transpose ) const
     {
         int ierr = 0;
         petsc_sparse_matrix_type const& _A = dynamic_cast<petsc_sparse_matrix_type const&>( A );
         petsc_vector_type const& _x = dynamic_cast<petsc_vector_type const&>( x );
         petsc_vector_type const& _b = dynamic_cast<petsc_vector_type const&>( b );
-        if ( _A.mapCol().worldComm().globalSize() == x.map().worldComm().globalSize() )
-        {
-            //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
-            ierr = MatMult( _A.mat(), _x.vec(), _b.vec() );
-            CHKERRABORT( _A.comm().globalComm(),ierr );
+        if(!transpose) {
+            if ( _A.mapCol().worldComm().globalSize() == x.map().worldComm().globalSize() )
+            {
+                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
+                ierr = MatMult( _A.mat(), _x.vec(), _b.vec() );
+                CHKERRABORT( _A.comm().globalComm(),ierr );
+            }
+            else
+            {
+                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
+                auto x_convert = petscMPI_vector_type(_A.mapColPtr());
+                x_convert.duplicateFromOtherPartition(x);
+                x_convert.close();
+                ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
+                CHKERRABORT( _A.comm().globalComm(),ierr );
+            }
         }
-        else
-        {
-            //std::cout << "BackendPetsc::prod with convert"<< std::endl;
-            auto x_convert = petscMPI_vector_type(_A.mapColPtr());
-            x_convert.duplicateFromOtherPartition(x);
-            x_convert.close();
-            ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
-            CHKERRABORT( _A.comm().globalComm(),ierr );
+        else {
+            if ( _A.mapRow().worldComm().globalSize() == x.map().worldComm().globalSize() )
+            {
+                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
+                ierr = MatMultTranspose( _A.mat(), _x.vec(), _b.vec() );
+                CHKERRABORT( _A.comm().globalComm(),ierr );
+            }
+            else
+            {
+                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
+                auto x_convert = petscMPI_vector_type(_A.mapRowPtr());
+                x_convert.duplicateFromOtherPartition(x);
+                x_convert.close();
+                ierr = MatMultTranspose( _A.mat(), x_convert.vec(), _b.vec() );
+                CHKERRABORT( _A.comm().globalComm(),ierr );
+            }
         }
         b.close();
     }
 
+    /**
+     * get the matrix \c M whose diagonal is \c -v
+     */
+    int diag( vector_type const& v, sparse_matrix_type& M ) const;
+
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    int diag( sparse_matrix_type const& M, vector_type& v ) const;
 
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
@@ -350,6 +378,19 @@ public:
                              vector_ptrtype& x,
                              vector_ptrtype const& b );
 
+    /**
+     * assemble \f$C=P^T A P\f$
+     */
+    int PtAP( sparse_matrix_ptrtype const& A,
+              sparse_matrix_ptrtype const& P,
+              sparse_matrix_ptrtype& C ) const;
+    /**
+     * assemble \f$C=P A P^T\f$
+     */
+    int PAPt( sparse_matrix_ptrtype const& A,
+              sparse_matrix_ptrtype const& P,
+              sparse_matrix_ptrtype& C ) const;
+    
     template <class Vector>
     static value_type dot( const vector_type& f,
                            const Vector& x )
@@ -361,100 +402,29 @@ public:
         return result;
     }
 
+    /**
+     * @return the linear solver (const version)
+     */
+    SolverLinearPetsc<double> const& linearSolver() const { return M_solver_petsc; }
+    /**
+     * @return the linear solver 
+     */
+    SolverLinearPetsc<double> & linearSolver() { return M_solver_petsc; }
+    
 private:
 
     SolverLinearPetsc<double> M_solver_petsc;
-    SolverNonLinearPetsc<double> M_nl_solver_petsc;
+    //SolverNonLinearPetsc<double> M_nl_solver_petsc;
 
 }; // class BackendPetsc
 
 
-template<typename T>
-BackendPetsc<T>::~BackendPetsc()
-{
-    this->clear();
-}
-template<typename T>
-void
-BackendPetsc<T>::clear()
-{
-    LOG(INFO) << "Deleting linear solver petsc";
-    M_solver_petsc.clear();
-    LOG(INFO) << "Deleting non linear solver petsc";
-    M_nl_solver_petsc.clear();
-    LOG(INFO) << "Deleting backend petsc";
-
-    super::clear();
-
-}
-
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
-                        sparse_matrix_ptrtype const& B,
-                        vector_ptrtype& x,
-                        vector_ptrtype const& b )
-{
-    M_solver_petsc.setPrefix( this->prefix() );
-    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
-    M_solver_petsc.setSolverType( this->kspEnumType() );
-    if (!M_solver_petsc.initialized())
-        M_solver_petsc.attachPreconditioner( this->M_preconditioner );
-    M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
-    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
-    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
-                                  _atolerance=this->aTolerance(),
-                                  _dtolerance=this->dTolerance(),
-                                  _maxit = this->maxIterations() );
-    M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
-    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
-    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
-
-    auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
-
-    if ( !res.template get<0>() )
-        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
-
-    return res;
-} // BackendPetsc::solve
 
 
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_type const& A,
-                        vector_type& x,
-                        vector_type const& b )
-{
-    M_solver_petsc.setPrefix( this->prefix() );
-    M_solver_petsc.setPreconditionerType( this->pcEnumType() );
-    M_solver_petsc.setSolverType( this->kspEnumType() );
-    if (!M_solver_petsc.initialized())
-        M_solver_petsc.attachPreconditioner( this->M_preconditioner );
-    M_solver_petsc.setConstantNullSpace( this->hasConstantNullSpace() );
-    M_solver_petsc.setFieldSplitType( this->fieldSplitEnumType() );
-    M_solver_petsc.setTolerances( _rtolerance=this->rTolerance(),
-                                  _atolerance=this->aTolerance(),
-                                  _dtolerance=this->dTolerance(),
-                                  _maxit = this->maxIterations() );
-    M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
-    M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
-    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
-    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
-
-    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
-    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
-
-    if ( !res.template get<0>() )
-        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
-
-    return res;
-} // BackendPetsc::solve
-
-
+#if !defined(FEELPP_BACKEND_PETSC_NOEXTERN)
+extern template class BackendPetsc<double>;
+extern template class BackendPetsc<std::complex<double>>;
+#endif
 
 #endif // FEELPP_HAS_PETSC_H
 } // Feel

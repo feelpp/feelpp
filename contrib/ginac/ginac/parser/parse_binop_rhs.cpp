@@ -26,6 +26,7 @@
 #include "add.h"
 #include "power.h"
 #include "operators.h"
+#include "relational.h"
 #include "parser.h"
 #include "lexer.h"
 #include "debug.h"
@@ -137,6 +138,7 @@ static ex make_divide_expr(const exvector& args)
 	return (new mul(args[0], rest))->setflag(status_flags::dynallocated);
 }
 
+
 static ex make_binop_expr(const int binop, const exvector& args)
 {
 	switch (binop) {
@@ -148,6 +150,10 @@ static ex make_binop_expr(const int binop, const exvector& args)
 			return (new mul(args))->setflag(status_flags::dynallocated);
 		case '/':
 			return make_divide_expr(args);
+        case '<':
+            return (new relational(args[0],args[1],relational::less))->setflag(status_flags::dynallocated);
+        case '>':
+            return (new relational(args[0],args[1],relational::greater))->setflag(status_flags::dynallocated);
 		case '^':
 			if (args.size() != 2)
 				throw std::invalid_argument(
@@ -167,8 +173,10 @@ static inline bool is_binop(const int c)
 	switch (c) {
 		case '+':
 		case '-':
-		case '*':
+        case '*':
 		case '/':
+        case '<':
+        case '>':
 		case '^':
 			return true;
 		default:
@@ -180,6 +188,9 @@ static inline bool is_binop(const int c)
 static int get_tok_prec(const int c)
 {
 	switch (c) {
+        case '<':
+        case '>':
+            return 10;
 		case '+':
 		case '-':
 			return 20;

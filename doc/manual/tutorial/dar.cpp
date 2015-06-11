@@ -110,8 +110,8 @@ public:
     DAR()
         :
         super(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        meshSize( doption("hsize") ),
+        shape(    soption("shape") )
     {
     }
 
@@ -159,14 +159,14 @@ DAR<Dim>::run()
     element_type gproj( Xh, "v" );
     /** \endcode */
 
-    bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
-    value_type penaldir = this->vm()["penaldir"].template as<double>();
-    bool stab = this->vm()["stab"].template as<int>();
-    value_type stabcoeff = this->vm()["stabcoeff"].template as<double>();
-    value_type epsilon = this->vm()["epsilon"].template as<double>();
-    value_type mu = this->vm()["mu"].template as<double>();
-    value_type bx = this->vm()["bx"].template as<double>();
-    value_type by = this->vm()["by"].template as<double>();
+    bool weak_dirichlet =  ioption("weakdir"  );
+    value_type penaldir =  doption("penaldir" );
+    bool stab =            ioption("stab"     );
+    value_type stabcoeff = doption("stabcoeff");
+    value_type epsilon =   doption("epsilon"  );
+    value_type mu =        doption("mu"       );
+    value_type bx =        doption("bx"       );
+    value_type by =        doption("by"       );
 
     LOG(INFO) << "[DAR] hsize = " << meshSize << "\n";
     LOG(INFO) << "[DAR] bx = " << bx << "\n";

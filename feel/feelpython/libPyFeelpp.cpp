@@ -85,34 +85,34 @@ namespace py = boost::parameter::python;
     template<typename MeshType, int N>
 void expo_w ( boost::shared_ptr<MeshType> m)
 {
-    auto x=Exporter<MeshType,N>::New();
-    x->setMesh(m);
+    auto x = exporter( _mesh=m );
     x->addRegions();
     x->save();
 }
 
-    template<typename MeshType>
+template<typename MeshType>
 boost::shared_ptr<MeshType> loadMesh_w (MeshType* mesh)
 {
     return loadMesh(_mesh=mesh);
 }
 
-template<int Order, 
+template<int Order,
+         typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          typename MeshType,
          int Tag = 0>
 
-typename meta::Pch<MeshType,Order,Pts,Tag>::ptrtype
+typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype
 Pch_w( boost::shared_ptr<MeshType> mesh)
 {
-    return Pch<Order,Pts,MeshType,Tag>(mesh);
+    return Pch<Order,T,Pts,MeshType,Tag>(mesh);
 }
 
 
 
 // method that will define all the elements link to Mesh object into the Python library
 
-    template <int n,int N>
+template <int n,int N>
 void def_wrapper (std::string s)
 {    
     std::ostringstream f;
@@ -165,7 +165,7 @@ void def_wrapper_Pch ()
 
     class_<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Simplex<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
 
-    def(j.str().c_str(),Pch_w<k,PointSetEquiSpaced,Mesh<Simplex<n>>,0>);
+    def(j.str().c_str(),Pch_w<k,double,PointSetEquiSpaced,Mesh<Simplex<n>>,0>);
 
     h.str("");
     i.str(""); 
@@ -177,7 +177,7 @@ void def_wrapper_Pch ()
 
     class_<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>,boost::shared_ptr<Feel::FunctionSpace<Mesh<Hypercube<n>>,Feel::bases<Feel::Lagrange<k,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>>>,boost::python::bases<Feel::FunctionSpaceBase>>(i.str().c_str(),no_init);
 
-    def(j.str().c_str(),Pch_w<k,PointSetEquiSpaced,Mesh<Hypercube<n>>,0>);
+    def(j.str().c_str(),Pch_w<k,double,PointSetEquiSpaced,Mesh<Hypercube<n>>,0>);
 
     h.str("");
     i.str(""); 
@@ -198,8 +198,8 @@ BOOST_PYTHON_MODULE(libPyFeelpp)
 
     if (import_mpi4py()<0) return ;
 
-    class_<Feel::detail::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
-        .def("worldComm",&Feel::detail::Environment::worldComm,return_value_policy<copy_non_const_reference>())
+    class_<Feel::Environment,boost::noncopyable>("Environment", init<boost::python::list>()) 
+        .def("worldComm",&Feel::Environment::worldComm,return_value_policy<copy_non_const_reference>())
         .staticmethod("worldComm");
 
     class_<WorldComm>("WorldComm",init<>());

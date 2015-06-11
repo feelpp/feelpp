@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -182,8 +182,8 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
-    M_lambda( this->vm()["lambda"].template as<double>() ),
+    meshSize( doption("hsize") ),
+    M_lambda( doption("lambda") ),
     M_penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
     M_Xh(),
     exporter()
@@ -347,8 +347,8 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     this->addParameterValue( Dim )
     .addParameterValue( Order )
-    .addParameterValue( this->vm()["lambda"].template as<double>() )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( doption("lambda") )
+    .addParameterValue( doption("hsize") );
 
     if ( this->preProcessing() == RUN_EXIT ) return;
 

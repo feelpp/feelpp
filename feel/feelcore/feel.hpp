@@ -1,28 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+ This file is part of the Feel library
+ 
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 2006-12-30
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-12-30
+ Copyright (C) 2006,2007,2008,2009,2010 Universite de Grenoble 1
+ Copyright (C) 2011-2015 Feel++ Consortium
 
-  Copyright (C) 2006,2007,2008,2009,2010 Université de Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 3.0 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 /**
-   \file feel.hpp
+ \file feel.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
  */
@@ -33,7 +34,7 @@
 # ifndef _FEELPP_HH_
 # define _FEELPP_HH_
 
-#include <complex>
+
 
 #if defined(__APPLE__)
 #undef tolower
@@ -92,7 +93,22 @@
 #pragma warning push
 #pragma warning(disable:780)
 #endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
+#endif
 #include <glog/logging.h>
+#include <glog/stl_logging.h>
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #if defined(__INTEL_COMPILER)
 #pragma warning pop
 #endif
@@ -123,7 +139,10 @@ namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;
+
+// bring boost.mpi into Feel realm
 namespace mpi=boost::mpi;
+
 namespace constants=boost::math::constants;
 //namespace constants = boost::math::constants;
 //using boost::math::double_constants;
@@ -212,10 +231,6 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 typedef double Real;
 typedef double float64_t;
 typedef double scalar_type;
-typedef std::complex<double> complex_type;
-typedef std::complex<double> complex64_type;
-typedef std::complex<float64_t> complex128_type;
-typedef complex128_type complex128_t;
 
 //
 // Create type that are machine independent
@@ -352,6 +367,9 @@ typedef uint16_type dim_type;
 
 //! Indices (starting from 0)
 typedef size_t size_type;
+
+//! dof id type 
+typedef size_type dof_id_type;
 
 //! type for mpi rank ids
 typedef uint16_type rank_type;
@@ -553,16 +571,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #endif // FEELPP_HAS_MPFR
 
 
-#include <boost/shared_ptr.hpp>
-#include <boost/detail/is_xxx.hpp>
-
-namespace Feel
-{
-namespace detail
-{
-BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
-}
-}
 
 #if !defined(MPI_INT64_T)
 #define MPI_INT64_T MPI_LONG_INT
@@ -606,5 +614,8 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 #endif // NDEBUG
 
 #endif // DVLOG_IF
+
+
+#include <feel/feelcore/ptr.hpp>
 
 #endif

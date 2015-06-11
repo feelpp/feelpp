@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -335,7 +335,7 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
         else
             M_mapRow->setLastDofGlobalCluster(proc,  M_mapRow->firstDofGlobalCluster(proc) + M_mapRow->nLocalDofWithoutGhost(proc)-1 );
 
-        if ( M_mapCol->nLocalDofWithoutGhost() == 0 )
+        if ( M_mapCol->nLocalDofWithoutGhost(proc) == 0 )
             M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) );
         else
             M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) + M_mapCol->nLocalDofWithoutGhost(proc)-1 );
@@ -435,17 +435,28 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
     {
-        //const uint16_type nRow = blockgraph.nRow();
         boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
         const size_type firstDofGC = this->mapRow().firstDofGlobalCluster();
         for ( uint16_type i=0; i<nRow; ++i )
-        {
             indexSplit->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplit() );
-        }
         //indexSplit->showMe();
         this->mapRowPtr()->setIndexSplit( indexSplit );
-    }
 
+        bool hasComponentsSplit = false;
+        for ( uint16_type i=0; i<nRow; ++i )
+            if ( blockSet(i,0)->mapRow().hasIndexSplitWithComponents() )
+            {
+                hasComponentsSplit = true;
+                break;
+            }
+        if ( hasComponentsSplit )
+        {
+            boost::shared_ptr<IndexSplit> indexSplitWithComponents( new IndexSplit() );
+            for ( uint16_type i=0; i<nRow; ++i )
+                indexSplitWithComponents->addSplit( firstDofGC, blockSet(i,0)->mapRow().indexSplitWithComponents() );
+            this->mapRowPtr()->setIndexSplitWithComponents( indexSplitWithComponents );
+        }
+    }
 
 
 }
@@ -1005,7 +1016,7 @@ GraphCSR::close()
 #endif // MPI_MODE
 
 
-
+#if 0
     size_type nRowLoc = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
     if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
     {
@@ -1042,6 +1053,31 @@ GraphCSR::close()
         M_a.resize(  0 );
 
     }
+#else
+    size_type nRowLoc = this->mapRow().nLocalDofWithoutGhost();
+    M_ia.resize( nRowLoc+1,0 );
+    M_ja.resize( sum_nz, 0. );
+    //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+    size_type col_cursor = 0;
+    auto jait = M_ja.begin();
+
+    for ( size_type i = 0 ; i< nRowLoc; ++i )
+    {
+        if ( M_storage.find( this->firstRowEntryOnProc()+i ) != M_storage.end() )
+        {
+            row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
+            M_ia[i] = col_cursor;
+            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+            col_cursor+=boost::get<2>( irow ).size();
+        }
+        else
+        {
+            M_ia[i] = col_cursor;
+        }
+    }
+
+    M_ia[nRowLoc] = sum_nz;
+#endif
 } // close
 
 

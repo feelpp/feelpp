@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -45,37 +45,38 @@ namespace fs = boost::filesystem;
 template <typename MeshType, int N>
 class Exporterhdf5
     : 
-public Exporter <MeshType, N>
+        public Exporter <MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-    public: 
-        typedef MeshType mesh_type;
-        typedef typename mesh_type::value_type value_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
-        typedef typename super::timeset_type timeset_type;
-        typedef typename super::timeset_ptrtype timeset_ptrtype;
-        typedef typename super::timeset_iterator timeset_iterator;
-        typedef typename super::timeset_const_iterator timeset_const_iterator;
+public: 
+    typedef MeshType mesh_type;
+    typedef typename mesh_type::value_type value_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef typename super::timeset_type timeset_type;
+    typedef typename super::timeset_ptrtype timeset_ptrtype;
+    typedef typename super::timeset_iterator timeset_iterator;
+    typedef typename super::timeset_const_iterator timeset_const_iterator;
 
-        Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
-        Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-        Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
+    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    Exporterhdf5( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
-        Exporterhdf5( Exporterhdf5 const & __ex );
+    Exporterhdf5( Exporterhdf5 const & __ex );
 
-        ~Exporterhdf5(); 
+    ~Exporterhdf5(); 
 
-        /** @name  Mutators
-         */
-        //@{
+    /** @name  Mutators
+     */
+    //@{
 
-        Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
         {
             super::setOptions( exp_prefix );
 
             return this;
         }
-        Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
         {
             super::setOptions( exp_prefix );
 
@@ -110,14 +111,9 @@ public Exporter <MeshType, N>
         void writeXDMF() const;
 
         /*!
-         * \brief write points' coordonates   
+         * \brief write mesh data
          */
-        void writePoints(typename timeset_type::step_ptrtype __step) const;
-
-        /*!
-         * \brief write elements (an element is formed by several nodes) 
-         */
-        void writeElements(typename timeset_type::step_ptrtype __step) const;
+        void saveMesh(mesh_ptrtype mesh, int stepIndex) const;
 
         /*!
          * \brief write informations of the mesh in .h5 file (unused for now)
@@ -142,34 +138,15 @@ public Exporter <MeshType, N>
         template<typename Iterator>
             void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
-        /*!
-         * \brief a bubble sort of 2 arrays in the same time
-         * \param ids    array of points' identifier
-         * \param coords coordinates of points
-         * \param n      size of those array
-         */
-        void bubbleSort (size_type * ids, value_type * coords, size_type n) const;
-
     private :
         mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
         mutable std::ostringstream M_fileName;        /*!< file name */
-        mutable std::string M_fileNameStep;    /*!< file name + time step */
         mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
 
         // Mesh geometry
-        mutable size_type M_elementNodes;      /*!< number of nodes for one element */ 
-        mutable size_type M_maxNumElements;    /*!< number of elements for the current process */
-        mutable size_type M_maxNumPoints;      /*!< number of points for the current process */
-        mutable size_type M_numParts;          /*!< number of partitions */
         mutable std::string M_element_type;    /*!< element's type */
 
-        mutable size_type M_step = 0;          /*!< number of the current step */
         mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
-
-        mutable std::vector<size_type> M_uintBuffer;           /*!< buffer of integer */
-        mutable std::vector<value_type> M_realBuffer;          /*!< buffer of double */
-        mutable std::map<size_type, size_type> M_newPointId;   /*!< new point identifier after sort */
-        mutable std::ostringstream M_str;                      /*!< buffer of string */
         mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
 };
 } // Feel

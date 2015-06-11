@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-14
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -189,7 +189,7 @@ public:
 
     int nExpression() const { return M_expr.size(); }
 
-    const int index(int i=0) const
+    int index(int i=0) const
     {
         auto it = std::find_if( M_syms.begin(), M_syms.end(),
                                 [=]( GiNaC::symbol const& s ) { return s.get_name() == M_expr[i].first.get_name(); } );
@@ -207,7 +207,7 @@ public:
         return indices_vec;
     }
 
-    const bool isZero() const { return M_fun.is_zero(); }
+    bool isZero() const { return M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     //@}

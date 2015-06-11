@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,12 @@
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
+
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+using Pdh_ptrtype=boost::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
+    
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are

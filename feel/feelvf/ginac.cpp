@@ -3,7 +3,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2012-10-24
 
    Copyright (C) 2012 Université de Strasbourg
@@ -24,7 +24,7 @@
 */
 /**
    \file ginac.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-10-24
 */
 #include <feel/feelcore/environment.hpp>
@@ -189,7 +189,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                      } );
 
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
-        LOG(INFO) <<" - table : "  << it->first << it->second;
+        LOG(INFO) <<" - table : "  << it->first << "\t" << it->second;
 
 
     LOG(INFO) <<"Defining parser";
@@ -313,43 +313,56 @@ div( matrix const& f, std::vector<symbol> const& l )
 matrix
 curl( ex const& f, std::vector<symbol> const& l )
 {
-    if   ( is_a<lst>( f ) && f.nops() == 2 )
-    {
-        std::vector<ex> v(2);
+	CHECK(f.nops() > 1) << "Invalid expression for curl operator: the expression has to be a vector";
+	CHECK(f.nops() <=3) << "Invalid expression for curl operator: the expression has to be a vector with max 3 components";
+  if   ( is_a<lst>( f ) ){
+    if   ( f.nops() == 2 ){
+        std::vector<ex> v(1);
         CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
         CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
         v[0] = f.op(1).diff(l[0])-f.op(0).diff(l[1]);
         matrix h( 1, 1, v );
         return h;
     }
-    if   ( !is_a<lst>( f ) )
-    {
-        CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
-        CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
-        std::vector<ex> v(2);
-        v[0] = f.diff(l[1]);
-        v[1] = -f.diff(l[0]);
-        matrix h( 2, 1, v );
-        return h;
-    }
-    if   ( is_a<lst>( f ) && f.nops() == 3)
-    {
+    if   ( f.nops() == 3){
         CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
         CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
         CHECK( l[2].get_name() == "z") << "Symbol z not present in list of symbols, cannot compute curl(" << f << ")\n";
         std::vector<ex> v(3);
         v[0]=f.op(2).diff(l[1])-f.op(1).diff(l[2]);
-        v[1]=f.op(2).diff(l[0])-f.op(0).diff(l[2]);
+        v[1]=f.op(0).diff(l[2])-f.op(2).diff(l[0]);
         v[2]=f.op(1).diff(l[0])-f.op(0).diff(l[1]);
         matrix h( 3, 1, v );
         return h;
     }
-    CHECK(0) << "Invalid expression " << f << " cannot compute its curl\n";
+	}else{ //   ( is_a<lst>( f ) )
+		if   ( f.nops() == 2 ){
+        CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
+        CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
+        std::vector<ex> v(1);
+        v[0] = f[1].diff(l[0])-f[0].diff(l[1]);
+        matrix h( 1, 1, v );
+        return h;
+		}
+    if   ( f.nops() == 3 ){
+			CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
+      CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
+      CHECK( l[2].get_name() == "z") << "Symbol z not present in list of symbols, cannot compute curl(" << f << ")\n";
+      std::vector<ex> v(3);
+      v[0]=f[2].diff(l[1])-f[1].diff(l[2]);
+      v[1]=f[0].diff(l[2])-f[2].diff(l[0]);
+      v[2]=f[1].diff(l[0])-f[0].diff(l[1]);
+      matrix h( 3, 1, v );
+      return h;
+		}
+	}
+	CHECK(0) << "Invalid expression " << f << " cannot compute its curl\n";
 }
 
 matrix
 curl( matrix const& f, std::vector<symbol> const& l )
 {
+	LOG(INFO) << "matrix version\n";
     CHECK(0) << "not implemented yet\n";
 }
 

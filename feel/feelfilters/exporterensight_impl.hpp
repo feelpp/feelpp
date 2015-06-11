@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,6 +60,14 @@ template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
+{
+    init();
+}
+
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& exp_prefix, WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm )
 {
     init();
 }
@@ -267,70 +275,84 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
     {
         timeset_ptrtype __ts = *__ts_it;
 
-        typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__ts->rbeginStep() )->beginNodalScalar();
-        typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__ts->rbeginStep() )->endNodalScalar();
+        auto __tstp_st = __ts->beginStep();
+        auto __tstp_en = __ts->endStep();
 
-        while ( __it != __end )
+        /* protect this portion of code */
+        /* if we don't have time steps */
+        /* happens when we only have the mesh */
+        if(__tstp_st != __tstp_en)
         {
-            __out << "scalar per node: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __it->second.name() << " " << __it->first << "-" << this->worldComm().globalSize() << "_" << __it->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
-            ++__it;
-        }
+            auto __tstp_it = boost::prior(__tstp_en);
 
-        typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
-        typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__ts->rbeginStep() )->endNodalVector();
+            typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__tstp_it )->beginNodalScalar();
+            typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__tstp_it )->endNodalScalar();
 
-        while ( __itv != __env )
-        {
-            __out << "vector per node: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itv->second.name() << " " << __itv->first << "-" << this->worldComm().globalSize() << "_" << __itv->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
-            ++__itv;
-        }
+            while ( __it != __end )
+            {
+                __out << "scalar per node: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __it->second.name() << " " << __it->first << "-" << this->worldComm().globalSize() << "_" << __it->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                ++__it;
+            }
 
-        typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__ts->rbeginStep() )->beginNodalTensor2();
-        typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__ts->rbeginStep() )->endNodalTensor2();
+            typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__tstp_it )->beginNodalVector();
+            typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__tstp_it )->endNodalVector();
 
-        while ( __itt != __ent )
-        {
-            __out << "tensor per node: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-            ++__itt;
-        }
+            while ( __itv != __env )
+            {
+                __out << "vector per node: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __itv->second.name() << " " << __itv->first << "-" << this->worldComm().globalSize() << "_" << __itv->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                ++__itv;
+            }
 
-        typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__ts->rbeginStep() )->beginElementScalar();
-        typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__ts->rbeginStep() )->endElementScalar();
+            typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__tstp_it )->beginNodalTensor2();
+            typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__tstp_it )->endNodalTensor2();
 
-        while ( __it_el != __end_el )
-        {
-            __out << "scalar per element: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __it_el->second.name() << " " << __it_el->first << "-" << this->worldComm().globalSize() << "_" << __it_el->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
-            ++__it_el;
-        }
+            while ( __itt != __ent )
+            {
+                std::cout << "tensor asym per node: "
+                          << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                          << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << std::endl; // important localRank !!
+                __out << "tensor asym per node: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                ++__itt;
+            }
 
-        typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
-        typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__ts->rbeginStep() )->endElementVector();
+            typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__tstp_it )->beginElementScalar();
+            typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__tstp_it )->endElementScalar();
 
-        while ( __itv_el != __env_el )
-        {
-            __out << "vector per element: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itv_el->second.name() << " " << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << __itv_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-            ++__itv_el;
-        }
+            while ( __it_el != __end_el )
+            {
+                __out << "scalar per element: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __it_el->second.name() << " " << __it_el->first << "-" << this->worldComm().globalSize() << "_" << __it_el->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                ++__it_el;
+            }
 
-        typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
-        typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__ts->rbeginStep() )->endElementTensor2();
+            typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__tstp_it )->beginElementVector();
+            typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__tstp_it )->endElementVector();
 
-        while ( __itt_el != __ent_el )
-        {
-            __out << "tensor per element: "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itt_el->second.name() << " " << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << __itt_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-            ++__itt_el;
+            while ( __itv_el != __env_el )
+            {
+                __out << "vector per element: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __itv_el->second.name() << " " << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << __itv_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                ++__itv_el;
+            }
+
+            typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__tstp_it )->beginElementTensor2();
+            typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__tstp_it )->endElementTensor2();
+
+            while ( __itt_el != __ent_el )
+            {
+                __out << "tensor per element: "
+                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                    << __itt_el->second.name() << " " << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << __itt_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                ++__itt_el;
+            }
         }
 
         ++__ts_it;
@@ -343,15 +365,26 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
     {
         timeset_ptrtype __ts = *__ts_it;
         typename timeset_type::step_const_iterator __its = __ts->beginStep();
+        typename timeset_type::step_const_iterator __ens = __ts->endStep();
 
-        __out << "time set:        " << __ts->index() << "\n"
-              << "number of steps: " << __ts->numberOfSteps() << "\n"
-              << "filename start number: " << ( *__its )->index() << "\n"
-              << "filename increment: " << 1 << "\n"
-              << "time values: ";
+        if(__its != __ens)
+        {
+            __out << "time set:        " << __ts->index() << "\n"
+                << "number of steps: " << __ts->numberOfSteps() << "\n"
+                << "filename start number: " << ( *__its )->index() << "\n"
+                << "filename increment: " << 1 << "\n"
+                << "time values: ";
+        }
+        else
+        {
+            __out << "time set:        " << TS_INITIAL_INDEX << "\n"
+                << "number of steps: " << 1 << "\n"
+                << "filename start number: " << TS_INITIAL_INDEX << "\n"
+                << "filename increment: " << 1 << "\n"
+                << "time values: 1.0";
+        }
 
         uint16_type __l = 0;
-        typename timeset_type::step_const_iterator __ens = __ts->endStep();
 
         while ( __its != __ens )
         {
@@ -394,7 +427,34 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
-        __it = boost::prior( __end );
+        int timeIndex = TS_INITIAL_INDEX;
+        mesh_ptrtype mesh = NULL;
+
+        /* if we do not have time steps, we try to save the mesh at least */
+        if( __it == __end )
+        {
+            if ( __ts->hasMesh() )
+            { mesh = __ts->mesh(); }
+        }
+        /* otherwise we save the mesh */
+        else
+        {
+            __it = boost::prior( __end );
+
+            /* check that step is in memory */
+            if( (*__it)->isInMemory() && (*__it)->hasMesh() )
+            { mesh = (*__it)->mesh(); }
+
+            /* record step index */
+            timeIndex = (*__it)->index();
+        }
+
+        /* if we were not able to get a mesh, there is a problem */
+        if(!mesh)
+        {
+            LOG(INFO) << "GEO: Unable to get mesh data" << std::endl;
+            return;
+        }
 
         if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
         {
@@ -405,34 +465,21 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                        << ".geo";
             M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
-            if ( __ts->hasMesh() )
-                __ts->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
-            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+            mesh->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
         }
-
-        while ( __it != __end )
+        else
         {
-            typename timeset_type::step_ptrtype __step = *__it;
-
-
             std::ostringstream __geofname;
 
-            if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
-            {
-                __geofname << this->path() << "/"
-                           << __ts->name()
-                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-                           << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-                if ( __step->isInMemory() )
-                {
-                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                    //, __ts->name(), __geofname.str() );
-                    M_filename =  __geofname.str();
-                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
-                }
-            }
-            ++__it;
+            __geofname << this->path() << "/"
+                << __ts->name()
+                << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << timeIndex;
+            
+            //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+            //, __ts->name(), __geofname.str() );
+            M_filename =  __geofname.str();
+            mesh->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
         }
 
         ++__ts_it;
@@ -455,25 +502,29 @@ ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
-        __it = boost::prior( __end );
 
-        while ( __it != __end )
+        if(__it != __end)
         {
-            typename timeset_type::step_ptrtype __step = *__it;;
+            __it = boost::prior( __end );
 
-            if ( __step->isInMemory() )
+            while ( __it != __end )
             {
-                saveNodal( __step, __step->beginNodalScalar(), __step->endNodalScalar() );
-                saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
-                saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                typename timeset_type::step_ptrtype __step = *__it;;
 
-                saveElement( __step, __step->beginElementScalar(), __step->endElementScalar() );
-                saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
-                saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
+                if ( __step->isInMemory() )
+                {
+                    saveNodal( __step, __step->beginNodalScalar(), __step->endNodalScalar() );
+                    saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
+                    saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
 
+                    saveElement( __step, __step->beginElementScalar(), __step->endElementScalar() );
+                    saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
+                    saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
+
+                }
+
+                ++__it;
             }
-
-            ++__it;
         }
 
         ++__ts_it;
@@ -508,6 +559,8 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 
         if ( __var->second.is_vectorial )
             nComponents = 3;
+        if ( __var->second.is_tensor2 )
+            nComponents = 9;
 
         /**
          * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -715,7 +768,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Material %d",p_it->first );
+        sprintf( buffer, "Marker %d (%s)", p_it->first, __mesh->markerName(p_it->first).substr(0, 32).c_str());
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         strcpy( buffer, this->elementType().c_str() );

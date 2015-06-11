@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -303,7 +303,16 @@ MatrixEpetra::printMatlab ( const std::string name ) const
 
     //this->printKonsole();
     //std::cout << "[printMatlab] print matrix in matlab file done\n";
-    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat );
+		/*
+		 * int EpetraExt::RowMatrixToMatrixMarketFile(RowMatrixToMatrixMarketFileconst char *		filename,
+		 * const Epetra_RowMatrix &		A,
+		 * const char *		matrixName = 0,
+		 * const char *		matrixDescription = 0,
+		 * bool		writeHeader = true 
+		 * )
+		 */
+		std::string matrixName = "var_"+name;
+    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat, matrixName.c_str() );
 
     //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *M_mat, "toto", "tutu" );
     if ( ret != 0 )

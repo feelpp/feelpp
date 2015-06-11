@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -109,8 +109,8 @@ class Laplacian_parabolic
   Laplacian_parabolic()
     :
       super(),
-      meshSize( this->vm()["hsize"].template as<double>() ),
-      shape( this->vm()["shape"].template as<std::string>() )
+      meshSize( doption("hsize") ),
+      shape( soption("shape") )
   {
   }
 
@@ -170,30 +170,29 @@ Laplacian_parabolic<Dim,Order>::run()
   /**
    * Loading variables from cfg file
    */
-  bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
-  value_type penaldir = this->vm()["penaldir"].template as<double>();
-  std::string geofile = this->vm()["geofile"].template as<std::string>();
+  bool weak_dirichlet = ioption("weakdir");
+  value_type penaldir = doption("penaldir");
+  std::string geofile = soption("geofile");
 
   // loading exact and rhs
-  std::string exact  = this->vm()["error.exact"].template as<std::string>();
-  std::string rhs  = this->vm()["error.rhs"].template as<std::string>();
-  std::string params = this->vm()["error.params"].template as<std::string>();
-  value_type nu = this->vm()["nu"].template as<double>();
+  std::string exact  = soption("error.exact");
+  std::string rhs  = soption("error.rhs");
+  std::string params = soption("error.params");
+  value_type nu = doption("nu");
 
   // loading time loop variables
-  bool steady = this->vm()["bdf.steady"].template as<bool>();
-  double t_final = this->vm()["bdf.time-final"].template as<double>();
+  bool steady = boption("bdf.steady");
+  double t_final = doption("bdf.time-final");
   double t0 = this->vm()["bdf.time-initial"].template as <double>();
   double dt = this->vm()["bdf.time-step"].template as <double>();
 
   // loadgin initial temperature expression
-  std::string initial_u = this->vm()["initial_u"].template as<std::string>();
+  std::string initial_u = soption("initial_u");
 
 
   ///**
   // * Creation of a new mesh depending on the information of the geofile
   // */
-  ///** \code */
   //// access to the geofile
   //std::string access_geofile = ( boost::format( "%1%.geo" ) % geofile ).str();
 
@@ -204,9 +203,8 @@ Laplacian_parabolic<Dim,Order>::run()
   //mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
   //    _desc=desc_geo,
   //    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-
-  mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,_filename=this->vm()["geofile"].template as<std::string>()); 
-
+  ///** \code */
+  mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,_filename=soption("geofile")); 
   /** \endcode */
 
 #if 0
@@ -240,15 +238,15 @@ Laplacian_parabolic<Dim,Order>::run()
 
   if( !exact.empty() )
   {
-    /// [marker11]
+    //! [marker11]
     if ( !params.empty() )
       cvg->setParams ( params );
-    /// [marker11]
+    //! [marker11]
     LOG(INFO) << "Loading function : " << exact << std::endl;
     std::cout << "Loading function : " << exact << std::endl;
-    /// [marker12]
+    //! [marker12]
     cvg->setSolution(exact, params);
-    /// [marker12]
+    //! [marker12]
     cvg->print();
   }
 
@@ -373,36 +371,36 @@ Laplacian_parabolic<Dim,Order>::run()
    * create the matrix that will hold the algebraic representation
    * of the left hand side (only stationnary terms)
    */
-  /// [marker3]
+  //! [marker3]
   /** \code */
   auto D = backend()->newMatrix( _test=Xh, _trial=Xh  );
   /** \endcode */
 
-  //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
+  //! assemble \(\int_\Omega \nu \nabla u \cdot \nabla v\)
   /** \code */
   auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
   a = integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
   /** \endcode */
-  /// [marker3]
+  //! [marker3]
 
   if ( weak_dirichlet )
   {
     /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
-     * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
-     * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
-     * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
+     * -# assemble \(\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\)
+     * -# assemble \(\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\)
+     * -# assemble \(\int_{\partial \Omega} \frac{\gamma}{h} u v\)
      */
     /** \code */
-    /// [marker10]
+    //! [marker10]
     a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
         _expr= nu * ( -( gradt( u )*vf::N() )*id( v )
           -( grad( v )*vf::N() )*idt( u )
           +penaldir*id( v )*idt( u )/hFace() ) );
-    /// [marker10]
+    //! [marker10]
     /** \endcode */
   }
 
-  //! assemble $\int_\Omega u^{n+1} v$
+  //! assemble \(int_\Omega u^{n+1} v\)
   /** \code */
   /// [marker8]
   if( !steady )

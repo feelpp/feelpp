@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel++ library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #             Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
 #       Date: 2012-05-10
 #

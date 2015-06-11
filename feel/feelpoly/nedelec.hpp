@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -186,14 +186,14 @@ public:
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
+        LOG(INFO) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
         VLOG(1) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
+        LOG(INFO) << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
         VLOG(1) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
@@ -217,10 +217,10 @@ public:
 
         //VLOG(1) << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        std::cout << "[Nedelec1stKindset] xPk =" << xPk.coeff() << "\n";
+        LOG(INFO) << "[Nedelec1stKindset] xPk =" << xPk.coeff() << "\n";
         //VLOG(1) << "[Nedelec1stKindPset] here 1\n";
         // (P_k)^d + x P_k
-        std::cout << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        LOG(INFO) << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
         //VLOG(1) << "[Nedelec1stKindPset] here 2\n";
     }
@@ -492,16 +492,16 @@ public:
                 << "Invalid finite element dimension. Expected : " 
                 << nOrder*(nOrder+2) << " Actual: " << nLocalDof;
 
-        std::cout << "Nedelec finite element(dual): \n";
-        std::cout << " o- dim   = " << nDim << "\n";
-        std::cout << " o- order = " << nOrder << "\n";
-        std::cout << " o- kind = " << static_cast<int>(kind) << "\n";
-        std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
+        //LOG(INFO) << "Nedelec finite element(dual): \n";
+        //LOG(INFO) << " o- dim   = " << nDim << "\n";
+        //LOG(INFO) << " o- order = " << nOrder << "\n";
+        //LOG(INFO) << " o- kind = " << static_cast<int>(kind) << "\n";
+        //LOG(INFO) << " o- numPoints      = " << numPoints << "\n";
+        //LOG(INFO) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        //LOG(INFO) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        //LOG(INFO) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        //LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        //LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
 
         size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                                           mpl::int_<face_type::numEdges*nbPtsPerEdge>,
@@ -749,16 +749,16 @@ public:
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 
-        std::cout << "Nedelec finite element(dual): \n";
-        std::cout << " o- dim   = " << nDim << "\n";
-        std::cout << " o- order = " << nOrder << "\n";
-        std::cout << " o- kind = " << static_cast<int>(kind) << "\n";
-        std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
+        LOG(INFO) << "Nedelec finite element(dual): \n";
+        LOG(INFO) << " o- dim   = " << nDim << "\n";
+        LOG(INFO) << " o- order = " << nOrder << "\n";
+        LOG(INFO) << " o- kind = " << static_cast<int>(kind) << "\n";
+        LOG(INFO) << " o- numPoints      = " << numPoints << "\n";
+        LOG(INFO) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        LOG(INFO) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        LOG(INFO) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
 
         size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                                           mpl::int_<face_type::numEdges*nbPtsPerEdge>,
@@ -879,8 +879,8 @@ public:
                             q[i](2) = 0.5*solx(1,i) + 0.5*soly(1,i);
                         }
                 }
-            std::cout << "q0 = " << q[0] << std::endl;
-            std::cout << "q1 = " << q[1] << std::endl;
+            LOG(INFO) << "q0 = " << q[0] << std::endl;
+            LOG(INFO) << "q1 = " << q[1] << std::endl;
 
             // Compute and add associated functionnals ( \int (u.t) q[i], i=0,1 )
             // dcpe2_type __dcpe2_0( primal, dir, ublas::trans(Gt_ext), q[0]);
@@ -926,10 +926,10 @@ public:
 #endif
 
         VLOG(1) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
-        std::cout << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
+        LOG(INFO) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
         VLOG(1) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
-        std::cout << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
+        LOG(INFO) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
         VLOG(1) << "[Nedelec2ndKind Dual] done 4\n";
 
     }
@@ -941,7 +941,7 @@ public:
 
     points_type const& points() const
     {
-        std::cout << "ned2 points =" << M_pts << std::endl;
+        LOG(INFO) << "ned2 points =" << M_pts << std::endl;
         return M_pts;
     }
 

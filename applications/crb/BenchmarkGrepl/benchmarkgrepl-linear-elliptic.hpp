@@ -389,7 +389,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
 
     if( mshfile_name=="" )
     {
-        double hsize=option(_name="hsize").template as<double>();
+        double hsize=doption(_name="hsize");
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                _desc = createGeo( hsize ) );
@@ -431,7 +431,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
     std::vector<int> N(2);
-    int Ne = option(_name="trainset-eim-size").template as<int>();
+    int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
     // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
@@ -489,7 +489,7 @@ void BenchmarkGreplLinearElliptic<Order>::checkEimExpansion()
     auto Xh=this->Xh;
     auto Pset = this->Dmu->sampling();
     std::vector<int> N(2);
-    int Ne = option(_name="trainset-eim-size").template as<int>();
+    int Ne = ioption(_name="trainset-eim-size");
     N[0]=Ne; N[1]=Ne;
     bool all_proc_same_sampling=true;
     std::string supersamplingname =(boost::format("PsetCheckEimExpansion-Ne%1%-generated-by-master-proc") %Ne ).str();
@@ -577,7 +577,7 @@ BenchmarkGreplLinearElliptic<Order>::computeMonolithicFormulation( parameter_typ
     auto Xh = this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
 
     auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );
@@ -605,7 +605,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     auto u = Xh->element();
     auto v = Xh->element();
 
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
     auto eim_g = M_funs[0];
 
     this->M_Aqm.resize( 2 );
@@ -677,7 +677,7 @@ BenchmarkGreplLinearElliptic<Order>::computeLinearDecompositionA()
     auto muref = refParameter();
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
 
     auto exprg = 1./sqrt( (Px()-muref(0))*(Px()-muref(0)) + (Py()-muref(1))* (Py()-muref(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );

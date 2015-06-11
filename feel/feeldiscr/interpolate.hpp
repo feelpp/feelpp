@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -157,12 +157,14 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
             {
 
-                const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+                const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
+                const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
 
-                for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
+                    for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
                 {
                     size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
-                                                          l, comp ) );
+                                                          l, ncdof2*comp1+comp2 ) );
 
 #if 0
                     size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
@@ -178,7 +180,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     if ( globaldof >= interp.firstLocalIndex() &&
                             globaldof < interp.lastLocalIndex() )
                     {
-                        interp( globaldof ) = fvalues[l]( comp,0 );
+                        interp( globaldof ) = fvalues[l]( comp1,comp2 );
                         //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }

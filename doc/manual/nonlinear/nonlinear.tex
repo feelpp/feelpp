@@ -33,7 +33,7 @@ class MyApp : public Application
   // init the parent class
   Application( argc, argv, ad, od ),
   // init the backend
-  M_backend( backend_type::build( this->vm() ) ),
+  M_backend( backend_type::build( soption("backend") ) ),
   {
     // define the callback functions (works only for the PETSc backend)
     M_backend->nlSolver()->residual =

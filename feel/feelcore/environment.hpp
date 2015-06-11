@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -30,6 +30,7 @@
 #define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
@@ -41,7 +42,7 @@
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-#include <mpi4py/mpi4py.h>
+//#include <mpi4py/mpi4py.h>
 #endif
 
 #include <feel/feelcore/parameter.hpp>
@@ -59,32 +60,50 @@
 
 namespace Feel
 {
-namespace detail
-{
+class TimerTable;
 struct MemoryUsage
 {
+    MemoryUsage()
+        :
+#if defined ( FEELPP_HAS_PETSC_H )
+        memory_usage(0),
+        petsc_malloc_usage(0),
+        petsc_malloc_maximum_usage(0)
+#endif
+        {}
+    MemoryUsage(MemoryUsage const& m )
+        :
+#if defined ( FEELPP_HAS_PETSC_H )
+        memory_usage(m.memory_usage),
+        petsc_malloc_usage(m.petsc_malloc_usage),
+        petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
+#endif
+        {}
+    MemoryUsage& operator=(MemoryUsage const& m )
+        {
+            if ( this != &m )
+            {
+#if defined ( FEELPP_HAS_PETSC_H )
+                memory_usage = m.memory_usage;
+                petsc_malloc_usage = m.petsc_malloc_usage;
+                petsc_malloc_maximum_usage = m.petsc_malloc_maximum_usage;
+#endif
+            }
+            return *this;
+        }
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscLogDouble memory_usage;
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
 #endif
+    
 };
-inline
-AboutData
-makeAbout( char* name )
-{
-    AboutData about( name,
-                     name,
-                     "0.1",
-                     name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012 Feel++ Consortium" );
-
-    about.addAuthor( "Feel++ Consortium",
-                     "",
-                     "feelpp-devel@feelpp.org", "" );
-    return about;
-}
+/**
+ * default \c makeAbout function to define the \c AboutData structure of the Feel++
+ * application
+ * @param name name or short name of the application
+ */
+AboutData makeAboutDefault( std::string name );
 
 /**
  *  @class Environment "Environment"
@@ -155,72 +174,60 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    Environment( int argc, char** argv,
+#if BOOST_VERSION >= 105500
+                 mpi::threading::level lvl,
+#endif
+                 po::options_description const& desc,
+                 po::options_description const& desc_lib,
+                 AboutData const& about,
+                 std::string directory );
+    
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ), static changeRepository, tag,
-        ( required
-          ( directory,( boost::format ) ) )
-        ( optional
-          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
-        ) )
-    {
-        changeRepositoryImpl( directory, filename, subdir );
-    }
 
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
-    {
-        char** argv = args[_argv];
-        int argc = args[_argc];
-        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
-        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
-        AboutData about = args[_about| makeAbout( argv[0] )];
-        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-        S_desc->add( *S_desc_app );
-
-        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-        // otherwise we will have duplicated options
-        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-        auto it = std::find_if( opts.begin(), opts.end(),
-                                []( boost::shared_ptr<po::option_description> const&o )
-        {
-            return o->format_name().erase( 0,2 ) == "backend";
-        } );
-
-        if   ( it == opts.end() )
-            S_desc->add( *S_desc_lib );
-
-        S_desc->add( file_options( about.appName() ) );
-        S_desc->add( generic_options() );
-
-
-        init( argc, argv, *S_desc, *S_desc_lib, about );
-
-        if ( S_vm.count( "nochdir" ) == 0 )
-        {
-            std::string defaultdir = about.appName();
-
-            if ( S_vm.count( "directory" ) )
-                defaultdir = S_vm["directory"].as<std::string>();
-
-            std::string d = args[_directory|defaultdir];
-            LOG( INFO ) << "change directory to " << d << "\n";
-            boost::format f( d );
-            changeRepository( _directory=f );
-        }
-    }
-
-
-
-
-
-    void init( int argc, char** argv, po::options_description const& desc,
-               po::options_description const& desc_lib, AboutData const& about );
-
+        :
+        Environment( args[_argc],
+                     args[_argv],
+#if BOOST_VERSION >= 105500                     
+                     args[_threading|mpi::threading::single],
+#endif
+                     args[_desc|feel_nooptions()],
+                     args[_desc_lib | feel_options()],
+                     args[_about| makeAboutDefault( args[_argv][0] )],
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()] )
+        {}
+#if BOOST_VERSION >= 105500                     
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( threading,(mpi::threading::level) )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+#else
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( directory,( std::string ) )
+          ) ) // no semicolon
+#endif
+    
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -310,6 +317,15 @@ public:
         return rank() == 0;
     }
 
+    static po::command_line_parser const& commandLineParser()
+    {
+        return *S_commandLineParser;
+    }
+    static std::set<std::string> configFileNames()
+    {
+        return S_configFileNames;
+    }
+
     /**
      * return variables_map
      */
@@ -317,6 +333,14 @@ public:
     {
         return S_vm;
     }
+  
+    template<typename T>
+    static void setOptionValue(std::string s,T val)
+    {
+        auto it = S_vm.find( s );
+        CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
+        S_vm.at(s).value() = val;
+    } 
 
     static AboutData const& about()
     {
@@ -370,6 +394,7 @@ public:
     }
 
 #if defined(FEELPP_HAS_HARTS)
+
     /**
      * Init Hwloc topology structure
      */
@@ -393,9 +418,19 @@ public:
     static void bindToCore( unsigned int id );
 
     /**
-     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     * Counts the number of cores on the current server
+     * Calls countCoresInSubtree done on the whole topology
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
      */
-    static int countCoresInSubtree( hwloc_obj_t node );
+    static int getNumberOfCores( bool logical = false );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
+     */
+    static int countCoresInSubtree( hwloc_obj_t node, bool logical = false );
 
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes
@@ -403,18 +438,36 @@ public:
     static void bindNumaRoundRobin( int lazy = false );
 
     /**
+     * Get information about the last CPU bound. You must use --bind-to core with MPI for this feature to work.
+     */
+    static void getLastBoundCPU( std::vector<int> * cpuAffinity, std::vector<int> * lastCPU );
+
+    /**
      * Writes data about processor affinity and last location of the different processes/threads
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
     static void writeCPUData( std::string fname = "CPUData.dat" );
-#endif
 
+#endif
 
     //@}
 
     /** @name  Methods
      */
     //@{
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( void ), static changeRepository, tag,
+        ( required
+          ( directory,( boost::format ) ) )
+        ( optional
+          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ) )
+        {
+            changeRepositoryImpl( directory, filename, subdir, worldcomm );
+        }
 
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
@@ -466,6 +519,7 @@ public:
           ( worldcomm, ( WorldComm ), Environment::worldComm() )
           ( sub,( std::string ),"" )
           ( prefix,( std::string ),"" )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
         std::ostringstream os;
@@ -477,8 +531,8 @@ public:
             os << sub << "-";
 
         os << name;
-        auto it = Environment::vm().find( os.str() );
-        CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
+        auto it = vm.find( os.str() );
+        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return it->second;
     }
 
@@ -487,6 +541,16 @@ public:
      * \param message message to print to identity the associated memory operation
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
+
+    /**
+     * add timer to a map of timers that can be shown using \c displayTimers()
+     */
+    static void addTimer( std::string const& msg, double t );
+
+    /**
+     * display and save timers
+     */
+    static void saveTimers( bool save );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -550,7 +614,13 @@ public:
 private:
 
     //! change the directory where the results are stored
-    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm );
+
+#if defined ( FEELPP_HAS_PETSC_H )
+    void initPetsc( int * argc = 0, char *** argv = NULL );
+#endif
+
+    
 
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
@@ -574,13 +644,15 @@ private:
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
-    mpi::environment M_env;
+    std::unique_ptr<mpi::environment> M_env;
 
     static std::vector<fs::path> S_paths;
 
-    static  fs::path S_scratchdir;
-
+    static fs::path S_scratchdir;
+    static fs::path S_cfgdir;
     static AboutData S_about;
+    static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
+    static std::set<std::string> S_configFileNames;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
@@ -605,27 +677,9 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+
+    static TimerTable S_timers;
 };
-} // detail
-
-
-
-class Environment : public detail::Environment
-{
-public:
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( detail::Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( directory,( std::string ) )
-        ) ) // no semicolon
-};
-
 
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,
@@ -635,9 +689,10 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
-    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix );
+    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix, _vm=vm );
 }
 
 BOOST_PARAMETER_FUNCTION(

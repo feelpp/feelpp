@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -592,7 +592,7 @@ void SolverNonLinearPetsc<T>::init ()
             break;
         }
 #else
-        std::string s = option(_name="snes-type",_prefix=this->prefix()).template as<std::string>();
+        std::string s = soption(_name="snes-type",_prefix=this->prefix());
         DVLOG(1) << "snes type: " << s;
         check( SNESSetType( M_snes, s.c_str() ) );
 #if 0
@@ -622,6 +622,52 @@ void SolverNonLinearPetsc<T>::init ()
         // sets the software that is used to perform the factorization
         //PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
+        // Have the Krylov subspace method use our good initial guess rather than 0
+        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+        KSPType ksp_type;
+#else
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+        const KSPType ksp_type;
+#else
+        KSPType ksp_type;
+#endif
+#endif
+
+        ierr = KSPGetType ( M_ksp, &ksp_type );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPPREONLY ) )
+        {
+            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+        {
+            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
+        {
+            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
+        {
+            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
+            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
 
         if ( this->M_preconditioner )
         {
@@ -632,6 +678,36 @@ void SolverNonLinearPetsc<T>::init ()
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
             PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
+
+            switch( this->M_preconditioner->side() )
+            {
+            default:
+            case preconditioner_type::LEFT:
+                VLOG(2) << " . PC is set to left side\n";
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+                KSPSetPreconditionerSide( M_ksp, PC_LEFT );
+#else
+                KSPSetPCSide( M_ksp, PC_LEFT );
+#endif
+                break;
+            case preconditioner_type::RIGHT:
+                VLOG(2) << " . PC is set to right side\n";
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+                KSPSetPreconditionerSide( M_ksp, PC_RIGHT );
+#else
+                KSPSetPCSide( M_ksp, PC_RIGHT );
+#endif
+                break;
+            case preconditioner_type::SYMMETRIC:
+                VLOG(2) << " . PC is set to symmetric\n";
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+                KSPSetPreconditionerSide( M_ksp, PC_SYMMETRIC );
+#else
+                KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+#endif
+                break;
+            }
+
         }
         else
         {
@@ -640,13 +716,13 @@ void SolverNonLinearPetsc<T>::init ()
             PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
         }
 
-        if ( Environment::vm(_name="snes-monitor",_prefix=this->prefix()).template as<bool>() )
+        if ( this->showSNESMonitor() )
         {
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
-        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
+        if ( this->showKSPMonitor() )
         {
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -765,8 +841,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
 #else
-    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    // no longer necessary here!
+    //ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat() );
 #endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -780,9 +857,14 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
-        {
-            jac->updatePCFieldSplit( M_pc );
-        }
+    {
+        jac->updatePCFieldSplit( M_pc );
+    }
+
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
+        this->updateNullSpace( jac->mat() );
+    if ( this->M_nearNullSpace && this->M_nearNullSpace->size() > 0 )
+        this->updateNearNullSpace( jac->mat() );
 
     //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),M_pc, this->worldComm() );
 
@@ -847,7 +929,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( this->viewSNESInfo() )//boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
     bool hasConverged = reason>0;
     if ( !hasConverged )
@@ -895,30 +977,29 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     Vec petsc_r;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
     VecCreateSeq( this->worldComm().globalComm(),r_in.size(),&petsc_r );
-
+#if 0
     for ( int i=0; i< ( int )x_in.size(); i++ )
     {
         VecSetValues( petsc_r,1,&i,&r_in[i],INSERT_VALUES );
     }
-
+#endif
     ierr = SNESSetFunction ( M_snes, petsc_r, __feel_petsc_snes_dense_residual, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     Mat petsc_j;
     MatCreateSeqDense( this->worldComm().globalComm(), jac_in.size1(), jac_in.size2(), 0, &petsc_j );
-
+#if 0
     for ( int i = 0; i < ( int )jac_in.size1(); ++i )
         for ( int j = 0; j < ( int )jac_in.size2(); ++j )
         {
             MatSetValue( petsc_j, i, j, jac_in( i, j ), INSERT_VALUES );
-
         }
-
     /*
       Assemble matrix
     */
     MatAssemblyBegin( petsc_j,MAT_FINAL_ASSEMBLY );
     MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
+#endif
 
 
 #if PETSC_VERSION_LESS_THAN(3,5,0)
@@ -939,8 +1020,10 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     //SNESGetKSP( M_snes,&ksp );
     //KSPGetPC( ksp,&pc );
     //PCSetType(pc,PCNONE);
-    PCSetType( M_pc,PCLU );
-    KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+    //PCSetType( M_pc,PCLU );
+    //KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+    //ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
@@ -981,7 +1064,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESGetConvergedReason( M_snes,&reason );
 
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( this->viewSNESInfo() )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
@@ -1096,7 +1179,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
-    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+    if ( this->viewSNESInfo() ) //boption( _prefix=this->prefix(), _name="snes-view" ) )
         check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
 
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
@@ -1196,6 +1279,16 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
         ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
 #endif
         CHKERRABORT( this->comm(),ierr );
+        return;
+
+    case PREONLY :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case GCR :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGCR );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     default:
@@ -1298,6 +1391,64 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 
 }
 
+template <typename T>
+void
+SolverNonLinearPetsc<T>::updateNullSpace( Mat A )
+{
+    if ( !this->M_nullSpace ) return;
+    if ( this->M_nullSpace->size() == 0 ) return;
+
+    int ierr = 0;
+    int dimNullSpace = this->M_nullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nullSpace->basisVector(k) )->vec();
+
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = MatSetNullSpace(A,nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    bool checkNullSpace = false;
+    if ( checkNullSpace )
+    {
+        PetscBool isNull;
+        ierr = MatNullSpaceTest(nullsp, A, &isNull);
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHECK( isNull ) << "nullspace is not apply on this matrix";
+    }
+
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
+
+template <typename T>
+void
+SolverNonLinearPetsc<T>::updateNearNullSpace( Mat A )
+{
+    if ( !this->M_nearNullSpace ) return;
+    if ( this->M_nearNullSpace->size() == 0 ) return;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    int ierr = 0;
+    int dimNullSpace = this->M_nearNullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = MatSetNearNullSpace( A, nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
 
 
 //------------------------------------------------------------------

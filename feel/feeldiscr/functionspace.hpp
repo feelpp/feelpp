@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -6,7 +6,8 @@
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
-   Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2006-2012 Universite Joseph Fourier (Grenoble I)
+   Copyright (C) 2011-2015 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -90,6 +91,7 @@
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feeldiscr/mortar.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
@@ -178,12 +180,6 @@ struct ID
         size_type e1 = M_id.shape()[0];
         DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
-        size_type e2 = M_id.shape()[1];
-        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = M_id.shape()[2];
-        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
         DVLOG(2) << "saving in archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
         DVLOG(2) << "saving in archive done\n";
@@ -194,10 +190,6 @@ struct ID
         size_type e1, e2, e3;
         ar  & e1;
         DVLOG(2) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         M_id.resize( boost::extents[e1] );
         DVLOG(2) << "loading from archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
@@ -251,12 +243,6 @@ struct DD
         size_type e1 = M_grad.shape()[0];
         DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
-        size_type e2 = M_grad.shape()[1];
-        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
-        ar  & e2;
-        size_type e3 = M_grad.shape()[2];
-        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
-        ar  & e3;
         DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
         DVLOG(2) << "saving in archive done\n";
@@ -267,10 +253,6 @@ struct DD
         size_type e1, e2, e3;
         ar  & e1;
         DVLOG(2) << "loading from archive e1= " << e1 << "\n";
-        ar  & e2;
-        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
-        ar  & e3;
-        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         M_grad.resize( boost::extents[e1] );
         DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
@@ -1188,15 +1170,25 @@ struct computeStartOfFieldSplit
             }
         return boost::make_tuple( ++cptSpaces, start );
     }
+};
 
+struct hasSubSpaceWithComponentsSplit
+{
+    typedef bool result_type;
+    template<typename T>
+    result_type operator()( result_type const &  previousRes, T const& t )
+    {
+        //return ( T::element_type::dof_type::is_product && T::element_type::dof_type::nComponents > 1 ) || previousRes;
+        return t->map().hasIndexSplitWithComponents() || previousRes;
+    }
 };
 
 // compute split
+template<bool UseComponentsSplit>
 struct computeNDofForEachSpace
 {
-
     computeNDofForEachSpace(size_type startSplit)
-    :
+        :
         M_indexSplit( new IndexSplit() ),
         M_startSplit(startSplit)
     {}
@@ -1205,35 +1197,21 @@ struct computeNDofForEachSpace
 
     typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
 
-#if 0
-    template<typename T>
-    result_type operator()( result_type const & previousRes, T const& t )
-    {
-        const size_type nDofWithoutGhost = t->dof()->nLocalDofWithoutGhost();
-        const size_type nDofWithGhost = t->dof()->nLocalDofWithGhost();
-        const size_type firstDof = t->dof()->firstDofGlobalCluster();
-        uint16_type cptSpaces = previousRes.get<0>();
-        const size_type start = previousRes.get<1>();
-        auto is = previousRes.get<2>();
-
-        is[cptSpaces].resize(nDofWithoutGhost);
-
-        for ( size_type i=0; i<nDofWithGhost; ++i )
-        {
-            if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
-            const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            M_is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
-        }
-
-        return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
-    }
-#else
     template<typename T>
     void operator()( T const& t ) const
     {
+        this->operator()( t, mpl::bool_<UseComponentsSplit>() );
+    }
+    template<typename T>
+    void operator()( T const& t, mpl::false_ ) const
+    {
         M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
     }
-#endif
+    template<typename T>
+    void operator()( T const& t, mpl::true_ ) const
+    {
+        M_indexSplit->addSplit( M_startSplit, t->map().indexSplitWithComponents() );
+    }
 
     mutable boost::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
@@ -1284,7 +1262,7 @@ struct BasisOrder
 
 } // detail
 
-enum ComponentType
+enum class ComponentType
 {
     NO_COMPONENT = -1,
     X = 0,
@@ -1297,6 +1275,7 @@ enum ComponentType
     TY,
     TZ
 };
+using Component = ComponentType;
 enum FunctionSpaceType
 {
     SCALAR = 0,
@@ -1491,12 +1470,12 @@ public:
                 typename mesh_type::element_type>::type::nComponents> type;
     };
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                             mpl::identity<meshes_list >,
-                                             mpl::identity<nodim> >::type::type::nDim;
-    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                                 mpl::identity<meshes_list>,
-                                                 mpl::identity<nodim> >::type::type::nRealDim;
+    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                          mpl::identity<meshes_list >,
+                                          mpl::identity<nodim> >::type::type::nDim;
+    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                              mpl::identity<meshes_list>,
+                                              mpl::identity<nodim> >::type::type::nRealDim;
 
 
 
@@ -1506,17 +1485,21 @@ public:
                                                                    value_type,
                                                                    typename GetMesh<meshes_list,0>::type::element_type>::type basis_0_type;
 
-    static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
-    static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
-    static const bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
-    static const bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
-    static const bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
-    static const bool is_modal = ( is_composite? false : basis_0_type::is_modal );
-    static const bool is_nodal = !is_modal;
-    static const uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
-    static const uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
-    static const bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
+    static constexpr uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
+    static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
+    static constexpr bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
+    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
+    static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
+    static constexpr bool is_nodal = !is_modal;
+    static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
+    static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
+    static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
+
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
 
     static const uint16_type nComponents = mpl::transform<bases_list,
                              GetNComponents<mpl::_1>,
@@ -1624,6 +1607,8 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::face_type>, mpl::identity<mpl::void_> >::type::type geoface_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::edge_type>, mpl::identity<mpl::void_> >::type::type geoedge_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::point_type>, mpl::identity<mpl::void_> >::type::type geopoint_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
@@ -1648,6 +1633,8 @@ public:
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
+    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
@@ -1662,9 +1649,11 @@ public:
     template<int i>
     struct sub_functionspace
     {
-        typedef typename mpl::at_c<functionspace_vector_type,i>::type type;
+        typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
+        typedef typename ptrtype::element_type type;
     };
-
+    template<int i> using sub_functionspace_type = typename sub_functionspace<i>::type;
+    template<int i> using sub_functionspace_ptrtype = typename sub_functionspace<i>::ptrtype;
     /**
        @name Subclasses
     */
@@ -1863,7 +1852,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
     {
     public:
         typedef T value_type;
@@ -1919,7 +1908,8 @@ public:
         static const uint16_type nComponents = functionspace_type::nComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
-
+        static const int rank = functionspace_type::rank;
+        
         /** @name Typedefs
          */
         //@{
@@ -1964,6 +1954,9 @@ public:
             typedef typename mpl::at_c<element_vector_type,i>::type::second_type ptrtype;
             typedef typename ptrtype::element_type type;
         };
+        template<int i> using sub_element_ptrtype = typename mpl::at_c<element_vector_type,i>::type::second_type;
+        template<int i> using sub_element_type = typename mpl::at_c<element_vector_type,i>::type::second_type::element_type;
+        
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
@@ -1994,13 +1987,13 @@ public:
         Element( functionspace_ptrtype const& __functionspace,
                  std::string const& __name = "unknown",
                  size_type __start = 0,
-                 ComponentType __ct = NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT );
 
         Element( functionspace_ptrtype const& __functionspace,
                  container_type const& __c,
                  std::string const& __name = "unknown",
                  size_type __start = 0,
-                 ComponentType __ct = NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT );
 
         ~Element();
 
@@ -2059,26 +2052,26 @@ public:
         component_type
         comp( mpl::bool_<true> )
         {
-            BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            auto s = ublas::slice( THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
-                                   typename component_type::container_type( this->vec().data().expression(), s ),
+                                   typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                                    __name,
-                                   start()+THECOMP,
+                                   start()+(int)THECOMP,
                                    THECOMP );
         }
         template<ComponentType THECOMP>
         component_type
         comp( mpl::bool_<false> )
         {
-            BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            auto s = ublas::slice( THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
-                                   typename component_type::container_type( ( VectorUblas<value_type>& )*this, s ),
+                                   typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof()  ),
                                    __name,
-                                   start()+THECOMP,
+                                   start()+(int)THECOMP,
                                    THECOMP );
         }
 
@@ -2098,29 +2091,29 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<true> ) const
         {
-            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
+            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
-
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s ),
+                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+i,
+                              start()+(size_type)i,
                               i );
             return c;
         }
         component_type
         comp( ComponentType i, mpl::bool_<false> ) const
         {
-            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
+            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
-
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s ),
+                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
-                              start()+i,
+                              start()+(size_type)i,
                               i );
             return c;
         }
@@ -2140,41 +2133,64 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<true> )
         {
-            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-
+            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
+            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
             std::string __name = this->name() + "_" + componentToString( i );
+            
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s ),
+                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+i,
+                              start()+(size_type)i,
                               i );
             return c;
         }
         component_type
         comp( ComponentType i, mpl::bool_<false> )
         {
-            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-
+            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int) i;
+            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
             std::string __name = this->name() + "_" + componentToString( i );
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s ),
+                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               __name,
-                              start()+i,
+                              start()+(size_type)i,
                               i );
             return c;
         }
+        component_type
+        operator[]( ComponentType i ) 
+            {
+                //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
+                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            }
+        component_type
+        operator[]( ComponentType i ) const
+            {
+                //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
+                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            }
+        value_type&
+        operator[]( size_type i ) 
+            {
+                return super::operator[]( i );
+            }
+        value_type
+        operator[]( size_type i )  const
+            {
+                return super::operator[]( i );
+            }
 
         value_type localToGlobal( size_type e, size_type l, int c ) const
         {
-            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #if 0
         value_type& localToGlobal( size_type e, size_type l, int c )
         {
-            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #endif
@@ -2223,53 +2239,110 @@ public:
         }
         void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
-            this->operator[]( index ) = __v;
+            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            super::operator[]( index ) = __v;
         }
         void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
-            this->operator[]( index ) += __v;
+            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            super::operator[]( index ) += __v;
         }
 
         void assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
-                     
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
-            for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                size_type index = ldof.second.index();
+                super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
+        template<typename EltType>
+        void assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = e.elements().begin()->first;
+                uint16_type edgeid_in_element = e.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    
+                    size_type index= ldof.index();
+                    super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                }
+            }
+        
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
+                }
+            }
+
         void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
-            for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) = s(ldof.second.localDof())*Ihloc( ldof.first );
+                size_type index = ldof.index();
+                super::operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
         void plus_assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
-            for( auto ldof : M_functionspace->dof()->localDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                size_type index = ldof.second.index();
+                super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
         void plus_assign( geoface_type const& e, local_interpolant_type const& Ihloc )
          {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
-            for( auto ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
+            for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index=start()+ ldof.second.index();
-                this->operator[]( index ) += s(ldof.second.localDof())*Ihloc( ldof.first );
+                size_type index = ldof.index();
+                super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
-
+        template<typename EltType>
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+        {
+            // we assume here that we are in CG
+            // TODO : adapt to DG and loop over all element to which the point belongs to
+            size_type eid = e.elements().begin()->first;
+            uint16_type edgeid_in_element = e.elements().begin()->second;
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+            for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type index= ldof.index();
+                super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+            }
+        }
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
+                }
+            }
         //@}
 
         /** @name Accessors
@@ -2277,7 +2350,7 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
         typedef Eigen::Matrix<value_type,1,1> _div_type;
@@ -2408,8 +2481,8 @@ public:
          * data structure that stores the interpolated values of the
          * element at a set of points
          */
-        typedef Feel::detail::ID<value_type,nComponents1,nComponents2> id_type;
-
+        using id_type =  Feel::detail::ID<value_type,nComponents1,nComponents2>;
+        using laplacian_type = id_type;
 
         /**
          * \return the extents of the interpolation of the function at
@@ -2955,6 +3028,7 @@ public:
         void
         hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const;
 
+
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
@@ -2982,6 +3056,54 @@ public:
             hess_( *gmc, *pcPtr( elt ), v );
         }
 
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        laplacianExtents( ContextType const & context ) const
+            {
+                BOOST_STATIC_ASSERT( rank <= 1 );
+
+                boost::array<typename array_type::index, 1> shape;
+                shape[0] = context.xRefs().size2();
+                //shape[1] = nRealDim;
+                //shape[2] = nRealDim;
+                return shape;
+            }
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v ) const;
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const;
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const;
+
+        void
+        laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+        template<typename ContextType>
+        laplacian_type
+        laplacian( ContextType const & context ) const
+        {
+            return laplacian_type( *this, context );
+        }
+
+        template<typename ContextType>
+        void
+        laplacian( ContextType const & context, id_array_type& v ) const
+        {
+            laplacian_( context, v );
+        }
+        template<typename ElementType>
+        void
+        laplacian( ElementType const& elt, id_array_type& v )
+        {
+            gmc_ptrtype gmc( geomapPtr( elt ) );
+            v.resize( laplacianExtents(  *gmc ) );
+            laplacian_( *gmc, *pcPtr( elt ), v );
+        }
         /**
            \return the finite element space
         */
@@ -3022,7 +3144,7 @@ public:
                 vector_ptrtype res = backend->newVector(s, s);
                 size_type i = 0;
                 for( auto it = r.first, en = r.second; it != en; ++it, ++i )
-                    res->set( i, this->operator[]( it->second ) );
+                    res->set( i, super::operator[]( it->second ) );
                 return res;
             }
 
@@ -3037,9 +3159,9 @@ public:
                 vector_ptrtype res = backend->newVector(s, s);
                 size_type i = 0;
                 for( auto it = r1.first, en = r1.second; it != en; ++it, ++i )
-                    res->set( i, this->operator[]( it->second ) );
+                    res->set( i, super::operator[]( it->second ) );
                 for( auto it = r2.first, en = r2.second; it != en; ++it, ++i )
-                    res->set( i, this->operator[]( it->second ) );
+                    res->set( i, super::operator[]( it->second ) );
                 return res;
             }
 
@@ -3151,15 +3273,15 @@ public:
 
         bool isAComponent() const
         {
-            return M_ct >= X && M_ct <= Z;
+            return M_ct >= ComponentType::X && M_ct <= ComponentType::Z;
         }
 
         ComponentType component() const
         {
-            if (  M_ct < X || M_ct > Z )
+            if (  M_ct < ComponentType::X || M_ct > ComponentType::Z )
             {
                 std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << M_ct;
+                __str << "invalid component extraction (should be 0 or 1 or 2): " << (int)M_ct;
                 throw std::logic_error( __str.str() );
             }
 
@@ -3168,27 +3290,27 @@ public:
 
         std::string componentToString( ComponentType ct ) const
         {
-            if (  ct < X || ct > Z )
+            if (  ct < ComponentType::X || ct > ComponentType::Z )
             {
                 std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
+                __str << "invalid component extraction (should be 0 or 1 or 2): " << (int)ct;
                 throw std::logic_error( __str.str() );
             }
 
             switch ( ct )
             {
-            case X:
+            case ComponentType::X:
                 return "X";
 
-            case Y:
+            case ComponentType::Y:
                 return "Y";
 
-            case Z:
+            case ComponentType::Z:
                 return "Z";
 
             default:
                 std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << ct;
+                __str << "invalid component extraction (should be 0 or 1 or 2): " << (int)ct;
                 throw std::logic_error( __str.str() );
             }
         }
@@ -3331,7 +3453,7 @@ public:
                     auto relation = this->functionSpace()->dof()->pointIdToDofRelation();
                     for( size_type i = 0; i < this->localSize(); ++i )
                     {
-                        m[relation.first[i]-1] = this->operator[]( i );
+                        m[relation.first[i]-1] = super::operator[]( i );
                     }
                 }
                 m.printMatlab( fname );
@@ -3350,7 +3472,7 @@ public:
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
-                                           ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )))
+                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
                 return onImpl( range, expr, prefix, geomap, accumulate, verbose );
             }
@@ -3397,7 +3519,7 @@ public:
 
                 for ( size_type i = 0; it != en; ++it, ++i )
                 {
-                    T value = this->operator[]( i );
+                    T value = super::operator[]( i );
                     std::ostringstream v_str;
                     v_str << "value_" << i;
 
@@ -3449,7 +3571,7 @@ public:
                     //                     DVLOG(2) << "load value at " << v_str.str() << "\n";
                     ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
                     //                     DVLOG(2) << "got value " << value << " at index " << i << "\n";
-                    this->operator[]( i ) = value;
+                    super::operator[]( i ) = value;
                 }
             }
 
@@ -3479,8 +3601,15 @@ public:
 
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
+        
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
 
     private:
 
@@ -3965,6 +4094,13 @@ public:
     {
         return *M_dof;
     }
+    /**
+     \return the degrees of freedom
+     */
+    datamap_ptrtype mapPtr() const
+        {
+            return M_dof;
+        }
 
     /**
        \return the degrees of freedom
@@ -4057,10 +4193,23 @@ public:
     buildDofIndexSplit()
     {
         auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-        auto computeSplit = Feel::detail::computeNDofForEachSpace(startSplit);
+        auto computeSplit = Feel::detail::computeNDofForEachSpace<false>(startSplit);
         boost::fusion::for_each( functionSpaces(), computeSplit );
         return computeSplit.indexSplit();
-
+    }
+    boost::shared_ptr<IndexSplit>
+    buildDofIndexSplitWithComponents()
+    {
+        bool hasCompSplit = boost::fusion::fold( functionSpaces(), false, Feel::detail::hasSubSpaceWithComponentsSplit() );
+        if ( hasCompSplit )
+        {
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
+            auto computeSplit = Feel::detail::computeNDofForEachSpace<true>(startSplit);
+            boost::fusion::for_each( functionSpaces(), computeSplit );
+            return computeSplit.indexSplit();
+        }
+        else
+            return boost::shared_ptr<IndexSplit>();
     }
 
     boost::shared_ptr<IndexSplit> const&
@@ -4119,7 +4268,8 @@ public:
     {
         element_ptrtype u( new element_type( this->shared_from_this(), name ) );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        u->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
         return u;
     }
 
@@ -4175,6 +4325,7 @@ public:
      */
     component_functionspace_ptrtype const& compSpace() const
     {
+        buildComponentSpace();
         return M_comp_space;
     }
 
@@ -4241,6 +4392,11 @@ public:
 
     */
     bool findPoint( node_type const& pt, size_type &cv, node_type& ptr ) const;
+
+    /**
+     * build component space in vectorial case
+     */
+    void buildComponentSpace() const;
 
     /**
      * rebuild dof points after a mesh mover for example
@@ -4376,13 +4532,13 @@ protected:
     boost::shared_ptr<WorldComm> M_worldComm;
 
     // finite element mesh
-    mesh_ptrtype M_mesh;
-
+    mutable mesh_ptrtype M_mesh;
+    mutable periodicity_type M_periodicity;
     //! finite element reference type
     reference_element_ptrtype M_ref_fe;
 
     //! component fe space
-    component_functionspace_ptrtype M_comp_space;
+    mutable component_functionspace_ptrtype M_comp_space;
 
     //! Degrees of freedom
     dof_ptrtype M_dof;
@@ -4439,6 +4595,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
 
     M_mesh = __m;
+    M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
@@ -4476,27 +4633,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_dofOnOff = M_dof;
 
-    if ( is_vectorial )
-    {
-        // Warning: this works regarding the communicator . for the component space
-        // it will use in mixed spaces only numberofSudomains/numberofspace processors
-        //
-        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
-                                                                                           MESH_COMPONENTS_DEFAULTS,
-                                                                                           periodicity,
-                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
-    }
+    
 
     DVLOG(2) << "nb dim : " << qDim() << "\n";
     DVLOG(2) << "nb dof : " << nDof() << "\n";
     DVLOG(2) << "nb dof per component: " << nDofPerComponent() << "\n";
 
-    if ( is_vectorial )
-    {
-        DVLOG(2) << "component space :: nb dim : " << M_comp_space->qDim() << "\n";
-        DVLOG(2) << "component space :: nb dof : " << M_comp_space->nDof() << "\n";
-        DVLOG(2) << "component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
-    }
 
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
@@ -4610,6 +4752,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         M_dofOnOff->setNDof( this->nDof() );
     }
     M_dof->setIndexSplit( this->buildDofIndexSplit() );
+    M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
     //M_dof->indexSplit().showMe();
 
 }
@@ -4737,6 +4880,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, 
     return M_dof->nLocalDofWithoutGhost(proc);
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
+{
+    if ( is_vectorial && !M_comp_space )
+    {
+        // Warning: this works regarding the communicator . for the component space
+        // it will use in mixed spaces only numberofSudomains/numberofspace processors
+        //
+        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
+                                                                                          MESH_COMPONENTS_DEFAULTS,
+                                                                                          M_periodicity,
+                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+        VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
+        VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
+        VLOG(2) << " - component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
+    }
+}
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )
@@ -4919,6 +5080,10 @@ template<typename FuncSpaceType>
 struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // detail
 
+template<typename FESpace>
+using functionspace_type = typename mpl::if_<Feel::detail::is_function_space_ptr<FESpace>,
+                                             mpl::identity<typename FESpace::element_type>,
+                                             mpl::identity<FESpace>>::type::type;
 
 
 

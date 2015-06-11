@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-16
 
   Copyright (C) 2013 Université de Strasbourg
@@ -24,7 +24,7 @@
 /**
    \file hdf5.cpp
    \author Radu Popescu <radu.popescu@epfl.ch>
-   \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
    \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2013-10-16
  */
@@ -70,6 +70,15 @@ void Feel::HDF5::openFile (const std::string& fileName,
                               H5P_DEFAULT, plistId);
     }
     H5Pclose (plistId);
+}
+
+void Feel::HDF5::createGroup (const std::string& GroupName)
+{
+#ifdef H5_USE_16_API
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
+#else
+        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
+#endif
 }
 
 void Feel::HDF5::createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType, 

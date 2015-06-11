@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -118,7 +118,7 @@ void
 ThermalBlockMinimalVersion::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
 
     this->setFunctionSpaces( Pch<1>( loadMesh( _mesh=new Mesh<Simplex<2>> ) ) );
 
@@ -199,30 +199,30 @@ ThermalBlockMinimalVersion::initModel()
     this->addLhs( { a9 , "1" } );
 
 
-    form2( Xh, Xh, M ) = integrate( markedelements( mesh, "domain-1" ), gradt( u )*trans( grad( v ) )  );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-2" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-3" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-4" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-5" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-6" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-7" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-8" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) += integrate( markedelements( mesh, "domain-9" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mesh, "north_domain-7" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( markedelements( mesh, "domain-1" ), gradt( u )*trans( grad( v ) )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-2" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-3" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-4" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-5" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-6" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-7" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-8" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedelements( mesh, "domain-9" ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mesh, "north_domain-7" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mesh, "north_domain-8" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mesh, "north_domain-8" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) +=  integrate( markedfaces( mesh, "north_domain-9" ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mesh, "north_domain-9" ),
                                       -gradt( u )*vf::N()*id( v ) * mu_min_coeff
                                       -grad( u )*vf::N()*idt( v ) * mu_min_coeff
                                       );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
-    form2( Xh, Xh, M ) += integrate( markedfaces( mesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-7" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
     this->addEnergyMatrix( M );
 
 }//initModel()
@@ -252,6 +252,3 @@ ThermalBlockMinimalVersion::output( int output_index, parameter_type const& mu ,
 } // Feel
 
 #endif /* __ThermalBlock_H */
-
-
-

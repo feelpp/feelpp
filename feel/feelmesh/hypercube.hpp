@@ -38,9 +38,9 @@
 
 namespace Feel
 {
-
+class HypercubeBase {};
 template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
-class Hypercube  : public Convex<Dim,Order,RDim>
+class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
 {
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
@@ -66,6 +66,7 @@ class Hypercube  : public Convex<Dim,Order,RDim>
                 Hypercube<1, Order, rdim>,
                 Hypercube<2, Order, rdim> > type;
     };
+    typedef mpl::vector<boost::none_t,Hypercube<1, Order,1>, Hypercube<1, Order, 2>, Hypercube<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 8> permutations_t;
@@ -87,7 +88,8 @@ public:
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
-
+    typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
+    
     static const uint16_type numVertices = mpl::at<vertices_t, mpl::int_<Dim> >::type::value;
     static const uint16_type numEdges = mpl::at<edges_t, mpl::int_<Dim> >::type::value;
     static const uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<Dim> >::type::value;

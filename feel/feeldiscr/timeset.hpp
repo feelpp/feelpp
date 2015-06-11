@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -56,6 +56,7 @@
 // #include <boost/numeric/ublas/vector_serialize.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelcomplex.hpp>
 #include <feel/feelcore/context.hpp>
 
 #include <feel/feelalg/glas.hpp>
@@ -67,6 +68,8 @@
 #include <feel/feeldiscr/subelements.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+
+#define TS_INITIAL_INDEX 1
 
 namespace Feel
 {
@@ -518,7 +521,9 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
         {
+            tic();
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
         template<typename TSet>
@@ -593,12 +598,11 @@ public:
             add( __n, __fname, func, mpl::bool_<false>(), mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true> )
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                  typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
         {
-            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
-            if ( FunctionType::is_scalar )
-            {
-                boost::timer t;
+            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+            boost::timer t;
 
                 if ( !M_ts->M_scalar_p1 )
                 {
@@ -645,12 +649,17 @@ public:
                             M_nodal_scalar[__fname].set( startDof+k, thelocalmin );
                     }
                 }
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
 
+                showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
-            }
-
-            else if ( FunctionType::is_vectorial )
+        }
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                  typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
             {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
                 if ( !M_ts->M_vector_p1 )
@@ -726,19 +735,103 @@ public:
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
                 } // if ( func.worldComm().isActive() )
 
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+
+                showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
             }
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                  typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                boost::timer t;
 
-            M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
-            M_state.clear( STEP_ON_DISK );
+                if ( !M_ts->M_tensor2_p1 )
+                {
+                    M_ts->M_tensor2_p1 = tensor2_p1_space_ptrtype( new tensor2_p1_space_type ( M_mesh.get(),
+                                                                                            MESH_RENUMBER | MESH_CHECK,
+                                                                                            typename tensor2_p1_space_type::periodicity_type(),
+                                                                                            func.worldsComm(),
+                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_tensor2_p1 = M_ts->M_tensor2_p1;
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                }
 
-            showMe( "Step::add" );
-        }
+                else if ( M_mesh.get() == M_ts->M_tensor2_p1->mesh() )
+                {
+                    M_tensor2_p1 = M_ts->M_tensor2_p1;
+                }
 
+            if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
+                {
+                    M_tensor2_p1 = tensor2_p1_space_ptrtype( new tensor2_p1_space_type ( M_mesh.get(),
+                                                                                      MESH_RENUMBER | MESH_CHECK,
+                                                                                      typename tensor2_p1_space_type::periodicity_type(),
+                                                                                      func.worldsComm(),
+                                                                                      std::vector<bool>(1,extendeddof) ) );
+                    DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space tensor2 p1 created\n";
+                }
+
+                t.restart();
+                M_nodal_tensor2.insert( std::make_pair( __fname,M_tensor2_p1->element( __n ) ) );
+                //M_nodal_tensor2[__fname].setName( __n );
+                //M_nodal_tensor2[__fname].setFunctionSpace( M_tensor2_p1 );
+                DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
+                t.restart();
+
+                if ( func.worldComm().isActive() )
+                {
+                    // interpolate field on visualisation space
+                    interpolate( M_tensor2_p1, func, M_nodal_tensor2[__fname] );
+                    // if exporter use extended dof table but the field to export is not define on this part
+                    // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
+                    size_type nGhostDofAddedInExtendedDofTable = M_tensor2_p1->dof()->nGhostDofAddedInExtendedDofTable();
+                    if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                    {
+                        // get a random value (in the first elt valid)
+                        std::vector<typename tensor2_p1_space_type::value_type> randomEval( tensor2_p1_space_type::nComponents );
+                        for ( auto const& elt : elements(M_tensor2_p1->mesh()) )
+                        {
+                            if ( M_tensor2_p1->dof()->isElementDone( elt.id() ) && !elt.isGhostCell() )
+                            {
+                                for ( uint16_type comp=0; comp<tensor2_p1_space_type::nComponents ; ++comp )
+                                {
+                                    const size_type index = M_tensor2_p1->dof()->localToGlobal( elt.id(), 0, comp ).index();
+                                    randomEval[comp] = M_nodal_tensor2[__fname]( index );
+                                }
+                                break;
+                            }
+                        }
+                        // update extended elt with this tensor2ial value
+                        for ( auto const& eltWrap : elements(M_tensor2_p1->mesh(),EntityProcessType::GHOST_ONLY) )
+                        {
+                            auto const& elt = boost::unwrap_ref(eltWrap);
+                            for ( uint16_type locDof=0; locDof < tensor2_p1_space_type::fe_type::nLocalDof; ++locDof )
+                                for ( uint16_type comp=0; comp<tensor2_p1_space_type::nComponents1 ; ++comp )
+                                {
+                                    const size_type index = M_tensor2_p1->dof()->localToGlobal( elt.id(), locDof, comp ).index();
+                                    if ( index <= ( M_tensor2_p1->dof()->lastDof()-nGhostDofAddedInExtendedDofTable) )
+                                        continue;
+                                    M_nodal_tensor2[__fname].set( index, randomEval[comp] );
+                                }
+                        }
+                    } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                } // if ( func.worldComm().isActive() )
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+
+                showMe( "Step::add" );
+                DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+            }
+        
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false> )
         {
-            bool extendeddof = (option(_name="exporter.format").template as<std::string>() == "ensightgold");
+            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
             if ( !func.worldComm().isActive() ) return;
 
             if ( FunctionType::is_scalar )
@@ -2018,7 +2111,7 @@ TimeSet<MeshType, N>::step( Real __time )
 }
 
 template<typename MeshType, int N>
-uint32_type TimeSet<MeshType, N>::_S_current_index = 1;
+uint32_type TimeSet<MeshType, N>::_S_current_index = TS_INITIAL_INDEX;
 
 //
 // TimeSet<MeshType, N>::Step

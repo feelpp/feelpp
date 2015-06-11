@@ -94,6 +94,7 @@ OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
@@ -104,6 +105,8 @@ OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+
+OPTION(FEELPP_USE_GMSH_PACKAGE "Use system installed package" ON)
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -301,24 +304,29 @@ include( feelpp.macros )
 # it assumes that a project is valid if :
 #   there is README.md file in the directory
 #   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_${PROJECT} and FEELPP_ENABLE_${PROJECT}_DOCUMENTATION
+# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
 # option which are set to OFF by default
 MESSAGE(STATUS "[feelpp] Feel++ projects :")
 feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
     string(TOUPPER ${project} PROJECT)
-    option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
-    option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
+    if ( ${PROJECT} STREQUAL "EYE2BRAIN" )
+      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
+    else()
+      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
+    endif()
+    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
 		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project} -- Compile: ${FEELPP_ENABLE_RESEARCH_${PROJECT}} -- Doc  ${FEELPP_ENABLE_${PROJECT}_DOCUMENTATION}" )
+		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
+		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
   endif()
 endforeach()
 
 ################################################################################
 # data
 ################################################################################
-IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
+IF(EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 
@@ -369,24 +377,20 @@ IF(FEELPP_ENABLE_TESTS )
 endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
+  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
+  ADD_SUBDIRECTORY ( doc )
 endif()
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
-IF(FEELPP_ENABLE_TESTS )
+IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
 endif()
-
-
-if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
-  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
-  ADD_SUBDIRECTORY ( doc )
-endif ()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
-if ( FEELPP_ENABLE_APPLICATIONS )
+if ( FEELPP_ENABLE_APPLICATIONS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/applications)
   ADD_SUBDIRECTORY ( applications )
 elseif (EXISTS ${FEELPP_SOURCE_DIR}/applications/opus )
   ADD_SUBDIRECTORY ( applications/opus )
@@ -396,9 +400,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
 
-
-ADD_SUBDIRECTORY ( quickstart )
-
+include(feelpp.module.quickstart)
 
 
 ################################################################################

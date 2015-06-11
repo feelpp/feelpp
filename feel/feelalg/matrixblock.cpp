@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -97,8 +97,8 @@ BlocksBaseSparseMatrix<T>::close()
             if ( this->operator()(i,j) ) continue;
 
             DVLOG(1) << "add zero matrix in block ("<<i<<","<<j<<")\n";
-            
-            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
+
+            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapColRef[j], dataMapRowRef[i]);
         }
     }
 
@@ -180,52 +180,6 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     M_mat->zero();
 
     M_mat->setIndexSplit( graph->mapRow().indexSplit() );
-
-#if 0
-    bool computeIndexSplit = true;
-    if ( computeIndexSplit )
-    {
-#if 0
-        const uint16_type nRow = blockgraph.nRow();
-        const uint16_type nCol = blockgraph.nCol();
-        // index container for field split preconditioner
-        std::vector< std::vector<size_type> > indexSplit( nRow );
-        size_type startIS = M_mat->mapRow().firstDofGlobalCluster();
-        for ( uint16_type i=0; i<nRow; ++i )
-        {
-            auto const& mapRowBlock = blockgraph(i,0)->mapRow();
-            const size_type nLocDofWithoutGhostBlock = mapRowBlock.nLocalDofWithoutGhost();
-            const size_type nLocDofWithGhostBlock = mapRowBlock.nLocalDofWithGhost();
-            const size_type firstDofGCBlock = mapRowBlock.firstDofGlobalCluster();
-
-            indexSplit[i].resize( nLocDofWithoutGhostBlock );
-
-            for ( size_type l = 0; l< nLocDofWithGhostBlock ; ++l )
-            {
-                if ( mapRowBlock.dofGlobalProcessIsGhost(l) ) continue;
-
-                const size_type globalDof = mapRowBlock.mapGlobalProcessToGlobalCluster(l);
-                indexSplit[i][globalDof - firstDofGCBlock ] = startIS + (globalDof - firstDofGCBlock);
-            }
-
-            startIS += nLocDofWithoutGhostBlock;
-        }
-#else
-        const uint16_type nRow = blockgraph.nRow();
-        indexsplit_ptrtype indexSplit( new IndexSplit() );
-        const size_type firstDofGC = graph->mapRow().firstDofGlobalCluster();
-        for ( uint16_type i=0; i<nRow; ++i )
-        {
-            indexSplit->addSplit( firstDofGC, blockgraph(i,0)->mapRow().indexSplit() );
-        }
-        //indexSplit.showMe();
-        graph->mapRowPtr()->setIndexSplit( indexSplit );
-#endif
-
-        // update
-        M_mat->setIndexSplit( indexSplit );
-    }
-#endif
 
 }
 

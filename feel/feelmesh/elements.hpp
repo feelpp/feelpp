@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -964,10 +964,11 @@ public:
      * @param f a new point
      * @return the new point from the list
      */
-    element_type const& addElement( element_type& f )
+    element_type const& addElement( element_type& f, bool setid = true )
     {
         M_parts[f.marker().value()]++;
-        f.setId( M_elements.size() );
+        if ( setid )
+            f.setId( M_elements.size() );
         return *M_elements.insert( f ).first;
         //M_elements.push_back( f );
         //return M_elements.back();

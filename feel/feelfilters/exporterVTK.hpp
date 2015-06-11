@@ -1,4 +1,4 @@
-/* -* -mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -* -mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -30,7 +30,7 @@
 #ifndef __ExporterVTK_H
 #define __ExporterVTK_H 1
 
-#if defined(FEELPP_VTK_EXPORTER_ENABLED) && defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_HAS_VTK)
 
 #include <iostream>
 #include <fstream>
@@ -42,8 +42,19 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
+#include <vtkIntArray.h>
+#include <vtkStringArray.h>
 #include <vtkFloatArray.h>
 #include <vtkPoints.h>
 #include <vtkPointData.h>
@@ -54,6 +65,20 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataWriter.h>
 
+#include <vtkInformation.h>
+#include <vtkVertex.h>
+#include <vtkLine.h>
+#include <vtkPolyLine.h>
+#include <vtkQuadraticTriangle.h>
+#include <vtkQuad.h>
+#include <vtkQuadraticQuad.h>
+#include <vtkTetra.h>
+#include <vtkQuadraticTetra.h>
+#include <vtkHexahedron.h>
+#include <vtkQuadraticHexahedron.h>
+#include <vtkTriangle.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkXMLMultiBlockDataWriter.h>
 
 /* Only use MPI when we have vtk 5.8+ */
 /* features initializing MPI using an external context a missing in 5.8- */
@@ -71,24 +96,18 @@
 #include <vtkCPPythonScriptPipeline.h>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
-#endif
 
-#endif
+#include <feel/feelfilters/vtkBaseInsituPipeline.h>
+#endif // FEELPP_VTK_INSITU_ENABLED
 
-#include <vtkInformation.h>
-#include <vtkVertex.h>
-#include <vtkLine.h>
-#include <vtkPolyLine.h>
-#include <vtkQuadraticTriangle.h>
-#include <vtkQuad.h>
-#include <vtkQuadraticQuad.h>
-#include <vtkTetra.h>
-#include <vtkQuadraticTetra.h>
-#include <vtkHexahedron.h>
-#include <vtkQuadraticHexahedron.h>
-#include <vtkTriangle.h>
-#include <vtkMultiBlockDataSet.h>
-#include <vtkXMLMultiBlockDataWriter.h>
+#endif // VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 namespace Feel
 {
@@ -186,7 +205,8 @@ public:
 
     ExporterVTK( WorldComm const& worldComm = Environment::worldComm() );
     ExporterVTK( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterVTK( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterVTK( ExporterVTK const & __ex );
 
@@ -238,6 +258,11 @@ public:
      */
     void save() const;
 
+    /** 
+     * Returns a VTK structure representing the last timestep 
+     */ 
+    vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
+
     /**
      * export mesh
      */
@@ -246,7 +271,7 @@ public:
     /**
      * save the \p mesh to the file \p filename
      */
-    void saveMesh( typename timeset_type::step_ptrtype step, vtkSmartPointer<vtkout_type> out ) const;
+    void saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
     void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
     template<typename Iterator>
@@ -257,12 +282,20 @@ public:
      * To do so, we use a pvd file (Paraview format) that allows use to specify new timesteps
      * using xml syntax.
      */
-    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename) const;
+    int writeTimePVD(std::string xmlFilename, double timestep, std::string dataFilename, int partNo = 0) const;
+
+
+    /**
+     * Build a multi block structure based on the data gathered 
+     * on the different processes.
+     */
+    vtkSmartPointer<vtkMultiBlockDataSet>
+        buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const;
 
     /**
      * Actual write of the dataset into a file 
      */
-    void write( typename timeset_type::step_ptrtype step, std::string filename, vtkSmartPointer<vtkout_type> out) const;
+    void write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
     //@}
 
@@ -273,6 +306,7 @@ private:
 
     /* class members for in-situ visualization */
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+    mutable MPI_Comm lComm;
     mutable vtkMPICommunicatorOpaqueComm * opaqueComm;
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;

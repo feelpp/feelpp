@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,25 +44,27 @@ const size_type FIRST_DERIVATIVE         = ( 1<<3 );
 const size_type GRAD                     = ( 1<<4 );
 const size_type SECOND_DERIVATIVE        = ( 1<<5 );
 const size_type HESSIAN                  = ( 1<<6 );
-const size_type MEASURE                  = ( 1<<7 );
-const size_type NORMAL                   = ( 1<<8 );
-const size_type TANGENT                  = ( 1<<9 );
-const size_type FIRST_DERIVATIVE_NORMAL  = ( 1<<10 );
-const size_type POINT                    = ( 1<<11 );
-const size_type SYMM                     = ( 1<<12 );
-const size_type UNSYMM                   = ( 1<<13 );
-const size_type DIV                      = ( 1<<14 );
-const size_type CURL                     = ( 1<<15 );
+const size_type LAPLACIAN                = ( 1<<7 );
+const size_type MEASURE                  = ( 1<<8 );
+const size_type NORMAL                   = ( 1<<9 );
+const size_type TANGENT                  = ( 1<<10 );
+const size_type FIRST_DERIVATIVE_NORMAL  = ( 1<<11 );
+const size_type POINT                    = ( 1<<12 );
+const size_type SYMM                     = ( 1<<13 );
+const size_type UNSYMM                   = ( 1<<14 );
+const size_type DIV                      = ( 1<<15 );
+const size_type CURL                     = ( 1<<16 );
 const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
 
 
+
 typedef mpl::vector_c<size_type,
-        JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN,
-        MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
-        SYMM, UNSYMM,
-        DIV,CURL,
-        MASS, STIFFNESS> contexts;
+                      JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN, LAPLACIAN,
+                      MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
+                      SYMM, UNSYMM,
+                      DIV,CURL,
+                      MASS, STIFFNESS> contexts;
 
 template<size_type Context>
 struct has_jacobian
@@ -99,6 +101,12 @@ struct has_hessian
 {
     static const bool value = has_value<Context, HESSIAN>::value;
 };
+template<size_type Context>
+struct has_laplacian
+{
+    static const bool value = has_value<Context, LAPLACIAN>::value;
+};
+
 template<size_type Context>
 struct has_normal
 {

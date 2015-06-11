@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -59,12 +59,16 @@ template<typename P,
          template<class,uint16_type,class> class Pts>
 class FiniteElement :
     public mpl::if_<mpl::bool_<P::is_scalar>,
-    mpl::identity<PolynomialSet<P, Scalar> >,
-    mpl::identity<PolynomialSet<P, Vectorial> > >::type::type
+                    mpl::identity<PolynomialSet<P, Scalar> >,
+                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
+                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                      mpl::identity<PolynomialSet<P, Tensor2>   > >::type>::type::type
 {
-    typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
-            mpl::identity<PolynomialSet<P, Scalar> >,
-            mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
+    using super = typename mpl::if_<mpl::bool_<P::is_scalar>,
+                                    mpl::identity<PolynomialSet<P, Scalar> >,
+                                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
+                                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                                      mpl::identity<PolynomialSet<P, Tensor2>   > >::type>::type::type;
 
 public:
 
@@ -74,7 +78,7 @@ public:
 
     typedef FiniteElement<P, PDual, Pts> self_type;
 
-    typedef typename P::value_type value_type;
+    using value_type = typename P::value_type;
 
     typedef P primal_space_type;
 
@@ -274,6 +278,16 @@ public:
         return M_dual.points( f );
     }
 
+    points_type edgePoints( uint16_type e ) const
+        {
+            return M_dual.edgePoints( e );
+        }
+    
+    points_type vertexPoints( uint16_type v ) const
+        {
+            return M_dual.vertexPoints( v );
+        }
+    
     /**
      * \return the family name of the finite element
      */

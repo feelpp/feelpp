@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-19
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,8 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
   # we include this directory : add some missing headers from Gmsh
   INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
-else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
-  
+#else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
   FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
     $ENV{FEELPP_DIR}/include/feel/gmsh
     NO_DEFAULT_PATH)

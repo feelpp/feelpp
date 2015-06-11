@@ -1,8 +1,9 @@
-// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 namespace Feel
 {
@@ -83,8 +84,8 @@ void runStokesDirichletLM()
     auto submesh = createSubmesh(mesh,markedfaces(mesh,presslm));
 
     auto Vh1 = THch<OrderGeo>(mesh);
-    auto Vh21 = Pch<2,PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
-    auto Vh22 = Pch<2,PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,1>(submesh);
+    auto Vh21 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
+    auto Vh22 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,1>(submesh);
 
     if (Environment::worldComm().isMasterRank())
     {
@@ -212,7 +213,7 @@ void runStokesDirichletLM()
     std::cout << "diag Vh1\n";
     form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=Vh1->nLocalDofWithGhost() )
-        +=integrate( elements( submesh ), doption("eps-lag")**idt(lambda1)*id(lambda1) );
+        +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda1)*id(lambda1) );
 
     std::cout << "diag Vh2\n";
     form2( _test=Vh22, _trial=Vh22 ,_matrix=A,

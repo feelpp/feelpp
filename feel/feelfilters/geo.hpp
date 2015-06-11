@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -49,12 +49,12 @@ BOOST_PARAMETER_FUNCTION(
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
       ( desc, *( boost::is_convertible<mpl::_,std::string> ), std::string() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
-      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( option(_name="gmsh.geo-variables-list").template as<std::string>() ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_name="gmsh.hsize") )
+      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( soption(_name="gmsh.geo-variables-list") ) )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_name="gmsh.depends") )
       ( worldcomm,       (WorldComm), Environment::worldComm() ) )
     )
 
