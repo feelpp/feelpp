@@ -77,6 +77,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->M_markerNameFSI.clear();
     this->M_markerNameBCRobin.clear();
 
+
+    fs::path curPath=fs::current_path();
+    bool hasChangedRep=false;
+    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
+    {
+        this->log("SolidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
+        bool hasChangedRep=true;
+        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
+    }
+
+
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
     for( auto const& d : M_bcDirichlet )
@@ -106,6 +117,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::robin_vec>() )
         M_markerNameBCRobin.push_back(PhysicalName);
 #endif
+
+    // go back to previous repository
+    if ( hasChangedRep )
+        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
+
 }
 
 //---------------------------------------------------------------------------------------------------//

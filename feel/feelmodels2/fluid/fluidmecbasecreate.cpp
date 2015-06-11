@@ -487,7 +487,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 
     // bdf time schema
     std::string suffixName = "";
-    if ( soption(_name="bdf.file-format",_prefix=this->prefix()) == "binary" )
+    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_bdf_fluid = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),

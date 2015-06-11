@@ -54,12 +54,19 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
                                                this->worldComm(),this->verboseAllProc());
 
     bool doBuild = buildOperators && !this->fluid()->markersNameMovingBoundary().empty();
-    if (M_solid->isStandardModel())
+    if (this->solid()->isStandardModel())
         doBuild = doBuild && !this->solid()->getMarkerNameFSI().empty();
+
+    if ( this->fluid()->doRestart() )
+    {
+        this->fluid()->getMeshALE()->revertReferenceMesh();
+        this->fluid()->getMeshALE()->displacement()->functionSpace()->rebuildDofPoints();
+    }
+
     if ( doBuild )
     {
         boost::mpi::timer btime;double thet;
-        if (M_solid->isStandardModel())
+        if (this->solid()->isStandardModel())
         {
             //---------------------------------------------//
             this->initDispInterpolation();
@@ -99,7 +106,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
                 this->initVelocityInterpolationF2S();
             }
         }
-        else if ( M_solid->is1dReducedModel() )
+        else if ( this->solid()->is1dReducedModel() )
         {
             //---------------------------------------------//
             this->initDisp1dToNdInterpolation();
@@ -127,6 +134,10 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
             //---------------------------------------------//
         }
     }
+
+    if ( this->fluid()->doRestart() )
+        this->fluid()->getMeshALE()->revertMovingMesh();
+
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
 
@@ -209,6 +220,7 @@ InterpolationFSI<FluidType,SolidType>::initDispInterpolation()
                                                 _backend=this->fluid()->backend() );
     }
 }
+
 
 //-----------------------------------------------------------------------------------//
 

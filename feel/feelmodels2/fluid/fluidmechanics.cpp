@@ -81,6 +81,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerPressureBC();
     this->M_fluidOutletsBCType.clear();
 
+    // change path
+    fs::path curPath=fs::current_path();
+    bool hasChangedRep=false;
+    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
+    {
+        this->log("FluidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
+        bool hasChangedRep=true;
+        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
+    }
+
     // boundary conditions
     this->M_isMoveDomain = false;
     std::string dirichletbcType = soption(_name="dirichletbc.type",_prefix=this->prefix());
@@ -129,6 +139,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
 
+    // go back to previous repository
+    if ( hasChangedRep )
+        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
