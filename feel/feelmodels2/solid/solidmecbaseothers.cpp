@@ -111,7 +111,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- coeff Lame 2 : " << this->mechanicalProperties()->cstCoeffLame2()
            << "\n   Boundary conditions";
     *_ostr << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
+           << this->getInfoNeumannBC()
+           << this->getInfoRobinBC()
+           << this->getInfoFluidStructureInterfaceBC();
     *_ostr << "\n   Space Discretization"
            << "\n     -- msh file name   : " << this->mshfileStr()
            << "\n     -- nb elt in mesh : " << nElt
@@ -571,7 +573,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
 
     *M_normalStressFromStruct = vf::project(_space=M_normalStressFromStruct->functionSpace(),
-                                            _range=markedfaces(this->mesh(),this->getMarkerNameFSI().front()),
+                                            _range=markedfaces(this->mesh(),this->markerNameFSI().front()),
                                             _expr=sigma*vf::N() );
 }
 

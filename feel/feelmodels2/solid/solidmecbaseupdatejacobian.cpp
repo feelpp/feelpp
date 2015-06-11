@@ -178,24 +178,27 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
     }
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
-    if ( M_markerNameBCRobin.size() > 0 && BuildCstPart )
+    if ( this->markerRobinBC().size() > 0 && !BuildCstPart )
     {
+        this->updateBCRobinJacobian( J );
+#if 0
         double alpha_robin =1e4;
         bilinearForm_PatternDefault +=
-            integrate( _range=markedfaces(mesh,M_markerNameBCRobin),
+            integrate( _range=markedfaces(mesh,this->markerRobinBC() ),
                        _expr= alpha_robin*trans(idt(u))*id(v),
                        _geomap=this->geomap() );
+#endif
     }
     //--------------------------------------------------------------------------------------------------//
     // fsi coupling using a robin boundary condition
-    if (this->getMarkerNameFSI().size()>0 && this->couplingFSIcondition() == "robin" )
+    if (this->markerNameFSI().size()>0 && this->couplingFSIcondition() == "robin" )
     {
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
         double muFluid = this->muFluidFSI();//0.03;
         if (BuildCstPart)
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                            _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                            _geomap=this->geomap() );
         }

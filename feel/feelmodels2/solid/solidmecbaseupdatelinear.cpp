@@ -187,13 +187,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     }
     //---------------------------------------------------------------------------------------//
 
-    if (this->getMarkerNameFSI().size()>0)
+    if (this->markerNameFSI().size()>0)
     {
         // neumann boundary condition with normal stress (fsi boundary condition)
         if (BuildNonCstPart)
         {
             form1( _test=Xh, _vector=F) +=
-                integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                            _expr= -alpha_f*trans(idv(*M_normalStressFromFluid))*id(v),
                            _geomap=this->geomap() );
         }
@@ -206,7 +206,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
             if (BuildCstPart)
             {
                 form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -214,7 +214,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
             {
                 auto robinFSIRhs = idv(M_newmark_displ_struct->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
                 form1( _test=Xh, _vector=F) +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -222,7 +222,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
             if (BuildCstPart)
             {
                 form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*(1./M_newmark_displ_struct->timeStep())*inner(idt(u),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -230,7 +230,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
             {
                 auto robinFSIRhs = (1./M_newmark_displ_struct->timeStep())*idv(M_newmark_displ_struct->previousUnknown() ) + idv(this->velocityInterfaceFromFluid());
                 form1( _test=Xh, _vector=F) +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -241,11 +241,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     //---------------------------------------------------------------------------------------//
 
     // robin condition (used in fsi blood flow as external tissue)
-    if ( M_markerNameBCRobin.size() > 0 && BuildCstPart )
+    if ( !this->markerRobinBC().empty() && !BuildCstPart )
     {
+        this->updateBCRobinLinearPDE( A, F );
+#if 0
+
         double alpha_robin =1e4;
         form2( _test=Xh, _trial=Xh, _matrix=A) +=
-            integrate( _range=markedfaces(mesh,M_markerNameBCRobin),
+            integrate( _range=markedfaces(mesh,this->markerRobinBC()),
                        _expr= alpha_robin*trans(idt(u))*id(v),
                        _geomap=this->geomap() );
 #if 0
@@ -256,6 +259,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
                               _geomap=this->geomap() ) );
 #endif
         // TODO second membre
+#endif
     }
 
     //---------------------------------------------------------------------------------------//

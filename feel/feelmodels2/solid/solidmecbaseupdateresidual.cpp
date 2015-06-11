@@ -190,13 +190,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
 
     //--------------------------------------------------------------------------------------------------//
     // fsi bc
-    if (this->getMarkerNameFSI().size()>0)
+    if (this->markerNameFSI().size()>0)
     {
         // neumann boundary condition with normal stress (fsi boundary condition)
         if (BuildCstPart_BoundaryParoiMobile)
         {
             linearFormDisplacement +=
-                integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                            _expr= alpha_f*trans(idv(*M_normalStressFromFluid))*id(v),
                            _geomap=this->geomap() );
         }
@@ -208,7 +208,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
             if (!BuildCstPart && !UseJacobianLinearTerms)
             {
                 linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -217,14 +217,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
             {
                 auto const& polyFirstDerivDisp = M_newmark_displ_struct->polyFirstDeriv();
                 linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= -gammaRobinFSI*muFluid*inner(idv( polyFirstDerivDisp/*M_newmark_displ_struct->polyFirstDeriv()*/ ),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
             if (BuildCstPart_BoundaryParoiMobile)
             {
                 linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->getMarkerNameFSI()),
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= -gammaRobinFSI*muFluid*inner(idv(this->velocityInterfaceFromFluid()),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
@@ -234,13 +234,17 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
 
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
-    if ( M_markerNameBCRobin.size() > 0 && !BuildCstPart && !UseJacobianLinearTerms)
+    //if ( this->markerRobinBC().size() > 0 && !BuildCstPart && !UseJacobianLinearTerms)
+    if ( this->markerRobinBC().size() > 0 && !BuildCstPart )// && !UseJacobianLinearTerms)
     {
+        this->updateBCRobinResidual( u, R );
+#if 0
         double alpha_robin = 1e4;
         linearFormDisplacement +=
-            integrate( _range=markedfaces(mesh,M_markerNameBCRobin),
+            integrate( _range=markedfaces(mesh,this->markerRobinBC()),
                        _expr= alpha_robin*trans(idv(u))*id(v),
                        _geomap=this->geomap() );
+#endif
     }
     // TODO up second membre
     /*if (BuildCstPart)

@@ -57,7 +57,9 @@ namespace FeelModels
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp >
 class SolidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
-                           public MarkerManagementNeumannBC
+                           public MarkerManagementNeumannBC,
+                           public MarkerManagementRobinBC,
+                           public MarkerManagementFluidStructureInterfaceBC
 {
 public:
     typedef ModelNumerical super_type;
@@ -462,7 +464,8 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::list<std::string> getMarkerNameFSI() const { return M_markerNameFSI; }
+    //std::list<std::string> getMarkerNameFSI() const { return M_markerNameFSI; }
+    std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
     double gammaNitschFSI() const { return M_gammaNitschFSI; }
     void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
     double muFluidFSI() const { return M_muFluidFSI; }
@@ -546,16 +549,17 @@ public :
 
     virtual void updateBCDirichletStrongResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCRobinResidual( vector_ptrtype& R ) const = 0;
+    virtual void updateBCRobinResidual( element_displacement_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
 
     virtual void updateBCDirichletStrongJacobian(sparse_matrix_ptrtype& J) const = 0;
     virtual void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const = 0;
+    virtual void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const = 0;
 
     virtual void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
-    //virtual void updateBCRobinLinearPDE( vector_ptrtype& F ) const = 0;
+    virtual void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const = 0;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F ) const = 0;
 
 protected:
@@ -666,11 +670,11 @@ protected:
     double M_genAlpha_gamma;
     double M_genAlpha_beta;
 
-    std::list<std::string> M_markerNameBCRobin;
+    //std::list<std::string> M_markerNameBCRobin;
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    std::list<std::string> M_markerNameFSI;
+    //std::list<std::string> M_markerNameFSI;
     double M_gammaNitschFSI;
     double M_muFluidFSI;
 
@@ -680,36 +684,7 @@ protected:
 }; // SolidMechanics
 
 
-#if 0
-    template <typename element_stressN_ptrtype>
-    void
-    SOLIDMECHANICSBASE_CLASS_NAME::updateStressTensor( element_stressN_ptrtype __stressN)
-    {
-
-        if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor start\n";
-
-        boost::timer btime; btime.restart();
-
-        auto opI=opInterpolation( _domainSpace=__stressN->functionSpace(),
-                                  _imageSpace=M_normalStressFromFluid->functionSpace(),//M_Xh,
-                                  _range=markedfaces(M_mesh,M_markerNameFSI),
-                                  _backend=M_backend );
-        opI->apply(*__stressN,*M_normalStressFromFluid);
-
-
-#if 0
-        if (M_is1dReduced)
-            {
-                ForEachBC( bcDef,cl::paroi_mobile,
-                           TransfertStress2dTo1d(PhysicalName); )
-            }
-#endif
-        if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor finish in "<<btime.elapsed()<<"\n";
-
-    }
-#endif
-
 } // FeelModels
-
 } // Feel
+
 #endif /* FEELPP_SOLIDMECHANICSBASE_HPP */
