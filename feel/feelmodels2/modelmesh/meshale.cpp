@@ -44,7 +44,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     super_type( prefixvm(prefix,"alemesh"),worldcomm,"",appliShortRepository ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
-    M_isRevertedOnReferenceMesh( false ),
+    M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
     M_aleFactory( ale_map_type::build(M_referenceMesh ,this->prefix(), this->worldComm(), moveGhostEltFromExtendedStencil ) ),
     M_Xhref( M_aleFactory->functionSpace() ),
     M_Xhmove(ale_map_functionspace_type::New(_mesh=M_movingMesh,
@@ -59,8 +59,8 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     M_meshVelocity(new ale_map_element_type( M_Xhmove) ),
     M_drm( new DofRelationshipMap_type(M_Xhref,M_Xhmove ) ),
     M_cpt_export(0),
-    M_isARestart(boption(_name="bdf.restart")),
-    M_restartPath(soption(_name="bdf.restart.path"))
+    M_isARestart(boption(_name="ts.restart")),
+    M_restartPath(soption(_name="ts.restart.path"))
     //M_doExport(option(_name="export",_prefix=prefixvm(prefix,"alemesh")).template as<bool>())
 {
 
@@ -86,45 +86,54 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
             CHECK( math::abs( M_dispP1ToHO_ref->operator()(k) ) < 1e-14 ) <<  "error must be null : " << M_dispP1ToHO_ref->operator()(k) ;
 
 
-    // create time scheme
-    std::ostringstream ostrBdfName;
-    ostrBdfName<<"bdf_rank"<<this->worldComm().globalRank();
+    // create time schemes
+
+    double timestep = doption(_name="ts.time-step");
+    std::string suffixName = "";
+    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
 
     M_bdf_ale_identity = bdf( _vm=Environment::vm(), _space=M_Xhmove,
-                              _name=prefixvm(prefix,"meshale_identity")+ostrBdfName.str(),
-                              _prefix=prefixvm(prefix,"alemesh"),
-                              _initial_time=doption(_name="bdf.time-initial"),
-                              _final_time=doption(_name="bdf.time-final"),
-                              _time_step=doption(_name="bdf.time-step"),
+                              _name=prefixvm(prefix,"meshale_identity"+suffixName),
+                              _prefix=this->prefix(),
+                              _initial_time=doption(_name="ts.time-initial"),
+                              _final_time=doption(_name="ts.time-final"),
+                              _time_step=timestep,
                               _restart=M_isARestart,
                               _restart_path=M_restartPath,
-                              _restart_at_last_save=boption(_name="bdf.restart.at-last-save"),
-                              _save=boption(_name="bdf.save"),_freq=ioption(_name="bdf.save.freq")
+                              _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
+                              _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
+    M_bdf_ale_identity->setPathSave( (fs::path(this->appliRepository()) /
+                                      fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_identity->bdfOrder()).str() ) ) ).string() );
 
     M_bdf_ale_velocity = bdf( _vm=Environment::vm(), _space=M_Xhmove,
-                              _name=prefixvm(prefix,"meshale_velocity")+ostrBdfName.str(),
-                              _prefix=prefixvm(prefix,"alemesh"),
+                              _name=prefixvm(prefix,"meshale_velocity"+suffixName),
+                              _prefix=this->prefix(),
                               _initial_time=doption(_name="bdf.time-initial"),
-                              _final_time=doption(_name="bdf.time-final"),
-                              _time_step=doption(_name="bdf.time-step"),
+                              _final_time=doption(_name="ts.time-final"),
+                              _time_step=timestep,
                               _restart=M_isARestart,
                               _restart_path=M_restartPath,
-                              _restart_at_last_save=boption(_name="bdf.restart.at-last-save"),
-                              _save=boption(_name="bdf.save"),_freq=ioption(_name="bdf.save.freq")
+                              _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
+                              _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
+    M_bdf_ale_velocity->setPathSave( (fs::path(this->appliRepository()) /
+                                      fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_velocity->bdfOrder()).str() ) ) ).string() );
 
     M_bdf_ale_displacement_ref = bdf( _vm=Environment::vm(), _space=M_Xhref,
-                                      _name=prefixvm(prefix,"meshale_displacement_ref")+ostrBdfName.str(),
-                                      _prefix=prefixvm(prefix,"alemesh"),
-                                      _initial_time=doption(_name="bdf.time-initial"),
-                                      _final_time=doption(_name="bdf.time-final"),
-                                      _time_step=doption(_name="bdf.time-step"),
+                                      _name=prefixvm(prefix,"meshale_displacement_ref"+suffixName),
+                                      _prefix=this->prefix(),
+                                      _initial_time=doption(_name="ts.time-initial"),
+                                      _final_time=doption(_name="ts.time-final"),
+                                      _time_step=timestep,
                                       _restart=M_isARestart,
                                       _restart_path=M_restartPath,
-                                      _restart_at_last_save=boption(_name="bdf.restart.at-last-save"),
-                                      _save=boption(_name="bdf.save"),_freq=ioption(_name="bdf.save.freq")
+                                      _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
+                                      _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                                       );
+    M_bdf_ale_displacement_ref->setPathSave( (fs::path(this->appliRepository()) /
+                                              fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_displacement_ref->bdfOrder()).str() ) ) ).string() );
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "finish");
 
@@ -165,6 +174,8 @@ MeshALE<Convex>::init()
 
         //move the mesh
         M_mesh_mover.apply(M_movingMesh, *M_displacement );
+        M_isOnReferenceMesh = false;
+        M_isOnMovingMesh = true;
 
         this->log(prefixvm(this->prefix(),"MeshALE"),"init", "restart on moving mesh");
 
@@ -422,7 +433,7 @@ template< class Convex >
 void
 MeshALE<Convex>::revertReferenceMesh()
 {
-    if ( !M_isRevertedOnReferenceMesh )
+    if ( !this->isOnReferenceMesh() )
     {
 
 #if 1
@@ -436,7 +447,8 @@ MeshALE<Convex>::revertReferenceMesh()
 
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
 
-        M_isRevertedOnReferenceMesh = true;
+        M_isOnReferenceMesh = true;
+        M_isOnMovingMesh = false;
     }
 }
 
@@ -446,7 +458,7 @@ template< class Convex >
 void
 MeshALE<Convex>::revertMovingMesh()
 {
-    if ( M_isRevertedOnReferenceMesh )
+    if ( !this->isOnMovingMesh() )
     {
 #if 1
         auto temporaryDisp = *M_displacement;
@@ -457,7 +469,8 @@ MeshALE<Convex>::revertMovingMesh()
 #endif
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
 
-        M_isRevertedOnReferenceMesh = false;
+        M_isOnReferenceMesh = false;
+        M_isOnMovingMesh = true;
     }
 }
 
@@ -523,6 +536,76 @@ MeshALE<Convex>::exportResults(double time)
         M_exporter->save();
     }
 }
+
+template< class Convex >
+void
+MeshALE<Convex>::updateImpl( Vector<double> const& dispInput )
+{
+    //M_displacementOnMovingBoundary_HO_ref->zero();
+    *M_displacementOnMovingBoundary_HO_ref = dispInput;
+
+    //---------------------------------------------------------------------------------------------//
+    // transform disp from ref_ho -> ref_p1
+    for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
+        (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]) + (*M_dispP1ToHO_ref)(i);
+
+    //---------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------//
+    boost::mpi::timer mpiTimer;
+    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", "start generateMap");
+    //---------------------------------------------------------------------------------------------//
+    //generate the ale map
+    M_aleFactory->generateMap( *M_displacementOnMovingBoundary_P1_ref, M_bdf_ale_displacement_ref->unknown(0) );
+    //---------------------------------------------------------------------------------------------//
+    std::ostringstream ostrTime; ostrTime << "boost::mpi::timer :" << mpiTimer.elapsed() << "s";
+    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", "finish generateMap in "+ostrTime.str());
+    //---------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------//
+    //---------------------------------------------------------------------------------------------//
+
+    //---------------------------------------------------------------------------------------------//
+    //usefull for implicit fsi coupling (reset when we are in ptfixe cycle)
+    auto resetDisp = *M_displacement;
+    resetDisp.scale(-1.);
+    M_mesh_mover.apply(M_movingMesh, resetDisp );
+
+    //---------------------------------------------------------------------------------------------//
+    // get displacement on ref mesh
+    *M_displacement_ref = M_aleFactory->displacement();
+
+    //---------------------------------------------------------------------------------------------//
+    // transfert to the move mesh
+    for (size_type i=0;i<M_displacement->nLocalDof();++i)
+        (*M_displacement)(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);/////
+#if 0
+    //---------------------------------------------------------------------------------------------//
+    // update to real move
+    auto const& dispRefPrevious = M_bdf_ale_displacement_ref->unknown(0);
+    for (size_type i=0;i<M_displacement->nLocalDof();++i)
+        (*M_displacement)(M_drm->dofRelMap()[i]) -= dispRefPrevious(i) - (*M_dispP1ToHO_ref)(i);//////
+#endif
+    //---------------------------------------------------------------------------------------------//
+    //move the mesh
+    M_mesh_mover.apply(M_movingMesh, *M_displacement );
+
+    M_isOnReferenceMesh = false;
+    M_isOnMovingMesh = true;
+
+    // rebuild dof point (necessary in updateIdentityMap with extended dof table)
+    M_Xhmove->rebuildDofPoints();
+
+    // up identity
+    this->updateIdentityMap();
+
+    // compute mesh velocity
+    *M_meshVelocity = *M_identity_ale;
+    M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
+    M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
+
+}
+
+
 
 } // namespace FeelModels
 } // namespace Feel
