@@ -656,28 +656,6 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     // build subdatamap row
     datamap_ptrtype subMapRow = this->mapPtr()->createSubDataMap( rows, false );
 
-    // build subvector petsc
-    Vec subVecPetsc = NULL;
-    this->getSubVectorPetsc( rows,subVecPetsc );
-
-    // build vectorsparse object
-    boost::shared_ptr<Vector<T> > subVec;
-    if ( this->comm().size()>1 )
-        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
-    else
-        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
-    return subVec;
-}
-
-template <typename T>
-void
-VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
-                                   Vec &subvec ) const
-{
-    //    this->close();
-    int ierr=0;
-    IS isrow;
-    PetscInt *rowMap;
 
     std::set<size_type> rowMapOrdering;
     if ( this->comm().size()>1 )
@@ -697,6 +675,7 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     }
 
     // copying into PetscInt vector
+    PetscInt *rowMap;
     int nrow = rowMapOrdering.size();
     rowMap = new PetscInt[nrow];
     size_type curId=0;
@@ -707,6 +686,12 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     }
 
 
+    // build subvector petsc
+    Vec subVecPetsc = NULL;
+
+    int ierr=0;
+    IS isrow;
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
     CHKERRABORT( this->comm(),ierr );
@@ -714,13 +699,24 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
 #endif
-    ierr = VecGetSubVector(this->vec(), isrow, &subvec);
+    ierr = VecGetSubVector(this->vec(), isrow, &subVecPetsc);
     CHKERRABORT( this->comm(),ierr );
 
     ierr = PETSc::ISDestroy( isrow );
     CHKERRABORT( this->comm(),ierr );
 
     delete[] rowMap;
+
+    // build vectorsparse object
+    boost::shared_ptr<Vector<T> > subVec;
+    if ( this->comm().size()>1 )
+        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
+    else
+        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
+
+    VecRestoreSubVector(this->vec(), isrow, &subVecPetsc);
+
+    return subVec;
 }
 
 //----------------------------------------------------------------------------------------------------//
