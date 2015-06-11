@@ -644,6 +644,85 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         CHKERRABORT( this->comm(),ierr );
     }
 
+template <typename T>
+boost::shared_ptr<Vector<T> >
+VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
+                                 bool checkAndFixRange ) const
+{
+    // update maybe input index set
+    std::vector<size_type> rows = ( checkAndFixRange )?
+        this->mapPtr()->buildIndexSetWithParallelMissingDof( _rows ) : _rows;
+
+    // build subdatamap row
+    datamap_ptrtype subMapRow = this->mapPtr()->createSubDataMap( rows, false );
+
+    // build subvector petsc
+    Vec subVecPetsc = NULL;
+    this->getSubVectorPetsc( rows,subVecPetsc );
+
+    // build vectorsparse object
+    boost::shared_ptr<Vector<T> > subVec;
+    if ( this->comm().size()>1 )
+        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
+    else
+        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
+    return subVec;
+}
+
+template <typename T>
+void
+VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
+                                   Vec &subvec ) const
+{
+    //    this->close();
+    int ierr=0;
+    IS isrow;
+    PetscInt *rowMap;
+
+    std::set<size_type> rowMapOrdering;
+    if ( this->comm().size()>1 )
+    {
+        // convert global process ids into global cluster ids, remove ghost dofs
+        // and build ordering row map
+        for (int i=0; i<rows.size(); i++)
+        {
+            if ( !this->map().dofGlobalProcessIsGhost( rows[i] ) )
+                rowMapOrdering.insert( this->map().mapGlobalProcessToGlobalCluster( rows[i] ) );
+        }
+    }
+    else
+    {
+        // build ordering row map
+        rowMapOrdering.insert( rows.begin(), rows.end() );
+    }
+
+    // copying into PetscInt vector
+    int nrow = rowMapOrdering.size();
+    rowMap = new PetscInt[nrow];
+    size_type curId=0;
+    for ( auto& rowId : rowMapOrdering )
+    {
+        rowMap[curId] = rowId;
+        ++curId;
+    }
+
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    ierr = VecGetSubVector(this->vec(), isrow, &subvec);
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = PETSc::ISDestroy( isrow );
+    CHKERRABORT( this->comm(),ierr );
+
+    delete[] rowMap;
+}
+
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
