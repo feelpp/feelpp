@@ -276,11 +276,12 @@ public:
     void build();
     void loadMesh(mesh_ptrtype __mesh );
     void loadMesh(mesh_1dreduced_ptrtype __mesh );
-protected :
+    //protected :
     void build(mesh_ptrtype mesh );
     void build( mesh_1dreduced_ptrtype mesh );
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
+protected :
 
     virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
     virtual void loadConfigMeshFile1dReduced(std::string const& geofilename) = 0;

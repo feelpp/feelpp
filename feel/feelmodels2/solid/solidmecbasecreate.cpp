@@ -534,9 +534,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     this->log("SolidMechanics","createTimeDiscretisation", "start" );
     this->timerTool("Constructor").start();
 
-    auto ti = this->timeInitial();
-    auto tf = this->timeFinal();
-    auto dt = this->timeStep();
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
 
     std::string suffixName = "";
     if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
@@ -575,9 +575,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
 {
     this->log("SolidMechanics","createTimeDiscretisation1dReduced", "start" );
 
-    auto ti = this->timeInitial();
-    auto tf = this->timeFinal();
-    auto dt = this->timeStep();
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
 
     std::string suffixName = "";
     if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
@@ -589,6 +589,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
                                           _initial_time=ti, _final_time=tf, _time_step=dt,
                                           _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                           _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+    M_newmark_displ_1dReduced->setPathSave( (fs::path(this->appliRepository()) /
+                                             fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
     this->log("SolidMechanics","createTimeDiscretisation1dReduced", "finish" );
 }

@@ -229,8 +229,19 @@ FSI<FluidType,SolidType>::init()
         if ( doExtractSubmesh )
         {
             CHECK( !M_fluid->markersNameMovingBoundary().empty() ) << "no marker moving boundary in fluid model";
+
+            if ( M_fluid->doRestart() )
+                M_fluid->getMeshALE()->revertReferenceMesh();
             auto submeshStruct = detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluid );
-            M_solid->loadMesh(submeshStruct);
+            if ( M_fluid->doRestart() )
+                M_fluid->getMeshALE()->revertMovingMesh();
+
+            // TODO ( save 1d mesh and reload )
+            if ( M_fluid->doRestart() )
+                M_solid->build(submeshStruct);
+            else
+                M_solid->loadMesh(submeshStruct);
+
         }
         else
         {
@@ -663,8 +674,8 @@ boost::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    *_ostr << this->fluidAppli()->getInfo()
-           << this->solidAppli()->getInfo();
+    *_ostr << this->fluidAppli()->getInfo()->str()
+           << this->solidAppli()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"
