@@ -55,7 +55,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
 
     bool doBuild = buildOperators && !this->fluid()->markersNameMovingBoundary().empty();
     if (this->solid()->isStandardModel())
-        doBuild = doBuild && !this->solid()->getMarkerNameFSI().empty();
+        doBuild = doBuild && !this->solid()->markerNameFSI().empty();
 
     if ( this->fluid()->doRestart() )
     {
@@ -268,7 +268,7 @@ InterpolationFSI<FluidType,SolidType>::initStressInterpolation()
             std::cout << "initStressInterpolation() CONFORME" << std::endl;
         M_opStress2dTo2dconf = opInterpolation(_domainSpace=this->fluid()->getNormalStress()->functionSpace(),
                                                _imageSpace=this->solid()->normalStressFromFluid()->functionSpace(),
-                                               _range=markedfaces(this->solid()->mesh(),this->solid()->getMarkerNameFSI()),
+                                               _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                _type=InterpolationConforme(),
                                                _backend=M_fluid->backend() );
     }
@@ -278,7 +278,7 @@ InterpolationFSI<FluidType,SolidType>::initStressInterpolation()
             std::cout << "initStressInterpolation() NONCONFORME" << std::endl;
         M_opStress2dTo2dnonconf = opInterpolation(_domainSpace=this->fluid()->getNormalStress()->functionSpace(),
                                                   _imageSpace=this->solid()->normalStressFromFluid()->functionSpace(),
-                                                  _range=markedfaces(this->solid()->mesh(),this->solid()->getMarkerNameFSI()),
+                                                  _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                   _type=InterpolationNonConforme(true,true,true,15),
                                                   _backend=M_fluid->backend() );
     }
@@ -386,7 +386,7 @@ InterpolationFSI<FluidType,SolidType>::initVelocityInterpolationF2S()
             std::cout << "initVelocityInterpolationF2S() CONFORME" << std::endl;
         M_opVelocity2dTo2dconfF2S = opInterpolation(_domainSpace=this->fluid()->functionSpaceVelocity(),
                                                     _imageSpace=this->solid()->velocityInterfaceFromFluid()->functionSpace(),
-                                                    _range=markedfaces(this->solid()->mesh(),this->solid()->getMarkerNameFSI()),
+                                                    _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                     _type=InterpolationConforme(),
                                                     _backend=this->fluid()->backend() );
 
@@ -398,7 +398,7 @@ InterpolationFSI<FluidType,SolidType>::initVelocityInterpolationF2S()
             std::cout << "initVelocityInterpolation() NONCONFORME" << std::endl;
         M_opVelocity2dTo2dnonconfF2S = opInterpolation(_domainSpace=this->fluid()->meshVelocity2().functionSpace(),
                                                        _imageSpace=this->solid()->fieldVelocity()->functionSpace(),
-                                                       _range=markedfaces(this->solid()->mesh(),this->solid()->getMarkerNameFSI()),
+                                                       _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                        _type=InterpolationNonConforme(),
                                                        _backend=this->fluid()->backend() );
 #endif
@@ -521,7 +521,7 @@ InterpolationFSI<FluidType,SolidType>::transfertStress()
                                        _type=Feel::L2);//L2;
             auto proj_beta = opProj->operator()(vf::trans(vf::idv(myudisc/*M_fluid->getNormalStress()*/)));
 
-            auto SolidPhysicalName = M_solid->getMarkerNameFSI().front();
+            auto SolidPhysicalName = M_solid->markerNameFSI().front();
             auto myopStress2dTo2dnonconf = opInterpolation(_domainSpace=myXh,//M_fluid->getNormalStress()->functionSpace(),
                                                            _imageSpace=M_solid->getStress()->functionSpace(),
                                                            _range=markedfaces(M_solid->mesh(),SolidPhysicalName),
