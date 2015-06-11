@@ -224,7 +224,7 @@ fluidMechanics_options(std::string const& prefix)
                 ((boost::format("%1%fluid-outlet.windkessel.Cd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
                 ;
 
-    return fluidOptions.add( applibaseNumericalSimulationTransitory_options( prefix ) ).add( bdf_options( prefix ) ).add( alemesh_options( prefix ) );
+    return fluidOptions.add( applibaseNumericalSimulationTransitory_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( alemesh_options( prefix ) );
 }
 
 Feel::po::options_description
@@ -327,6 +327,7 @@ alemesh_options(std::string const& prefix)
         ;
     return desc_options
         .add( bdf_options( prefixvm(prefix,"alemesh") ) )
+        .add( ts_options( prefixvm(prefix,"alemesh") ) )
         .add( backend_options( prefixvm(prefix,"alemesh") ) )
         .add( applibase_options( prefixvm(prefix,"alemesh") ) )
         .add( applibaseMethodsNum_options( prefixvm(prefix,"alemesh.harmonic") ) )

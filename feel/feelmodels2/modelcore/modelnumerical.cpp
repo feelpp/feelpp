@@ -40,14 +40,14 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
         M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
         M_isStationary( false /*_isStationary*/),
-        M_doRestart( boption(_name="bdf.restart") ),
-        M_restartPath( soption(_name="bdf.restart.path") ),
-        M_restartAtLastSave( boption(_name="bdf.restart.at-last-save") ),
-        M_timeInitial( doption(_name="bdf.time-initial") ),
-        M_timeFinal( doption(_name="bdf.time-final") ),
-        M_timeStep( doption(_name="bdf.time-step") ),
-        M_bdfSaveInFile( boption(_name="bdf.save") ),
-        M_bdfSaveFreq( ioption(_name="bdf.save.freq") ),
+        M_doRestart( boption(_name="ts.restart") ),
+        M_restartPath( soption(_name="ts.restart.path") ),
+        M_restartAtLastSave( boption(_name="ts.restart.at-last-save") ),
+        M_timeInitial( doption(_name="ts.time-initial") ),
+        M_timeFinal( doption(_name="ts.time-final") ),
+        M_timeStep( doption(_name="ts.time-step") ),
+        M_bdfSaveInFile( boption(_name="ts.save") ),
+        M_bdfSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
         M_modelProps( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ) ),
         M_parameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS,0)),
@@ -95,6 +95,10 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         if ( Environment::vm().count(prefixvm(this->prefix(),"ginac-expr-directory").c_str()) )
         {
             M_ginacExprCompilationDirectory=Environment::rootRepository()+"/"+soption(_name="ginac-expr-directory",_prefix=this->prefix());
+        }
+        else
+        {
+            M_ginacExprCompilationDirectory = (fs::path(this->appliRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
         }
         //-----------------------------------------------------------------------//
         // mesh file : .msh
