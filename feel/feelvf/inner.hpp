@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -234,7 +234,7 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
-            return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type(), mpl::bool_<IsSame>() );
+            return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<r_is_terminal> >::type(), mpl::bool_<IsSame>() );
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0>, mpl::bool_<false> ) const
@@ -402,6 +402,27 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprR,1,Props> product_t;
     return Expr< product_t >(  product_t( l, r ) );
+}
+
+/**
+ * \brief symetric part of a matricial expression
+ */
+template<typename ExprL>
+inline
+Expr< Product<ExprL, ExprL,1,NONE> >
+inner( ExprL l )
+{
+    typedef Product<ExprL, ExprL,1,NONE> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
+}
+
+template<typename ExprL, int Props>
+inline
+Expr< Product<ExprL, ExprL,1,Props> >
+inner( ExprL l, mpl::int_<Props> )
+{
+    typedef Product<ExprL, ExprL,1,Props> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
 }
 
 

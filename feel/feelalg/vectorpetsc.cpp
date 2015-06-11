@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -131,6 +131,9 @@ VectorPetsc<T>::setVector ( int* i, int n, value_type* v )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -156,6 +159,9 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -185,24 +191,74 @@ VectorPetsc<T>::operator() ( const size_type i ) const
 
         return static_cast<value_type>( value );
     }
-
-/**
- * \p Utility::iota is a duplication of the SGI STL extension
- * \p std::iota.  It simply assigns sequentially increasing values
- * to a range. That is, it assigns \p value to \p *first, \p value + 1
- * to \p *(first + 1) and so on. In general, each iterator \p i in the
- * range [first, last) is assigned \p value + (i - \p first).
- */
-template <typename ForwardIter, typename T>
-void iota ( ForwardIter first, ForwardIter last, T value )
-{
-    while ( first != last )
+template <typename T>
+typename VectorPetsc<T>::value_type&
+VectorPetsc<T>::operator() ( const size_type i )
     {
-        *first = value++;
-        ++first;
+        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                       << " first local index: "  << this->firstLocalIndex()
+                                                       << " last local index:  " << this->lastLocalIndex();
+
+        int ierr=0;
+        PetscScalar *values;
+
+        ierr = VecGetArray( M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
+
+        PetscScalar& value = values[i - this->firstLocalIndex()];
+
+        ierr = VecRestoreArray ( M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
+
+        return static_cast<value_type&>( value );
     }
+
+template <typename T>
+void
+VectorPetsc<T>::pointwiseMult ( Vector<T> const& xx, Vector<T> const& yy )
+{    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
+    }
+
+    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
+    auto ierr =  VecPointwiseMult(this->vec(), x->vec(), y->vec() );
+    CHKERRABORT( this->comm(),ierr );
 }
 
+template <typename T>
+void
+VectorPetsc<T>::pointwiseDivide ( Vector<T> const& xx, Vector<T> const& yy )
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
+    }
+
+    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
+    auto ierr =  VecPointwiseDivide(this->vec(), x->vec(), y->vec() );
+    CHKERRABORT( this->comm(),ierr );
+}
 template <typename T>
 void
 VectorPetsc<T>::zero()
@@ -221,6 +277,14 @@ VectorPetsc<T>::zero()
     ierr = VecSet ( M_vec, z );
     CHKERRABORT( this->comm(),ierr );
 #endif
+}
+
+template <typename T>
+int
+VectorPetsc<T>::reciprocal()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    return VecReciprocal( M_vec );
 }
 
 
@@ -466,7 +530,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
     }
 
     const_cast<VectorPetsc<T>*>( this )->close();
-    PetscObjectSetName((PetscObject)M_vec,fs::path(name).stem().string().c_str());
+    PetscObjectSetName((PetscObject)M_vec,fs::path("var_"+name).stem().string().c_str());
     //this->close();
     int ierr=0;
 
@@ -610,9 +674,9 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
 //----------------------------------------------------------------------------------------------------//
 
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super( v,dm )
+    super( v,dm,duplicate )
 {
     int ierr=0;
     int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
@@ -780,6 +844,22 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
 
     return static_cast<value_type>( value );
 }
+template <typename T>
+typename VectorPetscMPI<T>::value_type&
+VectorPetscMPI<T>::operator() ( const size_type i )
+{
+    int ierr=0;
+    PetscScalar *values;
+    ierr = VecGetArray( M_vecLocal, &values );
+    CHKERRABORT( this->comm(),ierr );
+    //std::cout << "\n operator MPI ";
+    PetscScalar& value =  values[i /*- this->firstLocalIndex()*/ ];
+
+    ierr = VecRestoreArray( M_vecLocal, &values );
+    CHKERRABORT( this->comm(),ierr );
+
+    return static_cast<value_type&>( value );
+}
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
@@ -804,7 +884,9 @@ VectorPetscMPI<T>::setVector ( int* i, int n, value_type* v )
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 
-    if ( n == 0 || i == 0 || v == 0 ) return;
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
@@ -836,7 +918,9 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 
-    if ( n == 0 || i == 0 || v == 0 ) return;
+#if PETSC_VERSION_LESS_THAN(3,5,3)
+    if ( n == 0 ) return;
+#endif
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );

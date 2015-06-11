@@ -1,4 +1,4 @@
-/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -533,6 +533,10 @@ public:
         //Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
+
+    template<typename Geo_t>
+    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    
 #if 0
     class Diff
     {

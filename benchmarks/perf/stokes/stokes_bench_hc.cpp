@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -163,8 +163,8 @@ public:
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        M_backend( backend_type::build( soption("backend") ) ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         mu = this->vm()["mu"].template as<value_type>();
@@ -219,7 +219,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % BasisU::nOrder
-                                % this->vm()["hsize"].template as<double>() );
+                                % doption("hsize") );
     }
 
     /*
@@ -304,7 +304,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto f = vec( 0.*Px(),0.*Py() ) ;
 
     // right hand side
-    form1( Xh, F, _init=true )  =
+    form1( Xh, _vector=F, _init=true )  =
         integrate( elements( mesh ), trans( f )*id( v ) )+
         integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
 

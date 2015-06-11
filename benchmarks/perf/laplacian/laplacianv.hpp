@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -149,7 +149,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
                             % meshSize() );
 
     //! init backend
-    M_backend = backend_type::build();
+    M_backend = backend_type::build(soption("backend"));
 
 
     boost::timer t;
@@ -161,7 +161,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
     double ymin = -1, ymax=1;
 #endif
     double shear = option(_name="shear").template as<value_type>();
-    bool recombine = option(_name="recombine").template as<bool>();
+    bool recombine = boption(_name="recombine");
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -224,21 +224,21 @@ LaplacianV<Dim, BasisU, Entity>::run()
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
-    form1( Xh, F, _init=true );
+    form1( Xh, _vector=F, _init=true );
     M_stats.put( "t.init.vector",t.elapsed() );
     LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
-    form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
+    form1( Xh, _vector=F ) = integrate( elements( mesh ), trans( f )*id( v ) );
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
     subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*dn( u ) );
+        form1( Xh, _vector=F ) += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*dn( u ) );
         M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
         subt.restart();
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
-        //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
+        form1( Xh, _vector=F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
+        //form1( Xh, _vector=F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
         LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
@@ -275,7 +275,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
     //# marker7 #
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, D, _init=true );
+    form2( Xh, Xh, _matrix=D, _init=true );
     M_stats.put( "t.init.matrix",t.elapsed() );
     LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
@@ -283,17 +283,17 @@ LaplacianV<Dim, BasisU, Entity>::run()
     subt.restart();
     t.restart();
 
-    form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
+    form2( Xh, Xh, _matrix=D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
     M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
     LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=-trans( dnt( u ) )*id( v )-trans( dn( u ) )*idt( v ) );
+        form2( Xh, Xh, _matrix=D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=-trans( dnt( u ) )*id( v )-trans( dn( u ) )*idt( v ) );
         M_stats.put( "t.assembly.matrix.dirichlet1",subt.elapsed() );
         subt.restart();
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
+        form2( Xh, Xh, _matrix=D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
         M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
         subt.restart();
         LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
@@ -306,7 +306,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
-        form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact );
+        form2( Xh, Xh, _matrix=D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact );
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
         LOG(INFO) << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();

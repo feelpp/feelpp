@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -558,7 +558,8 @@ makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( integration )
 
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>> order_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>  > order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
@@ -616,6 +617,8 @@ main( int argc, char** argv )
 #endif
     }
 
+    // disable 
+#if 0
     else if ( mpi.vm()["order"].as<int>() == 5 )
     {
 #if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 5)
@@ -623,6 +626,7 @@ main( int argc, char** argv )
         t2();
 #endif
     }
+#endif
 
 }
 #endif // USE_BOOST_TEST

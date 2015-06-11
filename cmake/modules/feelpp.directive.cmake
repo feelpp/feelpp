@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-04
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@ MESSAGE(STATUS "           FEELPP_REVISON : ${FEELPP_REVISION}")
 MESSAGE(STATUS "           FEELPP_BUILDID : ${FEELPP_BUILDID}")
 MESSAGE(STATUS "")
 MESSAGE(STATUS "Feel++ Modules :")
+MESSAGE(STATUS "     QuickStart: ${FEELPP_ENABLE_QUICKSTART}")
 MESSAGE(STATUS "  Documentation: ${FEELPP_ENABLE_DOCUMENTATION}")
 MESSAGE(STATUS "        Doxygen: ${FEELPP_ENABLE_DOXYGEN}")
 MESSAGE(STATUS "      Testsuite: ${FEELPP_ENABLE_TESTS}")

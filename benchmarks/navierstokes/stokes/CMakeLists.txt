@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-07-19
 #
 #  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -19,8 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-#
+
 add_executable(sphere sphere.cpp)
 target_link_libraries(sphere feelpp ${FEELPP_LIBRARIES} )
 set_property(TARGET sphere PROPERTY LABELS benchmarks)

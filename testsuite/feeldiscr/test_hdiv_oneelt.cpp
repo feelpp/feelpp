@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -135,8 +135,7 @@ public:
     TestHDivOneElt()
         :
         super(),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         this->changeRepository( boost::format( "%1%" ) % this->about().appName() );
     }
@@ -150,9 +149,6 @@ public:
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 }; //TestHDivOneElt
 
@@ -185,7 +181,6 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
-    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
@@ -208,13 +203,11 @@ TestHDivOneElt::testProjector(std::string one_element_mesh )
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
 
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % proj_name ).str();
+    auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
@@ -251,13 +244,11 @@ void
     std::vector<element_type> u_vec( Xh->nLocalDof() );
 
     std::string shape_name = "shape_functions";
-    export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                   ( boost::format( "%1%-%2%-%3%" )
-                                     % this->about().appName()
-                                     % mesh_path.stem()
-                                     % shape_name ).str() ) );
-
-    exporter_shape->step( 0 )->setMesh( mesh );
+    std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
+                                        % this->about().appName()
+                                        % mesh_path.stem()
+                                        % shape_name ).str();
+    auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
 
     for ( size_type i = 0; i < Xh->nLocalDof(); ++i )
     {

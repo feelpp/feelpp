@@ -30,6 +30,25 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feel.hpp>
+#include <feel/options.hpp>
+
+/** use Feel namespace */
+using namespace Feel;
+using namespace Feel::vf;
+
+/**
+ * \return the list of options
+ */
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description partionningoptions( "Partitionning options" );
+    partionningoptions.add_options()
+    ( "use_global", po::value<bool>()->default_value( false ), "use global flag on nelements" )
+      ;
+    return partionningoptions.add( Feel::feel_options() );
+}
 
 namespace Feel
 {
@@ -76,7 +95,13 @@ Partitioning<Dim>::run()
         std::cout << "proc " << Environment::rank() 
                   << " is not excluded and is locally rank " << wComm.rank() << " and loads mesh with " 
                   << wComm.globalSize() << " partitions\n";
-        mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
+        // mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
+        mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
+                              _worldcomm = wComm,
+                              _desc = domain(_worldcomm = wComm, _name = "hypercube", _shape = "hypercube",
+                                             _xmin = 0.0, _xmax = 1.0,
+                                             _ymin = 0.0, _ymax = 1.0,
+                                             _zmin = 0.0, _zmax = 1.0));
         std::cout << " - nelement(mesh)=" << nelements(elements(mesh)) << "\n";
         std::cout << " - loading space\n";
         auto Vh = Pch<2>( mesh );
@@ -93,8 +118,12 @@ Partitioning<Dim>::run()
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range=elements(mesh),
                       _expr=gradt(u)*trans(grad(v)) );
-        a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
-
+        if(boption("gmsh.domain.usenames")) {
+            if(nelements(markedfaces(mesh, "Dirichlet"), boption("use_global")) > 0)
+                a+=on(_range=markedfaces(mesh, "Dirichlet"), _rhs=l, _element=u, _expr=g);
+        }
+        else
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g);
         a.solve(_rhs=l,_solution=u);
         auto e = exporter( _mesh=mesh );
         //e->addRegions();
@@ -121,7 +150,8 @@ int main(int argc, char** argv) {
      * Initialize Feel++ Environment
      */
     Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="doc_partitioning",
+                     _desc=makeOptions(),
+                     _about=about(_name="partitioning",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
     Application app;

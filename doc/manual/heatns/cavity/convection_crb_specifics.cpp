@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -247,11 +247,11 @@ void ConvectionCrb::initModel()
 
     M = M_backend->newMatrix( Xh, Xh );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) ) );
+    form2( Xh, Xh, _matrix=M, _init=true ) = integrate( elements( mesh ), trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) ) );
 
-    form2( Xh, Xh, M ) += integrate( _range=elements( mesh ), _expr=id( q )*idt( p ) + grad( q )*trans( gradt( p ) ) );
+    form2( Xh, Xh, _matrix=M ) += integrate( _range=elements( mesh ), _expr=id( q )*idt( p ) + grad( q )*trans( gradt( p ) ) );
 
-    form2( Xh, Xh, M ) += integrate( _range=elements( mesh ), _expr=id( s )*idt( t ) + grad( s )*trans( gradt( t ) ) );
+    form2( Xh, Xh, _matrix=M ) += integrate( _range=elements( mesh ), _expr=id( s )*idt( t ) + grad( s )*trans( gradt( t ) ) );
 
     M->close();
 
@@ -600,14 +600,14 @@ void ConvectionCrb ::updateJacobianWithoutAffineDecomposition( const vector_ptrt
     if ( weakdir == 0 )
     {
         //vitesse
-        form2( Xh, Xh, M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, _matrix=M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
 
         if ( adim==1 )
             //temperature
-            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, _matrix=M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
 
         else
-            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, _matrix=M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
     LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 
@@ -681,14 +681,14 @@ void ConvectionCrb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrt
     {
 
         //vitesse
-        form2( Xh, Xh, M_Aqm[3][0] )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, _matrix=M_Aqm[3][0] )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
 
         if ( adim==1 )
             //temperature
-            form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, _matrix=M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
 
         else
-            form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, _matrix=M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
 
     M_Aqm[3][0]->close();
@@ -773,15 +773,15 @@ ConvectionCrb::computeTrilinearForm( const element_type& X )
     if ( weakdir == 0 )
     {
         //vitesse
-        //form2( Xh, Xh, M_A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
-        form2( Xh, Xh, M_A_tril )  += on( boundaryfaces( mesh ),v, Rtemp, one()*0 );
+        //form2( Xh, Xh, _matrix=M_A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, _matrix=M_A_tril )  += on( boundaryfaces( mesh ),v, Rtemp, one()*0 );
         if ( adim==1 )
             //temperature
-            //form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
-            form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( 0.0 ) );
+            //form2( Xh, Xh, _matrix=M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, _matrix=M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( 0.0 ) );
         else
-            //form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
-            form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( T0 ) );
+            //form2( Xh, Xh, _matrix=M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, _matrix=M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( T0 ) );
     }
     //std::cout<<"proc "<< Environment::worldComm().globalRank() << "total time for Model computeTrilinearForm : "<<ti.elapsed()<<"s end"<<std::endl;
     return M_A_tril;

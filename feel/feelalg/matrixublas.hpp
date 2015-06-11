@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -521,7 +521,7 @@ MatrixUBlas<T, LayoutType>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+    file_out << "var_"<<filename<<" = [ ";
 
     for ( typename matrix_type::const_iterator1 i1=M_mat.begin1();
             i1!=M_mat.end1(); ++i1 )
@@ -534,8 +534,8 @@ MatrixUBlas<T, LayoutType>::printMatlab( const std::string filename ) const
     }
 
     file_out << "];" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "A=sparse(I,J,S); spy(A);" << std::endl;
+    file_out << "I=var_"<<filename<<"(:,1); J=var_"<<filename<<"(:,2); var_"<<filename<<"=var_"<<filename<<"(:,3);" << std::endl;
+    file_out << "A=sparse(I,J,var_"<<filename<<"); spy(A);" << std::endl;
 }
 
 } // Feel

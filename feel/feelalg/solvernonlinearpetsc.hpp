@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -110,7 +110,7 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverNonLinearPetsc(WorldComm const& worldComm=Environment::worldComm());
+    SolverNonLinearPetsc( std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
     SolverNonLinearPetsc( SolverNonLinearPetsc const & );
 
     /**
@@ -227,6 +227,12 @@ private:
 
 
     /**
+     * Tells PETSC to attach NullSpace or NearNullSpace in matrix
+     */
+    void updateNullSpace( Mat A );
+    void updateNearNullSpace( Mat A );
+
+    /**
      * Nonlinear solver context
      */
     SNES M_snes;
@@ -250,9 +256,9 @@ private:
 
 template <typename T>
 inline
-SolverNonLinearPetsc<T>::SolverNonLinearPetsc(WorldComm const& worldComm)
+SolverNonLinearPetsc<T>::SolverNonLinearPetsc( std::string const& prefix, WorldComm const& worldComm )
 :
-    super(worldComm),
+    super( prefix,worldComm ),
     M_mapRow(new datamap_type(worldComm)),
     M_mapCol(new datamap_type(worldComm))
 {}

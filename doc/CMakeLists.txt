@@ -1,7 +1,4 @@
 add_custom_target(doc)
-if(FEELPP_ENABLE_DOXYGEN)
-ADD_SUBDIRECTORY( api )
-endif()
 if(FEELPP_ENABLE_DOCUMENTATION)
 ADD_SUBDIRECTORY( manual )
 ADD_SUBDIRECTORY( snippets )

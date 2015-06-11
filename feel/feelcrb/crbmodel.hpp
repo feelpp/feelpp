@@ -367,8 +367,8 @@ public:
         u = Xh->element();
         v = Xh->element();
 
-        bool symmetric = option(_name="crb.use-symmetric-matrix").template as<bool>();
-        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+        bool symmetric = boption(_name="crb.use-symmetric-matrix");
+        bool stock = boption(_name="crb.stock-matrices");
 
         // Access to eim eventually built in initModel
         if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
@@ -836,7 +836,7 @@ public:
     {
         auto all_beta = this->computeBetaQm( mu , time , only_time_dependent_terms );
         offline_merge_type offline_merge;
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
             offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
@@ -853,7 +853,7 @@ public:
 
         offline_merge_type offline_merge;
 
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
             offline_merge = offlineMerge( all_beta , only_time_dependent_terms );
         else
             offline_merge = offlineMergeOnFly( all_beta, only_time_dependent_terms );
@@ -1796,7 +1796,7 @@ public:
      */
     sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false )
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -1847,7 +1847,7 @@ public:
      */
     const sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -1897,7 +1897,7 @@ public:
      */
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false )
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
             if ( transpose )
@@ -1961,7 +1961,7 @@ public:
      */
     value_type linearDecompositionAqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        bool stock = option(_name="crb.stock-matrices").template as<bool>();
+        bool stock = boption(_name="crb.stock-matrices");
         if( stock )
         {
             //in this case matrices have already been stocked
@@ -1985,7 +1985,7 @@ public:
      */
     value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
             return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
@@ -2032,7 +2032,7 @@ public:
      */
     value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
             return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
@@ -2080,7 +2080,7 @@ public:
      */
     vector_ptrtype Fqm( uint16_type l, uint16_type q, int m ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             return M_Fqm[l][q][m];
         }
@@ -2132,7 +2132,7 @@ public:
 
         value_type result=0;
 
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             result = inner_product( *M_Fqm[l][q][m] , xi );
         }
@@ -2180,7 +2180,7 @@ public:
     {
         value_type result=0;
 
-        if( option(_name="crb.stock-matrices").template as<bool>() )
+        if( boption(_name="crb.stock-matrices") )
         {
             result = inner_product( *M_Fqm[l][q][m] , xi );
         }
@@ -2375,7 +2375,7 @@ public:
     {
         double timestep;
 
-        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
         if ( is_steady )
             timestep=1e30;
         else timestep = M_bdf->timeStep();
@@ -2407,7 +2407,7 @@ public:
     {
         double timefinal;
 
-        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
         if ( is_steady )
             timefinal=1e30;
         else
@@ -2439,7 +2439,7 @@ public:
     }
     bool isSteady( mpl::bool_<true> )
     {
-        bool is_steady = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
         return is_steady;
     }
     bool isSteady( mpl::bool_<false> )
@@ -3405,7 +3405,7 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type const& mu )
 {
-    int output_index = option(_name="crb.output-index").template as<int>();
+    int output_index = ioption(_name="crb.output-index");
 
     auto Xh= this->functionSpace();
 
@@ -3482,7 +3482,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
             Rhs->scale( -1 );
         }
 
-        if( option("crb.use-symmetric-matrix").template as<bool>() )
+        if( boption("crb.use-symmetric-matrix") )
             Adu = A;
         else
             A->transpose( Adu );
@@ -3502,7 +3502,7 @@ template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
 CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
-    int output_index = option(_name="crb.output-index").template as<int>();
+    int output_index = ioption(_name="crb.output-index");
 
     auto Xh= this->functionSpace();
 
@@ -3556,8 +3556,8 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
     for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;
@@ -3584,7 +3584,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 Rhs->scale( -1 );
             }
 
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
+            if( boption("crb.use-symmetric-matrix") )
                 Adu = A;
             else
                 A->transpose( Adu );
@@ -3593,7 +3593,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             M_preconditioner_dual->setMatrix( Adu );
             M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
 
-            if( option(_name="crb.use-linear-model").template as<bool>() )
+            if( boption(_name="crb.use-linear-model") )
                 norm = 0;
             else
                 norm = this->computeNormL2( uold , udu );

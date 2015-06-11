@@ -344,7 +344,8 @@ private:
 template<int Order>
 void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 {
-    M_use_newton = option(_name="crb.use-newton").template as<bool>();
+
+    M_use_newton = boption(_name="crb.use-newton");
 
     std::string mshfile_name = option("mshfile").as<std::string>();
 
@@ -354,7 +355,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
 
     if( mshfile_name=="" )
     {
-        double hsize=option(_name="hsize").template as<double>();
+        double hsize=doption(_name="hsize");
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _desc=domain( _name = "benchmarkgrepl",
                                              _shape = "hypercube",
@@ -400,7 +401,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
     std::vector<int> N(2);
-    int Ne = option(_name="trainset-eim-size").template as<int>();
+    int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
     std::ifstream file ( supersamplingname );
@@ -524,7 +525,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleJacobianWithAffineDecomposition(
     auto u = Xh->element(); //trial
     auto eim_g = M_funs[0];
     int M = eim_g->mMax();
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
 
     form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] ) =
         integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
@@ -559,9 +560,10 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     auto v = Xh->element(); //test
     auto eim_g = M_funs[0];
     int M = eim_g->mMax();
+
     auto u = Xh->element();
     u = *this->M_InitialGuess[0][0];
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
 
     form1( _test=Xh, _vector=Rqm[0][0][0] ) =
         integrate( _range= elements( mesh ), _expr = gradv(u)*trans(grad(v)) );
@@ -573,6 +575,7 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
     Rqm[0][0][0]->close();
 
     Rqm[0][1].resize(M);
+
     for(int m=0; m<M; m++)
     {
         this->M_Rqm[0][1][m] = backend()->newVector( this->Xh );
@@ -631,7 +634,7 @@ BenchmarkGreplNonlinearElliptic<Order>::updateJacobianMonolithic( vector_ptrtype
     u=*X;
     auto v = Xh->element(); //test
 
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
     auto g = exp( mu(1)*idv(u) );
 
     J->zero();
@@ -656,7 +659,7 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidualMonolithic(vector_ptrtype 
                                                                  parameter_type const& mu )
 {
     auto Xh = this->Xh;
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
 
     auto u = Xh->element();
     u=*X;
@@ -703,7 +706,7 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         auto v = Xh->element();
         auto eim_g = M_funs[0];
         int M = eim_g->mMax();
-        double gamma = option(_name="gamma").template as<double>();
+        double gamma = doption(_name="gamma");
 
         form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
             integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
@@ -711,7 +714,6 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
                                                                               _expr = gamma*idt(u)*id(v)/hFace()
                                                                               - (gradt(u)*vf::N())*id(v)
                                                                               - (grad(v)*vf::N())*idt(u) );
-
         this->M_Fqm[0][0].resize( M );
         for(int m=0; m<M; m++)
         {
@@ -741,7 +743,7 @@ BenchmarkGreplNonlinearElliptic<Order>::computeMonolithicFormulationU( parameter
     auto Xh = this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
 
     M_monoA = backend()->newMatrix( Xh, Xh );
     M_monoF.resize(2);
@@ -795,7 +797,7 @@ BenchmarkGreplNonlinearElliptic<Order>::computeLinearDecompositionA()
     auto Xh=this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma = option(_name="gamma").template as<double>();
+    double gamma = doption(_name="gamma");
 
     this->M_linearAqm.resize(1);
     this->M_linearAqm[0].resize(1);
@@ -806,6 +808,7 @@ BenchmarkGreplNonlinearElliptic<Order>::computeLinearDecompositionA()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
+
     this->M_linearAqm[0][0]->close();
     return this->M_linearAqm;
 
@@ -850,5 +853,3 @@ double BenchmarkGreplNonlinearElliptic<Order>::output( int output_index, paramet
 }
 
 #endif /* __BenchmarkGreplNonlinearElliptic_H */
-
-

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -217,6 +217,7 @@ public:
      * \return the range of iterator \c (begin,end) over the faces
      * with marker \p m on processor \p p
      */
+    
     std::pair<marker_edge_iterator, marker_edge_iterator>
     edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
@@ -224,22 +225,26 @@ public:
         return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
 
-    marker_edge_iterator beginEdgeWithMarker( size_type m )
-    {
-        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
-    {
-        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_edge_iterator endEdgeWithMarker( size_type m )
-    {
-        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
-    marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
-    {
-        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
+    marker_edge_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+        }
+    marker_edge_const_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+        }
+    marker_edge_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+        }
+    marker_edge_const_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+        }
 
     /**
      * get the edges container by id

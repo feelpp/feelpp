@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -64,6 +64,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( argv )
 
     BOOST_PARAMETER_NAME( verbose )
+    BOOST_PARAMETER_NAME( threading )
 
 
     BOOST_PARAMETER_NAME( matrix )
@@ -88,6 +89,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( pc )
     BOOST_PARAMETER_NAME( pcfactormatsolverpackage )
     BOOST_PARAMETER_NAME( constant_null_space )
+    BOOST_PARAMETER_NAME( null_space )
+    BOOST_PARAMETER_NAME( near_null_space )
     BOOST_PARAMETER_NAME( test )
     BOOST_PARAMETER_NAME( trial )
     BOOST_PARAMETER_NAME( vector )
@@ -233,6 +236,7 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( collect_garbage )
 
+    BOOST_PARAMETER_NAME( savehdf5 )
     BOOST_PARAMETER_NAME( partitions )
     BOOST_PARAMETER_NAME( partition_file )
     BOOST_PARAMETER_NAME( respect_partition )
@@ -249,6 +253,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( currentElt )
     BOOST_PARAMETER_NAME( newElt )
     BOOST_PARAMETER_NAME( space )
+    BOOST_PARAMETER_NAME( space2 )
     BOOST_PARAMETER_NAME( initial_theta )
     BOOST_PARAMETER_NAME( min_theta )
     BOOST_PARAMETER_NAME( forceRelaxation )
@@ -275,6 +280,11 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( max_points_used )
     BOOST_PARAMETER_NAME( projection )
+
+    BOOST_PARAMETER_NAME( bc )
+    BOOST_PARAMETER_NAME( mu )
+    BOOST_PARAMETER_NAME( rho )
+    BOOST_PARAMETER_NAME( alpha )
 } // Feel
 
 

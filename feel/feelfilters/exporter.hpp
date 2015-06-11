@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,8 @@
        Date: 2004-11-09
 
   Copyright (C) 2004 EPFL
-  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -93,6 +94,8 @@ public:
     typedef VisitorBase super1;
     typedef Visitor<MeshType> super2;
 
+    typedef Exporter<MeshType,N> etype;
+    typedef boost::shared_ptr<etype> ptrtype;
     typedef TimeSet<MeshType,N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
@@ -102,6 +105,7 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
+    
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
@@ -136,6 +140,14 @@ public:
      */
     Exporter( po::variables_map const& vm,
               std::string const& exporter_prefix = "",
+              WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+
+    /**
+     * Constructor
+     * \param prefix the prefix for the file names of the exported data
+     * \param freq an integer giving the frequency at which the data should be saved
+     */
+    Exporter( std::string const& exporter_prefix,
               WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -154,7 +166,7 @@ public:
      * files.
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
-                                                         std::string prefix = Environment::about().appName(),
+                                                         std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -164,6 +176,12 @@ public:
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
+                                                         WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    /**
+     * Static function instantiating from the Exporter Factory an exporter using
+     * \p prefix for the prefix of the data files.
+     */    
+    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -511,15 +529,15 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( mesh, * )
                           ) // required
                           ( optional                                  // 4. one required parameter, and
-                            ( fileset, *, option(_name="exporter.fileset").template as<bool>() )
+                            ( fileset, *, boption(_name="exporter.fileset") )
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, option(_name="exporter.geometry").template as<std::string>() )
+                            ( geo,   *, soption(_name="exporter.geometry") )
                             ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
+    auto e =  exporter_type::New( name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
     if ( geo == "change_coords_only" )
@@ -535,6 +553,16 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
     //return Exporter<Mesh<Simplex<2> >,1>::New();
 }
 
+namespace meta
+{
+template<typename MeshType, int N = 1>
+struct Exporter
+{
+    typedef Feel::Exporter<MeshType,N> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+}
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )

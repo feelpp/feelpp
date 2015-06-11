@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-12-01
 #
 #  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -41,5 +41,3 @@ set(lib_convection
 if(FEELPP_DOC_ENABLE_CAVITY_CRB)
 add_subdirectory( cavity )
 endif()
-#add_subdirectory( cabin )
-#add_subdirectory( room )

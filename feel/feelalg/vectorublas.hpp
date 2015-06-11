@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -115,12 +115,15 @@ public:
     VectorUblas( VectorUblas const & m );
 
     VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+    VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
 
-    VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+    VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
     VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
 
-    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
 
 
     ~VectorUblas();
@@ -186,13 +189,7 @@ public:
      */
     T operator()( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -201,13 +198,7 @@ public:
      */
     T& operator()( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -216,13 +207,7 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i < this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -231,13 +216,7 @@ public:
      */
     T& operator[]( size_type i )
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
-                        ( i <=  this->lastLocalIndex() ) )
-        ( i )
-        ( this->firstLocalIndex() )
-        ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
+        checkIndex(i);
         return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -749,22 +728,28 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        double local_sum = ublas::sum( M_vec );
+        value_type local_sum = 0, global_sum=0;
 
-        double global_sum = local_sum;
-
-
-#ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
+        if ( this->comm().size() == 1 )
         {
+            local_sum = ublas::sum( M_vec );
+            global_sum = local_sum;
+        }
+        else
+        {
+            size_type s = this->localSize();
+            size_type start = this->firstLocalIndex();
+            for ( size_type i = 0; i < s; ++i )
+            {
+                if ( !this->localIndexIsGhost( start + i ) )
+                    local_sum += M_vec.operator()( start + i );
+            }
+#ifdef FEELPP_HAS_MPI
             mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
+#endif
         }
 
-#endif
-
         return global_sum;
-
     }
 
     /**
@@ -894,6 +879,11 @@ public:
     value_type dot( Vector<T> const& __v );
     //@}
 
+#ifdef FEELPP_HAS_HDF5
+    void saveHDF5( std::string const& filename );
+    void loadHDF5( std::string const& filename );
+    void ioHDF5( bool isLoad, std::string const& filename );
+#endif
 
 
 protected:
@@ -905,6 +895,17 @@ private:
      */
     void checkInvariant() const;
 
+    inline void checkIndex( size_type i ) const
+        {
+            #if 0
+            DCHECK(  this->isInitialized() ) << "vector not initialized";
+            DCHECK (( i >= this->firstLocalIndex() ) &&
+                    ( i <=  this->lastLocalIndex() ) )
+                << "invalid index " << i << " min=" <<  this->firstLocalIndex() << " max=" << this->lastLocalIndex() ;
+            #endif
+        }
+
+    
 private:
     vector_type M_vec;
     mutable bool M_global_values_updated;

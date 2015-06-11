@@ -138,6 +138,9 @@
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 
+/* Define to 1 if you have cereal. */
+#cmakedefine FEELPP_HAS_CEREAL
+
 /* Define to 1 if you have Python. */
 #cmakedefine FEELPP_HAS_PYTHON
 
@@ -164,9 +167,6 @@
 
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
-
-/* Define to 1 if you have VTK . */
-#cmakedefine FEELPP_VTK_EXPORTER_ENABLED
 
 /* Define to 1 if you the insitu part is enabled for VTK . */
 #cmakedefine FEELPP_VTK_INSITU_ENABLED

@@ -696,7 +696,20 @@ Geo0D<Dim, T>::showMe( bool /*verbose*/, std::ostream & out ) const
 
 template<uint16_type Dim, typename T>
 inline
-DebugStream&
+std::ostream&
+operator<<( std::ostream& __os, Geo0D<Dim, T> const& __n )
+{
+    __os.setf( std::ios::scientific, std::ios::floatfield );
+    __os << "----- BEGIN of Geo0D ---\n";
+    __os << "id = " << __n.id() << " node:" << (ublas::vector<double>&)__n.node() << "\n";
+    __os << "is a vertex = " << __n.isVertex() << "\n";
+    __os << "----- END OF Geo0D ---\n";
+    return __os;
+}
+
+template<uint16_type Dim, typename T>
+inline
+FEELPP_DEPRECATED DebugStream&
 operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 {
     if ( __os.doPrint() )
@@ -712,7 +725,7 @@ operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 }
 template<uint16_type Dim, typename T>
 inline
-NdebugStream&
+FEELPP_DEPRECATED NdebugStream&
 operator<<( NdebugStream& __os, Geo0D<Dim, T> const& __n )
 {
     return __os;

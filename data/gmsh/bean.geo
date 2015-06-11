@@ -4,7 +4,7 @@
   Author(s): Guillaume Dolle <gdolle@unistra.fr>
        Date: 2014-08-01
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mesh size
-h=0.1;
+h=0.5;
 // Topological dimension
-dim=3;
+dim=2;
 // Bean length
 d=1;
 // Bean left radius
@@ -41,6 +41,13 @@ r2=0.5;
 
 // IMPORTANT NOTE: Sometimes 3D mesh generation crash for some shape!
 //                 (For example d=1,r1=0.5,r2=0.6)
+
+// Add gmsh parameters with above values as default.
+h = DefineNumber[ h, Name "Parameters/h" ];
+dim = DefineNumber[ dim, Name "Parameters/dim" ];
+d = DefineNumber[ d, Name "Parameters/d" ];
+r1 = DefineNumber[ r1, Name "Parameters/r1" ];
+r2 = DefineNumber[ r2, Name "Parameters/r2" ];
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +59,19 @@ r2=0.5;
 If( dim > 3 || dim < 2 )
     Error("dim should be equal to 2 or 3!");
     Abort;
+EndIf
+
+// Check GMSH version (> 2.8.4)
+If( GMSH_MAJOR_VERSION < 2 )
+    Error("This geometry requires GMSH version > 2.8.5");
+EndIf
+
+If( GMSH_MINOR_VERSION < 8 )
+    Error("This geometry requires GMSH version > 2.8.5");
+EndIf
+
+If( GMSH_PATCH_VERSION < 5 )
+    Error("This geometry requires GMSH version > 2.8.5");
 EndIf
 
 //------------------------------------------------------------------------------
@@ -137,6 +157,7 @@ Function Add2DPhysicals
     Printf("-- Add 2D Physicals");
     Physical Line( "Wall" ) = l2d[];
     Physical Surface( "Omega" ) = { s };
+    Recombine Surface {s};
 Return
 
 //------------------------------------------------------------------------------

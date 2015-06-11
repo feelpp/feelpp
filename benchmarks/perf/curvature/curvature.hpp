@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -130,8 +130,7 @@ public:
         :
         super(),
         M_backend(),
-        M_basis_name( basis_name ),
-        exporter()
+        M_basis_name( basis_name )
     {
         // mu = this->vm()["mu"].template as<value_type>();
         // penalbc = this->vm()["bccoeff"].template as<value_type>();
@@ -164,8 +163,6 @@ private:
     backend_ptrtype M_backend;
     std::string M_basis_name;
 
-    boost::shared_ptr<export_type> exporter;
-
     // bench parameters
     double x0, y0, Radius;
     element_type init_shape;
@@ -185,9 +182,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     int nparts = Environment::worldComm().size();
 
-    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    bool prepare = boption("benchmark.prepare");
     if ( prepare )
-        nparts = this->vm()["benchmark.partitions"].template as<int>();
+        nparts = ioption("benchmark.partitions");
 
     // give as parameter when other shapes are avaliable
     shape_type shape = circle;
@@ -204,14 +201,12 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     }
 
     //! init backend
-    M_backend = backend_type::build( this->vm() );
-
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+    M_backend = backend_type::build( soption("backend") );
 
     boost::mpi::timer t;
 
     double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    bool recombine = boption("recombine");
 
     /*
      * First we create the mesh, in the case of quads we wish to have
@@ -232,13 +227,16 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                            //                                _refine=level(),
                            _partitions=nparts );
 
+    auto ex = exporter( _mesh=mesh, _name=( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() );
+
     M_stats.put( "t.init.mesh",t.elapsed() );t.restart();
 
     size_type gnelts=0;
     mpi::all_reduce( this->comm(), mesh->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
 
     // space
-    Xh = space_type::New( mesh );
+    std::vector<bool> extendedDT(1,true);
+    Xh = space_type::New( _mesh=mesh, _extended_doftable=extendedDT );
     M_stats.put( "n.space.nelts", gnelts );
     M_stats.put( "n.space.nlocalelts",Xh->mesh()->numElements() );
     M_stats.put( "n.space.ndof",Xh->nDof() );
@@ -246,7 +244,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     M_stats.put( "t.init.space",t.elapsed() );
     LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
 
-    space_Vec_ptrtype Xh_Vec = space_Vec_type::New( mesh );
+    space_Vec_ptrtype Xh_Vec = space_Vec_type::New( _mesh=mesh, _extended_doftable=extendedDT );
 
     M_stats.put( "n.spacev.nelts", gnelts );
     M_stats.put( "n.spacev.nlocalelts",Xh_Vec->mesh()->numElements() );
@@ -266,10 +264,10 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     t.restart() ;
 
     // backends
-    auto backend_l2 = backend_type::build( this->vm(), "projections" );
-    auto backend_l2Vec = backend_type::build( this->vm(),  "projections" );
-    auto backend_l2Smooth = backend_type::build( this->vm(),  "projections" );
-    auto backend_l2SmoothVec = backend_type::build( this->vm(),  "projections" );
+    auto backend_l2          = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2Vec       = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2Smooth    = backend_type::build( soption("backend"), "projections" );
+    auto backend_l2SmoothVec = backend_type::build( soption("backend"), "projections" );
 
     // projectors
 
@@ -288,7 +286,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto l2p = opProjection(Xh , Xh, _type=L2);
     auto l2pVec = opProjection(Xh_Vec, Xh_Vec, _type=L2);
     auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
-    auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec, DIFF, diffnum, 20);
+    auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec,DIFF, diffnum, 20);
     auto cip = opProjection(Xh , Xh, _type=CIP);
     auto cipVec = opProjection(Xh_Vec , Xh_Vec, _type=CIP);
 
@@ -373,20 +371,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 
     /* ------------------ smooth projection ---------------- */
-    auto n_smooth = smoothVec->project( gradv(init_shape) / modgradphi );
+    auto n_smooth = smoothVec->project( trans(gradv(init_shape)) / modgradphi );
 
     auto k_smooth = smooth->project( divv(n_smooth) );
     auto phi_smooth = smooth->project( shape_expr );
 
-    auto nk_smooth = smoothVec->project( gradv(k_smooth) /
+    auto nk_smooth = smoothVec->project( trans(gradv(k_smooth)) /
                                         vf::max(sqrt( gradv(k_smooth) * trans(gradv(k_smooth))), max_modgradphi) );
     auto kk_smooth = smooth->project( divv(nk_smooth) );
 
 
     /* ------------------ L2 projection ---------------- */
-    auto n_l2 = l2pVec->project( gradv(init_shape) / modgradphi );
+    auto n_l2 = l2pVec->project( trans(gradv(init_shape)) / modgradphi );
     auto k_l2 = l2p->project( divv(n_l2) );
-    auto nk_l2 = l2pVec->project( gradv(k_l2) /
+    auto nk_l2 = l2pVec->project( trans(gradv(k_l2)) /
                                  vf::max(sqrt( gradv(k_l2) * trans(gradv(k_l2))), max_modgradphi) );
     auto kk_l2 = l2p->project( divv(nk_l2) );
 
@@ -420,9 +418,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 
     /* ------------------ projection L2 with CIP stabilization ---------------- */
-    auto n_cip = cipVec->project( gradv(init_shape) / modgradphi );
+    auto n_cip = cipVec->project( trans(gradv(init_shape)) / modgradphi );
     auto k_cip = cip->project( divv(n_cip) );
-    auto nk_cip = cipVec->project( gradv(k_cip) /
+    auto nk_cip = cipVec->project( trans(gradv(k_cip) )/
                                  vf::max(sqrt( gradv(k_cip) * trans(gradv(k_cip))), max_modgradphi) );
     auto kk_cip = cip->project( divv(nk_cip) );
 
@@ -558,7 +556,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     std::cout<<"exporting ...\n";
 
-    if ( exporter->doExport() )
+    if ( ex->doExport() )
     {
 
         if (BasisU::nOrder>1)
@@ -570,8 +568,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1_Vec_ptrtype op_inte_N_to_P1_Vec;
                 OperatorLagrangeP1<space_Vec_type> * opLagP1Vec;
 
-                auto backend_oplag = backend_type::build( this->vm() );
-                auto backend_oplagVec = backend_type::build( this->vm() );
+                auto backend_oplag = backend_type::build( soption("backend") );
+                auto backend_oplagVec = backend_type::build( soption("backend") );
                 opLagP1 = new OperatorLagrangeP1<space_type> (Xh, backend_oplag);
                 opLagP1Vec = new OperatorLagrangeP1<space_Vec_type> (Xh_Vec, backend_oplagVec);
 
@@ -615,49 +613,49 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1_Vec->apply( nk_opt, nk_opt_p1);
                 op_inte_N_to_P1_Vec->apply( nk_cip, nk_cip_p1);
 
-                exporter->step( 0 )->setMesh( opLagP1->mesh() );
-                exporter->step( 0 )->add( "Delta", delta_p1 );
-                exporter->step( 0 )->add("k_l2", k_l2_p1);
-                exporter->step( 0 )->add("k_smooth",k_smooth_p1);
-                exporter->step( 0 )->add("k_nod", k_nod_p1);
-                exporter->step( 0 )->add("k_hess", k_hess_p1);
-                exporter->step( 0 )->add("k_int", k_int_p1);
-                exporter->step( 0 )->add("k_opt", k_opt_p1);
-                exporter->step( 0 )->add("k_cip", k_cip_p1);
+                ex->step( 0 )->setMesh( opLagP1->mesh() );
+                ex->step( 0 )->add( "Delta", delta_p1 );
+                ex->step( 0 )->add("k_l2", k_l2_p1);
+                ex->step( 0 )->add("k_smooth",k_smooth_p1);
+                ex->step( 0 )->add("k_nod", k_nod_p1);
+                ex->step( 0 )->add("k_hess", k_hess_p1);
+                ex->step( 0 )->add("k_int", k_int_p1);
+                ex->step( 0 )->add("k_opt", k_opt_p1);
+                ex->step( 0 )->add("k_cip", k_cip_p1);
 
-                exporter->step( 0 )->add("nk_l2", nk_l2_p1);
-                exporter->step( 0 )->add("nk_nod", nk_nod_p1);
-                exporter->step( 0 )->add("nk_smooth", nk_smooth_p1);
-                exporter->step( 0 )->add("nk_int", nk_int_p1);
-                exporter->step( 0 )->add("nk_opt", nk_opt_p1);
-                exporter->step( 0 )->add("nk_cip", nk_cip_p1);
+                ex->step( 0 )->add("nk_l2", nk_l2_p1);
+                ex->step( 0 )->add("nk_nod", nk_nod_p1);
+                ex->step( 0 )->add("nk_smooth", nk_smooth_p1);
+                ex->step( 0 )->add("nk_int", nk_int_p1);
+                ex->step( 0 )->add("nk_opt", nk_opt_p1);
+                ex->step( 0 )->add("nk_cip", nk_cip_p1);
 
-                exporter->step( 0 )->add("marker_delta", marker_delta);
-                exporter->step( 0 )->add("n_l2", n_l2);
+                ex->step( 0 )->add("marker_delta", marker_delta);
+                ex->step( 0 )->add("n_l2", n_l2);
 
-                exporter->step(0)->add("modgradphi", l2p->project( modgradphi ));
+                ex->step(0)->add("modgradphi", l2p->project( modgradphi ));
 
-                exporter->step( 0 )->add("init_shape", init_shape);
+                ex->step( 0 )->add("init_shape", init_shape);
 
-                exporter->save();
+                ex->save();
             }
         else
             {
-                exporter->step( 0 )->setMesh( mesh );
-                exporter->step( 0 )->add( "Delta", Delta_proj );
-                exporter->step( 0 )->add("k_l2", k_l2);
-                exporter->step( 0 )->add("k_smooth", k_smooth);
-                exporter->step( 0 )->add("k_nod", k_nod);
-                exporter->step( 0 )->add("k_hess", k_hess);
-                exporter->step( 0 )->add("k_int", k_int);
-                exporter->step( 0 )->add("k_cip", k_cip);
-                exporter->step( 0 )->add("marker_delta", marker_delta);
+                ex->step( 0 )->setMesh( mesh );
+                ex->step( 0 )->add( "Delta", Delta_proj );
+                ex->step( 0 )->add("k_l2", k_l2);
+                ex->step( 0 )->add("k_smooth", k_smooth);
+                ex->step( 0 )->add("k_nod", k_nod);
+                ex->step( 0 )->add("k_hess", k_hess);
+                ex->step( 0 )->add("k_int", k_int);
+                ex->step( 0 )->add("k_cip", k_cip);
+                ex->step( 0 )->add("marker_delta", marker_delta);
 
-                exporter->step( 0 )->add("n_l2", n_l2);
-                exporter->step( 0 )->add("n_smooth", n_smooth);
+                ex->step( 0 )->add("n_l2", n_l2);
+                ex->step( 0 )->add("n_smooth", n_smooth);
 
-                exporter->step( 0 )->add("init_shape", init_shape);
-                exporter->save();
+                ex->step( 0 )->add("init_shape", init_shape);
+                ex->save();
             }
     }
 

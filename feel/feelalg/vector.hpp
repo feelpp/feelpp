@@ -79,7 +79,7 @@ public:
              const size_type n_local,
              WorldComm const& _worldComm = Environment::worldComm() );
 
-  Vector ( Vector const& v );
+    Vector ( Vector const& v );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
@@ -165,6 +165,11 @@ public:
     }
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    virtual int reciprocal();
+    
+    /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
@@ -230,6 +235,16 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<T> & operator= ( const std::vector<T> &v );
+
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+    
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      * \return the sum of the components of the vector
@@ -338,6 +353,8 @@ public:
      * Access components, returns \p U(i).
      */
     virtual T operator() ( const size_type i ) const = 0;
+
+    virtual T& operator() ( const size_type i ) = 0;
 
     /**
      * Addition operator.

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -73,20 +73,9 @@ public:
         M_constant( value )
     {
     }
-
-    Cst( Cst const& __cst )
-        :
-        M_constant( __cst.M_constant )
-    {
-    }
-
-    Cst&
-    operator=( Cst const& c )
-        {
-            if ( this != &c )
-                M_constant = c.M_constant;
-            return *this;
-        }
+    Cst( Cst && c ) = default;
+    Cst( Cst const& c ) = default;
+    Cst& operator=( Cst const& c ) = default;
 
     constexpr value_type value() const
     {

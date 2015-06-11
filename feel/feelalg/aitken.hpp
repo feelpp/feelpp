@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -111,7 +111,8 @@ public:
             AitkenType _aitkenType = AITKEN_STANDARD,
             double _failsafeParameter = 1.0,
             double _tol=1.0e-6,
-            double _minParam = 1e-4 )
+            double _minParam = 1e-4,
+            size_type _maxit=1000 )
         :
         M_Xh( _Xh ),
         M_failsafeParameter( _failsafeParameter ),
@@ -126,7 +127,8 @@ public:
         M_aitkenType( _aitkenType ),
         M_tolerance( _tol ),
         M_residualConvergence( 1. ),
-        M_hasConverged( false )
+        M_hasConverged( false ),
+        M_maxit( _maxit )
     {
     }
 
@@ -148,7 +150,8 @@ public:
         M_aitkenType( tc.M_aitkenType ),
         M_tolerance( tc.M_tolerance ),
         M_residualConvergence( tc.M_residualConvergence ),
-        M_hasConverged( tc.M_hasConverged )
+        M_hasConverged( tc.M_hasConverged ),
+        M_maxit( tc.M_maxit )
     {
     }
 
@@ -253,7 +256,7 @@ public:
     /**
      * get theta
      */
-    double theta()
+    double theta() const
     {
         return M_previousParameter;
     }
@@ -270,22 +273,40 @@ public:
      * get number of iterations
      */
 
-    uint nIterations()
+    size_type nIterations() const
     {
         return  M_cptIteration;
     }
 
-    bool isFinished()
+    bool isFinished() const
+    {
+        return M_hasConverged || ( this->nIterations() > this->maxit() );
+    }
+
+    bool hasConverged() const
     {
         return M_hasConverged;
     }
 
-    double residualNorm()
+    double residualNorm() const
     {
         return M_residualConvergence;
     }
 
-    void printInfo();
+    size_type maxit() const
+    {
+        return M_maxit;
+    }
+    /**
+     * elements access
+     */
+    element_type const& previousResidual() const { return M_previousResidual; }
+    element_type const& previousElement() const { return M_previousElement; }
+    element_type const& currentResidual() const { return M_currentResidual; }
+    element_type const& currentElement() const { return M_currentElement; }
+
+
+    void printInfo() const;
 
     /**
      * save converegence history
@@ -322,9 +343,13 @@ public:
     /**
      * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    //void relaxationStep( element_type& new_elem );
     template< typename eltType >
     void relaxationStep( eltType& new_elem );
+
+    /**
+     * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void relaxationStep();
 
     //! \return the convergence history
     convergence_type const& convergenceHistory() const
@@ -376,11 +401,12 @@ private:
 
     element_type M_previousResidual, M_previousElement, M_currentResidual, M_currentElement;
 
-    uint M_cptIteration;
+    size_type M_cptIteration;
     AitkenType M_aitkenType;
     double M_tolerance;
     double M_residualConvergence;
     bool M_hasConverged;
+    size_type M_maxit;
     convergence_type M_convergence;
 
 
@@ -527,6 +553,17 @@ Aitken<fs_type>::relaxationStep( eltType& new_elem )
 
 template< typename fs_type >
 void
+Aitken<fs_type>::relaxationStep()
+{
+    M_currentElement = M_previousElement;
+    M_currentElement.add(M_previousParameter,M_currentResidual);
+}
+
+
+//-----------------------------------------------------------------------------------------//
+
+template< typename fs_type >
+void
 Aitken<fs_type>::shiftRight()
 {
     // store convergence history
@@ -594,7 +631,7 @@ Aitken<fs_type>::restart()
 
 template< typename fs_type >
 void
-Aitken<fs_type>::printInfo()
+Aitken<fs_type>::printInfo() const
 {
     std::cout << "[Aitken] iteration : "<< M_cptIteration
               <<" theta=" << M_previousParameter
@@ -735,15 +772,25 @@ operator++( boost::shared_ptr<Aitken<fs_type> > & aitk )
 
 template<typename SpaceType>
 boost::shared_ptr<Aitken<SpaceType> >
-aitkenNew( boost::shared_ptr<SpaceType> const& _space,
-           AitkenType _type,
-           double _init_theta,
-           double _tol,
-           double _minParam )
+aitkenImpl( boost::shared_ptr<SpaceType> const& _space,
+            std::string _type,
+            double _init_theta,
+            double _tol,
+            double _minParam,
+            size_type _maxit )
 {
 
-    boost::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,_type,_init_theta,_tol,_minParam ) );
+    AitkenType myAitkenType=AITKEN_METHOD_1;
+    if ( _type == "standard" )
+        myAitkenType = AITKEN_STANDARD;
+    else if ( _type == "method1" )
+        myAitkenType = AITKEN_METHOD_1;
+    else if ( _type == "fixed-relaxation" )
+        myAitkenType = FIXED_RELAXATION_METHOD;
+    else
+        CHECK( false ) << "invalid aitken type " << _type;
 
+    boost::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,myAitkenType,_init_theta,_tol,_minParam,_maxit ) );
     return Aitk;
 }
 
@@ -767,14 +814,16 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     )//required
     ( optional
-      ( type, ( AitkenType ), AITKEN_STANDARD  )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), 1.0  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), 1e-4  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), 1.0e-6  )
+      ( prefix,*,"" )
+      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
+      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
+      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
+      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
+      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
     )//optional
 )
 {
-    return *aitkenNew( space,type,initial_theta,tolerance,min_theta );
+    return *aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -785,14 +834,16 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     )//required
     ( optional
-      ( type, ( AitkenType ), AITKEN_STANDARD  )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), 1.0  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), 1e-4  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), 1.0e-6  )
+      ( prefix,*,"" )
+      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
+      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
+      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
+      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
+      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
     )//optional
 )
 {
-    return aitkenNew( space,type,initial_theta,tolerance,min_theta );
+    return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
 
 

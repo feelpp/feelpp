@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -150,14 +150,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     using namespace Feel::vf;
 
     int nparts = Environment::worldComm().size();
-    bool prepare = option(_name="benchmark.prepare").template as<bool>();
+    bool prepare = boption(_name="benchmark.prepare");
     if ( prepare )
-        nparts = option(_name="benchmark.partitions").template as<int>();
+        nparts = ioption(_name="benchmark.partitions");
 
 
     this->changeRepository( boost::format( "%1%/%2%/%3%/%4%/h_%5%/l_%6%/parts_%7%/" )
                             % this->about().appName()
-                            % option(_name="testcase").template as<std::string>()
+                            % soption(_name="testcase")
                             % convex_type::name()
                             % M_basis_name
                             % meshSizeInit()
@@ -231,9 +231,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double mu = option(_name="mu").template as<value_type>();
 
     std::string dim_str =  boost::str( boost::format( "%1%D" ) % Dim );
-    std::string u1_str = option(_name="u_exact_x",_prefix=dim_str).template as<std::string>();
-    std::string u2_str = option(_name="u_exact_y",_prefix=dim_str).template as<std::string>();
-    std::string p_str = option(_name="p_exact",_prefix=dim_str).template as<std::string>();
+    std::string u1_str = soption(_name="u_exact_x",_prefix=dim_str);
+    std::string u2_str = soption(_name="u_exact_y",_prefix=dim_str);
+    std::string p_str = soption(_name="p_exact",_prefix=dim_str);
     LOG(INFO) << "ux = " << u1_str;
     LOG(INFO) << "uy = " << u2_str;
     LOG(INFO) << "p = " << p_str;
@@ -242,7 +242,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto u2 = parse( u2_str, vars );
     ex u3;
     if ( Dim == 3 )
-        u3 = parse( option(_name="u_exact_z",_prefix=dim_str).template as<std::string>(), vars );
+        u3 = parse( soption(_name="u_exact_z",_prefix=dim_str), vars );
     matrix u_exact_g = matrix(Dim,1);
     if ( Dim == 2 )
         u_exact_g = u1,u2;
@@ -288,7 +288,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     }
 
 
-    if ( option(_name= prefixvm( name(),"bctype" ) ).template as<int>() == 1  )
+    if ( ioption(_name= prefixvm( name(),"bctype" ) ) == 1  )
     {
         rhs += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*SigmaN );
         M_stats.put( "t.assembly.rhs.dirichletup",subt.elapsed() );
@@ -343,7 +343,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "   o time for pressure/multiplier terms: " << subt.elapsed() << "\n";
     subt.restart();
 
-    if ( option(_name= prefixvm( name(),"bctype" ) ).template as<int>() == 1  )
+    if ( ioption(_name= prefixvm( name(),"bctype" ) ) == 1  )
     {
         //form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(SigmaNt)*id(v) );
         a+=integrate( _range=boundaryfaces( mesh ),_expr=-trans( SigmaNt )*id( v ) );
@@ -364,7 +364,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << " -- time lhs global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
-    if ( option(_name=prefixvm( name(),"bctype" ) ).template as<int>() == 0  )
+    if ( ioption(_name=prefixvm( name(),"bctype" ) ) == 0  )
     {
         a += on( _range=boundaryfaces( mesh ), _element=u, _rhs=rhs.vectorPtr(), _expr=u_exact );
         M_stats.put( "t.assembly.lhs.dirichlet",subt.elapsed() );

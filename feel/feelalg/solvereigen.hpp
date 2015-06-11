@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -499,21 +499,21 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                    ( matrixA,( d_sparse_matrix_ptrtype ) )
                                    ( matrixB,( d_sparse_matrix_ptrtype ) ) )
                                  ( optional
-                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
-                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
+                                   ( nev, ( int ), ioption(_name="solvereigen.nev") )
+                                   ( ncv, ( int ), ioption(_name="solvereigen.ncv") )
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( solver,( EigenSolverType ), KRYLOVSCHUR )
                                    ( problem,( EigenProblemType ), GHEP )
                                    ( transform,( SpectralTransformType ), SHIFT )
                                    ( spectrum,( PositionOfSpectrum ), LARGEST_MAGNITUDE )
-                                   ( maxit,( size_type ), 1000 )
-                                   ( tolerance,( double ), 1e-11 )
-                                   ( verbose,( bool ), false )
+                                   ( maxit,( size_type ), ioption(_name="solvereigen.maxiter") )
+                                   ( tolerance,( double ), doption(_name="solvereigen.tolerance") )
+                                   ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
 {
     typedef boost::shared_ptr<Vector<double> > vector_ptrtype;
-    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    //boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );                                                                                                                                                                                 
     boost::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( solver );
     eigen->setEigenProblemType( problem );
@@ -571,15 +571,15 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                                    ( formA, *)//*(mpl::is_convertible<mpl::_,BilinearFormBase>) )
                                    ( formB, *))//*(mpl::is_convertible<mpl::_,BilinearFormBase>) ) )
                                  ( optional
-                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
-                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
-                                   ( solver,( std::string ), option(_name="solvereigen.solver").template as<std::string>() )
-                                   ( problem,( std::string ), option(_name="solvereigen.problem").template as<std::string>() )
-                                   ( transform,( std::string ), option(_name="solvereigen.transform").template as<std::string>() )
-                                   ( spectrum,( std::string ), option(_name="solvereigen.spectrum").template as<std::string>()  )
-                                   ( maxit,( size_type ), option(_name="solvereigen.maxiter").template as<int>() )
-                                   ( tolerance,( double ), option(_name="solvereigen.tolerance").template as<double>() )
-                                   ( verbose,( bool ), option(_name="solvereigen.verbose").template as<bool>() )
+                                   ( nev, ( int ), ioption(_name="solvereigen.nev") )
+                                   ( ncv, ( int ), ioption(_name="solvereigen.ncv") )
+                                   ( solver,( std::string ), soption(_name="solvereigen.solver") )
+                                   ( problem,( std::string ), soption(_name="solvereigen.problem") )
+                                   ( transform,( std::string ), soption(_name="solvereigen.transform") )
+                                   ( spectrum,( std::string ), soption(_name="solvereigen.spectrum")  )
+                                   ( maxit,( size_type ), ioption(_name="solvereigen.maxiter") )
+                                   ( tolerance,( double ), doption(_name="solvereigen.tolerance") )
+                                   ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
 {
@@ -636,6 +636,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                 std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
             femodes[i].first = mode.second.get<0>();
             femodes[i].second = *mode.second.get<2>();
+            femodes[i].second.close();
             ++i;
         }
     }

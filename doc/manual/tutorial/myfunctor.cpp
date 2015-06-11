@@ -26,10 +26,13 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelvf/projectors.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/function.hpp>
 using namespace Feel;
+
+//! [functor]
 namespace Feel
 {
 	struct myFunctor
@@ -40,7 +43,7 @@ namespace Feel
 		static const uint16_type rank = 0;
 		static const uint16_type imorder = 1;
 		static const bool imIsPoly = true;
-		double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& n ) const
+		double operator()( uint16_type a, uint16_type b, ublas::vector<double> const& x, ublas::vector<double> const& n ) const
 		{
 			return x[val];
 		}
@@ -48,16 +51,17 @@ namespace Feel
 		void setVal(int i){val = i;}
 	};
 }
+//! [functor]
 
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="myexpression",
+                     _about=about(_name="myfunctor",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
     //! [mesh]
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<1>>);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     //! [mesh]
 
     //! [space]
@@ -65,6 +69,7 @@ int main(int argc, char**argv )
     auto spacev= Pchv<2>(mesh); 
     //! [space]
 	
+		//! [functors_and_proj]
 		//! [functors]
 		myFunctor functor1, functor2;
 		functor1.setVal(0);
@@ -74,8 +79,8 @@ int main(int argc, char**argv )
 		//! [projection]
 		auto u = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor1)); // Will contain x
 		auto v = vf::project(_space=spaces,_range=elements(mesh),_expr=idf(functor2)); // will contain y
-		//auto V = vf::project(spacev,elements(mesh),vec(idf(functor1),idf(functor2)) );
 		//! [projection]
+		//! [functors_and_proj]
 		
 		//! [export]
 		auto ex1 = exporter(_mesh=mesh,_name="ex1");

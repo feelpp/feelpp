@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -109,11 +109,12 @@
 # /* List of applicative binary operators. */
 # define VF_APPLICATIVE_BINARY_OPS \
    BOOST_PP_TUPLE_TO_LIST( \
-      12, \
+      13, \
       ( \
          ( *  , vf_mul           ,1 ,0 ,0 ,0 ,1, shape_op_mul      ,2 ), \
          ( /  , vf_div           ,1 ,0 ,0 ,0 ,0, shape_op_div      ,1 ), \
          ( +  , vf_add           ,1 ,0 ,0 ,1 ,1, shape_op_samerank ,1 ), \
+         ( %  , vf_mod           ,1 ,0 ,0 ,0 ,0, shape_op_div      ,1 ), \
          ( -  , vf_sub           ,1 ,0 ,0 ,1 ,0, shape_op_samerank ,1 ), \
          ( <  , vf_less          ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
          ( <= , vf_less_equal    ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \

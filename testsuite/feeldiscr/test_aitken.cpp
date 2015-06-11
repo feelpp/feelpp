@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -403,7 +403,7 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     AitkenType relaxmethod = ( AitkenType )this->vm()["relaxmethod"].template as<int>();
     auto aitkenRelax =  aitken( _space= Xh2,
-                                _type=relaxmethod,
+                                _type=( relaxmethod == 0 ) ? "standard" : "method1",
                                 _initial_theta=theta,
                                 _tolerance=tol );
     aitkenRelax.initialize( residual, lambda );

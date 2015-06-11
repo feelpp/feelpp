@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -65,6 +65,7 @@ public:
     //@{
 
     typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
@@ -121,7 +122,8 @@ public:
     */
     ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsight( std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) ;
 
     ExporterEnsight( ExporterEnsight const & __ex );
 

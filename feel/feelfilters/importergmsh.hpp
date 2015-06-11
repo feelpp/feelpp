@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -172,7 +172,7 @@ struct GMSHElement
                     0, 1
                     )
         {
-#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,8,0)
+#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,6,1)
           std::vector<int> verts;
           ele->getVerticesIdForMSH(verts);
           indices = verts;
@@ -848,9 +848,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             __is >> __buf;
         }
 
-        for(auto it = meshMarkerNameMap.begin(), en = meshMarkerNameMap.end(); it != en; ++ it )
+        for( auto const& it : meshMarkerNameMap )
         {
-            mesh->addMarkerName( it->name, it->ids[0], it->ids[1] );
+            mesh->addMarkerName( it.name, it.ids[0], it.ids[1] );
         }
     }
 
@@ -1121,13 +1121,11 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         CHECK( numElementsPartial == numElements ) << "Invalid number of elements read from GMSH, read " << numElementsPartial << " element but expected " << numElements << "\n";
     } // binary
 
-    auto it = __gt.begin();
-    auto en = __gt.end();
-    for( ; it != en; ++it )
+    for ( auto const& it : __gt )
     {
         const char* name;
-        MElement::getInfoMSH( it->first, &name );
-        LOG(INFO) << "Read " << it->second << " " << name << " elements\n";
+        MElement::getInfoMSH( it.first, &name );
+        LOG(INFO) << "Read " << it.second << " " << name << " elements\n";
     }
 
     if ( binary )
@@ -1183,22 +1181,20 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     node_type coords( mesh_type::nRealDim );
     //M_n_b_vertices.resize( __n );
     //M_n_b_vertices.assign( __n, 0 );
-    auto it_gmshElt = __et.begin();
-    auto const en_gmshElt = __et.end();
-    for ( ; it_gmshElt!=en_gmshElt ; ++it_gmshElt )
+    for ( auto const& it_gmshElt : __et )
     // add the element to the mesh
     {
 
         //std::cout<<"isOnProcessor= "<< __et[__i].isOnProcessor()  <<"\n";
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
-        if ( it_gmshElt->isOnProcessor() == false ||
-             it_gmshElt->isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+        if ( it_gmshElt.isOnProcessor() == false ||
+             it_gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
         // add the points associates to the element on the processor
-        for ( uint16_type p = 0; p < it_gmshElt->numVertices; ++p )
+        for ( uint16_type p = 0; p < it_gmshElt.numVertices; ++p )
         {
-            int ptid = it_gmshElt->indices[p];
+            int ptid = it_gmshElt.indices[p];
             // don't do anything if the point is already registered
             if ( mesh->hasPoint( ptid ) )
                 continue;
@@ -1224,12 +1220,12 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         } // loop over local points
 
 
-        switch ( it_gmshElt->type )
+        switch ( it_gmshElt.type )
         {
             // Points
         case GMSH_POINT:
         {
-            addPoint( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addPoint( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
 
             break;
@@ -1242,7 +1238,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_LINE_4:
         case GMSH_LINE_5:
         {
-            addEdge( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addEdge( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1256,7 +1252,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_QUADRANGLE:
         case GMSH_QUADRANGLE_2:
         {
-            addFace( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addFace( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1270,7 +1266,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_HEXAHEDRON:
         case GMSH_HEXAHEDRON_2:
         {
-            addVolume( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addVolume( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1279,35 +1275,29 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             break;
         }
 
-        if ( it_gmshElt->isGhost() )
+        if ( it_gmshElt.isGhost() )
         {
-            mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
+            mapGhostElt.insert( std::make_pair( it_gmshElt.num,boost::make_tuple( __idGmshToFeel[it_gmshElt.num], it_gmshElt.ghostPartitionId() ) ) );
         }
-        else if( it_gmshElt->ghosts.size() > 0 )
+        else if( it_gmshElt.ghosts.size() > 0 )
         {
-            auto itg = it_gmshElt->ghosts.begin();
-            auto const eng = it_gmshElt->ghosts.end();
-            for ( ; itg !=eng ; ++itg )
-                nbMsgToRecv[*itg]++;
+            for ( auto const& itg : it_gmshElt.ghosts )
+                nbMsgToRecv[itg]++;
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
     // treat periodic entities if any
-    auto eit = periodic_entities.begin();
-    auto een = periodic_entities.end();
-    for( ; eit != een ; ++eit )
+    for ( auto const& eit : periodic_entities )
     {
-        auto vit = eit->correspondingVertices.begin();
-        auto ven = eit->correspondingVertices.end();
-        for( ; vit != ven ; ++vit )
+        for ( auto const& vit : eit.correspondingVertices )
         {
-            auto pit1 = mesh->pointIterator( vit->first );
-            auto pit2 = mesh->pointIterator( vit->second );
+            auto pit1 = mesh->pointIterator( vit.first );
+            auto pit2 = mesh->pointIterator( vit.second );
             CHECK( pit1 != mesh->endPoint() &&
                    pit2 != mesh->endPoint() )
-                << "Periodic points data is screwd in periodic entity slave " << eit->slave
-                << " master : " << eit->master << " dimension: " << eit->dim;
+                << "Periodic points data is screwd in periodic entity slave " << eit.slave
+                << " master : " << eit.master << " dimension: " << eit.dim;
             auto p1 = *pit1;
             auto p2 = *pit2;
             p1.setMasterId( p2.id() );
@@ -1357,7 +1347,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
 
-    toc("read msh from file");
+    toc("read msh from file", FLAGS_v > 0);
 }
 
 template<typename MeshType>

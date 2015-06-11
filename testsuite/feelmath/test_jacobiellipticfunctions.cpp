@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 12 Sep 2014
 
-   Copyright (C) 2014 Feel++ Consortium
+   Copyright (C) 2014-2015 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,9 @@
  */
 
 #define BOOST_TEST_MODULE jacobi elliptic functions testsuite
+
 #include <testsuite/testsuite.hpp>
+#include <feel/feelcore/feelcomplex.hpp>
 #include <feel/feelmath/jacobiellipticfunctions.hpp>
 using namespace Feel;
 

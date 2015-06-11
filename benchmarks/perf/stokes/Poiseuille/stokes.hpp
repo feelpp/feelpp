@@ -1,8 +1,8 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes_Dirichlet_Dirichlet.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #include <feel/options.hpp>
@@ -92,7 +92,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2009-2012 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -221,8 +221,8 @@ template<int POrder, int GeoOrder>
 Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::Stokes_Dirichlet_Dirichlet( )
     :
     super( ),
-    M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
+    M_backend( backend_type::build( soption("backend") ) ),
+    meshSize( doption("hsize") ),
     mu( this->vm()["mu"].template as<value_type>() ),
     penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -246,7 +246,7 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
                             % convex_type::name()
                             % basis_u_type::nOrder % basis_p_type::nOrder
                             % GeoOrder
-                            % this->vm()["hsize"].template as<double>() );
+                            % doption("hsize") );
 
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************

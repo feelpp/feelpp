@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -60,7 +60,7 @@ EigenProblem<Dim, Order>::run()
                                    % this->about().appName()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = loadMesh(_mesh = new mesh_type );
 
@@ -87,9 +87,9 @@ EigenProblem<Dim, Order>::run()
     a += integrate( elements( mesh ), idt(lambda)*id(q) );
     a += integrate( elements( mesh ), id(nu)*idt(p) );
 #endif
-    auto beta = option(_name="parameters.beta").template as<double>();
+    auto beta = doption(_name="parameters.beta");
     //a += integrate( elements( mesh ), beta*idt(p)*id(q) );
-    auto gamma = option(_name="parameters.gamma").template as<double>();
+    auto gamma = doption(_name="parameters.gamma");
     //a += integrate( boundaryfaces(mesh), -trans(-idt(p)*N()+gradt(u)*N())*id(v) -trans(-id(q)*N()+grad(u)*N())*idt(v)  + gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
     a += integrate( boundaryfaces(mesh), gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
     //a+= on( boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
@@ -101,8 +101,8 @@ EigenProblem<Dim, Order>::run()
     b += integrate( elements( mesh ), beta*idt(lambda)*id(nu) );
 #endif
 
-    int nev = option(_name="solvereigen.nev").template as<int>();
-    int ncv = option(_name="solvereigen.ncv").template as<int>();;
+    int nev = ioption(_name="solvereigen.nev");
+    int ncv = ioption(_name="solvereigen.ncv");;
 
     double eigen_real, eigen_imag;
 

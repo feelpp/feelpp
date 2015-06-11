@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -171,10 +171,6 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     const int proc_id = M_worldComm.localRank();
     const int nProc = M_worldComm.localSize();
-    std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
-    std::vector< std::vector<size_type> > memory_id( nProc );
-    std::vector< std::vector<size_type> > vecToSend( nProc );
-    std::vector< std::vector<size_type> > vecToRecv( nProc );
 
     //-----------------------------------------------------------//
 
@@ -183,13 +179,10 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     std::map<int,std::set<boost::tuple<size_type,size_type> > > ghostCellsFind;
 
 
-    auto itListRange = M_listRange.begin();
-    auto const enListRange = M_listRange.end();
-    for ( ; itListRange!=enListRange ; ++itListRange)
+    for (auto& itList : M_listRange)
     {
-        auto it = itListRange->template get<1>();
-        auto const en = itListRange->template get<2>();
-
+        auto it = itList.template get<1>();
+        auto const en = itList.template get<2>();
         for ( ; it != en; ++ it )
         {
             element_type const& oldElem = *it;
@@ -242,16 +235,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                     if ( old_point.numberOfProcGhost() > 0 && nProc > 1 )
                     {
-                        auto itprocghost=old_point.elementsGhost().begin();
                         auto const enprocghost=old_point.elementsGhost().end();
-                        for ( ; itprocghost!=enprocghost ; ++itprocghost )
+                        for (auto& itProcGhost : old_point.elementsGhost())
                         {
-                            const int procIdGhost=itprocghost->first;
-                            auto iteltghost = itprocghost->second.begin();
-                            auto const eneltghost = itprocghost->second.end();
-                            for ( ; iteltghost!=eneltghost ; ++iteltghost )
+                            const int procIdGhost=itProcGhost.first;
+                            for (auto& itEltGhost : itProcGhost.second)
                             {
-                                auto const& ghostElt = M_mesh->element( *iteltghost,procIdGhost );
+                                auto const& ghostElt = M_mesh->element( itEltGhost,procIdGhost );
                                 ghostCellsFind[procIdGhost].insert( boost::make_tuple( ghostElt.id(),
                                                                                        ghostElt.idInOthersPartitions( ghostElt.processId() ) ) );
                             }
@@ -330,7 +320,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // for (unsigned int s=0 ... )
 
         } //  for( ; it != en; ++ it )
-    } // for ( ; itListRange!=enListRange ; ++itListRange)
+    } // for (auto& itList : M_listRange)
 
     if ( nProc > 1 )
     {
@@ -555,12 +545,10 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     //-----------------------------------------------------------//
 
-    auto itListRange = M_listRange.begin();
-    auto const enListRange = M_listRange.end();
-    for ( ; itListRange!=enListRange ; ++itListRange)
+    for (auto& itList : M_listRange)
     {
-        auto it = itListRange->template get<1>();
-        auto const en = itListRange->template get<2>();
+        auto it = itList.template get<1>();
+        auto const en = itList.template get<2>();
 
         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " faces " << "\n";
         for ( ; it != en; ++ it )
@@ -668,7 +656,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
 
         } // end for it
-    } // for ( ; itListRange!=enListRange ; ++itListRange)
+    } // for (auto& itList : M_listRange)
 
 
     if ( nProc > 1 )
@@ -677,17 +665,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         std::vector<int> nbMsgToSend( theWorldCommSize , 0 );
         std::vector< std::map<int,size_type> > mapMsg( theWorldCommSize );
 
-        auto itGhostFind = ghostCellsFind.begin();
-        auto const enGhostFind = ghostCellsFind.end();
-        for ( ; itGhostFind!=enGhostFind ; ++itGhostFind )
+        for (auto& itGhostFind : ghostCellsFind)
         {
-            auto const realProcId = itGhostFind->first;
-            auto itIdElt = itGhostFind->second.begin();
-            auto const enIdElt = itGhostFind->second.end();
-            for ( ; itIdElt!=enIdElt ; ++itIdElt)
+            auto const realProcId = itGhostFind.first;
+            for (auto& itIdElt : itGhostFind.second)
             {
-                auto const idEltInMyProc =itIdElt->template get<0>();
-                auto const idEltInRealProc =itIdElt->template get<1>();
+                auto const idEltInMyProc =itIdElt.template get<0>();
+                auto const idEltInRealProc =itIdElt.template get<1>();
                 newMesh->worldComm().localComm().send(realProcId, nbMsgToSend[realProcId], idEltInRealProc);
                 mapMsg[realProcId].insert( std::make_pair( nbMsgToSend[realProcId],idEltInMyProc ) );
                 ++nbMsgToSend[realProcId];
