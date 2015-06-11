@@ -344,6 +344,7 @@ MarkerManagementSlipBC::getInfoSlipBC() const
     std::ostringstream _ostr;
     return _ostr.str();
 }
+
 //--------------------------------------------------------------//
 
 MarkerManagementPressureBC::MarkerManagementPressureBC()
@@ -374,6 +375,84 @@ MarkerManagementPressureBC::markerPressureBC() const
 }
 std::string
 MarkerManagementPressureBC::getInfoPressureBC() const
+{
+    std::ostringstream _ostr;
+    return _ostr.str();
+}
+
+//--------------------------------------------------------------//
+
+MarkerManagementRobinBC::MarkerManagementRobinBC()
+    :
+    M_containerMarkers(),
+    M_listMarkerEmpty()
+{}
+void
+MarkerManagementRobinBC::clearMarkerRobinBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementRobinBC::setMarkerRobinBC( std::string const& markerNameId, std::list<std::string> const& markers )
+{
+    M_containerMarkers[markerNameId] = markers;
+}
+void
+MarkerManagementRobinBC::addMarkerRobinBC( std::string const& markerNameId )
+{
+    if ( markerNameId.empty() ) return;
+    M_containerMarkers[markerNameId].push_back(markerNameId);
+}
+std::map<std::string,std::list<std::string> > const&
+MarkerManagementRobinBC::markerRobinBC() const
+{
+    return M_containerMarkers;
+}
+std::list<std::string> const&
+MarkerManagementRobinBC::markerRobinBC( std::string const& markerNameId ) const
+{
+    if ( M_containerMarkers.find( markerNameId ) != M_containerMarkers.end() )
+        return M_containerMarkers.find(markerNameId)->second;
+    else
+        return M_listMarkerEmpty;
+}
+std::string
+MarkerManagementRobinBC::getInfoRobinBC() const
+{
+    std::ostringstream _ostr;
+    return _ostr.str();
+}
+
+//--------------------------------------------------------------//
+
+MarkerManagementFluidStructureInterfaceBC::MarkerManagementFluidStructureInterfaceBC()
+    :
+    M_containerMarkers(),
+    M_listMarkerEmpty()
+{}
+void
+MarkerManagementFluidStructureInterfaceBC::clearMarkerFluidStructureInterfaceBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementFluidStructureInterfaceBC::setMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers )
+{
+    M_containerMarkers = markers;
+}
+void
+MarkerManagementFluidStructureInterfaceBC::addMarkerFluidStructureInterfaceBC( std::string markerName )
+{
+    if ( std::find( M_containerMarkers.begin(),M_containerMarkers.end(),markerName) == M_containerMarkers.end() )
+        M_containerMarkers.push_back(markerName);
+}
+std::list<std::string> const&
+MarkerManagementFluidStructureInterfaceBC::markerFluidStructureInterfaceBC() const
+{
+    return M_containerMarkers;
+}
+std::string
+MarkerManagementFluidStructureInterfaceBC::getInfoFluidStructureInterfaceBC() const
 {
     std::ostringstream _ostr;
     return _ostr.str();

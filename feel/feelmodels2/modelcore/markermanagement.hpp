@@ -151,6 +151,39 @@ private :
     std::list<std::string> M_listMarkerEmpty;
 };
 
+class MarkerManagementRobinBC
+{
+public :
+
+    MarkerManagementRobinBC();
+    MarkerManagementRobinBC( MarkerManagementRobinBC const& op ) = default;
+    void clearMarkerRobinBC();
+    void setMarkerRobinBC( std::string const& markerNameId, std::list<std::string> const& markers );
+    void addMarkerRobinBC( std::string const& markerNameId );
+    std::map<std::string,std::list<std::string> > const& markerRobinBC() const;
+    std::list<std::string> const& markerRobinBC( std::string const& markerNameId ) const;
+    std::string getInfoRobinBC() const;
+private :
+    std::map<std::string,std::list<std::string> > M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
+};
+
+class MarkerManagementFluidStructureInterfaceBC
+{
+public :
+
+    MarkerManagementFluidStructureInterfaceBC();
+    MarkerManagementFluidStructureInterfaceBC( MarkerManagementFluidStructureInterfaceBC const& op ) = default;
+    void clearMarkerFluidStructureInterfaceBC();
+    void setMarkerFluidStructureInterfaceBC( std::list<std::string> const& markers );
+    void addMarkerFluidStructureInterfaceBC( std::string markerName);
+    std::list<std::string> const& markerFluidStructureInterfaceBC() const;
+    std::string getInfoFluidStructureInterfaceBC() const;
+private :
+    std::list<std::string> M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
+};
+
 } // namespace FeelModels
 } // namespace Feel
 
