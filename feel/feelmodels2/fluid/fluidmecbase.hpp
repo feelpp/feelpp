@@ -1064,36 +1064,6 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMesh
 }
 #endif
 //---------------------------------------------------------------------------------------------------------//
-#if 0
-namespace detail
-{
-
-template <typename T>
-std::list<T>
-intersectionList( std::list<T> const& list1,std::list<T> const& list2 )
-{
-    std::list<T> intersecList;
-    for ( std::string const& marker1 : list1 )
-    {
-        auto it = std::find_if( list2.begin(), list2.end(),
-                                [&marker1]( T const& marker2 ) { return marker2 == marker1; } );
-        if ( it != list2.end() )
-            intersecList.push_back( marker1 );
-    }
-    return intersecList;
-}
-
-template <typename T>
-bool
-isInList( T marker, std::list<T> const& list )
-{
-    auto it = std::find_if( list.begin(), list.end(),
-                            [&marker]( T const& marker2 ) { return marker2 == marker; } );
-    return it != list.end();
-}
-
-} // namespace detail
-#endif
 
 } // namespace FeelModels
 } // namespace Feel
