@@ -387,12 +387,12 @@ public:
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
     void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
-    
+
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
     void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
-    
+
     /**
      * Call the assemble functions
      */
@@ -664,6 +664,14 @@ public:
     value_type dot( Vector<T> const& __v );
 
     /**
+     * This function creates a vector which is defined
+     * by the row indices given in the "rows" entries.
+     */
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const;
+
+    /**
      * Serialization for PETSc VECSEQ
      */
     template<class Archive>
@@ -687,6 +695,9 @@ public:
     }
     //@}
 
+private:
+    void getSubVectorPetsc( std::vector<size_type> const& rows,
+                            Vec &subvec ) const;
 
 
 protected:
