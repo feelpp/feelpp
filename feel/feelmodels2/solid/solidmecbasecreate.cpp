@@ -797,7 +797,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
          (this->is1dReducedModel() && !M_hasBuildFromMesh1dReduced ) )
         this->build();
 
-    if ( this->getMarkerNameFSI().size()>0 )
+    if ( this->markerNameFSI().size()>0 )
         this->createAdditionalFunctionSpacesFSI();
 
     // update timediscr and exporters

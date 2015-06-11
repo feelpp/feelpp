@@ -96,18 +96,21 @@ public:
     //___________________________________________________________________________________//
     // assembly using bc
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
-    void updateBCRobinResidual( vector_ptrtype& R ) const;
+    void updateBCRobinResidual( element_displacement_type const& u, vector_ptrtype& R ) const;
     void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const;
+    void updateSourceTermResidual( vector_ptrtype& R ) const;
 
     void updateBCDirichletStrongJacobian(sparse_matrix_ptrtype& J) const;
     void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const;
+    void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
 
     void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermResidual( vector_ptrtype& R ) const;
-    void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
+    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
 
 }; // SolidMechanics
 

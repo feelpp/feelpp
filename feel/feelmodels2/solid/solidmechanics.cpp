@@ -74,8 +74,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
-    this->M_markerNameFSI.clear();
-    this->M_markerNameBCRobin.clear();
+    this->clearMarkerFluidStructureInterfaceBC();
+    this->clearMarkerRobinBC();
 
 
     fs::path curPath=fs::current_path();
@@ -86,7 +86,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         bool hasChangedRep=true;
         Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
     }
-
 
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
@@ -109,14 +108,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d));
     M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
     for( auto const& d : M_bcInterfaceFSI )
-        this->M_markerNameFSI.push_back(marker(d));
+        this->addMarkerFluidStructureInterfaceBC( marker(d) );
+    M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<super_type::nDim>( "displacement", "robin" );
+    for( auto const& d : M_bcRobin )
+        this->addMarkerRobinBC( marker(d) );
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
-
-#if 0 // TODO
-    for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::robin_vec>() )
-        M_markerNameBCRobin.push_back(PhysicalName);
-#endif
 
     // go back to previous repository
     if ( hasChangedRep )
@@ -156,13 +153,24 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
+    std::map<std::string,double> mySymbolsValues = { {"t",this->currentTime()} };
     M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcDirichlet.setParameterValues( mySymbolsValues );
     M_bcDirichletX.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcDirichletX.setParameterValues( mySymbolsValues );
     M_bcDirichletY.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcDirichletY.setParameterValues( mySymbolsValues );
     M_bcDirichletZ.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcDirichletZ.setParameterValues( mySymbolsValues );
     M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcNeumannScalar.setParameterValues( mySymbolsValues );
     M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcNeumannVectorial.setParameterValues( mySymbolsValues );
+    M_bcRobin.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcRobin.setParameterValues( mySymbolsValues );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_volumicForcesProperties.setParameterValues( mySymbolsValues );
+
 
     super_type::solve( upVelAcc );
 }
@@ -357,23 +365,72 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_type const& u, vector_ptrtype& R) const
 {
-#if 0 // TODO
-#if 0
-    auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
-    if ( bcDef.hasRobinVec() )
+
+    if ( M_bcRobin.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+
+    // Warning : take only first component of expression1
+    for( auto const& d : M_bcRobin )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
+                       _geomap=this->geomap() );
+
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype& J) const
+{
+    if ( M_bcRobin.empty() ) return;
+
+    auto Xh = this->functionSpaceDisplacement();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    auto const& u = this->fieldDisplacement();
+
+    // Warning : take only first component of expression1
+    for( auto const& d : M_bcRobin )
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _geomap=this->geomap() );
+
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+{
+    if ( M_bcRobin.empty() ) return;
+
+    auto Xh = this->functionSpaceDisplacement();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    auto myLinearForm = form1( _test=Xh, _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& u = this->fieldDisplacement();
+
+    // Warning : take only first component of expression1
+    for( auto const& d : M_bcRobin )
     {
-        auto const& v = this->fieldDisplacement();
-        double alpha_robin = 1e4;
-        ForEachBC( bcDef,cl::robin_vec,
-                   form1( _test=this->functionSpace(), _vector=R) +=
-                   /**/ integrate( _range=markedfaces(this->mesh(),PhysicalName),
-                                   _expr= alpha_robin*trans(idv(u))*id(v),
-                                   _geomap=this->geomap() ) );
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _geomap=this->geomap() );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= inner( expression2(d) , id(u) ),
+                       _geomap=this->geomap() );
+
     }
-#endif
-#endif
+
 }
 
 

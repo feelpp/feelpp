@@ -79,8 +79,8 @@ SOLIDMECHANICS_CLASS_NAME::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
-    M_markerNameFSI.clear();
-    M_markerNameBCRobin.clear();
+    this->clearMarkerFluidStructureInterfaceBC();
+    this->clearMarkerRobinBC();
 
     auto const bcDef = SOLIDMECHANICS_BC(this/*this->shared_from_this()*/);
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
@@ -97,9 +97,9 @@ SOLIDMECHANICS_CLASS_NAME::loadConfigBCFile()
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::neumann_vec>() )
         this->addMarkerNeumannBC(NeumannBCShape::VECTORIAL,PhysicalName);
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::paroi_mobile>() )
-        M_markerNameFSI.push_back(PhysicalName);
+        this->addMarkerFluidStructureInterfaceBC( PhysicalName );
     for ( std::string const& PhysicalName : bcDef.getMarkerNameList<cl::robin_vec>() )
-        M_markerNameBCRobin.push_back(PhysicalName);
+        this->addMarkerRobinBC( PhysicalName );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -387,8 +387,9 @@ SOLIDMECHANICS_CLASS_NAME::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 
 
 void
-SOLIDMECHANICS_CLASS_NAME::updateBCRobinResidual(vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_NAME::updateBCRobinResidual(element_displacement_type const& u, vector_ptrtype& R) const
 {
+    CHECK( false ) << "TODO";
 #if 0
     auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
     if ( bcDef.hasRobinVec() )
@@ -402,6 +403,18 @@ SOLIDMECHANICS_CLASS_NAME::updateBCRobinResidual(vector_ptrtype& R) const
                                    _geomap=this->geomap() ) );
     }
 #endif
+}
+
+void
+SOLIDMECHANICS_CLASS_NAME::updateBCRobinJacobian( sparse_matrix_ptrtype& J) const
+{
+    CHECK( false ) << "TODO";
+}
+
+void
+SOLIDMECHANICS_CLASS_NAME::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+{
+    CHECK( false ) << "TODO";
 }
 
 
