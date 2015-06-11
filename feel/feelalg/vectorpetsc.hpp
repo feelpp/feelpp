@@ -695,10 +695,6 @@ public:
     }
     //@}
 
-private:
-    void getSubVectorPetsc( std::vector<size_type> const& rows,
-                            Vec &subvec ) const;
-
 
 protected:
 
