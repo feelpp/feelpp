@@ -341,11 +341,17 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::solve()
 {
+    boost::mpi::timer mytimer;
+
     if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
         this->solveImpl1();
     else if (this->fsiCouplingBoundaryCondition()=="robin-robin" ||
              this->fsiCouplingBoundaryCondition()=="robin-neumann" )
         this->solveImpl2();
+
+    double timeElapsed = mytimer.elapsed();
+    if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
+        std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] finish fsi solve in " << timeElapsed << "\n";
 }
 
 //---------------------------------------------------------------------------------------------------------//
