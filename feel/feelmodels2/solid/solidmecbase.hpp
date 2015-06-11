@@ -279,9 +279,9 @@ public:
     //protected :
     void build(mesh_ptrtype mesh );
     void build( mesh_1dreduced_ptrtype mesh );
+protected :
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
-protected :
 
     virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
     virtual void loadConfigMeshFile1dReduced(std::string const& geofilename) = 0;
@@ -565,6 +565,9 @@ protected:
     bool M_useDisplacementPressureFormulation;
     bool M_is1dReducedModel;
     bool M_isStandardModel;
+
+    bool M_hasBuildFromMesh,M_hasBuildFromMesh1dReduced, M_isUpdatedForUse;
+
 
     //model parameters
     space_scalar_P0_ptrtype M_XhScalarP0;
