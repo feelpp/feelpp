@@ -549,7 +549,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                       _prefix=this->prefix(),
                                       _initial_time=ti, _final_time=tf, _time_step=dt,
                                       _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                      _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_newmark_displ_struct->setPathSave( (fs::path(this->appliRepository()) /
                                           fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
@@ -560,7 +560,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                 _prefix=this->prefix(),
                                 _initial_time=ti, _final_time=tf, _time_step=dt,
                                 _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+                                _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
         M_savetsPressure->setPathSave( (fs::path(this->appliRepository()) /
                                         fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
     }
@@ -591,7 +591,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
                                           _prefix=this->prefix(),
                                           _initial_time=ti, _final_time=tf, _time_step=dt,
                                           _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                          _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+                                          _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_newmark_displ_1dReduced->setPathSave( (fs::path(this->appliRepository()) /
                                              fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 

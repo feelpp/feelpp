@@ -499,7 +499,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
     M_bdf_fluid->setPathSave( (fs::path(this->appliRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
