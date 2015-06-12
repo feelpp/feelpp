@@ -293,20 +293,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
-    std::map<std::string,double> mySymbolsValues = { {"t",this->currentTime()} };
     M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcDirichlet.setParameterValues( mySymbolsValues );
     M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannScalar.setParameterValues( mySymbolsValues );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( mySymbolsValues );
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
         boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
         myPrecBlockNs->setParameterValues( this->modelProperties().parameters().toParameterValues() );
-        myPrecBlockNs->setParameterValues( mySymbolsValues );
     }
 
     super_type::solve();
