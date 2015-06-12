@@ -1,0 +1,63 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Fluid fsi",
+    "ShortName":"FluidFSI",
+    "Model":"Navier-Stokes",
+    "Parameters":
+    {
+        "ubar":
+        {
+            "value":"2"
+        }
+    },
+    "Materials":
+    {
+        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "fluid-inlet":
+                {
+                    //"expr":"{1,0}"
+                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
+                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*(t<2) + (1-(t<2)) ),0}:ubar:y:t"//thegood
+                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*(0) + (1) ),0}:ubar:y:t"
+                },
+                "fluid-wall":
+                {
+                    "expr":"{0,0}"
+                },
+                "fluid-cylinder":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsi-wall":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "fluid-outlet":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure"]
+    }
+
+}

@@ -1,0 +1,56 @@
+// -*- mode: javascript -*-
+{
+    "Name": "fluidfsi 2D beam ",
+    "ShortName":"fluidfsibeam2d",
+    "Model":"fluidfsihyperelastic",
+    "Parameters":
+    {
+        "pIn":
+        {
+            "value":"2.0e4"
+        },
+        "pTimeMax":
+        {
+            "value":"0.005"
+        }
+    },
+    "Materials":
+    {
+        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Neumann_scalar":
+            {
+                "fluid-inlet":
+                {
+                    "expr": "-(pIn/2.)*(1-cos(pi*t/(pTimeMax/2.)))*(t<pTimeMax):pIn:pTimeMax:t"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsi-wall":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "fluid":
+        {
+            "fluid-outlet":
+            {
+                "Sortie":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure"]
+    }
+
+}
