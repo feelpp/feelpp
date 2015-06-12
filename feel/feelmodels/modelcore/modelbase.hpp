@@ -35,9 +35,9 @@
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
-#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
-#include <feel/feelmodels2/modelcore/log.hpp>
-#include <feel/feelmodels2/modelcore/timertool.hpp>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/log.hpp>
+#include <feel/feelmodels/modelcore/timertool.hpp>
 
 
 namespace Feel

@@ -44,11 +44,11 @@
 
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 
-#include <feel/feelmodels2/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels2/modelcore/markermanagement.hpp>
-#include <feel/feelmodels2/solid/mechanicalpropertiesdescription.hpp>
-#include <feel/feelmodels2/modelcore/options.hpp>
-#include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {

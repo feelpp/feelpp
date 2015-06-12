@@ -27,7 +27,7 @@
  \date 2012-01-19
  */
 
-#include <feel/feelmodels2/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel {
 

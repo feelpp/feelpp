@@ -43,13 +43,13 @@
 #include <feel/feelvf/geometricdata.hpp>
 
 
-#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
-#include <feel/feelmodels2/modelcore/modelbase.hpp>
-#include <feel/feelmodels2/modelmesh/ale.hpp>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelmesh/ale.hpp>
 
 
-#include <feel/feelmodels2/modelmesh/dofrelationshipmap.hpp>
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {

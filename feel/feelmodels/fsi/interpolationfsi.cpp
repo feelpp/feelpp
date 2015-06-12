@@ -27,7 +27,7 @@
  \date 2011-07-05
  */
 
-#include <feel/feelmodels2/fsi/interpolationfsi.hpp>
+#include <feel/feelmodels/fsi/interpolationfsi.hpp>
 
 
 namespace Feel

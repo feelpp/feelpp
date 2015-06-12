@@ -27,8 +27,8 @@
    \date 2011-07-05
  */
 
-#include <feel/feelmodels2/fsi/fsi.hpp>
-#include <feel/feelmodels2/modelmesh/fsimesh.hpp>
+#include <feel/feelmodels/fsi/fsi.hpp>
+#include <feel/feelmodels/modelmesh/fsimesh.hpp>
 
 namespace Feel
 {

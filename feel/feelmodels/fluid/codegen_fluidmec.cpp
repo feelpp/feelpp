@@ -30,7 +30,7 @@
 #include "codegen_fluidmec.hpp"
 
 #include <feel/feelfilters/geotool.hpp>
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 
 #undef FLUIDMECHANICS_MESH

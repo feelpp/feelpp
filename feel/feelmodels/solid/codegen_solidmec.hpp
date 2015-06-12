@@ -30,7 +30,7 @@
 #ifndef FEELPP_CODEGEN_SOLIDMECHANICS_HPP
 #define FEELPP_CODEGEN_SOLIDMECHANICS_HPP 1
 
-#include <feel/feelmodels2/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmecbase.hpp>
 
 #include <feel/feelvf/vf.hpp>
 

@@ -1,6 +1,6 @@
 
 #include "solidmecconfig.h"
-#include <feel/feelmodels2/solid/solidmecbaseupdatejacobian.cpp>
+#include <feel/feelmodels/solid/solidmecbaseupdatejacobian.cpp>
 
 namespace Feel {
 namespace FeelModels {

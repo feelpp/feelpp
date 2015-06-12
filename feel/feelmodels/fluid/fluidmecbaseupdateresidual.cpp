@@ -1,11 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 */
 
 
-#include <feel/feelmodels2/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels2/modelvf/fluidmecconvection.hpp>
+#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
 namespace Feel
 {

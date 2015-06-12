@@ -27,10 +27,10 @@
    \date 2014-06-04
  */
 
-#include <feel/feelmodels2/solid/solidmechanics.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
-#include <feel/feelmodels2/modelvf/solidmecgeomapeulerian.hpp>
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelvf/solidmecgeomapeulerian.hpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {

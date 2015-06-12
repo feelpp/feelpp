@@ -29,8 +29,8 @@
 #ifndef FEELPP_MODELS_VF_FLUIDMEC_STRESSTENSOR_H
 #define FEELPP_MODELS_VF_FLUIDMEC_STRESSTENSOR_H 1
 
-#include <feel/feelmodels2/modelvf/exprtensorbase.hpp>
-//#include <feel/feelmodels2/fluid/viscositymodeldescription.hpp>
+#include <feel/feelmodels/modelvf/exprtensorbase.hpp>
+//#include <feel/feelmodels/fluid/viscositymodeldescription.hpp>
 //template<class SpaceType> class DynamicViscosityModel;
 
 namespace Feel
