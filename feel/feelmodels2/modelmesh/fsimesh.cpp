@@ -102,7 +102,8 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
         bool hasChangedRep=false;
         if ( curPath != meshesdirectories )
         {
-            std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
+            if ( this->worldComm().isMasterRank() )
+                std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
             bool hasChangedRep=true;
             Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
                                            _worldcomm=this->worldComm() );
