@@ -75,7 +75,7 @@ public:
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
     TestLevelSet( double radius=1.0, double h=0.1 ) :
-        m_mesh( createGMSHMesh( _mesh=new mesh_type,
+        M_mesh( createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid_nd",
                                               _shape="ellipsoid",
                                               _dim=DIM,
@@ -88,27 +88,27 @@ public:
                                               _h= h ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
                               ) ),
-        m_radius( radius )
+        M_radius( radius )
     {}
 
     /// First method: let the FMM search for the elements crossed by the interface
     /// and the maximum distance is checked for a circle/sphere.
     void wallDist_1()
     {
-        auto Xh = Pch<H_ORDER>(m_mesh);
+        auto Xh = Pch<H_ORDER>(M_mesh);
         auto thefms = fms( Xh );
         auto phio = Xh->element();
-        phio = vf::project(Xh, elements(m_mesh), h() );
-        phio.on( _range=boundaryfaces(m_mesh), _expr= -h()/100. );
+        phio = vf::project(Xh, elements(M_mesh), h() );
+        phio.on( _range=boundaryfaces(M_mesh), _expr= -h()/100. );
         auto phi = thefms->march(phio);
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+        BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
 #else
 
         VLOG(2) << "phi_max" << phi.max();
-        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw1");
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw1");
         exp->step(0)->add("phio", phio);
         exp->step(0)->add("phi", phi);
         exp->save();
@@ -119,26 +119,27 @@ public:
     /// and the maximum distance is checked for a circle/sphere.
     void wallDist_2()
     {
-        auto Xh = Pch<H_ORDER>(m_mesh);
-        auto Xh0 = Pdh<0>(m_mesh);
-
+        auto Xh = Pch<H_ORDER>(M_mesh);
+        auto Xh0 = Pdh<0>(M_mesh);
         auto thefms = fms( Xh );
-
         auto phio = Xh->element();
-        phio = vf::project(Xh, boundaryelements(m_mesh), h() );
-        phio.on( _range=boundaryfaces(m_mesh), _expr= -h() );
+        auto mark = Xh0->element();
 
-        auto mark = vf::project(Xh0, boundaryelements(m_mesh), cst(1) );
-        m_mesh->updateMarker2( mark );
+        phio.on( _range=boundaryelements(M_mesh), _expr=h() );
+        phio.on( _range=boundaryfaces(M_mesh), _expr=cst(0) );
+
+        mark.on( _range=boundaryelements(M_mesh), _expr=cst(1) );
+        M_mesh->updateMarker2( mark );
 
         auto phi = thefms->march(phio, true);
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+        BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
 #else
         VLOG(2) << "phi_max" << phi.max();
-        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw2");
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw2");
+        exp->step(0)->add("mark", mark);
         exp->step(0)->add("phio", phio);
         exp->step(0)->add("phi", phi);
         exp->save();
@@ -146,8 +147,8 @@ public:
     }
 
 private:
-    mesh_ptrtype m_mesh;
-    double m_radius;
+    mesh_ptrtype M_mesh;
+    double M_radius;
 
 };
 
@@ -193,13 +194,14 @@ int main(int argc, char** argv )
                            _about=makeAbout(),
                            _desc=feel_options() );
 #if 0
-    TestLevelSet<2,1,1> tls;    // unit circle
-    TestLevelSet<3,1,1> tls;    // unit sphere
-    TestLevelSet<2,1,1> tls( 10, 0.1 ); // circle radius 10
-    TestLevelSet<3,1,1> tls( 10, 1 ); // sphere radius 10
+    TestLevelSet<2,1,1> tls;
+    TestLevelSet<3,1,1> tls;
+    TestLevelSet<2,1,1> tls( 10, 0.1 );
+    TestLevelSet<3,1,1> tls( 10, 1 );
 #endif
-    //TestLevelSet<2,1,2> tls( 30, 1 ); // sphere radius 30
-    TestLevelSet<2,1,1> tls( 30, 1 ); // sphere radius 30
+    //TestLevelSet<3,1,1> tls( 1, 0.1 );
+    TestLevelSet<2,1,2> tls( 1, 0.1 );
+    //TestLevelSet<2,1,1> tls( 1, 0.1 );
     tls.wallDist_1();
     tls.wallDist_2();
 
