@@ -1,0 +1,50 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Arterial wall",
+    "ShortName":"ArterialWall",
+    "Model":"Elasticity",
+    "Materials":
+    {
+        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "inletRing":
+                {
+                    "expr":"{0,0,0}"
+                }
+            },
+            "Neumann_scalar":
+            {
+                "outletRing":
+                {
+                    "expr":"0"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsiWall":
+                {
+                    "expr":"0" 
+                }
+            },
+            "robin":
+            {
+                "exterior":
+                {
+                    "expr1":"{1e4,0,0}",
+                    "expr2":"{0,0,0}" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["displacement"]
+    }
+
+}
