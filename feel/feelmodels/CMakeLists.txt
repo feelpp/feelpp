@@ -28,4 +28,4 @@ SET( SRC
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelmodels "${SRC};${HDR}")
 
-add_subdirectory(solid)
+add_subdirectory(solid_oldversion)
