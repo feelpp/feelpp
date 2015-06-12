@@ -509,6 +509,22 @@ expr( std::string const& s, std::string filename="", WorldComm const& world=Envi
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( g.first, g.second, s, filename, world ) );
 }
+template<int M, int N, int Order=2>
+inline
+Expr< GinacMatrix<M,N,Order> >
+expr( std::string const& s, std::map<std::string,double> const& mp, std::string filename="", WorldComm const& world=Environment::worldComm() )
+{
+    auto ginacMat = expr<M,N,Order>(s,filename, world);
+    ginacMat.setParameterValues( mp );
+    return ginacMat;
+}
+template<int M, int N, int Order=2>
+inline
+Expr< GinacMatrix<M,N,Order> >
+expr( std::string const& s, std::pair<std::string,double> const& mp, std::string filename="", WorldComm const& world=Environment::worldComm() )
+{
+    return expr<M,N,Order>( s, { { mp.first, mp.second } }, filename, world );
+}
 
 
 inline
