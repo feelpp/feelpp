@@ -153,24 +153,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
-    std::map<std::string,double> mySymbolsValues = { {"t",this->currentTime()} };
     M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcDirichlet.setParameterValues( mySymbolsValues );
     M_bcDirichletX.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcDirichletX.setParameterValues( mySymbolsValues );
     M_bcDirichletY.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcDirichletY.setParameterValues( mySymbolsValues );
     M_bcDirichletZ.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcDirichletZ.setParameterValues( mySymbolsValues );
     M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannScalar.setParameterValues( mySymbolsValues );
     M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannVectorial.setParameterValues( mySymbolsValues );
     M_bcRobin.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcRobin.setParameterValues( mySymbolsValues );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( mySymbolsValues );
-
 
     super_type::solve( upVelAcc );
 }
