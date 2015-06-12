@@ -46,13 +46,15 @@ macro(genLibBase)
     # bcmarker
     set(BCMARKER_FILE ${FEELMODELS_GENLIB_BASE_MARKERS})
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
-      configure_file( ${BCMARKER_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp COPYONLY)
+      #configure_file( ${BCMARKER_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp COPYONLY)
+      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp "") #write empty file
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${BCMARKER_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
     # bctool
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
-      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
+      #configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
+      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp "") #write empty file
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
@@ -61,7 +63,8 @@ macro(genLibBase)
   if ( FEELMODELS_GENLIB_BASE_DESC )
     set(BCDESC_FILE ${FEELMODELS_GENLIB_BASE_DESC})
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
-      configure_file( ${BCDESC_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc COPYONLY)
+      #configure_file( ${BCDESC_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc COPYONLY)
+      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc "") #write empty file
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${BCDESC_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
@@ -70,7 +73,8 @@ macro(genLibBase)
   if ( FEELMODELS_GENLIB_BASE_GEO )
     set(MESH_FILE ${FEELMODELS_GENLIB_BASE_GEO})
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
-      configure_file( ${MESH_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh COPYONLY)
+      #configure_file( ${MESH_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh COPYONLY)
+      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh "") #write empty file
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${MESH_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
@@ -79,7 +83,8 @@ macro(genLibBase)
   foreach(filepath ${CODEGEN_FILES_TO_COPY})
     get_filename_component(filename ${filepath} NAME)
     if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
-      configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
+      #configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
+      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} "") #write empty file
     endif()
     add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
@@ -121,7 +126,8 @@ macro(genExecutableBase)
 
   if ( NOT EXISTS ${APPLICATION_DIR}/applimanagement.hpp )
     foreach(filename applimanagement.hpp)
-      configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
+      #configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
+      file(WRITE ${APPLICATION_DIR}/${filename} "") #write empty file
     endforeach()
   endif()
   add_custom_target(codegen_env_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
@@ -132,7 +138,8 @@ macro(genExecutableBase)
 
   if ( NOT EXISTS ${APPLICATION_DIR}/${MAIN_FILE} )
     foreach(filename ${MAIN_FILE})
-      configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
+      #configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
+      file(WRITE ${APPLICATION_DIR}/${filename} "") #write empty file
     endforeach()
   endif()
   add_custom_target(codegen_src_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )

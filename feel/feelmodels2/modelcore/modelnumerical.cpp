@@ -46,8 +46,8 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         M_timeInitial( doption(_name="ts.time-initial") ),
         M_timeFinal( doption(_name="ts.time-final") ),
         M_timeStep( doption(_name="ts.time-step") ),
-        M_bdfSaveInFile( boption(_name="ts.save") ),
-        M_bdfSaveFreq( ioption(_name="ts.save.freq") ),
+        M_tsSaveInFile( boption(_name="ts.save") ),
+        M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
         M_modelProps( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ) ),
         M_parameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS,0)),
@@ -128,6 +128,14 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
             this->setNeedToRebuildCstPart(true);
         }
     }
+
+    void
+    ModelNumerical::updateTime(double t)
+    {
+        M_timeCurrent=t;
+        M_modelProps.parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
+    }
+
 
     // ginac expr
     Expr< GinacEx<2> >

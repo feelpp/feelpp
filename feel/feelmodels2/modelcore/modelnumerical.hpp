@@ -94,13 +94,13 @@ class ModelNumerical : public ModelAlgebraic
 
         double time() const { return this->currentTime(); }
         double currentTime() const { return M_timeCurrent; }
-        void updateTime(double t) { M_timeCurrent=t; }
+        void updateTime(double t);
 
         double timeInitial() const { return M_timeInitial; }
         double timeFinal() const { return M_timeFinal; }
         double timeStep() const { return M_timeStep; }
-        bool bdfSaveInFile() const { return M_bdfSaveInFile; }
-        int bdfSaveFreq() const { return M_bdfSaveFreq; }
+        bool tsSaveInFile() const { return M_tsSaveInFile; }
+        int tsSaveFreq() const { return M_tsSaveFreq; }
         void setTimeInitial(double v)  { M_timeInitial=v; }
 
 
@@ -188,8 +188,8 @@ class ModelNumerical : public ModelAlgebraic
         bool M_restartAtLastSave;
 
         double M_timeInitial,M_timeFinal,M_timeStep;
-        bool M_bdfSaveInFile;
-        int M_bdfSaveFreq;
+        bool M_tsSaveInFile;
+        int M_tsSaveFreq;
         double M_timeCurrent;
 
         ModelProperties M_modelProps;
