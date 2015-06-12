@@ -709,6 +709,7 @@ void PreconditionerPetsc<T>::init ()
     {
         check( PCRegister("lsc2",PCCreate_LSC2) );
         check( PCRegister("blockns",PCCreate_FEELPP) );
+        check( PCRegister("blockms",PCCreate_FEELPP) );
         petscPCInHouseIsInit=true;
     }
 
@@ -1052,6 +1053,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case FEELPP_BLOCKMS_PRECOND:
+        ierr = PCSetType( pc, "blockms" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case ML_PRECOND:
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1239,6 +1245,11 @@ ConfigurePC::run( PC& pc )
     {
         CHECK( this->precFeel()->hasInHousePreconditioners( "blockns") ) << "blockns in-house prec not attached";
         this->check( PCSetPrecond_FEELPP(pc, this->precFeel()->inHousePreconditioners( "blockns") ) );
+    }
+    else if ( std::string(pctype) == "blockms" )
+    {
+        CHECK( this->precFeel()->hasInHousePreconditioners( "blockms") ) << "blockms in-house prec not attached";
+        this->check( PCSetPrecond_FEELPP(pc, this->precFeel()->inHousePreconditioners( "blockms") ) );
     }
     else if ( std::string(pctype) == "hypre" )
     {
