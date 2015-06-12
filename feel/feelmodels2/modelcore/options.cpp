@@ -301,6 +301,8 @@ thermoDynamics_options(std::string const& prefix)
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
         (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
         (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
+        (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
+        (prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
         (prefixvm(prefix,"do_export_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_velocity-convection")
         ;
