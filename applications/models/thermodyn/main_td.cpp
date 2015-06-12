@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels2/thermodyn/thermodynamics.hpp>
+#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
 
 int main(int argc, char**argv )
 {
