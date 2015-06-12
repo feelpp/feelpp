@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set syntax=cpp fenc=utf-8 et sw=4 ts=4 sts=4:
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t
+   -*- vim: set ft=cpp fenc=utf-8 sw=4 ts=4 sts=4 tw=80 et cin cino=N-s,c0,(0,W4,g0:
 
   This file is part of the Feel library
 
@@ -55,8 +56,8 @@ makeAbout()
 
     about.addAuthor( "Guillaume Dolle", "developer", "gdolle@unistra.fr", "" );
     about.addAuthor( "Vincent Doyeux", "developer", "vincent.doyeux@ujf-grenoble.fr", "" );
-    return about;
 
+    return about;
 }
 
 /// Test the reinitialisation method (Fast Marching, ...)
@@ -66,89 +67,87 @@ makeAbout()
 template<int DIM, int H_ORDER, int G_ORDER>
 class TestLevelSet
 {
-    public:
-        using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
-        using mesh_ptrtype = boost::shared_ptr< mesh_type >;
+public:
+    using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
+    using mesh_ptrtype = boost::shared_ptr< mesh_type >;
 
-        /// Init the geometry with a circle/sphere from radius and characteristic length
-        ///     \param radius   Circle or sphere radius.
-        ///     \param h        Mesh size.
-        TestLevelSet( double radius=1.0, double h=0.1 ) :
-            m_mesh( createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name="ellipsoid_nd",
-                                                  _shape="ellipsoid",
-                                                  _dim=DIM,
-                                                  _xmin=-radius,
-                                                  _ymin=-radius,
-                                                  _zmin=-radius,
-                                                  _xmax=radius,
-                                                  _ymax=radius,
-                                                  _zmax=radius,
-                                                  _h= h ),
-                                    _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
-                                    ) ),
-            m_radius( radius )
-        {}
+    /// Init the geometry with a circle/sphere from radius and characteristic length
+    ///     \param radius   Circle or sphere radius.
+    ///     \param h        Mesh size.
+    TestLevelSet( double radius=1.0, double h=0.1 ) :
+        m_mesh( createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name="ellipsoid_nd",
+                                              _shape="ellipsoid",
+                                              _dim=DIM,
+                                              _xmin=-radius,
+                                              _ymin=-radius,
+                                              _zmin=-radius,
+                                              _xmax=radius,
+                                              _ymax=radius,
+                                              _zmax=radius,
+                                              _h= h ),
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
+                              ) ),
+        m_radius( radius )
+    {}
 
-        /// First method: let the FMM search for the elements crossed by the interface
-        /// and the maximum distance is checked for a circle/sphere.
-        void wallDist_1()
-        {
-            auto Xh = Pch<H_ORDER>(m_mesh);
+    /// First method: let the FMM search for the elements crossed by the interface
+    /// and the maximum distance is checked for a circle/sphere.
+    void wallDist_1()
+    {
+        auto Xh = Pch<H_ORDER>(m_mesh);
+        auto thefms = fms( Xh );
+        auto phio = Xh->element();
+        phio = vf::project(Xh, elements(m_mesh), h() );
+        phio.on( _range=boundaryfaces(m_mesh), _expr= -h()/100. );
+        auto phi = thefms->march(phio);
 
-            auto thefms = fms( Xh );
+#if defined(USE_BOOST_TEST)
+        // Max error around mesh size h.
+        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+#else
 
-            auto phio = Xh->element();
-            phio = vf::project(Xh, elements(m_mesh), h() );
-            phio += vf::project(Xh, boundaryfaces(m_mesh), -idv(phio) - h()/100. );
+        VLOG(2) << "phi_max" << phi.max();
+        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw1");
+        exp->step(0)->add("phio", phio);
+        exp->step(0)->add("phi", phi);
+        exp->save();
+#endif
+    }
 
-            auto phi = thefms->march(phio);
+    /// Second method: give to the FMM the elements having the good value to start with,
+    /// and the maximum distance is checked for a circle/sphere.
+    void wallDist_2()
+    {
+        auto Xh = Pch<H_ORDER>(m_mesh);
+        auto Xh0 = Pdh<0>(m_mesh);
 
-            #if defined(USE_BOOST_TEST)
-            // Max error around mesh size h.
-            BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
-            #else
-            VLOG(2) << "phi_max" << phi.max();
-            auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw1");
-            exp->step(0)->add("phio", phio);
-            exp->step(0)->add("phi", phi);
-            exp->save();
-            #endif
-        }
+        auto thefms = fms( Xh );
 
-        /// Second method: give to the FMM the elements having the good value to start with,
-        /// and the maximum distance is checked for a circle/sphere.
-        void wallDist_2()
-        {
-            auto Xh = Pch<H_ORDER>(m_mesh);
-            auto Xh0 = Pdh<0>(m_mesh);
+        auto phio = Xh->element();
+        phio = vf::project(Xh, boundaryelements(m_mesh), h() );
+        phio.on( _range=boundaryfaces(m_mesh), _expr= -h() );
 
-            auto thefms = fms( Xh );
+        auto mark = vf::project(Xh0, boundaryelements(m_mesh), cst(1) );
+        m_mesh->updateMarker2( mark );
 
-            auto phio = Xh->element();
-            phio = vf::project(Xh, boundaryelements(m_mesh), h() );
-            phio += vf::project(Xh, boundaryfaces(m_mesh), -idv(phio) );
+        auto phi = thefms->march(phio, true);
 
-            auto mark = vf::project(Xh0, boundaryelements(m_mesh), cst(1) );
-            m_mesh->updateMarker2( mark );
+#if defined(USE_BOOST_TEST)
+        // Max error around mesh size h.
+        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+#else
+        VLOG(2) << "phi_max" << phi.max();
+        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw2");
+        exp->step(0)->add("phio", phio);
+        exp->step(0)->add("phi", phi);
+        exp->save();
+#endif
+    }
 
-            auto phi = thefms->march(phio, true);
-
-            #if defined(USE_BOOST_TEST)
-            // Max error around mesh size h.
-            BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
-            #else
-            VLOG(2) << "phi_max" << phi.max();
-            auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw2");
-            exp->step(0)->add("phio", phio);
-            exp->step(0)->add("phi", phi);
-            exp->save();
-            #endif
-        }
-
-        private:
-            mesh_ptrtype m_mesh;
-            double m_radius;
+private:
+    mesh_ptrtype m_mesh;
+    double m_radius;
 
 };
 
@@ -199,7 +198,8 @@ int main(int argc, char** argv )
     TestLevelSet<2,1,1> tls( 10, 0.1 ); // circle radius 10
     TestLevelSet<3,1,1> tls( 10, 1 ); // sphere radius 10
 #endif
-    TestLevelSet<2,1,2> tls( 30, 1 ); // sphere radius 30
+    //TestLevelSet<2,1,2> tls( 30, 1 ); // sphere radius 30
+    TestLevelSet<2,1,1> tls( 30, 1 ); // sphere radius 30
     tls.wallDist_1();
     tls.wallDist_2();
 
