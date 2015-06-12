@@ -33,4 +33,4 @@ add_library(feelpp_modelcore
   )
 target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
 
-include(feelpp.models.cmake)
+include(feelpp.models.macros.cmake)
