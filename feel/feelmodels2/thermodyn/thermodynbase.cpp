@@ -80,7 +80,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_rho = doption(_name="rho",_prefix=this->prefix()); // density [ kg/(m^3) ]
     M_heatCapacity = doption(_name="heat-capacity",_prefix=this->prefix()); // [ J/(kg*K) ]
 
-    M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix());
+    M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
+        Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
     M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
 
     M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
@@ -214,7 +215,17 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvec
     if ( !M_XhVelocityConvection )
         M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     if ( !M_fieldVelocityConvection )
+    {
         M_fieldVelocityConvection.reset( new element_velocityconvection_type(M_XhVelocityConvection,"VelocityConvection"));
+        // load the field velocity convection from a math expr
+        if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
+        {
+            std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/velocity-convection";
+            auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
+                                        this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+            M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=myexpr);
+        }
+    }
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -235,7 +246,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart=this->doRestart(),
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->bdfSaveInFile(), _freq=this->bdfSaveFreq() );
+                            _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
     M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
@@ -291,6 +302,15 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
 
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
+
+    // load an initial solution from a math expr
+    if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
+    {
+        std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/initial-solution.temperature";
+        auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
+                            this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+        this->fieldTemperature()->on(_range=elements(this->mesh()),_expr=myexpr);
+    }
 
     // vector solution
     M_blockVectorSolution.resize( 1 );
@@ -525,12 +545,36 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X
             integrate( _range=elements(mesh),
                        _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                        _geomap=this->geomap() );
-        if ( !this->fieldVelocityConvectionIsIncompressible() )
+
+
+        //viscous dissipation
+        if ( true )
         {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
-                           _expr= thecoeff*(idt(u)*divv(this->fieldVelocityConvection()))*id(v),
-                           _geomap=this->geomap() );
+            double mu = 1.;
+            auto defv = sym(gradv( this->fieldVelocityConvection() ) );
+            auto defv2 = inner(defv,defv);
+
+            if ( !this->fieldVelocityConvectionIsIncompressible() )
+            {
+#if 0
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=elements(mesh),
+                               _expr= thecoeff*(idt(u)*divv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+#endif
+                myLinearForm +=
+                    integrate( _range=elements(mesh),
+                               _expr= 2*mu*defv2*id(v),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto incomp2 = pow( divv( this->fieldVelocityConvection() ),2 );
+                myLinearForm +=
+                    integrate( _range=elements(mesh),
+                               _expr= 2*mu*(defv2-(1./3.)*incomp2)*id(v),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

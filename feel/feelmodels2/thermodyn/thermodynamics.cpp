@@ -35,9 +35,10 @@
 #include <feel/feelvf/operators.hpp>
  #include <feel/feelvf/operations.hpp>*/
 
-namespace Feel {
-
-namespace FeelModels {
+namespace Feel
+{
+namespace FeelModels
+{
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
 THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string __prefix,

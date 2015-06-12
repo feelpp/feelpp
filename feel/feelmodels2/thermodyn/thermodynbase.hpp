@@ -188,6 +188,9 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         //private :
     protected :
+
+        bool M_hasBuildFromMesh, M_isUpdatedForUse;
+
         double M_meshSize;
         mesh_ptrtype M_mesh;
 
