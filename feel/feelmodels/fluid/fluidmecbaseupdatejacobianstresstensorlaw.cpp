@@ -1,9 +1,9 @@
 
-#include <feel/feelmodels2/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels2/modelvf/fluidmecstresstensor.hpp>
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 
 namespace Feel

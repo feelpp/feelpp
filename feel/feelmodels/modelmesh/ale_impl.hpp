@@ -37,14 +37,14 @@
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
 
-#include <feel/feelmodels2/modelcore/feelmodelscoreconstconfig.h>
-#include <feel/feelmodels2/modelcore/modelbase.hpp>
-#include <feel/feelmodels2/modelmesh/ale.hpp>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelmesh/ale.hpp>
 #if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
-#include <feel/feelmodels2/modelmesh/harmonicextension.hpp>
+#include <feel/feelmodels/modelmesh/harmonicextension.hpp>
 #endif
 #if defined( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
-#include <feel/feelmodels2/modelmesh/winslow.hpp>
+#include <feel/feelmodels/modelmesh/winslow.hpp>
 #endif
 
 /*

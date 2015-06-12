@@ -30,7 +30,7 @@
 #ifndef FEELPP_MODELALGEBRAIC_HPP
 #define FEELPP_MODELALGEBRAIC_HPP 1
 
-#include <feel/feelmodels2/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>

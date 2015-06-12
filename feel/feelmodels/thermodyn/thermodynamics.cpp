@@ -27,7 +27,7 @@
    \date 2014-06-04
  */
 
-#include <feel/feelmodels2/thermodyn/thermodynamics.hpp>
+#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
 
 #include <feel/feelvf/vf.hpp>
 /*#include <feel/feelvf/form.hpp>

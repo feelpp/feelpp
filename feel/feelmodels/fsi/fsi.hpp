@@ -30,14 +30,14 @@
 #ifndef FEELPP_MODELS_FSI_H
 #define FEELPP_MODELS_FSI_H 1
 
-#include <feel/feelmodels2/fluid/fluidmechanics.hpp>
-#include <feel/feelmodels2/solid/solidmechanics.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
-#include <feel/feelmodels2/fsi/interpolationfsi.hpp>
-#include <feel/feelmodels2/fsi/aitkenrelaxationfsi.hpp>
-//#include <feel/feelmodels2/modelcore/modelbase.hpp>
-//#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels2/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/fsi/interpolationfsi.hpp>
+#include <feel/feelmodels/fsi/aitkenrelaxationfsi.hpp>
+//#include <feel/feelmodels/modelcore/modelbase.hpp>
+//#include <feel/feelmodels/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelts/tsbase.hpp>
 
 namespace Feel

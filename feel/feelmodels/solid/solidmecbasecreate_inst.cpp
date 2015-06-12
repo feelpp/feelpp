@@ -1,6 +1,6 @@
 
 #include "solidmecconfig.h"
-#include <feel/feelmodels2/solid/solidmecbasecreate.cpp>
+#include <feel/feelmodels/solid/solidmecbasecreate.cpp>
 
 namespace Feel {
 namespace FeelModels {

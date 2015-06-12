@@ -27,7 +27,7 @@
    \date 2011-08-11
  */
 
-#include <feel/feelmodels2/modelmesh/fsimesh.hpp>
+#include <feel/feelmodels/modelmesh/fsimesh.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>

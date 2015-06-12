@@ -1,9 +1,9 @@
 
 #include "fsiconfig.h"
 
-#include <feel/feelmodels2/fsi/fsi.cpp>
-#include <feel/feelmodels2/fsi/interpolationfsi.cpp>
-#include <feel/feelmodels2/fsi/aitkenrelaxationfsi.cpp>
+#include <feel/feelmodels/fsi/fsi.cpp>
+#include <feel/feelmodels/fsi/interpolationfsi.cpp>
+#include <feel/feelmodels/fsi/aitkenrelaxationfsi.cpp>
 
 namespace Feel {
 namespace FeelModels {

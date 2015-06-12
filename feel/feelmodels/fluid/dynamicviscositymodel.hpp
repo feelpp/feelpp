@@ -30,7 +30,7 @@
 #ifndef FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H
 #define FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H 1
 
-//#include <feel/feelmodels2/modelvf/fluidmecstresstensor.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 namespace Feel
 {

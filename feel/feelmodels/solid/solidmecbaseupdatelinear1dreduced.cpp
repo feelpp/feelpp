@@ -1,4 +1,4 @@
-#include <feel/feelmodels2/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmecbase.hpp>
 
 
 namespace Feel

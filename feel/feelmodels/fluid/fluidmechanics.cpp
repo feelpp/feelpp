@@ -27,9 +27,9 @@
  \date 2011-07-17
  */
 
-#include <feel/feelmodels2/fluid/fluidmechanics.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 

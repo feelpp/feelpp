@@ -1,6 +1,6 @@
 
 #include "fluidmecconfig.h"
-#include <feel/feelmodels2/fluid/fluidmecbaseupdatestabilisation.cpp>
+#include <feel/feelmodels/fluid/fluidmecbaseupdatestabilisation.cpp>
 
 namespace Feel {
 namespace FeelModels {

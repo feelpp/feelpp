@@ -30,7 +30,7 @@
 #ifndef FEELPP_MODELNUMERICAL_HPP
 #define FEELPP_MODELNUMERICAL_HPP 1
 
-#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 

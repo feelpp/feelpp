@@ -29,7 +29,7 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-#include <feel/feelmodels2/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
 {

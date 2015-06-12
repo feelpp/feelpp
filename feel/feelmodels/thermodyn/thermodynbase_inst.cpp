@@ -1,6 +1,6 @@
 
 #include "thermodynconfig.h"
-#include <feel/feelmodels2/thermodyn/thermodynbase.cpp>
+#include <feel/feelmodels/thermodyn/thermodynbase.cpp>
 
 namespace Feel {
 namespace FeelModels {

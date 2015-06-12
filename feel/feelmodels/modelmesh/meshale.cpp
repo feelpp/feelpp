@@ -27,7 +27,7 @@
  \date 2011-07-17
  */
 
-#include <feel/feelmodels2/modelmesh/meshale.hpp>
+#include <feel/feelmodels/modelmesh/meshale.hpp>
 
 namespace Feel
 {

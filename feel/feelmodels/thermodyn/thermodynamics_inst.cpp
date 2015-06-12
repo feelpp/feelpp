@@ -1,7 +1,7 @@
 
 
 #include "thermodynconfig.h"
-#include <feel/feelmodels2/thermodyn/thermodynamics.cpp>
+#include <feel/feelmodels/thermodyn/thermodynamics.cpp>
 
 namespace Feel {
 namespace FeelModels {

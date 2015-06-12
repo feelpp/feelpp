@@ -31,8 +31,8 @@
 
 #include <feel/feelfilters/geotool.hpp>
 
-#include <feel/feelmodels2/modelvf/solidmecgeomapeulerian.hpp>
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelvf/solidmecgeomapeulerian.hpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 #undef SOLIDMECHANICS_MESH
 #undef SOLIDMECHANICS_1D_REDUCED_MESH

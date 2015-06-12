@@ -30,7 +30,7 @@
 #ifndef FEELPP_THERMODYNAMICS_HPP
 #define FEELPP_THERMODYNAMICS_HPP 1
 
-#include <feel/feelmodels2/thermodyn/thermodynbase.hpp>
+#include <feel/feelmodels/thermodyn/thermodynbase.hpp>
 
 namespace Feel
 {

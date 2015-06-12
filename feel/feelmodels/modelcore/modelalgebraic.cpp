@@ -27,7 +27,7 @@
  \date 2012-01-19
  */
 
-#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 
 namespace Feel {
 

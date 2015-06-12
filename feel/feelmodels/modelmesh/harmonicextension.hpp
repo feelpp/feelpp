@@ -35,8 +35,8 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/operators.hpp>
 
-#include <feel/feelmodels2/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
+#include <feel/feelmodels/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {

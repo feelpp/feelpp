@@ -2,8 +2,8 @@
 #ifndef __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H
 #define __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H 1
 
-#include <feel/feelmodels2/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels2/solid/mechanicalpropertiesdescription.hpp>
+#include <feel/feelmodels/modelvf/exprtensorbase.hpp>
+#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {

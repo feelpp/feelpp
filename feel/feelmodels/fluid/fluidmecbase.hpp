@@ -41,15 +41,15 @@
 #include <feel/feelvf/projectors.hpp>
 
 
-#include <feel/feelmodels2/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels2/modelcore/markermanagement.hpp>
-#include <feel/feelmodels2/modelcore/options.hpp>
-#include <feel/feelmodels2/modelalg/modelalgebraicfactory.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels2/fluid/densityviscositymodel.hpp>
+#include <feel/feelmodels/fluid/densityviscositymodel.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-#include <feel/feelmodels2/modelmesh/meshale.hpp>
+#include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
 

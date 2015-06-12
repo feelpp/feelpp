@@ -1,6 +1,6 @@
 
 #include "fluidmecconfig.h"
-#include <feel/feelmodels2/fluid/fluidmecbaseupdatejacobianstresstensorlaw.cpp>
+#include <feel/feelmodels/fluid/fluidmecbaseupdatejacobianstresstensorlaw.cpp>
 
 namespace Feel {
 namespace FeelModels {

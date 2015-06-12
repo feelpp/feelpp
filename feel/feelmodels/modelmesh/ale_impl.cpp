@@ -25,7 +25,7 @@
  \date 2010-10-12
  */
 
-#include <feel/feelmodels2/modelmesh/ale_impl.hpp>
+#include <feel/feelmodels/modelmesh/ale_impl.hpp>
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 
@@ -46,7 +46,7 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/on.hpp>
 
-#include <feel/feelmodels2/modelalg/functionSup.cpp>
+#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {

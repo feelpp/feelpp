@@ -25,7 +25,7 @@
    \date 2014-05-16
 */
 
-#include <feel/feelmodels2/modelmesh/harmonicextension.hpp>
+#include <feel/feelmodels/modelmesh/harmonicextension.hpp>
 
 #include <feel/feeldiscr/stencil.hpp>
 
@@ -44,7 +44,7 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/on.hpp>
 
-#include <feel/feelmodels2/modelcore/log.hpp>
+#include <feel/feelmodels/modelcore/log.hpp>
 
 
 namespace Feel

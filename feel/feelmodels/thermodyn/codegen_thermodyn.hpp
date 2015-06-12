@@ -31,7 +31,7 @@
 #ifndef __THERMODYNAMICS_H
 #define __THERMODYNAMICS_H 1
 
-#include <feel/feelmodels2/thermodyn/thermodynbase.hpp>
+#include <feel/feelmodels/thermodyn/thermodynbase.hpp>
 
 #undef THERMODYNAMICS
 #undef THERMODYNAMICS0

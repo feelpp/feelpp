@@ -27,7 +27,7 @@
  \date 2011-07-05
  */
 
-#include <feel/feelmodels2/fsi/aitkenrelaxationfsi.hpp>
+#include <feel/feelmodels/fsi/aitkenrelaxationfsi.hpp>
 
 
 namespace Feel
