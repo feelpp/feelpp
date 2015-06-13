@@ -3,7 +3,7 @@
    This file is part of the Feel++ library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date     : Mon Feb 24 15:18:58 2014
+   Date     : Mon Feb 24 15:19:59 2014
 
    Copyright (C) 2014-2015 Feel++ Consortium
 
@@ -25,9 +25,6 @@
 
 namespace Feel {
 
-template class ReinitializerFMS< ls_space_type<2>, Periodic<> > ;
-template class ReinitializerFMS< ls_space_type<2>, NoPeriodicity  > ;
-template class ReinitializerFMS< lsh_space_type<2>, NoPeriodicity  > ;
-
+template class ReinitializerFMS< ls_space_type<3,2>, NoPeriodicity > ;
 
 }
