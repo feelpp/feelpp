@@ -43,6 +43,18 @@
 
 using namespace Feel;
 
+
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description opts( "test_levelset" );
+    opts.add_options()
+    ( "radius", po::value<double>()->default_value( 1.0 ), "circle or sphere radius" )
+    ;
+    return opts.add( Feel::feel_options() );
+}
+
 inline
 AboutData
 makeAbout()
@@ -74,7 +86,7 @@ public:
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
-    TestLevelSet( double radius=1.0, double h=0.1 ) :
+    TestLevelSet( double radius=doption("radius") ) :
         M_mesh( createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid_nd",
                                               _shape="ellipsoid",
@@ -85,7 +97,7 @@ public:
                                               _xmax=radius,
                                               _ymax=radius,
                                               _zmax=radius,
-                                              _h= h ),
+                                              _h=doption("gmsh.hsize") ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
                               ) ),
         M_radius( radius )
@@ -101,16 +113,22 @@ public:
         phio = vf::project(Xh, elements(M_mesh), h() );
         phio.on( _range=boundaryfaces(M_mesh), _expr= -h()/100. );
         auto phi = thefms->march(phio);
+        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        BOOST_CHECK_SMALL( err.max(), h() )
 #else
 
-        VLOG(2) << "phi_max" << phi.max();
+        LOG(INFO) << "phi1 max" << phi.max();
+        LOG(INFO) << "err1 max: " << err.max();
         auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw1");
-        exp->step(0)->add("phio", phio);
-        exp->step(0)->add("phi", phi);
+        exp->step(0)->add("phi1", phi);
+        exp->step(0)->add("phio1", phio);
+        exp->step(0)->add("dist1", dist);
+        exp->step(0)->add("err1", err);
         exp->save();
 #endif
     }
@@ -132,16 +150,22 @@ public:
         M_mesh->updateMarker2( mark );
 
         auto phi = thefms->march(phio, true);
+        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        BOOST_CHECK_SMALL( err.max(), h() )
 #else
-        VLOG(2) << "phi_max" << phi.max();
+        LOG(INFO) << "phi2_max" << phi.max();
+        LOG(INFO) << "err2 max: " << err.max();
         auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw2");
-        exp->step(0)->add("mark", mark);
-        exp->step(0)->add("phio", phio);
-        exp->step(0)->add("phi", phi);
+        exp->step(0)->add("phio2", phio);
+        exp->step(0)->add("phi2", phi);
+        exp->step(0)->add("dist2", dist);
+        exp->step(0)->add("err2", err);
+        exp->step(0)->add("mark2", mark);
         exp->save();
 #endif
     }
@@ -192,7 +216,7 @@ int main(int argc, char** argv )
 {
     Feel::Environment env( _argc=argc, _argv=argv,
                            _about=makeAbout(),
-                           _desc=feel_options() );
+                           _desc=makeOptions() );
 #if 0
     TestLevelSet<2,1,1> tls;
     TestLevelSet<3,1,1> tls;
@@ -200,8 +224,8 @@ int main(int argc, char** argv )
     TestLevelSet<3,1,1> tls( 10, 1 );
 #endif
     //TestLevelSet<3,1,1> tls( 1, 0.1 );
-    TestLevelSet<2,1,2> tls( 1, 0.1 );
-    //TestLevelSet<2,1,1> tls( 1, 0.1 );
+    //TestLevelSet<2,1,2> tls( 1, 0.1 );
+    TestLevelSet<3,1,1> tls;
     tls.wallDist_1();
     tls.wallDist_2();
 
