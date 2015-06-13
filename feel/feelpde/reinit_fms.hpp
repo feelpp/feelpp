@@ -179,8 +179,9 @@ using lsh_space_type = Pch_type<lsh_mesh_type<Dim,GeoOrder>,1>;
 #if !defined( FEELPP_INSTANTIATE_FMS )
 extern template class Feel::ReinitializerFMS< ls_space_type<2>, Feel::Periodic<> > ;
 extern template class Feel::ReinitializerFMS< ls_space_type<2>, Feel::NoPeriodicity  > ;
-extern template class Feel::ReinitializerFMS< ls_space_type<3>, Feel::NoPeriodicity > ;
+extern template class Feel::ReinitializerFMS< ls_space_type<2,2>, Feel::NoPeriodicity  > ;
 extern template class Feel::ReinitializerFMS< ls_space_type<3>, Feel::Periodic<> > ;
+extern template class Feel::ReinitializerFMS< ls_space_type<3>, Feel::NoPeriodicity > ;
 extern template class Feel::ReinitializerFMS< ls_space_type<3,2>, Feel::NoPeriodicity > ;
 // Hypercube
 extern template class Feel::ReinitializerFMS< lsh_space_type<2>, Feel::NoPeriodicity  > ;
