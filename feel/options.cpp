@@ -569,6 +569,7 @@ error_options( std::string const& prefix )
     return _options;
 }
 
+// preconditioner for Navier-Stokes
 po::options_description
 blockns_options( std::string const& prefix )
 {
@@ -587,6 +588,34 @@ blockns_options( std::string const& prefix )
         ( prefixvm( prefix, "blockns.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
         ;
     return _options;
+}
+
+// preconditioner for Magneto Static
+po::options_description
+blockms_options( std::string const& prefix )
+{
+    po::options_description _options( "BLOCKNS options (" + prefix + ")" );
+    _options.add_options()
+        // error options
+        ( prefixvm( prefix, "blockms" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS preconditioner" )
+        ( prefixvm( prefix, "blockms.type" ).c_str(), Feel::po::value<std::string>()->default_value("AFP"), "type of PC: AFP = Augmented Free Preconditioner" )
+        ( prefixvm( prefix, "blockms.fs" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Fictious spaces ?" )
+        //( prefixvm( prefix, "blockms.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Velocity CD preconditioner" )
+        //( prefixvm( prefix, "blockms.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Pressure CD preconditioner" )
+        //( prefixvm( prefix, "blockms.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
+        //( prefixvm( prefix, "blockms.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
+        //( prefixvm( prefix, "blockms.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        //( prefixvm( prefix, "blockms.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        //( prefixvm( prefix, "blockms.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        //// options for pmm
+        //( prefixvm( prefix, "blockms.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
+        ;
+        
+    return _options
+        .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
+        .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block
+        .add( backend_options( prefixvm(prefix, "blockms.11.2").c_str() )) // the (1,1).2 block
+        .add( backend_options( prefixvm(prefix, "blockms.22").c_str() )); // the (2,2) block
 }
 
 /**
@@ -698,6 +727,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
         .add( blockns_options( prefix ) )
+        .add( blockms_options( prefix ) )
 
         /* nonlinear solver options */
         .add( nlsolver_options() )
