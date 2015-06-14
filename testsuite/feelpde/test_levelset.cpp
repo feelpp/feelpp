@@ -43,6 +43,18 @@
 
 using namespace Feel;
 
+
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description opts( "test_levelset" );
+    opts.add_options()
+    ( "radius", po::value<double>()->default_value( 1.0 ), "circle or sphere radius" )
+    ;
+    return opts.add( Feel::feel_options() );
+}
+
 inline
 AboutData
 makeAbout()
@@ -74,8 +86,8 @@ public:
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
-    TestLevelSet( double radius=1.0, double h=0.1 ) :
-        m_mesh( createGMSHMesh( _mesh=new mesh_type,
+    TestLevelSet( double radius=doption("radius") ) :
+        M_mesh( createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid_nd",
                                               _shape="ellipsoid",
                                               _dim=DIM,
@@ -85,32 +97,38 @@ public:
                                               _xmax=radius,
                                               _ymax=radius,
                                               _zmax=radius,
-                                              _h= h ),
+                                              _h=doption("gmsh.hsize") ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
                               ) ),
-        m_radius( radius )
+        M_radius( radius )
     {}
 
     /// First method: let the FMM search for the elements crossed by the interface
     /// and the maximum distance is checked for a circle/sphere.
     void wallDist_1()
     {
-        auto Xh = Pch<H_ORDER>(m_mesh);
+        auto Xh = Pch<H_ORDER>(M_mesh);
         auto thefms = fms( Xh );
         auto phio = Xh->element();
-        phio = vf::project(Xh, elements(m_mesh), h() );
-        phio.on( _range=boundaryfaces(m_mesh), _expr= -h()/100. );
+        phio = vf::project(Xh, elements(M_mesh), h() );
+        phio.on( _range=boundaryfaces(M_mesh), _expr= -h()/100. );
         auto phi = thefms->march(phio);
+        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        BOOST_CHECK_SMALL( err.max(), h() )
 #else
 
-        VLOG(2) << "phi_max" << phi.max();
-        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw1");
-        exp->step(0)->add("phio", phio);
-        exp->step(0)->add("phi", phi);
+        LOG(INFO) << "phi1 max" << phi.max();
+        LOG(INFO) << "err1 max: " << err.max();
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw1");
+        exp->step(0)->add("phi1", phi);
+        exp->step(0)->add("phio1", phio);
+        exp->step(0)->add("dist1", dist);
+        exp->step(0)->add("err1", err);
         exp->save();
 #endif
     }
@@ -119,35 +137,42 @@ public:
     /// and the maximum distance is checked for a circle/sphere.
     void wallDist_2()
     {
-        auto Xh = Pch<H_ORDER>(m_mesh);
-        auto Xh0 = Pdh<0>(m_mesh);
-
+        auto Xh = Pch<H_ORDER>(M_mesh);
+        auto Xh0 = Pdh<0>(M_mesh);
         auto thefms = fms( Xh );
-
         auto phio = Xh->element();
-        phio = vf::project(Xh, boundaryelements(m_mesh), h() );
-        phio.on( _range=boundaryfaces(m_mesh), _expr= -h() );
+        auto mark = Xh0->element();
 
-        auto mark = vf::project(Xh0, boundaryelements(m_mesh), cst(1) );
-        m_mesh->updateMarker2( mark );
+        phio.on( _range=boundaryelements(M_mesh), _expr=h() );
+        phio.on( _range=boundaryfaces(M_mesh), _expr=cst(0) );
+
+        mark.on( _range=boundaryelements(M_mesh), _expr=cst(1) );
+        M_mesh->updateMarker2( mark );
 
         auto phi = thefms->march(phio, true);
+        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
-        BOOST_CHECK_CLOSE( phi.max(), m_radius, h() );
+        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        BOOST_CHECK_SMALL( err.max(), h() )
 #else
-        VLOG(2) << "phi_max" << phi.max();
-        auto exp = exporter(_mesh=m_mesh, _name="testsuite_levelset_distw2");
-        exp->step(0)->add("phio", phio);
-        exp->step(0)->add("phi", phi);
+        LOG(INFO) << "phi2_max" << phi.max();
+        LOG(INFO) << "err2 max: " << err.max();
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw2");
+        exp->step(0)->add("phio2", phio);
+        exp->step(0)->add("phi2", phi);
+        exp->step(0)->add("dist2", dist);
+        exp->step(0)->add("err2", err);
+        exp->step(0)->add("mark2", mark);
         exp->save();
 #endif
     }
 
 private:
-    mesh_ptrtype m_mesh;
-    double m_radius;
+    mesh_ptrtype M_mesh;
+    double M_radius;
 
 };
 
@@ -191,15 +216,16 @@ int main(int argc, char** argv )
 {
     Feel::Environment env( _argc=argc, _argv=argv,
                            _about=makeAbout(),
-                           _desc=feel_options() );
+                           _desc=makeOptions() );
 #if 0
-    TestLevelSet<2,1,1> tls;    // unit circle
-    TestLevelSet<3,1,1> tls;    // unit sphere
-    TestLevelSet<2,1,1> tls( 10, 0.1 ); // circle radius 10
-    TestLevelSet<3,1,1> tls( 10, 1 ); // sphere radius 10
+    TestLevelSet<2,1,1> tls;
+    TestLevelSet<3,1,1> tls;
+    TestLevelSet<2,1,1> tls( 10, 0.1 );
+    TestLevelSet<3,1,1> tls( 10, 1 );
 #endif
-    //TestLevelSet<2,1,2> tls( 30, 1 ); // sphere radius 30
-    TestLevelSet<2,1,1> tls( 30, 1 ); // sphere radius 30
+    //TestLevelSet<3,1,1> tls( 1, 0.1 );
+    //TestLevelSet<2,1,2> tls( 1, 0.1 );
+    TestLevelSet<3,1,1> tls;
     tls.wallDist_1();
     tls.wallDist_2();
 
