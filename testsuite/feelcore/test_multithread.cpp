@@ -90,6 +90,13 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     coarseCoreID = new int[nCores];
     coarseParTime = new double[nCores];
 
+    for(int i = 0; i < nCores; i++)
+    {
+        coarseParRes[i] = 0.0;
+        coarseCoreID[i] = -1;;
+        coarseParTime[i] = -1.0;
+    }
+
     /* sequential with a constant */
     seqLastCPU.clear();
     Environment::getLastBoundCPU(&seqLastCPU, NULL);
@@ -97,7 +104,7 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intfCst = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    auto intfCst = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate();
     seqRes = intfCst(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
@@ -105,28 +112,31 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
 /* Do this section only if we have OPENMP */
 #if defined(FEELPP_HAS_OPENMP)
-    /* Set the number of threads to use */
-    omp_set_num_threads(nCores);
-
-    /* parallel with constant */
-    #pragma omp parallel
+    if(mtImpl == "openmp")
     {
-        std::vector<int> lastCPU;
-        Environment::getLastBoundCPU(&lastCPU, NULL);
-        coarseCoreID[omp_get_thread_num()] = (lastCPU.size() == 1 ? lastCPU.front() : -1);
+        /* Set the number of threads to use */
+        omp_set_num_threads(nCores);
 
-        struct timespec tts1, tts2;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
+        /* parallel with constant */
+#pragma omp parallel
+        {
+            std::vector<int> lastCPU;
+            Environment::getLastBoundCPU(&lastCPU, NULL);
+            coarseCoreID[omp_get_thread_num()] = (lastCPU.size() == 1 ? lastCPU.front() : -1);
 
-        auto intf = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
-        coarseParRes[omp_get_thread_num()] = intf(0, 0);
+            struct timespec tts1, tts2;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
 
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
-        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+            auto intf = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+            coarseParRes[omp_get_thread_num()] = intf(0, 0);
+
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
+            coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+        }
+
+        for(int i = 0; i < nCores; i++)
+        { CHECK( fabs(coarseParRes[i] - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")" << std::endl; }
     }
-
-    for(int i = 0; i < nCores; i++)
-    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")" << std::endl; }
 #endif
 
     /* parallel implementation in Feel++ with a constant */
@@ -136,7 +146,7 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate();
     fineParRes = intfCstPar(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
@@ -146,16 +156,26 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
     Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
 
-    std::cout << "Test OK: seq=" << seqTime << " (" << seqCoreID << ", coarse=";
+    CHECK( fabs(fineParRes - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in fine test (" << fineParRes << " != " << seqRes << ")\n";
+
+    std::cout << "Test OK: seq=" << seqTime << " (" << seqCoreID << "), coarse=(";
     if(nCores > 0)
     {
-        std::cout << coarseParTime[0] << " (" << coarseCoreID[0] << "), " << seqTime / coarseParTime[0] << ")";
+        std::cout << coarseParTime[0] << " (" << coarseCoreID[0] << ", " << seqTime / coarseParTime[0] << ")";
         for(int i = 1; i < nCores; i++)
         { std::cout << ", " << coarseParTime[i] << " ("  << coarseCoreID[i] << ", " << seqTime / coarseParTime[i] << ")"; }
     }
     std::cout << "), fine=" << fineParTime <<  " (" << seqTime / fineParTime << ")" << std::endl;
 
     /* sequential with an expression */
+    /* reinit variables */
+    for(int i = 0; i < nCores; i++)
+    {
+        coarseParRes[i] = 0.0;
+        coarseCoreID[i] = -1;;
+        coarseParTime[i] = -1.0;
+    }
+
     seqLastCPU.clear();
     Environment::getLastBoundCPU(&seqLastCPU, NULL);
     seqCoreID = (seqLastCPU.size() == 1 ? seqLastCPU.front() : -1);
@@ -165,7 +185,7 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intfExpr = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+    auto intfExpr = integrate( _range = elements( mesh ), _expr = g ).evaluate();
     seqRes = intfExpr(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
@@ -173,29 +193,32 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
 /* Do this section only if we have OPENMP */
 #if defined(FEELPP_HAS_OPENMP)
-    /* Reset the number of threads, as we previously modified it in fine parallelism */
-    omp_set_num_threads(nCores);
-
-    #pragma omp parallel
+    if(mtImpl == "openmp")
     {
-        std::vector<int> lastCPU;
-        Environment::getLastBoundCPU(&lastCPU, NULL);
-        coarseCoreID[omp_get_thread_num()] = (lastCPU.size() == 1 ? lastCPU.front() : -1);
+        /* Reset the number of threads, as we previously modified it in fine parallelism */
+        omp_set_num_threads(nCores);
 
-        struct timespec tts1, tts2;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
+#pragma omp parallel
+        {
+            std::vector<int> lastCPU;
+            Environment::getLastBoundCPU(&lastCPU, NULL);
+            coarseCoreID[omp_get_thread_num()] = (lastCPU.size() == 1 ? lastCPU.front() : -1);
 
-        // our function to integrate
-        // auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
-        auto intf = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
-        coarseParRes[omp_get_thread_num()] = intf(0, 0);
+            struct timespec tts1, tts2;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
 
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
-        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+            // our function to integrate
+            // auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
+            auto intf = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+            coarseParRes[omp_get_thread_num()] = intf(0, 0);
+
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
+            coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+        }
+
+        for(int i = 0; i < nCores; i++)
+        { CHECK( fabs(coarseParRes[i] - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")\n"; }
     }
-
-    for(int i = 0; i < nCores; i++)
-    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")\n"; }
 #endif
 
     /* parallel implementation in Feel++ with a constant */
@@ -205,7 +228,7 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intfExprPar = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+    auto intfExprPar = integrate( _range = elements( mesh ), _expr = g ).evaluate();
     fineParRes = intfExprPar(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
@@ -215,7 +238,9 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
     Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
 
-    std::cout << "Test OK: seq=" << seqTime << " (" << seqCoreID << "), coarse=";
+    CHECK( fabs(fineParRes - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in fine test (" << fineParRes << " != " << seqRes << ")\n";
+
+    std::cout << "Test OK: seq=" << seqTime << " (" << seqCoreID << "), coarse=(";
     if(nCores > 0)
     {
         std::cout << coarseParTime[0] << " (" << coarseCoreID[0] << ", " << seqTime / coarseParTime[0] << ")";
