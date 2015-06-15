@@ -266,23 +266,31 @@ FSI<FluidType,SolidType>::init()
         }
     }
 
+
+    CHECK( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" ||
+           this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+           this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+           this->fsiCouplingBoundaryCondition() == "nitsche" ) << "invalid fsiCouplingBoundaryCondition : " << this->fsiCouplingBoundaryCondition();
+    M_fluid->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
+    M_solid->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
+#if 0
     // set coupling parameters
     if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
     {
-        M_fluid->couplingFSIcondition("dirichlet");
+        M_fluid->couplingFSIcondition("dirichlet-neumann");
         M_solid->couplingFSIcondition("neumann");
     }
     else if (this->fsiCouplingBoundaryCondition()=="robin-neumann")
     {
-        M_fluid->couplingFSIcondition("robin");
+        M_fluid->couplingFSIcondition("robin-neumann");
         M_solid->couplingFSIcondition("neumann");
     }
     else if (this->fsiCouplingBoundaryCondition()=="robin-robin")
     {
-        M_fluid->couplingFSIcondition("robin");
+        M_fluid->couplingFSIcondition("robin-robin");
         M_solid->couplingFSIcondition("robin");
     }
-
+#endif
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
         M_fluid->useFSISemiImplicitScheme(true);
@@ -313,12 +321,14 @@ FSI<FluidType,SolidType>::init()
     //M_solid->createAdditionalFunctionSpacesFSI();
     //-------------------------------------------------------------------------//
     // init interpolation tool
-    M_interpolationFSI.reset(new interpolationFSI_type(M_fluid,M_solid)); // TODO HERE ( tale into account restart )
+    M_interpolationFSI.reset(new interpolationFSI_type(M_fluid,M_solid));
     //-------------------------------------------------------------------------//
     // init aitken relaxation tool
     //AitkenType aitkenType = AitkenType::AITKEN_METHOD_1;
     std::string aitkenType = "method1";
-    if (this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-neumann")
+    if (this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+        this->fsiCouplingBoundaryCondition()=="robin-neumann" || this->fsiCouplingBoundaryCondition()=="robin-neumann-genuine" ||
+        this->fsiCouplingBoundaryCondition() == "nitsche")
     {
         //aitkenType = AitkenType::FIXED_RELAXATION_METHOD;
         aitkenType = "fixed-relaxation";
@@ -345,8 +355,9 @@ FSI<FluidType,SolidType>::solve()
 
     if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
         this->solveImpl1();
-    else if (this->fsiCouplingBoundaryCondition()=="robin-robin" ||
-             this->fsiCouplingBoundaryCondition()=="robin-neumann" )
+    else if (this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+             this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+             this->fsiCouplingBoundaryCondition() == "nitsche" )
         this->solveImpl2();
 
     double timeElapsed = mytimer.elapsed();
@@ -573,16 +584,12 @@ FSI<FluidType,SolidType>::solveImpl2()
         M_fluid->setRebuildCstPartInResidual(true);M_solid->setRebuildCstPartInResidual(true);
     }
 
-
     this->updateBackendOptimisation(true,true);
 
 
 #if 1
     auto oldSolDisp = M_solid->functionSpaceDisplacement()->elementPtr();
     auto residualDisp = M_solid->functionSpaceDisplacement()->elementPtr();
-#endif
-#if 0
-    this->aitkenRelaxTool()->restart();
 #endif
     int cptFSI=0;
     double residualConvergence=1;
@@ -598,9 +605,6 @@ FSI<FluidType,SolidType>::solveImpl2()
                                         _range=elements(oldSolDisp->mesh()),
                                         _expr=vf::idv(M_solid->fieldDisplacement()) );
 #endif
-#if 0
-        this->aitkenRelaxTool()->saveOldSolution();
-#endif
 
         //--------------------------------------------------------------//
         if (solveStruct)
@@ -610,15 +614,23 @@ FSI<FluidType,SolidType>::solveImpl2()
             this->interpolationTool()->transfertStress();
             // revert moving mesh
             M_fluid->getMeshALE()->revertMovingMesh();
-            bool useExtrap = this->fluidAppli()->timeStepBDF()->iteration() > 2;
-            if (this->fsiCouplingBoundaryCondition()=="robin-robin")
+            bool useExtrap = (this->fluidAppli()->timeStepBDF()->iteration() > 2) && boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
+            if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
+                 this->fsiCouplingBoundaryCondition()=="nitsche" )
                 this->interpolationTool()->transfertVelocityF2S(useExtrap);
             M_solid->solve();
             M_solid->updateVelocity();
         }
-
         //--------------------------------------------------------------//
-        this->interpolationTool()->transfertVelocity();
+        if (this->fsiCouplingType()=="Implicit")
+        {
+            this->interpolationTool()->transfertDisplacement();
+            M_fluid->updateALEmesh();
+        }
+        else
+        {
+            this->interpolationTool()->transfertVelocity();
+        }
         M_fluid->solve();
         //--------------------------------------------------------------//
 
@@ -636,15 +648,6 @@ FSI<FluidType,SolidType>::solveImpl2()
         if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
             std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
                       << " residualConvergence " << std::scientific << residualConvergence << "\n";
-#endif
-#if 0
-        this->aitkenRelaxTool()->applyRelaxation();
-        // update velocity and acceleration
-        //M_solid->updateVelocity();
-        // aitken relaxtion
-        if (M_fluid->worldComm().isMasterRank())
-            this->aitkenRelaxTool()->printInfo();
-        this->aitkenRelaxTool()->shiftRight();
 #endif
 
         if (this->fsiCouplingType()=="Semi-Implicit")

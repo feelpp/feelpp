@@ -81,7 +81,9 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
                                                        this->worldComm(),this->verboseAllProc());
             btime.restart();
             //---------------------------------------------//
-            if (this->fsiCouplingType()=="Semi-Implicit" || this->fsiCouplingBoundaryCondition()=="robin-neumann")
+            if (this->fsiCouplingType()=="Semi-Implicit" ||
+                this->fsiCouplingBoundaryCondition()=="robin-neumann" || this->fsiCouplingBoundaryCondition()=="robin-robin" ||
+                this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" || this->fsiCouplingBoundaryCondition()=="nitsche" )
             {
                 this->initVelocityInterpolation();
                 std::ostringstream ostr3;ostr3<<btime.elapsed()<<"s";
@@ -101,7 +103,8 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
             }
 #endif
             //---------------------------------------------//
-            if (this->fsiCouplingBoundaryCondition()=="robin-robin")
+            if ( /*this->fsiCouplingBoundaryCondition()=="robin-neumann" ||*/ this->fsiCouplingBoundaryCondition()=="robin-robin" ||
+                 this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" || this->fsiCouplingBoundaryCondition()=="nitsche" )
             {
                 this->initVelocityInterpolationF2S();
             }
@@ -627,7 +630,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S(bool useExtrapolatio
 {
     if ( useExtrapolation )
     {
-        if (false)
+        if ( false )
         {
             // bdf extrapolation
             auto solExtrap = this->fluid()->timeStepBDF()->polyDeriv();
@@ -670,8 +673,13 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S(bool useExtrapolatio
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconfF2S->apply( this->fluid()->timeStepBDF()->unknown(0).template element<0>(),//this->fluid()->getSolution()->template element<0>(),
+#if 0
+            M_opVelocity2dTo2dconfF2S->apply( this->fluid()->timeStepBDF()->unknown(0).template element<0>(),
                                               *this->solid()->velocityInterfaceFromFluid() );
+#else
+            M_opVelocity2dTo2dconfF2S->apply( this->fluid()->fieldVelocity(),
+                                              *this->solid()->velocityInterfaceFromFluid() );
+#endif
         }
         else
         {
