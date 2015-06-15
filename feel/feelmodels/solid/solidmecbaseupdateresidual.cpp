@@ -201,7 +201,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
                            _geomap=this->geomap() );
         }
 
-        if ( this->couplingFSIcondition() == "robin" )
+        if ( //this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
+             this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+             this->couplingFSIcondition() == "nitsche" )
         {
             double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
             double muFluid = this->muFluidFSI();//0.03;
