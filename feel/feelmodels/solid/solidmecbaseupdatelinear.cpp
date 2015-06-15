@@ -198,11 +198,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
                            _geomap=this->geomap() );
         }
 
-        if ( this->couplingFSIcondition() == "robin" )
+        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+             this->couplingFSIcondition() == "nitsche" )
         {
             double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
             double muFluid = this->muFluidFSI();//0.03;
-#if 1
             if (BuildCstPart)
             {
                 form2( _test=Xh, _trial=Xh, _matrix=A )  +=
@@ -218,23 +218,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
                                _geomap=this->geomap() );
             }
-#else
-            if (BuildCstPart)
-            {
-                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*(1./M_newmark_displ_struct->timeStep())*inner(idt(u),id(v))/hFace(),
-                               _geomap=this->geomap() );
-            }
-            if (BuildNonCstPart )
-            {
-                auto robinFSIRhs = (1./M_newmark_displ_struct->timeStep())*idv(M_newmark_displ_struct->previousUnknown() ) + idv(this->velocityInterfaceFromFluid());
-                form1( _test=Xh, _vector=F) +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
-                               _geomap=this->geomap() );
-            }
-#endif
         }
     }
 
@@ -244,22 +227,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     if ( !this->markerRobinBC().empty() && !BuildCstPart )
     {
         this->updateBCRobinLinearPDE( A, F );
-#if 0
-
-        double alpha_robin =1e4;
-        form2( _test=Xh, _trial=Xh, _matrix=A) +=
-            integrate( _range=markedfaces(mesh,this->markerRobinBC()),
-                       _expr= alpha_robin*trans(idt(u))*id(v),
-                       _geomap=this->geomap() );
-#if 0
-        ForEachBC( bcDef,cl::robin_vec,
-                   form2( _test=Xh, _trial=Xh, _matrix=A) +=
-                   integrate( _range=markedfaces(mesh,PhysicalName),
-                              _expr= alpha_robin*trans(idt(u))*id(v),
-                              _geomap=this->geomap() ) );
-#endif
-        // TODO second membre
-#endif
     }
 
     //---------------------------------------------------------------------------------------//

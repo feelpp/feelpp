@@ -191,7 +191,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
     }
     //--------------------------------------------------------------------------------------------------//
     // fsi coupling using a robin boundary condition
-    if (this->markerNameFSI().size()>0 && this->couplingFSIcondition() == "robin" )
+    if (this->markerNameFSI().size()>0 && ( //this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
+                                            this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                            this->couplingFSIcondition() == "nitsche" ) )
     {
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
         double muFluid = this->muFluidFSI();//0.03;

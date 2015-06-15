@@ -167,7 +167,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
     M_useFSISemiImplicitScheme = false;
-    M_couplingFSIcondition = "neumann";
+    M_couplingFSIcondition = "dirichlet-neumann";
     M_gammaNitschFSI = 2500;
     //M_penalbc = doption(_name="weakbccoeff",_prefix=this->prefix());
     M_isHOVisu = nOrderGeo > 1;
@@ -501,7 +501,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandar
         M_normalStressFromStruct.reset(new element_stress_type( M_XhStress, "normalStressBoundaryFromStruct" ));
 
     //--------------------------------------------------------//
-    if ( this->couplingFSIcondition() == "robin" && !M_velocityInterfaceFromFluid )
+    if ( !M_velocityInterfaceFromFluid && ( this->couplingFSIcondition() == "robin-neumann" ||
+                                            this->couplingFSIcondition() == "robin-robin" ||
+                                            this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                            this->couplingFSIcondition() == "nitsche" ) )
         M_velocityInterfaceFromFluid.reset( new element_vectorial_type( M_XhVectorial, "velocityInterfaceFromFluid" ));
 
 
