@@ -309,7 +309,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             this->updateBCDirichletNitscheResidual( R );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
             {
                 // compute integrate range (intersection with nitsche and moving marker)
                 std::list<std::string> movingBCmarkers;
@@ -457,7 +457,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             this->updateBCDirichletLagMultResidual( R );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" && false )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
             {
                 form1( _test=this->XhDirichletLM(),_vector=R,
                        _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
@@ -471,7 +471,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
     //------------------------------------------------------------------------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() && this->couplingFSIcondition() == "robin" )
+    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" ||
+                                   this->couplingFSIcondition() == "robin-robin" ||
+                                   this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                   this->couplingFSIcondition() == "nitsche" ) )
     {
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
         //double muFluid = this->mu();//0.03;
@@ -502,6 +505,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                            _expr= -inner( Sigmav*N(),id(u)),
                            _geomap=this->geomap() );
         }
+
     }
 #endif
     //------------------------------------------------------------------------------------//
@@ -522,7 +526,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
     bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" );
+    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
     if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
     {
@@ -531,8 +535,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletResidual(R);
 
-#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             this->log("FluidMechanics","updateResidual","update moving boundary with strong Dirichlet");
             modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
@@ -565,7 +569,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
     {
         this->log("FluidMechanics","updateNewtonInitialGuess","update moving boundary with strong Dirichlet");
         modifVec(markedfaces(mesh, this->markersNameMovingBoundary()), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );

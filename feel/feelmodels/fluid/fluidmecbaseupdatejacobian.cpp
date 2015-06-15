@@ -352,7 +352,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->isMoveDomain() && this->couplingFSIcondition() == "robin" )
+    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" ||
+                                   this->couplingFSIcondition() == "robin-robin" ||
+                                   this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                   this->couplingFSIcondition() == "nitsche" ) )
     {
         double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
         //double muFluid = this->mu();//0.03;
@@ -371,7 +374,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet" );
+    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
     if ( BuildNonCstPart && _doBCStrongDirichlet && hasStrongDirichletBC )
     {
@@ -380,8 +383,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         if ( this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletJacobian(J,RBis);
 
-#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             this->log("FluidMechanics","updateJacobian","update moving boundary with strong Dirichlet");
             bilinearForm_PatternCoupled +=

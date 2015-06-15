@@ -134,7 +134,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
     //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
     M_useFSISemiImplicitScheme = false;
-    M_couplingFSIcondition = "dirichlet";
+    M_couplingFSIcondition = "dirichlet-neumann";
     M_gammaNitschFSI = 2500;
     M_gamma0NitschFSI = 1;
 

@@ -997,7 +997,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateNormalStress", "start" );
+    this->log("FluidMechanics","updateNormalStressUseAlePart", "start" );
 
     // current solution
     auto solFluid = this->fieldVelocityPressurePtr();
@@ -1009,23 +1009,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
+    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
 
-#if 0
-    auto const& bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    ForEachBC( bcDef, cl::paroi_mobile,
-               *M_normalBoundaryStress = vf::project(_space=M_XhNormalBoundaryStress,
-                                                     _range=markedfaces(this->mesh(),PhysicalName),
-                                                     _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                                     _geomap=this->geomap() ); );
-#else
-    *M_normalBoundaryStress = vf::project(_space=M_XhNormalBoundaryStress,
-                                          _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                          _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                          _geomap=this->geomap() );
-#endif
+    if ( M_saveALEPartNormalStress )
+        M_normalBoundaryStress->on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                   _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
+                                   _geomap=this->geomap() );
+    else
+        M_normalBoundaryStress->on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                   _expr=Sigmav*N(),
+                                   _geomap=this->geomap() );
 
-    this->log("FluidMechanics","updateNormalStress", "finish" );
+    this->log("FluidMechanics","updateNormalStressUseAlePart", "finish" );
 #endif
 }
 
@@ -1483,7 +1478,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
     bool doStabPSPG = boption(_prefix=this->prefix(),_name="stabilisation-pspg");
     bool doStabGLS = boption(_prefix=this->prefix(),_name="stabilisation-gls");
     if ( doStabPSPG || doStabGLS ||
-         (this->definePressureCst() && this->definePressureCstMethod() == "penalisation") )
+         (this->definePressureCst() && this->definePressureCstMethod() == "penalisation") ||
+         (this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "nitsche" ) )
+         )
         pat_pp = size_type(Pattern::COUPLED);
 
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )

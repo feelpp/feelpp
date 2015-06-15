@@ -195,34 +195,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     {
         this->updateBCPressureLinearPDE( F );
     }
-
-    //--------------------------------------------------------------------------------------------------//
-
-#if 0
-    // robin fsi
-    if ( this->couplingFSIcondition()=="robin" && BuildNonCstPart )
-    {
-        //double alphaRobinFSI = 1.0;
-        double alphaRobinFSI = 0.1*1.2/this->timeStepBDF()->timeStep() + (0.1*3e6/((1-0.3*0.3)*0.5*0.5) )*this->timeStepBDF()->timeStep() ;
-        ForEachBC( bcDef,cl::paroi_mobile,
-                   bilinearForm_PatternCoupled +=
-                   /**/ integrate( _range=markedfaces(mesh,PhysicalName),
-                                   _expr= alphaRobinFSI*trans(idt(u))*id(v),
-                                   _geomap=this->geomap() );
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(mesh,PhysicalName),
-                                   _expr= alphaRobinFSI*trans(idv(this->meshVelocity2()))*id(v),
-                                   _geomap=this->geomap() );
-                   myLinearForm +=
-                   /**/ integrate( _range=markedfaces(mesh,PhysicalName),
-                                   _expr= -trans(idv(this->normalStressFromStruct()))*id(v),
-                                   _geomap=this->geomap() ); );
-    }
-
-#endif
-
-
-
     //--------------------------------------------------------------------------------------------------//
     // Todo : BuildNonCstPart ?
     if (M_pdeType == "Oseen" && BuildNonCstPart_ConvectiveTerm)
@@ -337,7 +309,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
             this->updateBCStrongDirichletLinearPDE(A,F);
 
 #if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet")
+        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             bilinearForm_PatternCoupled +=
                 on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
