@@ -988,6 +988,14 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
         subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
     else
         subMat.reset( new MatrixPetsc<T>( subMatPetsc,subMapRow,subMapCol,true ) );
+
+    bool computeSubGraph = true;
+    if ( computeSubGraph && this->hasGraph() )
+    {
+        auto subgraph = this->graph()->createSubGraph( rows, cols, subMapRow, subMapCol, useSameDataMap, false );
+        subMat->setGraph( subgraph );
+    }
+
     return subMat;
 }
 
