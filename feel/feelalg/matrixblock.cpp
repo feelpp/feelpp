@@ -141,7 +141,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
             for ( uint16_type j=0; j<nCol; ++j )
             {
-                blockSet(i,j)->close();
+                //blockSet(i,j)->close(); // close done in updateBlockMat
                 this->updateBlockMat( blockSet(i,j),start_i,start_j );
 
                 for ( int proc=0 ;proc < worldsize;++proc )
