@@ -107,8 +107,14 @@ SolverEigenSlepc<T>::init ()
         // Set modified Gram-Schmidt orthogonalization as default
         // and leave other parameters unchanged
         BVOrthogRefineType refinement;
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 6)
+        BVOrthogBlockType blockOrthoType;
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta,&blockOrthoType );
+        ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta, blockOrthoType );
+#else
         ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
         ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta );
+#endif
 
 #else
         ierr = EPSGetIP ( M_eps, &M_ip );
