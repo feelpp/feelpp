@@ -383,13 +383,13 @@ public:
     void
     add( std::string const& name, F const& u )
         {
-            this->step( 0 )->add( this->prefix()+"."+name, u );
+            this->step( 0 )->add( name, u );
         }
 
     void
     addRegions()
         {
-            this->step( 0 )->addRegions( this->prefix() );
+            this->step( 0 )->addRegions( "" );
         }
     step_ptrtype step( double time )
     {
