@@ -115,13 +115,13 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
         /* If we want only one file, specify the same filename for each process */
         if(boption(_name="exporter.gmsh.merge") == true)
         {
-            __fname << __ts->name()  //<< this->prefix() //this->path()
+            __fname << this->prefix() //<< this->prefix() //this->path()
                     << "-" << this->worldComm().size()
                     << ".msh";
         }
         else
         {
-            __fname << __ts->name()  //<< this->prefix() //this->path()
+            __fname << this->prefix()  //<< this->prefix() //this->path()
                     << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                     << ".msh";
         }
@@ -169,7 +169,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     }
 
                     DVLOG(2) << "[ExporterGmsh] saving model "
-                                  << __ts->name() << " at time step "
+                                  << this->prefix() << " at time step "
                                   << __ts->index() << " in "
                                   << __fname.str() << "\n";
 
@@ -207,7 +207,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 else
                 {
                     DVLOG(2) << "[ExporterGmsh] saving model "
-                                  << __ts->name() << " at time step "
+                                  << this->prefix() << " at time step "
                                   << __ts->index() << " in "
                                   << __fname.str() << "\n";
 
@@ -300,7 +300,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         std::ostringstream __geofname;
                         std::ostringstream __mshfname;
 
-                        __geofname << __ts->name()  //<< this->prefix() //this->path()
+                        __geofname << this->prefix()  //<< this->prefix() //this->path()
                             << "-" << this->worldComm().size()
                             << ".geo";
 
@@ -310,7 +310,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         // merge the msh files, depending on the fact that we have 1 or several data files
                         if(boption(_name="exporter.gmsh.merge") == true)
                         {
-                            __mshfname << __ts->name()  //<< this->prefix() //this->path()
+                            __mshfname << this->prefix()  //<< this->prefix() //this->path()
                                 << "-" << this->worldComm().size()
                                 << ".msh";
                             geoout << "Merge \"" << __fname.str() << "\";" << std::endl; 
@@ -320,7 +320,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                             for(int i = 0; i < this->worldComm().size(); i++)
                             {
                                 __mshfname.str("");
-                                __mshfname << __ts->name()  //<< this->prefix() //this->path()
+                                __mshfname << this->prefix()  //<< this->prefix() //this->path()
                                     << "-" << this->worldComm().size() << "_" << i
                                     << ".msh";
                                 geoout << "Merge \"" << __mshfname.str() << "\";" << std::endl; 
