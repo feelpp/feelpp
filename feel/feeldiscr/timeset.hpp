@@ -89,6 +89,9 @@ template<typename A0,typename A1,typename A2,typename A3,typename A4> class Func
  * \ingroup SpaceTime
  * \brief data TimeSet
  *
+ * \tparam MeshType     Mesh type
+ * \tparam N            Mesh geometrical order
+ *
  * \author Christophe Prud'homme
  */
 template<typename MeshType, int N = 1>
