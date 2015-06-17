@@ -61,6 +61,9 @@ enum file_type
  * \brief export Feel generated data to some file formats
  * \ingroup Exporter
  *
+ * \tparam MeshType     mesh type
+ * \tparam N            mesh geometrical order
+ *
  * Use the visitor and factory pattern.
  *
  * Here is a snippet on how to use the Exporter class
