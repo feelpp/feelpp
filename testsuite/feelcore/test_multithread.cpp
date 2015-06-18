@@ -139,22 +139,38 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     }
 #endif
 
-    /* parallel implementation in Feel++ with a constant */
-    Environment::setOptionValue("parallel.cpu.enable", bool(true));
-    Environment::setOptionValue("parallel.cpu.impl", mtImpl);
-    Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
+#ifdef FEELPP_HAS_TBB
+    if(mtImpl == "tbb")
+    {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+        auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0), use_tbb = true).evaluate();
+        fineParRes = intfCstPar(0 , 0);
 
-    auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate();
-    fineParRes = intfCstPar(0 , 0);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+        fineParTime = getElapsedTime(ts1, ts2);
+    }
+    else
+#endif
+    if(1)
+    {
+        /* parallel implementation in Feel++ with a constant */
+        Environment::setOptionValue("parallel.cpu.enable", bool(true));
+        Environment::setOptionValue("parallel.cpu.impl", mtImpl);
+        Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    fineParTime = getElapsedTime(ts1, ts2);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
-    Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
-    Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+        auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate();
+        fineParRes = intfCstPar(0 , 0);
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+        fineParTime = getElapsedTime(ts1, ts2);
+
+        Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
+        Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
+        Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+    }
 
     CHECK( fabs(fineParRes - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in fine test (" << fineParRes << " != " << seqRes << ")\n";
 
@@ -221,22 +237,38 @@ void test_integrate(MeshTypePtr mesh, int nCores, std::string mtImpl)
     }
 #endif
 
-    /* parallel implementation in Feel++ with a constant */
-    Environment::setOptionValue("parallel.cpu.enable", bool(true));
-    Environment::setOptionValue("parallel.cpu.impl", mtImpl);
-    Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
+#ifdef FEELPP_HAS_TBB
+    if(mtImpl == "tbb")
+    {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+        auto intfExprPar = integrate( _range = elements( mesh ), _expr = g, use_tbb = true ).evaluate();
+        fineParRes = intfExprPar(0 , 0);
 
-    auto intfExprPar = integrate( _range = elements( mesh ), _expr = g ).evaluate();
-    fineParRes = intfExprPar(0 , 0);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+        fineParTime = getElapsedTime(ts1, ts2);
+    }
+    else
+#endif
+    if(1)
+    {
+        /* parallel implementation in Feel++ with a constant */
+        Environment::setOptionValue("parallel.cpu.enable", bool(true));
+        Environment::setOptionValue("parallel.cpu.impl", mtImpl);
+        Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    fineParTime = getElapsedTime(ts1, ts2);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
-    Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
-    Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+        auto intfExprPar = integrate( _range = elements( mesh ), _expr = g ).evaluate();
+        fineParRes = intfExprPar(0 , 0);
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+        fineParTime = getElapsedTime(ts1, ts2);
+
+        Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
+        Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
+        Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+    }
 
     CHECK( fabs(fineParRes - seqRes) < 1e-8 ) << "Test failed (" << __FUNCTION__ << ") in fine test (" << fineParRes << " != " << seqRes << ")\n";
 
@@ -294,6 +326,12 @@ int main(int argc, char ** argv)
     test_integrate(mesh, nCores, std::string("harts.pthreads"));
 #else
     std::cout << "Harts is not activated. Skipping associated tests." << std::endl;
+#endif 
+#ifdef FEELPP_HAS_TBB
+    std::cout << "*** TESTING TBB ***" << std::endl;
+    test_integrate(mesh, nCores, std::string("tbb.pthreads"));
+#else
+    std::cout << "TBB is not activated. Skipping associated tests." << std::endl;
 #endif 
 
 #if 0
