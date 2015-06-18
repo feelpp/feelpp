@@ -131,7 +131,7 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-        auto Jh = lag_v_space_type::New(M_mesh); // lag
+        auto Jh = lag_v_space_type::New(M_mesh); // lag_v
 
         auto model = ModelProperties(Environment::expand(soption("myModel")));
         auto J = vf::project(_space=Jh,
@@ -158,9 +158,8 @@ class TestPrecAFP : public Application
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<DIM>("phi","Dirichlet")};
         
-        // RHS
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(idv(J),id(J)));    // rhs
+                       _expr = inner(idv(J),id(u)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                        - inner(trans(id(v)),gradt(phi)) // -grad(phi)
