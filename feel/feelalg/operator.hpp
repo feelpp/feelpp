@@ -281,10 +281,10 @@ private:
 template<typename MatrixType>
 boost::shared_ptr<OperatorMatrix<typename MatrixType::value_type>>
 op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
-
 {
     return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
 }
+
 /**
  * Operator class to model an inverse operator
  */
