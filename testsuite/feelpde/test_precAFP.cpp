@@ -140,6 +140,9 @@ class TestPrecAFP : public Application
         auto M_mu = vf::project(_space=Mh,
                                _range=elements(M_mesh),
                                _expr=expr(soption("functions.m")));
+        auto M_a = vf::project(_space=Xh->template functionSpace<0>(),
+                               _range=elements(M_mesh),
+                               _expr=expr<DIM,1>(soption("functions.a")));
         
         auto U = Xh->element();
         auto u = U.template element<0>();
@@ -186,6 +189,21 @@ class TestPrecAFP : public Application
         f2.solveb(_rhs=f1,
                   _solution=U,
                   _backend=backend(_name="ms"));
+        }
+        auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
+        auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
+        if(Environment::worldComm().globalRank()==0)
+            std::cout << doption("gmsh.hsize") << "\t"
+                << e21 << "\t"
+                << e21/e22 << std::endl;
+        // export
+        if(boption("exporter.export")){
+            auto ex = exporter(_mesh=M_mesh);
+            ex->add("rhs"                ,J  );
+            ex->add("potential"          ,u  );
+            ex->add("exact_potential"    ,M_a);
+            ex->add("lagrange_multiplier",phi);
+            ex->save();
         }
     }
 
