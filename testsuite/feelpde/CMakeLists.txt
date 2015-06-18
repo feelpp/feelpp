@@ -3,4 +3,6 @@ foreach(TEST levelset )
     feelpp_add_test( ${TEST} )
 endforeach()
 
-feelpp_add_test( precAFP CFG precAFP.cfg precAFP.mod DEFS FM_DIM=2 GEO precAFP2D.geo)
+foreach(DIM 2 3)
+  feelpp_add_test( precAFP${DIM}D SRCS test_precAFP.cpp CFG precAFP${DIM}D.cfg backend.cfg precAFP${DIM}D.mod DEFS FM_DIM=${DIM} GEO precAFP${DIM}D.geo)
+endforeach()
