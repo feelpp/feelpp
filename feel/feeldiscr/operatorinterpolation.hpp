@@ -1188,7 +1188,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 {
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                         {
-                            const auto& gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
+                            const size_type gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
                             if (!dof_done[gdof])
                                 {
                                     //------------------------
