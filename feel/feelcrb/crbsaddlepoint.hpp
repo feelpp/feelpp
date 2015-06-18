@@ -146,6 +146,7 @@ public:
     typedef typename model_type::matrix_ad_type matrix_ad_type;
     typedef typename model_type::vector_ad_type vector_ad_type;
 
+    typedef boost::tuple<double, parameter_type, double, double> max_error_type;
 
     /// Default constructor
     CRBSaddlePoint() :
@@ -272,6 +273,10 @@ private :
         void offlineResidual( int N0, int N1, int Nadded0, int Nadded1 );
     template<int Row>
         void initResidualVectors();
+    max_error_type maxResidual( int N );
+    double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
+    template <int Row>
+        double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
 
     struct ComputeADElements
     {
@@ -549,21 +554,21 @@ CRBSaddlePoint<TruthModelType>::offline()
             M_blockLqm_pr[1][q].resize( this->M_model->template mMaxF<1>( output_index, q ) );
     } // if ( rebuild_database )
 
-
-
     bool use_predefined_WNmu = buildSampling();
 
     LOG( INFO )<<"[CRBSaddlePoint offline] M_error_type = "<<this->M_error_type;
-
-
 
     if ( use_predefined_WNmu )
     {
         this->M_iter_max = this->M_WNmu->size();
         mu = this->M_WNmu->at( std::min( this->M_N, this->M_iter_max-1 ) ); // first element
     }
+    else if ( this->M_error_type != CRB_NO_RESIDUAL )
+    {
+        boost::tie( mu, index ) = this->M_Xi->min(true);
+    }
 
-    if( this->M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
+    if( use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
         this->M_maxerror = 1e10;
@@ -595,7 +600,7 @@ CRBSaddlePoint<TruthModelType>::offline()
             std::cout << "  -- primal problem solved in "<< timer.elapsed() << std::endl;
         timer.restart();
 
-        if ( !use_predefined_WNmu)
+        if ( !use_predefined_WNmu )
             this->M_WNmu->push_back( mu, index );
         this->M_WNmu_complement = this->M_WNmu->complement();
 
@@ -654,34 +659,23 @@ CRBSaddlePoint<TruthModelType>::offline()
         offlineResidual<1>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
         CRB_COUT << "  -- offline residual 1 built in "<< timer.elapsed() << std::endl;
 
-        if ( ! use_predefined_WNmu )
-        {
-            bool already_exist;
-            do
-            {
-                //initialization
-                already_exist=false;
-                //pick randomly an element
-                mu = this->M_Dmu->element();
-                //make sure that the new mu is not already is M_WNmu
-                BOOST_FOREACH( auto _mu, *this->M_WNmu )
-                {
-                    if( mu == _mu )
-                        already_exist=true;
-                }
-            }
-            while( already_exist );
-            this->M_current_mu = mu;
-        }
-        else
+        if( ! use_predefined_WNmu )
+           this->M_WNmu->push_back( mu, index );
+        this->M_WNmu_complement = this->M_WNmu->complement();
+
+        if ( use_predefined_WNmu )
         {
             //remmber that in this case M_iter_max = sampling size
             if( this->M_N < this->M_iter_max )
-            {
                 mu = this->M_WNmu->at( this->M_N );
-                this->M_current_mu = mu;
-            }
         }
+        else
+        {
+            tic();
+            boost::tie( this->M_maxerror, mu, delta_pr, delta_du ) = maxResidual( this->M_N );
+            toc( "  -- max residual computation ");
+        }
+        this->M_current_mu = mu;
 
         this->M_rbconv.insert( convergence(this->M_N, boost::make_tuple(this->M_maxerror,
                                                                         delta_pr,delta_du) ) );
@@ -1097,8 +1091,195 @@ CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, in
             } // m1 loop Lhs1
         } // q1 loop Lhs1
     } // j loop Lhs1
+} // offlineResidual
 
+template<typename TruthModelType>
+typename CRBSaddlePoint<TruthModelType>::max_error_type
+CRBSaddlePoint<TruthModelType>::maxResidual( int N )
+{
+    std::vector< vectorN_type > uN;
+    std::vector< vectorN_type > uNdu;
+    std::vector< vectorN_type > uNold;
+    std::vector< vectorN_type > uNduold;
+
+    double rez=0;
+    parameter_type mu;
+
+    // we evaluate residual for each parameter in the complement of W_MNmu
+    for ( int k=0; k<this->M_WNmu_complement->size(); k++ )
+    {
+        parameter_type const& current_mu = this->M_WNmu_complement->at(k);
+        lb( N, current_mu, uN, uNdu, uNold, uNduold );
+        double current_rez = onlineResidual( N, current_mu, uN[0] );
+        if ( current_rez>rez )
+        {
+            mu = current_mu;
+            rez = current_rez;
+        }
+    } // loop on M_WNmu_complement
+
+    // we find the proc which has the max residual
+    int world_size = Environment::worldComm().globalSize();
+    std::vector<double> max_world( world_size );
+    mpi::all_gather( Environment::worldComm().globalComm(),
+                     rez,
+                     max_world );
+    auto it_max = std::max_element( max_world.begin(), max_world.end() );
+    int proc_having_good_mu = it_max - max_world.begin();
+
+    // we broadcast the good parameter and the value of the max residual
+    auto tuple = boost::make_tuple( mu, rez );
+    boost::mpi::broadcast( Environment::worldComm(), tuple, proc_having_good_mu );
+    mu = tuple.template get<0>();
+    rez = tuple.template get<1>();
+
+    CRB_COUT << std::setprecision(15) << "[CRBSaddlePoint] max residual="<< rez << std::endl;
+
+    return boost::make_tuple( rez, mu, 0, 0 );
 }
+
+template<typename TruthModelType>
+double
+CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& mu,
+                                                vectorN_type Un ) const
+{
+    double res0 = onlineResidual<0>( Ncur, mu, Un );
+    double res1 = onlineResidual<1>( Ncur, mu, Un );
+
+    return std::sqrt( res0*res0 + res1*res1 );
+}
+
+
+template<typename TruthModelType>
+template<int Row>
+double
+CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& mu,
+                                                vectorN_type Un ) const
+{
+    int N0 = M_N0[Ncur];
+    int N1 = M_N1[Ncur];
+    int N [2] = { M_N0[Ncur], M_N1[Ncur] };
+
+    CHECK( Un.size() == N0 + N1 )
+        << "invalide size of Un, vector can't be cut, Un.size="
+        <<Un.size()<<", N0="<<N0<<", N1="<<N1<<std::endl;
+
+    vectorN_type un = Un.head( N0 );
+    vectorN_type pn = Un.tail( N1 );
+
+    int QRhs = this->M_model->template Ql<Row>( 0 );
+    int QLhs0 = this->M_model->template Qa<Row,0>();
+    int QLhs1 = this->M_model->template Qa<Row,1>();
+
+    beta_vector_type betaLhs0 = this->M_model->template computeBetaAqm<Row,0>(mu);
+    beta_vector_type betaLhs1 = this->M_model->template computeBetaAqm<Row,1>(mu);;
+    beta_vector_type betaRhs;
+    if ( QRhs )
+        betaRhs = this->M_model->template computeBetaFqm<Row>(0,mu);
+
+
+    double RhsRhs = 0;
+    double Lhs0Rhs = 0;
+    double Lhs0Lhs0 = 0;
+    double Lhs0Lhs1 =0;
+    double Lhs1Rhs = 0;
+    double Lhs1Lhs1 = 0;
+
+    // LOOP ON RHS
+    for ( int q1=0; q1<QRhs; q1++ )
+    {
+        for ( int m1=0; m1<this->M_model->template mMaxF<Row>( 0, q1 ); m1++ )
+        {
+            double beta_q1 = betaRhs[q1][m1];
+            for ( int q2=0; q2<QRhs; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxF<Row>( 0, q2 ); m2++ )
+                {
+                    double beta_q2 = betaRhs[q2][m2];
+                    RhsRhs += M_R_RhsRhs[Row][q1][m1][q2][m2]*beta_q1*beta_q2;
+                }
+            } // q2 loop rhs
+        } // m1 loop rhs
+    } // q1 loop rhs
+
+    // LOOP ON LHS0
+    for ( int q1=0; q1<QLhs0; q1++ )
+    {
+        for ( int m1=0; m1<this->M_model->template mMaxA<Row,0>(q1); m1++ )
+        {
+            double beta_q1 = betaLhs0[q1][m1];
+
+            // SUBLOOP ON RHS
+            for ( int q2=0; q2<QRhs; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxF<Row>( 0, q2 ); m2++ )
+                {
+                    double beta_q2 = betaRhs[q2][m2];
+                    Lhs0Rhs += beta_q1*beta_q2*M_R_Lhs0Rhs[Row][q1][m1][q2][m2].head(N0).dot(un);
+                } // m2 loop rhs
+            } // q2 loop rhs
+
+            // SUBLOOP ON LHS0
+            for ( int q2=0; q2<QLhs0; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxA<Row,0>(q2); m2++ )
+                {
+                    double beta_q2 = betaLhs0[q2][m2];
+
+                    auto m = M_R_Lhs0Lhs0[Row][q1][m1][q2][m2].block(0,0,N0,N0)*un;
+                    Lhs0Lhs0 += beta_q1*beta_q2*un.dot(m);
+                } // m2 loop lhs0
+            } // q2 loop lhs0
+
+            // SUBLOOP ON LHS1
+            for ( int q2=0; q2<QLhs1; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxA<Row,1>(q2); m2++ )
+                {
+                    double beta_q2 = betaLhs1[q2][m2];
+                    auto m = M_R_Lhs0Lhs1[Row][q1][m1][q2][m2].block(0,0,N0,N1)*pn;
+                    Lhs0Lhs1 += beta_q1*beta_q2*un.dot(m);
+                } // m2 loop on lhs1
+            } // q2 loop on lhs1
+
+        } // m1 loop lhs0
+    } // q1 loop lhs0
+
+    // LOOP ON LHS1
+    for ( int q1=0; q1<QLhs1; q1++ )
+    {
+        for ( int m1=0; m1<this->M_model->template mMaxA<Row,1>(q1); m1++ )
+        {
+            double beta_q1 = betaLhs1[q1][m1];
+
+            // SUBLOOP ON RHS
+            for ( int q2=0; q2<QRhs; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxF<Row>( 0, q2 ); m2++ )
+                {
+                    double beta_q2 = betaRhs[q2][m2];
+                    Lhs1Rhs += beta_q1*beta_q2*M_R_Lhs1Rhs[Row][q1][m1][q2][m2].head(N1).dot(pn);
+                } // m2 loop rhs
+            } // q2 loop rhs
+
+            // SUBLOOP ON LHS1
+            for ( int q2=0; q2<QLhs1; q2++ )
+            {
+                for ( int m2=0; m2<this->M_model->template mMaxA<Row,1>(q2); m2++ )
+                {
+                    double beta_q2 = betaLhs1[q2][m2];
+                    auto m = M_R_Lhs1Lhs1[Row][q1][m1][q2][m2].block(0,0,N1,N1)*pn;
+                    Lhs1Lhs1 += beta_q1*beta_q2*pn.dot(m);
+                } // m2 loop on lhs1
+            } // q2 loop on lhs1
+
+        } // m1 loop lhs1
+    } // q1 loop lhs1
+
+    double delta = math:: abs( RhsRhs + Lhs0Rhs + Lhs0Lhs0 + Lhs0Lhs1 + Lhs1Rhs + Lhs1Lhs1 );
+
+    return delta;
+} // onlineResidual
 
 
 /**
@@ -1338,7 +1519,7 @@ CRBSaddlePoint<TruthModelType>::buildSampling()
                        << sampling_size <<" )";
         }
     }
-    else // We generate the sampling with choosen strategy
+    else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
         if ( N_log_equi>0 )
         {
@@ -1371,9 +1552,10 @@ CRBSaddlePoint<TruthModelType>::buildSampling()
             throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
+        use_predefined_WNmu=true;
     } //build sampling
 
-    return true;
+    return use_predefined_WNmu;
 } //buildSampling()
 
 

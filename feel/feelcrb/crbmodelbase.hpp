@@ -510,9 +510,15 @@ public:
             return M_A.template get<Row,Col>()->setBeta(q,m);
         }
     template<int Row=0, int Col=0>
-    beta_vector_type computeBetaAqm( parameter_type const& mu, double time=0 )
+    beta_vector_type computeBetaAqm( parameter_type const& mu, double time=0, bool get_transpose=true )
         {
-            return M_A.template get<Row,Col>()->computeBetaQm( mu, time );
+            beta_vector_type out;
+            auto A =M_A.template get<Row,Col>();
+            if ( A )
+                out = A->computeBetaQm( mu, time );
+            else if ( boption("crb.saddlepoint.transpose") && M_A.template get<Col,Row>() && get_transpose )
+                out = M_A.template get<Col,Row>()->computeBetaQm( mu, time );
+            return out;
         }
     template<int Row=0, int Col=0>
     beta_vector_type computeBetaAqm( element_type const& T, parameter_type const& mu, double time=0 )
