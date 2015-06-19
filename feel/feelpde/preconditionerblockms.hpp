@@ -225,7 +225,6 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     f2B = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
     for(auto const & it : m_dirichlet_p){
         f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); // rajouter option elimination_keep-diag
-        std::cout << it.first << "\t" << it.second << std::endl;
     }
     M_22Op = op(f2B.matrixPtr(), "blockms.22");
 
