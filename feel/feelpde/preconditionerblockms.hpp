@@ -216,7 +216,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));;
     
     map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<FM_DIM> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
     LOG(INFO) << "Create sub Matrix\n";
     // calcule matrice L
@@ -235,7 +235,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     f2A = integrate(_range=elements(M_Vh->mesh()), _expr=cst(1.)/idv(M_mu)*trans(curlt_op(u))*curl_op(u) // mu^-1 A
                                                         +cst(1.-M_k*M_k)*inner(idt(u),id(u))); // g M
     for(auto const & it : m_dirichlet_u )
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u);
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
 
         
     M_11Op = op(M_11, "blockms.11");
