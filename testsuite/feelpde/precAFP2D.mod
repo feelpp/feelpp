@@ -1,7 +1,7 @@
 // -*- mode: javascript -*-  vim: set ft=javascript:
 {
-  "Name": "precAFP",
-  "ShortName":"precAFP",
+  "Name": "precAFP2D",
+  "ShortName":"precAFP2D",
   "Model":"linear",
   "Description":"Magneto Static",
   "Parameters":
