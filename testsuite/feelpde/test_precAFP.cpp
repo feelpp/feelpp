@@ -38,6 +38,16 @@
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 
+#if FM_DIM == 2
+#define curl_op curlx
+#define curlt_op curlxt
+#define curlv_op curlxv
+#else
+#define curl_op curl
+#define curlt_op curlt
+#define curlv_op curlv
+#endif
+
 using namespace Feel;
 
 
@@ -57,12 +67,21 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "precAFP" ,
-                     "precAFP" ,
+#if FM_DIM==2
+    AboutData about( "precAFP2D" ,
+                     "precAFP2D" ,
                      "0.1",
-                     "test precAFP",
+                     "test precAFP2D",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
+#else
+    AboutData about( "precAFP3D" ,
+                     "precAFP3D" ,
+                     "0.1",
+                     "test precAFP3D",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2015 Feel++ Consortium" );
+#endif
 
     about.addAuthor( "Vincent HUBER", "developer", "vincent.huber@cemosis.fr", "" );
 
@@ -96,7 +115,7 @@ class TestPrecAFP : public Application
     typedef typename lag_space_type::element_type lag_element_type;
 
     //! Pch 0 space
-    typedef Lagrange<2, Scalar, Discontinuous> lag_0_basis_type; 
+    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
     typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>, Continuous> lag_0_space_type;
     typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
     typedef typename lag_0_space_type::element_type lag_0_element_type;
@@ -107,11 +126,9 @@ class TestPrecAFP : public Application
     typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
     typedef typename lag_v_space_type::element_type lag_v_element_type;
 
-#ifndef STAB
     typedef FunctionSpace<mesh_type, bases<curl_basis_type,lag_basis_type>> comp_space_type;
     typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
     typedef typename comp_space_type::element_type comp_element_type;
-#endif
     
     //! The exporter factory
     typedef Exporter<mesh_type> export_type;
@@ -153,42 +170,50 @@ class TestPrecAFP : public Application
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
        
-       auto M_prec = blockms(
-          _space = Xh,
-          _space2 = Mh, 
-          _matrix = f2.matrixPtr(),
-          _bc = model.boundaryConditions());
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
-        map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<DIM>("phi","Dirichlet")};
+        map_scalar_field<DIM> m_dirichlet_phi {model.boundaryConditions().getScalarFields<DIM>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(idv(J),id(u)));    // rhs
+                       _expr = inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                        - inner(trans(id(v)),gradt(phi)) // -grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
-                       + (1./idv(M_mu))*(trans(curlxt(u))*curlx(u)) // curl curl :: 2D VERSION
+                       + (1./idv(M_mu))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
         for(auto const & it : m_dirichlet)
             f2 += on(_range=markedfaces(M_mesh,it.first),
                      _rhs=f1,
                      _element=u,
-                     _expr = it.second);
+                     _expr=it.second);
         for(auto const & it : m_dirichlet_phi)
             f2 += on(_range=markedfaces(M_mesh,it.first),
                      _rhs=f1,
                      _element=phi,
-                     _expr = it.second);
-        if(soption("ms.pc-type") == "AFP" ){
-        M_prec->update(f2.matrixPtr(),M_mu);
-        f2.solveb(_rhs=f1,
-                  _solution=U,
-                  _backend=backend(_name="ms"),
-                  _prec=M_prec);
+                     _expr=it.second);
+        if(soption("ms.pc-type") == "blockms" ){
+            // auto M_prec = blockms(
+            //    _space = Xh,
+            //    _space2 = Mh, 
+            //    _matrix = f2.matrixPtr(),
+            //    _bc = model.boundaryConditions());
+
+            auto M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
+                soption("blockms.type"),
+                Xh, Mh,
+                model.boundaryConditions(),
+                "",
+                f2.matrixPtr());
+
+            M_prec->update(f2.matrixPtr(),M_mu);
+            f2.solveb(_rhs=f1,
+                      _solution=U,
+                      _backend=backend(_name="ms"),
+                      _prec=M_prec);
         }else{
-        f2.solveb(_rhs=f1,
-                  _solution=U,
-                  _backend=backend(_name="ms"));
+            f2.solveb(_rhs=f1,
+                      _solution=U,
+                      _backend=backend(_name="ms"));
         }
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
@@ -216,10 +241,9 @@ private:
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
 BOOST_AUTO_TEST_SUITE( levelset )
 
-// Test 2D
-BOOST_AUTO_TEST_CASE( test_2d )
+BOOST_AUTO_TEST_CASE( test )
 {
-    TestPrecAFP<2> test;
+    TestPrecAFP<FM_DIM> test;
 }
 
 //// Test 3D
@@ -237,8 +261,7 @@ int main(int argc, char** argv )
                            _about=makeAbout(),
                            _desc=makeOptions() );
     
-    TestPrecAFP<2> tl2;
-    //TestPrecAFP<3> tl3;
+    TestPrecAFP<FM_DIM> t_afp;
 
     return 0;
 }
