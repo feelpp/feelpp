@@ -133,10 +133,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
     //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
+
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
     M_gammaNitschFSI = 2500;
     M_gamma0NitschFSI = 1;
+    M_couplingFSI_RNG_useInterfaceOperator = false;
+    M_couplingFSI_solidIs1dReduced=false;
 
     M_startBySolveNewtonian = boption(_prefix=this->prefix(),_name="start-by-solve-newtonian");
     M_hasSolveNewtonianAtKickOff = false;
@@ -1040,6 +1043,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
         if ( myexpressions.size() >0 )
             markMesh.updateForUseFaceMarker3();
     }
+
+    if ( boption(_name="marked-zones.internal-faces",_prefix=this->prefix() ) )
+    {
+        markMesh.updateFaceMarker3FromInternalFaces();
+        this->applyCIPStabOnlyOnBoundaryFaces( false );
+    }
+
     if ( this->verbose() )
     {
         markMesh.verbose();
