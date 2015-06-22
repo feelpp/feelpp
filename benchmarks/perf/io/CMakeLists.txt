@@ -35,24 +35,8 @@ foreach(D 2 3)
   endforeach()
 endforeach()
     
-add_executable( feel_perf
-  bench1_main.cpp
-  bench1_run.cpp
-  bench1_run1d.cpp
-  bench1_run2d.cpp
-  bench1_run3d.cpp
+add_executable( feel_perf_io
+bench_perf_io.cpp
   )
-target_link_libraries(feel_perf feelpp ${FEELPP_LIBRARIES} )
 
-add_executable( feel_perf2
-  perf2.cpp
-  )
-target_link_libraries(feel_perf2 feelpp ${FEELPP_LIBRARIES} )
-
-add_subdirectory(laplacian)
-add_subdirectory(dar)
-add_subdirectory(stokes)
-add_subdirectory(mortar)
-add_subdirectory(tilted)
-add_subdirectory(curvature)
-add_subdirectory(io)
+target_link_libraries(feel_perf_io feelpp ${FEELPP_LIBRARIES} )
