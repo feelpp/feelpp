@@ -192,6 +192,9 @@ public :
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
 
+    vector_ptrtype const& robinNeumannInterfaceOperator() const { return M_robinNeumannInterfaceOperator; }
+    void setRobinNeumannInterfaceOperator( vector_ptrtype const& vec ) { M_robinNeumannInterfaceOperator = vec; }
+
     //-----------------------------------------------------------------------------------//
 
     void initDispInterpolation();
@@ -210,11 +213,16 @@ public :
 
     void transfertDisplacement();
     void transfertStress();
-    void transfertVelocity();
+    void transfertVelocity( bool useExtrap=false);
+    void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
 
     void transfertStressS2F();
-    void transfertVelocityF2S(bool useExtrapolation);
+    void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
 
+    void transfertRobinNeumannInterfaceOperatorS2F();
+
+    void updateFieldVelocitySolidPreviousPrevious( typename solid_type::element_displacement_type const& vel ) {  *M_fieldVelocitySolidPreviousPrevious = vel; }
+    void updateFieldVelocitySolid1dReducedPreviousPrevious( typename solid_type::element_1dreduced_type const& vel ) {  *M_fieldVelocitySolid1dReducedPreviousPrevious = vel; }
 private :
 
     fluid_ptrtype M_fluid;
@@ -258,6 +266,10 @@ private :
     op_f2s_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconfF2S;
 
     bool M_verbose,M_verboseAllProc;
+
+    vector_ptrtype M_robinNeumannInterfaceOperator;
+    typename solid_type::element_displacement_ptrtype M_fieldVelocitySolidPreviousPrevious;
+    typename solid_type::element_1dreduced_ptrtype M_fieldVelocitySolid1dReducedPreviousPrevious;
 
 };
 

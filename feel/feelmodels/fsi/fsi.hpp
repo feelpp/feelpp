@@ -63,6 +63,8 @@ public :
 
     typedef AitkenRelaxationFSI<solid_type> aitkenrelaxationFSI_type;
     typedef boost::shared_ptr<aitkenrelaxationFSI_type> aitkenrelaxationFSI_ptrtype;
+    typedef FixPointConvergenceFSI<solid_type> fixpointconvergenceFSI_type;
+    typedef boost::shared_ptr<fixpointconvergenceFSI_type> fixpointconvergenceFSI_ptrtype;
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -73,8 +75,8 @@ public :
 
     double meshSize() const { return M_meshSize; }
 
-    fluid_ptrtype const& fluidAppli() const { return M_fluid; }
-    solid_ptrtype const& solidAppli() const { return M_solid; }
+    fluid_ptrtype const& fluidModel() const { return M_fluid; }
+    solid_ptrtype const& solidModel() const { return M_solid; }
     void setFluidModel( fluid_ptrtype const& fm ) { M_fluid=fm; }
     void setSolidModel( solid_ptrtype const& sm ) { M_solid=sm; }
 
@@ -101,8 +103,8 @@ public :
     void
     printInfo() const
     {
-        this->fluidAppli()->printInfo();
-        this->solidAppli()->printInfo();
+        this->fluidModel()->printInfo();
+        this->solidModel()->printInfo();
 
         if ( M_fluid->verboseAllProc() || M_solid->verboseAllProc() ) std::cout << this->getInfo()->str();
         else if (M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank() )
@@ -114,8 +116,8 @@ public :
     void
     saveInfo() const
     {
-        this->fluidAppli()->saveInfo();
-        this->solidAppli()->saveInfo();
+        this->fluidModel()->saveInfo();
+        this->solidModel()->saveInfo();
 
         if ( this->worldComm().isMasterRank() )
         {
@@ -149,21 +151,22 @@ public :
     double currentTime() const { return M_fluid->time(); }
     double time() const { return this->currentTime(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
-    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidAppli()->timeStepBase(); }
-    boost::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidAppli()->timeStepBase(); }
+    boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidModel()->timeStepBase(); }
     void updateTimeStep();
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time )
     {
-        this->fluidAppli()->exportResults(time);
-        this->solidAppli()->exportResults(time);
+        this->fluidModel()->exportResults(time);
+        this->solidModel()->exportResults(time);
     }
 
 private :
     void updateBackendOptimisation( bool restartFullStepFluid,bool restartFullStepSolid );
     void solveImpl1();
     void solveImpl2();
+    void solveImpl3();
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -186,6 +189,7 @@ private :
 
     interpolationFSI_ptrtype M_interpolationFSI;
     aitkenrelaxationFSI_ptrtype M_aitkenFSI;
+    fixpointconvergenceFSI_ptrtype M_fixPointConvergenceFSI;
 
     int M_previousTimeOrder,M_currentTimeOrder;
     bool M_reusePrecOptFluid,M_reusePrecRebuildAtFirstFSIStepOptFluid,M_reuseJacOptFluid,M_reuseJacRebuildAtFirstNewtonStepOptFluid,M_reuseJacRebuildAtFirstFSIStepOptFluid;

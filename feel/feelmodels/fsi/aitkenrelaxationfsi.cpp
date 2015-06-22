@@ -88,16 +88,14 @@ AitkenRelaxationFSI<SolidType>::saveOldSolution()
 {
     if (M_solid->isStandardModel())
     {
-        *M_oldSol = Feel::vf::project(M_oldSol->functionSpace(),
-                                      elements(M_oldSol->mesh()),
-                                      //markedfaces(M_oldSol->mesh(),"ParoiFSI"),
-                                      vf::idv(M_solid->fieldDisplacement()) );
+        M_oldSol->on(_range=elements(M_oldSol->mesh()),
+                     //_range=markedfaces(M_oldSol->mesh(),"ParoiFSI"),
+                     _expr=vf::idv(M_solid->fieldDisplacement()) );
     }
     else if ( M_solid->is1dReducedModel() )
     {
-        *M_oldSol1dReduced = Feel::vf::project(M_oldSol1dReduced->functionSpace(),
-                                               elements(M_oldSol1dReduced->mesh()),
-                                               vf::idv(M_solid->fieldDisplacementScal1dReduced()) );
+        M_oldSol1dReduced->on(_range=elements(M_oldSol1dReduced->mesh()),
+                              _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced()) );
     }
 }
 
@@ -148,10 +146,9 @@ AitkenRelaxationFSI<SolidType>::applyRelaxation()
 {
     if (M_solid->isStandardModel())
     {
-        *M_residual = vf::project(M_residual->functionSpace(),
-                                  elements(M_residual->mesh()),
-                                  //markedfaces(M_oldSol->mesh(),"ParoiFSI"),
-                                  vf::idv(M_solid->fieldDisplacement() ));
+        M_residual->on(_range=elements(M_residual->mesh()),
+                       //_range=markedfaces(M_oldSol->mesh(),"ParoiFSI"),
+                       _expr=vf::idv(M_solid->fieldDisplacement() ));
         *M_residual -= *M_oldSol;
 
         M_aitken->apply2(_newElt=M_solid->fieldDisplacement(),
@@ -160,9 +157,8 @@ AitkenRelaxationFSI<SolidType>::applyRelaxation()
     }
     else if ( M_solid->is1dReducedModel() )
     {
-        *M_residual1dReduced = vf::project(M_residual1dReduced->functionSpace(),
-                                           elements(M_residual1dReduced->mesh()),
-                                           vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
+        M_residual1dReduced->on(_range=elements(M_residual1dReduced->mesh()),
+                                _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
         *M_residual1dReduced -= *M_oldSol1dReduced;
 
         M_aitken1dReduced->apply2(_newElt=M_solid->fieldDisplacementScal1dReduced(),
@@ -226,6 +222,72 @@ AitkenRelaxationFSI<SolidType>::setTheta(double v)
 }
 
 //-----------------------------------------------------------------------------------//
+
+template <class SolidType >
+FixPointConvergenceFSI<SolidType>::FixPointConvergenceFSI( solid_ptrtype solid )
+    :
+    M_solid(solid)
+{
+    if (M_solid->isStandardModel())
+    {
+        M_oldSol.reset( new element_disp_type( M_solid->functionSpaceDisplacement() ) );
+        M_residual.reset( new element_disp_type( M_solid->functionSpaceDisplacement() ) );
+    }
+    else if ( M_solid->is1dReducedModel() )
+    {
+        M_oldSol1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
+        M_residual1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
+    }
+}
+
+template <class SolidType >
+void
+FixPointConvergenceFSI<SolidType>::saveOldSolution()
+{
+    if (M_solid->isStandardModel())
+    {
+        M_oldSol->on(_range=elements(M_oldSol->mesh()),
+                     //_range=markedfaces(M_oldSol->mesh(),"ParoiFSI"),
+                     _expr=vf::idv(M_solid->fieldDisplacement()) );
+    }
+    else if ( M_solid->is1dReducedModel() )
+    {
+        M_oldSol1dReduced->on(_range=elements(M_oldSol1dReduced->mesh()),
+                              _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced()) );
+    }
+}
+
+template <class SolidType >
+double
+FixPointConvergenceFSI<SolidType>::computeConvergence()
+{
+    double residualConvergence=1;
+
+    if (M_solid->isStandardModel())
+    {
+        M_residual->on(_range=elements(M_residual->mesh()),
+                       _expr=vf::idv(M_solid->fieldDisplacement() ));
+        *M_residual -= *M_oldSol;
+        double oldEltL2Norm = M_oldSol->l2Norm();
+        if ( oldEltL2Norm > 1e-8 )
+            residualConvergence = M_residual->l2Norm()/oldEltL2Norm;
+        else
+            residualConvergence = M_residual->l2Norm();
+    }
+    else if ( M_solid->is1dReducedModel() )
+    {
+        M_residual1dReduced->on(_range=elements(M_residual1dReduced->mesh()),
+                                _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
+        *M_residual1dReduced -= *M_oldSol1dReduced;
+        double oldEltL2Norm = M_oldSol1dReduced->l2Norm();
+        if ( oldEltL2Norm > 1e-8 )
+            residualConvergence = M_residual1dReduced->l2Norm()/oldEltL2Norm;
+        else
+            residualConvergence = M_residual1dReduced->l2Norm();
+    }
+
+    return residualConvergence;
+}
 
 
 } // namespace FeelModels
