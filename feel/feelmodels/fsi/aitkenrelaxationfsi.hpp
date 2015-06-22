@@ -43,7 +43,6 @@ namespace FeelModels
 
 template <class SolidType >
 class AitkenRelaxationFSI
-
 {
 public :
     typedef AitkenRelaxationFSI<SolidType> self_type;
@@ -51,17 +50,14 @@ public :
     typedef boost::shared_ptr<solid_type> solid_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_disp_type;
-    //typedef typename solid_type::element_displacement_type element_disp_type;
-    typedef typename solid_type::element_vectorial_type element_disp_type;
-    typedef boost::shared_ptr<element_disp_type> element_disp_ptrtype;
-
+    typedef typename solid_type::element_displacement_type element_disp_type;
+    typedef typename solid_type::element_displacement_ptrtype element_disp_ptrtype;
     typedef Aitken<space_disp_type> aitken_type;
     typedef boost::shared_ptr<aitken_type> aitken_ptrtype;
 
     typedef typename solid_type::space_1dreduced_type space_disp_1dreduced_type;
     typedef typename solid_type::element_1dreduced_type element_disp_1dreduced_type;
-    typedef boost::shared_ptr<element_disp_1dreduced_type> element_disp_1dreduced_ptrtype;
-
+    typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
     typedef Aitken<space_disp_1dreduced_type> aitken_1dreduced_type;
     typedef boost::shared_ptr<aitken_1dreduced_type> aitken_1dreduced_ptrtype;
 
@@ -107,6 +103,36 @@ private :
     element_disp_1dreduced_ptrtype M_residual1dReduced;
 
     //double M_areaFSIinterface;
+};
+
+template <class SolidType >
+class FixPointConvergenceFSI
+{
+public :
+    typedef FixPointConvergenceFSI<SolidType> self_type;
+    typedef SolidType solid_type;
+    typedef boost::shared_ptr<solid_type> solid_ptrtype;
+
+    typedef typename solid_type::space_displacement_type space_disp_type;
+    typedef typename solid_type::element_displacement_type element_disp_type;
+    typedef typename solid_type::element_displacement_ptrtype element_disp_ptrtype;
+
+    typedef typename solid_type::space_1dreduced_type space_disp_1dreduced_type;
+    typedef typename solid_type::element_1dreduced_type element_disp_1dreduced_type;
+    typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
+
+    FixPointConvergenceFSI( solid_ptrtype solid );
+    FixPointConvergenceFSI( self_type const & M ) = default;
+
+    void saveOldSolution();
+    double computeConvergence();
+
+private :
+    solid_ptrtype M_solid;
+    element_disp_ptrtype M_oldSol;
+    element_disp_ptrtype M_residual;
+    element_disp_1dreduced_ptrtype M_oldSol1dReduced;
+    element_disp_1dreduced_ptrtype M_residual1dReduced;
 };
 
 } // namespace FeelModels

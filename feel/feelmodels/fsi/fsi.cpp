@@ -266,31 +266,14 @@ FSI<FluidType,SolidType>::init()
         }
     }
 
-
     CHECK( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" ||
            this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
            this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
-           this->fsiCouplingBoundaryCondition() == "nitsche" ) << "invalid fsiCouplingBoundaryCondition : " << this->fsiCouplingBoundaryCondition();
+           this->fsiCouplingBoundaryCondition() == "nitsche" ||
+           this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" ) << "invalid fsiCouplingBoundaryCondition : " << this->fsiCouplingBoundaryCondition();
     M_fluid->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
     M_solid->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
-#if 0
-    // set coupling parameters
-    if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
-    {
-        M_fluid->couplingFSIcondition("dirichlet-neumann");
-        M_solid->couplingFSIcondition("neumann");
-    }
-    else if (this->fsiCouplingBoundaryCondition()=="robin-neumann")
-    {
-        M_fluid->couplingFSIcondition("robin-neumann");
-        M_solid->couplingFSIcondition("neumann");
-    }
-    else if (this->fsiCouplingBoundaryCondition()=="robin-robin")
-    {
-        M_fluid->couplingFSIcondition("robin-robin");
-        M_solid->couplingFSIcondition("robin");
-    }
-#endif
+
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
         M_fluid->useFSISemiImplicitScheme(true);
@@ -313,34 +296,121 @@ FSI<FluidType,SolidType>::init()
     M_reuseJacOptSolid = M_solid->backend()->reuseJac();
     M_reuseJacRebuildAtFirstNewtonStepOptSolid = M_solid->backend()->reuseJacRebuildAtFirstNewtonStep();
     //-------------------------------------------------------------------------//
-
     // call init
     M_fluid->init();
     M_solid->init();
     //-------------------------------------------------------------------------//
+    if (M_solid->isStandardModel())
+    {
+        M_fluid->setCouplingFSI_solidIs1dReduced(false);
+        M_fluid->setRhoSolidFSI( M_solid->mechanicalProperties()->cstRho() );
+    }
+    else if ( M_solid->is1dReducedModel() )
+    {
+        M_fluid->setCouplingFSI_solidIs1dReduced(true);
+        M_fluid->setRhoSolidFSI( M_solid->mechanicalProperties()->cstRho()*0.1 ); // 0.1 is thickness (TODO)
+    }
+
     //M_solid->createAdditionalFunctionSpacesFSI();
     //-------------------------------------------------------------------------//
     // init interpolation tool
     M_interpolationFSI.reset(new interpolationFSI_type(M_fluid,M_solid));
+
+    if ( M_solid->isStandardModel() )
+        M_interpolationFSI->updateFieldVelocitySolidPreviousPrevious( M_solid->timeStepNewmark()->previousVelocity() );
+    else if ( M_solid->is1dReducedModel() )
+        M_interpolationFSI->updateFieldVelocitySolid1dReducedPreviousPrevious( M_solid->timeStepNewmark1dReduced()->previousVelocity() );
+
     //-------------------------------------------------------------------------//
     // init aitken relaxation tool
     //AitkenType aitkenType = AitkenType::AITKEN_METHOD_1;
     std::string aitkenType = "method1";
     if (this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
         this->fsiCouplingBoundaryCondition()=="robin-neumann" || this->fsiCouplingBoundaryCondition()=="robin-neumann-genuine" ||
+        this->fsiCouplingBoundaryCondition()=="robin-neumann-generalized" ||
         this->fsiCouplingBoundaryCondition() == "nitsche")
     {
         //aitkenType = AitkenType::FIXED_RELAXATION_METHOD;
         aitkenType = "fixed-relaxation";
         M_initialTheta=0;
+        M_fixPointConvergenceFSI.reset(new fixpointconvergenceFSI_type(M_solid) );
     }
     M_aitkenFSI.reset(new aitkenrelaxationFSI_type(M_solid,
                                                    aitkenType,//AITKEN_METHOD_1,
                                                    M_initialTheta,
                                                    M_tolPtFixe,
                                                    M_minTheta));
-    //-------------------------------------------------------------------------//
 
+    //-------------------------------------------------------------------------//
+    // build interface operator for generalized robin-neumann
+    if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized")
+    {
+        auto fieldInit = M_fluid->meshVelocity2().functionSpace()->elementPtr();
+        M_fluid->setCouplingFSI_RNG_evalForm1( fieldInit );
+    }
+    if (M_solid->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized")
+    {
+        auto spaceDisp = M_solid->functionSpaceDisplacement();
+        auto const& uDisp = M_solid->fieldDisplacement();
+        auto mygraph = stencil(_test=spaceDisp,_trial=spaceDisp)->graph();
+        auto matMass = M_solid->backend()->newMatrix(0,0,0,0,mygraph);
+        form2( _trial=spaceDisp, _test=spaceDisp,_matrix=matMass )
+            += integrate(//_range=markedfaces(M_solid->mesh(),M_solid->markerNameFSI()),
+                         _range=elements(M_solid->mesh()),
+                     _expr=inner(idt(uDisp),id(uDisp)) );
+        matMass->close();
+        auto vecDiag = M_solid->backend()->newVector(spaceDisp);
+#if 0
+        M_solid->backend()->diag(matMass,vecDiag );
+#else
+        std::set<size_type> dofMarkerFsi;
+#if 0 // bug
+        for ( std::string const markName : M_solid->markerNameFSI() )
+        {
+            //functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 )
+            auto setofdof = M_solid->functionSpaceDisplacement()->dof()->markerToDof( markName );
+            for( auto it = setofdof.first, en = setofdof.second; it != en; ++ it )
+                dofMarkerFsi.insert( it->second );
+        }
+#else
+        for ( auto const& faceMarked : markedfaces(M_solid->mesh(),M_solid->markerNameFSI() ) )
+        {
+            auto __face_it = faceMarked.template get<1>();
+            auto __face_en = faceMarked.template get<2>();
+            for( ; __face_it != __face_en; ++__face_it )
+                //for ( auto const& face : faceMarked )
+            {
+                auto const& face = *__face_it;
+                for ( uint16_type l = 0; l < M_solid->functionSpaceDisplacement()->dof()->nLocalDofOnFace(true); ++l )
+                {
+                    for (uint16_type c1=0;c1<solid_type::nDim;c1++)
+                    {
+                        size_type gdof = boost::get<0>(M_solid->functionSpaceDisplacement()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                        dofMarkerFsi.insert( gdof );
+                    }
+                }
+            }
+        }
+#endif
+        for ( size_type k : dofMarkerFsi )
+        {
+            if ( vecDiag->map().dofGlobalProcessIsGhost( k ) ) continue;
+            size_type gcdof = vecDiag->map().mapGlobalProcessToGlobalCluster(k);
+            auto const& graphRow = matMass->graph()->row(gcdof);
+            double sumCol=0;
+            for ( size_type idCol : graphRow.template get<2>() )
+            {
+                sumCol += matMass->operator()(k,idCol);
+            }
+            vecDiag->set( k, sumCol );
+        }
+#endif
+        vecDiag->close();
+
+        M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
+        M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
+    }
+    //-------------------------------------------------------------------------//
 
     this->log("ToolBoxFSI","init","finish");
 }
@@ -354,11 +424,19 @@ FSI<FluidType,SolidType>::solve()
     boost::mpi::timer mytimer;
 
     if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
+    {
         this->solveImpl1();
-    else if (this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
-             this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
-             this->fsiCouplingBoundaryCondition() == "nitsche" )
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
         this->solveImpl2();
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+        this->solveImpl3();
+    }
 
     double timeElapsed = mytimer.elapsed();
     if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
@@ -576,8 +654,10 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
+#if 0
         this->interpolationTool()->transfertDisplacement();
         M_fluid->updateALEmesh();
+#endif
 
         M_fluid->setRebuildLinearPartInJacobian(true);M_fluid->setRebuildCstPartInLinearSystem(true);
         M_solid->setRebuildLinearPartInJacobian(true);M_solid->setRebuildCstPartInLinearSystem(true);
@@ -586,25 +666,22 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     this->updateBackendOptimisation(true,true);
 
+    /*if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+         this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
+        M_solid->updateSubMeshDispFSIFromPrevious();
+     }*/
 
-#if 1
-    auto oldSolDisp = M_solid->functionSpaceDisplacement()->elementPtr();
-    auto residualDisp = M_solid->functionSpaceDisplacement()->elementPtr();
-#endif
+
     int cptFSI=0;
     double residualConvergence=1;
 
-    bool solveStruct = this->fluidAppli()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
+    bool solveStruct = this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
 
     while ( ( residualConvergence > this->tolPtFixe() || cptFSI <3 ) && cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
-        //timerCur.restart();
-#if 1
-        *oldSolDisp = Feel::vf::project(_space=oldSolDisp->functionSpace(),
-                                        _range=elements(oldSolDisp->mesh()),
-                                        _expr=vf::idv(M_solid->fieldDisplacement()) );
-#endif
+        M_fixPointConvergenceFSI->saveOldSolution();
 
         //--------------------------------------------------------------//
         if (solveStruct)
@@ -614,10 +691,13 @@ FSI<FluidType,SolidType>::solveImpl2()
             this->interpolationTool()->transfertStress();
             // revert moving mesh
             M_fluid->getMeshALE()->revertMovingMesh();
-            bool useExtrap = (this->fluidAppli()->timeStepBDF()->iteration() > 2) && boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
-            if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
-                 this->fsiCouplingBoundaryCondition()=="nitsche" )
-                this->interpolationTool()->transfertVelocityF2S(useExtrap);
+            if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
+                   this->fsiCouplingBoundaryCondition()=="nitsche" ) &&
+                 M_solid->isStandardModel() )
+            {
+                bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
+                this->interpolationTool()->transfertVelocityF2S(cptFSI,useExtrap);
+            }
             M_solid->solve();
             M_solid->updateVelocity();
         }
@@ -634,21 +714,11 @@ FSI<FluidType,SolidType>::solveImpl2()
         M_fluid->solve();
         //--------------------------------------------------------------//
 
-#if 1
-        *residualDisp = vf::project(residualDisp->functionSpace(),
-                                    elements(residualDisp->mesh()),
-                                    vf::idv(M_solid->fieldDisplacement() ));
-        *residualDisp -= *oldSolDisp;
-        auto oldEltL2Norm = oldSolDisp->l2Norm();
-        if ( oldEltL2Norm > 1e-8 )
-            residualConvergence = residualDisp->l2Norm()/oldEltL2Norm;
-        else
-            residualConvergence = residualDisp->l2Norm();
+        residualConvergence = M_fixPointConvergenceFSI->computeConvergence();
 
         if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
             std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
                       << " residualConvergence " << std::scientific << residualConvergence << "\n";
-#endif
 
         if (this->fsiCouplingType()=="Semi-Implicit")
         {
@@ -677,6 +747,92 @@ FSI<FluidType,SolidType>::solveImpl2()
         ++cptFSI;
     }
 
+    if (this->fsiCouplingType()=="Semi-Implicit")
+    {
+        this->interpolationTool()->transfertDisplacement();
+        M_fluid->updateALEmesh();
+    }
+
+
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::solveImpl3()
+{
+    boost::mpi::timer timerIter;
+
+    if (this->fsiCouplingType()=="Semi-Implicit")
+    {
+        this->interpolationTool()->transfertDisplacement();
+        M_fluid->updateALEmesh();
+
+        M_fluid->setRebuildLinearPartInJacobian(true);M_fluid->setRebuildCstPartInLinearSystem(true);
+        M_solid->setRebuildLinearPartInJacobian(true);M_solid->setRebuildCstPartInLinearSystem(true);
+        M_fluid->setRebuildCstPartInResidual(true);M_solid->setRebuildCstPartInResidual(true);
+    }
+
+    this->updateBackendOptimisation(true,true);
+
+    int cptFSI=0;
+    double residualConvergence=1;
+
+    //bool solveStruct = this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
+
+    while ( ( residualConvergence > this->tolPtFixe() || cptFSI <3 ) && cptFSI < this->fixPointMaxIt() )
+    {
+        timerIter.restart();
+        //timerCur.restart();
+        M_fixPointConvergenceFSI->saveOldSolution();
+        //--------------------------------------------------------------//
+        if (this->fsiCouplingType()=="Implicit")
+        {
+            this->interpolationTool()->transfertDisplacement();
+            M_fluid->updateALEmesh();
+        }
+        else
+        {
+            //bool useExtrap = (this->fluidModel()->timeStepBDF()->iteration() > 1) && cptFSI==0;
+            //this->interpolationTool()->transfertVelocity(useExtrap);
+        }
+        this->interpolationTool()->transfertRobinNeumannGeneralizedS2F( cptFSI );
+        M_fluid->solve();
+        //--------------------------------------------------------------//
+        M_fluid->getMeshALE()->revertReferenceMesh();
+        // transfert stress
+        this->interpolationTool()->transfertStress();
+        // revert moving mesh
+        M_fluid->getMeshALE()->revertMovingMesh();
+        M_solid->solve();
+        M_solid->updateVelocity();
+        //--------------------------------------------------------------//
+
+        residualConvergence = M_fixPointConvergenceFSI->computeConvergence();
+        if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
+            std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
+                      << " residualConvergence " << std::scientific << residualConvergence << "\n";
+
+        if (this->fsiCouplingType()=="Semi-Implicit")
+        {
+            M_fluid->setRebuildLinearPartInJacobian(false);M_fluid->setRebuildCstPartInLinearSystem(false);
+            M_fluid->setRebuildCstPartInResidual(false);
+            M_solid->setRebuildLinearPartInJacobian(false);M_solid->setRebuildCstPartInLinearSystem(false);
+            M_solid->setRebuildCstPartInResidual(false);
+        }
+
+        this->updateBackendOptimisation(false,false);
+
+
+        //--------------------------------------------------------------//
+        //--------------------------------------------------------------//
+        double timeElapsedIter = timerIter.elapsed();
+        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("main","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
+        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+
+        ++cptFSI;
+    }
+
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -688,6 +844,14 @@ FSI<FluidType,SolidType>::updateTimeStep()
     M_previousTimeOrder=M_fluid->timeStepBDF()->timeOrder();
 
     M_fluid->updateTimeStep();
+
+    if ( M_interpolationFSI )
+    {
+        if (M_solid->isStandardModel())
+            M_interpolationFSI->updateFieldVelocitySolidPreviousPrevious( M_solid->timeStepNewmark()->previousVelocity() );
+        else if ( M_solid->is1dReducedModel() )
+            M_interpolationFSI->updateFieldVelocitySolid1dReducedPreviousPrevious( M_solid->timeStepNewmark1dReduced()->previousVelocity() );
+    }
     M_solid->updateTimeStep();
 
     M_currentTimeOrder=M_fluid->timeStepBDF()->timeOrder();
@@ -700,8 +864,8 @@ boost::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    *_ostr << this->fluidAppli()->getInfo()->str()
-           << this->solidAppli()->getInfo()->str();
+    *_ostr << this->fluidModel()->getInfo()->str()
+           << this->solidModel()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"

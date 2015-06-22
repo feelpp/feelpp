@@ -60,11 +60,23 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
     if ( this->fluid()->doRestart() )
     {
         this->fluid()->getMeshALE()->revertReferenceMesh();
-        this->fluid()->getMeshALE()->displacement()->functionSpace()->rebuildDofPoints();
+        this->fluid()->getMeshALE()->displacement()->functionSpace()->rebuildDofPoints();//????????
     }
 
     if ( doBuild )
     {
+        if (M_solid->isStandardModel())
+        {
+            M_fieldVelocitySolidPreviousPrevious = this->solid()->timeStepNewmark()->previousVelocity().functionSpace()->elementPtr();
+            *M_fieldVelocitySolidPreviousPrevious = this->solid()->timeStepNewmark()->previousVelocity();
+        }
+        else if ( M_solid->is1dReducedModel() )
+        {
+            M_fieldVelocitySolid1dReducedPreviousPrevious = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
+            *M_fieldVelocitySolid1dReducedPreviousPrevious = this->solid()->timeStepNewmark1dReduced()->previousVelocity();
+        }
+
+
         boost::mpi::timer btime;double thet;
         if (this->solid()->isStandardModel())
         {
@@ -82,6 +94,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
             btime.restart();
             //---------------------------------------------//
             if (this->fsiCouplingType()=="Semi-Implicit" ||
+                this->fsiCouplingBoundaryCondition()=="robin-neumann-generalized" ||
                 this->fsiCouplingBoundaryCondition()=="robin-neumann" || this->fsiCouplingBoundaryCondition()=="robin-robin" ||
                 this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" || this->fsiCouplingBoundaryCondition()=="nitsche" )
             {
@@ -126,7 +139,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
                                                        this->worldComm(),this->verboseAllProc());
             btime.restart();
             //---------------------------------------------//
-            if (this->fsiCouplingType()=="Semi-Implicit" || this->fsiCouplingBoundaryCondition()=="robin-neumann")
+            if (this->fsiCouplingType()=="Semi-Implicit" || this->fsiCouplingBoundaryCondition()=="robin-neumann-generalized")
             {
                 this->initVelocity1dToNdInterpolation();
                 thet = btime.elapsed();
@@ -301,7 +314,7 @@ InterpolationFSI<FluidType,SolidType>::initStress1dToNdInterpolation()
         if (this->verbose() && M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank())
             std::cout << "initStress1dToNdInterpolation() CONFORME" << std::endl;
         M_opStress1dToNdconf = opInterpolation(_domainSpace=M_fluid->getNormalStress()->functionSpace(),
-                                               _imageSpace=M_solid->getStressVect1dReduced().functionSpace(),
+                                               _imageSpace=M_solid->fieldStressVect1dReduced().functionSpace(),
                                                _range=elements(M_solid->mesh1dReduced()),
                                                _type=InterpolationConforme(),
                                                _backend=M_fluid->backend() );
@@ -312,7 +325,7 @@ InterpolationFSI<FluidType,SolidType>::initStress1dToNdInterpolation()
         if (this->verbose() && M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank())
             std::cout << "initStress1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opStress1dToNdnonconf = opInterpolation(_domainSpace=M_fluid->getNormalStress()->functionSpace(),
-                                                  _imageSpace=M_solid->getStressVect1dReduced().functionSpace(),
+                                                  _imageSpace=M_solid->fieldStressVect1dReduced().functionSpace(),
                                                   _range=elements(M_solid->mesh1dReduced()),
                                                   _type=InterpolationNonConforme(),
                                                   _backend=M_fluid->backend() );
@@ -544,12 +557,12 @@ InterpolationFSI<FluidType,SolidType>::transfertStress()
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opStress1dToNdconf )  << "interpolation operator not build";
-            M_opStress1dToNdconf->apply(*(M_fluid->getNormalStress()), M_solid->getStressVect1dReduced() );
+            M_opStress1dToNdconf->apply(*(M_fluid->getNormalStress()), M_solid->fieldStressVect1dReduced() );
         }
         else
         {
             CHECK( M_opStress1dToNdnonconf )  << "interpolation operator not build";
-            M_opStress1dToNdnonconf->apply(*(M_fluid->getNormalStress()), M_solid->getStressVect1dReduced() );
+            M_opStress1dToNdnonconf->apply(*(M_fluid->getNormalStress()), M_solid->fieldStressVect1dReduced() );
         }
         M_solid->updateInterfaceScalStressDispFromVectStress();
     }
@@ -567,37 +580,116 @@ InterpolationFSI<FluidType,SolidType>::transfertStress()
 
 template< class FluidType, class SolidType >
 void
-InterpolationFSI<FluidType,SolidType>::transfertVelocity()
+InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannInterfaceOperatorS2F()
+{
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannInterfaceOperatorS2F", "start",
+                                               this->worldComm(),this->verboseAllProc());
+
+    if (!M_solid->isStandardModel()) return;
+
+    auto fieldInterpolated = this->fluid()->functionSpaceVelocity()->elementPtr();//M_fluid->meshVelocity2().functionSpace()->elementPtr();
+    auto fieldToTransfert = M_solid->functionSpaceDisplacement()->elementPtr(); //fieldVelocityPtr()->functionSpace()->elementPtr();
+    CHECK( fieldToTransfert->map().nLocalDofWithGhost() == this->robinNeumannInterfaceOperator()->map().nLocalDofWithGhost() ) << "invalid compatibility size";
+    *fieldToTransfert = *this->robinNeumannInterfaceOperator();
+    if (M_interfaceFSIisConforme)
+    {
+        auto opI = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
+                                   _imageSpace=this->fluid()->functionSpaceVelocity(),
+                                   _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
+                                   _type=InterpolationConforme(),
+                                   _backend=this->fluid()->backend() );
+        opI->apply( *fieldToTransfert, *fieldInterpolated );
+    }
+    else
+    {
+        auto opI = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
+                                   _imageSpace=this->fluid()->functionSpaceVelocity(),
+                                   _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
+                                   _type=InterpolationNonConforme(),
+                                   _backend=this->fluid()->backend() );
+        opI->apply( *fieldToTransfert, *fieldInterpolated );
+    }
+
+    M_fluid->setCouplingFSI_RNG_interfaceOperator( fieldInterpolated );
+    M_fluid->setCouplingFSI_RNG_useInterfaceOperator( true );
+
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannInterfaceOperatorS2F", "finish",
+                                               this->worldComm(),this->verboseAllProc());
+}
+
+template< class FluidType, class SolidType >
+void
+InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertVelocity", "start",
                                                this->worldComm(),this->verboseAllProc());
 
     if (M_solid->isStandardModel())
     {
+        typename solid_type::element_displacement_ptrtype fieldToTransfert;
+        if ( !useExtrap )
+        {
+            fieldToTransfert = M_solid->fieldVelocityPtr();
+        }
+        else
+        {
+            fieldToTransfert = M_solid->fieldVelocity().functionSpace()->elementPtr();
+            fieldToTransfert->add(  2.0, this->solid()->timeStepNewmark()->previousVelocity() );
+            fieldToTransfert->add( -1.0, *M_fieldVelocitySolidPreviousPrevious /*this->solid()->timeStepNewmark()->previousVelocity(1)*/ );//timeStepBDF()->unknown(1).template element<0>() );
+        }
+
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconf->apply( M_solid->fieldVelocity(), M_fluid->meshVelocity2() );
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert/*M_solid->fieldVelocity()*/, M_fluid->meshVelocity2() );
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dnonconf->apply( M_solid->fieldVelocity(), M_fluid->meshVelocity2() );
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert/*M_solid->fieldVelocity()*/, M_fluid->meshVelocity2() );
         }
     }
     else if ( M_solid->is1dReducedModel() )
     {
-        M_solid->updateInterfaceVelocityFrom1dVelocity();
+
+        typename solid_type::element_vect_1dreduced_ptrtype fieldToTransfert;
+        if( !useExtrap )
+        {
+            M_solid->updateInterfaceVelocityFrom1dVelocity();
+            fieldToTransfert = M_solid->fieldVelocityVect1dReducedPtr();
+        }
+        else
+        {
+            if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertVelocity", "use extrapolation (1dReduced)",
+                                                       this->worldComm(),this->verboseAllProc());
+            //auto fieldExtrapolated = M_solid->fieldVelocityScal1dReduced().functionSpace()->elementPtr();
+            auto fieldExtrapolated = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
+            fieldExtrapolated->add(  2.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity() );
+            fieldExtrapolated->add( -1.0, *M_fieldVelocitySolid1dReducedPreviousPrevious /*this->solid()->timeStepNewmark()->previousVelocity(1)*/ );
+            fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated );
+        }
+#if 0 // NEW
+        auto fieldExtrapolated2 = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
+        double dt = M_solid->timeStepNewmark1dReduced()->timeStep();
+        double gamma = M_solid->timeStepNewmark1dReduced()->gamma();
+        double beta = M_solid->timeStepNewmark1dReduced()->beta();
+        fieldExtrapolated2->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark1dReduced()->currentVelocity() );
+        fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
+        fieldExtrapolated2->add( 1.0, M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
+
+        fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
+#endif
+
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity1dToNdconf ) << "interpolation operator not build";
-            M_opVelocity1dToNdconf->apply(M_solid->fieldVelocityVect1dReduced(),
+            M_opVelocity1dToNdconf->apply(*fieldToTransfert/*M_solid->fieldVelocityVect1dReduced()*/,
                                           M_fluid->meshVelocity2() );
         }
         else
         {
             CHECK( M_opVelocity1dToNdnonconf ) << "interpolation operator not build";
-            M_opVelocity1dToNdnonconf->apply(M_solid->fieldVelocityVect1dReduced(),
+            M_opVelocity1dToNdnonconf->apply(*fieldToTransfert/*M_solid->fieldVelocityVect1dReduced()*/,
                                              M_fluid->meshVelocity2() );
         }
     }
@@ -606,6 +698,110 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity()
                                                this->worldComm(),this->verboseAllProc());
 }
 
+
+template< class FluidType, class SolidType >
+void
+InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
+{
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
+                                               this->worldComm(),this->verboseAllProc());
+
+    if (M_solid->isStandardModel())
+    {
+        auto fieldToTransfert = M_solid->fieldVelocity().functionSpace()->elementPtr();
+        //typename solid_type::element_displacement_ptrtype fieldToTransfert;
+        double dt = M_solid->timeStepNewmark()->timeStep();
+        double gamma = M_solid->timeStepNewmark()->gamma();
+        double beta = M_solid->timeStepNewmark()->beta();
+        double scaleTimeDisc = M_solid->mechanicalProperties()->cstRho();
+        fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark()->currentVelocity() );
+        fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solid->timeStepNewmark()->currentAcceleration() );
+        fieldToTransfert->scale( scaleTimeDisc );
+
+        // apply interface operator
+        if ( M_fluid->couplingFSI_RNG_useInterfaceOperator() )
+        {
+            if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertVelocity", "update with interface operator",
+                                                       this->worldComm(),this->verboseAllProc());
+
+            CHECK( this->robinNeumannInterfaceOperator() ) << "has not interface operator";
+            CHECK( this->robinNeumannInterfaceOperator()->map().nLocalDofWithGhost() == fieldToTransfert->map().nLocalDofWithGhost() ) << "invalid compatibility size";
+            for ( size_type k = 0 ; k < fieldToTransfert->map().nLocalDofWithGhost() ; ++k )
+            {
+                double val = fieldToTransfert->operator()(k);
+                double scaling = this->robinNeumannInterfaceOperator()->operator()(k);
+                fieldToTransfert->set(k,val*scaling);
+            }
+        }
+
+        if (M_interfaceFSIisConforme)
+        {
+            CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1() );
+        }
+        else
+        {
+            CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1() );
+        }
+
+        M_fluid->setCouplingFSI_RNG_coeffForm2( (scaleTimeDisc*(1./(dt*gamma)) ) );
+    }
+    else if ( M_solid->is1dReducedModel() )
+    {
+        typename solid_type::element_vect_1dreduced_ptrtype fieldToTransfert;
+        auto fieldExtrapolated2 = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
+        double dt = M_solid->timeStepNewmark1dReduced()->timeStep();
+        double gamma = M_solid->timeStepNewmark1dReduced()->gamma();
+        double beta = M_solid->timeStepNewmark1dReduced()->beta();
+        double scaleTimeDisc = M_solid->mechanicalProperties()->cstRho()*M_solid->thickness1dReduced();
+        fieldExtrapolated2->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark1dReduced()->currentVelocity() );
+
+        if ( iterationFSI == 0 )
+        {
+#if 0
+            fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) /*+ 1.0*/, M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
+            if ( M_solid->timeStepNewmark1dReduced()->iteration() > 1 )
+                fieldExtrapolated2->add( 1.0, M_solid->timeStepNewmark1dReduced()->previousAcceleration(1) );
+#else
+            fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
+            // extrapolate acceleration with bdf order 1
+            if ( M_solid->timeStepNewmark1dReduced()->iteration() > 1 )
+            {
+                fieldExtrapolated2->add(  1.0/dt, M_solid->timeStepNewmark1dReduced()->previousVelocity(1) );
+                fieldExtrapolated2->add( -1.0/dt, M_solid->timeStepNewmark1dReduced()->previousVelocity(2) );
+            }
+#endif
+        }
+        else
+        {
+            fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
+        }
+
+
+        fieldExtrapolated2->scale( scaleTimeDisc );
+        fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
+
+        if (M_interfaceFSIisConforme)
+        {
+            CHECK( M_opVelocity1dToNdconf ) << "interpolation operator not build";
+            M_opVelocity1dToNdconf->apply(*fieldToTransfert,
+                                          *M_fluid->couplingFSI_RNG_evalForm1() );
+        }
+        else
+        {
+            CHECK( M_opVelocity1dToNdnonconf ) << "interpolation operator not build";
+            M_opVelocity1dToNdnonconf->apply(*fieldToTransfert,
+                                             *M_fluid->couplingFSI_RNG_evalForm1() );
+        }
+
+        M_fluid->setCouplingFSI_RNG_coeffForm2( (scaleTimeDisc*(1./(dt*gamma)) ) );
+    }
+
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "finish",
+                                               this->worldComm(),this->verboseAllProc());
+
+}
 //-----------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
@@ -626,14 +822,15 @@ InterpolationFSI<FluidType,SolidType>::transfertStressS2F()
 
 template< class FluidType, class SolidType >
 void
-InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S(bool useExtrapolation)
+InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, bool _useExtrapolation )
 {
+    bool useExtrapolation = ( iterationFSI == 0) && _useExtrapolation && (this->fluid()->timeStepBDF()->iteration() > 2);
     if ( useExtrapolation )
     {
-        if ( false )
+        if ( true )
         {
             // bdf extrapolation
-            auto solExtrap = this->fluid()->timeStepBDF()->polyDeriv();
+            auto solExtrap = this->fluid()->timeStepBDF()->poly();
             auto velExtrap = solExtrap.template element<0>();
             if (M_interfaceFSIisConforme)
             {
