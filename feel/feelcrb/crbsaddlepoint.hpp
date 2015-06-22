@@ -147,6 +147,7 @@ public:
     typedef typename model_type::vector_ad_type vector_ad_type;
 
     typedef boost::tuple<double, parameter_type, double, double> max_error_type;
+    typedef boost::tuple<double, std::vector<double> > residual_error_type;
 
     /// Default constructor
     CRBSaddlePoint() :
@@ -276,7 +277,13 @@ private :
     max_error_type maxResidual( int N );
     double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
     template <int Row>
-        double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un ) const;
+        double onlineResidual( int Ncur, parameter_type const& mu, vectorN_type Un, bool test=false ) const;
+    residual_error_type steadyPrimalResidual( int Ncur, parameter_type const& mu,  vectorN_type const& Un, double time=0 ) const
+    {
+        double rez = onlineResidual( Ncur, mu, Un );
+        std::vector<double> coeffs(3,0);
+        return boost::make_tuple( rez, coeffs );
+    }
 
     struct ComputeADElements
     {
@@ -480,7 +487,6 @@ CRBSaddlePoint<TruthModelType>::offline()
 {
     bool rebuild_database = boption( "crb.rebuild-database" );
     bool orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
-    boost::timer ti;
     parameter_type mu ( this->M_Dmu );
     double delta_pr = 0;
     double delta_du = 0;
@@ -498,12 +504,8 @@ CRBSaddlePoint<TruthModelType>::offline()
 
     if ( rebuild_database || this->M_N==0 )
     {
-        ti.restart();
         // Generate sampling depending of the "crb.sampling-mode" option
         generateSuperSampling();
-        LOG(INFO) << " -- super sampling init done in " << ti.elapsed() << "s";
-
-        ti.restart();
 
         this->M_N=0;
         M_N0.clear();
@@ -560,6 +562,7 @@ CRBSaddlePoint<TruthModelType>::offline()
 
     if ( use_predefined_WNmu )
     {
+        this->M_maxerror = 1e10;
         this->M_iter_max = this->M_WNmu->size();
         mu = this->M_WNmu->at( std::min( this->M_N, this->M_iter_max-1 ) ); // first element
     }
@@ -568,16 +571,9 @@ CRBSaddlePoint<TruthModelType>::offline()
         boost::tie( mu, index ) = this->M_Xi->min(true);
     }
 
-    if( use_predefined_WNmu )
-    {
-        //in this case it makes no sens to check the estimated error
-        this->M_maxerror = 1e10;
-    }
-
 
     while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
     {
-        boost::timer timer;
         CRB_COUT<<"Construction of "<<this->M_N+1<<"/"<<this->M_iter_max<<" basis, mu = [";
         for ( int i=0; i<mu.size(); i++ )
             CRB_COUT<<mu( i )<<",";
@@ -594,15 +590,9 @@ CRBSaddlePoint<TruthModelType>::offline()
 
         LOG(INFO) << "[CRB::offline] solving primal" << "\n";
 
-        timer.restart();
+        tic();
         *U = this->M_model->solve( mu );
-        if ( Environment::isMasterRank() )
-            std::cout << "  -- primal problem solved in "<< timer.elapsed() << std::endl;
-        timer.restart();
-
-        if ( !use_predefined_WNmu )
-            this->M_WNmu->push_back( mu, index );
-        this->M_WNmu_complement = this->M_WNmu->complement();
+        toc( " -- probleme resolution");
 
         auto u = U->template elementPtr<0>();
         auto p = U->template elementPtr<1>();
@@ -616,8 +606,10 @@ CRBSaddlePoint<TruthModelType>::offline()
         M_Nadded1=1;
         M_N1[this->M_N] += M_Nadded1;
 
+        tic();
         this->orthonormalize( M_N1[this->M_N], XN1->primalRB(), M_Nadded1, 1,
                               ioption("crb.saddlepoint.orthonormalize1") );
+        toc(" -- orthonormalization of RBSpace #1", ioption("crb.saddlepoint.orthonormalize1"));
 
         XN0->addPrimalBasisElement( u );
         XN0->addDualBasisElement( u );
@@ -625,43 +617,34 @@ CRBSaddlePoint<TruthModelType>::offline()
 
         if ( boption("crb.saddlepoint.add-false-supremizer") )
         {
-            timer.restart();
+            tic();
             auto us = this->M_model->falseSupremizer( mu, p );
             XN0->addPrimalBasisElement( us );
             XN0->addDualBasisElement( us );
             M_Nadded0++;
-            CRB_COUT << "  -- false supremizer added in "<< timer.elapsed() << std::endl;
+            toc(" -- false supremizer computation");
         }
         if ( boption("crb.saddlepoint.add-supremizer") )
         {
-            timer.restart();
+            tic();
             //auto us = this->M_model->supremizer( mu, p );
             auto us = this->M_model->supremizer( mu, XN1->primalRB().back() );
             XN0->addPrimalBasisElement( us );
             XN0->addDualBasisElement( us );
             M_Nadded0++;
-            CRB_COUT << "  -- supremizer added in "<< timer.elapsed() << std::endl;
+            toc(" -- supremizer computation");
         }
 
         M_N0[this->M_N] += M_Nadded0;
+        tic();
         this->orthonormalize( M_N0[this->M_N], XN0->primalRB(), M_Nadded0, 0,
                               ioption("crb.saddlepoint.orthonormalize0") );
-
+        toc(" -- orthonormalization of RBSpace #0", ioption("crb.saddlepoint.orthonormalize0") );
 
         matrixblockrange_type matrixrange;
         ComputeADElements compute_elements( this->shared_from_this() );
         fusion::for_each( matrixrange, compute_elements );
 
-        timer.restart();
-        offlineResidual<0>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
-        CRB_COUT << "  -- offline residual 0 built in "<< timer.elapsed() << std::endl;
-        timer.restart();
-        offlineResidual<1>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
-        CRB_COUT << "  -- offline residual 1 built in "<< timer.elapsed() << std::endl;
-
-        if( ! use_predefined_WNmu )
-           this->M_WNmu->push_back( mu, index );
-        this->M_WNmu_complement = this->M_WNmu->complement();
 
         if ( use_predefined_WNmu )
         {
@@ -672,8 +655,19 @@ CRBSaddlePoint<TruthModelType>::offline()
         else
         {
             tic();
+            offlineResidual<0>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
+            toc(" -- offline residual 0 computation");
+            tic();
+            offlineResidual<1>( M_N0[this->M_N], M_N1[this->M_N], M_Nadded0, M_Nadded1 );
+            toc(" -- offline residual 1 computation");
+
+            this->M_WNmu->push_back( mu, index );
+            tic();
+            this->M_WNmu_complement = this->M_WNmu->complement();
+            toc(" -- WNmu complement creation",  FLAGS_v > 0);
+            tic();
             boost::tie( this->M_maxerror, mu, delta_pr, delta_du ) = maxResidual( this->M_N );
-            toc( "  -- max residual computation ");
+            toc( " -- max residual computation ");
         }
         this->M_current_mu = mu;
 
@@ -689,9 +683,41 @@ CRBSaddlePoint<TruthModelType>::offline()
         CRB_COUT << "============================================================\n";
     } // while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
 
+    /*std::vector< vectorN_type > uN;
+    std::vector< vectorN_type > uNdu;
+    std::vector< vectorN_type > uNold;
+     std::vector< vectorN_type > uNduold;*/
+
+    vectorN_type uN(M_N0[this->M_N]+M_N1[this->M_N]);
+    if (boption("crb.saddlepoint.test-residual"))
+    {
+        CRB_COUT << "\n TEST RESIDUAL \n";
+        CRB_COUT << "WNmu.size()="<<this->M_WNmu->size()<<std::endl;
+        for (int k=0; k<this->M_N; k++)
+        {
+            CRB_COUT << "====================================================\n";
+            parameter_type mu_test = this->M_WNmu->at(k);
+            uN.setZero();
+            uN(k)=1;
+            uN(M_N0[this->M_N]+k)=1;
+
+            //lb( this->M_N, mu_test, uN, uNdu, uNold, uNduold );
+            CRB_COUT<< "mu_test = [";
+            for ( int i=0; i<mu.size(); i++ )
+                CRB_COUT<<mu_test( i )<<",";
+            CRB_COUT<<"]"<<std::endl;
+            double rez_test0 = onlineResidual<0>( this->M_N, mu_test, uN, true );
+            double rez_test1 = onlineResidual<1>( this->M_N, mu_test, uN, true );
+            CRB_COUT << "rez_test0="<< std::sqrt(rez_test0)
+                     << ", rez_test1="<< std::sqrt(rez_test1) <<std::endl;
+        }
+        CRB_COUT << "====================================================\n";
+    }
     if ( boption("crb.visualize-basis") )
     {
+        tic();
         exportBasisFunctions();
+        toc(" -- export basis functions");
     }
     CRB_COUT << "Number of elements, in first base : "<< M_N0[this->M_N]<<", in second base : "
              <<M_N1[this->M_N]<<std::endl;
@@ -710,6 +736,7 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
                                   std::vector<vectorN_type> & uNduold,
                                   bool print_rb_matrix, int K ) const
 {
+    LOG(INFO) << "CRBSaddlePoint : online resolution for mu="<<mu;
     uN.resize(1);
     N = std::min( N, this->M_N );
 
@@ -748,7 +775,6 @@ template<int Row>
 void
 CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, int Nadded1 )
 {
-    boost::timer ti;
     bool transpose = boption("crb.saddlepoint.transpose");
     bool optimize = boption(_name="crb.optimize-offline-residual") ;
 
@@ -774,9 +800,8 @@ CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, in
     std::vector< std::vector< sparse_matrix_ptrtype >> Lhs0 = this->M_model->template Aqm<Row,0>();
     std::vector< std::vector< sparse_matrix_ptrtype >> Lhs1 = this->M_model->template Aqm<Row,1>();
 
-    if ( N0==this->M_Nm )
+    if ( N0==Nadded0 )
     {
-        ti.restart();
         LOG(INFO) << "[offlineResidual] Compute residual data\n";
         LOG(INFO) << "[offlineResidual] M_R_0x0\n";
 
@@ -787,7 +812,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, in
                 this->M_model->l2solve( Z1, Fqm[q1][m1], Row );
                 for ( int q2=0; q2<QRhs; q2++ )
                 {
-                    for ( int m2=0; q2<this->M_model->template mMaxF<Row>(0,q2); m2++ )
+                    for ( int m2=0; m2<this->M_model->template mMaxF<Row>(0,q2); m2++ )
                     {
                         this->M_model->l2solve( Z2, Fqm[q2][m2], Row );
                         M_R_RhsRhs[Row][q1][m1][q2][m2] = this->M_model->scalarProduct( Z1, Z2, Row );
@@ -880,7 +905,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, in
                             W->scale( -1. );
                             this->M_model->l2solve( Z2, W, Row );
                             M_R_Lhs0Lhs1[Row][q1][m1][q2][m2]( i, j )
-                                = this->M_model->scalarProduct( Z1, Z2, Row );
+                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                         } // m2 loop Lhs1
                     } // q2 loop Lhs1
                 } // j loop Lhs1
@@ -1040,7 +1065,7 @@ CRBSaddlePoint<TruthModelType>::offlineResidual( int N0, int N1, int Nadded0, in
                             W->scale(-1.);
                             this->M_model->l2solve( Z2, W, Row );
                             M_R_Lhs0Lhs1[Row][q2][m2][q1][m1]( i, j )
-                                = this->M_model->scalarProduct( Z1, Z2, Row );
+                                = 2.0*this->M_model->scalarProduct( Z1, Z2, Row );
                         }
                     } // q1 loop Lhs0
                 } // i loop Lhs0
@@ -1133,6 +1158,7 @@ CRBSaddlePoint<TruthModelType>::maxResidual( int N )
     mu = tuple.template get<0>();
     rez = tuple.template get<1>();
 
+
     CRB_COUT << std::setprecision(15) << "[CRBSaddlePoint] max residual="<< rez << std::endl;
 
     return boost::make_tuple( rez, mu, 0, 0 );
@@ -1146,7 +1172,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& 
     double res0 = onlineResidual<0>( Ncur, mu, Un );
     double res1 = onlineResidual<1>( Ncur, mu, Un );
 
-    return std::sqrt( res0*res0 + res1*res1 );
+    return std::sqrt( res0 + res1 );
 }
 
 
@@ -1154,7 +1180,7 @@ template<typename TruthModelType>
 template<int Row>
 double
 CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& mu,
-                                                vectorN_type Un ) const
+                                                vectorN_type Un, bool test ) const
 {
     int N0 = M_N0[Ncur];
     int N1 = M_N1[Ncur];
@@ -1275,6 +1301,113 @@ CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& 
 
         } // m1 loop lhs1
     } // q1 loop lhs1
+
+    if ( test )
+    {
+        CRB_COUT << "test online Residual : \n RhsRhs="<<RhsRhs << ", Lhs0Rhs="<< Lhs0Rhs
+                 <<", Lhs0Lhs0="<< Lhs0Lhs0 <<", Lhs0Lhs1="<<Lhs0Lhs1
+                 <<", Lhs1Lhs1="<< Lhs1Lhs1 <<", Lhs1Rhs="<< Lhs1Rhs <<std::endl;
+
+        vector_ptrtype F = this->M_model->template newL2Vector<Row>();
+        vector_ptrtype F0 = this->M_model->template newL2Vector<Row>();
+        vector_ptrtype F1 = this->M_model->template newL2Vector<Row>();
+        vector_ptrtype Un = this->M_model->template newL2Vector<0>();
+        vector_ptrtype Pn = this->M_model->template newL2Vector<1>();
+        sparse_matrix_ptrtype A0 = this->M_model->template newL2Matrix<Row,0>();
+        sparse_matrix_ptrtype A1 = this->M_model->template newL2Matrix<Row,1>();
+        vector_ptrtype Rhs = this->M_model->template newL2Vector<Row>();
+        vector_ptrtype Lhs0 = this->M_model->template newL2Vector<Row>();
+        vector_ptrtype Lhs1 = this->M_model->template newL2Vector<Row>();
+
+        auto truc0 = un(0)*this->M_model->template rBFunctionSpace<0>()->primalBasisElement(0);
+        for ( int k=1; k<un.size(); k++ )
+        {
+            truc0 += un(k)*this->M_model->template rBFunctionSpace<0>()->primalBasisElement(k);
+        }
+        *Un = truc0;
+
+        auto truc1 = pn(0)*this->M_model->template rBFunctionSpace<1>()->primalBasisElement(0);
+        for ( int k=1; k<un.size(); k++ )
+        {
+            truc1 += pn(k)*this->M_model->template rBFunctionSpace<1>()->primalBasisElement(k);
+        }
+        *Pn = truc1;
+
+
+        auto blockF = this->M_model->M_F[0].template get<Row>();
+        if ( blockF )
+        {
+            auto beta = blockF->computeBetaQm( mu );
+            auto Fqm = blockF->compute();
+            for ( int q=0; q<blockF->Q(); q++ )
+                for( int m=0; m<blockF->mMax(q); m++ )
+                    F->add( beta[q][m], Fqm[q][m]);
+        }
+        this->M_model->l2solve( Rhs, F, Row );
+
+        auto blockA0 = this->M_model->M_A.template get<Row,0>();
+        if ( blockA0 )
+        {
+            auto beta = blockA0->computeBetaQm(mu);
+            auto Aqm = blockA0->compute();
+            for ( int q=0; q<blockA0->Q(); q++ )
+                for( int m=0; m<blockA0->mMax(q); m++ )
+                    A0->addMatrix( beta[q][m], Aqm[q][m]);
+            A0->multVector( Un, F0 );
+            F0->scale(-1);
+        }
+        else if ( boption("crb.saddlepoint.transpose") && this->M_model->M_A.template get<0,Row>() )
+        {
+            auto beta = this->M_model->M_A.template get<0,Row>()->computeBetaQm(mu);
+            auto Aqm = this->M_model->M_A.template get<0,Row>()->compute();
+            sparse_matrix_ptrtype truc= this->M_model->template newL2Matrix<0,Row>();
+            for ( int q=0; q<this->M_model->M_A.template get<0,Row>()->Q(); q++ )
+                for( int m=0; m<this->M_model->M_A.template get<0,Row>()->mMax(q); m++ )
+                    truc->addMatrix( beta[q][m], Aqm[q][m]);
+            truc->transpose( A0 );
+            A0->multVector( Un, F0 );
+            F0->scale(-1);
+        }
+        this->M_model->l2solve( Lhs0, F0, Row );
+
+        auto blockA1 = this->M_model->M_A.template get<Row,1>();
+        if ( blockA1 )
+        {
+            auto beta = blockA1->computeBetaQm(mu);
+            auto Aqm = blockA1->compute();
+            for ( int q=0; q<blockA1->Q(); q++ )
+                for( int m=0; m<blockA1->mMax(q); m++ )
+                    A1->addMatrix( beta[q][m], Aqm[q][m]);
+            A1->multVector( Pn, F1 );
+            F1->scale(-1);
+        }
+        else if ( boption("crb.saddlepoint.transpose") && this->M_model->M_A.template get<1,Row>() )
+        {
+            auto beta = this->M_model->M_A.template get<1,Row>()->computeBetaQm(mu);
+            auto Aqm = this->M_model->M_A.template get<1,Row>()->compute();
+            sparse_matrix_ptrtype truc= this->M_model->template newL2Matrix<1,Row>();
+            for ( int q=0; q<this->M_model->M_A.template get<1,Row>()->Q(); q++ )
+                for( int m=0; m<this->M_model->M_A.template get<1,Row>()->mMax(q); m++ )
+                    truc->addMatrix( beta[q][m], Aqm[q][m]);
+            truc->transpose( A1 );
+            A1->multVector( Pn, F1 );
+            F1->scale(-1);
+        }
+        this->M_model->l2solve( Lhs1, F1, Row );
+
+
+        auto RhsRhs_test = this->M_model->scalarProduct(Rhs,Rhs, Row);
+        auto Lhs0Rhs_test = 2.*this->M_model->scalarProduct(Lhs0, Rhs, Row);
+        auto Lhs0Lhs0_test = this->M_model->scalarProduct(Lhs0, Lhs0, Row);
+        auto Lhs0Lhs1_test = 2.*this->M_model->scalarProduct(Lhs0, Lhs1, Row);
+        auto Lhs1Rhs_test = 2.*this->M_model->scalarProduct(Lhs1, Rhs, Row);
+        auto Lhs1Lhs1_test = this->M_model->scalarProduct(Lhs1, Lhs1, Row);
+
+        CRB_COUT << "test block residual : \n RhsRhs="<<RhsRhs_test << ", Lhs0Rhs="<< Lhs0Rhs_test
+                 <<", Lhs0Lhs0="<< Lhs0Lhs0_test <<", Lhs0Lhs1="<<Lhs0Lhs1_test
+                 <<", Lhs1Lhs1="<< Lhs1Lhs1_test <<", Lhs1Rhs="<< Lhs1Rhs_test <<std::endl;
+
+    }
 
     double delta = math:: abs( RhsRhs + Lhs0Rhs + Lhs0Lhs0 + Lhs0Lhs1 + Lhs1Rhs + Lhs1Lhs1 );
 

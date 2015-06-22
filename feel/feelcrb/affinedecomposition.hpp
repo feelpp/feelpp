@@ -991,7 +991,7 @@ public:
     template< int Row=0 >
     oneblock_ptrtype<Row> get() const
         {
-            CHECK( fusion::at_c<Row>( M_blockAD ) )<< "Error trying to access block "<< Row <<" when it was not created yet.";
+            //CHECK( fusion::at_c<Row>( M_blockAD ) )<< "Error trying to access block "<< Row <<" when it was not created yet.";
 
             return fusion::at_c<Row>( M_blockAD );
         }

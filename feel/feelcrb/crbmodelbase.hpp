@@ -260,7 +260,9 @@ public:
             M_F.push_back( vector_ad_type( this->shared_from_this() ) );
 
             LOG(INFO)<< "Model Initialization";
+            tic();
             initModel();
+            toc(" -- model initialization");
             initDerived();
             if ( !is_time_dependent )
                 initializeMassMatrix();
@@ -2058,6 +2060,10 @@ public:
         mutable boost::shared_ptr<self_type> M_crb_model;
     };
 
+    matrix_ad_type M_M;
+    matrix_ad_type M_A;
+    std::vector< vector_ad_type > M_F;
+
 protected:
     bool M_is_initialized;
     CRBModelMode M_mode;
@@ -2086,9 +2092,6 @@ protected:
     std::vector<vector_ptrtype> M_monoF;
 
     int M_Nl;
-    matrix_ad_type M_M;
-    matrix_ad_type M_A;
-    std::vector< vector_ad_type > M_F;
 
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
     mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
