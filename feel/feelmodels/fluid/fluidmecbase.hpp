@@ -453,13 +453,24 @@ public :
     void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
     double gamma0NitschFSI() const { return M_gamma0NitschFSI; }
     void gamma0NitschFSI(double d) { M_gamma0NitschFSI=d; }
+    double rhoSolidFSI() const { return M_rhoSolidFSI; }
+    void setRhoSolidFSI(double d) { M_rhoSolidFSI=d; }
+
+    bool couplingFSI_RNG_useInterfaceOperator() const { return M_couplingFSI_RNG_useInterfaceOperator; }
+    void setCouplingFSI_RNG_useInterfaceOperator(bool b) { M_couplingFSI_RNG_useInterfaceOperator=b; }
+    vector_ptrtype const& couplingFSI_RNG_interfaceOperator() const { return M_couplingFSI_RNG_interfaceOperator; }
+    void setCouplingFSI_RNG_interfaceOperator(vector_ptrtype const& op ) { M_couplingFSI_RNG_interfaceOperator=op; }
+    bool couplingFSI_solidIs1dReduced() const { return M_couplingFSI_solidIs1dReduced; }
+    void setCouplingFSI_solidIs1dReduced(bool b) { M_couplingFSI_solidIs1dReduced=b; }
+    double couplingFSI_RNG_coeffForm2() const { return M_couplingFSI_RNG_coeffForm2; }
+    void setCouplingFSI_RNG_coeffForm2(double d) { M_couplingFSI_RNG_coeffForm2=d; }
+    element_meshvelocityonboundary_ptrtype const& couplingFSI_RNG_evalForm1() const { return M_couplingFSI_RNG_evalForm1; }
+    void setCouplingFSI_RNG_evalForm1( element_meshvelocityonboundary_ptrtype const& v) { M_couplingFSI_RNG_evalForm1=v; }
 
     //___________________________________________________________________________________//
     // stabilisation parameters
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
-
-
     bool doCIPStabConvection() const { return M_doCIPStabConvection; }
     void doCIPStabConvection(bool b) { M_doCIPStabConvection=b; }
     bool doCIPStabDivergence() const { return M_doCIPStabDivergence; }
@@ -788,6 +799,13 @@ protected:
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
     double M_gammaNitschFSI,M_gamma0NitschFSI;
+    double M_rhoSolidFSI;
+    bool M_couplingFSI_RNG_useInterfaceOperator;
+    vector_ptrtype M_couplingFSI_RNG_interfaceOperator;
+    bool M_couplingFSI_solidIs1dReduced;
+    double M_couplingFSI_RNG_coeffForm2;
+    element_meshvelocityonboundary_ptrtype M_couplingFSI_RNG_evalForm1;
+
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
     //----------------------------------------------------
