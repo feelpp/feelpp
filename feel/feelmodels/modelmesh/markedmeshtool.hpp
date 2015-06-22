@@ -100,6 +100,11 @@ public :
                                     _extended_doftable=std::vector<bool>(1,true) );
     }
 
+    void updateFaceMarker3FromInternalFaces()
+    {
+        M_mesh->updateMarker3WithRange(internalfaces(M_mesh),1);
+    }
+
     void updateFaceMarker3FromFaceMarker()
     {
         for ( std::string mark : M_listMarkers )
