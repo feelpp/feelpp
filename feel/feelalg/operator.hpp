@@ -41,6 +41,8 @@ class OperatorBase
     typedef T value_type;
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
+
 
     OperatorBase() 
         : 
@@ -85,6 +87,10 @@ class OperatorBase
     
     virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
     virtual int applyInverse(const vector_type& X, vector_type& Y) const = 0;
+    
+    virtual void setPc(pc_ptrtype p){
+      M_pc = p;
+    }
  
     /* Returns the quantity \f$ \| A \|_\infty\f$ such that
      \f[\| A \|_\infty = \max_{1\lei\lem} \sum_{j=1}^n |a_{ij}| \f].
@@ -153,7 +159,8 @@ class OperatorBase
      * \return the WorldComm of the Operator
      */
     virtual const WorldComm& comm() const { return M_domain_map->worldComm(); }
- 
+
+    pc_ptrtype M_pc;
 protected:
     // domain and image map 
     datamap_ptrtype M_domain_map, M_image_map;
@@ -175,8 +182,6 @@ public:
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
-    typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
-
     OperatorMatrix()
         :
         OperatorBase<T>()
@@ -188,9 +193,8 @@ public:
         M_hasInverse( 1 ),
         M_hasApply( 1 )
     {
-        hasPc = false;
-        auto b = backend(_name=this->label(),_rebuild=true);
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
+        auto b = backend(_name=this->label(),_rebuild=true);
     }
 
     OperatorMatrix( const OperatorMatrix& tc )
@@ -214,11 +218,6 @@ public:
         return M_hasApply;
     }
 
-    void setPc(pc_ptrtype p){
-      hasPc=true;
-      pc = p;
-    }
-
     int apply( const vector_type& X, vector_type& Y ) const
     {
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
@@ -232,7 +231,7 @@ public:
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
-        LOG(INFO) << "OperatorMatrix: applyInverse(X,Y)";
+        LOG(INFO) << "OperatorMatrix: applyInverse(X,Y) with backend " << this->label();
         tic();
         auto xx = backend(_name=this->label())->newVector( X.mapPtr() );
         *xx = X;
@@ -240,13 +239,13 @@ public:
         auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
         bool cv;
-        if(!hasPc){
-        auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
-        cv = r.isConverged();
+        if(!this->M_pc){
+          auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+          cv = r.isConverged();
         }
         else{
-        auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=pc );
-        cv = r.isConverged();
+          auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
+          cv = r.isConverged();
         }
         Y=*yy;
         Y.close();
@@ -271,8 +270,6 @@ private:
 
     bool M_hasInverse, M_hasApply;
 
-    pc_ptrtype pc;
-    bool hasPc;
 };
 
 /**
@@ -287,6 +284,7 @@ op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
 {
     return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
 }
+
 /**
  * Operator class to model an inverse operator
  */

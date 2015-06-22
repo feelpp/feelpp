@@ -45,7 +45,7 @@ public:
     {
         PCD = 0, // pressure convection diffusion
         PMM = 1, // pressure mass matrix
-        SIMPLE=2 // 
+        SIMPLE=2 //
     };
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -79,7 +79,7 @@ public:
     typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
     typedef OperatorBase<value_type> op_type;
     typedef boost::shared_ptr<op_type> op_ptrtype;
-    
+
     /**
      * \param Xh velocity/pressure space type
      * \param bcFlags the boundary conditions flags
@@ -89,17 +89,20 @@ public:
      * \param alpha mass term
      */
     PreconditionerBlockNS( std::string t,
-                           space_ptrtype Xh, 
+                           space_ptrtype Xh,
                            BoundaryConditions bcFlags,
                            std::string const& s,
                            sparse_matrix_ptrtype A,
                            double mu,
                            double rho,
                            double alpha = 0 );
-    
+
     Type type() const { return M_type; }
     void setType( std::string t );
-    
+
+    BoundaryConditions const& bcFlags() const { return M_bcFlags; }
+    void setParameterValues( std::map<std::string,double> const& pv ) { M_bcExprParameterValues=pv; }
+
     void initialize();
 
     void assembleHelmholtz( double mu, double rho, double alpha = 0 );
@@ -161,16 +164,16 @@ private:
 
     Type M_type;
     value_type M_mu, M_alpha, M_rho;
-    
+
     backend_ptrtype M_b;
 
     space_ptrtype M_Xh;
-    
+
     velocity_space_ptrtype M_Vh;
     pressure_space_ptrtype M_Qh;
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
-    
+
     sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt, M_mass, M_massv_inv;
     op_mat_ptrtype divOp, helmOp;
 
@@ -182,8 +185,9 @@ private:
 
     op_pcd_ptrtype pcdOp;
     op_ptrtype pm;
-    
+
     BoundaryConditions M_bcFlags;
+    std::map<std::string,double> M_bcExprParameterValues;
     std::string M_prefix;
     op_mat_ptrtype precHelm;
 };
@@ -195,7 +199,7 @@ private:
 
 template < typename space_type >
 PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
-                                                          space_ptrtype Xh, 
+                                                          space_ptrtype Xh,
                                                           BoundaryConditions bcFlags,
                                                           std::string const& p,
                                                           sparse_matrix_ptrtype A,
@@ -238,7 +242,7 @@ PreconditionerBlockNS<space_type>::PreconditionerBlockNS( std::string t,
 
     this->createSubMatrices();
 
-    
+
     initialize();
 
     this->setType ( t );
@@ -346,6 +350,8 @@ PreconditionerBlockNS<space_type>::update( sparse_matrix_ptrtype A,
                                            bool hasConvection )
 {
     map_vector_field<Dim,1,2> m_dirichlet { M_bcFlags.template getVectorFields<Dim> ( std::string(M_prefix), "Dirichlet" ) };
+    if ( !M_bcExprParameterValues.empty() )
+        m_dirichlet.setParameterValues( M_bcExprParameterValues );
     this->update( A, expr_b, m_dirichlet, hasConvection );
 }
 template < typename space_type >
@@ -370,7 +376,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
     M_pin->close();
     *M_aux = *M_vin;
     M_aux->close();
-    
+
     if ( this->type() == PMM )
     {
         LOG(INFO) << "Applying PMM:  pressure mass matrix";
@@ -394,7 +400,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
             M_pout->scale(-1);
             M_pout->close();
             toc("PreconditionerBlockNS::applyInverse PCD::S^-1",FLAGS_v>0);
-            
+
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
         else
@@ -406,15 +412,15 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
     LOG(INFO) << "pressure/velocity blockns : apply divergence...\n";
     tic();
     divOp->apply( *M_pout, *M_vout );
-    
-    
+
+
     M_aux->add( -1.0, *M_vout );
     M_aux->close();
     toc("PreconditionerBlockNS::applyInverse apply B^T",FLAGS_v>0);
-    
+
     if ( boption("blockns.cd") )
     {
-        
+
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
         tic();
         helmOp->applyInverse(*M_aux, *M_vout);
@@ -435,7 +441,7 @@ PreconditionerBlockNS<space_type>::applyInverse ( const vector_type& X, vector_t
     Y=U;
     Y.close();
     toc("PreconditionerBlockNS::applyInverse update solution",FLAGS_v>0);
-    toc("PreconditionerBlockNS::applyInverse" );
+    toc("PreconditionerBlockNS::applyInverse", FLAGS_v > 0 );
     return 0;
 }
 

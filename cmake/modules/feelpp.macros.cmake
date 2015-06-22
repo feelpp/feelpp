@@ -231,7 +231,7 @@ macro(feelpp_add_test)
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
       add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
-      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} PROPERTY TIMEOUT 30)
+      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
     endif()
 
 

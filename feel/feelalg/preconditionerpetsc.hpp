@@ -530,7 +530,8 @@ private :
     int M_nLevels;
     int M_procEqLim, M_coarseEqLim;
     double M_threshold;
-    bool M_setSymGraph, M_reuseInterpolation;
+    bool M_setSymGraph, M_reuseInterpolation, M_gamgVerbose;
+    int M_nSmooths;
 
     std::string M_prefixMGCoarse;
     std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
