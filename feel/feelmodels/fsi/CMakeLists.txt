@@ -33,5 +33,22 @@ foreach( _DIM 2 3)
   endforeach()
 endforeach()
 
+# same order velocty,pressure,displacement (geo1)
+foreach( _DIM 2 3)
+  foreach( _FLUID_U_ORDER 1 2 )
+    math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}')
+    genLibFSI(
+      DIM ${_DIM}
+      FLUID_U_ORDER ${_FLUID_U_ORDER}
+      FLUID_P_ORDER ${_FLUID_U_ORDER}
+      FLUID_P_CONTINUITY Continuous
+      FLUID_GEO_ORDER  1
+      SOLID_DISP_ORDER ${_FLUID_U_ORDER}
+      SOLID_GEO_ORDER 1
+      )
+    set(FEELPP_MODELS_LIBRARIES_FSI  ${FEELPP_MODELS_LIBRARIES_FSI} ${LIBBASE_NAME}  )
+  endforeach()
+endforeach()
+
 add_library(feelpp_model_fsi SHARED libfsi.cpp)
 target_link_libraries(feelpp_model_fsi ${FEELPP_MODELS_LIBRARIES_FSI})
