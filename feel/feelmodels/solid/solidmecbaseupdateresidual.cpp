@@ -201,35 +201,57 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
                            _geomap=this->geomap() );
         }
 
-        if ( //this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-             this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
              this->couplingFSIcondition() == "nitsche" )
         {
-            double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-            double muFluid = this->muFluidFSI();//0.03;
-            if (!BuildCstPart && !UseJacobianLinearTerms)
+            double gammaRobinFSI = this->gammaNitschFSI();
+            double muFluid = this->muFluidFSI();
+#if 0
+            // integrate on ref with variables change
+            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
+            auto Ja = det(Fa);
+            auto Ba = inv(Fa);
+            auto variablechange = Ja*norm2( Ba*N() );
+            if (!BuildCstPart)
             {
                 linearFormDisplacement +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
+                               _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
+                               _geomap=this->geomap() );
+            }
+            if (!BuildCstPart )
+            {
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                linearFormDisplacement +=
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                               _expr= -variablechange*gammaRobinFSI*muFluid*inner( robinFSIRhs,id(v) )/hFace(),
                                _geomap=this->geomap() );
             }
 
-            if (BuildCstPart )
-            {
-                auto const& polyFirstDerivDisp = M_newmark_displ_struct->polyFirstDeriv();
-                linearFormDisplacement +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= -gammaRobinFSI*muFluid*inner(idv( polyFirstDerivDisp/*M_newmark_displ_struct->polyFirstDeriv()*/ ),id(v))/hFace(),
-                               _geomap=this->geomap() );
-            }
-            if (BuildCstPart_BoundaryParoiMobile)
+#else
+            MeshMover<mesh_type> mymesh_mover;
+            mesh_ptrtype mymesh = this->mesh();
+            mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
+
+            if (!BuildCstPart)
             {
                 linearFormDisplacement +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= -gammaRobinFSI*muFluid*inner(idv(this->velocityInterfaceFromFluid()),id(v))/hFace(),
+                               _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(v))/hFace(),
                                _geomap=this->geomap() );
             }
+            if (!BuildCstPart )
+            {
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                linearFormDisplacement +=
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                               _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(v) )/hFace(),
+                               _geomap=this->geomap() );
+            }
+
+            auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
+            mymesh_mover.apply( mymesh, dispInv );
+#endif
         } // robin-robin fsi
 
     }
@@ -240,28 +262,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
     if ( this->markerRobinBC().size() > 0 && !BuildCstPart )// && !UseJacobianLinearTerms)
     {
         this->updateBCRobinResidual( u, R );
-#if 0
-        double alpha_robin = 1e4;
-        linearFormDisplacement +=
-            integrate( _range=markedfaces(mesh,this->markerRobinBC()),
-                       _expr= alpha_robin*trans(idv(u))*id(v),
-                       _geomap=this->geomap() );
-#endif
     }
-    // TODO up second membre
-    /*if (BuildCstPart)
-     {
-     //this->updateBCRobinResidual( R );
-
-     double p0_robin = 115000;
-     ForEachBC( bcDef,cl::robin_vec,
-     form1( _test=M_Xh, _vector=R) +=
-     integrate( _range=markedfaces(mesh,PhysicalName),
-     _expr= p0_robin*trans(vf::N())*id(v),
-     _geomap=this->geomap() ) );
-
-     }
-     */
     //--------------------------------------------------------------------------------------------------//
     // dirichlet condition by elimination
     if (this->hasMarkerDirichletBCelimination() && !BuildCstPart)

@@ -196,6 +196,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
     M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
 
+    // axi-sym
+    M_thickness_1dReduced = doption(_name="1dreduced-thickness",_prefix=this->prefix());
+    M_radius_1dReduced = doption(_name="1dreduced-radius",_prefix=this->prefix());
+
     this->log("SolidMechanics","loadParameterFromOptionsVm", "finish" );
 }
 
@@ -507,6 +511,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandar
                                             this->couplingFSIcondition() == "nitsche" ) )
         M_velocityInterfaceFromFluid.reset( new element_vectorial_type( M_XhVectorial, "velocityInterfaceFromFluid" ));
 
+
+    if ( !M_XhSubMeshDispFSI && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                  this->couplingFSIcondition() == "nitsche" ) )
+    {
+        auto subfsimesh = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerNameFSI()) );
+        M_XhSubMeshDispFSI = space_tracemesh_disp_type::New( _mesh=subfsimesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_fieldSubMeshDispFSI.reset( new element_tracemesh_disp_type(M_XhSubMeshDispFSI) );
+    }
 
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish" );
 }

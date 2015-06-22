@@ -722,6 +722,25 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 
 //---------------------------------------------------------------------------------------------------//
 
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::element_vect_1dreduced_ptrtype
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const
+{
+    auto res = M_Xh_vect_1dReduced->elementPtr( vf::idv(vel1d)*vf::oneY() );
+    return res;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
+{
+    auto subfsimesh = M_fieldSubMeshDispFSI->mesh();
+    M_fieldSubMeshDispFSI->on(_range=elements(subfsimesh),
+                              _expr=idv(this->timeStepNewmark()->previousUnknown()) );
+    M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
+}
 
 
 } // FeelModels

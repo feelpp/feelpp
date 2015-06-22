@@ -149,6 +149,15 @@ public:
     typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
     typedef boost::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
     //___________________________________________________________________________________//
+    // trace mesh
+    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    typedef boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
+    typedef Lagrange<nOrderGeo, Vectorial,Continuous> basis_tracemesh_disp_type;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_tracemesh_disp_type> > space_tracemesh_disp_type;
+    typedef boost::shared_ptr<space_tracemesh_disp_type> space_tracemesh_disp_ptrtype;
+    typedef typename space_tracemesh_disp_type::element_type element_tracemesh_disp_type;
+    typedef boost::shared_ptr<element_tracemesh_disp_type> element_tracemesh_disp_ptrtype;
+    //___________________________________________________________________________________//
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> exporter_type;
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
@@ -261,6 +270,8 @@ public:
                          typename MeshTraits<mesh_1dreduced_type>::element_const_iterator> range_elt1d_reduced_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt1d_reduced_type> op_interpolation2dTo1d_normalstress_type;
     typedef boost::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
+
+    //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -424,7 +435,7 @@ public :
     // 1d reduced model
     //-----------------------------------------------------------------------------------//
 
-    mesh_1dreduced_ptrtype mesh1dReduced() { return M_mesh_1dReduced; }
+    //mesh_1dreduced_ptrtype mesh1dReduced() { return M_mesh_1dReduced; }
     mesh_1dreduced_ptrtype const& mesh1dReduced() const { return M_mesh_1dReduced; }
     space_1dreduced_ptrtype functionSpace1dReduced() { return M_Xh_1dReduced; }
     space_1dreduced_ptrtype const& functionSpace1dReduced() const { return M_Xh_1dReduced; }
@@ -433,16 +444,25 @@ public :
     element_1dreduced_type const & fieldDisplacementScal1dReduced() const { return *M_disp_1dReduced; }
     element_vect_1dreduced_type & fieldDisplacementVect1dReduced() { return *M_disp_vect_1dReduced; }
     element_vect_1dreduced_type const & fieldDisplacementVect1dReduced() const { return *M_disp_vect_1dReduced; }
+    element_vect_1dreduced_ptrtype const & fieldDisplacementVect1dReducedPtr() const { return M_disp_vect_1dReduced; }
 
-    element_stress_scal_1dreduced_type & getStressScal1dReduced() { return *M_stress_1dReduced; }
-    element_stress_vect_1dreduced_type & getStressVect1dReduced() { return *M_stress_vect_1dReduced; }
+    element_stress_scal_1dreduced_type & fieldStressScal1dReduced() { return *M_stress_1dReduced; }
+    element_stress_vect_1dreduced_type & fieldStressVect1dReduced() { return *M_stress_vect_1dReduced; }
+    element_stress_vect_1dreduced_type const& fieldStressVect1dReduced() const { return *M_stress_vect_1dReduced; }
+    element_stress_vect_1dreduced_type const& fieldStressVect1dReducedPtr() const { return *M_stress_vect_1dReduced; }
     element_1dreduced_type & fieldVelocityScal1dReduced() { return *M_velocity_1dReduced; }
+    element_1dreduced_type const& fieldVelocityScal1dReduced() const { return *M_velocity_1dReduced; }
     element_vect_1dreduced_type & fieldVelocityVect1dReduced() { return *M_velocity_vect_1dReduced; }
+    element_vect_1dreduced_type const& fieldVelocityVect1dReduced() const { return *M_velocity_vect_1dReduced; }
+    element_vect_1dreduced_ptrtype const& fieldVelocityVect1dReducedPtr() const { return M_velocity_vect_1dReduced; }
 
-    newmark_1dreduced_ptrtype timeStepNewmark1dReduced() { return M_newmark_displ_1dReduced; }
+    newmark_1dreduced_ptrtype & timeStepNewmark1dReduced() { return M_newmark_displ_1dReduced; }
     newmark_1dreduced_ptrtype const& timeStepNewmark1dReduced() const { return M_newmark_displ_1dReduced; }
 
     backend_ptrtype const& backend1dReduced() const { return M_backend_1dReduced; }
+
+    double thickness1dReduced() const { return M_thickness_1dReduced; }
+    double radius1dReduced() const { return M_radius_1dReduced; }
 
     //-----------------------------------------------------------------------------------//
 
@@ -463,6 +483,8 @@ public :
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
+
+    void updateSubMeshDispFSIFromPrevious();
 
     //std::list<std::string> getMarkerNameFSI() const { return M_markerNameFSI; }
     std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
@@ -491,6 +513,9 @@ public :
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
     void updateInterfaceScalStressDispFromVectStress();
+
+    element_vect_1dreduced_ptrtype
+    extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const;
 
     //-----------------------------------------------------------------------------------//
     // post processing computation
@@ -585,6 +610,7 @@ protected:
     double M_meshSize;
     mesh_ptrtype M_mesh;
     MeshMover<mesh_type> M_mesh_mover;
+    MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
     // function space
     space_displacement_ptrtype M_Xh;
     element_displacement_ptrtype M_fieldDisplacement;
@@ -611,6 +637,10 @@ protected:
     backend_ptrtype M_backend;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
+    // trace mesh
+    space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
+    element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
+
     // exporter
     exporter_ptrtype M_exporter;
     bool M_doExportVelocity;
@@ -658,6 +688,8 @@ protected:
     // exporter
     exporter_1dreduced_ptrtype M_exporter_1dReduced;
 
+    // axi-sym properties
+    double M_thickness_1dReduced, M_radius_1dReduced;
 
     //-------------------------------------------//
     // others
@@ -677,6 +709,8 @@ protected:
     //std::list<std::string> M_markerNameFSI;
     double M_gammaNitschFSI;
     double M_muFluidFSI;
+    boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
+
 
     std::set<std::string> M_nameFilesData;
 

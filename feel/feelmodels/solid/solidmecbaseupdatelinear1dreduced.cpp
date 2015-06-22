@@ -26,14 +26,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
     auto Xh1 = M_Xh_1dReduced;
     auto u = Xh1->element(), v = Xh1->element();
 
-    double epp=0.1;
+    double epp=this->thickness1dReduced();//0.1;
     double k=2.5;
     double G=1e5;
     double gammav=0.01;
 
     double E=this->mechanicalProperties()->cstYoungModulus();//M_youngmodulus;
     double mu=this->mechanicalProperties()->cstCoeffPoisson();//M_coeffpoisson;
-    double R0=0.5;
+    double R0=this->radius1dReduced();//0.5;
     double rho=this->mechanicalProperties()->cstRho();
     bool robinOutletCoef = 1./math::sqrt(k*G/rho);
     //---------------------------------------------------------------------------------------//
@@ -127,7 +127,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
             integrate( _range=elements(mesh),
                        _expr=alpha_vel*gammav*dxv(M_newmark_displ_1dReduced->previousUnknown())*dx(v) );
     }
-
     //---------------------------------------------------------------------------------------//
     // fluid stress
     if (BuildNonCstPart)
