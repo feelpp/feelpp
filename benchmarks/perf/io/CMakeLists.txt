@@ -1,7 +1,7 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-12-01
+#  Author(s): Yacine OUld Rouis <yacine.ouldrouis@cea.fr>
+#       Date: 2015-06-22
 #
 #  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 #
@@ -21,20 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target(genfiles ALL)
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-add_custom_target(feelpp_assembly)
-
-foreach(D 2 3)
-  foreach(N 1 2 3 4)
-    feelpp_add_application( assembly_${D}d_p${N} SRCS  assembly.cpp  DEFS FEELPP_DIM=${D} FEELPP_ORDER=${N})
-    add_dependencies(feelpp_assembly feelpp_assembly_${D}d_p${N})
-  endforeach()
-endforeach()
-    
 add_executable( feel_perf_io
 bench_perf_io.cpp
   )
