@@ -181,28 +181,40 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
     if ( this->markerRobinBC().size() > 0 && !BuildCstPart )
     {
         this->updateBCRobinJacobian( J );
-#if 0
-        double alpha_robin =1e4;
-        bilinearForm_PatternDefault +=
-            integrate( _range=markedfaces(mesh,this->markerRobinBC() ),
-                       _expr= alpha_robin*trans(idt(u))*id(v),
-                       _geomap=this->geomap() );
-#endif
     }
     //--------------------------------------------------------------------------------------------------//
     // fsi coupling using a robin boundary condition
-    if (this->markerNameFSI().size()>0 && ( //this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-                                            this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+    if (this->markerNameFSI().size()>0 && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                             this->couplingFSIcondition() == "nitsche" ) )
     {
-        double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-        double muFluid = this->muFluidFSI();//0.03;
-        if (BuildCstPart)
+        double gammaRobinFSI = this->gammaNitschFSI();
+        double muFluid = this->muFluidFSI();
+        if ( !BuildCstPart)
         {
+#if 0
+            // integrate on ref with variables change
+            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
+            auto Ja = det(Fa);
+            auto Ba = inv(Fa);
+            auto variablechange = Ja*norm2( Ba*N() );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
+                           _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                            _geomap=this->geomap() );
+
+#else
+            MeshMover<mesh_type> mymesh_mover;
+            mesh_ptrtype mymesh = this->mesh();
+            mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
+
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                           _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
+                           _geomap=this->geomap() );
+
+            auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
+            mymesh_mover.apply( mymesh, dispInv );
+#endif
         }
     }
     //--------------------------------------------------------------------------------------------------//

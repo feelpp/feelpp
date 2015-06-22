@@ -3,6 +3,8 @@
 
 #include <feel/feelmodels/solid/solidmecbase.hpp>
 
+//#include <feel/feeldiscr/pchv.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -201,23 +203,51 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
         if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
              this->couplingFSIcondition() == "nitsche" )
         {
-            double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-            double muFluid = this->muFluidFSI();//0.03;
-            if (BuildCstPart)
+
+            double gammaRobinFSI = this->gammaNitschFSI();
+            double muFluid = this->muFluidFSI();
+#if 0
+            // integrate on ref with variables change
+            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
+            auto J = det(Fa);
+            auto B = inv(Fa);
+            auto variablechange = J*norm2( B*N() );
+            if (BuildNonCstPart )
             {
                 form2( _test=Xh, _trial=Xh, _matrix=A )  +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*M_newmark_displ_struct->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
+                               _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                                _geomap=this->geomap() );
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                form1( _test=Xh, _vector=F) +=
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                               _expr= variablechange*gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
+                               _geomap=this->geomap() );
+
             }
-            if (BuildNonCstPart )
+#else
+            if (BuildNonCstPart )//BuildCstPart)
             {
-                auto robinFSIRhs = idv(M_newmark_displ_struct->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                MeshMover<mesh_type> mymesh_mover;
+                mesh_ptrtype mymesh = this->mesh();
+                mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
+
+                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                               _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
+                               _geomap=this->geomap() );
+
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
                 form1( _test=Xh, _vector=F) +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
                                _geomap=this->geomap() );
+
+                auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
+                mymesh_mover.apply( mymesh, dispInv );
             }
+#endif
+
         }
     }
 
