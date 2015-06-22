@@ -709,6 +709,7 @@ void PreconditionerPetsc<T>::init ()
     {
         check( PCRegister("lsc2",PCCreate_LSC2) );
         check( PCRegister("blockns",PCCreate_FEELPP) );
+        check( PCRegister("blockms",PCCreate_FEELPP) );
         petscPCInHouseIsInit=true;
     }
 
@@ -1052,6 +1053,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case FEELPP_BLOCKMS_PRECOND:
+        ierr = PCSetType( pc, "blockms" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case ML_PRECOND:
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1239,6 +1245,11 @@ ConfigurePC::run( PC& pc )
     {
         CHECK( this->precFeel()->hasInHousePreconditioners( "blockns") ) << "blockns in-house prec not attached";
         this->check( PCSetPrecond_FEELPP(pc, this->precFeel()->inHousePreconditioners( "blockns") ) );
+    }
+    else if ( std::string(pctype) == "blockms" )
+    {
+        CHECK( this->precFeel()->hasInHousePreconditioners( "blockms") ) << "blockms in-house prec not attached";
+        this->check( PCSetPrecond_FEELPP(pc, this->precFeel()->inHousePreconditioners( "blockms") ) );
     }
     else if ( std::string(pctype) == "hypre" )
     {
@@ -1562,6 +1573,10 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "set for asymmetric matrice (if the matrix is sym, put to false)" )
         ( prefixvm( prefix,pcctx+"gamg-reuse-interpolation").c_str(), Feel::po::value<bool>()->default_value( false ),
           "reuse prolongation operator" )
+        ( prefixvm( prefix,pcctx+"gamg-verbose").c_str(), Feel::po::value<int>()->default_value( 0 ),
+          "verbose internal petsc info for gamg" )
+        ( prefixvm( prefix,pcctx+"gamg-nsmooths" ).c_str(), Feel::po::value<int>()->default_value( 1 ),
+          "number of smoothing steps" )
         ;
 
     // coarse ksp/pc
@@ -2188,6 +2203,8 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
     M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_reuseInterpolation( option(_name="pc-gamg-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_gamgVerbose( option(_name="pc-gamg-verbose",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_nSmooths( option(_name="pc-gamg-nsmooths",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2218,10 +2235,16 @@ ConfigurePCGAMG::run( PC& pc )
         {
             this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_sym_graph")%std::string(petscPrefix)).str().c_str(),
                                                boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_verbose")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue( (boost::format("-%1%pc_gamg_agg_nsmooths")%std::string(petscPrefix)).str().c_str(),
+                                               boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
         }
         else
         {
             this->check( PetscOptionsSetValue("-pc_gamg_sym_graph", boost::lexical_cast<std::string>(M_setSymGraph).c_str()) );
+            this->check( PetscOptionsSetValue("-pc_gamg_verbose", boost::lexical_cast<std::string>(M_gamgVerbose).c_str()) );
+            this->check( PetscOptionsSetValue("-pc_gamg_agg_nsmooths", boost::lexical_cast<std::string>(M_nSmooths).c_str()) );
         }
 
         // PCSetFromOptions is called here because PCGAMGSetType destroy all unless the type_name
@@ -2243,6 +2266,9 @@ ConfigurePCGAMG::run( PC& pc )
 #else
         this->check( PCGAMGSetReuseInterpolation( pc, ( M_reuseInterpolation )?PETSC_TRUE : PETSC_FALSE ) );
 #endif
+        // not work also
+        //this->check( PCGAMGSetNSmooths( pc, 30 ) );
+
     }
 
     // setup sub-pc
