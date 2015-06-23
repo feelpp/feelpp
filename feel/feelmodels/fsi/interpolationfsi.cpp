@@ -701,7 +701,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
 
 template< class FluidType, class SolidType >
 void
-InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
+InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling )
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -714,6 +714,8 @@ InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int 
         double gamma = M_solid->timeStepNewmark()->gamma();
         double beta = M_solid->timeStepNewmark()->beta();
         double scaleTimeDisc = M_solid->mechanicalProperties()->cstRho();
+        if ( std::abs(manualScaling-1) > 1e-9 )
+            scaleTimeDisc *= manualScaling;
         fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark()->currentVelocity() );
         fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solid->timeStepNewmark()->currentAcceleration() );
         fieldToTransfert->scale( scaleTimeDisc );
@@ -755,6 +757,9 @@ InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int 
         double gamma = M_solid->timeStepNewmark1dReduced()->gamma();
         double beta = M_solid->timeStepNewmark1dReduced()->beta();
         double scaleTimeDisc = M_solid->mechanicalProperties()->cstRho()*M_solid->thickness1dReduced();
+        if ( std::abs(manualScaling-1) > 1e-9 )
+            scaleTimeDisc *= manualScaling;
+
         fieldExtrapolated2->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark1dReduced()->currentVelocity() );
 
         if ( iterationFSI == 0 )
