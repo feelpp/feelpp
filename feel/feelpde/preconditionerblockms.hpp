@@ -70,8 +70,8 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::template sub_functionspace<0>::type potential_space_type;
     typedef typename space_type::template sub_functionspace<1>::type lagrange_space_type;
-    typedef typename space_type::template sub_functionspace<0>::ptrtype potential_space_ptrtype;
-    typedef typename space_type::template sub_functionspace<1>::ptrtype lagrange_space_ptrtype;
+    typedef typename boost::shared_ptr<potential_space_type> potential_space_ptrtype;
+    typedef typename boost::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
 
     typedef typename potential_space_type::element_type potential_element_type;
     typedef typename lagrange_space_type::element_type lagrange_element_type;
@@ -216,15 +216,16 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));;
     
     map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "p", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
     LOG(INFO) << "Create sub Matrix\n";
     // calcule matrice L
     auto f2B = form2(_trial=M_Qh, _test=M_Qh);
     auto f1B = form1(_test=M_Qh);
     f2B = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
-    for(auto const & it : m_dirichlet_p)
+    for(auto const & it : m_dirichlet_p){
         f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); // rajouter option elimination_keep-diag
+    }
     M_22Op = op(f2B.matrixPtr(), "blockms.22");
 
     // calculer matrice A + g M
@@ -233,7 +234,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     f2A = integrate(_range=elements(M_Vh->mesh()), _expr=cst(1.)/idv(M_mu)*trans(curlt_op(u))*curl_op(u) // mu^-1 A
                                                         +cst(1.-M_k*M_k)*inner(idt(u),id(u))); // g M
     for(auto const & it : m_dirichlet_u )
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u);
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
 
         
     M_11Op = op(M_11, "blockms.11");
