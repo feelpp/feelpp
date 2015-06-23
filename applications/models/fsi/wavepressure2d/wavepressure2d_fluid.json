@@ -39,9 +39,9 @@
         },
         "fluid":
         {
-            "fluid-outlet":
+            "outlet":
             {
-                "Sortie":
+                "fluid-outlet":
                 {
                     "expr":"0" 
                 }
