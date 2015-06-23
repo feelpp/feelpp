@@ -813,7 +813,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 }
                 MPI_Barrier( this->worldComm().comm() );
 
-                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                 free(str);
 
                 Feel::detail::FileIndex index;
@@ -917,7 +917,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 }
                 MPI_Barrier(this->worldComm().comm());
 
-                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                 free(str);
 
                 Feel::detail::FileIndex index;
@@ -1006,7 +1006,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 }
                 MPI_Barrier(this->worldComm().comm());
 
-                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                 free(str);
 
                 /* Either write every marker in one file */
@@ -1693,7 +1693,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         }
         MPI_Barrier(this->worldComm().comm());
 
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
         free(str);
 
         Feel::detail::FileIndex index;
@@ -2013,7 +2013,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         }
         MPI_Barrier(this->worldComm().comm());
 
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
         free(str);
 
         Feel::detail::FileIndex index;
