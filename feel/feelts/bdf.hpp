@@ -508,7 +508,7 @@ Bdf<SpaceType>::init()
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
