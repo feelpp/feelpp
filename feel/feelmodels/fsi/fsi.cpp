@@ -348,37 +348,22 @@ FSI<FluidType,SolidType>::init()
         auto fieldInit = M_fluid->meshVelocity2().functionSpace()->elementPtr();
         M_fluid->setCouplingFSI_RNG_evalForm1( fieldInit );
     }
-    if (M_solid->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized")
+    if (M_solid->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" &&
+        boption(_name="coupling-robin-neumann-generalized.use-interface-operator",_prefix=this->prefix() ) )
     {
+#if 1
         auto spaceDisp = M_solid->functionSpaceDisplacement();
         auto const& uDisp = M_solid->fieldDisplacement();
         auto mygraph = stencil(_test=spaceDisp,_trial=spaceDisp)->graph();
-        auto matMass = M_solid->backend()->newMatrix(0,0,0,0,mygraph);
-        form2( _trial=spaceDisp, _test=spaceDisp,_matrix=matMass )
-            += integrate(//_range=markedfaces(M_solid->mesh(),M_solid->markerNameFSI()),
-                         _range=elements(M_solid->mesh()),
-                     _expr=inner(idt(uDisp),id(uDisp)) );
-        matMass->close();
-        auto vecDiag = M_solid->backend()->newVector(spaceDisp);
-#if 0
-        M_solid->backend()->diag(matMass,vecDiag );
-#else
+
+        //----------------------------------------------------------------------------------//
+        // get dofs on markedfaces fsi
         std::set<size_type> dofMarkerFsi;
-#if 0 // bug
-        for ( std::string const markName : M_solid->markerNameFSI() )
-        {
-            //functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 )
-            auto setofdof = M_solid->functionSpaceDisplacement()->dof()->markerToDof( markName );
-            for( auto it = setofdof.first, en = setofdof.second; it != en; ++ it )
-                dofMarkerFsi.insert( it->second );
-        }
-#else
         for ( auto const& faceMarked : markedfaces(M_solid->mesh(),M_solid->markerNameFSI() ) )
         {
             auto __face_it = faceMarked.template get<1>();
             auto __face_en = faceMarked.template get<2>();
             for( ; __face_it != __face_en; ++__face_it )
-                //for ( auto const& face : faceMarked )
             {
                 auto const& face = *__face_it;
                 for ( uint16_type l = 0; l < M_solid->functionSpaceDisplacement()->dof()->nLocalDofOnFace(true); ++l )
@@ -391,21 +376,95 @@ FSI<FluidType,SolidType>::init()
                 }
             }
         }
+#if 0 // bug
+        std::set<size_type> dofMarkerFsiTest;
+        for ( std::string const markName : M_solid->markerNameFSI() )
+        {
+            //functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 )
+            auto setofdof = M_solid->functionSpaceDisplacement()->dof()->markerToDof( markName );
+            for( auto it = setofdof.first, en = setofdof.second; it != en; ++ it )
+                dofMarkerFsiTest.insert( it->second );
+        }
+        std::cout << "size " << dofMarkerFsiTest.size() << " vs " << dofMarkerFsi.size() << "\n";
 #endif
+
+        //----------------------------------------------------------------------------------//
+        // mass matrix on solid
+        auto matMass = M_solid->backend()->newMatrix(0,0,0,0,mygraph);
+        form2( _trial=spaceDisp, _test=spaceDisp,_matrix=matMass )
+            += integrate(
+                //_range=markedfaces(M_solid->mesh(),M_solid->markerNameFSI()),
+                _range=elements(M_solid->mesh()),
+                //_quad=_Q<1>(),
+                _expr=/*M_solid->mechanicalProperties()->cstRho()**/inner(idt(uDisp),id(uDisp)) );
+        matMass->close();
+        auto vecDiag = M_solid->backend()->newVector(spaceDisp);
+
+        auto vecDiagMassLumped = M_solid->backend()->newVector(spaceDisp);
+        auto unityVec = M_solid->backend()->newVector(spaceDisp);
+        for (int k=0;k<unityVec->map().nLocalDofWithGhost();++k)
+            unityVec->set(k,1);
+        unityVec->close();
+        matMass->multVector( unityVec,vecDiagMassLumped );
+        vecDiagMassLumped->close();
+
+        //----------------------------------------------------------------------------------//
+        // mass matrix on interface
+        auto matMassInterface = M_solid->backend()->newMatrix(0,0,0,0,mygraph);
+        form2( _trial=spaceDisp, _test=spaceDisp,_matrix=matMassInterface )
+            += integrate( _range=markedfaces(M_solid->mesh(),M_solid->markerNameFSI()),
+                          //_quad=_Q<1>(),
+                          _expr=inner(idt(uDisp),id(uDisp)) );
+        matMassInterface->close();
+        auto vecDiagMassInterface = M_solid->backend()->newVector(spaceDisp);
+        M_solid->backend()->diag(matMassInterface,vecDiagMassInterface );
+        vecDiagMassInterface->close();
+
+
+        auto unityVecInterface = M_solid->backend()->newVector(spaceDisp);
+        for (int k=0;k<unityVecInterface->map().nLocalDofWithGhost();++k)
+            if ( dofMarkerFsi.find( k ) != dofMarkerFsi.end() ) 
+                unityVecInterface->set(k,1);
+        unityVecInterface->close();
+        auto vecDiagMassInterfaceLumped = M_solid->backend()->newVector(spaceDisp);
+        matMassInterface->multVector( unityVecInterface/*unityVec*/,vecDiagMassInterfaceLumped );
+        vecDiagMassInterfaceLumped->close();
+
+
+        auto bbbb = sum(spaceDisp,elements(spaceDisp->mesh()),cst(1./4.)*meas()*one());
         for ( size_type k : dofMarkerFsi )
         {
             if ( vecDiag->map().dofGlobalProcessIsGhost( k ) ) continue;
             size_type gcdof = vecDiag->map().mapGlobalProcessToGlobalCluster(k);
             auto const& graphRow = matMass->graph()->row(gcdof);
-            double sumCol=0;
+            double sumCol=0,sumCol2=0;
             for ( size_type idCol : graphRow.template get<2>() )
             {
                 sumCol += matMass->operator()(k,idCol);
+                if ( k==idCol ) std::cout << "diag eval mass " << matMass->operator()(k,idCol) << "\n";
+
+                if ( dofMarkerFsi.find( idCol ) != dofMarkerFsi.end() ) 
+                    sumCol2 += matMass->operator()(k,idCol);
+
             }
-            vecDiag->set( k, sumCol );
+            std::cout << "val interface op " << sumCol << " VS " << sumCol2 << " VS " << bbbb(k) << " VS " << vecDiagMassLumped->operator()(k)
+                      << " Interface " << matMassInterface->operator()(k,k) << " VS " << vecDiagMassInterfaceLumped->operator()(k)
+                      << " in row " << k << "with "<< graphRow.template get<2>().size() <<" dof in row\n";
+            //vecDiag->set( k, sumCol );
+            //vecDiag->set( k, vecDiagMassLumped->operator()(k)/matMassInterface->operator()(k,k) );///THE NEWS
+            vecDiag->set( k, vecDiagMassLumped->operator()(k)/vecDiagMassInterface->operator()(k) );///THE NEWS
+            std::cout << "use " << vecDiagMassLumped->operator()(k) << " and " << vecDiagMassInterface->operator()(k)
+                      << " = " << vecDiagMassLumped->operator()(k)/vecDiagMassInterface->operator()(k) << "\n";
+            //vecDiag->set( k, vecDiagMassLumped->operator()(k)/vecDiagMassInterfaceLumped->operator()(k) );///THE NEWS
         }
-#endif
         vecDiag->close();
+#endif
+
+        /*auto bbbb = sum(spaceDisp,elements(spaceDisp->mesh()),cst(1./4.)*meas()*one());
+        auto vecDiag = M_solid->backend()->newVector(spaceDisp);
+        *vecDiag = bbb;
+         vecDiag.close();*/
+
 
         M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
         M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
@@ -774,6 +833,8 @@ FSI<FluidType,SolidType>::solveImpl3()
 
     this->updateBackendOptimisation(true,true);
 
+    double manualScalingRNG = doption(_name="coupling-robin-neumann-generalized.manual-scaling",_prefix=this->prefix());
+
     int cptFSI=0;
     double residualConvergence=1;
 
@@ -795,7 +856,7 @@ FSI<FluidType,SolidType>::solveImpl3()
             //bool useExtrap = (this->fluidModel()->timeStepBDF()->iteration() > 1) && cptFSI==0;
             //this->interpolationTool()->transfertVelocity(useExtrap);
         }
-        this->interpolationTool()->transfertRobinNeumannGeneralizedS2F( cptFSI );
+        this->interpolationTool()->transfertRobinNeumannGeneralizedS2F( cptFSI, manualScalingRNG );
         M_fluid->solve();
         //--------------------------------------------------------------//
         M_fluid->getMeshALE()->revertReferenceMesh();

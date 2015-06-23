@@ -214,7 +214,7 @@ public :
     void transfertDisplacement();
     void transfertStress();
     void transfertVelocity( bool useExtrap=false);
-    void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
+    void transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling = 1 );
 
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
