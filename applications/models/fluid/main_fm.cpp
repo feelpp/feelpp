@@ -2,23 +2,18 @@
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
-int
-main( int argc, char** argv )
+namespace Feel
 {
 
+template <uint16_type OrderVelocity,uint16_type OrderPressure>
+void
+runApplicationFluid()
+{
     using namespace Feel;
-	po::options_description fluidmecoptions( "application fluid-mechanics options" );
-    fluidmecoptions.add( feelmodels_options("fluid") );
 
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=fluidmecoptions,
-                   _about=about(_name="application_fluid",
-                                _author="Feel++ Consortium",
-                                _email="feelpp-devel@feelpp.org"));
-
-    typedef FeelModels::FluidMechanics< Simplex<2,1,2>,
-                                        Lagrange<2, Vectorial,Continuous,PointSetFekete>/*,
-                                        Lagrange<1, Scalar,Continuous,PointSetFekete>*/ > model_type;
+    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
+                                        Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
+                                        Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
     boost::shared_ptr<model_type> FM( new model_type("fluid") );
 
     FM->init();
@@ -44,6 +39,33 @@ main( int argc, char** argv )
             FM->exportResults();
         }
     }
+
+}
+
+} // namespace Feel
+
+int
+main( int argc, char** argv )
+{
+    using namespace Feel;
+	po::options_description fluidmecoptions( "application fluid-mechanics options" );
+    fluidmecoptions.add( feelmodels_options("fluid") );
+    fluidmecoptions.add_options()
+        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
+        ;
+
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=fluidmecoptions,
+                   _about=about(_name="application_fluid",
+                                _author="Feel++ Consortium",
+                                _email="feelpp-devel@feelpp.org"));
+
+    std::string feapprox = soption(_name="fe-approximation");
+    if ( feapprox == "P2P1" )
+        runApplicationFluid<2,1>();
+    else if ( feapprox == "P1P1" )
+        runApplicationFluid<1,1>();
+    else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
 }
