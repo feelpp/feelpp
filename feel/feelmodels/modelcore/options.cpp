@@ -290,6 +290,10 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-robin.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-robin-robin.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         (prefixvm("fluid"/*prefix*/,"coupling-robin-robin.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-interface-operator").c_str(), Feel::po::value<bool>()->default_value( true ),
+         "coupling-robin-neumann-generalized.use-interface-operator")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.manual-scaling").c_str(), Feel::po::value<double>()->default_value( 1.0 ),
+         "coupling-robin-neumann-generalized.manual-scaling")
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")
         ;
