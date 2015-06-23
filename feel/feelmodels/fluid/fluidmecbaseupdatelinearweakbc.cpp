@@ -408,6 +408,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
                                    _geomap=this->geomap() );
                     matBCFSI->close();
+
+
+#if 1 /////////////////////////
                     // scale diagonal with operator
                     auto myoperator = this->couplingFSI_RNG_interfaceOperator();
                     CHECK( /*matBCFSI->mapRow()*/this->functionSpaceVelocity()->nLocalDofWithGhost() == myoperator->map().nLocalDofWithGhost() ) << "invalid compatibility size";
@@ -476,6 +479,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                     }
                     matBCFSI->close();
 
+#endif ///////////
                     std::cout << "fluid assembly : use operator ---1----\n";
                     //A->updateBlockMat();
                     A->addMatrix(1.0, matBCFSI );
