@@ -78,7 +78,7 @@ public :
             {
                 if (i==0)
                 {
-                 v2=(-image(j,i)+image(j,i+2)/2+2*image(j,i+1))/doption("msi.pixelsize");   
+                 v2=(-(3./2)*image(j,i)+image(j,i+2)/2+2*image(j,i+1))/doption("msi.pixelsize");   
                 }
                 else if (i==image.cols()-1)
                 {
@@ -117,7 +117,7 @@ public :
                 }
                 else
                 {
-                v2=(image(j,i+1)-image(j,i-1))/(2*doption("msi.pixelsize"));
+                v2=(-image(j,i+1)-image(j,i-1))/(2*doption("msi.pixelsize"));
                 }
             }            
             }
@@ -128,7 +128,7 @@ public :
             {
                 if (i==0)
                 {
-                v2=(-image(j,i)+image(j+2,i)/2+2*image(j+1,i))/doption("msi.pixelsize");       
+                v2=(-(3./2)*image(j,i)+image(j+2,i)/2+2*image(j+1,i))/doption("msi.pixelsize");       
                 }
                 else if (i==image.cols()-1)
                 {
@@ -160,15 +160,15 @@ public :
             {
                 if (i==0)
                 {
-                v2=(-image(j+1,i)+image(j-1,i))/(2*doption("msi.pixelsize")); 
+                v2=(image(j+1,i)-image(j-1,i))/(2*doption("msi.pixelsize")); 
                 }
                 else if (i==image.cols()-1)
                 {
-                 v2=(-image(j-1,i)+image(j+1,i))/(2*doption("msi.pixelsize")); 
+                 v2=(image(j-1,i)-image(j+1,i))/(2*doption("msi.pixelsize")); 
                 }
                 else
                 {
-                v2=(image(j+1,i)-image(j-1,i))/(2*doption("msi.pixelsize"));
+                v2=(-image(j+1,i)-image(j-1,i))/(2*doption("msi.pixelsize"));
                 }
             }
 
