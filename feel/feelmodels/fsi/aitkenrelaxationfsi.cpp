@@ -269,7 +269,7 @@ FixPointConvergenceFSI<SolidType>::computeConvergence()
                        _expr=vf::idv(M_solid->fieldDisplacement() ));
         *M_residual -= *M_oldSol;
         double oldEltL2Norm = M_oldSol->l2Norm();
-        if ( oldEltL2Norm > 1e-8 )
+        if ( oldEltL2Norm > 1e-13 )
             residualConvergence = M_residual->l2Norm()/oldEltL2Norm;
         else
             residualConvergence = M_residual->l2Norm();
@@ -280,7 +280,7 @@ FixPointConvergenceFSI<SolidType>::computeConvergence()
                                 _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
         *M_residual1dReduced -= *M_oldSol1dReduced;
         double oldEltL2Norm = M_oldSol1dReduced->l2Norm();
-        if ( oldEltL2Norm > 1e-8 )
+        if ( oldEltL2Norm > 1e-13 )
             residualConvergence = M_residual1dReduced->l2Norm()/oldEltL2Norm;
         else
             residualConvergence = M_residual1dReduced->l2Norm();

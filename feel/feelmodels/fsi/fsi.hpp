@@ -80,9 +80,6 @@ public :
     void setFluidModel( fluid_ptrtype const& fm ) { M_fluid=fm; }
     void setSolidModel( solid_ptrtype const& sm ) { M_solid=sm; }
 
-    //bool verbose() const { return M_verbose; }
-    //bool verboseAllProc() const { return M_verboseAllProc; }
-
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
     bool interfaceFSIisConforme() const { return M_interfaceFSIisConforme; }
@@ -90,6 +87,7 @@ public :
     double initialTheta() const { return M_initialTheta; }
     double minTheta() const { return M_minTheta; }
     int fixPointMaxIt() const { return M_fixPointMaxIt; }
+    int fixPointMinItConvergence() const { return M_fixPointMinItConvergence; }
 
     interpolationFSI_ptrtype interpolationTool() { return M_interpolationFSI; }
     interpolationFSI_ptrtype const& interpolationTool() const { return M_interpolationFSI; }
@@ -186,6 +184,7 @@ private :
     bool M_interfaceFSIisConforme;
     double M_tolPtFixe,M_initialTheta,M_minTheta;
     int M_fixPointMaxIt;
+    int M_fixPointMinItConvergence;
 
     interpolationFSI_ptrtype M_interpolationFSI;
     aitkenrelaxationFSI_ptrtype M_aitkenFSI;
