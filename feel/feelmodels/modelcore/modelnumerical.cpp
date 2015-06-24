@@ -118,6 +118,12 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         //-----------------------------------------------------------------------//
     }
 
+   void
+   ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
+   {
+        M_modelProps.parameters()[symbolName] = ModelParameter(symbolName,value);
+   }
+
 
     void
     ModelNumerical::setStationary(bool b)
