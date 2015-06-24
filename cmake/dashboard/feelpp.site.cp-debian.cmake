@@ -39,7 +39,7 @@ set(FEELPP_WORK_DIR ${WORK_DIR})
 set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
 
 #Options
-set(DEFAULT_TEST_TIMEOUT 60)
+set(DEFAULT_TEST_TIMEOUT "60")
 set(ENABLE_ALTIVEC OFF)
 set(ENABLE_BUILD_STATIC OFF)
 set(ENABLE_DOXYGEN OFF)
