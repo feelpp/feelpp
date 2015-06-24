@@ -102,7 +102,9 @@ public :
         :
         super( std::pow(2,ioption("msi.level"))+1  )
     {
+
         int  gridsize = std::pow(2,ioption("msi.level"));
+
         // build rules in x and y direction
         weights_type wx( gridsize+1  );
         weights_type px( gridsize+1  );
@@ -191,7 +193,9 @@ public :
         :
         super( (1+std::pow(2,ioption("msi.level")))*(std::pow(2,ioption("msi.level"))+1) )
     {
+
         int gridsize=std::pow(2,ioption("msi.level"));
+
         // build rules in x and y direction
         weights_type wx( (gridsize+1)*(gridsize+1) );
         //weights_type px( (gridsize*gridsize );
