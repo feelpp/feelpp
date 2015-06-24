@@ -1679,27 +1679,242 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
         res += 2*this->nFluidOutlet();
     return res;
 }
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
+{
+    if ( M_couplingFSI_RNG_matrix ) return;
+
+    this->log("FluidMechanics","couplingFSI_RNG_updateForUse", "start" );
+
+    //-----------------------------------------------------------------//
+    // build matrix
+    //-----------------------------------------------------------------//
+#if 0 // not work if we use a different pattern matrix with matrix
+    auto ru = stencilRange<0,0>(markedfaces(this->mesh(),this->markersNameMovingBoundary()));
+    auto myblockpattern = vf::Blocks<2,2,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO)
+                                                      << size_type(Pattern::ZERO)  << size_type(Pattern::ZERO);
+    auto mygraph = stencil(_test=this->functionSpace(),_trial=this->functionSpace(),
+                           _pattern_block=myblockpattern,
+                           //_diag_is_nonzero=false,_close=false,
+                           _diag_is_nonzero=false,_close=true,
+                           _range=stencilRangeMap(ru) )->graph();
+    M_couplingFSI_RNG_matrix = this->backend()->newMatrix(0,0,0,0,mygraph);
+#else
+    M_couplingFSI_RNG_matrix = this->backend()->newMatrix(0,0,0,0,this->algebraicFactory()->sparsityMatrixGraph());
+#endif
+
+
+    //-----------------------------------------------------------------//
+    // assembly : first version
+    //-----------------------------------------------------------------//
+#if 0 /////////////////////////
+    this->getMeshALE()->revertReferenceMesh();
+    form2( _test=Xh,_trial=Xh,_matrix=M_couplingFSI_RNG_matrix,
+           _pattern=size_type(Pattern::COUPLED) ) +=
+        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                   _geomap=this->geomap() );
+    M_couplingFSI_RNG_matrix->close();
+    this->getMeshALE()->revertMovingMesh();
+
+
+    // scale with diagonal operator
+    auto myoperator = this->couplingFSI_RNG_interfaceOperator();
+    CHECK( /*M_couplingFSI_RNG_matrix->mapRow()*/this->functionSpaceVelocity()->nLocalDofWithGhost() == myoperator->map().nLocalDofWithGhost() ) << "invalid compatibility size";
+
+    std::set<size_type> dofMarkerFsi,dofMarkerFsiP1;
+#if 0 // bug!!!!
+    for ( std::string const markName : this->markersNameMovingBoundary() )
+    {
+        //functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 )
+        auto setofdof = this->functionSpaceVelocity()->dof()->markerToDof( markName );
+        for( auto it = setofdof.first, en = setofdof.second; it != en; ++ it )
+            dofMarkerFsi.insert( it->second );
+    }
+#endif
+    for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
+    {
+        auto __face_it = faceMarked.template get<1>();
+        auto __face_en = faceMarked.template get<2>();
+        for( ; __face_it != __face_en; ++__face_it )
+            //for ( auto const& face : faceMarked )
+        {
+            auto const& face = *__face_it;
+            for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l )
+            {
+                for (uint16_type c1=0;c1<nDim;c1++)
+                {
+                    size_type gdof = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    dofMarkerFsiP1.insert( gdof );
+                }
+            }
+            for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
+            {
+                for (uint16_type c1=0;c1<nDim;c1++)
+                {
+                    size_type gdof = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    dofMarkerFsi.insert( gdof );
+                }
+            }
+
+        }
+    }
+    //std::cout << "nLocalDofOnFace(true)" << this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true) << "\n";
+    //std::cout << "nLocalDofOnFace(false)" << this->functionSpaceVelocity()->dof()->nLocalDofOnFace(false) << "\n";
+    //std::cout << "mesh_type::element_type::numVertices" << mesh_type::face_type::numVertices << "\n";
+    std::cout << "size dofMarkerFsi " << dofMarkerFsi.size() << " size dofMarkerFsiP1 " << dofMarkerFsiP1.size() <<"\n";
+
+    //for ( size_type k = 0 ; k<myoperator->map().nLocalDofWithGhost() ; ++k )
+    for ( size_type k : dofMarkerFsi )
+    {
+        if ( myoperator->map().dofGlobalProcessIsGhost( k ) ) continue;
+        size_type gcdof = myoperator->map().mapGlobalProcessToGlobalCluster(k);
+#if 0
+        double scalDiag = myoperator->operator()(k);
+        double valDiag = M_couplingFSI_RNG_matrix->operator()( gcdof,gcdof);
+        M_couplingFSI_RNG_matrix->set(k,k,valDiag*scalDiag);
+#else
+        auto const& graphRow = M_couplingFSI_RNG_matrix->graph()->row(gcdof);
+        for ( size_type idCol : graphRow.template get<2>() )
+        {
+            if ( dofMarkerFsiP1.find(idCol) == dofMarkerFsiP1.end() ) continue; // Only P1 dof
+            double scalDiag = myoperator->operator()(idCol);
+            double valEntryMat = M_couplingFSI_RNG_matrix->operator()( gcdof,idCol);
+            M_couplingFSI_RNG_matrix->set(k,idCol,valEntryMat*scalDiag);
+        }
+#endif
+    }
+    M_couplingFSI_RNG_matrix->close();
+
+#endif ///////////
+
+
+    //-----------------------------------------------------------------//
+    // assembly : second version
+    //-----------------------------------------------------------------//
+    auto myoperator = this->couplingFSI_RNG_interfaceOperator();
+    //M_couplingFSI_RNG_matrix->zero();
+#if 0
+    // CELUI QUI MARCHAIT A PEU PRES
+    for ( size_type k : dofMarkerFsi )
+        //for ( size_type k : dofMarkerFsiP1 )
+    {
+        double scalDiag = myoperator->operator()(k);
+        M_couplingFSI_RNG_matrix->set(k,k,this->couplingFSI_RNG_coeffForm2()*scalDiag);
+    }
+#else
+    std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
+    for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
+    {
+        auto __face_it = faceMarked.template get<1>();
+        auto __face_en = faceMarked.template get<2>();
+        for( ; __face_it != __face_en; ++__face_it )
+        {
+            auto const& face = *__face_it;
+            for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
+                //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
+            {
+                for (uint16_type c1=0;c1<nDim;c1++)
+                {
+                    size_type gdofVelFluid = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    if ( dofdone[gdofVelFluid] ) continue;
+                    double scalDiag = myoperator->operator()(gdofVelFluid);
+                    M_couplingFSI_RNG_matrix->add(gdofVelFluid,gdofVelFluid,this->couplingFSI_RNG_coeffForm2()*scalDiag);
+                    dofdone[gdofVelFluid] = true;
+                }
+            }
+        }
+    }
+#endif
+    M_couplingFSI_RNG_matrix->close();
+
+    this->log("FluidMechanics","couplingFSI_RNG_updateForUse", "finish" );
+
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const
+{
+
+#if 0
+    this->getMeshALE()->revertReferenceMesh();
+    form1( _test=Xh, _vector=F,
+           _rowstart=rowStartInVector ) +=
+        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                   _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
+                   _geomap=this->geomap() );
+#elif 0
+    // this one has almost worked!!!!!!!!!!!
+    // on dirait que le dofdone ralentit conv
+    auto myoperator = this->couplingFSI_RNG_interfaceOperator();
+    std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
+    for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
+    {
+        auto __face_it = faceMarked.template get<1>();
+        auto __face_en = faceMarked.template get<2>();
+        for( ; __face_it != __face_en; ++__face_it )
+        {
+            auto const& face = *__face_it;
+            for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
+            {
+                for (uint16_type c1=0;c1<nDim;c1++)
+                {
+                    size_type gdofVelFluid = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    //if ( dofdone[gdofVelFluid] ) continue;
+                    size_type gdofVelInterf = boost::get<0>(this->couplingFSI_RNG_evalForm1()->functionSpace()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    double thevalue = this->couplingFSI_RNG_evalForm1()->operator()(gdofVelInterf);//*(*myoperator)(gdofVelFluid);
+                    F->add( gdofVelFluid, -thevalue );
+                    //dofdone[gdofVelFluid] = true;
+                }
+            }
+        }
+    }
+#else
+    auto myoperator = this->couplingFSI_RNG_interfaceOperator();
+    std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
+    for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
+    {
+        auto __face_it = faceMarked.template get<1>();
+        auto __face_en = faceMarked.template get<2>();
+        for( ; __face_it != __face_en; ++__face_it )
+        {
+            auto const& face = *__face_it;
+            //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
+            for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
+            {
+                for (uint16_type c1=0;c1<nDim;c1++)
+                {
+                    size_type gdofVelFluid = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    if ( dofdone[gdofVelFluid] ) continue;
+                    //double thevalue = this->couplingFSI_RNG_evalForm1Bis()->operator()(gdofVelFluid);//*(*myoperator)(gdofVelFluid);
+                    double thevalue = this->couplingFSI_RNG_evalForm1Bis()->operator()(gdofVelFluid)*(*myoperator)(gdofVelFluid);
+
+                    //size_type gdofVelInterf = boost::get<0>(this->couplingFSI_RNG_evalForm1()->functionSpace()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
+                    //double thevalue = this->couplingFSI_RNG_evalForm1()->operator()(gdofVelInterf);//*(*myoperator)(gdofVelFluid);
+
+                    F->add( gdofVelFluid, -thevalue );
+                    dofdone[gdofVelFluid] = true;
+                }
+            }
+        }
+    }
+#endif
+
+}
+
+
+
+
+
+
 //---------------------------------------------------------------------------------------------------------//
 
 
-
-/*void
- FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
- sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
- bool _doClose, bool _doBCStrongDirichlet ) const
- {
- }*/
-/*    void
- FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
- bool BuildCstPart,sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
- bool _doClose, bool _doBCStrongDirichlet ) const
- {}
- void
- FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
- bool BuildCstPart, bool UseJacobianLinearTerms,
- bool _doClose, bool _doBCStrongDirichlet ) const
- {}
- */
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
