@@ -177,7 +177,7 @@ class TestPrecAFP : public Application
                        _expr = inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
-                       - inner(trans(id(v)),gradt(phi)) // -grad(phi)
+                         inner(trans(id(v)),gradt(phi)) //  grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
                        + (1./idv(M_mu))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
