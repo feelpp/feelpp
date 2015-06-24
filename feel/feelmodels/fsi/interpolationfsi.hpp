@@ -103,7 +103,14 @@ public :
     typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_velocity_type,
                                   range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
     typedef boost::shared_ptr<op_interpolation2dTo2dconf_velocity_type> op_interpolation2dTo2dconf_velocity_ptrtype;
-
+    
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocityBis_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dnonconf_velocityBis_type> op_interpolation2dTo2dnonconf_velocityBis_ptrtype;
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocityBis_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dconf_velocityBis_type> op_interpolation2dTo2dconf_velocityBis_ptrtype;
+    
     //-----------------------------------------------------------------------------------//
     // space and element displacement with interaction 2d/1d (disp is scalar)
     typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_disp_1dreduced_type;
@@ -245,7 +252,10 @@ private :
     op_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconf;
     op_interpolation2dTo2dnonconf_velocity_ptrtype M_opVelocity2dTo2dnonconf;
     bool M_opVelocityIsInit;
-
+    
+    op_interpolation2dTo2dconf_velocityBis_ptrtype M_opVelocityBis2dTo2dconf;
+    op_interpolation2dTo2dnonconf_velocityBis_ptrtype M_opVelocityBis2dTo2dnonconf;
+    
     // 1d reduced model
     op_interpolation1dToNdnonconf_disp_ptrtype M_opDisp1dToNdnonconf;
     op_interpolation1dToNdconf_disp_ptrtype M_opDisp1dToNdconf;
