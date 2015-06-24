@@ -593,25 +593,26 @@ InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannInterfaceOperatorS2F
     *fieldToTransfert = *this->robinNeumannInterfaceOperator();
     if (M_interfaceFSIisConforme)
     {
-        auto opI = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
+        M_opVelocityBis2dTo2dconf/*auto opI*/ = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
                                    _imageSpace=this->fluid()->functionSpaceVelocity(),
                                    _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                    _type=InterpolationConforme(),
                                    _backend=this->fluid()->backend() );
-        opI->apply( *fieldToTransfert, *fieldInterpolated );
+        M_opVelocityBis2dTo2dconf/*opI*/->apply( *fieldToTransfert, *fieldInterpolated );
     }
     else
     {
-        auto opI = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
+        M_opVelocityBis2dTo2dnonconf/*auto opI*/ = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
                                    _imageSpace=this->fluid()->functionSpaceVelocity(),
                                    _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                    _type=InterpolationNonConforme(),
                                    _backend=this->fluid()->backend() );
-        opI->apply( *fieldToTransfert, *fieldInterpolated );
+        M_opVelocityBis2dTo2dnonconf/*opI*/->apply( *fieldToTransfert, *fieldInterpolated );
     }
 
     M_fluid->setCouplingFSI_RNG_interfaceOperator( fieldInterpolated );
     M_fluid->setCouplingFSI_RNG_useInterfaceOperator( true );
+    M_fluid->couplingFSI_RNG_updateForUse();
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannInterfaceOperatorS2F", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -668,17 +669,6 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
             fieldExtrapolated->add( -1.0, *M_fieldVelocitySolid1dReducedPreviousPrevious /*this->solid()->timeStepNewmark()->previousVelocity(1)*/ );
             fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated );
         }
-#if 0 // NEW
-        auto fieldExtrapolated2 = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
-        double dt = M_solid->timeStepNewmark1dReduced()->timeStep();
-        double gamma = M_solid->timeStepNewmark1dReduced()->gamma();
-        double beta = M_solid->timeStepNewmark1dReduced()->beta();
-        fieldExtrapolated2->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark1dReduced()->currentVelocity() );
-        fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
-        fieldExtrapolated2->add( 1.0, M_solid->timeStepNewmark1dReduced()->currentAcceleration() );
-
-        fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
-#endif
 
         if (M_interfaceFSIisConforme)
         {
@@ -717,9 +707,24 @@ InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int 
         if ( std::abs(manualScaling-1) > 1e-9 )
             scaleTimeDisc *= manualScaling;
         fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solid->timeStepNewmark()->currentVelocity() );
-        fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solid->timeStepNewmark()->currentAcceleration() );
-        fieldToTransfert->scale( scaleTimeDisc );
 
+        if ( iterationFSI == 0 )
+        {
+            fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solid->timeStepNewmark()->currentAcceleration() );
+            // extrapolate acceleration with bdf order 1
+            if ( M_solid->timeStepNewmark()->iteration() > 1 )
+            {
+                fieldToTransfert->add(  1.0/dt, M_solid->timeStepNewmark()->previousVelocity(1) );
+                fieldToTransfert->add( -1.0/dt, M_solid->timeStepNewmark()->previousVelocity(2) );
+            }
+        }
+        else
+        {
+            fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solid->timeStepNewmark()->currentAcceleration() );
+        }
+
+        fieldToTransfert->scale( scaleTimeDisc );
+#if 0
         // apply interface operator
         if ( M_fluid->couplingFSI_RNG_useInterfaceOperator() )
         {
@@ -735,16 +740,33 @@ InterpolationFSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int 
                 fieldToTransfert->set(k,val*scaling);
             }
         }
-
+#endif
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
             M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1() );
+            
+            // additional transfert
+            if ( M_fluid->couplingFSI_RNG_useInterfaceOperator() )
+            {
+                CHECK( M_opVelocityBis2dTo2dconf ) << "interpolation operator not build";
+                M_opVelocityBis2dTo2dconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1Bis() );
+            }
+            
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
             M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1() );
+            
+            // additional transfert
+            if ( M_fluid->couplingFSI_RNG_useInterfaceOperator() )
+            {
+                CHECK( M_opVelocityBis2dTo2dconf ) << "interpolation operator not build";
+                M_opVelocityBis2dTo2dnonconf->apply( *fieldToTransfert, *M_fluid->couplingFSI_RNG_evalForm1Bis() );
+            }
+            
+
         }
 
         M_fluid->setCouplingFSI_RNG_coeffForm2( (scaleTimeDisc*(1./(dt*gamma)) ) );

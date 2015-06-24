@@ -348,9 +348,12 @@ FSI<FluidType,SolidType>::init()
         auto fieldInit = M_fluid->meshVelocity2().functionSpace()->elementPtr();
         M_fluid->setCouplingFSI_RNG_evalForm1( fieldInit );
     }
-    if (M_solid->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" &&
-        boption(_name="coupling-robin-neumann-generalized.use-interface-operator",_prefix=this->prefix() ) )
+    if ( M_solid->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" &&
+         boption(_name="coupling-robin-neumann-generalized.use-interface-operator",_prefix=this->prefix() ) )
     {
+        auto fieldInitBis = M_fluid->functionSpaceVelocity()->elementPtr();
+        M_fluid->setCouplingFSI_RNG_evalForm1Bis( fieldInitBis );
+
 #if 1
         auto spaceDisp = M_solid->functionSpaceDisplacement();
         auto const& uDisp = M_solid->fieldDisplacement();
@@ -456,6 +459,9 @@ FSI<FluidType,SolidType>::init()
             std::cout << "use " << vecDiagMassLumped->operator()(k) << " and " << vecDiagMassInterface->operator()(k)
                       << " = " << vecDiagMassLumped->operator()(k)/vecDiagMassInterface->operator()(k) << "\n";
             //vecDiag->set( k, vecDiagMassLumped->operator()(k)/vecDiagMassInterfaceLumped->operator()(k) );///THE NEWS
+
+            vecDiag->set( k, vecDiagMassLumped->operator()(k) );
+
         }
         vecDiag->close();
 #endif
