@@ -48,6 +48,7 @@ FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm )
     M_initialTheta( doption(_name="fixpoint.initialtheta",_prefix=this->prefix()) ),
     M_minTheta( doption(_name="fixpoint.min_theta",_prefix=this->prefix()) ),
     M_fixPointMaxIt( ioption(_name="fixpoint.maxit",_prefix=this->prefix()) ),
+    M_fixPointMinItConvergence( ioption(_name="fixpoint.minit-convergence",_prefix=this->prefix()) ),
     M_previousTimeOrder(0),M_currentTimeOrder(1),
     M_reusePrecOptFluid(false),
     M_reusePrecRebuildAtFirstFSIStepOptFluid( boption(_name="fluid.reuse-prec.rebuild-at-first-fsi-step",_prefix=this->prefix()) ),
@@ -585,7 +586,9 @@ FSI<FluidType,SolidType>::solveImpl1()
 
     boost::mpi::timer timerCur,timerIter;
 
-    while (!this->aitkenRelaxTool()->isFinished() && this->aitkenRelaxTool()->nIterations()<this->fixPointMaxIt())
+
+    while ( (!this->aitkenRelaxTool()->isFinished() || this->aitkenRelaxTool()->nIterations() <= this->fixPointMinItConvergence() ) &&
+            this->aitkenRelaxTool()->nIterations()<this->fixPointMaxIt() )
     {
         timerIter.restart();
         timerCur.restart();
@@ -743,7 +746,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     bool solveStruct = this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
 
-    while ( ( residualConvergence > this->tolPtFixe() || cptFSI <3 ) && cptFSI < this->fixPointMaxIt() )
+    while ( ( residualConvergence > this->tolPtFixe() || cptFSI < this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
         M_fixPointConvergenceFSI->saveOldSolution();
@@ -846,7 +849,7 @@ FSI<FluidType,SolidType>::solveImpl3()
 
     //bool solveStruct = this->fluidModel()->timeStepBDF()->iteration() > 1 || this->fixPointMaxIt()==1;
 
-    while ( ( residualConvergence > this->tolPtFixe() || cptFSI <3 ) && cptFSI < this->fixPointMaxIt() )
+    while ( ( residualConvergence > this->tolPtFixe() || cptFSI <this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
         //timerCur.restart();
