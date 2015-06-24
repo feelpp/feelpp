@@ -315,10 +315,12 @@ protected :
     void createAdditionalFunctionSpacesFSIStandard();
     void createAdditionalFunctionSpacesFSI1dReduced();
 
-    void restartExporters();
-    void restartExporters1dReduced();
-
 public :
+    void restartExporters() { this->restartExporters( this->timeInitial() ); }
+    void restartExporters1dReduced() { this->restartExporters1dReduced( this->timeInitial() ); }
+    void restartExporters( double time );
+    void restartExporters1dReduced( double time );
+
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"SolidMechanicsMesh.path"); }
 
@@ -429,6 +431,7 @@ public :
     std::map<std::string,size_type> const& startDofIndexFieldsInMatrix() const { return M_startDofIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
+    void updateBlockVectorSolution();
 
 
     //-----------------------------------------------------------------------------------//

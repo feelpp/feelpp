@@ -13,18 +13,18 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 {
     if (this->doRestart() && this->restartPath().empty())
     {
         if (!M_isHOVisu)
         {
-            if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
+            if ( M_exporter->doExport() ) M_exporter->restart(time);
         }
         else
         {
 #if defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
+            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(time);
 #endif
         }
     }
@@ -34,11 +34,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters1dReduced()
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters1dReduced( double time )
 {
     if (this->doRestart() && this->restartPath().empty())
     {
-        if ( M_exporter_1dReduced->doExport() ) M_exporter_1dReduced->restart(this->timeInitial());
+        if ( M_exporter_1dReduced->doExport() ) M_exporter_1dReduced->restart(time);
     }
 }
 
@@ -255,6 +255,32 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
     }
 }
 
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
+{
+    if (this->isStandardModel())
+    {
+        auto & vecAlgebraic = M_blockVectorSolution.vector();
+        auto const& fieldDisp = this->fieldDisplacement();
+        for (int k=0;k< M_Xh->nLocalDofWithGhost() ;++k)
+            vecAlgebraic->set(k, fieldDisp(k) );
+
+        if ( M_useDisplacementPressureFormulation )
+        {
+            auto const& fieldPressure = this->fieldPressure();
+            size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
+            for (int k=0;k< M_XhPressure->nLocalDofWithGhost() ;++k)
+                vecAlgebraic->set( startDofIndexPressure+k, fieldPressure(k) );
+        }
+        vecAlgebraic->close();
+    }
+    else if (this->is1dReducedModel())
+    {
+        // nothing because do in solve (TODO mv here)
+    }
+}
+
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -430,6 +456,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
 
 //---------------------------------------------------------------------------------------------------//
 
+
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
@@ -437,6 +464,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->log("SolidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
+    this->updateBlockVectorSolution();
     if (M_pdeType=="Elasticity")
     {
         if (M_pdeSolver=="LinearSystem")
