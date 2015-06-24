@@ -373,138 +373,50 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
         //---------------------------------------------------------------------------//
         {
             bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
-            if ( BuildNonCstPart_robinFSI )
-            {
-                this->getMeshALE()->revertReferenceMesh();
 
-                if ( !useInterfaceOperator )
+            if ( !useInterfaceOperator )
+            {
+                if ( BuildNonCstPart_robinFSI )
                 {
-                    //double gamma = 0.5;
+                    this->getMeshALE()->revertReferenceMesh();
                     bilinearForm_PatternCoupled +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
                                    _geomap=this->geomap() );
                 }
-                else
+                if ( BuildNonCstPart )
                 {
-#if 1
-                    std::cout << "fluid assembly : use operator\n";
-#if 0
-                    auto ru = stencilRange<0,0>(markedfaces(this->mesh(),this->markersNameMovingBoundary()));
-                    auto myblockpattern = vf::Blocks<2,2,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO)
-                                                                      << size_type(Pattern::ZERO)  << size_type(Pattern::ZERO);
-                    auto mygraph = stencil(_test=this->functionSpace(),_trial=this->functionSpace(),
-                        _pattern_block=myblockpattern,
-                        //_diag_is_nonzero=false,_close=false,
-                        _diag_is_nonzero=false,_close=true,
-                        _range=stencilRangeMap(ru) )->graph();
-                    auto matBCFSI = this->backend()->newMatrix(0,0,0,0,mygraph);
-#else
-                    auto matBCFSI = this->backend()->newMatrix(0,0,0,0,A->graph());
-#endif
-                    form2( _test=Xh,_trial=Xh,_matrix=matBCFSI,
-                           _pattern=size_type(Pattern::COUPLED) ) +=
+                    this->getMeshALE()->revertReferenceMesh();
+                    form1( _test=Xh, _vector=F,
+                           _rowstart=rowStartInVector ) +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                                   _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
                                    _geomap=this->geomap() );
-                    matBCFSI->close();
-
-
-#if 1 /////////////////////////
-                    // scale diagonal with operator
-                    auto myoperator = this->couplingFSI_RNG_interfaceOperator();
-                    CHECK( /*matBCFSI->mapRow()*/this->functionSpaceVelocity()->nLocalDofWithGhost() == myoperator->map().nLocalDofWithGhost() ) << "invalid compatibility size";
-
-                    std::set<size_type> dofMarkerFsi,dofMarkerFsiP1;
-#if 0 // bug!!!!
-                    for ( std::string const markName : this->markersNameMovingBoundary() )
-                    {
-                        //functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 )
-                        auto setofdof = this->functionSpaceVelocity()->dof()->markerToDof( markName );
-                        for( auto it = setofdof.first, en = setofdof.second; it != en; ++ it )
-                            dofMarkerFsi.insert( it->second );
-                    }
-#endif
-                    for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
-                    {
-                        auto __face_it = faceMarked.template get<1>();
-                        auto __face_en = faceMarked.template get<2>();
-                        for( ; __face_it != __face_en; ++__face_it )
-                            //for ( auto const& face : faceMarked )
-                        {
-                            auto const& face = *__face_it;
-                            for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l )
-                            {
-                                for (uint16_type c1=0;c1<nDim;c1++)
-                                {
-                                    size_type gdof = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
-                                    dofMarkerFsiP1.insert( gdof );
-                                }
-                            }
-                            for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
-                            {
-                                for (uint16_type c1=0;c1<nDim;c1++)
-                                {
-                                    size_type gdof = boost::get<0>(this->functionSpaceVelocity()->dof()->faceLocalToGlobal(face.id(), l, c1 ));
-                                    dofMarkerFsi.insert( gdof );
-                                }
-                            }
-
-                        }
-                    }
-                    //std::cout << "nLocalDofOnFace(true)" << this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true) << "\n";
-                    //std::cout << "nLocalDofOnFace(false)" << this->functionSpaceVelocity()->dof()->nLocalDofOnFace(false) << "\n";
-                    //std::cout << "mesh_type::element_type::numVertices" << mesh_type::face_type::numVertices << "\n";
-                    std::cout << "size dofMarkerFsi " << dofMarkerFsi.size() << " size dofMarkerFsiP1 " << dofMarkerFsiP1.size() <<"\n";
-
-                    //for ( size_type k = 0 ; k<myoperator->map().nLocalDofWithGhost() ; ++k )
-                    for ( size_type k : dofMarkerFsi )
-                    {
-                        if ( myoperator->map().dofGlobalProcessIsGhost( k ) ) continue;
-                        size_type gcdof = myoperator->map().mapGlobalProcessToGlobalCluster(k);
-#if 0
-                        double scalDiag = myoperator->operator()(k);
-                        double valDiag = matBCFSI->operator()( gcdof,gcdof);
-                        matBCFSI->set(k,k,valDiag*scalDiag);
-#else
-                        auto const& graphRow = matBCFSI->graph()->row(gcdof);
-                        for ( size_type idCol : graphRow.template get<2>() )
-                        {
-                            if ( dofMarkerFsiP1.find(idCol) == dofMarkerFsiP1.end() ) continue; // Only P1 dof
-                            double scalDiag = myoperator->operator()(idCol);
-                            double valEntryMat = matBCFSI->operator()( gcdof,idCol);
-                            matBCFSI->set(k,idCol,valEntryMat*scalDiag);
-                        }
-#endif
-                    }
-                    matBCFSI->close();
-
-#endif ///////////
-                    std::cout << "fluid assembly : use operator ---1----\n";
-                    //A->updateBlockMat();
-                    A->addMatrix(1.0, matBCFSI );
-                    std::cout << "fluid assembly : use operator finish\n";
                 }
-#endif
-
+                this->getMeshALE()->revertMovingMesh();
             }
-
-            if ( BuildNonCstPart )
+            else // useInterfaceOperator
             {
-                this->getMeshALE()->revertReferenceMesh();
-                form1( _test=Xh, _vector=F,
-                       _rowstart=rowStartInVector ) +=
-                    integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                               _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
-                               _geomap=this->geomap() );
+                if ( BuildNonCstPart_robinFSI )
+                {
+                    //std::cout << "fluid assembly : use operator ---1----\n";
+                    //A->updateBlockMat();
+                    //A->addMatrix(1.0, matBCFSI );
+                    CHECK( this->couplingFSI_RNG_matrix() ) << "couplingFSI_RNG_matrix not build";
+                    auto matBCFSI=this->couplingFSI_RNG_matrix();
+                    A->addMatrix(1.0, matBCFSI );
+                    //A->addMatrix(1.0, this->couplingFSI_RNG_matrix() );
+                    //std::cout << "fluid assembly : use operator finish\n";
+                }
+
+                if ( BuildNonCstPart )
+                {
+                    this->couplingFSI_RNG_updateLinearPDE( F );
+                }
             }
-            this->getMeshALE()->revertMovingMesh();
         }
-
-#endif
+#endif // FEELPP_MODELS_HAS_MESHALE
     }
-
-
     if ( UsePeriodicity && BuildNonCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());

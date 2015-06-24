@@ -466,6 +466,12 @@ public :
     void setCouplingFSI_RNG_coeffForm2(double d) { M_couplingFSI_RNG_coeffForm2=d; }
     element_meshvelocityonboundary_ptrtype const& couplingFSI_RNG_evalForm1() const { return M_couplingFSI_RNG_evalForm1; }
     void setCouplingFSI_RNG_evalForm1( element_meshvelocityonboundary_ptrtype const& v) { M_couplingFSI_RNG_evalForm1=v; }
+    boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& couplingFSI_RNG_evalForm1Bis() const { return M_couplingFSI_RNG_evalForm1Bis; }
+    void setCouplingFSI_RNG_evalForm1Bis( boost::shared_ptr<typename space_fluid_velocity_type::element_type> const& v) { M_couplingFSI_RNG_evalForm1Bis=v; }
+    sparse_matrix_ptrtype const& couplingFSI_RNG_matrix() const { return M_couplingFSI_RNG_matrix; }
+    void couplingFSI_RNG_matrix( sparse_matrix_ptrtype const& mat ) { M_couplingFSI_RNG_matrix=mat; }
+    void couplingFSI_RNG_updateForUse();
+    void couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const;
 
     //___________________________________________________________________________________//
     // stabilisation parameters
@@ -805,6 +811,8 @@ protected:
     bool M_couplingFSI_solidIs1dReduced;
     double M_couplingFSI_RNG_coeffForm2;
     element_meshvelocityonboundary_ptrtype M_couplingFSI_RNG_evalForm1;
+    boost::shared_ptr<typename space_fluid_velocity_type::element_type> M_couplingFSI_RNG_evalForm1Bis;
+    sparse_matrix_ptrtype M_couplingFSI_RNG_matrix;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
