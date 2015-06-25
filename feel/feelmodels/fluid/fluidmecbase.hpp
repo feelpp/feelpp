@@ -382,6 +382,7 @@ public:
     std::map<std::string,size_type> const& startDofIndexFieldsInMatrix() const { return M_startDofIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
+    void updateBlockVectorSolution();
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -444,17 +445,20 @@ public :
     bool hasSolveStokesStationaryAtKickOff() const { return M_hasSolveStokesStationaryAtKickOff; }
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
+    //___________________________________________________________________________________//
+    // fsi parameters
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
     void useFSISemiImplicitScheme(bool b) { M_useFSISemiImplicitScheme=b; }
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
-    double gammaNitschFSI() const { return M_gammaNitschFSI; }
-    void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
-    double gamma0NitschFSI() const { return M_gamma0NitschFSI; }
-    void gamma0NitschFSI(double d) { M_gamma0NitschFSI=d; }
-    double rhoSolidFSI() const { return M_rhoSolidFSI; }
-    void setRhoSolidFSI(double d) { M_rhoSolidFSI=d; }
+
+    double couplingFSI_Nitsche_gamma() const { return M_couplingFSI_Nitsche_gamma; }
+    void setCouplingFSI_Nitsche_gamma(double d) { M_couplingFSI_Nitsche_gamma=d; }
+    double couplingFSI_Nitsche_gamma0() const { return M_couplingFSI_Nitsche_gamma0; }
+    void setCouplingFSI_Nitsche_gamma0(double d) { M_couplingFSI_Nitsche_gamma0=d; }
+    double couplingFSI_Nitsche_alpha() const { return M_couplingFSI_Nitsche_alpha; }
+    void setCouplingFSI_Nitsche_alpha(double d) { M_couplingFSI_Nitsche_alpha=d; }
 
     bool couplingFSI_RNG_useInterfaceOperator() const { return M_couplingFSI_RNG_useInterfaceOperator; }
     void setCouplingFSI_RNG_useInterfaceOperator(bool b) { M_couplingFSI_RNG_useInterfaceOperator=b; }
@@ -804,8 +808,7 @@ protected:
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_gammaNitschFSI,M_gamma0NitschFSI;
-    double M_rhoSolidFSI;
+    double M_couplingFSI_Nitsche_gamma,M_couplingFSI_Nitsche_gamma0, M_couplingFSI_Nitsche_alpha;
     bool M_couplingFSI_RNG_useInterfaceOperator;
     vector_ptrtype M_couplingFSI_RNG_interfaceOperator;
     bool M_couplingFSI_solidIs1dReduced;

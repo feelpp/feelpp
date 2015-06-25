@@ -298,7 +298,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
              this->couplingFSIcondition() == "nitsche" )
         //---------------------------------------------------------------------------//
         {
-            double gammaRobinFSI = this->gammaNitschFSI();
+            double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
             if ( BuildNonCstPart_robinFSI )
             {
                 bilinearForm_PatternCoupled +=
@@ -317,8 +317,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" ||
                  this->couplingFSIcondition() == "nitsche" )
             {
-                double alpha = doption(_name="coupling-robin-robin.alpha",_prefix=this->prefix());
-                double gamma0RobinFSI = this->gamma0NitschFSI();
+                double alpha = this->couplingFSI_Nitsche_alpha();
+                double gamma0RobinFSI = this->couplingFSI_Nitsche_gamma0();
                 auto mysigma = id(q)*Id+2*alpha*idv(mu)*sym(grad(u));
                 if ( BuildNonCstPart_robinFSI )
                 {

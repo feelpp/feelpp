@@ -476,8 +476,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                                    this->couplingFSIcondition() == "robin-robin-genuine" ||
                                    this->couplingFSIcondition() == "nitsche" ) )
     {
-        double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-        //double muFluid = this->mu();//0.03;
+        double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
 
         if ( (!BuildCstPart && !UseJacobianLinearTerms) )
         {
