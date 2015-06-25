@@ -29,14 +29,15 @@
 //#define _MULTISCALEIMAGE_HPP_
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/special_functions/round.hpp>
+#include <feel/feelvf/fftmultiscale.hpp>
 using namespace boost::numeric;
 
 namespace Feel
 {
 enum { ComputeGradient = 1 << 0  };
 
-template <typename T = float>
-using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
+//template <typename T = float>
+//using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
 
 template<typename T, int _Options = 0>
 class MultiScaleImage
@@ -54,11 +55,39 @@ public :
         :
         dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
+        FFTFeel fft;
+        fft.gradImage(im);
+        imageGradX=fft.getX();
+        imageGradY=fft.getY();
     }
+
+    value_type 
+    operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
+        {
+            double x = real[0];
+            double y = real[1];
+             
+            int i = boost::math::iround(x/dx);
+            //int j = image.cols()-1-boost::math::iround(y/dy);
+            int j = boost::math::iround(y/dy);
+            
+            // x component
+            if (c==0)
+            {
+                return imageGradX(j,i);
+            }
+            // y component
+            else 
+            {
+                return imageGradY(j,i);
+            }
+        }
+
     /**
      * @return the component \c c of the gradient of the image at point \c real
      * in the coarse grid
      */
+     /*
     value_type 
     operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -177,6 +206,7 @@ public :
             // note that it would be differently handled if we use the fft and ifft
             return v2;
         }
+        */
     /**
      * @return the value of the image at point \c real in the coarse grid
      */
@@ -204,6 +234,8 @@ private :
     double dx;
     double dy;
     holo3_image<value_type> image;
+    holo3_image<value_type> imageGradX;
+    holo3_image<value_type> imageGradY;
     int level;
 };
 
