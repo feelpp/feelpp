@@ -442,7 +442,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
     {
         //this->fieldDisplacementScal1dReduced().add(M_newmark_displ_1dReduced->timeStep(),M_newmark_displ_1dReduced->currentVelocity() );
         double dt = M_newmark_displ_1dReduced->timeStep();
-        if (M_newmark_displ_struct->iteration() == 1)
+        if (M_newmark_displ_1dReduced->iteration() == 1)
         {
             this->fieldDisplacementScal1dReduced().add( dt, M_newmark_displ_1dReduced->previousVelocity(0) );
         }
