@@ -29,7 +29,7 @@
 //#define _MULTISCALEIMAGE_HPP_
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/special_functions/round.hpp>
-#include <feel/feelvf/fftmultiscale.hpp>
+#include <feel/feeldiscr/fftmultiscale.hpp>
 using namespace boost::numeric;
 
 namespace Feel
