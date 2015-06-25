@@ -59,9 +59,13 @@ FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm )
     M_reusePrecRebuildAtFirstFSIStepOptSolid( boption(_name="solid.reuse-prec.rebuild-at-first-fsi-step",_prefix=this->prefix()) ),
     M_reuseJacOptSolid(false),
     M_reuseJacRebuildAtFirstNewtonStepOptSolid(false),
-    M_reuseJacRebuildAtFirstFSIStepOptSolid( boption(_name="solid.reuse-jac.rebuild-at-first-fsi-step",_prefix=this->prefix()) )
+    M_reuseJacRebuildAtFirstFSIStepOptSolid( boption(_name="solid.reuse-jac.rebuild-at-first-fsi-step",_prefix=this->prefix()) ),
+    M_reusePrecActivatedAfterNbFsiIterationFluid( ioption(_name="fluid.reuse-prec.activated-after-n-fsi-it",_prefix=this->prefix()) ),
+    M_reusePrecActivatedAfterNbFsiIterationSolid( ioption(_name="solid.reuse-prec.activated-after-n-fsi-it",_prefix=this->prefix()) ),
+    M_reusePrecActivatedToleranceFluid( doption(_name="fluid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) ),
+    M_reusePrecActivatedToleranceSolid( doption(_name="solid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) )
 {
-    this->log("fsi","constructor","start");
+    this->log("FSI","constructor","start");
 
     if ( Environment::vm().count( prefixvm(this->prefix(),"fluid-mesh.markers" ) ) )
     {
@@ -76,7 +80,7 @@ FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm )
             M_markersNameSolid.insert( marker );
     }
 
-    this->log("fsi","constructor","finish");
+    this->log("FSI","constructor","finish");
 }
 //---------------------------------------------------------------------------------------------------------//
 
@@ -222,7 +226,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::init()
 {
-    this->log("ToolBoxFSI","init","start");
+    this->log("FSI","init","start");
 
     // create fsimesh and partitioned meshes if require
     if ( this->hasMshfileStr() || this->hasGeofileStr() )
@@ -447,18 +451,13 @@ FSI<FluidType,SolidType>::init()
         vecDiag->close();
 #endif
 
-        /*auto bbbb = sum(spaceDisp,elements(spaceDisp->mesh()),cst(1./4.)*meas()*one());
-        auto vecDiag = M_solidModel->backend()->newVector(spaceDisp);
-        *vecDiag = bbb;
-         vecDiag.close();*/
-
 
         M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
         M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
     }
     //-------------------------------------------------------------------------//
 
-    this->log("ToolBoxFSI","init","finish");
+    this->log("FSI","init","finish");
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -493,29 +492,61 @@ FSI<FluidType,SolidType>::solve()
 
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateBackendOptimisation( bool restartFullStepFluid,bool restartFullStepSolid )
+FSI<FluidType,SolidType>::updateBackendOptimisation( int iterationFSI, double lastErrorRelative )
 {
-    // ici on impose la reconstruction du preconditionneur au debut du solveur FSI
-    // maybe add an option to do that
-    if ( M_reuseJacOptFluid && (!M_reuseJacRebuildAtFirstNewtonStepOptFluid  && M_reuseJacRebuildAtFirstFSIStepOptFluid) )
+    bool isFirstFsiIteration = (iterationFSI == 0);
+
+    bool canActivatedReusePrecFluid = ( (iterationFSI) >= M_reusePrecActivatedAfterNbFsiIterationFluid );
+    bool canActivatedReusePrecSolid = ( (iterationFSI) >= M_reusePrecActivatedAfterNbFsiIterationSolid );
+    if ( iterationFSI > 1 )
     {
-        M_fluidModel->backend()->setReuseJacRebuildAtFirstNewtonStep(restartFullStepFluid);
+        if ( lastErrorRelative > M_reusePrecActivatedToleranceSolid )
+            canActivatedReusePrecSolid = false;
+        if ( lastErrorRelative > M_reusePrecActivatedToleranceFluid )
+            canActivatedReusePrecFluid = false;
     }
 
+    // reuse-prec
     if ( M_reusePrecOptFluid && ( M_previousTimeOrder!=M_currentTimeOrder || M_reusePrecRebuildAtFirstFSIStepOptFluid ) )
     {
-        M_fluidModel->backend()->setReusePrec(!restartFullStepFluid);
+        bool doReusePrec = !isFirstFsiIteration && canActivatedReusePrecFluid;
+        M_fluidModel->backend()->setReusePrec(doReusePrec);
     }
-
-    if ( M_reuseJacOptSolid && ( !M_reuseJacRebuildAtFirstNewtonStepOptSolid && M_reuseJacRebuildAtFirstFSIStepOptSolid ) )
-    {
-        M_solidModel->backend()->setReuseJacRebuildAtFirstNewtonStep(restartFullStepSolid);
-    }
-
     if ( M_reusePrecOptSolid && M_reusePrecRebuildAtFirstFSIStepOptSolid )
     {
-        M_solidModel->backend()->setReusePrec(!restartFullStepSolid);
+        bool doReusePrec = !isFirstFsiIteration && canActivatedReusePrecSolid;
+        M_solidModel->backend()->setReusePrec(doReusePrec);
     }
+
+    // reuse-jac.RebuildAtFirstNewtonStep
+    if ( M_reuseJacOptFluid && (!M_reuseJacRebuildAtFirstNewtonStepOptFluid  && M_reuseJacRebuildAtFirstFSIStepOptFluid) )
+    {
+        M_fluidModel->backend()->setReuseJacRebuildAtFirstNewtonStep(isFirstFsiIteration);
+    }
+    if ( M_reuseJacOptSolid && ( !M_reuseJacRebuildAtFirstNewtonStepOptSolid && M_reuseJacRebuildAtFirstFSIStepOptSolid ) )
+    {
+        M_solidModel->backend()->setReuseJacRebuildAtFirstNewtonStep(isFirstFsiIteration);
+    }
+
+
+    this->log("FSI","updateBackendOptimisation",
+              (boost::format("backend fluid reuse prec : %1%")%M_fluidModel->backend()->reusePrec() ).str());
+    this->log("FSI","updateBackendOptimisation",
+              (boost::format("backend solid reuse prec : %1%")%M_solidModel->backend()->reusePrec() ).str());
+    if ( true )
+        this->log("FSI","updateBackendOptimisation",
+                  (boost::format("backend fluid reuse jac : %1%")%M_fluidModel->backend()->reuseJac() ).str());
+    if ( true )
+        this->log("FSI","updateBackendOptimisation",
+                  (boost::format("backend solid reuse jac : %1%")%M_solidModel->backend()->reuseJac() ).str());
+    if ( M_fluidModel->backend()->reuseJac() )
+        this->log("FSI","updateBackendOptimisation",
+                  (boost::format("backend fluid reuse jac (RebuildAtFirstNewtonStep) : %1%")%M_fluidModel->backend()->reuseJacRebuildAtFirstNewtonStep() ).str());
+    if ( M_solidModel->backend()->reuseJac() )
+        this->log("FSI","updateBackendOptimisation",
+                  (boost::format("backend solid reuse jac (RebuildAtFirstNewtonStep) : %1%")%M_solidModel->backend()->reuseJacRebuildAtFirstNewtonStep() ).str());
+
+
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -524,6 +555,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::solveImpl1()
 {
+
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
         this->interpolationTool()->transfertDisplacement();
@@ -533,26 +565,31 @@ FSI<FluidType,SolidType>::solveImpl1()
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
-    this->updateBackendOptimisation(true,true);
 
     // predictor disp
     M_solidModel->predictorDispl();
+    M_solidModel->updateVelocity();
+
     // coupling fluid structure
-    this->aitkenRelaxTool()->restart();
+    bool useAitken = true;//boption(_name="coupling-dirichlet-neumann.use-aitken",_prefix=this->prefix());
+    if ( useAitken )
+        this->aitkenRelaxTool()->restart();
     //aitkenFSI.setTheta(initialTheta);
 
+    bool hasConverged = false;
+    int cptFSI=0;
+    double residualRelativeConvergence=1;
+    //this->updateBackendOptimisation(true,true);
     boost::mpi::timer timerCur,timerIter;
 
-
-    while ( (!this->aitkenRelaxTool()->isFinished() || this->aitkenRelaxTool()->nIterations() <= this->fixPointMinItConvergence() ) &&
-            this->aitkenRelaxTool()->nIterations()<this->fixPointMaxIt() )
+    while ( (!this->aitkenRelaxTool()->isFinished() || cptFSI < this->fixPointMinItConvergence() ) &&
+            cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
         timerCur.restart();
         //--------------------------------------------------------------//
-
         this->aitkenRelaxTool()->saveOldSolution();
-
+        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
         //--------------------------------------------------------------//
         // ALE solver
         timerCur.restart();
@@ -561,26 +598,16 @@ FSI<FluidType,SolidType>::solveImpl1()
             this->interpolationTool()->transfertDisplacement();
             M_fluidModel->updateALEmesh();
             double tALE = timerCur.elapsed();
-            this->log("main","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
+            this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
         }
         else  if (this->fsiCouplingType()=="Semi-Implicit")
         {
             this->interpolationTool()->transfertVelocity();
             double tALE = timerCur.elapsed();
-            this->log("main","transfert velocity","finish in "+(boost::format("%1% s") % tALE).str());
+            this->log("FSI","transfert velocity","finish in "+(boost::format("%1% s") % tALE).str());
         }
-        // robin-neumann as fsi condition
-        if (this->fsiCouplingBoundaryCondition()=="robin-neumann")
-        {
-            this->interpolationTool()->transfertStressS2F();
-        }
-
-        //--------------------------------------------------------------//
         //--------------------------------------------------------------//
         M_fluidModel->solve();
-        //--------------------------------------------------------------//
-        //--------------------------------------------------------------//
-
         //--------------------------------------------------------------//
         timerCur.restart();
         // revert ref mesh
@@ -589,31 +616,13 @@ FSI<FluidType,SolidType>::solveImpl1()
         this->interpolationTool()->transfertStress();
         // revert moving mesh
         M_fluidModel->getMeshALE()->revertMovingMesh();
-
-
-        //if (this->fsiCouplingBoundaryCondition()=="robin-robin")
-        //    this->interpolationTool()->transfertVelocityF2S(true);
-
         double t3 = timerCur.elapsed();
-        this->log("main","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
-        //--------------------------------------------------------------//
-
-        //--------------------------------------------------------------//
+        this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
         //--------------------------------------------------------------//
         M_solidModel->solve();
         //--------------------------------------------------------------//
-        //--------------------------------------------------------------//
-#if 0
-        M_fluidModel->updateTime(M_fluidModel->time()+1);
-        M_fluidModel->exportResults();
-        M_solidModel->updateTime(M_solidModel->time()+1);
-        M_solidModel->exportResults();
-#endif
-
-        //--------------------------------------------------------------//
         timerCur.restart();
         //compute and apply aitken relaxation
-        //if ( this->fsiCouplingBoundaryCondition()=="dirichlet-neumann" )
         this->aitkenRelaxTool()->applyRelaxation();
         // update velocity and acceleration
         M_solidModel->updateVelocity();
@@ -621,9 +630,11 @@ FSI<FluidType,SolidType>::solveImpl1()
         if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
             this->aitkenRelaxTool()->printInfo();
         this->aitkenRelaxTool()->shiftRight();
+        hasConverged = this->aitkenRelaxTool()->isFinished();
+        residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
 
         double t4 = timerCur.elapsed();
-        this->log("main","apply relax and up vel/acc struct","finish in "+(boost::format("%1% s") % t4).str() );
+        this->log("FSI","apply relax and up vel/acc struct","finish in "+(boost::format("%1% s") % t4).str() );
         //--------------------------------------------------------------//
 
         if (this->fsiCouplingType()=="Semi-Implicit")
@@ -632,19 +643,12 @@ FSI<FluidType,SolidType>::solveImpl1()
             M_solidModel->setRebuildLinearPartInJacobian(false);M_solidModel->setRebuildCstPartInLinearSystem(false);
             M_fluidModel->setRebuildCstPartInResidual(false);M_solidModel->setRebuildCstPartInResidual(false);
         }
-        /*else if (this->fsiCouplingType()=="Implicit" &&
-         M_reuseJacOptFluid && !M_reuseJacRebuildAtFirstNewtonStepOptFluid &&
-         !M_fluidModel->useLinearJacobianInResidual() )
-         {
-         M_fluidModel->setRebuildLinearPartInJacobian(false);
-         }*/
-        this->updateBackendOptimisation(false,false);
-        //--------------------------------------------------------------//
         //--------------------------------------------------------------//
         double timeElapsedIter = timerIter.elapsed();
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
-        this->log("main","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        ++cptFSI;
     }
 
 }
@@ -663,14 +667,6 @@ FSI<FluidType,SolidType>::solveImpl2()
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
-    this->updateBackendOptimisation(true,true);
-
-    /*if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
-         this->fsiCouplingBoundaryCondition() == "nitsche" )
-    {
-        M_solidModel->updateSubMeshDispFSIFromPrevious();
-     }*/
-
     bool useAitken = boption(_name="coupling-nitsche-family.use-aitken",_prefix=this->prefix());
     if ( useAitken )
         this->aitkenRelaxTool()->restart();
@@ -679,7 +675,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     bool hasConverged = false;
     int cptFSI=0;
-    double residualConvergence=1;
+    double residualRelativeConvergence=1;
     while ( ( !hasConverged || cptFSI < this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
@@ -687,6 +683,8 @@ FSI<FluidType,SolidType>::solveImpl2()
             this->aitkenRelaxTool()->saveOldSolution();
         else
             M_fixPointConvergenceFSI->saveOldSolution();
+
+        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
 
         //--------------------------------------------------------------//
         if (solveStruct)
@@ -716,6 +714,7 @@ FSI<FluidType,SolidType>::solveImpl2()
                     this->aitkenRelaxTool()->printInfo();
                 this->aitkenRelaxTool()->shiftRight();
                 hasConverged = this->aitkenRelaxTool()->isFinished();
+                residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
             }
 
         }
@@ -735,11 +734,11 @@ FSI<FluidType,SolidType>::solveImpl2()
 
         if ( !useAitken )
         {
-            residualConvergence = M_fixPointConvergenceFSI->computeConvergence();
-            hasConverged = residualConvergence < this->fixPointTolerance();
+            residualRelativeConvergence = M_fixPointConvergenceFSI->computeConvergence();
+            hasConverged = residualRelativeConvergence < this->fixPointTolerance();
             if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
                 std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
-                          << " residualConvergence " << std::scientific << residualConvergence << "\n";
+                          << " residualRelativeConvergence " << std::scientific << residualRelativeConvergence << "\n";
         }
 
         if (this->fsiCouplingType()=="Semi-Implicit")
@@ -753,16 +752,15 @@ FSI<FluidType,SolidType>::solveImpl2()
                 M_solidModel->setRebuildCstPartInResidual(false);
             }
         }
-        this->updateBackendOptimisation(false,!solveStruct);
 
         if (!solveStruct) solveStruct=true;
 
         //--------------------------------------------------------------//
         //--------------------------------------------------------------//
         double timeElapsedIter = timerIter.elapsed();
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
-        this->log("main","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
 
         ++cptFSI;
     }
@@ -792,8 +790,6 @@ FSI<FluidType,SolidType>::solveImpl3()
         M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
 
-    this->updateBackendOptimisation(true,true);
-
     double manualScalingRNG = doption(_name="coupling-robin-neumann-generalized.manual-scaling",_prefix=this->prefix());
 
     bool useAitken = boption(_name="coupling-robin-neumann-generalized.use-aitken",_prefix=this->prefix());
@@ -802,15 +798,19 @@ FSI<FluidType,SolidType>::solveImpl3()
 
     bool hasConverged = false;
     int cptFSI=0;
-    double residualConvergence=1;
+    double residualRelativeConvergence=1;
     while ( ( !hasConverged || cptFSI <this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
     {
         timerIter.restart();
         //timerCur.restart();
+        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
+
         if ( useAitken )
             this->aitkenRelaxTool()->saveOldSolution();
         else
             M_fixPointConvergenceFSI->saveOldSolution();
+
+
         //--------------------------------------------------------------//
         if (this->fsiCouplingType()=="Implicit")
         {
@@ -836,11 +836,11 @@ FSI<FluidType,SolidType>::solveImpl3()
 
         if ( !useAitken )
         {
-            residualConvergence = M_fixPointConvergenceFSI->computeConvergence();
-            hasConverged = residualConvergence < this->fixPointTolerance();
+            residualRelativeConvergence = M_fixPointConvergenceFSI->computeConvergence();
+            hasConverged = residualRelativeConvergence < this->fixPointTolerance();
             if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
                 std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] iteration " << cptFSI
-                          << " residualConvergence " << std::scientific << residualConvergence << "\n";
+                          << " residualRelativeConvergence " << std::scientific << residualRelativeConvergence << "\n";
         }
         else
         {
@@ -852,6 +852,7 @@ FSI<FluidType,SolidType>::solveImpl3()
                 this->aitkenRelaxTool()->printInfo();
             this->aitkenRelaxTool()->shiftRight();
             hasConverged = this->aitkenRelaxTool()->isFinished();
+            residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
         }
 
         if (this->fsiCouplingType()=="Semi-Implicit")
@@ -861,16 +862,12 @@ FSI<FluidType,SolidType>::solveImpl3()
             M_solidModel->setRebuildLinearPartInJacobian(false);M_solidModel->setRebuildCstPartInLinearSystem(false);
             M_solidModel->setRebuildCstPartInResidual(false);
         }
-
-        this->updateBackendOptimisation(false,false);
-
-
         //--------------------------------------------------------------//
         //--------------------------------------------------------------//
         double timeElapsedIter = timerIter.elapsed();
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
-        this->log("main","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
-        this->log("main","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
 
         ++cptFSI;
     }
@@ -895,14 +892,6 @@ FSI<FluidType,SolidType>::updateTimeStep()
     M_previousTimeOrder=M_fluidModel->timeStepBDF()->timeOrder();
 
     M_fluidModel->updateTimeStep();
-
-    /*if ( M_interpolationFSI )
-    {
-        if (M_solidModel->isStandardModel())
-            M_interpolationFSI->updateFieldVelocitySolidPreviousPrevious( M_solidModel->timeStepNewmark()->previousVelocity() );
-        else if ( M_solidModel->is1dReducedModel() )
-            M_interpolationFSI->updateFieldVelocitySolid1dReducedPreviousPrevious( M_solidModel->timeStepNewmark1dReduced()->previousVelocity() );
-     }*/
     M_solidModel->updateTimeStep();
 
     M_currentTimeOrder=M_fluidModel->timeStepBDF()->timeOrder();

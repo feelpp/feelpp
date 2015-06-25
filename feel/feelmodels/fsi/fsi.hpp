@@ -105,8 +105,6 @@ public :
 
     void updateTime(double time);
 
-    //double currentTime() const { return M_fluidModel->time(); }
-    //double time() const { return this->currentTime(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
     boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
     boost::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidModel()->timeStepBase(); }
@@ -120,7 +118,7 @@ public :
     }
 
 private :
-    void updateBackendOptimisation( bool restartFullStepFluid,bool restartFullStepSolid );
+    void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
     void solveImpl1();
     void solveImpl2();
     void solveImpl3();
@@ -151,6 +149,8 @@ private :
     int M_previousTimeOrder,M_currentTimeOrder;
     bool M_reusePrecOptFluid,M_reusePrecRebuildAtFirstFSIStepOptFluid,M_reuseJacOptFluid,M_reuseJacRebuildAtFirstNewtonStepOptFluid,M_reuseJacRebuildAtFirstFSIStepOptFluid;
     bool M_reusePrecOptSolid,M_reusePrecRebuildAtFirstFSIStepOptSolid,M_reuseJacOptSolid,M_reuseJacRebuildAtFirstNewtonStepOptSolid,M_reuseJacRebuildAtFirstFSIStepOptSolid;
+    int M_reusePrecActivatedAfterNbFsiIterationFluid,M_reusePrecActivatedAfterNbFsiIterationSolid;
+    double M_reusePrecActivatedToleranceFluid,M_reusePrecActivatedToleranceSolid;
 };
 
 } // namespace FeelModels
