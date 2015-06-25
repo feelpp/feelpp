@@ -421,34 +421,36 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
     this->log("SolidMechanics","predictorDispl", "start" );
 
-    //order 0:
-    //M_fieldDisplacement = M_fieldDisplacement
-
     if (isStandardModel())
     {
-        std::string mytype = soption(_name="predictor-disp-type",_prefix=this->prefix());
-        if (mytype=="bdf")
+        //std::string mytype = soption(_name="predictor-disp-type",_prefix=this->prefix());
+        double dt = M_newmark_displ_struct->timeStep();
+        if (M_newmark_displ_struct->iteration() == 1) //order 1: \tilde{u} = u_n + dt* \dot{u}_n
         {
-            //this->fieldDisplacement() = M_bdf_displ_struct->poly();
-            CHECK(false) << "TODO in newmark mode";
+            //this->fieldDisplacement().add(M_newmark_displ_struct->timeStep(),M_newmark_displ_struct->currentVelocity());
+            this->fieldDisplacement().add( dt, M_newmark_displ_struct->previousVelocity(0));
         }
-        else if (mytype=="extrap-with-vel")
+        else //order 2: \tilde{u} = u_n + dt*( (3/2)*\dot{u}_n-(1/2)*\dot{u}_{n-1}
         {
-            if (M_newmark_displ_struct->iteration() == 1) //order 1:
-            {
-                this->fieldDisplacement().add(M_newmark_displ_struct->timeStep(),M_newmark_displ_struct->currentVelocity());
-            }
-            else //order 2:
-            {
-                this->fieldDisplacement().add((3./2.)*M_newmark_displ_struct->timeStep(), M_newmark_displ_struct->currentVelocity() );
-                this->fieldDisplacement().add((-1./2.)*M_newmark_displ_struct->timeStep(), M_newmark_displ_struct->previousVelocity());
-            }
+            //this->fieldDisplacement().add((3./2.)*M_newmark_displ_struct->timeStep(), M_newmark_displ_struct->currentVelocity() );
+            //this->fieldDisplacement().add((-1./2.)*M_newmark_displ_struct->timeStep(), M_newmark_displ_struct->previousVelocity());
+            this->fieldDisplacement().add( (3./2.)*dt, M_newmark_displ_struct->previousVelocity(0) );
+            this->fieldDisplacement().add( (-1./2.)*dt, M_newmark_displ_struct->previousVelocity(1) );
         }
-        //*M_fieldDisplacement = M_bdf_displ_struct->poly();
     }
     else
     {
-        this->fieldDisplacementScal1dReduced().add(M_newmark_displ_1dReduced->timeStep(),M_newmark_displ_1dReduced->currentVelocity() );
+        //this->fieldDisplacementScal1dReduced().add(M_newmark_displ_1dReduced->timeStep(),M_newmark_displ_1dReduced->currentVelocity() );
+        double dt = M_newmark_displ_1dReduced->timeStep();
+        if (M_newmark_displ_struct->iteration() == 1)
+        {
+            this->fieldDisplacementScal1dReduced().add( dt, M_newmark_displ_1dReduced->previousVelocity(0) );
+        }
+        else
+        {
+            this->fieldDisplacementScal1dReduced().add( (3./2.)*dt, M_newmark_displ_1dReduced->previousVelocity(0) );
+            this->fieldDisplacementScal1dReduced().add( (-1./2.)*dt, M_newmark_displ_1dReduced->previousVelocity(1) );
+        }
     }
 
     this->log("SolidMechanics","predictorDispl", "finish" );
