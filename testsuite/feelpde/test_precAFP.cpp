@@ -171,13 +171,13 @@ class TestPrecAFP : public Application
         auto f1 = form1(_test=Xh);
        
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
-        map_scalar_field<DIM> m_dirichlet_phi {model.boundaryConditions().getScalarFields<DIM>("phi","Dirichlet")};
+        map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
                        _expr = inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
-                       - inner(trans(id(v)),gradt(phi)) // -grad(phi)
+                         inner(trans(id(v)),gradt(phi)) //  grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
                        + (1./idv(M_mu))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
@@ -239,7 +239,7 @@ private:
 
 #if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
-BOOST_AUTO_TEST_SUITE( levelset )
+BOOST_AUTO_TEST_SUITE( precAFP )
 
 BOOST_AUTO_TEST_CASE( test )
 {

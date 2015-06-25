@@ -130,6 +130,8 @@ private:
 
     potential_space_ptrtype M_Vh;
     lagrange_space_ptrtype M_Qh;
+    std::vector<size_type> M_Vh_indices;
+    std::vector<size_type> M_Qh_indices;
 
     mutable vector_ptrtype 
         M_uin,
@@ -139,7 +141,7 @@ private:
 
     mutable element_type U;
 
-    sparse_matrix_ptrtype M_11, M_P, M_C;
+    sparse_matrix_ptrtype M_11, M_P, M_C, M_mass;
     element_coef_type M_mu, // permeability
                       M_er;  // permittivity
 
@@ -164,7 +166,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
     coef_space_ptrtype Mh,        // mu
     BoundaryConditions bcFlags,   // bc
     std::string const& p,         // prefix
-    sparse_matrix_ptrtype A )     // The matrix
+    sparse_matrix_ptrtype AA )     // The matrix
 :
     M_type( AFP ),
     M_backend(backend()),           // the backend associated to the PC
@@ -172,12 +174,13 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
     M_Mh( Mh ),
     M_Vh( Xh->template functionSpace<0>() ),
     M_Qh( Xh->template functionSpace<1>() ),
+    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
+    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
     M_uin( M_backend->newVector( M_Vh )  ),
     M_uout( M_backend->newVector( M_Vh )  ),
     M_pin( M_backend->newVector( M_Qh )  ),
     M_pout( M_backend->newVector( M_Qh )  ),
     U( M_Xh, "U" ),
-    M_11(M_backend->newMatrix(M_Vh,M_Vh)),
     M_P(M_backend->newMatrix(M_Vh,M_Qh)),
     M_C(M_backend->newMatrix(M_Vh,M_Qh)),
     M_mu( M_Mh, "mu" ),
@@ -190,9 +193,25 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
-    this->setMatrix( A );
+    this->setMatrix( AA );
+    /* Indices are need to extract sub matrix */
+    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
+    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
+    M_11   = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
+    M_mass = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
     
     this->setType ( t );
+    
+    /* Compute the mass matrix */
+    map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+    auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_mass);
+    auto f1A = form1(_test=M_Vh);
+    f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
+    for(auto const & it : m_dirichlet_u )
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+    
+    this->update( AA, M_mu );
+
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 
@@ -220,7 +239,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
     LOG(INFO) << "Create sub Matrix\n";
     // calcule matrice L
-    auto f2B = form2(_trial=M_Qh, _test=M_Qh);
+    auto f2B = form2(_test=M_Qh,_trial=M_Qh);
     auto f1B = form1(_test=M_Qh);
     f2B = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
     for(auto const & it : m_dirichlet_p){
@@ -228,6 +247,16 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     }
     M_22Op = op(f2B.matrixPtr(), "blockms.22");
 
+    /*
+     * AA = [[ A - k^2 M, B^t],
+     *      [ B        , 0  ]]
+     * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
+     */
+    M_11.zero();
+    A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
+    M_11->addMatrix(1.0,M_mass);  // A-k^2 M + M = A+(1-k^2) M
+    
+#if 0
     // calculer matrice A + g M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
@@ -235,6 +264,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
                                                         +cst(1.-M_k*M_k)*inner(idt(u),id(u))); // g M
     for(auto const & it : m_dirichlet_u )
         f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+#endif
 
         
     M_11Op = op(M_11, "blockms.11");
@@ -245,7 +275,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
                          _space2=M_Mh,
                          _matrix=A,
                          _bc = M_bcFlags);
-        M_pcAs->update(f2A.matrixPtr(), f2B.matrixPtr(), M_mu);
+        M_pcAs->update(M_11, f2B.matrixPtr(), M_mu);
         M_pcAs->setPC( M_P, M_C );
         M_11Op->setPc( M_pcAs );
 
