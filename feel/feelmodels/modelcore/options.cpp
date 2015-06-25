@@ -288,13 +288,15 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"solid.reuse-prec.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
         (prefixvm(prefix,"fluid.reuse-jac.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
         (prefixvm(prefix,"solid.reuse-jac.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
-        (prefixvm(prefix,"coupling-robin-robin.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
-        (prefixvm(prefix,"coupling-robin-robin.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
-        (prefixvm("fluid"/*prefix*/,"coupling-robin-robin.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-interface-operator").c_str(), Feel::po::value<bool>()->default_value( true ),
-         "coupling-robin-neumann-generalized.use-interface-operator")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.manual-scaling").c_str(), Feel::po::value<double>()->default_value( 1.0 ),
-         "coupling-robin-neumann-generalized.manual-scaling")
+
+        (prefixvm(prefix,"coupling-nitsche-family.gamma").c_str(), Feel::po::value<double>()->default_value( 2500 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-nitsche-family.gamma0").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-nitsche-family.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
+        (prefixvm(prefix,"coupling-nitsche-family.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
+
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-interface-operator").c_str(), Feel::po::value<bool>()->default_value( true ),"use-interface-operator")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.manual-scaling").c_str(), Feel::po::value<double>()->default_value( 1.0 ),"manual-scaling")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")
         ;
