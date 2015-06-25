@@ -65,7 +65,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
 
     if ( doBuild )
     {
-        if (M_solid->isStandardModel())
+        /*if (M_solid->isStandardModel())
         {
             M_fieldVelocitySolidPreviousPrevious = this->solid()->timeStepNewmark()->previousVelocity().functionSpace()->elementPtr();
             *M_fieldVelocitySolidPreviousPrevious = this->solid()->timeStepNewmark()->previousVelocity();
@@ -74,7 +74,7 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
         {
             M_fieldVelocitySolid1dReducedPreviousPrevious = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
             *M_fieldVelocitySolid1dReducedPreviousPrevious = this->solid()->timeStepNewmark1dReduced()->previousVelocity();
-        }
+         }*/
 
 
         boost::mpi::timer btime;double thet;
@@ -636,18 +636,18 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
         {
             fieldToTransfert = M_solid->fieldVelocity().functionSpace()->elementPtr();
             fieldToTransfert->add(  2.0, this->solid()->timeStepNewmark()->previousVelocity() );
-            fieldToTransfert->add( -1.0, *M_fieldVelocitySolidPreviousPrevious /*this->solid()->timeStepNewmark()->previousVelocity(1)*/ );//timeStepBDF()->unknown(1).template element<0>() );
+            fieldToTransfert->add( -1.0, this->solid()->timeStepNewmark()->previousVelocity(1) );
         }
 
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dconf->apply( *fieldToTransfert/*M_solid->fieldVelocity()*/, M_fluid->meshVelocity2() );
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, M_fluid->meshVelocity2() );
         }
         else
         {
             CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
-            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert/*M_solid->fieldVelocity()*/, M_fluid->meshVelocity2() );
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, M_fluid->meshVelocity2() );
         }
     }
     else if ( M_solid->is1dReducedModel() )
@@ -666,7 +666,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
             //auto fieldExtrapolated = M_solid->fieldVelocityScal1dReduced().functionSpace()->elementPtr();
             auto fieldExtrapolated = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
             fieldExtrapolated->add(  2.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity() );
-            fieldExtrapolated->add( -1.0, *M_fieldVelocitySolid1dReducedPreviousPrevious /*this->solid()->timeStepNewmark()->previousVelocity(1)*/ );
+            fieldExtrapolated->add( -1.0, this->solid()->timeStepNewmark()->previousVelocity(1) );
             fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated );
         }
 

@@ -228,8 +228,8 @@ public :
 
     void transfertRobinNeumannInterfaceOperatorS2F();
 
-    void updateFieldVelocitySolidPreviousPrevious( typename solid_type::element_displacement_type const& vel ) {  *M_fieldVelocitySolidPreviousPrevious = vel; }
-    void updateFieldVelocitySolid1dReducedPreviousPrevious( typename solid_type::element_1dreduced_type const& vel ) {  *M_fieldVelocitySolid1dReducedPreviousPrevious = vel; }
+    //void updateFieldVelocitySolidPreviousPrevious( typename solid_type::element_displacement_type const& vel ) {  *M_fieldVelocitySolidPreviousPrevious = vel; }
+    //void updateFieldVelocitySolid1dReducedPreviousPrevious( typename solid_type::element_1dreduced_type const& vel ) {  *M_fieldVelocitySolid1dReducedPreviousPrevious = vel; }
 private :
 
     fluid_ptrtype M_fluid;
@@ -278,8 +278,8 @@ private :
     bool M_verbose,M_verboseAllProc;
 
     vector_ptrtype M_robinNeumannInterfaceOperator;
-    typename solid_type::element_displacement_ptrtype M_fieldVelocitySolidPreviousPrevious;
-    typename solid_type::element_1dreduced_ptrtype M_fieldVelocitySolid1dReducedPreviousPrevious;
+    //typename solid_type::element_displacement_ptrtype M_fieldVelocitySolidPreviousPrevious;
+    //typename solid_type::element_1dreduced_ptrtype M_fieldVelocitySolid1dReducedPreviousPrevious;
 
 };
 
