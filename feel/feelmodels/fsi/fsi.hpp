@@ -35,8 +35,6 @@
 
 #include <feel/feelmodels/fsi/interpolationfsi.hpp>
 #include <feel/feelmodels/fsi/aitkenrelaxationfsi.hpp>
-//#include <feel/feelmodels/modelcore/modelbase.hpp>
-//#include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelts/tsbase.hpp>
 
@@ -44,7 +42,6 @@ namespace Feel
 {
 namespace FeelModels
 {
-
 
 template< class FluidType, class SolidType >
 class FSI : public ModelNumerical
@@ -75,17 +72,17 @@ public :
 
     double meshSize() const { return M_meshSize; }
 
-    fluid_ptrtype const& fluidModel() const { return M_fluid; }
-    solid_ptrtype const& solidModel() const { return M_solid; }
-    void setFluidModel( fluid_ptrtype const& fm ) { M_fluid=fm; }
-    void setSolidModel( solid_ptrtype const& sm ) { M_solid=sm; }
+    fluid_ptrtype const& fluidModel() const { return M_fluidModel; }
+    solid_ptrtype const& solidModel() const { return M_solidModel; }
+    void setFluidModel( fluid_ptrtype const& fm ) { M_fluidModel=fm; }
+    void setSolidModel( solid_ptrtype const& sm ) { M_solidModel=sm; }
 
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
     bool interfaceFSIisConforme() const { return M_interfaceFSIisConforme; }
-    double tolPtFixe() const { return M_tolPtFixe; }
-    double initialTheta() const { return M_initialTheta; }
-    double minTheta() const { return M_minTheta; }
+    double fixPointTolerance() const { return M_fixPointTolerance; }
+    double fixPointInitialTheta() const { return M_fixPointInitialTheta; }
+    double fixPointMinTheta() const { return M_fixPointMinTheta; }
     int fixPointMaxIt() const { return M_fixPointMaxIt; }
     int fixPointMinItConvergence() const { return M_fixPointMinItConvergence; }
 
@@ -97,39 +94,6 @@ public :
     //---------------------------------------------------------------------------------------------------------//
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
-#if 0
-    void
-    printInfo() const
-    {
-        this->fluidModel()->printInfo();
-        this->solidModel()->printInfo();
-
-        if ( M_fluid->verboseAllProc() || M_solid->verboseAllProc() ) std::cout << this->getInfo()->str();
-        else if (M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank() )
-            std::cout << this->getInfo()->str();
-    }
-
-    //---------------------------------------------------------------------------------------------------------//
-
-    void
-    saveInfo() const
-    {
-        this->fluidModel()->saveInfo();
-        this->solidModel()->saveInfo();
-
-        if ( this->worldComm().isMasterRank() )
-        {
-            std::string nameFile = "FSI.info";// prefixvm(this->prefix(),"FSI.info");
-            std::ofstream file(nameFile.c_str(), std::ios::out);
-            file << this->getInfo()->str();
-            file.close();
-        }
-    }
-
-    //---------------------------------------------------------------------------------------------------------//
-
-    void printAndSaveInfo() const { this->printInfo();this->saveInfo(); }
-#endif
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -139,15 +103,10 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    void
-    updateTime(double time)
-    {
-        M_fluid->updateTime(time);
-        M_solid->updateTime(time);
-    }
+    void updateTime(double time);
 
-    double currentTime() const { return M_fluid->time(); }
-    double time() const { return this->currentTime(); }
+    //double currentTime() const { return M_fluidModel->time(); }
+    //double time() const { return this->currentTime(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
     boost::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
     boost::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidModel()->timeStepBase(); }
@@ -170,8 +129,8 @@ private :
 
 private :
 
-    fluid_ptrtype M_fluid;
-    solid_ptrtype M_solid;
+    fluid_ptrtype M_fluidModel;
+    solid_ptrtype M_solidModel;
 
     double M_meshSize;
     fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
@@ -180,11 +139,10 @@ private :
     std::string M_tagFileNameMeshGenerated;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
-    std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-neumann
+    std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
     bool M_interfaceFSIisConforme;
-    double M_tolPtFixe,M_initialTheta,M_minTheta;
-    int M_fixPointMaxIt;
-    int M_fixPointMinItConvergence;
+    double M_fixPointTolerance, M_fixPointInitialTheta, M_fixPointMinTheta;
+    int M_fixPointMaxIt, M_fixPointMinItConvergence;
 
     interpolationFSI_ptrtype M_interpolationFSI;
     aitkenrelaxationFSI_ptrtype M_aitkenFSI;
