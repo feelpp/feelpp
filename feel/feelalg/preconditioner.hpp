@@ -326,7 +326,7 @@ protected:
     Side M_side;
     
     /**
-     * Enum statitng with type of preconditioner to use.
+     * Enum stating with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
 
