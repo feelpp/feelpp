@@ -357,14 +357,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
                                    this->couplingFSIcondition() == "robin-robin-genuine" ||
                                    this->couplingFSIcondition() == "nitsche" ) )
     {
-        double gammaRobinFSI = this->gammaNitschFSI();//2500;//10;
-        //double muFluid = this->mu();//0.03;
+        double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
 
         if ( BuildCstPart /*BuildNonCstPart_robinFSI*/ )
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= gammaRobinFSI*idv(mu)/*muFluid*/*inner(idt(u),id(u))/hFace(),
+                           _expr= gammaRobinFSI*idv(mu)*inner(idt(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
     }

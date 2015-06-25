@@ -136,8 +136,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
-    M_gammaNitschFSI = 2500;
-    M_gamma0NitschFSI = 1;
+    M_couplingFSI_Nitsche_gamma = 2500;
+    M_couplingFSI_Nitsche_gamma0 = 1;
+    M_couplingFSI_Nitsche_alpha = 1;
     M_couplingFSI_RNG_useInterfaceOperator = false;
     M_couplingFSI_solidIs1dReduced=false;
 

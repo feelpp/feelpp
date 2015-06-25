@@ -1680,6 +1680,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
     return res;
 }
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
+{
+    // TODO
+}
+
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
