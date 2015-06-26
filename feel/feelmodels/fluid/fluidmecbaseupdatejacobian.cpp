@@ -352,21 +352,79 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" ||
-                                   this->couplingFSIcondition() == "robin-robin" ||
-                                   this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                   this->couplingFSIcondition() == "nitsche" ) )
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
+                                   this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+                                   this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )
     {
-        double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
-
-        if ( BuildCstPart /*BuildNonCstPart_robinFSI*/ )
+        //---------------------------------------------------------------------------//
+        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
+             this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
+             this->couplingFSIcondition() == "nitsche" )
+        //---------------------------------------------------------------------------//
         {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= gammaRobinFSI*idv(mu)*inner(idt(u),id(u))/hFace(),
-                           _geomap=this->geomap() );
+            double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
+            if ( BuildCstPart )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                               _expr= ( gammaRobinFSI*idv(mu)/hFace() )*inner(idt(u),id(u)),
+                               _geomap=this->geomap() );
+
+                if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" ||
+                     this->couplingFSIcondition() == "nitsche" )
+                {
+                    double alpha = this->couplingFSI_Nitsche_alpha();
+                    double gamma0RobinFSI = this->couplingFSI_Nitsche_gamma0();
+                    auto mysigma = id(q)*Id+2*alpha*idv(mu)*sym(grad(u));
+
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*idv(mu)) )*idt(p)*id(q),
+                                   _geomap=this->geomap() );
+
+                    if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" )
+                    {
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr= -inner( idt(u), vf::N() )*id(q),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->couplingFSIcondition() == "nitsche" )
+                    {
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr= -inner( idt(u), mysigma*vf::N() ),
+                                       _geomap=this->geomap() );
+                    }
+                }
+            }
+        }
+        //---------------------------------------------------------------------------//
+        else if ( this->couplingFSIcondition() == "robin-neumann-generalized" )
+        //---------------------------------------------------------------------------//
+        {
+            bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
+            if ( !useInterfaceOperator )
+            {
+                if ( BuildCstPart )
+                {
+                    this->getMeshALE()->revertReferenceMesh();
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                                   _geomap=this->geomap() );
+                    this->getMeshALE()->revertMovingMesh();
+                }
+            }
+            else // useInterfaceOperator
+            {
+                CHECK( false ) << "TODO";
+            }
         }
     }
+#endif // FEELPP_MODELS_HAS_MESHALE
+
     //--------------------------------------------------------------------------------------------------//
 
     //if (_doClose ) J->close();
