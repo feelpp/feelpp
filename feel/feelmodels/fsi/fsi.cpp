@@ -63,7 +63,12 @@ FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm )
     M_reusePrecActivatedAfterNbFsiIterationFluid( ioption(_name="fluid.reuse-prec.activated-after-n-fsi-it",_prefix=this->prefix()) ),
     M_reusePrecActivatedAfterNbFsiIterationSolid( ioption(_name="solid.reuse-prec.activated-after-n-fsi-it",_prefix=this->prefix()) ),
     M_reusePrecActivatedToleranceFluid( doption(_name="fluid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) ),
-    M_reusePrecActivatedToleranceSolid( doption(_name="solid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) )
+    M_reusePrecActivatedToleranceSolid( doption(_name="solid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) ),
+    M_couplingNitscheFamily_gamma( doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix()) ),
+    M_couplingNitscheFamily_gamma0( doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix()) ),
+    M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) ),
+    M_couplingRNG_manualScaling( doption(_name="coupling-robin-neumann-generalized.manual-scaling",_prefix=this->prefix()) ),
+    M_couplingRNG_useInterfaceOperator( boption(_name="coupling-robin-neumann-generalized.use-interface-operator",_prefix=this->prefix() ) )
 {
     this->log("FSI","constructor","start");
 
@@ -287,13 +292,10 @@ FSI<FluidType,SolidType>::init()
 
     // specific value for robin
     M_solidModel->muFluidFSI( M_fluidModel->densityViscosityModel()->cstMu() );
-    double gammaNitsche = doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix());
-    M_fluidModel->setCouplingFSI_Nitsche_gamma( gammaNitsche );
-    M_solidModel->gammaNitschFSI( gammaNitsche );
-    double gamma0Nitsche = doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix());
-    M_fluidModel->setCouplingFSI_Nitsche_gamma0( gamma0Nitsche );
-    double alphaNitsche = doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix());
-    M_fluidModel->setCouplingFSI_Nitsche_alpha( alphaNitsche );
+    M_fluidModel->setCouplingFSI_Nitsche_gamma( M_couplingNitscheFamily_gamma );
+    M_solidModel->gammaNitschFSI( M_couplingNitscheFamily_gamma );
+    M_fluidModel->setCouplingFSI_Nitsche_gamma0( M_couplingNitscheFamily_gamma0 );
+    M_fluidModel->setCouplingFSI_Nitsche_alpha( M_couplingNitscheFamily_alpha );
 
     // save if reuse prec option at the begining
     M_reusePrecOptFluid = M_fluidModel->backend()->reusePrec();
@@ -333,8 +335,9 @@ FSI<FluidType,SolidType>::init()
         auto fieldInit = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1( fieldInit );
     }
-    if ( M_solidModel->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" &&
-         boption(_name="coupling-robin-neumann-generalized.use-interface-operator",_prefix=this->prefix() ) )
+    if ( M_solidModel->is1dReducedModel() )
+        M_couplingRNG_useInterfaceOperator = false;
+    if ( M_solidModel->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" && M_couplingRNG_useInterfaceOperator )
     {
         auto fieldInitBis = M_fluidModel->functionSpaceVelocity()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1Bis( fieldInitBis );
@@ -790,7 +793,7 @@ FSI<FluidType,SolidType>::solveImpl3()
         M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
 
-    double manualScalingRNG = doption(_name="coupling-robin-neumann-generalized.manual-scaling",_prefix=this->prefix());
+    double manualScalingRNG = M_couplingRNG_manualScaling;
 
     bool useAitken = boption(_name="coupling-robin-neumann-generalized.use-aitken",_prefix=this->prefix());
     if ( useAitken )
@@ -919,12 +922,43 @@ FSI<FluidType,SolidType>::getInfo() const
     else
         *_ostr << "\n   Interface property : non conformal";
 
-    *_ostr << "\n   Fix point parameters"
-           << "\n     -- method : Aitken"
-           << "\n     -- tolerance  : " << M_fixPointTolerance
-           << "\n     -- initial theta  : " << M_fixPointInitialTheta
-           << "\n     -- min theta  : " << M_fixPointMinTheta
-           << "\n     -- maxit : " << M_fixPointMaxIt;
+    bool useAitken = false;
+    if ( this->fsiCouplingBoundaryCondition()  == "dirichlet-neumann" )
+    {
+        useAitken = true;
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
+        *_ostr << "\n   Nitsche family parameters"
+               << "\n     -- gamma : " << M_couplingNitscheFamily_gamma;
+        if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+            *_ostr << "\n     -- gamma0 : " << M_couplingNitscheFamily_gamma0;
+        *_ostr << "\n     -- alpha : " << M_couplingNitscheFamily_alpha;
+
+    }
+    else if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+        *_ostr << "\n   Generalized Robin-Neumann"
+               << "\n     -- use interface operator : " << std::boolalpha << M_couplingRNG_useInterfaceOperator
+               << "\n     -- manual scaling : " << M_couplingRNG_manualScaling;
+    }
+
+    *_ostr << "\n   Solver";
+    if ( useAitken )
+        *_ostr << "\n     -- method        : fix point with Aitken relaxation";
+    else
+        *_ostr << "\n     -- method        : fix point";
+
+    *_ostr << "\n     -- tolerance     : " << M_fixPointTolerance
+           << "\n     -- maxit         : " << M_fixPointMaxIt;
+
+    if ( useAitken )
+        *_ostr << "\n     -- initial theta : " << M_fixPointInitialTheta
+               << "\n     -- min theta     : " << M_fixPointMinTheta;
+
     *_ostr << "\n||==============================================||"
            << "\n";
 
