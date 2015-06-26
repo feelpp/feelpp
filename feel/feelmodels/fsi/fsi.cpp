@@ -106,10 +106,10 @@ FSI<FluidType,SolidType>::createMesh()
     fs::path mshFileNameFSI;
     if ( !M_tagFileNameMeshGenerated.empty() )
     {
-        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_M%3%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_M%3%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_M%3%_p%4%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
-        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_M%3%_p%4%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
+        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_%3%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
+        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_%3%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
+        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_%3%_p%4%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
+        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_%3%_p%4%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
     }
     else
     {
@@ -141,7 +141,7 @@ FSI<FluidType,SolidType>::createMesh()
     {
         fs::path mshFileNameFSI;
         if ( !M_tagFileNameMeshGenerated.empty() )
-            mshFileNameFSI = (boost::format("%1%_fsi_%2%_M%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
+            mshFileNameFSI = (boost::format("%1%_fsi_%2%_%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
         else
             mshFileNameFSI = (boost::format("%1%_fsi_%2%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
         fs::path mshPathFSI = meshesdirectories / mshFileNameFSI;
@@ -611,11 +611,11 @@ FSI<FluidType,SolidType>::solveImpl1()
         //--------------------------------------------------------------//
         timerCur.restart();
         // revert ref mesh
-        M_fluidModel->getMeshALE()->revertReferenceMesh();
+        //M_fluidModel->getMeshALE()->revertReferenceMesh();
         // transfert stress
         this->interpolationTool()->transfertStress();
         // revert moving mesh
-        M_fluidModel->getMeshALE()->revertMovingMesh();
+        //M_fluidModel->getMeshALE()->revertMovingMesh();
         double t3 = timerCur.elapsed();
         this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
         //--------------------------------------------------------------//
@@ -689,11 +689,11 @@ FSI<FluidType,SolidType>::solveImpl2()
         //--------------------------------------------------------------//
         if (solveStruct)
         {
-            M_fluidModel->getMeshALE()->revertReferenceMesh();
+            //M_fluidModel->getMeshALE()->revertReferenceMesh();
             // transfert stress
             this->interpolationTool()->transfertStress();
             // revert moving mesh
-            M_fluidModel->getMeshALE()->revertMovingMesh();
+            //M_fluidModel->getMeshALE()->revertMovingMesh();
             if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
                    this->fsiCouplingBoundaryCondition()=="nitsche" ) &&
                  M_solidModel->isStandardModel() )
@@ -824,12 +824,13 @@ FSI<FluidType,SolidType>::solveImpl3()
         }
         this->interpolationTool()->transfertRobinNeumannGeneralizedS2F( cptFSI, manualScalingRNG );
         M_fluidModel->solve();
+
         //--------------------------------------------------------------//
-        M_fluidModel->getMeshALE()->revertReferenceMesh();
+        //M_fluidModel->getMeshALE()->revertReferenceMesh();
         // transfert stress
         this->interpolationTool()->transfertStress();
         // revert moving mesh
-        M_fluidModel->getMeshALE()->revertMovingMesh();
+        //M_fluidModel->getMeshALE()->revertMovingMesh();
         M_solidModel->solve();
         M_solidModel->updateVelocity();
         //--------------------------------------------------------------//
