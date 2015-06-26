@@ -489,10 +489,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     this->log("FluidMechanics","createTimeDiscretisation", "start" );
     this->timerTool("Constructor").start();
 
-    // bdf time schema
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
-    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
-        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    if ( myFileFormat == "binary" )
+         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_bdf_fluid = bdf( _vm=Environment::vm(), _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),
                        _prefix=this->prefix(),
@@ -504,7 +504,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
                        _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-
+    M_bdf_fluid->setfileFormat( myFileFormat );
     M_bdf_fluid->setPathSave( (fs::path(this->appliRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
@@ -600,7 +600,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
         //M_exporter_ho = export_ho_type::New( this->application()->vm(), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_HO"))/*.c_str()*/, M_Xh->worldComm() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        if (M_isMoveDomain) this->getMeshALE()->revertReferenceMesh();
+        if (M_isMoveDomain) this->meshALE()->revertReferenceMesh();
 #endif
         //auto Xh_create_ho = space_create_ho_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
 
@@ -718,7 +718,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
         this->log("FluidMechanics","createExporters", "finish all opInterpolation in " + (boost::format("%1% s") % timeElapsedOpI).str() );
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        if (M_isMoveDomain) this->getMeshALE()->revertMovingMesh();
+        if (M_isMoveDomain) this->meshALE()->revertMovingMesh();
 #endif
 
 #endif

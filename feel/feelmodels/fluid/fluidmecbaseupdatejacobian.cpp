@@ -409,12 +409,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
             {
                 if ( BuildCstPart )
                 {
-                    this->getMeshALE()->revertReferenceMesh();
+                    this->meshALE()->revertReferenceMesh();
                     bilinearForm_PatternCoupled +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
                                    _geomap=this->geomap() );
-                    this->getMeshALE()->revertMovingMesh();
+                    this->meshALE()->revertMovingMesh();
                 }
             }
             else // useInterfaceOperator

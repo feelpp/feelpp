@@ -344,7 +344,6 @@ public:
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
     //___________________________________________________________________________________//
 
-    //mesh_ptrtype mesh() { return M_mesh; }
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
@@ -392,9 +391,9 @@ public:
     bdf_ptrtype const& timeStepBDF() const { return M_bdf_fluid; }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    void updateBdf();
+    void updateTimeStepBDF();
     void initTimeStep();
-    void updateTimeStep() { this->updateBdf(); }
+    void updateTimeStep() { this->updateTimeStepBDF(); }
 
 
     //___________________________________________________________________________________//
@@ -409,8 +408,8 @@ public :
     //___________________________________________________________________________________//
     // ale mesh
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    mesh_ale_ptrtype getMeshALE() { return M_meshALE; }
-    mesh_ale_ptrtype const& getMeshALE() const { return M_meshALE; }
+    mesh_ale_ptrtype meshALE() { return M_meshALE; }
+    mesh_ale_ptrtype const& meshALE() const { return M_meshALE; }
 
     element_mesh_disp_ptrtype meshDisplacementOnInterface() { return M_meshDisplacementOnInterface; }
     element_meshvelocity_type & meshVelocity() { return *M_meshALE->velocity(); }
@@ -945,7 +944,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const
 {
     using namespace Feel::vf;
 
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
 
     auto solFluid = this->getSolution();
 
@@ -1002,7 +1001,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const
     }
 
 
-    this->getMeshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh();
 
     return res;
 }
