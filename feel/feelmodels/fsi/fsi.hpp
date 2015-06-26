@@ -151,6 +151,11 @@ private :
     bool M_reusePrecOptSolid,M_reusePrecRebuildAtFirstFSIStepOptSolid,M_reuseJacOptSolid,M_reuseJacRebuildAtFirstNewtonStepOptSolid,M_reuseJacRebuildAtFirstFSIStepOptSolid;
     int M_reusePrecActivatedAfterNbFsiIterationFluid,M_reusePrecActivatedAfterNbFsiIterationSolid;
     double M_reusePrecActivatedToleranceFluid,M_reusePrecActivatedToleranceSolid;
+
+    double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
+    double M_couplingRNG_manualScaling;
+    bool M_couplingRNG_useInterfaceOperator;
+
 };
 
 } // namespace FeelModels
