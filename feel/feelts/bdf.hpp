@@ -581,6 +581,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start()
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     double ti = super::start();
     M_last_iteration_since_order_change = 1;
@@ -597,6 +600,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( u0 );
     double ti = super::start();
@@ -614,6 +620,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( uv0 );
     double ti = super::start();
