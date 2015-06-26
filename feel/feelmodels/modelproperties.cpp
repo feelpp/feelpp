@@ -116,4 +116,17 @@ std::string ModelProperties::getEntry(std::string &s)
   return res;
 }
 
+void ModelProperties::saveMD(std::ostream &os)
+{
+  os << "## Model \n";
+  os << " - Name **" << name()<< "**\n";
+  os << " - shortName **" << shortName()<< "**\n";
+  os << " - description **" << description()<< "**\n";
+  os << " - model **" << model()<< "**\n\n";
+  M_params.saveMD(os);
+  M_mat.saveMD(os);
+  M_bc.saveMD(os);
+  M_postproc.saveMD(os);
+}
+
 }
