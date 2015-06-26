@@ -79,5 +79,22 @@ ModelParameters::setup()
     }
 }
 
+void
+ModelParameters::saveMD(std::ostream &os)
+{
+  auto myMap = toParameterValues();
+  os << "### Parameters\n";
+  os << "|Name|Value|Min|Max|\n";
+  os << "|---|---|---|---|\n";
+  for(auto it =this->begin(); it != this->end(); it++)
+  {
+    os << "|**" << it->first << "**|" 
+      << it->second.value() << "|" 
+      << it->second.min() << "|" 
+      << it->second.max() << "|\n";
+  }
+  os << "\n";
+}
+
 
 }
