@@ -664,7 +664,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
         M_pressureVisuHO.reset( new element_scalar_visu_ho_type(M_XhScalarVisuHO,"p_visuHO"));
         if (M_isMoveDomain) M_meshdispVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"meshdisp_visuHO"));
         if (M_doExportNormalStress) M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
-        if (M_doExportWallShearStress) M_wallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
+        if (M_doExportWallShearStress) M_fieldWallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
 
         this->log("FluidMechanics","createExporters", "start opInterpolation" );
         boost::mpi::timer timerOpI;
@@ -793,12 +793,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 {
+    if ( M_XhNormalBoundaryStress ) return;
+
     M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
-    M_normalBoundaryStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
 #endif
-    M_wallShearStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    M_fieldWallShearStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
 }
 
 //---------------------------------------------------------------------------------------------------------//

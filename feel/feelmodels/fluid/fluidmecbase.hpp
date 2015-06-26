@@ -360,10 +360,12 @@ public:
     element_fluid_pressure_type & fieldPressure() { return M_Solution->template element<1>(); }
     element_fluid_pressure_type const& fieldPressure() const { return M_Solution->template element<1>(); }
 
-    element_stress_ptrtype getNormalStress() { return M_normalBoundaryStress; }
-    element_stress_ptrtype const& getNormalStress() const { return M_normalBoundaryStress; }
-    element_stress_ptrtype getWallShearStress() { return M_wallShearStress; }
-    element_stress_ptrtype const& getWallShearStress() const { return M_wallShearStress; }
+    element_stress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
+    element_stress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
+    element_stress_ptrtype & fieldNormalStressRefMeshPtr() { return M_fieldNormalStressRefMesh; }
+    element_stress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
+    element_stress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
+    element_stress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
     bool useExtendedDofTable() const;
 
@@ -563,10 +565,14 @@ public :
 
     //___________________________________________________________________________________//
 
-    void updateNormalStress();
-    void updateNormalStressStandard();
-    void updateNormalStressUseAlePart();
-    void updateAlePartUsedByNormalStress();
+    // update normal stress in reference ALE mesh
+    void updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    // update normal stress in reference ALE mesh
+    void updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers = std::list<std::string>() );
+    // update normal stress (subfunctions)
+    void updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers );
+    void updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers );
 
     void updateWallShearStress();
     void updateVorticity(mpl::int_<2> /***/);
@@ -769,8 +775,8 @@ protected:
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_stress_ptrtype M_XhNormalBoundaryStress;
-    element_stress_ptrtype M_normalBoundaryStress;
-    element_stress_ptrtype M_wallShearStress;
+    element_stress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
+    element_stress_ptrtype M_fieldWallShearStress;
     // vorticity space
     space_vorticity_ptrtype M_Xh_vorticity;
     element_vorticity_ptrtype M_vorticity;
@@ -873,7 +879,7 @@ protected:
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     element_vectorial_visu_ho_ptrtype M_meshdispVisuHO;
     element_vectorialdisc_visu_ho_ptrtype M_normalStressVisuHO;
-    element_vectorialdisc_visu_ho_ptrtype M_wallShearStressVisuHO;
+    element_vectorialdisc_visu_ho_ptrtype M_fieldWallShearStressVisuHO;
 
     op_interpolation_visu_ho_vectorial_ptrtype M_opIvelocity;
     op_interpolation_visu_ho_scalar_ptrtype M_opIpressure;
