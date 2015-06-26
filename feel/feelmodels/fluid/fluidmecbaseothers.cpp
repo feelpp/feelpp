@@ -12,6 +12,7 @@
 #include <feel/feelvf/val.hpp>
 #include <feel/feelvf/pow.hpp>
 #include <feel/feelvf/det.hpp>
+#include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/one.hpp>
 #include <feel/feelvf/geometricdata.hpp>
 //#include <fsi/fsicore/variousfunctions.hpp>
@@ -423,16 +424,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     if (M_doExportNormalStress || M_doExportAll)
     {
+        this->updateNormalStressOnCurrentMesh();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")),
-                                       *this->getNormalStress() );
+                                       this->fieldNormalStress() );
     }
     if (M_doExportWallShearStress || M_doExportAll)
     {
         this->updateWallShearStress();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
-                                       *this->getWallShearStress() );
+                                       this->fieldWallShearStress() );
     }
     if ( M_doExportViscosity || M_doExportAll )
     {
@@ -572,14 +574,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 
     if (M_doExportNormalStress)
     {
-        M_opIstress->apply( *this->getNormalStress(),*M_normalStressVisuHO );
+        this->updateNormalStressOnCurrentMesh();
+        M_opIstress->apply( this->fieldNormalStress(),*M_normalStressVisuHO );
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"normalstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")), *M_normalStressVisuHO );
     }
     if (M_doExportWallShearStress)
     {
         this->updateWallShearStress();
-        M_opIstress->apply( *this->getWallShearStress(),*M_wallShearStressVisuHO );
-        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"wallshearstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")), *M_wallShearStressVisuHO );
+        M_opIstress->apply( this->fieldWallShearStress(),*M_fieldWallShearStressVisuHO );
+        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"wallshearstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")), *M_fieldWallShearStressVisuHO );
     }
 
     M_exporter_ho->save();
@@ -599,6 +602,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
+
+    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
+    this->updateBlockVectorSolution();
 
     if ( this->startBySolveStokesStationary() && !this->isStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
@@ -831,33 +837,66 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     this->log("FluidMechanics","updateBdf", "finish" );
 }
 
+
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers )
 {
-    if (this->useFSISemiImplicitScheme())
-        this->updateNormalStressUseAlePart();
+    this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "start" );
+
+    // current solution
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
+    if( !M_fieldNormalStress )
+        this->createFunctionSpacesNormalStress();
+
+    auto const Id = eye<nDim,nDim>();
+    // deformations tensor
+    auto defv = sym(gradv(u));
+    // stress tensor
+    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
+
+    M_fieldNormalStress->zero();
+    if ( listMarkers.empty() )
+        M_fieldNormalStress->on(_range=boundaryfaces(this->mesh()),
+                                       _expr=Sigmav*N(),
+                                       _geomap=this->geomap() );
     else
-        this->updateNormalStressStandard();
+        M_fieldNormalStress->on(_range=markedfaces(this->mesh(),listMarkers),
+                                _expr=Sigmav*N(),
+                                _geomap=this->geomap() );
+
+    this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers )
+{
+    if (this->useFSISemiImplicitScheme())
+        this->updateNormalStressOnReferenceMeshOptSI( listMarkers );
+    else
+        this->updateNormalStressOnReferenceMeshStandard( listMarkers );
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateNormalStress", "start" );
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "start" );
 
     // current solution
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto p = solFluid->template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
 
     //Tenseur des deformations
     auto defv = sym(gradv(u));
@@ -869,6 +908,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
     // Deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
 
+#if 0
 #if (FLUIDMECHANICS_DIM==2)
     auto Fa11 = Fa(0,0);
     auto Fa12 = Fa(0,1);
@@ -893,24 +933,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
                            Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
                            );
 #endif
-    //auto InvFa = det(Fa)*inv(Fa);
-
-
-#if 0
-    auto const& bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    ForEachBC( bcDef, cl::paroi_mobile,
-               *M_normalBoundaryStress = vf::project(_space=M_XhNormalBoundaryStress,
-                                                     _range=markedfaces(this->mesh(),PhysicalName),
-                                                     _expr=val(Sigmav*trans(InvFa)*N()),
-                                                     _geomap=this->geomap() ); );
 #else
-    *M_normalBoundaryStress = vf::project(_space=M_XhNormalBoundaryStress,
-                                          _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                          _expr=val(Sigmav*trans(InvFa)*N()),
-                                          _geomap=this->geomap() );
+    auto InvFa = det(Fa)*inv(Fa);
 #endif
+    this->getMeshALE()->revertReferenceMesh();
 
-    this->log("FluidMechanics","updateNormalStress", "finish" );
+    M_fieldNormalStressRefMesh->zero();
+    if ( listMarkers.empty() )
+        M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
+                                       _expr=val(Sigmav*trans(InvFa)*N()),
+                                       _geomap=this->geomap() );
+    else
+        M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
+                                       _expr=val(Sigmav*trans(InvFa)*N()),
+                                       _geomap=this->geomap() );
+
+    this->getMeshALE()->revertMovingMesh();
+
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
 }
 
@@ -918,17 +958,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressStandard()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateAlePartUsedByNormalStress", "start" );
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "start" );
 
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
+#if 0
 #if (FLUIDMECHANICS_DIM==2)
     auto Fa11 = Fa(0,0);
     auto Fa12 = Fa(0,1);
@@ -953,38 +994,36 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
                            Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
                            );
 #endif
-    //nDim
-    //M_saveALEPartNormalStress;
-#if 0
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    if (!M_XhMeshALEmapDisc) M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
 #else
-    if (!M_XhMeshALEmapDisc) M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh());
+    auto InvFa = det(Fa)*inv(Fa);
 #endif
-#endif
-    //M_Solution.reset( new element_fluid_type(M_Xh,"U"));
-    // space usefull to tranfert sigma*N()
 
 
 
     if (!M_saveALEPartNormalStress) M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
+    this->getMeshALE()->revertReferenceMesh();
+
+
+    M_saveALEPartNormalStress->zero();
+    if ( listMarkers.empty() )
+        M_saveALEPartNormalStress->on(_range=boundaryfaces(this->mesh()),
+                                      _expr=val(trans(InvFa)*N()),
+                                      _geomap=this->geomap() );
+    else
+        M_saveALEPartNormalStress->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
+                                      _expr=val(trans(InvFa)*N()),
+                                      _geomap=this->geomap() );
 #if 0
-    auto const& bcDef = FLUIDMECHANICS_BC(this->shared_from_this());
-    ForEachBC( bcDef, cl::paroi_mobile,
-               *M_saveALEPartNormalStress = vf::project(_space=M_XhMeshALEmapDisc,
-                                                        _range=markedfaces(this->mesh(),PhysicalName),
-                                                        _expr=val(trans(InvFa)*N()),
-                                                        _geomap=this->geomap() ); );
-#else
     *M_saveALEPartNormalStress = vf::project(_space=M_XhMeshALEmapDisc,
                                              _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                              _expr=val(trans(InvFa)*N()),
                                              _geomap=this->geomap() );
-
 #endif
 
-    this->log("FluidMechanics","updateAlePartUsedByNormalStress", "finish" );
+    this->getMeshALE()->revertMovingMesh();
+
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "finish" );
 #endif
 }
 
@@ -992,17 +1031,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateAlePartUsedByNormalStress()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateNormalStressUseAlePart", "start" );
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "start" );
 
     // current solution
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto p = solFluid->template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
 
     //Tenseur des deformations
     auto defv = sym(gradv(u));
@@ -1011,16 +1049,34 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressUseAlePart()
     // Tenseur des contraintes (trial)
     auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
 
-    if ( M_saveALEPartNormalStress )
-        M_normalBoundaryStress->on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
-                                   _geomap=this->geomap() );
-    else
-        M_normalBoundaryStress->on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=Sigmav*N(),
-                                   _geomap=this->geomap() );
+    this->getMeshALE()->revertReferenceMesh();
 
-    this->log("FluidMechanics","updateNormalStressUseAlePart", "finish" );
+    if ( M_saveALEPartNormalStress )
+    {
+        if ( listMarkers.empty() )
+            M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
+                                           _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
+                                           _geomap=this->geomap() );
+        else
+            M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
+                                           _expr=val(Sigmav*idv(M_saveALEPartNormalStress)),
+                                           _geomap=this->geomap() );
+    }
+    else
+    {
+        if ( listMarkers.empty() )
+            M_fieldNormalStressRefMesh->on(_range=boundaryfaces(this->mesh()),
+                                      _expr=Sigmav*N(),
+                                      _geomap=this->geomap() );
+        else
+            M_fieldNormalStressRefMesh->on(_range=markedfaces(this->mesh(),listMarkers/*this->markersNameMovingBoundary()*/),
+                                           _expr=Sigmav*N(),
+                                           _geomap=this->geomap() );
+    }
+
+    this->getMeshALE()->revertMovingMesh();
+
+    this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "finish" );
 #endif
 }
 
@@ -1035,7 +1091,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 
     this->log("FluidMechanics","updateWallShearStress", "start" );
 
-    if ( !M_wallShearStress ) this->createFunctionSpacesNormalStress();
+    if ( !M_fieldWallShearStress ) this->createFunctionSpacesNormalStress();
 
     // current solution
     auto solFluid = this->fieldVelocityPressurePtr();
@@ -1049,9 +1105,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
     // Tenseur des contraintes (trial)
     auto Sigmav = (-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
 
-    M_wallShearStress->on(_range=boundaryfaces(this->mesh()),
-                          _expr=Sigmav*vf::N() - (trans(Sigmav*vf::N())*vf::N())*vf::N(),
-                          _geomap=this->geomap() );
+    M_fieldWallShearStress->on(_range=boundaryfaces(this->mesh()),
+                               _expr=Sigmav*vf::N() - (trans(Sigmav*vf::N())*vf::N())*vf::N(),
+                               _geomap=this->geomap() );
 
     this->log("FluidMechanics","updateWallShearStress", "finish" );
 }
@@ -1128,9 +1184,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
     // semi implicit optimisation
     if (this->useFSISemiImplicitScheme())
     {
-        this->getMeshALE()->revertReferenceMesh();
-        this->updateAlePartUsedByNormalStress();
-        this->getMeshALE()->revertMovingMesh();
+        //this->getMeshALE()->revertReferenceMesh();
+        this->updateNormalStressOnReferenceMeshOptPrecompute(this->markersNameMovingBoundary());
+        //this->getMeshALE()->revertMovingMesh();
     }
 
     //-------------------------------------------------------------------//
@@ -1684,7 +1740,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
-    // TODO
+    // copy velocity/pressure in block
+    auto & vecAlgebraic = M_blockVectorSolution.vector();
+    auto const& fieldVelPres = this->fieldVelocityPressure();
+    for (int k=0;k< this->functionSpace()->nLocalDofWithGhost() ;++k)
+        vecAlgebraic->set(k, fieldVelPres(k) );
+
+    // do nothing for others block (fields define only in blockVectorSolution)
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {}
+    if (this->hasMarkerDirichletBClm())
+    {}
+    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    {}
+
 }
 
 //---------------------------------------------------------------------------------------------------------//
