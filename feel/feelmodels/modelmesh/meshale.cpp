@@ -89,8 +89,9 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     // create time schemes
 
     double timestep = doption(_name="ts.time-step");
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
-    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
+    if ( myFileFormat == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
 
     M_bdf_ale_identity = bdf( _vm=Environment::vm(), _space=M_Xhmove,
@@ -104,6 +105,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                               _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
                               _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
+    M_bdf_ale_identity->setfileFormat( myFileFormat );
     M_bdf_ale_identity->setPathSave( (fs::path(this->appliRepository()) /
                                       fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_identity->bdfOrder()).str() ) ) ).string() );
 
@@ -118,6 +120,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                               _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
                               _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
+    M_bdf_ale_velocity->setfileFormat( myFileFormat );
     M_bdf_ale_velocity->setPathSave( (fs::path(this->appliRepository()) /
                                       fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_velocity->bdfOrder()).str() ) ) ).string() );
 
@@ -132,12 +135,11 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                                       _restart_at_last_save=boption(_name="ts.restart.at-last-save"),
                                       _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                                       );
+    M_bdf_ale_displacement_ref->setfileFormat( myFileFormat );
     M_bdf_ale_displacement_ref->setPathSave( (fs::path(this->appliRepository()) /
                                               fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_displacement_ref->bdfOrder()).str() ) ) ).string() );
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "finish");
-
-    //std::cout << "\n MESHALE FINISH " << mesh_moving->worldComm().godRank() << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------//
