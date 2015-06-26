@@ -59,8 +59,9 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
 
     if ( this->fluid()->doRestart() )
     {
-        this->fluid()->getMeshALE()->revertReferenceMesh();
-        //this->fluid()->getMeshALE()->displacement()->functionSpace()->rebuildDofPoints();//????????
+        this->fluid()->meshALE()->revertReferenceMesh();
+        // need to rebuild this dof point because updated in meshale after restart
+        this->fluid()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
     }
 
     if ( doBuild )
@@ -140,7 +141,10 @@ InterpolationFSI<FluidType,SolidType>::InterpolationFSI(fluid_ptrtype fluid, sol
     }
 
     if ( this->fluid()->doRestart() )
-        this->fluid()->getMeshALE()->revertMovingMesh();
+    {
+        this->fluid()->meshALE()->revertMovingMesh();
+        this->fluid()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
+    }
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -208,7 +212,7 @@ InterpolationFSI<FluidType,SolidType>::initDispInterpolation()
         if (this->verbose() && this->fluid()->worldComm().isMasterRank() )
             std::cout << "initDispInterpolation() CONFORME"  << std::endl;
         M_opDisp2dTo2dconf = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
-                                             _imageSpace=this->fluid()->getMeshALE()->displacement()->functionSpace(),
+                                             _imageSpace=this->fluid()->meshALE()->displacement()->functionSpace(),
                                              _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                              _type=InterpolationConforme(),
                                              _backend=this->fluid()->backend() );
@@ -218,7 +222,7 @@ InterpolationFSI<FluidType,SolidType>::initDispInterpolation()
         if (this->verbose() && this->fluid()->worldComm().isMasterRank())
             std::cout << "initDispInterpolation() NONCONFORME" << std::endl;
         M_opDisp2dTo2dnonconf = opInterpolation(_domainSpace=this->solid()->functionSpaceDisplacement(),
-                                                _imageSpace=this->fluid()->getMeshALE()->displacement()->functionSpace(),
+                                                _imageSpace=this->fluid()->meshALE()->displacement()->functionSpace(),
                                                 _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                                 _type=InterpolationNonConforme(),
                                                 _backend=this->fluid()->backend() );
@@ -239,7 +243,7 @@ InterpolationFSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
         if (this->verbose() && this->fluid()->worldComm().isMasterRank())
             std::cout << "initDisp1dToNdInterpolation() CONFORME"  << std::endl;
         M_opDisp1dToNdconf = opInterpolation(_domainSpace=this->solid()->fieldDisplacementVect1dReduced().functionSpace(),
-                                             _imageSpace=this->fluid()->getMeshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
+                                             _imageSpace=this->fluid()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
                                              _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                              _type=InterpolationConforme(),
                                              _backend=M_fluid->backend() );
@@ -249,7 +253,7 @@ InterpolationFSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
         if (this->verbose() && this->fluid()->worldComm().isMasterRank())
             std::cout << "initDisp1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opDisp1dToNdnonconf = opInterpolation(_domainSpace=this->solid()->fieldDisplacementVect1dReduced().functionSpace(),
-                                                _imageSpace=this->fluid()->getMeshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
+                                                _imageSpace=this->fluid()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
                                                 _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                                 _type=InterpolationNonConforme(),
                                                 _backend=M_fluid->backend() );

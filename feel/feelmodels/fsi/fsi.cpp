@@ -169,7 +169,7 @@ template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->getMeshALE()->referenceMesh(), markedfaces( FM->getMeshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
+    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
       submeshStruct->faces().modify( submeshStruct->faceIterator( itp->id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
@@ -179,8 +179,8 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     smd_ptrtype smd( new smd_type(FM->mesh()) );
     for ( auto const& e : elements(submeshStruct) )
       {
-        auto const& theface = FM->getMeshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
-        size_type idElt2 = FM->getMeshALE()->dofRelationShipMap()->geoElementMap()[ theface.element0().id() ].first;
+        auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
+        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap()[ theface.element0().id() ].first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
         auto const& theface2 = FM->mesh()->element(idElt2,e.processId()).face(theface.pos_first());
         smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
@@ -256,10 +256,10 @@ FSI<FluidType,SolidType>::init()
             CHECK( !M_fluidModel->markersNameMovingBoundary().empty() ) << "no marker moving boundary in fluid model";
 
             if ( M_fluidModel->doRestart() )
-                M_fluidModel->getMeshALE()->revertReferenceMesh();
+                M_fluidModel->meshALE()->revertReferenceMesh();
             auto submeshStruct = detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel );
             if ( M_fluidModel->doRestart() )
-                M_fluidModel->getMeshALE()->revertMovingMesh();
+                M_fluidModel->meshALE()->revertMovingMesh();
 
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
@@ -614,11 +614,11 @@ FSI<FluidType,SolidType>::solveImpl1()
         //--------------------------------------------------------------//
         timerCur.restart();
         // revert ref mesh
-        //M_fluidModel->getMeshALE()->revertReferenceMesh();
+        //M_fluidModel->meshALE()->revertReferenceMesh();
         // transfert stress
         this->interpolationTool()->transfertStress();
         // revert moving mesh
-        //M_fluidModel->getMeshALE()->revertMovingMesh();
+        //M_fluidModel->meshALE()->revertMovingMesh();
         double t3 = timerCur.elapsed();
         this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
         //--------------------------------------------------------------//
@@ -692,11 +692,11 @@ FSI<FluidType,SolidType>::solveImpl2()
         //--------------------------------------------------------------//
         if (solveStruct)
         {
-            //M_fluidModel->getMeshALE()->revertReferenceMesh();
+            //M_fluidModel->meshALE()->revertReferenceMesh();
             // transfert stress
             this->interpolationTool()->transfertStress();
             // revert moving mesh
-            //M_fluidModel->getMeshALE()->revertMovingMesh();
+            //M_fluidModel->meshALE()->revertMovingMesh();
             if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
                    this->fsiCouplingBoundaryCondition()=="nitsche" ) &&
                  M_solidModel->isStandardModel() )
@@ -829,11 +829,11 @@ FSI<FluidType,SolidType>::solveImpl3()
         M_fluidModel->solve();
 
         //--------------------------------------------------------------//
-        //M_fluidModel->getMeshALE()->revertReferenceMesh();
+        //M_fluidModel->meshALE()->revertReferenceMesh();
         // transfert stress
         this->interpolationTool()->transfertStress();
         // revert moving mesh
-        //M_fluidModel->getMeshALE()->revertMovingMesh();
+        //M_fluidModel->meshALE()->revertMovingMesh();
         M_solidModel->solve();
         M_solidModel->updateVelocity();
         //--------------------------------------------------------------//
