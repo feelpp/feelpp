@@ -190,7 +190,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
-        *_ostr << this->getMeshALE()->getInfo()->str();
+        *_ostr << this->meshALE()->getInfo()->str();
 #endif
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
@@ -345,7 +345,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     if (this->isMoveDomain() && (M_doExportMeshALE || M_doExportAll ) )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->getMeshALE()->exportResults( time );
+        this->meshALE()->exportResults( time );
 #endif
     }
 
@@ -404,7 +404,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     // because write geofile at each step ( TODO fix !!! )
     if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-        this->getMeshALE()->revertReferenceMesh();
+        this->meshALE()->revertReferenceMesh();
 #endif
     //M_exporter->step( time )->setMesh( M_mesh );
     M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
@@ -476,7 +476,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     //----------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-        this->getMeshALE()->revertMovingMesh();
+        this->meshALE()->revertMovingMesh();
 #endif
 }
 
@@ -489,7 +489,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 
     // because write geofile at each step ( TODO fix !!! )
     //if (M_isMoveDomain && M_exporter_ho->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-    //    this->getMeshALE()->revertReferenceMesh();
+    //    this->meshALE()->revertReferenceMesh();
 
     M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
     M_opIpressure->apply(M_Solution->template element<1>(),*M_pressureVisuHO);
@@ -588,7 +588,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     M_exporter_ho->save();
 
     //if (M_isMoveDomain && M_exporter_ho->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-    //   this->getMeshALE()->revertMovingMesh();
+    //   this->meshALE()->revertMovingMesh();
 
 #endif
 }
@@ -770,9 +770,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity(mpl::int_<3> /***/)
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 {
-    this->log("FluidMechanics","updateBdf", "start" );
+    this->log("FluidMechanics","updateTimeStepBDF", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -822,19 +822,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     {
         if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
-            this->log("FluidMechanics","updateBdf", "do rebuildCstJacobian" );
+            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
             M_algebraicFactory->rebuildCstJacobian(M_Solution);
         }
         else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
-            this->log("FluidMechanics","updateBdf", "do rebuildCstLinearPDE" );
+            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
         }
     }
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("FluidMechanics","updateBdf", "finish" );
+    this->log("FluidMechanics","updateTimeStepBDF", "finish" );
 }
 
 
@@ -936,7 +936,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
 #else
     auto InvFa = det(Fa)*inv(Fa);
 #endif
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
 
     M_fieldNormalStressRefMesh->zero();
     if ( listMarkers.empty() )
@@ -948,7 +948,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
                                        _expr=val(Sigmav*trans(InvFa)*N()),
                                        _geomap=this->geomap() );
 
-    this->getMeshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh();
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
@@ -1002,7 +1002,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
 
     if (!M_saveALEPartNormalStress) M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
 
 
     M_saveALEPartNormalStress->zero();
@@ -1021,7 +1021,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
                                              _geomap=this->geomap() );
 #endif
 
-    this->getMeshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh();
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "finish" );
 #endif
@@ -1049,7 +1049,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( 
     // Tenseur des contraintes (trial)
     auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
 
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
 
     if ( M_saveALEPartNormalStress )
     {
@@ -1074,7 +1074,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( 
                                            _geomap=this->geomap() );
     }
 
-    this->getMeshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh();
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptSI", "finish" );
 #endif
@@ -1184,9 +1184,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
     // semi implicit optimisation
     if (this->useFSISemiImplicitScheme())
     {
-        //this->getMeshALE()->revertReferenceMesh();
+        //this->meshALE()->revertReferenceMesh();
         this->updateNormalStressOnReferenceMeshOptPrecompute(this->markersNameMovingBoundary());
-        //this->getMeshALE()->revertMovingMesh();
+        //this->meshALE()->revertMovingMesh();
     }
 
     //-------------------------------------------------------------------//
@@ -1416,7 +1416,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<me
     else
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->getMeshALE()->revertReferenceMesh();
+        this->meshALE()->revertReferenceMesh();
         auto const Id = eye<nDim,nDim>();
         for (uint16_type i = 0 ; i<nbSlice ; ++i)
         {
@@ -1445,7 +1445,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<me
                                               _expr=idv(p)*detFa ).evaluate()(0,0));
             }
         }
-        this->getMeshALE()->revertMovingMesh();
+        this->meshALE()->revertMovingMesh();
 #endif
     }
 
@@ -1481,7 +1481,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d
     //else
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->getMeshALE()->revertReferenceMesh();
+        this->meshALE()->revertReferenceMesh();
 
         auto const Id = eye<nDim,nDim>();
         for (uint16_type i = 0 ; i<nbSlice ; ++i)
@@ -1507,7 +1507,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d
             }
         }
 
-        this->getMeshALE()->revertMovingMesh();
+        this->meshALE()->revertMovingMesh();
 #endif
     }
 
@@ -1788,14 +1788,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
     // assembly : first version
     //-----------------------------------------------------------------//
 #if 0 /////////////////////////
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
     form2( _test=Xh,_trial=Xh,_matrix=M_couplingFSI_RNG_matrix,
            _pattern=size_type(Pattern::COUPLED) ) +=
         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
                    _geomap=this->geomap() );
     M_couplingFSI_RNG_matrix->close();
-    this->getMeshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh();
 
 
     // scale with diagonal operator
@@ -1918,7 +1918,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 {
 
 #if 0
-    this->getMeshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh();
     form1( _test=Xh, _vector=F,
            _rowstart=rowStartInVector ) +=
         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),

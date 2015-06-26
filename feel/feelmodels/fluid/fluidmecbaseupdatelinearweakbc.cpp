@@ -378,7 +378,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             {
                 if ( BuildNonCstPart_robinFSI )
                 {
-                    this->getMeshALE()->revertReferenceMesh();
+                    this->meshALE()->revertReferenceMesh();
                     bilinearForm_PatternCoupled +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
@@ -386,14 +386,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                 }
                 if ( BuildNonCstPart )
                 {
-                    this->getMeshALE()->revertReferenceMesh();
+                    this->meshALE()->revertReferenceMesh();
                     form1( _test=Xh, _vector=F,
                            _rowstart=rowStartInVector ) +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
                                    _geomap=this->geomap() );
                 }
-                this->getMeshALE()->revertMovingMesh();
+                this->meshALE()->revertMovingMesh();
             }
             else // useInterfaceOperator
             {

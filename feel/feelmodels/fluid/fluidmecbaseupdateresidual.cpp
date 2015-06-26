@@ -573,7 +573,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             {
                 if ( !BuildCstPart && !UseJacobianLinearTerms )
                 {
-                    this->getMeshALE()->revertReferenceMesh();
+                    this->meshALE()->revertReferenceMesh();
                     linearForm_PatternCoupled +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr=this->couplingFSI_RNG_coeffForm2()*inner(idv(u),id(v)),
@@ -583,13 +583,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                 // todo cst in implicit non cst in semi-implicit
                 if ( BuildNonCstPart )
                 {
-                    this->getMeshALE()->revertReferenceMesh();
+                    this->meshALE()->revertReferenceMesh();
                     linearForm_PatternCoupled +=
                         integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
                                    _expr= inner(idv(this->couplingFSI_RNG_evalForm1()),id(v)),
                                    _geomap=this->geomap() );
                 }
-                this->getMeshALE()->revertMovingMesh();
+                this->meshALE()->revertMovingMesh();
             }
             else // useInterfaceOperator
             {
