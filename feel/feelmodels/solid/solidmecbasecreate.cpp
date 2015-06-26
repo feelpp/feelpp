@@ -556,8 +556,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     double tf = this->timeFinal();
     double dt = this->timeStep();
 
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
-    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
+    if ( myFileFormat == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_newmark_displ_struct = newmark( _vm=Environment::vm(), _space=M_Xh,
                                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
@@ -565,6 +566,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                       _initial_time=ti, _final_time=tf, _time_step=dt,
                                       _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+    M_newmark_displ_struct->setfileFormat( myFileFormat );
     M_newmark_displ_struct->setPathSave( (fs::path(this->appliRepository()) /
                                           fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
@@ -576,6 +578,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                 _initial_time=ti, _final_time=tf, _time_step=dt,
                                 _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                 _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+        M_savetsPressure->setfileFormat( myFileFormat );
         M_savetsPressure->setPathSave( (fs::path(this->appliRepository()) /
                                         fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
     }
@@ -597,8 +600,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
     double tf = this->timeFinal();
     double dt = this->timeStep();
 
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
-    if ( soption(_name="ts.file-format",_prefix=this->prefix()) == "binary" )
+    if ( myFileFormat == "binary" )
         suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
     M_newmark_displ_1dReduced = newmark( _vm=Environment::vm(),
                                           _space=M_Xh_1dReduced,
@@ -607,6 +611,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
                                           _initial_time=ti, _final_time=tf, _time_step=dt,
                                           _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                           _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+    M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
     M_newmark_displ_1dReduced->setPathSave( (fs::path(this->appliRepository()) /
                                              fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
