@@ -38,7 +38,7 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=true >
+template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp>,
                        public boost::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >
 {

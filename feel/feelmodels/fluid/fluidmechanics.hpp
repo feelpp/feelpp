@@ -40,7 +40,7 @@ namespace FeelModels
 {
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
-          typename BasisDVType=Lagrange<0, Scalar,Continuous/*,PointSetFekete*/>,
+          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/>,
           bool UsePeriodicity=false>
 class FluidMechanics : public FluidMechanicsBase<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity>,
                        public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >

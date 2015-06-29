@@ -314,9 +314,10 @@ public:
     FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
+    static std::string expandStringFromSpec( std::string const& expr );
+
+
     void build();
-
-
     void init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app );
 
     virtual void loadConfigBCFile() = 0;
