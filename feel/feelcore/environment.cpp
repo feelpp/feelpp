@@ -2036,6 +2036,13 @@ Environment::saveTimers( bool display )
     S_timers.save( display );
 }
 
+void
+Environment::saveTimersMD( std::ostream &os )
+{
+    //S_timers.save( Environment::about().appName(), display );
+    S_timers.saveMD( os );
+}
+
 
 
 AboutData Environment::S_about;
