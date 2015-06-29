@@ -100,9 +100,9 @@ public :
 
     MultiScaleQuadrature()
         :
-        super( pow(2,ioption("msi.level"))+1  )
+        super( std::pow(2,ioption("msi.level"))+1  )
     {
-        auto  gridsize = pow(2,ioption("msi.level"));
+        auto  gridsize = std::pow(2,ioption("msi.level"));
         // build rules in x and y direction
         weights_type wx( gridsize+1  );
         weights_type px( gridsize+1  );
@@ -189,9 +189,9 @@ public :
 
     MultiScaleQuadrature( )
         :
-        super( (1+pow(2,ioption("msi.level")))*(pow(2,ioption("msi.level"))+1) )
+        super( (1+std::pow(2,ioption("msi.level")))*(std::pow(2,ioption("msi.level"))+1) )
     {
-        auto gridsize=pow(2,ioption("msi.level"));
+        auto gridsize=std::pow(2,ioption("msi.level"));
         // build rules in x and y direction
         weights_type wx( (gridsize+1)*(gridsize+1) );
         //weights_type px( (gridsize*gridsize );
