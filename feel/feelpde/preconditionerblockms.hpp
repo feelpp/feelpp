@@ -121,6 +121,14 @@ public:
     int guess( vector_type& U ) const;
 
     virtual ~PreconditionerBlockMS(){};
+
+    void printMatSize(int i, std::ostream &os)
+    {
+        if(i == 1)
+        os << M_11->graph()->size();
+        else if(i==2)
+        os << M_22->graph()->size();
+    }
     void printIter(int i, std::ostream & os){
         os << "<ul>";
         if(i == 1)
