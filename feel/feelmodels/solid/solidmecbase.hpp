@@ -285,6 +285,9 @@ public:
                         WorldComm const& _worldComm=Environment::worldComm(),
                         std::string subPrefix="",
                         std::string appliShortRepository=soption(_name="exporter.directory") );
+    SolidMechanicsBase( self_type const & M ) = default;
+
+    static std::string expandStringFromSpec( std::string const& expr );
 
     void build();
     void loadMesh(mesh_ptrtype __mesh );

@@ -22,7 +22,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationar
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository),
+    super_type( __prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
     M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) )
 {
@@ -35,6 +35,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationar
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 }
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+std::string
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
+{
+    std::string res = expr;
+    boost::replace_all( res, "$fluid_u_order", (boost::format("%1%")%nOrderVelocity).str() );
+    boost::replace_all( res, "$fluid_p_order", (boost::format("%1%")%nOrderPressure).str() );
+    boost::replace_all( res, "$fluid_geo_order", (boost::format("%1%")%nOrderGeo).str() );
+    std::string fluidTag = (boost::format("P%1%P%2%G%3%")%nOrderVelocity %nOrderPressure %nOrderGeo ).str();
+    boost::replace_all( res, "$fluid_tag", fluidTag );
+    return res;
+}
+// add members instatantiations need by static function expandStringFromSpec
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderVelocity;
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderPressure;
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
 //---------------------------------------------------------------------------------------------------------//
 

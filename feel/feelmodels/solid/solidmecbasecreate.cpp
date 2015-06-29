@@ -21,7 +21,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix
                                                             std::string __subPrefix,
                                                             std::string __appliShortRepository )
     :
-    super_type(__prefix,__worldComm,__subPrefix, __appliShortRepository),
+    super_type(__prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
     M_mechanicalProperties( new mechanicalproperties_type( __prefix ) )
 {
@@ -34,6 +34,23 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 }
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+std::string
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
+{
+    std::string res = expr;
+    boost::replace_all( res, "$solid_disp_order", (boost::format("%1%")%nOrderDisplacement).str() );
+    boost::replace_all( res, "$solid_geo_order", (boost::format("%1%")%nOrderGeo).str() );
+    std::string solidTag = (boost::format("P%1%G%2%")%nOrderDisplacement %nOrderGeo ).str();
+    boost::replace_all( res, "$solid_tag", solidTag );
+    return res;
+}
+// add members instatantiations need by static function expandStringFromSpec
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
 //---------------------------------------------------------------------------------------------------//
 
