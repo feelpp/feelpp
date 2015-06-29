@@ -244,8 +244,15 @@ class TestPrecAFP : public Application
         std::ofstream outputFile( stringStream.str() );
         if( outputFile )
         {
+            outputFile 
+                    << "---\n"
+                    << "title: \"noTitle\"\n"
+                    << "date: " << stringStream.str() << "\n"
+                    << "categories: simu\n"
+                    << "--- \n\n";
             outputFile << "#Physique" << std::endl;
             model.saveMD(outputFile);    
+            
             outputFile << "##Physique spécifique" << std::endl;
             outputFile << "| Variable | value | " << std::endl;
             outputFile << "|---|---|" << std::endl;
@@ -254,16 +261,9 @@ class TestPrecAFP : public Application
             outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
 
             outputFile << "#Numerics" << std::endl;
+            
             outputFile << "##Mesh" << std::endl;
-           
             M_mesh->saveMD(outputFile); 
-            outputFile << "|Dim|" << M_mesh->dimension()     << "|" << std::endl;
-            outputFile << "|---|---|" << std::endl;
-            outputFile << "|hSize|" << M_mesh->hMin() << " - " << M_mesh->hMax() << " - " << M_mesh->hAverage()  << "|" << std::endl;
-            outputFile << "|numGlobalElements|" << M_mesh->numGlobalElements()     << "|" << std::endl;
-            outputFile << "|numGlobaleEdges|" << M_mesh->numGlobalEdges()     << "|" << std::endl;
-            outputFile << "|numGlobaleFaces|" << M_mesh->numGlobalFaces()     << "|" << std::endl;
-            outputFile << "|numGlobalElements|" << M_mesh->numGlobalElements()     << "|" << std::endl;
            
             outputFile << "##Spaces" << std::endl;
             outputFile << "|qDim|" << Xh->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << std::endl;
@@ -280,6 +280,7 @@ class TestPrecAFP : public Application
             outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
             outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
             outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
+            outputFile << "|**Matrix**  |  " << f2.matrixPtr()->graph()->size() << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
             outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
         
             outputFile << "##Timers" << std::endl;
