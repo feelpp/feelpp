@@ -154,8 +154,7 @@ public:
     template<typename Storage>
     void
     apply( const domain_element<typename domain_element_type::value_type, Storage>& de,
-           image_element_type&        ie,
-           bool transpose = false ) const
+           image_element_type&        ie ) const
     {
         if ( ! M_matrix->closed() )
         {
@@ -165,14 +164,13 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
     virtual void
     apply( const domain_element_type& de,
-           image_element_type&        ie,
-           bool transpose=false ) const
+           image_element_type&        ie ) const
     {
         if ( ! M_matrix->closed() )
         {
@@ -182,7 +180,7 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
@@ -207,8 +205,7 @@ public:
 
     virtual void
     apply( const typename domain_space_type::element_type & de,
-           typename dual_image_space_type::element_type & ie,
-           bool transpose=false )
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -218,7 +215,7 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
@@ -227,8 +224,7 @@ public:
     //apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
     //       typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
     apply( const domain_element_range_type & de,
-           typename dual_image_space_type::element_type & ie,
-           bool transpose=false )
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -238,14 +234,13 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
     virtual void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_range_type & ie,
-           bool transpose=false )
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -255,15 +250,14 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
 
     virtual void
     apply( const domain_element_range_type & de,
-           dual_image_element_range_type & ie,
-           bool transpose=false )
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -273,15 +267,14 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
 
     virtual void
     apply( const domain_element_slice_type & de,
-           typename dual_image_space_type::element_type & ie,
-           bool transpose=false )
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -291,14 +284,13 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
     virtual void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_slice_type & ie,
-           bool transpose=false )
+           dual_image_element_slice_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -308,15 +300,14 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
 
     virtual void
     apply( /*const*/ domain_element_slice_type /*&*/ de,
-                     dual_image_element_slice_type /*&*/ ie,
-                     bool transpose=false )
+                     dual_image_element_slice_type /*&*/ ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -326,7 +317,7 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 #if 0
@@ -352,8 +343,7 @@ public:
 
     virtual void
     apply( const domain_element_range_type & de,
-           dual_image_element_slice_type & ie,
-           bool transpose=false )
+           dual_image_element_slice_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -363,14 +353,13 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
     virtual void
     apply( const domain_element_slice_type & de,
-           dual_image_element_range_type & ie,
-           bool transpose=false )
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
@@ -380,7 +369,7 @@ public:
         vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2, transpose );
+        M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
 
