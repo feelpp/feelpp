@@ -39,6 +39,7 @@ class OperatorBase
 {
   public:
     typedef T value_type;
+    typedef typename Backend<value_type>::solve_return_type solve_return_type;
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
     typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
@@ -160,7 +161,10 @@ class OperatorBase
      */
     virtual const WorldComm& comm() const { return M_domain_map->worldComm(); }
 
+    int nIterations(void){return M_return.nIterations();}
+    solve_return_type solveReturn(void){return M_return;}
     pc_ptrtype M_pc;
+    mutable solve_return_type M_return;
 protected:
     // domain and image map 
     datamap_ptrtype M_domain_map, M_image_map;
@@ -175,6 +179,8 @@ class OperatorMatrix : public OperatorBase<T>
 public:
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
+
+    typedef typename Backend<value_type>::solve_return_type solve_return_type;
     
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
@@ -240,19 +246,18 @@ public:
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
         bool cv;
         if(!this->M_pc){
-          auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
-          cv = r.isConverged();
+          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+          cv = this->M_return.isConverged();
         }
         else{
-          auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
-          cv = r.isConverged();
+          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
+          cv = this->M_return.isConverged();
         }
         Y=*yy;
         Y.close();
         toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
         return cv;
     }
-
 
     value_type normInf() const
     {

@@ -169,6 +169,7 @@ public:
             return it->second;
             
         }
+    void saveMD(std::ostream &os);
 private:
     void setup();
 private:
