@@ -208,6 +208,9 @@ int main(int argc, char**argv )
         toc("Solve");tic();
         Environment::saveTimers( true );
 
+        if (dim!=3)
+        {
+            
         /*double areaIn = integrate(_range=markedfaces(mesh,"inlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
         double areaOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
 
@@ -277,7 +280,7 @@ int main(int argc, char**argv )
 
             }
 
-
+        }
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );
         //e->step(mybdf->time())->add( "w", w );
