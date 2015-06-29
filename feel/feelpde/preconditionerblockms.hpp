@@ -118,7 +118,6 @@ public:
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
-    int guess( vector_type& U ) const;
 
     virtual ~PreconditionerBlockMS(){};
 
@@ -227,22 +226,17 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
         M_11   = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
         M_mass = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
         
-        map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
-        map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
-
         /* Compute the mass matrix */
         auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
         auto f1A = form1(_test=M_Vh);
         f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-        for(auto const & it : m_dirichlet_u )
-            f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+        M_mass->close();
         
         /* Compute the L matrix */
         auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
         auto f1B = form1(_test=M_Qh);
         f2B = integrate(_range=elements(M_Qh->mesh()), _expr=inner(gradt(phi), grad(phi)));
-        for(auto const & it : m_dirichlet_p)
-            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); // rajouter option elimination_keep-diag
+        M_L->close();
        
         /* Initialize the blockAS prec */ 
         M_pcAs = blockas(_space=M_Xh,
@@ -271,10 +265,17 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     M_mu.on(_range=elements(M_Mh->mesh()), _expr=idv(mu));;
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));;
     
+    map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    
     LOG(INFO) << "Create sub Matrix\n";
+    // Is the zero() necessary ?
     M_22->zero();
     M_22->addMatrix(1.0,M_L);
-    //M_22->scale(idv(M_er)); // Not implemented yet 
+    auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_22);
+    auto f1B = form1(_test=M_Qh);
+    for(auto const & it : m_dirichlet_p)
+        f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); 
     M_22Op = op(M_22, "blockms.22");
 
     /*
@@ -282,14 +283,18 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
      *      [ B        , 0  ]]
      * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
      */
+    // Is the zero() necessary ?
     M_11->zero();
     A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
     M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+    auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_11);
+    auto f1A = form1(_test=M_Vh);
+    for(auto const & it : m_dirichlet_u )
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
 
     M_11Op = op(M_11, "blockms.11");
    
     if(soption("blockms.11.pc-type") == "AS"){
-        // Instancier un préconditioneur de type AS
         M_pcAs->update(M_11, M_22, M_mu);
         M_11Op->setPc( M_pcAs );
     }
@@ -343,12 +348,6 @@ PreconditionerBlockMS<space_type,coef_space_type>::applyInverse ( const vector_t
     return 0;
 }
 
-template < typename space_type, typename coef_space_type >
-int
-PreconditionerBlockMS<space_type,coef_space_type>::guess ( vector_type& Y ) const
-{
-    return 0;
-}
 namespace meta
 {
 template< typename space_type , typename coef_space_type >
