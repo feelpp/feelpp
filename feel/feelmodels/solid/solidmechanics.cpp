@@ -166,6 +166,40 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 }
 
 //---------------------------------------------------------------------------------------------------//
+namespace detail
+{
+template <typename MeshType>
+boost::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
+distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
+{
+    boost::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    for ( std::string const& marker : listMarker )
+    {
+        if ( !mesh->hasMarker( marker ) ) continue;
+
+        if ( /*mesh->markerDim( marker ) == (MeshType::nDim-1)*/mesh->hasFaceMarker( marker ) )
+        {
+            res.template get<0>().push_back( marker );
+            //std::cout << "has face marker " << marker << "\n";
+        }
+        else if ( /*MeshType::nDim == 3 && mesh->markerDim( marker ) == (MeshType::nDim-2)*/ mesh->hasEdgeMarker( marker ) )
+        {
+            res.template get<1>().push_back( marker );
+            //std::cout << "has edge marker " << marker << "\n";
+        }
+        else if ( /*mesh->markerDim( marker ) == 0*/ mesh->hasPointMarker( marker ) )
+        {
+            res.template get<2>().push_back( marker );
+            //std::cout << "has point marker " << marker << "\n";
+        }
+        else
+        {
+            //std::cout << "unknow marker " << marker << " with dim " << mesh->markerDim( marker ) << "\n";
+        }
+    }
+    return res;
+}
+}
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -184,17 +218,69 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
     if (Xh->worldsComm()[0].isActive()) // only on Displacement Proc
     {
         for( auto const& d : M_bcDirichlet )
-            modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                     u, U, expression(d), rowStartInVector );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces ),
+                         u, U, expression(d), rowStartInVector );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markededges(mesh,listMarkerEdges),
+                         u, U, expression(d), rowStartInVector );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedpoints(mesh,listMarkerPoints),
+                         u, U, expression(d), rowStartInVector );
+        }
         for( auto const& d : M_bcDirichletX )
-            modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::X ) ),
-                     u[Component::X], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::X ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces),
+                         u[Component::X], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markededges(mesh,listMarkerEdges),
+                         u[Component::X], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedpoints(mesh,listMarkerPoints),
+                         u[Component::X], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        }
         for( auto const& d : M_bcDirichletY )
-            modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::Y ) ),
-                     u[Component::Y], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::Y ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces),
+                         u[Component::Y], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markededges(mesh,listMarkerEdges),
+                         u[Component::Y], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedpoints(mesh,listMarkerPoints),
+                         u[Component::Y], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        }
         for( auto const& d : M_bcDirichletZ )
-            modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::Z ) ),
-                     u[Component::Z], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), Component::Z ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces),
+                         u[Component::Z], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markededges(mesh,listMarkerEdges),
+                         u[Component::Z], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedpoints(mesh,listMarkerPoints),
+                         u[Component::Z], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+        }
     }
     U->close();
 
@@ -215,17 +301,69 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
     if ( this->functionSpaceDisplacement()->worldsComm()[0].isActive() ) // only on Displacement Proc
     {
         for( auto const& d : M_bcDirichlet )
-            modifVec( markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                      u, R, 0*vf::one(), rowStartInVector );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec( markedfaces(this->mesh(),listMarkerFaces),
+                          u, R, 0*vf::one(), rowStartInVector );
+            if ( !listMarkerEdges.empty() )
+                modifVec( markededges(this->mesh(),listMarkerEdges),
+                          u, R, 0*vf::one(), rowStartInVector );
+            if ( !listMarkerPoints.empty() )
+                modifVec( markedpoints(this->mesh(),listMarkerPoints),
+                          u, R, 0*vf::one(), rowStartInVector );
+        }
         for( auto const& d : M_bcDirichletX )
-            modifVec( markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::X ) ),
-                      u[Component::X], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::X ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec( markedfaces(this->mesh(),listMarkerFaces),
+                          u[Component::X], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec( markededges(this->mesh(),listMarkerEdges),
+                          u[Component::X], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec( markedpoints(this->mesh(),listMarkerPoints),
+                          u[Component::X], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        }
         for( auto const& d : M_bcDirichletY )
-            modifVec( markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::Y ) ),
-                      u[Component::Y], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::Y ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec( markedfaces(this->mesh(),listMarkerFaces),
+                          u[Component::Y], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec( markededges(this->mesh(),listMarkerEdges),
+                          u[Component::Y], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec( markedpoints(this->mesh(),listMarkerPoints),
+                          u[Component::Y], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        }
         for( auto const& d : M_bcDirichletZ )
-            modifVec( markedfaces(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::Z ) ),
-                      u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), Component::Z ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                modifVec( markedfaces(this->mesh(),listMarkerFaces),
+                          u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec( markededges(this->mesh(),listMarkerEdges),
+                          u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec( markedpoints(this->mesh(),listMarkerPoints),
+                          u[Component::Z], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+        }
     }
 }
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -241,21 +379,81 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
                                               _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldDisplacement();
     for( auto const& d : M_bcDirichlet )
-        bilinearForm_PatternCoupled +=
-            /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                     _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto const& listMarkerFaces = ret.template get<0>();
+        auto const& listMarkerEdges = ret.template get<1>();
+        auto const& listMarkerPoints = ret.template get<2>();
+        if ( !listMarkerFaces.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markededges(this->mesh(), listMarkerEdges),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+    }
     for( auto const& d : M_bcDirichletX )
-        bilinearForm_PatternCoupled +=
-            /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::X ) ),
-                     _element=u[Component::X],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::X ) );
+        auto const& listMarkerFaces = ret.template get<0>();
+        auto const& listMarkerEdges = ret.template get<1>();
+        auto const& listMarkerPoints = ret.template get<2>();
+        if ( !listMarkerFaces.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                    _element=u[Component::X],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markededges(this->mesh(), listMarkerEdges),
+                    _element=u[Component::X],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                    _element=u[Component::X],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    }
     for( auto const& d : M_bcDirichletY )
-        bilinearForm_PatternCoupled +=
-            /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::Y ) ),
-                     _element=u[Component::Y],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::Y ) );
+        auto const& listMarkerFaces = ret.template get<0>();
+        auto const& listMarkerEdges = ret.template get<1>();
+        auto const& listMarkerPoints = ret.template get<2>();
+        if ( !listMarkerFaces.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                    _element=u[Component::Y],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markededges(this->mesh(), listMarkerEdges),
+                    _element=u[Component::Y],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                    _element=u[Component::Y],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    }
     for( auto const& d : M_bcDirichletZ )
-        bilinearForm_PatternCoupled +=
-            /**/ on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::Z ) ),
-                     _element=u[Component::Z],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::Z ) );
+        auto const& listMarkerFaces = ret.template get<0>();
+        auto const& listMarkerEdges = ret.template get<1>();
+        auto const& listMarkerPoints = ret.template get<2>();
+        if ( !listMarkerFaces.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                    _element=u[Component::Z],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markededges(this->mesh(), listMarkerEdges),
+                    _element=u[Component::Z],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                    _element=u[Component::Z],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+    }
 }
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -271,21 +469,81 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                                    _colstart=this->colStartInMatrix() );
         auto const& u = this->fieldDisplacement();
         for( auto const& d : M_bcDirichlet )
-            bilinearForm +=
-                on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                    _element=u,_rhs=F,_expr=expression(d) );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                bilinearForm +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u,_rhs=F,_expr=expression(d) );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u,_rhs=F,_expr=expression(d) );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u,_rhs=F,_expr=expression(d) );
+        }
         for( auto const& d : M_bcDirichletX )
-            bilinearForm +=
-                on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::X ) ),
-                    _element=u[Component::X],_rhs=F,_expr=expression(d) );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::X ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                bilinearForm +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u[Component::X],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u[Component::X],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u[Component::X],_rhs=F,_expr=expression(d) );
+        }
         for( auto const& d : M_bcDirichletY )
-            bilinearForm +=
-                on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::Y ) ),
-                    _element=u[Component::Y],_rhs=F,_expr=expression(d) );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::Y ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                bilinearForm +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u[Component::Y],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u[Component::Y],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u[Component::Y],_rhs=F,_expr=expression(d) );
+        }
         for( auto const& d : M_bcDirichletZ )
-            bilinearForm +=
-                on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d),Component::Z ) ),
-                    _element=u[Component::Z],_rhs=F,_expr=expression(d) );
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),Component::Z ) );
+            auto const& listMarkerFaces = ret.template get<0>();
+            auto const& listMarkerEdges = ret.template get<1>();
+            auto const& listMarkerPoints = ret.template get<2>();
+            if ( !listMarkerFaces.empty() )
+                bilinearForm +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u[Component::Z],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u[Component::Z],_rhs=F,_expr=expression(d) );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u[Component::Z],_rhs=F,_expr=expression(d) );
+        }
     }
     else if ( this->is1dReducedModel() )
     {
