@@ -1032,6 +1032,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 //MPI_Info info = initIoInfoFromEnvVars();
                 MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
                 //MPI_Info_free(&info);
+
                 free(str);
                 
                 // Initializing cursor in file
