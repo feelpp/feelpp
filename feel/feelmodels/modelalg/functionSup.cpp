@@ -2,6 +2,7 @@
 #define __FUNCTIONSUP_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+//#include <boost/mpl/int.hpp>
 //#include <feel/feelvf/vf.hpp>
 
 namespace Feel
@@ -9,7 +10,9 @@ namespace Feel
 
     template<typename ElementRange,typename eltType,typename ExprType,typename vectorType >
     void
-    modifVec(std::list<ElementRange> const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,size_type rowstart=0, int ComponentShiftFactor = 1)
+    modifVec(std::list<ElementRange> const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,
+             size_type rowstart, int ComponentShiftFactor,
+             mpl::int_<MESH_FACES> /**/ )
     {
         //using namespace Feel::vf;
         typedef typename eltType::functionspace_type::mesh_type mesh_type;
@@ -51,7 +54,6 @@ namespace Feel
         }
         if ( !findAFace ) return;
 
-
         // get the first face properly connected
         bool findAFaceToInit=false;
         for( auto lit = __r.begin(), len = __r.end(); lit != len; ++lit )
@@ -82,11 +84,8 @@ namespace Feel
 
 
         //dof_type const* __dof = u.functionSpace()->dof().get();
-
         fe_type const* __fe = u.functionSpace()->fe().get();
-
         gm_ptrtype __gm( new gm_type );
-
 
         //
         // Precompute some data in the reference element for
@@ -97,10 +96,10 @@ namespace Feel
         typedef typename gm_type::precompute_type geopc_type;
         std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
         for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
-            {
-                permutation_type __p( permutation_type::IDENTITY );
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            }
+        {
+            permutation_type __p( permutation_type::IDENTITY );
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+        }
 
         uint16_type __face_id = __face_it->pos_first();
         gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
@@ -108,8 +107,7 @@ namespace Feel
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         t_expr_type LExpr( expr, mapgmc );
 
-
-
+        std::vector<bool> dofdone( u.functionSpace()->dof()->nLocalDofWithGhost(), false );
 
         //face_const_iterator __face_it, __face_en;
 
@@ -117,39 +115,208 @@ namespace Feel
         {
             __face_it = lit->template get<1>();
             __face_en = lit->template get<2>();
-        for ( ; __face_it != __face_en; ++__face_it )
+            for ( ; __face_it != __face_en; ++__face_it )
             {
-
                 uint16_type __face_id = __face_it->pos_first();
                 __c->update( __face_it->element(0), __face_id );
-
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
                 LExpr.update( mapgmc );
-
-
 
                 for (uint c1=0;c1<eltType::nComponents1;c1++)
                     for (uint c2=0;c2<eltType::nComponents2;c2++)
+                    {
+                        for ( uint16_type l = 0; l < nbFaceDof; ++l )
                         {
-                            for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                                {
-                                    double __value=LExpr.evalq( c1, c2, l );
-                                    size_type thedof =  u.start() + ComponentShiftFactor*boost::get<0>(u.functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 ));
-                                    //u( thedof ) =  __value;
-                                    UnVec->set(rowstart+thedof,__value);
-                                }
+                            size_type index = boost::get<0>(u.functionSpace()->dof()->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                            if ( dofdone[index] ) continue;
+                            size_type thedof =  u.start() + ComponentShiftFactor*index;
+                            double __value=LExpr.evalq( c1, c2, l );
+                            //u( thedof ) =  __value;
+                            UnVec->set(rowstart+thedof,__value);
+                            dofdone[index] = true;
                         }
+                    }
             }
         }
         //UnVec->close();
     } // modifVec
 
-    template<typename ElementRange,typename eltType,typename ExprType,typename vectorType>
+
+    template<typename ElementRange,typename eltType,typename ExprType,typename vectorType >
     void
-    modifVec(ElementRange const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,size_type rowstart=0,int ComponentShiftFactor = 1)
+    modifVec(std::list<ElementRange> const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,
+             size_type rowstart, int ComponentShiftFactor,
+             mpl::int_<MESH_EDGES> /**/ )
     {
-        std::list<ElementRange> listRange = { __r };
+        const size_type context = ExprType::context|vm::POINT;
+
+        auto mesh = u.functionSpace()->mesh().get();
+        auto const* dof = u.functionSpace()->dof().get();
+        auto const* fe = u.functionSpace()->fe().get();
+
+
+        if ( __r.size() == 0 ) return;
+        auto edge_it =  __r.begin()->template get<1>();
+        auto edge_en =  __r.begin()->template get<2>();
+
+        bool findAEdge = false;
+        for( auto lit = __r.begin(), len = __r.end(); lit != len; ++lit )
+        {
+            edge_it = lit->template get<1>();
+            edge_en = lit->template get<2>();
+            if ( edge_it != edge_en )
+            {
+                findAEdge=true;
+                break;
+            }
+        }
+        if ( !findAEdge ) return;
+
+        auto const& edgeForInit = boost::unwrap_ref( *edge_it );
+
+        auto gm = mesh->gm();
+        //auto const& firstEntity = *entity_it;
+        size_type eid = edgeForInit.elements().begin()->first;
+        size_type ptid_in_element = edgeForInit.elements().begin()->second;
+        auto const& elt = mesh->element( eid );
+        auto geopc = gm->preCompute( fe->edgePoints(ptid_in_element) );
+        auto ctx = gm->template context<context>( elt, geopc );
+        auto expr_evaluator = expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = fe->edgeLocalInterpolant();
+
+        std::vector<bool> dofdone( dof->nLocalDofWithGhost(), false );
+
+        for( auto const& lit : __r )
+        {
+            edge_it = lit.template get<1>();
+            edge_en = lit.template get<2>();
+            for ( ; edge_it != edge_en;++edge_it )
+            {
+                auto const& theedge = boost::unwrap_ref( *edge_it );
+
+                if ( theedge.isGhostCell() )
+                {
+                    LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
+                    continue;
+                }
+
+                size_type eid = theedge.elements().begin()->first;
+                size_type edgeid_in_element = theedge.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( fe->edgePoints(edgeid_in_element) );
+                ctx->update( elt, geopc );
+                expr_evaluator.update( mapgmc( ctx ) );
+                fe->edgeInterpolate( expr_evaluator, IhLoc );
+
+                for( auto const& ldof : u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    size_type index = ldof.index();
+                    if ( dofdone[index] ) continue;
+                    //size_type thedof = u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index();
+                    size_type thedof = u.start() + ComponentShiftFactor*index;
+                    double value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                    UnVec->set(rowstart+thedof,value);
+                    dofdone[index] = true;
+                }
+            } // edge_it
+        } // lit
+    }
+
+    template<typename ElementRange,typename eltType,typename ExprType,typename vectorType >
+    void
+    modifVec(std::list<ElementRange> const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,
+             size_type rowstart, int ComponentShiftFactor,
+             mpl::int_<MESH_POINTS> /**/ )
+    {
+        const size_type context = ExprType::context|vm::POINT;
+
+        auto mesh = u.functionSpace()->mesh().get();
+        auto const* dof = u.functionSpace()->dof().get();
+        auto const* fe = u.functionSpace()->fe().get();
+
+        if ( __r.size() == 0 ) return;
+        auto point_it =  __r.begin()->template get<1>();
+        auto point_en =  __r.begin()->template get<2>();
+
+        bool findAPoint = false;
+        for( auto lit = __r.begin(), len = __r.end(); lit != len; ++lit )
+        {
+            point_it = lit->template get<1>();
+            point_en = lit->template get<2>();
+            if ( point_it != point_en )
+            {
+                findAPoint=true;
+                break;
+            }
+        }
+        if ( !findAPoint ) return;
+
+        auto const& pointForInit = boost::unwrap_ref( *point_it );
+
+        size_type eid = pointForInit.elements().begin()->first;
+        size_type ptid_in_element = pointForInit.elements().begin()->second;
+
+        auto const& elt = mesh->element( eid );
+        auto gm = mesh->gm();
+        auto geopc = gm->preCompute( fe->vertexPoints(ptid_in_element) );
+        auto ctx = gm->template context<context>( elt, geopc );
+        auto expr_evaluator = expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = fe->vertexLocalInterpolant();
+
+        std::vector<bool> dofdone( dof->nLocalDofWithGhost(), false );
+
+        for( auto const& lit : __r )
+        {
+            point_it = lit.template get<1>();
+            point_en = lit.template get<2>();
+            DVLOG(2) << "point " << point_it->id() << " with marker " << point_it->marker() << " nb: " << std::distance(point_it,point_en);
+
+            if ( point_it == point_en )
+                continue;
+
+            for ( ; point_it != point_en;++point_it )
+            {
+                auto const& thept = boost::unwrap_ref( *point_it );
+
+                size_type eid = thept.elements().begin()->first;
+                size_type ptid_in_element = thept.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( fe->vertexPoints(ptid_in_element) );
+                ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                expr_evaluator.update( mapgmc( ctx ) );
+                fe->vertexInterpolate( expr_evaluator, IhLoc );
+
+                for (int c1=0;c1<eltType::nComponents1;c1++)
+                    //for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = dof->localToGlobal( eid, ptid_in_element, c1 ).index();
+                    //size_type thedof = u.start()+ (is_comp_space?Elem1::nComponents:1)*index; // global dof
+                    size_type thedof = u.start() + ComponentShiftFactor*index;
+                    if ( dofdone[index] ) continue;
+                    double value = IhLoc( c1 );
+                    UnVec->set(rowstart+thedof,value);
+                    dofdone[index] = true;
+                }
+            }
+        }
+
+    }
+
+
+
+    template<typename RangeType,typename eltType,typename ExprType,typename vectorType >
+    void
+    modifVec(std::list<RangeType> const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,size_type rowstart=0, int ComponentShiftFactor = 1)
+    {
+        const int iDim = boost::tuples::template element<0, RangeType>::type::value;
+        modifVec( __r, u,UnVec,expr,rowstart,ComponentShiftFactor,mpl::int_<iDim>() );
+    }
+
+    template<typename RangeType,typename eltType,typename ExprType,typename vectorType>
+    void
+    modifVec(RangeType const& __r, eltType const& u,vectorType & UnVec,ExprType const& expr,size_type rowstart=0,int ComponentShiftFactor = 1)
+    {
+        std::list<RangeType> listRange = { __r };
         modifVec( listRange,u,UnVec,expr,rowstart,ComponentShiftFactor);
     }
 
