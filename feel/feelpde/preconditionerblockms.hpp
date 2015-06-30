@@ -126,7 +126,7 @@ public:
         if(i == 1)
         os << M_11->graph()->size();
         else if(i==2)
-        os << M_22->graph()->size();
+        os << M_L->graph()->size();
     }
     void printIter(int i, std::ostream & os){
         os << "<ul>";
@@ -162,8 +162,8 @@ private:
 
     mutable element_type U;
 
-    sparse_matrix_ptrtype M_11, M_22, M_mass, M_L;
-    element_coef_type M_mu, // permeability
+    sparse_matrix_ptrtype M_11, M_mass, M_L;
+    element_coef_type 
                       M_er;  // permittivity
 
     op_ptrtype M_22Op; // 
@@ -203,9 +203,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
     M_pin( M_backend->newVector( M_Qh )  ),
     M_pout( M_backend->newVector( M_Qh )  ),
     U( M_Xh, "U" ),
-    M_22(M_backend->newMatrix(M_Qh,M_Qh)),
+    M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
     M_L(M_backend->newMatrix(M_Qh,M_Qh)),
-    M_mu( M_Mh, "mu" ),
     M_er( M_Mh, "er" ),
     M_k(0.),
     M_bcFlags( bcFlags ),
@@ -215,6 +214,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
+    this->setMatrix( AA ); // Needed only if worldComm > 1
 
     this->setType ( t );
 
@@ -223,20 +223,25 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
         /* Indices are need to extract sub matrix */
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
         std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
-        M_11   = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
-        M_mass = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true); 
+        
+        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true);
+        
+        map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+        map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
         
         /* Compute the mass matrix */
         auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
         auto f1A = form1(_test=M_Vh);
         f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-        M_mass->close();
+        for(auto const & it : m_dirichlet_u )
+            f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
         
         /* Compute the L matrix */
         auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
         auto f1B = form1(_test=M_Qh);
         f2B = integrate(_range=elements(M_Qh->mesh()), _expr=inner(gradt(phi), grad(phi)));
-        M_L->close();
+        for(auto const & it : m_dirichlet_p)
+            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); 
        
         /* Initialize the blockAS prec */ 
         M_pcAs = blockas(_space=M_Xh,
@@ -261,44 +266,51 @@ template < typename space_type, typename coef_space_type >
 PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype A, element_coef_type mu )
 {
     tic();
-    //this->setMatrix( A );
-    M_mu.on(_range=elements(M_Mh->mesh()), _expr=idv(mu));;
-    M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));;
-    
-    map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
-    
-    LOG(INFO) << "Create sub Matrix\n";
-    // Is the zero() necessary ?
-    M_22->zero();
-    M_22->addMatrix(1.0,M_L);
-    auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_22);
-    auto f1B = form1(_test=M_Qh);
-    for(auto const & it : m_dirichlet_p)
-        f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); 
-    M_22Op = op(M_22, "blockms.22");
+    this->setMatrix( A );
+    if(this->type() == AFP){
+        M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));;
+        
+        
+        LOG(INFO) << "Create sub Matrix\n";
 
-    /*
-     * AA = [[ A - k^2 M, B^t],
-     *      [ B        , 0  ]]
-     * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
-     */
-    // Is the zero() necessary ?
-    M_11->zero();
-    A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
-    M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
-    auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_11);
-    auto f1A = form1(_test=M_Vh);
-    for(auto const & it : m_dirichlet_u )
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+        /*
+         * AA = [[ A - k^2 M, B^t],
+         *      [ B        , 0  ]]
+         * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
+         */
+        // Is the zero() necessary ?
+        if(boption("blockms.rebuild_11")){
+             // calculer matrice A + g M
+            map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+            auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
+            auto f1A = form1(_test=M_Vh);
+            f2A = integrate(_range=elements(M_Vh->mesh()), _expr=cst(1.)/idv(mu)*trans(curlt_op(u))*curl_op(u) // mu^-1 A
+                                                                +cst(1.-M_k*M_k)*idv(M_er)*inner(idt(u),id(u))); // g M
+            for(auto const & it : m_dirichlet_u )
+                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+        }else{
+            M_11->zero();
+            A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
+            M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+        }
 
-    M_11Op = op(M_11, "blockms.11");
+        M_11Op = op(M_11, "blockms.11");
    
-    if(soption("blockms.11.pc-type") == "AS"){
-        M_pcAs->update(M_11, M_22, M_mu);
-        M_11Op->setPc( M_pcAs );
+        
+        // Is the zero() necessary ?
+        //M_22->zero();
+        //M_22->addMatrix(1.0,M_L);
+        //auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_22);
+        //auto f1B = form1(_test=M_Qh);
+        //for(auto const & it : m_dirichlet_p)
+        //    f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); 
+        M_22Op = op(M_L, "blockms.22");
+        
+        if(soption("blockms.11.pc-type") == "AS"){
+            M_pcAs->update(M_11, M_L, mu);
+            M_11Op->setPc( M_pcAs );
+        }
     }
-
     toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
 }
 
