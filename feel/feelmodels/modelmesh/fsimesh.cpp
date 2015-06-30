@@ -62,7 +62,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
     CHECK( !this->mshPathFSI().empty() ) << "mshPathFSI must be specified";
 
     if ( this->worldComm().isMasterRank() &&
-         ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) ) )
+         ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || this->forceRebuild() ) )
     {
         std::cout << "[FSIMesh] : load fsi mesh ....\n";
         auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
@@ -111,7 +111,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 #endif
 
     if ( this->worldComm().isMasterRank() &&
-         (!fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) ) )
+         (!fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || this->forceRebuild() ) )
     {
         if ( !fs::exists( meshesdirectories ) ) fs::create_directories( meshesdirectories );
 
@@ -202,7 +202,7 @@ void
 FSIMesh<ConvexType>::buildMeshesPartitioning()
 {
     // partitioning if no exist
-    if ( !fs::exists( this->mshPathFluidPartN() ) )
+    if ( !fs::exists( this->mshPathFluidPartN() ) || this->forceRebuild() )
     {
         this->worldComm().globalComm().barrier();
 
@@ -218,7 +218,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
         gmsh.setPartitioner( (GMSH_PARTITIONER)this->partitioner() );
         gmsh.rebuildPartitionMsh( this->mshPathFluidPart1().string(), this->mshPathFluidPartN().string() );
     }
-    if ( !fs::exists( this->mshPathSolidPartN() ) )
+    if ( !fs::exists( this->mshPathSolidPartN() ) || this->forceRebuild() )
     {
         this->worldComm().globalComm().barrier();
         if ( this->worldComm().isMasterRank() )
