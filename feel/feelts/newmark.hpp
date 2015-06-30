@@ -327,6 +327,8 @@ Newmark<SpaceType>::init()
             {
 #ifdef FEELPP_HAS_HDF5
                 M_previousUnknown[p]->loadHDF5( ( dirPath / (boost::format("%1%-unknown-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
+                M_previousVel[p]->loadHDF5( ( dirPath / (boost::format("%1%-velocity-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
+                M_previousAcc[p]->loadHDF5( ( dirPath / (boost::format("%1%-acceleration-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -347,17 +349,31 @@ Newmark<SpaceType>::init()
                 boost::archive::binary_iarchive iaUnknown( ifsUnknown );
                 iaUnknown >> *(M_previousUnknown[p]);
 
+                std::ostringstream ostrVel;
+                ostrVel << M_name << "-velocity-" << M_iteration-p;
+                if( M_rankProcInNameOfFiles )
+                    ostrVel << procsufix;
+                DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
+                fs::ifstream ifsVel;
+                ifsVel.open( dirPath/ostrVel.str() );
+                // load data from archive
+                boost::archive::binary_iarchive iaVel( ifsVel );
+                iaVel >> *(M_previousVel[p]);
+
+                std::ostringstream ostrAcc;
+                ostrAcc << M_name << "-acceleration-" << M_iteration-p;
+                if( M_rankProcInNameOfFiles )
+                    ostrAcc << procsufix;
+                DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
+                fs::ifstream ifsAcc;
+                ifsAcc.open( dirPath/ostrAcc.str() );
+                // load data from archive
+                boost::archive::binary_iarchive iaAcc( ifsAcc );
+                iaAcc >> *(M_previousAcc[p]);
+
             } // binary
         } // p
-        DVLOG(2) << "[Newmark::init()] compute polyDeriv\n";
 
-        // update velocity/acceleration (the last save must not be update)
-        for (int p = 0; p < M_previousVel.size()-1 ; ++p )
-        {
-            this->updateFromDisp( *(M_previousUnknown[p]), p+1 );
-            *(M_previousVel[p]) = *M_currentVel;
-            *(M_previousAcc[p]) = *M_currentAcc;
-        }
         this->updateFromDisp( *M_previousUnknown[0] );
 
     } // isRestart
@@ -517,6 +533,8 @@ Newmark<SpaceType>::saveCurrent()
     {
 #ifdef FEELPP_HAS_HDF5
         M_previousUnknown[0]->saveHDF5( (M_path_save / (boost::format("%1%-unknown-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousVel[0]->saveHDF5( (M_path_save / (boost::format("%1%-velocity-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousAcc[0]->saveHDF5( (M_path_save / (boost::format("%1%-acceleration-%2%.h5")%M_name %M_iteration).str() ).string() );
 #else
         CHECK( false ) << "hdf5 not detected";
 #endif
@@ -533,6 +551,24 @@ Newmark<SpaceType>::saveCurrent()
         // save data in archive
         boost::archive::binary_oarchive oaUnknown( ofsUnknown );
         oaUnknown << *(M_previousUnknown[0]);
+
+        std::ostringstream ostrVel;
+        ostrVel << M_name << "-velocity-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrVel << procsufix;
+        fs::ofstream ofsVel( M_path_save / ostrVel.str() );
+        // save data in archive
+        boost::archive::binary_oarchive oaVel( ofsVel );
+        oaVel << *(M_previousVel[0]);
+
+        std::ostringstream ostrAcc;
+        ostrAcc << M_name << "-acceleration-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrAcc << procsufix;
+        fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
+        // save data in archive
+        boost::archive::binary_oarchive oaAcc( ofsAcc );
+        oaAcc << *(M_previousAcc[0]);
     }
 }
 
@@ -544,6 +580,8 @@ Newmark<SpaceType>::loadCurrent()
     {
 #ifdef FEELPP_HAS_HDF5
         M_previousUnknown[0]->loadHDF5( (M_path_save / (boost::format("%1%-unknown-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousVel[0]->loadHDF5( (M_path_save / (boost::format("%1%-velocity-%2%.h5")%M_name %M_iteration).str() ).string() );
+        M_previousAcc[0]->loadHDF5( (M_path_save / (boost::format("%1%-acceleration-%2%.h5")%M_name %M_iteration).str() ).string() );
 #else
         CHECK( false ) << "hdf5 not detected";
 #endif
@@ -560,6 +598,24 @@ Newmark<SpaceType>::loadCurrent()
         // load data from archive
         boost::archive::binary_iarchive iaUnknown( ifsUnknown );
         iaUnknown >> *(M_previousUnknown[0]);
+
+        std::ostringstream ostrVel;
+        ostrVel << M_name << "-velocity-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrVel << procsufix;
+        fs::ifstream ifsVel( M_path_save / ostrVel.str() );
+        // load data from archive
+        boost::archive::binary_iarchive iaVel( ifsVel );
+        iaVel >> *(M_previousVel[0]);
+
+        std::ostringstream ostrAcc;
+        ostrAcc << M_name << "-acceleration-" << M_iteration;
+        if( M_rankProcInNameOfFiles )
+            ostrAcc << procsufix;
+        fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
+        // load data from archive
+        boost::archive::binary_iarchive iaAcc( ifsAcc );
+        iaAcc >> *(M_previousAcc[0]);
     }
 }
 
