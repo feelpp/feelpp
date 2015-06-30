@@ -613,7 +613,6 @@ blockms_options( std::string const& prefix )
         
     return _options
         .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
-        .add( backend_options( prefixvm(prefix, "blockms.11.diag").c_str() )) // the (1,1).diag block
         .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block
         .add( backend_options( prefixvm(prefix, "blockms.11.2").c_str() )) // the (1,1).2 block
         .add( backend_options( prefixvm(prefix, "blockms.22").c_str() )); // the (2,2) block
