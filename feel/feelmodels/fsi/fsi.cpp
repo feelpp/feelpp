@@ -110,7 +110,18 @@ FSI<FluidType,SolidType>::createMesh()
 
     int nPart = this->worldComm().size();//this->nPartitions();
 
-    fs::path meshesdirectories = fs::path(this->appliRepositoryWithoutNumProc()) / fs::path("meshes");
+    fs::path meshesdirectories;
+    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh-save.directory" ) ) )
+    {
+        auto meshesdirgiven = fs::path(soption(_prefix=this->prefix(),_name="mesh-save.directory") );
+        if ( meshesdirgiven.is_relative() )
+            meshesdirectories = fs::path(Environment::rootRepository()) / meshesdirgiven;
+        else
+            meshesdirectories = meshesdirgiven;
+    }
+    else
+        meshesdirectories = fs::path(this->appliRepositoryWithoutNumProc()) / fs::path("meshes");
+
     fs::path gp;
     if (this->hasMshfileStr())
         gp = this->mshfileStr();
@@ -147,6 +158,7 @@ FSI<FluidType,SolidType>::createMesh()
     fsimeshTool.setMarkersNameFluidVolume( M_markersNameFluid );
     fsimeshTool.setMarkersNameSolidVolume( M_markersNameSolid );
 
+    fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
     if (this->hasMshfileStr())
     {
