@@ -274,6 +274,8 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"solid-mesh.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "solid-mesh.markers" )
         (prefixvm(prefix,"solid-mesh.extract-1d-from-fluid-mesh").c_str(), Feel::po::value<bool>()->default_value( false ), "solid-mesh.extract-1d-from-fluid-mesh")
         (prefixvm(prefix,"mesh-save.tag").c_str(),Feel::po::value< std::string >()->default_value(""), "mesh-tag")
+        (prefixvm(prefix,"mesh-save.directory").c_str(),Feel::po::value< std::string >(), "mesh-directory")
+        (prefixvm(prefix,"mesh-save.force-rebuild").c_str(), Feel::po::value<bool>()->default_value( false ), "mesh-save.force-rebuild")
 
         (prefixvm(prefix,"conforming-interface").c_str(), Feel::po::value<bool>()->default_value( false ), " fsi interface is conforme?")
         (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
