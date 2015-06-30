@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #define FEELPP_PRECONDITIONERAS_HPP 1
 
 
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
@@ -41,6 +42,9 @@ template< typename space_type, typename coef_space_type >
 {
     typedef Preconditioner<typename space_type::value_type> super;
 public:
+
+    static const uint16_type Dim = space_type::nDim;
+    typedef typename space_type::value_type value_type;
 
     enum Type
     {
@@ -69,16 +73,14 @@ public:
     typedef Lagrange<1,Vectorial> lag_v_type;
     typedef FunctionSpace<mesh_type, bases<lag_v_type>> lag_v_space_type;
     typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
-    typedef typename lag_v_space_type::element_type lag_v_element_type; 
 
+    // Elements
     typedef typename potential_space_type::element_type potential_element_type;
     typedef typename lagrange_space_type::element_type lagrange_element_type;
     typedef typename coef_space_type::element_type element_coef_type;
+    typedef typename lag_v_space_type::element_type lag_v_element_type; 
 
-    typedef typename space_type::value_type value_type;
-
-    static const uint16_type Dim = space_type::nDim;
-
+    // operatrors
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
@@ -129,15 +131,16 @@ private:
     coef_space_ptrtype M_Mh;
 
     sparse_matrix_ptrtype 
-        M_p, M_p_t,
-        M_c, M_c_t; // 10
+        M_P, M_Pt,
+        M_C, M_Ct;
 
     op_ptrtype SimpleOp;
     op_mat_ptrtype opMat1,
                    opMat2;
     op_inv_ptrtype opMatInv;
 
-    mutable vector_ptrtype 
+    mutable vector_ptrtype
+        A,B,C,
         M_r, M_r_t,
         M_uout,
         M_diagPm,
@@ -173,14 +176,14 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
         M_Vh(Xh->template functionSpace<0>() ),
         M_Qh(Xh->template functionSpace<1>() ),
         M_Mh( Mh ),
-        M_p_t(backend()->newMatrix(M_Qh, M_Vh)),
-        M_c_t(backend()->newMatrix(M_Qh, M_Vh)),
+        A(backend()->newVector(M_Vh)),
+        B(backend()->newVector(M_Vh)),
+        C(backend()->newVector(M_Vh)),
         M_r(backend()->newVector(M_Vh)),
         M_r_t(backend()->newVector(M_Vh)),
         M_uout(backend()->newVector(M_Vh)),
         M_diagPm(backend()->newVector(M_Vh)),
         M_t(backend()->newVector(M_Vh)),
-        M_s(backend()->newVector(M_Vh)),
         U( M_Vh, "U" ),
         M_mu(M_Mh, "mu"),
         M_bcFlags( bcFlags ),
@@ -191,6 +194,16 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerAS] setup starts";
     M_Qh3 = lag_v_space_type::New(Xh->mesh());
+    M_s = backend()->newVector(M_Qh3);
+    M_y = backend()->newVector(M_Qh3);
+
+    // Create the interpolation and keep only the matrix
+    auto pi_curl = opInterpolation(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+    M_P = pi_curl->matPtr();
+    M_Pt= backend()->newMatrix(M_Qh3,M_Vh);
+    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
+
+    // todo: create M_C and M_Ct
     //std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     //std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
@@ -222,9 +235,9 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
     backend()->diag(Pm,M_diagPm);
     M_lOp    = op( L, "blockms.11.2");
 
-    auto u = M_Qh->element("u");
-    auto f21 = form2(M_Qh, M_Qh); // L + g Q - see 14.a
-    f21 = integrate(_range=elements(M_Qh->mesh()),
+    auto u = M_Qh3->element("u");
+    auto f21 = form2(M_Qh3, M_Qh3); // L + g Q - see 14.a
+    f21 = integrate(_range=elements(M_Qh3->mesh()),
                     _expr=1./idv(mu)*inner(grad(u),gradt(u)) // should be wrong
                     + M_g*inner(id(u),idt(u)));
     M_lgqOp  = op( f21.matrixPtr(), "blockms.11.1");
@@ -279,43 +292,29 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         auto tmp = backend()->newVector(M_Vh);
         *tmp = X;
         tmp->close();
-        /*
-         * pi_curl = opInterpolation(_domainspace=Qh3, _imagespace=Vh);
-         *
-         * Project R with P^t in s
-         * M_lgqOp->applyInverse(s,y);
-         * Project R with C^t in t
-         * M_lOp->applyInverse(t,z);
-         * M_diagOp->applyInverse(r,A)
-         * Project y with P -> B
-         * Project z with 1/g C -> C
-         * Answer is A+B+C
-         */
-        //M_lgqOp->applyInverse(*M_s,*M_y);  // here solve 14.a
-        //toc("14.a solved");
-        //tic();
-        //M_lOp->applyInverse(*M_t,*M_z);  // here solve 14.b
-        //toc("14.b solved");
-        if(FLAGS_v>3)
-        {
-            M_p->print();
-            M_c->print();
-            tmp->print();
-            M_s->print();
-            M_t->print();
-            M_y->print();
-            M_z->print();
-        }
-        tic();
-        //M_diagPm->applyInverse(tmp,M_r_t);// Here compute diag(pm^-1)
-        M_diagPm->pointwiseDivide(*tmp,*M_r_t);
-        //M_p->multVector(M_y,M_y_t);       // M_p*M_y -> M_y_t
-        //M_c->multVector(M_z,M_z_t);       // M_c*M_z -> M_z_t
-        //M_z_t->scale(1./M_g);             // 1/g*M_c*M_z -> M_z_t
-        //M_r_t->add(*M_y_t);
-        //M_y_t->add(*M_z_t);
-        toc("15 assembled");
-        *M_uout = *M_r_t; // 15;
+        // A = diag(Pm)^-1*r
+        M_diagPm->pointwiseDivide(*tmp,*A);
+        // s = P^t r
+        M_Pt->multVector(tmp,M_s);
+        // 14.a
+        M_lgqOp->applyInverse(M_s,M_y);
+        // B = P*y
+        M_P->multVector(M_y,B);
+
+        // Not yet available
+#if 0
+        // t = C^t r
+        M_Ct->multVector(tmp,M_t);
+        // 14.b
+        M_lOp->applyInverse(M_t,M_z);
+        // C = C z
+        M_C->multVector(M_z,C);
+        C->scale(1./M_g);
+        A->add(*C);
+#endif
+        A->add(*B);
+        toc("15 assembled",FLAGS_v>0);
+        *M_uout = *A; // 15;
     }
     else if( this->type() == SIMPLE ){
         SimpleOp->applyInverse(X, Y);
