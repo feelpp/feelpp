@@ -14,14 +14,24 @@ find_package(Doxygen)
   
    
   add_custom_command(
+<<<<<<< HEAD
 	OUTPUT ${PROJECT_BINARY_DIR}/doc/html/index.html)
+=======
+		OUTPUT ${PROJECT_BINARY_DIR}/doc/html/index.html)
+>>>>>>> 323057c6f3bb63026cea1fe29c141f2d10ad97b6
   add_custom_target (doc ALL
             COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/doc/doxygen/Doxyfile
             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen/Doxygen.in
             COMMENT "Generating API documentation with Doxygen" VERBATIM))  
             
   
+<<<<<<< HEAD
   add_custom_target(html
 	         DEPENDS ${PROJECT_BINARY_DIR}/doc/html/index.html	)
 		           
+=======
+	add_custom_target(html
+		         DEPENDS ${PROJECT_BINARY_DIR}/doc/html/index.html	)
+	          
+>>>>>>> 323057c6f3bb63026cea1fe29c141f2d10ad97b6
 endif()
