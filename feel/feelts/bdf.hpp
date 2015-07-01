@@ -504,7 +504,7 @@ Bdf<SpaceType>::init()
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -577,6 +577,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start()
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     double ti = super::start();
     M_last_iteration_since_order_change = 1;
@@ -593,6 +596,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( u0 );
     double ti = super::start();
@@ -610,6 +616,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( uv0 );
     double ti = super::start();

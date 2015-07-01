@@ -131,5 +131,30 @@ BoundaryConditions::setup()
 }
     
 
+void
+BoundaryConditions::saveMD(std::ostream &os)
+{
+  os << "### Boundary Conditions\n";
+  os << "|Name|Type|Expressions|\n";
+  os << "|---|---|---|\n";
+  for (auto it = this->begin(); it!= this->end(); it++)
+  {
+    os << "|**" << it->first << "**"; // Var name
+    for(auto iit = it->second.begin(); iit !=  it->second.end(); iit++)
+    {
+     os << "|" << iit->first; // Type
+     os << "|<ul>";
+     for(auto iiit = iit->second.begin(); iiit !=  iit->second.end(); iiit++)
+     {
+       os << "<li>**" << iiit->marker()      << "**</li>";
+       os << "<li>" << iiit->expression()  << "</li>";
+       os << "<li>" << iiit->expression1() << "</li>";
+       os << "<li>" << iiit->expression2() << "</li>";
+     }
+    }
+    os << "</ul>|\n";
+  }
+  os << "\n";
+}
 
 }//Feel
