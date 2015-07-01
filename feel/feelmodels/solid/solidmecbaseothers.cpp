@@ -2,6 +2,8 @@
 
 
 #include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
+#include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
 
 
 namespace Feel
@@ -90,6 +92,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         myexporterFreq = M_exporter_1dReduced->freq();
     }
 
+    std::string doExport_str;
+    if (M_doExportDisplacement) doExport_str=(doExport_str.empty())?"displacement":doExport_str+" - displacement";
+    if (M_doExportVelocity) doExport_str=(doExport_str.empty())?"velocity":doExport_str+" - velocity";
+    if (M_doExportAcceleration) doExport_str=(doExport_str.empty())?"acceleration":doExport_str+" - acceleration";
+    if (M_doExportPressure) doExport_str=(doExport_str.empty())?"pressure":doExport_str+" - pressure";
+    if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
+    if (M_doExportVelocityInterfaceFromFluid) doExport_str=(doExport_str.empty())?"velocty interface from fluid":doExport_str+" - velocty interface from fluid";
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
@@ -141,7 +150,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Exporter"
            << "\n     -- type            : " << myexporterType
            << "\n     -- high order visu : " << hovisuMode
-           << "\n     -- freq save : " << myexporterFreq
+           << "\n     -- freq save       : " << myexporterFreq
+           << "\n     -- fields exported : " << doExport_str
            << "\n   Processors"
            << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
            << "\n     -- environement rank : " << Environment::worldComm().rank()
@@ -317,32 +327,71 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     if (this->isStandardModel())
     {
         if ( !M_exporter->doExport() ) return;
-
         //M_exporter->step( time )->setMesh( M_mesh );
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"displacement"), this->fieldDisplacement() );
-
-        if ( M_useDisplacementPressureFormulation )
+        bool hasFieldToExport = false;
+        if ( M_doExportDisplacement )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"displacement"), this->fieldDisplacement() );
+            hasFieldToExport = true;
+        }
+        if ( M_useDisplacementPressureFormulation && M_doExportPressure )
+        {
             M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"), *M_fieldPressure );
-
-        if (M_doExportVelocity) M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"), M_newmark_displ_struct->currentVelocity() );
-        if (M_doExportNormalStress) M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"), *M_normalStressFromFluid );
-
-        if (M_doExportVelocityInterfaceFromFluid && this->velocityInterfaceFromFluid() )
+            hasFieldToExport = true;
+        }
+        if ( M_doExportVelocity)
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"), this->timeStepNewmark()->currentVelocity() );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportAcceleration )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"acceleration"), this->timeStepNewmark()->currentAcceleration() );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportNormalStress )
+        {
+            this->updateNormalStressFromStruct();
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"), *M_normalStressFromStruct/*M_normalStressFromFluid*/ );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportVelocityInterfaceFromFluid && this->velocityInterfaceFromFluid() )
+        {
             M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-interface-from-fluid"), *this->velocityInterfaceFromFluid() );
-
+            hasFieldToExport = true;
+        }
         //M_exporter->step( time )->add( "prestress", *U_displ_struct_prestress);
-        M_exporter->save();
+        if ( hasFieldToExport )
+            M_exporter->save();
     }
     else
     {
         if ( !M_exporter_1dReduced->doExport() ) return;
-
         //M_exporter_1dReduced->step( time )->setMesh( M_mesh_1dReduced );
-        M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-displacement"), *M_disp_1dReduced );
-        if (M_doExportVelocity) M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-velocity"), *M_velocity_1dReduced );
-        if (M_doExportNormalStress) M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced );
+        bool hasFieldToExport = false;
+        if ( M_doExportDisplacement )
+        {
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-displacement"), *M_disp_1dReduced );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportVelocity )
+        {
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-velocity"), this->timeStepNewmark1dReduced()->currentVelocity()  /**M_velocity_1dReduced*/ );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportAcceleration )
+        {
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-acceleration"), this->timeStepNewmark1dReduced()->currentAcceleration() );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportNormalStress )
+        {
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced );
+            hasFieldToExport = true;
+        }
         //M_exporter_1dReduced->step( time )->add( "structure-1d-reduced-stressvec",*M_stress_vect_1dReduced);
-        M_exporter_1dReduced->save();
+        if ( hasFieldToExport )
+            M_exporter_1dReduced->save();
     }
 }
 
@@ -354,29 +403,45 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     {
 #if defined(FEELPP_HAS_VTK)
         if ( !M_exporter_ho->doExport() ) return;
-
         //M_exporter_ho->step( time )->setMesh( M_displacementVisuHO->mesh() );
-        M_opIdisplacement->apply(this->fieldDisplacement(),*M_displacementVisuHO);
-        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"displacement-ho"), *M_displacementVisuHO );
-        if ( M_useDisplacementPressureFormulation )
+
+        bool hasFieldToExport = false;
+        if ( M_doExportDisplacement )
+        {
+            M_opIdisplacement->apply(this->fieldDisplacement(),*M_displacementVisuHO);
+            M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"displacement-ho"), *M_displacementVisuHO );
+            hasFieldToExport = true;
+        }
+        if ( M_useDisplacementPressureFormulation && M_doExportPressure )
         {
             M_opIpressure->apply(*M_fieldPressure,*M_pressureVisuHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure-ho"), *M_pressureVisuHO );
-            M_exporter_ho->save();
+            hasFieldToExport = true;
         }
         if ( M_doExportVelocity )
         {
             auto velocityVisuHO = M_XhVectorialVisuHO->element();
-            M_opIdisplacement->apply( this->fieldVelocity(),velocityVisuHO );
+            M_opIdisplacement->apply( this->timeStepNewmark()->currentVelocity(),velocityVisuHO );
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity-ho"), velocityVisuHO );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportAcceleration )
+        {
+            auto accelerationVisuHO = M_XhVectorialVisuHO->element();
+            M_opIdisplacement->apply( this->timeStepNewmark()->currentAcceleration(),accelerationVisuHO );
+            M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"acceleration-ho"), accelerationVisuHO );
+            hasFieldToExport = true;
         }
         if ( M_doExportNormalStress )
         {
             auto normalstressVisuHO = M_XhVectorialVisuHO->element();
-            M_opInormalstress->apply( *M_normalStressFromFluid,normalstressVisuHO);
+            this->updateNormalStressFromStruct();
+            M_opInormalstress->apply( *M_normalStressFromStruct/*M_normalStressFromFluid*/,normalstressVisuHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"normalstress-ho"), normalstressVisuHO );
+            hasFieldToExport = true;
         }
-        M_exporter_ho->save();
+        if ( hasFieldToExport )
+            M_exporter_ho->save();
 #endif
     }
 
@@ -595,16 +660,54 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 {
     using namespace Feel::vf;
 
-    auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
-    auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
-    auto const& u = this->fieldDisplacement();
-    auto const Id = eye<nDim,nDim>();
-    auto eps = sym(gradv(u));//0.5*(gradv(u)+trans(gradv(u)));
-    auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
+    if ( !M_XhStress )
+        M_XhStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    if ( !M_normalStressFromStruct )
+        M_normalStressFromStruct.reset(new element_stress_type( M_XhStress, "normalStressBoundaryFromStruct" ));
 
-    *M_normalStressFromStruct = vf::project(_space=M_normalStressFromStruct->functionSpace(),
-                                            _range=markedfaces(this->mesh(),this->markerNameFSI().front()),
-                                            _expr=sigma*vf::N() );
+    auto const& u = this->fieldDisplacement();
+    if ( M_pdeType=="Elasticity" )
+    {
+
+        auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
+        auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
+
+        auto const Id = eye<nDim,nDim>();
+        auto eps = sym(gradv(u));//0.5*(gradv(u)+trans(gradv(u)));
+        if ( !this->useDisplacementPressureFormulation() )
+        {
+            auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
+            M_normalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+                                          _expr=sigma*vf::N() );
+        }
+        else
+        {
+            auto const& p = this->fieldPressure();
+            auto sigma = idv(p)*Id + 2*idv(coeffLame2)*eps;
+            M_normalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+                                          _expr=sigma*vf::N() );
+        }
+    }
+    else if ( M_pdeType=="Elasticity-Large-Deformation" )
+    {
+        CHECK( false ) << "TODO";
+    }
+    else if ( M_pdeType=="Hyper-Elasticity" )
+    {
+        auto const sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
+        if ( !this->useDisplacementPressureFormulation() )
+        {
+            M_normalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+                                          _expr=sigma*vf::N() );
+        }
+        else
+        {
+            auto const& p = this->fieldPressure();
+            auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
+            M_normalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+                                          _expr=sigmaWithPressure*vf::N() );
+        }
+    }
 }
 
 //---------------------------------------------------------------------------------------------------//

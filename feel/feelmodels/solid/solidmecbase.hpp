@@ -649,9 +649,7 @@ protected:
 
     // exporter
     exporter_ptrtype M_exporter;
-    bool M_doExportVelocity;
-    bool M_doExportAcceleration;
-    bool M_doExportNormalStress;
+    bool M_doExportDisplacement, M_doExportVelocity, M_doExportAcceleration, M_doExportNormalStress, M_doExportPressure;
     bool M_doExportVelocityInterfaceFromFluid;
     bool M_isHOVisu;
 #if defined(FEELPP_HAS_VTK)
