@@ -133,7 +133,8 @@ int main(int argc, char**argv )
     auto def = grad( v );
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
-
+    U = mybdf->unknown(0);
+    
     auto ft = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
@@ -164,7 +165,7 @@ int main(int argc, char**argv )
     
     toc("bdf, forms,...");
 
-    for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(U) )
+    for ( mybdf->restart();  mybdf->isFinished() == false; mybdf->next(U) )
     {
         if ( Environment::isMasterRank() )
         {
@@ -186,6 +187,7 @@ int main(int argc, char**argv )
         at += integrate( _range=elements( mesh ), _expr= rho*trans(gradt(u)*idv(extrapu))*id(v) );
         for( auto const& condition : dirichlet_conditions )
         {
+            dirichlet_conditions.setParameterValues( { {"t",mybdf->time()}}  );
             at+=on(_range=markedfaces(mesh,marker(condition)), _rhs=ft, _element=u,_expr=expression(condition));
             /*at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
             _expr=zero<FEELPP_DIM,1>() );
@@ -196,7 +198,7 @@ int main(int argc, char**argv )
         if ( soption("ns.preconditioner") != "petsc" )
         {
             a_blockns->update( at.matrixPtr(), idv(extrapu), dirichlet_conditions );
-            at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns",_rebuild=true),_prec=a_blockns);
+            at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns",_rebuild=false),_prec=a_blockns);
         }
         else
         {
@@ -206,6 +208,9 @@ int main(int argc, char**argv )
         toc("Solve");tic();
         Environment::saveTimers( true );
 
+        if (dim!=3)
+        {
+            
         /*double areaIn = integrate(_range=markedfaces(mesh,"inlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
         double areaOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
 
@@ -275,14 +280,15 @@ int main(int argc, char**argv )
 
             }
 
-
+        }
         w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "u", u );
-        e->step(mybdf->time())->add( "w", w );
+        //e->step(mybdf->time())->add( "w", w );
         e->step(mybdf->time())->add( "p", p );
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
+        //e->restart( mybdf->time() );
         toc("export");
         toc("time step");
 

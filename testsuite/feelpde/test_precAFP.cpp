@@ -57,6 +57,8 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
+    ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
     ;
     return opts.add( Feel::feel_options() )
@@ -129,6 +131,10 @@ class TestPrecAFP : public Application
     typedef FunctionSpace<mesh_type, bases<curl_basis_type,lag_basis_type>> comp_space_type;
     typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
     typedef typename comp_space_type::element_type comp_element_type;
+
+    //! Preconditioners
+    typedef PreconditionerBlockMS<comp_space_type,lag_0_space_type> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
     
     //! The exporter factory
     typedef Exporter<mesh_type> export_type;
@@ -137,6 +143,7 @@ class TestPrecAFP : public Application
     //! Backends factory
     typedef Backend<double> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef backend_type::solve_return_type solve_ret_type;
 
     public:
 
@@ -169,15 +176,17 @@ class TestPrecAFP : public Application
         
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
+
+        preconditioner_ptrtype M_prec;
        
         map_vector_field<DIM,1,2> m_dirichlet {model.boundaryConditions().getVectorFields<DIM>("u","Dirichlet")};
-        map_scalar_field<DIM> m_dirichlet_phi {model.boundaryConditions().getScalarFields<DIM>("phi","Dirichlet")};
+        map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
                        _expr = inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
-                       - inner(trans(id(v)),gradt(phi)) // -grad(phi)
+                         inner(trans(id(v)),gradt(phi)) // grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
                        + (1./idv(M_mu))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
@@ -191,6 +200,8 @@ class TestPrecAFP : public Application
                      _rhs=f1,
                      _element=phi,
                      _expr=it.second);
+
+        solve_ret_type ret;
         if(soption("ms.pc-type") == "blockms" ){
             // auto M_prec = blockms(
             //    _space = Xh,
@@ -198,7 +209,7 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            auto M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
                 soption("blockms.type"),
                 Xh, Mh,
                 model.boundaryConditions(),
@@ -206,21 +217,83 @@ class TestPrecAFP : public Application
                 f2.matrixPtr());
 
             M_prec->update(f2.matrixPtr(),M_mu);
-            f2.solveb(_rhs=f1,
+            tic();
+            ret = f2.solveb(_rhs=f1,
                       _solution=U,
                       _backend=backend(_name="ms"),
                       _prec=M_prec);
+            toc("Inverse",FLAGS_v>0);
         }else{
-            f2.solveb(_rhs=f1,
+            tic();
+            ret = f2.solveb(_rhs=f1,
                       _solution=U,
                       _backend=backend(_name="ms"));
+            toc("Inverse",FLAGS_v>0);
         }
+        Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
         if(Environment::worldComm().globalRank()==0)
             std::cout << doption("gmsh.hsize") << "\t"
                 << e21 << "\t"
                 << e21/e22 << std::endl;
+        /* report */
+        if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
+            time_t now = std::time(0);
+            tm *ltm = localtime(&now);
+            std::ostringstream stringStream;
+            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
+            std::ofstream outputFile( stringStream.str() );
+            if( outputFile )
+            {
+                outputFile 
+                        << "---\n"
+                        << "title: \"noTitle\"\n"
+                        << "date: " << stringStream.str() << "\n"
+                        << "categories: simu\n"
+                        << "--- \n\n";
+                outputFile << "#Physique" << std::endl;
+                model.saveMD(outputFile);    
+                
+                outputFile << "##Physique spécifique" << std::endl;
+                outputFile << "| Variable | value | " << std::endl;
+                outputFile << "|---|---|" << std::endl;
+                outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
+                outputFile << "| Rhs | " << expr<DIM,1>(soption("functions.j")) << "|" << std::endl;
+                outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
+
+                outputFile << "#Numerics" << std::endl;
+                
+                outputFile << "##Mesh" << std::endl;
+                M_mesh->saveMD(outputFile); 
+               
+                outputFile << "##Spaces" << std::endl;
+                outputFile << "|qDim|" << Xh->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << std::endl;
+                outputFile << "|---|---|---|---|" << std::endl;
+                outputFile << "|BasisName|"<< Xh->basisName() << "|" << Xh->template functionSpace<0>()->basisName() << "|" << Xh->template functionSpace<1>()->basisName() << "|" << std::endl;
+                outputFile << "|nDof|" << Xh->nDof()      << "|"<< Xh->template functionSpace<0>()->nDof()      << "|"<< Xh->template functionSpace<1>()->nDof()      << "|" << std::endl;
+                outputFile << "|nLocaldof|" << Xh->nLocalDof() << "|" << Xh->template functionSpace<0>()->nLocalDof() << "|" << Xh->template functionSpace<1>()->nLocalDof() << "|" << std::endl;
+                outputFile << "|nPerComponent|" << Xh->nDofPerComponent() << "|" << Xh->template functionSpace<0>()->nDofPerComponent() << "|" << Xh->template functionSpace<1>()->nDofPerComponent() << "|" << std::endl;
+                
+                outputFile << "##Solvers" << std::endl;
+
+                outputFile << "| x | ms | blocksms.11 | blockms.22 |" << std::endl;
+                outputFile << "|---|---|---|---| " << std::endl;
+                outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
+                outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
+                outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
+                outputFile << "|**Matrix**  |  " << f2.matrixPtr()->graph()->size() << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
+                outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
+            
+                outputFile << "##Timers" << std::endl;
+                Environment::saveTimersMD(outputFile); 
+            }
+            else
+            {
+               std::cerr << "Failure opening " << stringStream.str() << '\n';
+            }
+        }
+        /* end of report */
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
@@ -234,12 +307,11 @@ class TestPrecAFP : public Application
 
 private:
     mesh_ptrtype M_mesh;
-
 };
 
 #if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
-BOOST_AUTO_TEST_SUITE( levelset )
+BOOST_AUTO_TEST_SUITE( precAFP )
 
 BOOST_AUTO_TEST_CASE( test )
 {
