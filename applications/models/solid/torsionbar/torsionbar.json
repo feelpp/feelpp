@@ -49,5 +49,9 @@
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "Fields":["displacement","velocity","pressure","stress"]
     }
 }
