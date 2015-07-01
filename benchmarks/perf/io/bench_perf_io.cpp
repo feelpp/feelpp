@@ -4,7 +4,7 @@ int main(int argc, char**argv )
 {
 
     double t0, t1, t2, t3, t4, t5;
-    MPI_Init ( &argc, &argv );
+    // MPI_Init ( &argc, &argv );
     t0 = MPI_Wtime();
 
     using namespace Feel;
