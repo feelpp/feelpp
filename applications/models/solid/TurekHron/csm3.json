@@ -43,7 +43,7 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","stress"]
+        "Fields":["displacement"]
     }
 
 }
