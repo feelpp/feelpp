@@ -23,7 +23,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix
     :
     super_type(__prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
-    M_mechanicalProperties( new mechanicalproperties_type( __prefix ) )
+    M_mechanicalProperties( new mechanicalproperties_type( __prefix ) ),
+    M_doExportDisplacement( false ), M_doExportVelocity( false ), M_doExportAcceleration( false ),
+    M_doExportNormalStress( false ), M_doExportPressure( false ) , M_doExportVelocityInterfaceFromFluid( false )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsSolve.data";
@@ -190,10 +192,32 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
-    M_doExportVelocity = boption(_name="do_export_velocity",_prefix=this->prefix());
-    M_doExportAcceleration = boption(_name="do_export_acceleration",_prefix=this->prefix());
-    M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
-    M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
+
+    // overwrite export field options in json if given in cfg
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
+        M_doExportDisplacement = boption(_name="do_export_displacement",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
+        M_doExportVelocity = boption(_name="do_export_velocity",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_acceleration").c_str()) )
+        M_doExportAcceleration = boption(_name="do_export_acceleration",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
+        M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
+        M_doExportPressure = boption(_name="do_export_pressure",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocityinterfacefromfluid").c_str()) )
+        M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
+    {
+        if ( boption(_name="do_export_all",_prefix=this->prefix()) )
+        {
+            M_doExportDisplacement = true;
+            M_doExportVelocity = true;
+            M_doExportAcceleration = true;
+            M_doExportNormalStress = true;
+            M_doExportPressure = true;
+            M_doExportVelocityInterfaceFromFluid = true;
+        }
+    }
 
     //time schema parameters
     std::string timeSchema = soption(_name="time-schema",_prefix=this->prefix());
@@ -890,6 +914,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     }
 
     this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
+
+    // clean doExport with fields not available
+    if ( !M_useDisplacementPressureFormulation )
+        M_doExportPressure = false;
+    if ( this->is1dReducedModel() )
+        M_doExportNormalStress = false;
+    if ( !this->velocityInterfaceFromFluid() )
+        M_doExportVelocityInterfaceFromFluid = false;
+
 
     // update block vector (index + data struct)
     if (this->isStandardModel())

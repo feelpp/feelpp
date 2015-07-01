@@ -119,6 +119,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     if ( hasChangedRep )
         Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( o == "displacement" || o == "all" ) this->M_doExportDisplacement = true;
+            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
+            if ( o == "acceleration" || o == "all" ) this->M_doExportAcceleration = true;
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
+            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
+            if ( o == "all" ) this->M_doExportVelocityInterfaceFromFluid = true;
+        }
+
+
 }
 
 //---------------------------------------------------------------------------------------------------//
