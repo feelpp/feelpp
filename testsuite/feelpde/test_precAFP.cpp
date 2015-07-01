@@ -57,6 +57,7 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
@@ -233,8 +234,14 @@ class TestPrecAFP : public Application
         Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
+        auto nnzVec = f2.matrixPtr()->graph()->nNz();
+        int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
-            std::cout << doption("gmsh.hsize") << "\t"
+            std::cout << "RES\t"
+                << doption("gmsh.hsize") << "\t"
+                << Xh->nDof() << "\t"
+                << nnz << "\t"
+                << doption("mu") << "\t"
                 << e21 << "\t"
                 << e21/e22 << std::endl;
         /* report */
@@ -248,7 +255,7 @@ class TestPrecAFP : public Application
             {
                 outputFile 
                         << "---\n"
-                        << "title: \"noTitle\"\n"
+                        << "title: \""<< soption("title") << "\"\n"
                         << "date: " << stringStream.str() << "\n"
                         << "categories: simu\n"
                         << "--- \n\n";
@@ -282,7 +289,7 @@ class TestPrecAFP : public Application
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
                 outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
-                outputFile << "|**Matrix**  |  " << f2.matrixPtr()->graph()->size() << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
+                outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
                 outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
             
                 outputFile << "##Timers" << std::endl;
