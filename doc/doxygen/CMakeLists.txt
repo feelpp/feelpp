@@ -25,7 +25,7 @@ add_custom_command(
                             ${PROJECT_BINARY_DIR}/html/index.html
                             ${PROJECT_BINARY_DIR}${PROJECT_BINARY_DIR}/latex/Makefile)
 
-add_custom_target (docs ALL
+add_custom_target (doxygen ALL
             COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
             DEPENDS ${PROJECT_BINARY_DIR}/Doxyfile
                     ${PROJECT_BINARY_DIR}/html/index.html
