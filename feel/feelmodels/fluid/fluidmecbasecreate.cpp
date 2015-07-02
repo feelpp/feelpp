@@ -24,7 +24,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationar
     :
     super_type( __prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
-    M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) )
+    M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) ),
+    M_doExportVelocity( false), M_doExportPressure( false ), M_doExportVorticity( false ),
+    M_doExportNormalStress( false), M_doExportWallShearStress( false ), M_doExportViscosity( false ),
+    M_doExportMeshDisplacement( false )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -126,6 +129,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     this->log("FluidMechanics","loadParameterFromOptionsVm", "start");
 
     M_meshSize = doption(_name="hsize",_prefix=this->prefix());
+
+    //--------------------------------------------------------------//
+    // exporters options
 #if defined(FEELPP_HAS_VTK)
     M_isHOVisu =nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
@@ -136,14 +142,36 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "WARNING : hovisu disable because VTK not find",
                         this->worldComm(),this->verboseAllProc());
 #endif
-    M_doExportMeshALE = boption(_name="do_export_meshale",_prefix=this->prefix());
-    M_doExportVorticity = boption(_name="do_export_vorticity",_prefix=this->prefix());
-    M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
-    M_doExportWallShearStress = boption(_name="do_export_wallshearstress",_prefix=this->prefix());
-    M_doExportMeshDisplacementOnInterface = boption(_name="do_export_meshdisplacementoninterface",_prefix=this->prefix());
-    M_doExportViscosity = boption(_name="do_export_viscosity",_prefix=this->prefix());
-    M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
 
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
+        M_doExportVelocity = boption(_name="do_export_velocity",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
+        M_doExportPressure = boption(_name="do_export_pressure",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
+        M_doExportMeshDisplacement = boption(_name="do_export_displacement",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_vorticity").c_str()) )
+        M_doExportVorticity = boption(_name="do_export_vorticity",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
+        M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_wallshearstress").c_str()) )
+        M_doExportWallShearStress = boption(_name="do_export_wallshearstress",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_viscosity").c_str()) )
+        M_doExportViscosity = boption(_name="do_export_viscosity",_prefix=this->prefix());
+
+    M_doExportMeshALE = boption(_name="do_export_meshale",_prefix=this->prefix());
+    M_doExportMeshDisplacementOnInterface = boption(_name="do_export_meshdisplacementoninterface",_prefix=this->prefix());
+
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
+    {
+        if ( boption(_name="do_export_all",_prefix=this->prefix()) )
+        {
+            M_doExportVelocity = true; M_doExportPressure = true; M_doExportVorticity = true;
+            M_doExportNormalStress = true; M_doExportWallShearStress = true; M_doExportViscosity = true;
+            M_doExportMeshDisplacement = true; M_doExportMeshALE = true; M_doExportMeshDisplacementOnInterface=true;
+        }
+    }
+
+    //--------------------------------------------------------------//
     M_haveSourceAdded=false;//true when update
     M_velocityDivIsEqualToZero=true;
 
@@ -154,6 +182,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
     //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
 
+    //--------------------------------------------------------------//
+    // fsi options
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
     M_couplingFSI_Nitsche_gamma = 2500;
@@ -162,11 +192,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_couplingFSI_RNG_useInterfaceOperator = false;
     M_couplingFSI_solidIs1dReduced=false;
 
+    //--------------------------------------------------------------//
+    // start solver options
     M_startBySolveNewtonian = boption(_prefix=this->prefix(),_name="start-by-solve-newtonian");
     M_hasSolveNewtonianAtKickOff = false;
     M_startBySolveStokesStationary = boption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary");
     M_hasSolveStokesStationaryAtKickOff = false;
 
+    //--------------------------------------------------------------//
+    // stabilisation options
     M_applyCIPStabOnlyOnBoundaryFaces=false;
     M_doCIPStabConvection = boption(_name="stabilisation-cip-convection",_prefix=this->prefix());
     M_doCIPStabDivergence = boption(_name="stabilisation-cip-divergence",_prefix=this->prefix());
@@ -183,7 +217,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_definePressureCstMethod = soption(_name="define-pressure-cst.method",_prefix=this->prefix());
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
-    // fluid outlet
+    //--------------------------------------------------------------//
+    // fluid outlet options
     M_nFluidOutlet = this->hasFluidOutlet()? ioption(_name="fluid-outlet.number", _prefix=this->prefix()) : 0;
     if ( this->hasFluidOutlet() )
     {
@@ -872,7 +907,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
     //-------------------------------------------------//
     // add ALE markers
-    if (M_isMoveDomain)
+    if (this->isMoveDomain())
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         auto itAleBC = this->markerALEMeshBC().begin();
@@ -908,6 +943,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
+
+    // clean doExport with fields not available
+    if ( !this->isMoveDomain() )
+    {
+        M_doExportMeshDisplacement = false;
+        M_doExportMeshALE = false;
+        M_doExportMeshDisplacementOnInterface = false;
+    }
 
     //-------------------------------------------------//
     // windkessel outlet

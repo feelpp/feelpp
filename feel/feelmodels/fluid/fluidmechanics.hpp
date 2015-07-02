@@ -61,6 +61,7 @@ public:
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
+    void loadConfigPostProcess();
     void loadConfigMeshFile( std::string const& geofilename );
     // update for use
     void init( bool buildModelAlgebraicFactory=true );
