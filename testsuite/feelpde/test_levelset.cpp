@@ -91,6 +91,7 @@ public:
                                 _desc=domain( _name="ellipsoid_nd",
                                               _shape="ellipsoid",
                                               _dim=DIM,
+                                              _order=G_ORDER,
                                               _xmin=-radius,
                                               _ymin=-radius,
                                               _zmin=-radius,
@@ -177,7 +178,7 @@ private:
 };
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( levelset )
 
 // Test wall distance on :
