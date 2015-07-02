@@ -59,6 +59,7 @@ public:
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
+    void loadConfigPostProcess();
     void loadConfigMeshFile( std::string const& geofilename );
     void loadConfigMeshFile1dReduced( std::string const& geofilename );
 

@@ -50,8 +50,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string __prefix,
                                                this->worldComm(),this->verboseAllProc());
 
     //-----------------------------------------------------------------------------//
-    // load info from .bc file
+    // load info from .json file
     this->loadConfigBCFile();
+    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -119,6 +120,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     if ( hasChangedRep )
         Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+{
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
@@ -129,8 +136,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
             if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
             if ( o == "all" ) this->M_doExportVelocityInterfaceFromFluid = true;
         }
-
-
 }
 
 //---------------------------------------------------------------------------------------------------//
