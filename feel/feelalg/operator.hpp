@@ -86,7 +86,7 @@ class OperatorBase
     virtual int apply(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
     virtual int apply(const vector_type& X, vector_type& Y) const = 0;
     
-    virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
+    virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return applyInverse( *X, *Y ); }
     virtual int applyInverse(const vector_type& X, vector_type& Y) const = 0;
     
     virtual void setPc(pc_ptrtype p){

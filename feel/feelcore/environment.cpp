@@ -534,6 +534,9 @@ Environment::clearSomeMemory()
 
 Environment::~Environment()
 {
+    if ( boption( "display-stats" ) )
+        Environment::saveTimers( true );
+    
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
     Environment::destroyHwlocTopology();
@@ -2004,6 +2007,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
+    boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
     
 
     typedef std::vector< std::string > split_vector_type;

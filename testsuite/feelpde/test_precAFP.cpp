@@ -57,6 +57,8 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
+    ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
     ;
@@ -232,62 +234,71 @@ class TestPrecAFP : public Application
         Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
+        auto nnzVec = f2.matrixPtr()->graph()->nNz();
+        int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
-            std::cout << doption("gmsh.hsize") << "\t"
+            std::cout << "RES\t"
+                << doption("gmsh.hsize") << "\t"
+                << Xh->nDof() << "\t"
+                << nnz << "\t"
+                << doption("mu") << "\t"
                 << e21 << "\t"
                 << e21/e22 << std::endl;
         /* report */
-        time_t now = std::time(0);
-        tm *ltm = localtime(&now);
-        std::ostringstream stringStream;
-        stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
-        std::ofstream outputFile( stringStream.str() );
-        if( outputFile )
-        {
-            outputFile << "#Physique" << std::endl;
-            model.saveMD(outputFile);    
-            outputFile << "##Physique spécifique" << std::endl;
-            outputFile << "| Variable | value | " << std::endl;
-            outputFile << "|---|---|" << std::endl;
-            outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
-            outputFile << "| Rhs | " << expr<DIM,1>(soption("functions.j")) << "|" << std::endl;
-            outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
+        if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
+            time_t now = std::time(0);
+            tm *ltm = localtime(&now);
+            std::ostringstream stringStream;
+            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
+            std::ofstream outputFile( stringStream.str() );
+            if( outputFile )
+            {
+                outputFile 
+                        << "---\n"
+                        << "title: \""<< soption("title") << "\"\n"
+                        << "date: " << stringStream.str() << "\n"
+                        << "categories: simu\n"
+                        << "--- \n\n";
+                outputFile << "#Physique" << std::endl;
+                model.saveMD(outputFile);    
+                
+                outputFile << "##Physique spécifique" << std::endl;
+                outputFile << "| Variable | value | " << std::endl;
+                outputFile << "|---|---|" << std::endl;
+                outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
+                outputFile << "| Rhs | " << expr<DIM,1>(soption("functions.j")) << "|" << std::endl;
+                outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
 
-            outputFile << "#Numerics" << std::endl;
-            outputFile << "##Mesh" << std::endl;
-           
-            M_mesh->saveMD(outputFile); 
-            outputFile << "|Dim|" << M_mesh->dimension()     << "|" << std::endl;
-            outputFile << "|---|---|" << std::endl;
-            outputFile << "|hSize|" << M_mesh->hMin() << " - " << M_mesh->hMax() << " - " << M_mesh->hAverage()  << "|" << std::endl;
-            outputFile << "|numGlobalElements|" << M_mesh->numGlobalElements()     << "|" << std::endl;
-            outputFile << "|numGlobaleEdges|" << M_mesh->numGlobalEdges()     << "|" << std::endl;
-            outputFile << "|numGlobaleFaces|" << M_mesh->numGlobalFaces()     << "|" << std::endl;
-            outputFile << "|numGlobalElements|" << M_mesh->numGlobalElements()     << "|" << std::endl;
-           
-            outputFile << "##Spaces" << std::endl;
-            outputFile << "|qDim|" << Xh->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << std::endl;
-            outputFile << "|---|---|---|---|" << std::endl;
-            outputFile << "|BasisName|"<< Xh->basisName() << "|" << Xh->template functionSpace<0>()->basisName() << "|" << Xh->template functionSpace<1>()->basisName() << "|" << std::endl;
-            outputFile << "|nDof|" << Xh->nDof()      << "|"<< Xh->template functionSpace<0>()->nDof()      << "|"<< Xh->template functionSpace<1>()->nDof()      << "|" << std::endl;
-            outputFile << "|nLocaldof|" << Xh->nLocalDof() << "|" << Xh->template functionSpace<0>()->nLocalDof() << "|" << Xh->template functionSpace<1>()->nLocalDof() << "|" << std::endl;
-            outputFile << "|nPerComponent|" << Xh->nDofPerComponent() << "|" << Xh->template functionSpace<0>()->nDofPerComponent() << "|" << Xh->template functionSpace<1>()->nDofPerComponent() << "|" << std::endl;
+                outputFile << "#Numerics" << std::endl;
+                
+                outputFile << "##Mesh" << std::endl;
+                M_mesh->saveMD(outputFile); 
+               
+                outputFile << "##Spaces" << std::endl;
+                outputFile << "|qDim|" << Xh->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << Xh->template functionSpace<1>()->qDim()      << "|" << std::endl;
+                outputFile << "|---|---|---|---|" << std::endl;
+                outputFile << "|BasisName|"<< Xh->basisName() << "|" << Xh->template functionSpace<0>()->basisName() << "|" << Xh->template functionSpace<1>()->basisName() << "|" << std::endl;
+                outputFile << "|nDof|" << Xh->nDof()      << "|"<< Xh->template functionSpace<0>()->nDof()      << "|"<< Xh->template functionSpace<1>()->nDof()      << "|" << std::endl;
+                outputFile << "|nLocaldof|" << Xh->nLocalDof() << "|" << Xh->template functionSpace<0>()->nLocalDof() << "|" << Xh->template functionSpace<1>()->nLocalDof() << "|" << std::endl;
+                outputFile << "|nPerComponent|" << Xh->nDofPerComponent() << "|" << Xh->template functionSpace<0>()->nDofPerComponent() << "|" << Xh->template functionSpace<1>()->nDofPerComponent() << "|" << std::endl;
+                
+                outputFile << "##Solvers" << std::endl;
+
+                outputFile << "| x | ms | blocksms.11 | blockms.22 |" << std::endl;
+                outputFile << "|---|---|---|---| " << std::endl;
+                outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
+                outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
+                outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
+                outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
+                outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
             
-            outputFile << "##Solvers" << std::endl;
-
-            outputFile << "| x | ms | blocksms.11 | blockms.22 |" << std::endl;
-            outputFile << "|---|---|---|---| " << std::endl;
-            outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
-            outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
-            outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
-            outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
-        
-            outputFile << "##Timers" << std::endl;
-            Environment::saveTimersMD(outputFile); 
-        }
-        else
-        {
-           std::cerr << "Failure opening " << stringStream.str() << '\n';
+                outputFile << "##Timers" << std::endl;
+                Environment::saveTimersMD(outputFile); 
+            }
+            else
+            {
+               std::cerr << "Failure opening " << stringStream.str() << '\n';
+            }
         }
         /* end of report */
         // export

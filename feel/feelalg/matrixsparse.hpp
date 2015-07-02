@@ -779,11 +779,10 @@ protected:
                                  const std::vector<size_type>& ,
                                  const std::vector<size_type>& ,
                                  const bool ) const
-    {
-        std::cerr << "Error! This function is not yet implemented in the base class!"
-                  << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
-    }
+        {
+            CHECK(0) << "getSubMatrix is not implemented in the base class MatrixSparse!"
+                     << std::endl;
+        }
 
     //! mpi communicator
     //mpi::communicator M_comm;
