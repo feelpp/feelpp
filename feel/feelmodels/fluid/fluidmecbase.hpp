@@ -858,13 +858,11 @@ protected:
     //----------------------------------------------------
     // exporter option
     bool M_isHOVisu;
+    bool M_doExportVelocity, M_doExportPressure, M_doExportVorticity, M_doExportNormalStress, M_doExportWallShearStress, M_doExportViscosity;
+    bool M_doExportMeshDisplacement;
     bool M_doExportMeshALE;
-    bool M_doExportVorticity;
-    bool M_doExportNormalStress;
-    bool M_doExportWallShearStress;
     bool M_doExportMeshDisplacementOnInterface;
-    bool M_doExportViscosity;
-    bool M_doExportAll;
+
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;

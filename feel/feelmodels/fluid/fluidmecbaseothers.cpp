@@ -106,6 +106,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         myexporterType = M_exporter->type();
         myexporterFreq = M_exporter->freq();
     }
+
+    std::string doExport_str;
+    if (M_doExportVelocity) doExport_str=(doExport_str.empty())?"velocity":doExport_str+" - velocity";
+    if (M_doExportPressure) doExport_str=(doExport_str.empty())?"pressure":doExport_str+" - pressure";
+    if (M_doExportMeshDisplacement) doExport_str=(doExport_str.empty())?"displacement":doExport_str+" - displacement";
+    if (M_doExportVorticity) doExport_str=(doExport_str.empty())?"vorticity":doExport_str+" - vorticity";
+    if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
+    if (M_doExportWallShearStress) doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
+    if (M_doExportViscosity) doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
+
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
@@ -175,7 +185,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Exporter"
            << "\n     -- type            : " << myexporterType
            << "\n     -- high order visu : " << hovisuMode
-           << "\n     -- freq save : " << myexporterFreq
+           << "\n     -- freq save       : " << myexporterFreq
+           << "\n     -- fields exported : " << doExport_str
            << "\n   Processors"
            << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
            << "\n     -- environement rank : " << Environment::worldComm().rank()
@@ -342,7 +353,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
-    if (this->isMoveDomain() && (M_doExportMeshALE || M_doExportAll ) )
+    if (this->isMoveDomain() && M_doExportMeshALE )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         this->meshALE()->exportResults( time );
@@ -407,36 +418,46 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         this->meshALE()->revertReferenceMesh();
 #endif
     //M_exporter->step( time )->setMesh( M_mesh );
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
-                                   M_Solution->template element<0>() );
-    this->log("FluidMechanics","exportResults", "velocity done" );
-
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
-                                   M_Solution->template element<1>() );
-    if (M_doExportVorticity /*|| M_doExportAll*/)
+    bool hasFieldToExport = false;
+    if ( M_doExportVelocity )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
+                                       M_Solution->template element<0>() );
+        hasFieldToExport = true;
+        this->log("FluidMechanics","exportResults", "velocity done" );
+    }
+    if ( M_doExportPressure )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
+                                       M_Solution->template element<1>() );
+        hasFieldToExport = true;
+    }
+    if ( M_doExportVorticity )
     {
         this->updateVorticity(mpl::int_<nDim>());
         M_exporter->step( time )->add( prefixvm(this->prefix(),"vorticity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"vorticity")),
                                        *M_vorticity );
+        hasFieldToExport = true;
     }
-    if (M_doExportNormalStress || M_doExportAll)
+    if ( M_doExportNormalStress )
     {
         this->updateNormalStressOnCurrentMesh();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")),
                                        this->fieldNormalStress() );
+        hasFieldToExport = true;
     }
-    if (M_doExportWallShearStress || M_doExportAll)
+    if ( M_doExportWallShearStress )
     {
         this->updateWallShearStress();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
                                        this->fieldWallShearStress() );
     }
-    if ( M_doExportViscosity || M_doExportAll )
+    if ( M_doExportViscosity )
     {
         if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
         auto uCur = M_Solution->template element<0>();
@@ -446,8 +467,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         M_exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"viscosity")),
                                        viscosityField );
+        hasFieldToExport = true;
     }
-    if ( this->isMoveDomain() )
+    if ( this->isMoveDomain() && ( M_doExportMeshDisplacement || M_doExportMeshDisplacementOnInterface ) )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         auto drm = M_meshALE->dofRelationShipMap();
@@ -456,22 +478,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         for (size_type i=0;i<thedisp.nLocalDof();++i)
             thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i);
 
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"displacement"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacement")),
-                                       thedisp );
+        if ( M_doExportMeshDisplacement )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"displacement"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacement")),
+                                           thedisp );
+            hasFieldToExport = true;
+        }
 
-        if (M_doExportMeshDisplacementOnInterface || M_doExportAll)
+        if ( M_doExportMeshDisplacementOnInterface )
         {
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
                                            this->meshDisplacementOnInterface() );
+            hasFieldToExport = true;
         }
 #endif
     }
 
     //----------------------//
-    M_exporter->save();
-    this->log("FluidMechanics","exportResults", "save done" );
+    if ( hasFieldToExport )
+    {
+        M_exporter->save();
+        this->log("FluidMechanics","exportResults", "save done" );
+    }
 
     //----------------------//
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -490,14 +520,22 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     // because write geofile at each step ( TODO fix !!! )
     //if (M_isMoveDomain && M_exporter_ho->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
     //    this->meshALE()->revertReferenceMesh();
-
-    M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
-    M_opIpressure->apply(M_Solution->template element<1>(),*M_pressureVisuHO);
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
-    M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity_ho")), *M_velocityVisuHO );
-    M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure_ho")), *M_pressureVisuHO );
+    bool hasFieldToExport = false;
+    if ( M_doExportVelocity )
+    {
+        M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
+        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity_ho")), *M_velocityVisuHO );
+        hasFieldToExport = true;
+    }
+    if ( M_doExportPressure )
+    {
+        M_opIpressure->apply(M_Solution->template element<1>(),*M_pressureVisuHO);
+        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure_ho")), *M_pressureVisuHO );
+        hasFieldToExport = true;
+    }
 
-    if (M_isMoveDomain)
+    if (M_isMoveDomain && M_doExportMeshDisplacement)
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         auto drm = M_meshALE->dofRelationShipMap();
@@ -511,12 +549,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
             thedisp(i) = M_meshALE->displacement()->operator()(i);
 #endif
         }
+        if ( M_doExportMeshDisplacement )
+        {
+            M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
+            M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshdisp_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshdisp_ho")), *M_meshdispVisuHO );
+            hasFieldToExport = true;
+        }
 
-        M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
-
-        M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshdisp_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshdisp_ho")), *M_meshdispVisuHO );
-
-        if ( M_doExportAll )
+        if ( false /*M_doExportAll*/ )
         {
             auto themeshvelocityOnInterfaceVisuHO = M_XhVectorialVisuHO->element();
             auto hola2 = vf::project(_space=this->functionSpaceVelocity(),_range=elements(M_Xh->mesh()),_expr=vf::idv(this->meshVelocity2Ptr()));
@@ -577,15 +617,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         this->updateNormalStressOnCurrentMesh();
         M_opIstress->apply( this->fieldNormalStress(),*M_normalStressVisuHO );
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"normalstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")), *M_normalStressVisuHO );
+        hasFieldToExport = true;
     }
     if (M_doExportWallShearStress)
     {
         this->updateWallShearStress();
         M_opIstress->apply( this->fieldWallShearStress(),*M_fieldWallShearStressVisuHO );
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"wallshearstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")), *M_fieldWallShearStressVisuHO );
+        hasFieldToExport = true;
     }
 
-    M_exporter_ho->save();
+    if ( hasFieldToExport )
+        M_exporter_ho->save();
 
     //if (M_isMoveDomain && M_exporter_ho->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
     //   this->meshALE()->revertMovingMesh();

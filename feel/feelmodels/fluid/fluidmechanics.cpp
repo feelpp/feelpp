@@ -52,8 +52,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"FluidMechanics.info") );
     //-----------------------------------------------------------------------------//
-    // load info from .bc file
+    // load info from .json file
     this->loadConfigBCFile();
+    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -142,6 +143,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     // go back to previous repository
     if ( hasChangedRep )
         Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+{
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
+            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
+            if ( o == "displacement" || o == "all" ) this->M_doExportMeshDisplacement = true;
+            if ( o == "vorticity" || o == "all" ) this->M_doExportVorticity = true;
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
+            if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
+            if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
+        }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
