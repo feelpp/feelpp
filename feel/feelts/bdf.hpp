@@ -152,8 +152,7 @@ public:
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta ),
-        M_prefix( b.M_prefix )
+        M_beta( b.M_beta )
     {}
 
     ~Bdf();
@@ -193,7 +192,7 @@ public:
     //!return the prefix
     std::string bdfPrefix() const
     {
-        return M_prefix;
+        return this->M_prefix;
     }
 
     //! return the number of iterations between order change
@@ -381,7 +380,6 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
-    std::string M_prefix;
 };
 
 template <typename SpaceType>
@@ -397,8 +395,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
     M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( prefix )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -422,8 +419,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_iterations_between_order_change( 1 ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( "" )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
