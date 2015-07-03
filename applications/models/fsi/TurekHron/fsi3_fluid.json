@@ -57,7 +57,7 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure"]
+        "Fields":["velocity","pressure","displacement"]
     }
 
 }
