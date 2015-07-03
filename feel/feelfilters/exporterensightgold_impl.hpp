@@ -1506,7 +1506,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         int32_t partid = markerid;
         LOG(INFO) << "writing part " << partid << std::endl;
         // write number of points
-        MPI_File_write_at(fh, posInFile, &partid, size, MPI_INT32_T, &status);
+        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
         // MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
     }
     posInFile+=sizeOfInt32_t;
