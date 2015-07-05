@@ -51,7 +51,8 @@ TSBase::TSBase()
     M_saveFreq( 1 ),
     M_rankProcInNameOfFiles( false ),
     M_fileFormat( "binary" ),
-    M_worldComm( Environment::worldComm() )
+    M_worldComm( Environment::worldComm() ),
+    M_prefix()
 {}
 
 TSBase::TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
@@ -72,7 +73,8 @@ TSBase::TSBase( po::variables_map const& vm, std::string name, std::string const
     M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
     M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
     M_fileFormat( soption( _name="bdf.file-format",_prefix=prefix ) ),
-    M_worldComm( worldComm )
+    M_worldComm( worldComm ),
+    M_prefix( prefix )
 {}
 TSBase::TSBase( std::string name, WorldComm const& worldComm )
     :
@@ -91,7 +93,8 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_saveInFile( true ),
     M_saveFreq( 1 ),
     M_fileFormat( "binary" ),
-    M_worldComm( worldComm )
+    M_worldComm( worldComm ),
+    M_prefix()
 {}
 
 TSBase::TSBase( TSBase const& b )
@@ -113,7 +116,8 @@ TSBase::TSBase( TSBase const& b )
     M_saveFreq( b.M_saveFreq ),
     M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
     M_fileFormat( b.M_fileFormat ),
-    M_worldComm( b.M_worldComm )
+    M_worldComm( b.M_worldComm ),
+    M_prefix( b.M_prefix )
 {}
 
 TSBase&

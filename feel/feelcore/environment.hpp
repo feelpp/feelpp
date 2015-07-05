@@ -551,6 +551,7 @@ public:
      * display and save timers
      */
     static void saveTimers( bool save );
+    static void saveTimersMD( std::ostream & os );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );

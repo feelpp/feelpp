@@ -49,7 +49,7 @@ public:
             #endif
             return pv;
         }
-    
+    void saveMD(std::ostream &os);    
 private:
     void setup();
 private:

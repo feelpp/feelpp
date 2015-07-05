@@ -33,7 +33,7 @@ using namespace boost::numeric;
 
 namespace Feel
 {
-enum { ComputeGradient = 2 << 0  };
+enum { ComputeGradient = 1 << 0  };
 
 template <typename T = float>
 using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
