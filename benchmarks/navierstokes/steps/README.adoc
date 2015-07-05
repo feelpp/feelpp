@@ -37,13 +37,20 @@ The purpose of this project is to determine how computational fluid dynamics can
 
 [TableRe]
 .Throat Reynolds number $$Re_t$$ , inlet Reynolds number $$Re_i$$ , and flow rate for the flow regimes under consideration.
-[width="40%",options="header"]
-|==============================
-|  ￼Ret | Rei  | Flow rate Q (m3/s)
-|  500 | 167  |  5.2062e􏰙6
-| 2000 | 667  | 2.0825e􏰙5
-| 3500 | 1167 | 3.6444e􏰙5
-￼￼|==============================
+[width="80%",options="header",cols=">,>,>"]
+|===================
+|$$￼Re_t$$| $$Re_i$$  | Flow rate Q ($$m^3/s$$)
+|500 | 167  |5.2062e􏰙6
+|2000 | 667  |2.0825e􏰙5
+|3500 | 1167 |3.6444e􏰙5
+|===================
+￼￼
+[[img-fda-sections]]
+.Radial sections at which the numerical results are compared with the experimental measurements.
+image::fda-sections.png[FDA Sections, 300, 200]
+
+
+
 
 We consider three flow regimes $$Re_t=500,2000, 4500$$ as described in Table <<TableRe>>..
 
@@ -52,13 +59,13 @@ Regarding $$Re_t=500$$, we shall consider the meshes described in Table <<TableM
 [TableMeshesRe500]
 .List of meshes for $$Re=500$$
 [width="60%",options="header"]
-|==============================================
+|======
 | Name    | $$h_{min}$$| $$h_{max}$$| $$h_{avg}$$|  #Tetrahedrons| #Vertices
 | $$M_0$$ |   0.01| 7.5e-3| 6.9e-3| |
 | $$M_1$$ | 1.8e-3| 1.7e-4| 6.9e-4| |
 | $$M_2$$ | 1.9e-3| 1.3e-4| 4.5e-4| |
 | $$M_3$$ | 1.8e-3| 9.2e-5| 3.4e-4| |
-|==============================================
+|======
 
 
 :numbered:
