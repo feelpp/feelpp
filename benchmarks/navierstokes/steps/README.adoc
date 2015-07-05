@@ -32,3 +32,11 @@ The following is taken from  link:http://www.fda.gov/ScienceResearch/SpecialTopi
 The purpose of this project is to determine how computational fluid dynamics can be effectively used to characterize fluid flow and to predict blood damage in medical devices. To address this complex issue, FDA has partnered with academia and industry under the Critical Path Initiative program to advance the application of CFD technology in the development and evaluation of medical devices.
 
 === Application
+
+:numbered:
+[bibliography]
+=== FDA Bibliography
+
+[bibliography]
+- [[[Stewart]]] Stewart, SandyF.C. Paterson, EricG. Burgreen, GregW. Hariharan, Prasanna Giarra, Matthew Reddy, Varun Day, StevenW. Manning, KeefeB. Deutsch, Steven Berman, MichaelR. Myers, MatthewR. Malinauskas, RichardA. 'Assessment of CFD Performance in Simulations of an Idealized Medical Device: Results of FDA’s First Computational Interlaboratory Study'. Cardiovascular Engineering and Technology. June 2012, Volume 3, Issue 2, pp 139-160.
+- [[[walsh-muellner]]] 'Validation of an open source framework for the simulation of blood flow in rigid and deformable vessels.''
