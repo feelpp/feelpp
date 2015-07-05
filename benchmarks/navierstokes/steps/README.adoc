@@ -33,10 +33,23 @@ The purpose of this project is to determine how computational fluid dynamics can
 
 === Application
 
+=== Geometries
+
+.List of meshes for $$Re=500$$
+[width="60%",options="header"]
+|==============================================
+| Name    | $$h_{min}$$| $$h_{max}$$| $$h_{avg}$$|  #Tetrahedrons| #Vertices
+| $$M_0$$ |   0.01| 7.5e-3| 6.9e-3| |
+| $$M_1$$ | 1.8e-3| 1.7e-4| 6.9e-4| |
+| $$M_2$$ | 1.9e-3| 1.3e-4| 4.5e-4| |
+| $$M_3$$ | 1.8e-3| 9.2e-5| 3.4e-4| |
+|==============================================
+
+
 :numbered:
 [bibliography]
 === FDA Bibliography
 
 [bibliography]
 - [[[Stewart]]] Stewart, SandyF.C. Paterson, EricG. Burgreen, GregW. Hariharan, Prasanna Giarra, Matthew Reddy, Varun Day, StevenW. Manning, KeefeB. Deutsch, Steven Berman, MichaelR. Myers, MatthewR. Malinauskas, RichardA. 'Assessment of CFD Performance in Simulations of an Idealized Medical Device: Results of FDA’s First Computational Interlaboratory Study'. Cardiovascular Engineering and Technology. June 2012, Volume 3, Issue 2, pp 139-160.
-- [[[walsh-muellner]]] 'Validation of an open source framework for the simulation of blood flow in rigid and deformable vessels.''
+- [[[passerini]]] T. Passerini, A. Quaini, U. Villa, A. Veneziani and S. Canic 'Validation of an open source framework for the simulation of blood flow in rigid and deformable vessels.' INTERNATIONAL JOURNAL FOR NUMERICAL METHODS IN BIOMEDICAL ENGINEERING Int. J. Numer. Meth. Biomed. Engng. (2013) Published online in Wiley Online Library (wileyonlinelibrary.com). DOI: 10.1002/cnm.2568
