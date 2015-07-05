@@ -27,14 +27,29 @@ image::fda-1.png[FDA, 300, 200, link="http://www.flickr.com/photos/javh/54483366
 
 === Purpose
 
-The following is taken from  link:http://www.fda.gov/ScienceResearch/SpecialTopics/CriticalPathInitiative/SpotlightonCPIProjects/ucm149414.htm[Reference documentation].
+The following is taken from  link:http://www.fda.gov/ScienceResearch/SpecialTopics/CriticalPathInitiative/SpotlightonCPIProjects/ucm149414.htm[Reference documentation] and references <<Stewart>>, <<passerini>>.
 
 The purpose of this project is to determine how computational fluid dynamics can be effectively used to characterize fluid flow and to predict blood damage in medical devices. To address this complex issue, FDA has partnered with academia and industry under the Critical Path Initiative program to advance the application of CFD technology in the development and evaluation of medical devices.
 
 === Application
 
-=== Geometries
+=== Configurations
 
+[TableRe]
+.Throat Reynolds number $$Re_t$$ , inlet Reynolds number $$Re_i$$ , and flow rate for the flow regimes under consideration.
+[width="40%",options="header"]
+|==============================
+|  ￼Ret | Rei  | Flow rate Q (m3/s)
+|  500 | 167  |  5.2062e􏰙6
+| 2000 | 667  | 2.0825e􏰙5
+| 3500 | 1167 | 3.6444e􏰙5
+￼￼|==============================
+
+We consider three flow regimes $$Re_t=500,2000, 4500$$ as described in Table <<TableRe>>..
+
+Regarding $$Re_t=500$$, we shall consider the meshes described in Table <<TableMeshesRe500>>.
+
+[TableMeshesRe500]
 .List of meshes for $$Re=500$$
 [width="60%",options="header"]
 |==============================================
