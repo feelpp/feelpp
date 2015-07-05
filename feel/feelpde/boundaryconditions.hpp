@@ -109,6 +109,7 @@ class BoundaryConditions
      */
     void load(const std::string &filename);
 
+    void saveMD(std::ostream &os);
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
      */

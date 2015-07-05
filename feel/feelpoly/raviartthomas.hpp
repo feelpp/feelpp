@@ -653,7 +653,8 @@ public:
             auto g = expr.geom();
             ublas::vector<value_type> n( nDim ); //normal
             Ihloc.setZero();
-            for( int f = 0; f < face_type::numFaces; ++f )
+            //for( int f = 0; f < face_type::numFaces; ++f )
+            int f=0;
             {
                 if( g->faceId() == invalid_uint16_type_value)
                     getFaceNormal(expr, f, n);

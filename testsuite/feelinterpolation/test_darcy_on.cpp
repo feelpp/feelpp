@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(elements(mesh),
                   -trans(idt(u))*id(v)
-                  -divt(u)*id(q)
+                  -divt(u)*id(q)   
                   -idt(p)*div(v)
                   // CGLS stabilization terms
                   -1./2*(trans(idt(u)) - gradt(p))*(-id(v)+trans(grad(q)))
@@ -61,9 +61,14 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     a.solve(_rhs=l, _solution=U);
 
+    auto err1 = normL2( boundaryfaces(mesh), trans(idv(u))*N() );
+    auto err2 = normL2( boundaryfaces(mesh), h*N());
     auto err = normL2( boundaryfaces(mesh), trans(idv(u))*N() - h*N());
     if ( Environment::isMasterRank() )
+    {
         BOOST_CHECK_SMALL( err, 1e-8 );
+        std::cout << "err =" << err << " I1=" << err1 << " I2=" << err2 << "\n";
+    }
 
     auto UU = Vh->element();
     auto uu =UU.template element<0>();
