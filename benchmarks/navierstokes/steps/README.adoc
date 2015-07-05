@@ -23,7 +23,7 @@ Edit the .bc files
 
 [[img-fda]]
 .FDA Device Geometry
-image::fda-1.png[FDA, 300, 200, link="http://www.flickr.com/photos/javh/5448336655"]
+image::fda-1.png[FDA, 300]
 
 === Purpose
 
@@ -47,7 +47,7 @@ The purpose of this project is to determine how computational fluid dynamics can
 ￼￼
 [[img-fda-sections]]
 .Radial sections at which the numerical results are compared with the experimental measurements.
-image::fda-sections.png[FDA Sections, 300, 200]
+image::fda-sections.png[FDA Sections, 300]
 
 
 
