@@ -24,7 +24,8 @@
 #include <feel/feel.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 
-bool display_flowrates( std::ostream& os, std::map<std::string, double> const& flowrates );
+bool display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates );
+bool display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates );
 
 int main(int argc, char**argv )
 {
@@ -146,7 +147,14 @@ int main(int argc, char**argv )
         flowrates_f[f] = integrate(_range=markedfaces(mesh,f), _expr=inner(id(u),N()));
         
     }
-   
+    std::ofstream ofs( "flowrates.md" );
+    std::map<std::string,double> flowrates;
+    for( auto & f : flowrates_f )
+    {
+        flowrates[f.first]= 0;;
+    }
+    display_flowrates_header( ofs, flowrates );
+
     auto ft = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
@@ -231,7 +239,6 @@ int main(int argc, char**argv )
 
         tic();
         
-        std::map<std::string,double> flowrates;
         for( auto & f : flowrates_f )
         {
             flowrates[f.first]= f.second( u );
@@ -240,11 +247,10 @@ int main(int argc, char**argv )
         if (Environment::isMasterRank())
         {
             std::cout<< "\n \n \n ============= FLOW OVER RADIAL SECTIONS =================\n";
-            bool ok = display_flowrates( std::cout, flowrates );
+            bool ok = display_flowrates( std::cout, mybdf->time(), flowrates );
             if ( !ok ) 
                 std::cout << "WARNING ! flow rate issue at time " << mybdf->time() << "\n";
-            std::ofstream ofs( "flowrates.md" );
-            display_flowrates( ofs, flowrates );
+            display_flowrates( ofs, mybdf->time(), flowrates );
             std::cout<< "\n \n \n ==========================================================\n";
             
         }
