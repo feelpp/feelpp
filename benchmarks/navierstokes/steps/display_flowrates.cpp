@@ -26,15 +26,19 @@
 #include <map>
 #include <string>
 
-
 bool
-display_flowrates( std::ostream& os, std::map<std::string, double> const& flowrates )
+display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates )
 {
-    os << "| ";
+    os << "| Time | ";
     for( auto & f : flowrates )
         os << std::setw(11) << std::right << f.first  << " | " << std::setw(11) << std::right << " Error | " ;
     os << "|\n";
-    os << "| ";
+    return true;
+}
+bool
+display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates )
+{
+    os << "| " << t << " | ";
     for( auto & f : flowrates )
         os<< std::setw(11) << std::scientific << std::setprecision( 2 )<< f.second << " | " << std::setw(11) << std::scientific << std::setprecision( 2 ) << ((f.second-5.216650303e-6)/5.216650303e-6)*100 << "  | " ;
     os << "|\n";
