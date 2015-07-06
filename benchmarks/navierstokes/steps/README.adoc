@@ -1,0 +1,77 @@
+= Navier-Stokes benchmark
+Feel++ Consortium <feelpp-devel@feelpp.org>
+v1.0, 2015-07-05
+:toc:
+
+
+== Backward step
+
+=== Execute
+
+```shell
+# 2D
+mpirun -np 16 ./feelpp_steady_ns_2d
+# 3D
+mpirun -np 16 ./feelpp_steady_ns_3d
+```
+
+=== Boundary conditions
+
+Edit the .bc files
+
+== FDA Benchmark
+
+[[img-fda]]
+.FDA Device Geometry
+image::fda-1.png[FDA, 300]
+
+=== Purpose
+
+The following is taken from  link:http://www.fda.gov/ScienceResearch/SpecialTopics/CriticalPathInitiative/SpotlightonCPIProjects/ucm149414.htm[Reference documentation] and references <<Stewart>>, <<passerini>>.
+
+The purpose of this project is to determine how computational fluid dynamics can be effectively used to characterize fluid flow and to predict blood damage in medical devices. To address this complex issue, FDA has partnered with academia and industry under the Critical Path Initiative program to advance the application of CFD technology in the development and evaluation of medical devices.
+
+=== Application
+
+=== Configurations
+
+[TableRe]
+.Throat Reynolds number $$Re_t$$ , inlet Reynolds number $$Re_i$$ , and flow rate for the flow regimes under consideration.
+[width="80%",options="header",cols=">,>,>"]
+|===================
+|$$￼Re_t$$| $$Re_i$$  | Flow rate Q ($$m^3/s$$)
+|500 | 167  |5.2062e􏰙6
+|2000 | 667  |2.0825e􏰙5
+|3500 | 1167 |3.6444e􏰙5
+|===================
+￼￼
+[[img-fda-sections]]
+.Radial sections at which the numerical results are compared with the experimental measurements.
+image::fda-sections.png[FDA Sections, 300]
+
+
+
+
+We consider three flow regimes $$Re_t=500,2000, 4500$$ as described in Table <<TableRe>>..
+
+Regarding $$Re_t=500$$, we shall consider the meshes described in Table <<TableMeshesRe500>>.
+
+[TableMeshesRe500]
+.List of meshes for $$Re=500$$
+[width="60%",options="header"]
+|======
+| Name    | $$h_{min}$$| $$h_{max}$$| $$h_{avg}$$|  #Tetrahedrons| #Vertices
+| $$M_0$$ |   0.01| 7.5e-3| 6.9e-3| |
+| $$M_1$$ | 1.8e-3| 1.7e-4| 6.9e-4| |
+| $$M_2$$ | 1.9e-3| 1.3e-4| 4.5e-4| |
+| $$M_3$$ | 1.8e-3| 9.2e-5| 3.4e-4| |
+|======
+
+
+:numbered:
+[bibliography]
+=== FDA Bibliography
+
+[bibliography]
+- [[[Stewart]]] Stewart, SandyF.C. Paterson, EricG. Burgreen, GregW. Hariharan, Prasanna Giarra, Matthew Reddy, Varun Day, StevenW. Manning, KeefeB. Deutsch, Steven Berman, MichaelR. Myers, MatthewR. Malinauskas, RichardA. 'Assessment of CFD Performance in Simulations of an Idealized Medical Device: Results of FDA’s First Computational Interlaboratory Study'. Cardiovascular Engineering and Technology. June 2012, Volume 3, Issue 2, pp 139-160.
+- [[[passerini]]] T. Passerini, A. Quaini, U. Villa, A. Veneziani and S. Canic 'Validation of an open source framework for the simulation of blood flow in rigid and deformable vessels.' INTERNATIONAL JOURNAL FOR NUMERICAL METHODS IN BIOMEDICAL ENGINEERING Int. J. Numer. Meth. Biomed. Engng. (2013) Published online in Wiley Online Library (wileyonlinelibrary.com). DOI: 10.1002/cnm.2568
