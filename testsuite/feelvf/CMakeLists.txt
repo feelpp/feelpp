@@ -11,5 +11,6 @@ feelpp_add_test( msi CFG test_msi.cfg )
 feelpp_add_test( inner_curl )
 feelpp_add_test( inner_laplacian )
 feelpp_add_test( vf_integrals )
+feelpp_add_test( vf_val )
 
 feelpp_add_test( projtangent )
