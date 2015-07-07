@@ -27,7 +27,7 @@
 
 #define FEELPP_INSTANTIATE_FMS 1
 
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/projectors.hpp>
