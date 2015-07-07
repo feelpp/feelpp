@@ -25,7 +25,7 @@
 #define FEELPP_EXTENDERFROMINTERFACE_HPP 1
 
 
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 
 namespace Feel {
 

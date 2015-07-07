@@ -1,31 +1,28 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t
-   -*- vim: set ft=cpp fenc=utf-8 sw=4 ts=4 sts=4 tw=80 et cin cino=N-s,c0,(0,W4,g0:
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-02-07
-
-  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/**
-   \file dist2wallsoptimized.cpp
-   \author Guillaume Dolle <gdolle at unistra.fr>
-   \date 2014-01-21
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+ 
+ This file is part of the Feel++ library
+ 
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 07 juil. 2015
+ 
+ Copyright (C) 2015 Feel++ Consortium
+ 
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+
 
 //#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
@@ -37,9 +34,10 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feells/extenderfrominterface.hpp>
 
 using namespace Feel;
 
@@ -48,7 +46,7 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description opts( "test_levelset" );
+    po::options_description opts( "test_extenderFromInterface" );
     opts.add_options()
     ( "radius", po::value<double>()->default_value( 1.0 ), "circle or sphere radius" )
     ;
@@ -59,15 +57,15 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_levelset" ,
-                     "test_levelset" ,
+    AboutData about( "test_extenderFromInterface" ,
+                     "test_extenderFromInterface" ,
                      "0.1",
-                     "test levelset",
+                     "test extenderFromInterface",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
 
-    about.addAuthor( "Guillaume Dolle", "developer", "gdolle@unistra.fr", "" );
     about.addAuthor( "Vincent Doyeux", "developer", "vincent.doyeux@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
 
     return about;
 }
@@ -77,7 +75,7 @@ makeAbout()
 ///     \tparam H_ORDER     Space polynomial order..
 ///     \tparam G_ORDER     Geometrical polynomial order.
 template<int DIM, int H_ORDER, int G_ORDER>
-class TestLevelSet
+class TestExtenderFromInterface
 {
 public:
     using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
@@ -86,7 +84,7 @@ public:
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
-    TestLevelSet( double radius=doption("radius") ) :
+    TestExtenderFromInterface( double radius=doption("radius") ) :
         M_mesh( createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid_nd",
                                               _shape="ellipsoid",
@@ -125,7 +123,7 @@ public:
 
         LOG(INFO) << "phi1 max" << phi.max();
         LOG(INFO) << "err1 max: " << err.max();
-        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw1");
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_extenderFromInterface_distw1");
         exp->step(0)->add("phi1", phi);
         exp->step(0)->add("phio1", phio);
         exp->step(0)->add("dist1", dist);
@@ -161,7 +159,7 @@ public:
 #else
         LOG(INFO) << "phi2_max" << phi.max();
         LOG(INFO) << "err2 max: " << err.max();
-        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_distw2");
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_extenderFromInterface_distw2");
         exp->step(0)->add("phio2", phio);
         exp->step(0)->add("phi2", phi);
         exp->step(0)->add("dist2", dist);
@@ -179,34 +177,34 @@ private:
 
 #if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
-BOOST_AUTO_TEST_SUITE( levelset )
+BOOST_AUTO_TEST_SUITE( extenderFromInterface )
 
 // Test wall distance on :
 // Unit 2D circle P1G1.
 BOOST_AUTO_TEST_CASE( test_2d_p1g1 )
 {
-    TestLevelSet<2,1,1> tls;
+    TestExtenderFromInterface<2,1,1> tls;
     tls.wallDist_1();
 }
 
 // Unit 3D sphere P1G1.
 BOOST_AUTO_TEST_CASE( test_3d_p1g1 )
 {
-    TestLevelSet<3,1,1> tls;
+    TestExtenderFromInterface<3,1,1> tls;
     tls.wallDist_1();
 }
 
 // Unit 2D circle P1G2.
 BOOST_AUTO_TEST_CASE( test_2d_p1g2 )
 {
-    TestLevelSet<2,1,2> tls;
+    TestExtenderFromInterface<2,1,2> tls;
     tls.wallDist_1();
 }
 
 // Unite 3D sphere P1G2.
 BOOST_AUTO_TEST_CASE( test_3D_p1g2 )
 {
-    TestLevelSet<3,1,2> tls;
+    TestExtenderFromInterface<3,1,2> tls;
     tls.wallDist_1();
 }
 
@@ -219,17 +217,19 @@ int main(int argc, char** argv )
                            _about=makeAbout(),
                            _desc=makeOptions() );
 #if 0
-    TestLevelSet<2,1,1> tls;
-    TestLevelSet<3,1,1> tls;
-    TestLevelSet<2,1,1> tls( 10, 0.1 );
-    TestLevelSet<3,1,1> tls( 10, 1 );
+    TestExtenderFromInterface<2,1,1> tls;
+    TestExtenderFromInterface<3,1,1> tls;
+    TestExtenderFromInterface<2,1,1> tls( 10, 0.1 );
+    TestExtenderFromInterface<3,1,1> tls( 10, 1 );
 #endif
-    //TestLevelSet<3,1,1> tls( 1, 0.1 );
-    //TestLevelSet<2,1,2> tls( 1, 0.1 );
-    TestLevelSet<3,1,1> tls;
+    //TestExtenderFromInterface<3,1,1> tls( 1, 0.1 );
+    //TestExtenderFromInterface<2,1,2> tls( 1, 0.1 );
+    TestExtenderFromInterface<3,1,1> tls;
     tls.wallDist_1();
     tls.wallDist_2();
 
     return 0;
 }
 #endif
+
+

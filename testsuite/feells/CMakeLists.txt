@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-28
+#       Date: 07 juil. 2015
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-add_custom_target( testsuite )
-
-add_subdirectory(contrib)
-
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt pde ls)
-  add_custom_target( test${testdir} )
-  add_subdirectory( feel${testdir} )
-
+set_directory_properties(PROPERTIES LABEL testls )
+foreach(TEST levelset extender_from_interface )
+    feelpp_add_test( ${TEST} )
 endforeach()
