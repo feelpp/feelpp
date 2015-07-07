@@ -21,10 +21,13 @@
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <feel/feelpde/reinit_fms_impl.hpp>
+#include <feel/feells/reinit_fms_impl.hpp>
 
 namespace Feel {
 
+template class ReinitializerFMS< ls_space_type<3>, NoPeriodicity > ;
+template class ReinitializerFMS< ls_space_type<3>, Periodic<> > ;
 template class ReinitializerFMS< ls_space_type<3,2>, NoPeriodicity > ;
+template class ReinitializerFMS< lsh_space_type<3>, NoPeriodicity > ;
 
 }

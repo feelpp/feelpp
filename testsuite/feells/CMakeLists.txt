@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2013-07-22
+#       Date: 07 juil. 2015
 #
-#  Copyright (C) 2013-2014 Feel++ Consortium
+#  Copyright (C) 2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(SRC boundaryconditions.cpp)
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelpde "${SRC};${HDR}")
+
+set_directory_properties(PROPERTIES LABEL testls )
+foreach(TEST levelset extender_from_interface )
+    feelpp_add_test( ${TEST} )
+endforeach()
