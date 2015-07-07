@@ -29,7 +29,7 @@
 
 namespace Feel {
 
-template<int Dim,int GeoOrder=1, template<int,int,int> class Convex = Simplex>
+template<int Dim,int GeoOrder=1, template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
 class ExtenderFromInterface
 {
 public:
@@ -51,19 +51,20 @@ public:
             this->build();
         }
 
-    void extendFromInterface( ls_element_type<Dim,GeoDim,Convex>& field );
+    void extendFromInterface( element_type& field );
 private:
     void build();
 
 private:
     
     space_ptrtype M_Xh;
-    elemen_type M_phi;
+    element_type M_phi;
     std::vector<state_type> M_states_init;
-    std::vector<double> M_M_interf_id;
+    std::vector<size_type> M_interf_id;
 }; // ExtenderFromInterface
 
-template<int Dim,int GeoOrder=1, template<int,int,int> class Convex = Simplex>
+template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
+void
 ExtenderFromInterface<Dim,GeoOrder,Convex>::build()
 {
     
@@ -79,7 +80,7 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::build()
         std::vector<double> indices_nodes( 3 );
         for (int j=0; j<convex_type::nPoints; j++)
         {
-            double index = levelset->phi()->start() + boost::get<0>(M_Xh->dof()->localToGlobal( it_elt->id(), j, 0 ));
+            double index = M_phi.start() + boost::get<0>(M_Xh->dof()->localToGlobal( it_elt->id(), j, 0 ));
             //double index = velocX.localToGlobal(it_elt->id(), j, 0);
             indices_nodes[j]=index;
 
@@ -107,14 +108,14 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::build()
 
     if (M_interf_id.size() == 0 )
     {
-        cout<<"no element in the interface\n";
-        exit(0);
+        LOG(WARNING) <<"no element in the interface\n";
     }
     // **************************************************************
 
 }
 
-template<int Dim,int GeoOrder=1, template<int,int,int> class Convex = Simplex>
+template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
+void
 ExtenderFromInterface<Dim,GeoOrder,Convex>::extendFromInterface( element_type& field )
 {
     std::vector<state_type> states( M_states_init );
