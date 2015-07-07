@@ -128,8 +128,8 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::extendFromInterface( element_type& f
     for (int compt=0; dofpt_it != dofpt_en; dofpt_it++)
     {
         
-        auto dofpt_coord = dofpt_it->get<0>();
-        auto dofpt_id = dofpt_it->get<1>();
+        auto dofpt_coord = dofpt_it->template get<0>();
+        auto dofpt_id = dofpt_it->template get<1>();
 
         if (states[dofpt_id]==TODO)
         {
