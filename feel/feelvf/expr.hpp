@@ -526,7 +526,8 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_tensor_expr.evalq( c1, c2, q );
+            value_type e = M_tensor_expr.evalq( c1, c2, q );
+            return e;
         }
 
         gmc_ptrtype M_geo;
@@ -637,7 +638,12 @@ public:
     {
         return M_expr.evaluate( parallel,worldcomm );
     }
-
+    template<typename T, int M, int N=1>
+    std::vector<Eigen::Matrix<T,M,N> >
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
+        {
+            return M_expr.evaluate( v );
+        }
     typename expression_type::value_type
     evaluateAndSum() const
     {
@@ -685,6 +691,9 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
 extern Expr<LambdaExpr1> _e1;
 extern Expr<LambdaExpr2> _e2;
 extern Expr<LambdaExpr3> _e3;
+extern Expr<LambdaExpr1V> _e1v;
+extern Expr<LambdaExpr2V> _e2v;
+extern Expr<LambdaExpr3V> _e3v;
 
 /**
  * \class ExpressionOrder
