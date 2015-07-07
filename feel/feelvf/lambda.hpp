@@ -42,7 +42,7 @@ enum { NONE             = 0x00, // Notice we are using bits as flags here.
 
 class LambdaExprBase {};
 
-template<int I = FIRST>
+template<int I = FIRST, template<uint16_type> class FT = Scalar>
 class LambdaExpr : public LambdaExprBase
 {
 public:
@@ -161,7 +161,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
+        typedef Shape<gmc_type::nDim, FT, false, false> shape;
 
 
         template<typename Indq, typename Indi, typename Indj>
@@ -245,6 +245,9 @@ public:
 using LambdaExpr1 = LambdaExpr<FIRST>;
 using LambdaExpr2 = LambdaExpr<SECOND>;
 using LambdaExpr3 = LambdaExpr<THIRD>;
+using LambdaExpr1V = LambdaExpr<FIRST,Vectorial>;
+using LambdaExpr2V = LambdaExpr<SECOND,Vectorial>;
+using LambdaExpr3V = LambdaExpr<THIRD,Vectorial>;
 
 } // vf
 } // Feel

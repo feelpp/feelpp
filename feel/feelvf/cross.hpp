@@ -65,6 +65,15 @@ public:
         ExprR::template HasTrialFunction<Func>::result ;
     };
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef CrossProduct<typename ExprL::template Lambda<TheExpr...>::type,typename ExprR::template Lambda<TheExpr...>::type> type; 
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_left_expr(e...),M_right_expr(e...)); }
 
     /** @name Typedefs
      */
