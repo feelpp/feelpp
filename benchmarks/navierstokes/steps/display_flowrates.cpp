@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 11 Apr 2015
+ Date: 03 juil. 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,42 +21,26 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_MODELPOSTPROCESS_HPP
-#define FEELPP_MODELPOSTPROCESS_HPP 1
-
-
+#include <iostream>
+#include <iomanip>
 #include <map>
+#include <string>
 
-#include <boost/property_tree/ptree.hpp>
-
-namespace Feel {
-
-namespace pt =  boost::property_tree;
-
-class ModelPostprocess: public std::map<std::string,std::vector<std::string>>
+bool
+display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates )
 {
-public:
-    ModelPostprocess();
-    ModelPostprocess( pt::ptree const& p );
-    virtual ~ModelPostprocess();
-    void setPTree( pt::ptree const& _p );
-    std::map<std::string,double> toPostprocessValues() const
-        {
-            std::map<std::string,double> pv;
-            #if 0
-            for( auto const& p : *this )
-                pv[p.first]=p.second.value();
-            #endif
-            return pv;
-        }
-    void saveMD(std::ostream &os);    
-private:
-    void setup();
-private:
-    pt::ptree M_p;
-};
-
-
+    os << "| Time | ";
+    for( auto & f : flowrates )
+        os << std::setw(11) << std::right << f.first  << " | " << std::setw(11) << std::right << " Error | " ;
+    os << "|\n";
+    return true;
 }
-#endif
-
+bool
+display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates )
+{
+    os << "| " << t << " | ";
+    for( auto & f : flowrates )
+        os<< std::setw(11) << std::scientific << std::setprecision( 2 )<< f.second << " | " << std::setw(11) << std::scientific << std::setprecision( 2 ) << ((f.second-5.216650303e-6)/5.216650303e-6)*100 << "  | " ;
+    os << "|\n";
+    return true;
+}

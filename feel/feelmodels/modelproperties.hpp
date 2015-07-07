@@ -67,6 +67,8 @@ public:
     ModelPostprocess const& postProcess() const { return M_postproc; }
 
     std::string getEntry(std::string &s);
+
+    void saveMD(std::ostream &os);
     
 private:
     pt::ptree M_p;

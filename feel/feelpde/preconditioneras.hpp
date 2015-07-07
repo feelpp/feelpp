@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #define FEELPP_PRECONDITIONERAS_HPP 1
 
 
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
@@ -41,6 +42,9 @@ template< typename space_type, typename coef_space_type >
 {
     typedef Preconditioner<typename space_type::value_type> super;
 public:
+
+    static const uint16_type Dim = space_type::nDim;
+    typedef typename space_type::value_type value_type;
 
     enum Type
     {
@@ -59,19 +63,24 @@ public:
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
+    // Vh
     typedef typename space_type::template sub_functionspace<0>::type potential_space_type;
     typedef typename space_type::template sub_functionspace<1>::type lagrange_space_type;
+    // Qh
     typedef typename space_type::template sub_functionspace<0>::ptrtype potential_space_ptrtype;
     typedef typename space_type::template sub_functionspace<1>::ptrtype lagrange_space_ptrtype;
+    // Qh3 - temporary version
+    typedef Lagrange<1,Vectorial> lag_v_type;
+    typedef FunctionSpace<mesh_type, bases<lag_v_type>> lag_v_space_type;
+    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
 
+    // Elements
     typedef typename potential_space_type::element_type potential_element_type;
     typedef typename lagrange_space_type::element_type lagrange_element_type;
     typedef typename coef_space_type::element_type element_coef_type;
+    typedef typename lag_v_space_type::element_type lag_v_element_type; 
 
-    typedef typename space_type::value_type value_type;
-
-    static const uint16_type Dim = space_type::nDim;
-
+    // operatrors
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
@@ -87,25 +96,20 @@ public:
      * \param Mh Permeability space type
      * \param bcFlags the boundary conditions flags
      * \param s name of backend
-     * \param A the full matrix 
+     * \param k value
      */
     PreconditionerAS( std::string t,
                       space_ptrtype Xh,
                       coef_space_ptrtype Mh, 
                       BoundaryConditions bcFlags,
                       std::string const& s,
-                      sparse_matrix_ptrtype A,
                       double k
                       );
 
     Type type() const { return M_type; }
     void setType( std::string t );
 
-    void initialize();
-
-    //template< typename Expr_convection, typename Expr_bc >
     void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
-    void setPC( sparse_matrix_ptrtype , sparse_matrix_ptrtype );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -113,36 +117,33 @@ public:
     }
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
-    int guess( vector_type& U ) const;
 
     virtual ~PreconditionerAS(){};
 
 private:
-    void createMatrices();
-private:
 
     Type M_type;
-
-    backend_ptrtype M_cg1; // 14.a 
-    backend_ptrtype M_cg2; // 14.b
 
     space_ptrtype M_Xh;
     potential_space_ptrtype M_Vh;
     lagrange_space_ptrtype M_Qh;
+    lag_v_space_ptrtype M_Qh3;
     coef_space_ptrtype M_Mh;
 
     sparse_matrix_ptrtype 
-        M_p, M_p_t,
-        M_c, M_c_t; // 10
+        M_P, M_Pt,
+        M_C, M_Ct;
 
     op_ptrtype SimpleOp;
     op_mat_ptrtype opMat1,
                    opMat2;
     op_inv_ptrtype opMatInv;
 
-    mutable vector_ptrtype 
+    mutable vector_ptrtype
+        A,B,C,
         M_r, M_r_t,
         M_uout,
+        M_diagPm,
         M_t, M_s,
         M_y, M_y_t,
         M_z, M_z_t;
@@ -150,7 +151,7 @@ private:
     mutable potential_element_type U;
     element_coef_type M_mu;
 
-    op_ptrtype M_diagPm, // diag(Pm)
+    op_ptrtype
                M_lgqOp,    // \bar{L} + gamma \bar{Q}
                M_lOp      // L
                ;
@@ -158,8 +159,8 @@ private:
     BoundaryConditions M_bcFlags;
     std::string M_prefix;
 
-    value_type M_g; // gamma
     value_type M_k; // k
+    value_type M_g; // gamma
 };
 
 template < typename space_type, typename coef_space_type >
@@ -168,35 +169,43 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
                                                               coef_space_ptrtype Mh, 
                                                               BoundaryConditions bcFlags,
                                                               std::string const& p,
-                                                              sparse_matrix_ptrtype A,
                                                               double k)
     :
         M_type( AS ),
-        M_cg1(backend()),
         M_Xh( Xh ),
         M_Vh(Xh->template functionSpace<0>() ),
         M_Qh(Xh->template functionSpace<1>() ),
         M_Mh( Mh ),
-        M_p_t(M_cg1->newMatrix(M_Qh, M_Vh)),
-        M_c_t(M_cg1->newMatrix(M_Qh, M_Vh)),
-        M_t(M_cg1->newVector(M_Vh)),
-        M_s(M_cg1->newVector(M_Vh)),
+        A(backend()->newVector(M_Vh)),
+        B(backend()->newVector(M_Vh)),
+        C(backend()->newVector(M_Vh)),
+        M_r(backend()->newVector(M_Vh)),
+        M_r_t(backend()->newVector(M_Vh)),
+        M_uout(backend()->newVector(M_Vh)),
+        M_diagPm(backend()->newVector(M_Vh)),
+        M_t(backend()->newVector(M_Vh)),
         U( M_Vh, "U" ),
         M_mu(M_Mh, "mu"),
         M_bcFlags( bcFlags ),
         M_prefix( p ),
-        M_k(k)
+        M_k(k),
+        M_g(1.-k*k)
 {
     tic();
     LOG(INFO) << "[PreconditionerAS] setup starts";
-    M_g = 1.-M_k*M_k;
-    this->setMatrix( A );
+    M_Qh3 = lag_v_space_type::New(Xh->mesh());
+    M_s = backend()->newVector(M_Qh3);
+    M_y = backend()->newVector(M_Qh3);
+
+    // Create the interpolation and keep only the matrix
+    auto pi_curl = opInterpolation(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+    M_P = pi_curl->matPtr();
+    M_Pt= backend()->newMatrix(M_Qh3,M_Vh);
+    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
+
+    // todo: create M_C and M_Ct
     //std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
     //std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
-
-    this->createMatrices();
-
-    initialize();
 
     this->setType ( t );
     toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
@@ -204,50 +213,9 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
 
 template < typename space_type, typename coef_space_type >
     void
-PreconditionerAS<space_type,coef_space_type>::initialize()
-{
-}
-
-template < typename space_type, typename coef_space_type >
-    void
-PreconditionerAS<space_type,coef_space_type>::setPC(sparse_matrix_ptrtype p, sparse_matrix_ptrtype c) // matrix P and C
-{
-    tic();
-    M_p = p;
-    M_p->transpose(M_p_t);
-    M_c = c;
-    M_c->transpose(M_c_t);
-    toc("preconditionerAS::setPC");
-}
-
-template < typename space_type, typename coef_space_type >
-    void
-PreconditionerAS<space_type,coef_space_type>::createMatrices()
-{
-#if 0
-    tic();
-    M_p      = M_cg1->newMatrix(M_Xh, M_Xh ); 
-    M_l      = M_cg1->newMatrix(M_Xh, M_Xh ); 
-    M_q      = M_cg1->newMatrix(M_Xh, M_Xh ); 
-    M_c      = M_cg1->newMatrix(M_Xh, M_Xh ); 
-    M_id     = M_cg1->newMatrix(M_Xh, M_Xh ); 
-    M_r      = M_cg1->newVector(M_Xh); 
-    M_r_t    = M_cg1->newVector(M_Xh); 
-    M_z      = M_cg1->newVector(M_Xh); 
-    M_z_t    = M_cg1->newVector(M_Xh); 
-    M_y      = M_cg1->newVector(M_Xh); 
-    M_y_t    = M_cg1->newVector(M_Xh); 
-    M_uout   = M_cg1->newVector(M_Xh); 
-    M_t      = M_cg1->newVector(M_Xh); 
-    M_s      = M_cg1->newVector(M_Xh); 
-    toc( "PreconditionerAS::createMatrix", FLAGS_v > 0 );
-#endif
-}
-template < typename space_type, typename coef_space_type >
-    void
 PreconditionerAS<space_type,coef_space_type>::setType( std::string t )
 {
-    if ( t == "AS") M_type = AS;
+    if ( t == "AS")     M_type = AS;
     if ( t == "SIMPLE") M_type = SIMPLE;
 }
 
@@ -260,16 +228,17 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
 {
     // Mettre à jour les matrices
     tic();
-    this->setMatrix( Pm );
 
+    if(this->type() == AS){
     // A = Pm
-    M_diagPm = diag ( op (Pm, "blockms.11.diag")) ;
+    //M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
+    backend()->diag(Pm,M_diagPm);
     M_lOp    = op( L, "blockms.11.2");
 
-    auto u = M_Qh->element("u");
-    auto f21 = form2(M_Qh, M_Qh); // L + g Q
-    f21 = integrate(_range=elements(M_Qh->mesh()),
-                    _expr=1./idv(mu)*inner(grad(u),gradt(u))
+    auto u = M_Qh3->element("u");
+    auto f21 = form2(M_Qh3, M_Qh3); // L + g Q - see 14.a
+    f21 = integrate(_range=elements(M_Qh3->mesh()),
+                    _expr=1./idv(mu)*inner(grad(u),gradt(u)) // should be wrong
                     + M_g*inner(id(u),idt(u)));
     M_lgqOp  = op( f21.matrixPtr(), "blockms.11.1");
     //M_pm = f21.matrixPtr();
@@ -284,6 +253,15 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
 
     }
 #endif
+    }
+    else if(this->type() == SIMPLE)
+    {
+        auto uu = M_Vh->element("uu");
+        auto f22 = form2(M_Vh, M_Vh); 
+        f22 = integrate(_range=elements(M_Vh->mesh()),
+                        _expr=inner(id(uu),idt(uu)));
+        SimpleOp = op( f22.matrixPtr(),"blockms.11.1");
+    }
     toc( "PreconditionerAS::update", FLAGS_v > 0 );
 }
 
@@ -291,54 +269,52 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
 
 template < typename space_type, typename coef_space_type >
 int
-PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
+PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& X /*R*/, vector_type& Y /*W*/) const
 {
+    /*
+     * We solve Here P_v w = r
+     * With P_v^-1 = diag(P_m)^-1
+     *              + P (\bar L + g \bar Q) P^t
+     *              + C (L^-1) C^T
+     */
 #if 1
     // Decompose les éléments
     tic();
     U = X;
     U.close();
-    toc("Element created");
+    toc("Element created",FLAGS_v>0);
 
     // résout l'équation 12
     if ( this->type() == AS )
     {
         tic();
         // RHS calculation
-        auto tmp = M_cg1->newVector(M_Vh);
-        *tmp = Y;
+        auto tmp = backend()->newVector(M_Vh);
+        *tmp = X;
         tmp->close();
-        std::cout 
-            << M_p_t->size1() <<"\t"
-            << M_p_t->size2() <<"\t"
-            << tmp->size() <<"\t"
-            << M_s->size() <<std::endl;
-        M_p_t->multVector(tmp,M_s); // M_s = P^t r
-        M_c_t->multVector(tmp,M_t); // M_t = C^t r
-        M_lgqOp->applyInverse(*M_s,*M_y);  // here solve 14.a
-        toc("14.a solved");
-        tic();
-        M_lOp->applyInverse(*M_t,*M_z);  // here solve 14.b
-        toc("14.b solved");
-        if(FLAGS_v>3)
-        {
-            M_p->print();
-            M_c->print();
-            tmp->print();
-            M_s->print();
-            M_t->print();
-            M_y->print();
-            M_z->print();
-        }
-        tic();
-        M_diagPm->applyInverse(tmp,M_r_t);// Here compute diag(pm^-1)
-        M_p->multVector(M_y,M_y_t);       // M_p*M_y -> M_y_t
-        M_c->multVector(M_z,M_z_t);       // M_c*M_z -> M_z_t
-        M_z_t->scale(1./M_g);             // 1/g*M_c*M_z -> M_z_t
-        M_r_t->add(*M_y_t);
-        M_y_t->add(*M_z_t);
-        toc("15 assembled");
-        *M_uout = *M_y_t; // 15;
+        // A = diag(Pm)^-1*r
+        M_diagPm->pointwiseDivide(*tmp,*A);
+        // s = P^t r
+        M_Pt->multVector(tmp,M_s);
+        // 14.a
+        M_lgqOp->applyInverse(M_s,M_y);
+        // B = P*y
+        M_P->multVector(M_y,B);
+
+        // Not yet available
+#if 0
+        // t = C^t r
+        M_Ct->multVector(tmp,M_t);
+        // 14.b
+        M_lOp->applyInverse(M_t,M_z);
+        // C = C z
+        M_C->multVector(M_z,C);
+        C->scale(1./M_g);
+        A->add(*C);
+#endif
+        A->add(*B);
+        toc("15 assembled",FLAGS_v>0);
+        *M_uout = *A; // 15;
     }
     else if( this->type() == SIMPLE ){
         SimpleOp->applyInverse(X, Y);
@@ -350,46 +326,13 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
     }
 
     tic();
-    LOG(INFO) << "coucou\n"; Y=*M_uout;
-    LOG(INFO) << "coucou\n"; Y.close();
+    Y=*M_uout;
+    Y.close();
     toc("PreconditionerAS::applyInverse" );
 #endif
     return 0;
 }
 
-template < typename space_type, typename coef_space_type >
-int
-PreconditionerAS<space_type,coef_space_type>::guess ( vector_type& Y ) const
-{
-#if 0
-    U = Y;
-    U.close();
-
-    LOG(INFO) << "Create potential/lagrange component...\n";
-    *M_ain = U.template element<0>();
-    M_ain->close();
-    *M_pin = U.template element<1>();
-    M_pin->close();
-
-    LOG(INFO) << "lagrange/potential blockas : apply divergence...\n";
-    divOp->apply( *M_pout, *M_ain );
-
-    M_aux->zero();
-    M_aux->add( -1.0, *M_ain );
-    M_aux->close();
-
-    LOG(INFO) << "potential blockas : apply inverse convection diffusion...\n";
-    helmOp->applyInverse(*M_aux, *M_ain);
-    LOG(INFO) << "Update output potential/lagrange...\n";
-
-    U.template element<0>() = *M_ain;
-    U.template element<1>() = *M_pin;
-    U.close();
-    Y=U;
-    Y.close();
-#endif
-    return 0;
-}
 namespace meta
 {
 template< typename space_type , typename coef_space_type >
@@ -408,7 +351,6 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
                                  ( required
                                    ( space, *)
                                    ( space2, *)
-                                   ( matrix, *)
                                  )
                                  ( optional
                                    ( type, *, "AS")
@@ -421,14 +363,14 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
 #if 1
     typedef typename meta::blockas<
         typename parameter::value_type<Args, tag::space>::type::element_type,
-                 typename parameter::value_type<Args, tag::space2>::type::element_type
+        typename parameter::value_type<Args, tag::space2>::type::element_type
                      >::ptrtype pas_ptrtype;
 
     typedef typename meta::blockas<
         typename parameter::value_type<Args, tag::space>::type::element_type,
-                 typename parameter::value_type<Args, tag::space2>::type::element_type
+        typename parameter::value_type<Args, tag::space2>::type::element_type
                      >::type pas_type;
-    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, matrix, h ) );
+    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, h ) );
     return p;
 #endif
 } // 

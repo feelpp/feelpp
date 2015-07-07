@@ -37,5 +37,9 @@ namespace vf
 Expr<LambdaExpr1> _e1;
 Expr<LambdaExpr2> _e2;
 Expr<LambdaExpr3> _e3;
+
+Expr<LambdaExpr1V> _e1v;
+Expr<LambdaExpr2V> _e2v;
+Expr<LambdaExpr3V> _e3v;
 }
 }

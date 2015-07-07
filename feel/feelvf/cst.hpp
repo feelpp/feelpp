@@ -77,6 +77,14 @@ public:
     Cst( Cst const& c ) = default;
     Cst& operator=( Cst const& c ) = default;
 
+    T& value_ref() 
+        {
+            return M_constant;
+        }
+    T const& value_ref()  const
+        {
+            return M_constant;
+        }
     constexpr value_type value() const
     {
         return M_constant;
@@ -132,18 +140,18 @@ public:
         tensor( expression_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         tensor( expression_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& /*fev*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         tensor( expression_type const& expr, Geo_t const& /*geom*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         template<typename IM>
@@ -197,7 +205,7 @@ public:
         {
             return M_constant;
         }
-        const value_type M_constant;
+        T M_constant;
     };
 
 protected:
