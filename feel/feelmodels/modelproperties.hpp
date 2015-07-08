@@ -25,6 +25,7 @@
 #define FEELPP_MODELPROPERTIES_HPP 1
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
