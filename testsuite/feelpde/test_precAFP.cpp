@@ -61,6 +61,7 @@ makeOptions()
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
+    ( "mu", po::value<double>()->default_value( 1.0 ), "Magnetic Permeability" )
     ;
     return opts.add( Feel::feel_options() )
         .add(Feel::backend_options("ms"));

@@ -9,7 +9,8 @@
 # $5-11 - ksp/pc config
 # $12 - string
 function simu() {
-  out=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}.batch
+  title=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}
+  out=${title}.batch
   rm $out; touch $out
   echo "#!/bin/bash" >>$out
   echo "# Lines with SBATCH starting with ## are comments and starting with # are actual commands for sbatch">>$out
@@ -35,7 +36,8 @@ function simu() {
   echo "">>$out
   echo "# If you want to have access to Feel++ logs">>$out
   echo "# export the FEELPP_SCRATCHDIR variable to an NFS mounted directory">>$out
-  echo "export FEELPP_SCRATCHDIR=/scratch/job.$SLURM_JOB_ID">>$out
+  echo "export FEELPP_SCRATCHDIR=/scratch/log/job.$SLURM_JOB_ID">>$out
+  echo "export FEELPP_DIR=/scratch/export/job.$SLURM_JOB_ID">>$out
   echo "">>$out
   echo "#################### OPTIONAL: ">>$out
   echo "# In case you want to use modules.">>$out
@@ -57,10 +59,10 @@ function simu() {
   echo "# mpirun of openmpi is natively interfaced with Slurm">>$out
   echo "# No need to precise the number of processors to use">>$out
   echo "cd ${12}">>$out
-  echo "mpirun --bind-to-core -x LD_LIBRARY_PATH ./feelpp_test_precAFD${2}D --config-files precAFC${2}D.cfg backend.cfg --mu ${3} --gmsh.hsize ${4} --ms.backend.pc-type=$5 --ms.backend.ksp-type=$6 --ms.blockms.11.backend.pc-type=$7 --ms.blockms.11.backend.ksp-type=$8 --ms.blockms.22.backend.pc-type=$9 --ms.blockms.22.backend.ksp-type=${10} --title ${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10} | grep RES >> ${2}_${11}">>$out
-  echo "">>$out
+  echo "mpirun --bind-to-core -x LD_LIBRARY_PATH ./feelpp_test_precAFD${2}D --config-files precAFC${2}D.cfg backend.cfg --mu ${3} --gmsh.hsize ${4} --ms.backend.pc-type=$5 --ms.backend.ksp-type=$6 --ms.blockms.11.backend.pc-type=$7 --ms.blockms.11.backend.ksp-type=$8 --ms.blockms.22.backend.pc-type=$9 --ms.blockms.22.backend.ksp-type=${10} --title $title | grep RES >> ${title}_${11}">>$out
   echo "mkdir -p /data/`whoami`/slurm">>$out
-  echo "cp -r /scratch/job.$SLURM_JOB_ID /data/`whoami`/slurm">>$out
+  echo "cp -r $FEELPP_SCRATCHDIR /data/`whoami`/prec_behavior/${title}/log ">>$out
+  echo "cp -r $FEELPP_DIR /data/`whoami`/prec_behavior/${title}/export ">>$out
 }
 
 NPROCS=6
@@ -72,8 +74,11 @@ do
   do
     for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
     do
+      # LU
       simu $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir
+      # Block : LU LU
       simu $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir
+      # Block : Gamg Gamg
       simu $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir
     done
   done
