@@ -31,7 +31,10 @@
 
 
 /*
- This class provides an algorithm to make a distance function from a curve represented by list of points on the elements crossed by the curve. It can be coupled with a fast marching algorithm to make a distance function in the whole domain.
+ This class provides an algorithm to make a distance function from a curve
+ represented by list of points on the elements crossed by the curve. It can be
+ coupled with a fast marching algorithm to make a distance function in the whole
+ domain.
  */
 
 
