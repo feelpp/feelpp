@@ -61,7 +61,6 @@ makeOptions()
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
-    ( "mu", po::value<double>()->default_value( 1.0 ), "Magnetic Permeability" )
     ;
     return opts.add( Feel::feel_options() )
         .add(Feel::backend_options("ms"));
@@ -185,7 +184,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(idv(J),id(v)));    // rhs
+                       _expr = (1./idv(M_mu))*inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -242,7 +241,7 @@ class TestPrecAFP : public Application
                 << doption("gmsh.hsize") << "\t"
                 << Xh->nDof() << "\t"
                 << nnz << "\t"
-                << doption("mu") << "\t"
+                << soption("functions.m") << "\t"
                 << e21 << "\t"
                 << e21/e22 << std::endl;
         /* report */
