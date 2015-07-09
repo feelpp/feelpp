@@ -32,4 +32,4 @@ echo "</table>" >> tmpFile
 echo "">> tmpFile
 echo "*/" >> tmpFile
 
-mv tmpFile $1/doc/api/GettingStarted/DocCmakeLists.doc
+mv tmpFile $1/doc/api/DocCmakeLists.doc

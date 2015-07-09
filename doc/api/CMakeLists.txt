@@ -24,7 +24,7 @@
 # Set to "ON" if you want the LaTeX documentation to be built.
 set(DOXYFILE_LATEX 1)
 
-find_program(DOXYGEN doxygen)
+find_program(DOXYGEN doxygen )
 if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
 
   ## We extract the cmake option for the documentation
