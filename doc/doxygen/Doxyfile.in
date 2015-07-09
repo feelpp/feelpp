@@ -45,7 +45,7 @@ PROJECT_BRIEF          = "Finite Element Embedded Library and Language in C++"
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/pngs/logos/feel_logo_small.png"
+PROJECT_LOGO           =  "@FEELPP_HOME_DIRR@/doc/api/pngs/logos/feel_logo_small.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -380,17 +380,17 @@ EXTRACT_ALL            = YES
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class
 # will be included in the documentation.
 
-EXTRACT_PRIVATE        = NO
+EXTRACT_PRIVATE        = YES
 
 # If the EXTRACT_PACKAGE tag is set to YES all members with package or internal
 # scope will be included in the documentation.
 
-EXTRACT_PACKAGE        = NO
+EXTRACT_PACKAGE        = YES
 
 # If the EXTRACT_STATIC tag is set to YES all static members of a file
 # will be included in the documentation.
 
-EXTRACT_STATIC         = NO
+EXTRACT_STATIC         = YES
 
 # If the EXTRACT_LOCAL_CLASSES tag is set to YES classes (and structs)
 # defined locally in source files will be included in the documentation.
@@ -403,7 +403,7 @@ EXTRACT_LOCAL_CLASSES  = YES
 # the interface are included in the documentation.
 # If set to NO (the default) only methods in the interface are included.
 
-EXTRACT_LOCAL_METHODS  = NO
+EXTRACT_LOCAL_METHODS  = YES
 
 # If this flag is set to YES, the members of anonymous namespaces will be
 # extracted and appear in the documentation as a namespace called
@@ -411,7 +411,7 @@ EXTRACT_LOCAL_METHODS  = NO
 # name of the file that contains the anonymous namespace. By default
 # anonymous namespaces are hidden.
 
-EXTRACT_ANON_NSPACES   = NO
+EXTRACT_ANON_NSPACES   = YES
 
 # If the HIDE_UNDOC_MEMBERS tag is set to YES, Doxygen will hide all
 # undocumented members of documented classes, files or namespaces.
@@ -447,7 +447,7 @@ HIDE_IN_BODY_DOCS      = NO
 # to NO (the default) then the documentation will be excluded.
 # Set it to YES to include the internal documentation.
 
-INTERNAL_DOCS          = NO
+INTERNAL_DOCS          = YES
 
 # If the CASE_SENSE_NAMES tag is set to NO then Doxygen will only generate
 # file names in lower-case letters. If set to YES upper-case letters are also
@@ -688,7 +688,8 @@ WARN_LOGFILE           =
 # @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
 
 INPUT                  = \
- "@FEELPP_HOME_DIR@/ChangeLog.md"\ 
+ "@FEELPP_HOME_DIR@/ChangeLog.md"\
+# "@FEELPP_HOME_DIR@/doc/api" \ 
  "@FEELPP_HOME_DIR@/feel/" 
 # @FEELPP_PROJECTS_DIR@  #THAT HAS TO BE THE LAST ENTRY
 
@@ -785,6 +786,7 @@ EXAMPLE_RECURSIVE      = YES
 IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
                          "@FEELPP_HOME_DIR@/doc/figures/" \
+                         #"@FEELPP_HOME_DIR@/doc/api/pngs/logos/" \
                          "@FEELPP_HOME_DIR@/applications/crb/heat2d/pngs/ "
 
 
@@ -830,7 +832,7 @@ FILTER_SOURCE_PATTERNS =
 # This can be useful if you have a project on for instance GitHub and want reuse
 # the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = 
+USE_MDFILE_AS_MAINPAGE =
 
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
