@@ -250,7 +250,7 @@ class TestPrecAFP : public Application
             time_t now = std::time(0);
             tm *ltm = localtime(&now);
             std::ostringstream stringStream;
-            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
+            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<"_"<<soption("title")<<".md";
             std::ofstream outputFile( stringStream.str() );
             if( outputFile )
             {
