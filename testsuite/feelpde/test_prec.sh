@@ -2,13 +2,17 @@
 # set -x
 # This script is to test the precAFP behavior
 
+function simu() {
+  echo "mpirun -np $1 ./feelpp_test_precAFP${2}D --config-files precAFC${2}D.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}"
+}
+
 # $1 - nbProcs
 # $2 - Dim
 # $3 - mu
 # $4 - hsize
 # $5-11 - ksp/pc config
 # $12 - string
-function simu() {
+function simuBatch() {
   title=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}
   out=${title}.batch
   rm $out; touch $out
@@ -67,11 +71,11 @@ do
     for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
     do
       # LU
-      simu $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir
+      simuBatch $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir
       # Block : LU LU
-      simu $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir
+      simuBatch $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir
       # Block : Gamg Gamg
-      simu $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir
+      simuBatch $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir
     done
   done
 done
