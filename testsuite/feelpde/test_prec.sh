@@ -3,7 +3,8 @@
 # This script is to test the precAFP behavior
 
 function simu() {
-  echo "mpirun -np $1 ./feelpp_test_precAFP${2}D --config-files precAFC${2}D.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}"
+  title=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}-${13}
+  echo "mpirun -np $1 ./feelpp_test_precAFP${2}D --config-files precAFC${2}D_${13}.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}"
 }
 
 # $1 - nbProcs
@@ -11,9 +12,10 @@ function simu() {
 # $3 - mu
 # $4 - hsize
 # $5-11 - ksp/pc config
-# $12 - string
+# $12 - string - appDir
+# $13 - test type : lin or sin
 function simuBatch() {
-  title=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}
+  title=${2}D-h-${4}-mu-${3}-$5-${6}_$7-${8}_${9}-${10}-${13}
   out=${title}.batch
   rm $out; touch $out
   echo "#!/bin/bash" >>$out
@@ -53,7 +55,7 @@ function simuBatch() {
   echo "# mpirun of openmpi is natively interfaced with Slurm">>$out
   echo "# No need to precise the number of processors to use">>$out
   echo "cd ${12}">>$out
-  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFC${2}D.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}">>$out
+  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFC${2}D_${13}.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}">>$out
 
   echo "mkdir -p /data/`whoami`/prec_behavior/${title} ">>$out
   echo "cp -r /scratch/job.\${SLURM_JOB_ID}/* /data/`whoami`/prec_behavior/${title} ">>$out
@@ -66,16 +68,19 @@ OUTFILE=res.txt
 appDir=`pwd`
 for D in `seq 2 3`;
 do
-  for mu in `perl -le'for my $i (0..7) { print 10**-$i }'`;
+  for poly in `echo poly sin`;
   do
-    for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
+    for mu in `perl -le'for my $i (0..7) { print 10**-$i }'`;
     do
-      # LU
-      simuBatch $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir
-      # Block : LU LU
-      simuBatch $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir
-      # Block : Gamg Gamg
-      simuBatch $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir
+      for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
+      do
+        # LU
+        simuBatch $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir $poly
+        # Block : LU LU
+        simuBatch $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir $poly
+        # Block : Gamg Gamg
+        simuBatch $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir $poly
+      done
     done
   done
 done
