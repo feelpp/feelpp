@@ -49,7 +49,7 @@ function simu() {
   echo "# mpirun of openmpi is natively interfaced with Slurm">>$out
   echo "# No need to precise the number of processors to use">>$out
   echo "cd ${12}">>$out
-  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFC${2}D.cfg backend.cfg --mu ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}">>$out
+  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFC${2}D.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.pc-type=$5 --ms.ksp-type=$6 --ms.blockms.11.pc-type=$7 --ms.blockms.11.ksp-type=$8 --ms.blockms.22.pc-type=$9 --ms.blockms.22.ksp-type=${10} --title $title --generateMD true > ${title}_${11}">>$out
 
   echo "mkdir -p /data/`whoami`/prec_behavior/${title} ">>$out
   echo "cp -r /scratch/job.\${SLURM_JOB_ID}/* /data/`whoami`/prec_behavior/${title} ">>$out
