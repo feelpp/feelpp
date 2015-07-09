@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 07 juil. 2015
+ Date: 03 juil. 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,12 +21,26 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_REINIT_FMS_HPP
-#define FEELPP_REINIT_FMS_HPP 1
+#include <iostream>
+#include <iomanip>
+#include <map>
+#include <string>
 
-#warning This file includes at least one deprecated or antiquated header \
-    Please include <feel/feells/reinit_fms.hpp> instead.
-
-#include <feel/feells/reinit_fms.hpp>
-
-#endif
+bool
+display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates )
+{
+    os << "| Time | ";
+    for( auto & f : flowrates )
+        os << std::setw(11) << std::right << f.first  << " | " << std::setw(11) << std::right << " Error | " ;
+    os << "|\n";
+    return true;
+}
+bool
+display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates )
+{
+    os << "| " << t << " | ";
+    for( auto & f : flowrates )
+        os<< std::setw(11) << std::scientific << std::setprecision( 2 )<< f.second << " | " << std::setw(11) << std::scientific << std::setprecision( 2 ) << ((f.second-5.216650303e-6)/5.216650303e-6)*100 << "  | " ;
+    os << "|\n";
+    return true;
+}
