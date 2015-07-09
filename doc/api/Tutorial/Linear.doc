@@ -1,0 +1,64 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+    /** \page Linear Linear Algebra
+\author Christophe Prud'homme
+
+\tableofcontents
+<br>
+<hr>
+<br>
+\feel supports \c PETSc as it Linear algebra backend. \c PETSc is a suite of data structures and routines for the scalable solution of scientific applications modeled by PDE available at <a href="http://www.mcs.anl.gov/petsc/petsc-as/">http://www.mcs.anl.gov/petsc/petsc-as/</a>
+
+\section Linear_Choosing Choosing a linear algebra backend
+To select a backend in order to solve a linear system, we instantiate the \c Backend class associated :
+\co
+#include <feel/feelalg/backend.hpp>
+boost::shared_ptr<Backend<double> > backend =
+     Backend<double>::build( BACKEND_PETSC );
+\eco
+
+The backend provides an interface to solve
+\f[
+  A x = b
+\f]
+where \f$A\f$ is a \f$n \times n \f$ sparse matrix and \f$x,b\f$ vectors of size \f$n\f$. The backend defines the \c C++ types for  each of these, e.g :
+\co
+Backend<double>::sparse_matrix_type A;
+Backend<double>::vector_type x,b;
+\eco
+
+In practice, we use the \c boost::shared_ptr<> shared pointer to ensure that we won't get memory leaks. The backends provide a corresponding \c typedef
+\co
+Backend<double>::sparse_matrix_ptrtype A( backend->newMatrix( Xh, Yh ) );
+Backend<double>::vector_ptrtype x( backend->newVector( Yh ) );
+Backend<double>::vector_ptrtype b( backend->newVector( Xh ) );
+\eco
+
+where \f$X_h\f$ and \f$Y_h\f$ are function spaces providing the number of degrees of freedom that will define the size of the matrix and vectors thanks to the helpers functions \c Backend::newMatrix() and \c Backend::newVector. In a parallel setting, the local/global processor mapping would be passed down by the function spaces.
+
+\section Linear_Solving Solving
+To solve the linear problem \f$Ax=b\f$, the backend provides a function \c solve.<br>
+\Interface
+\co
+ solve(_matrix=A, _solution=x, _rhs=b)
+\eco
+Required Parameters :
+\li \c _matrix : the matrix \f$A\f$ has a \c sparse_matrix_ptrtype type
+\li \c _solution : the solution \f$x\f$ has a type \c vector_type or \c vector_ptrtype
+\li \c _rhs : the second member vector \f$b\f$ has a type \c vector_ptrtype
+
+Optional Parameters
+\li \c _prec : preconditioner, instead of solving \f$Ax=b\f$, we solve \f$P^{-1}Ax= P^{-1}b\f$. This method can be applied in iterative methods and permits to decrease the number of iterations in the resolution system
+\li \c _ maxit : maximum number of iterations, this option is used with an iterative solving method
+\li \c _rtolerance : residual tolerance, the fraction \f$\displaystyle{\frac{\mid\mid r^{(k)} \mid\mid }{\mid\mid r^{(0)} \mid\mid}}\f$ is inferior to the residual tolerance with \f$r^{(k)}=b-Ax^{(k)}\f$ and \f$x^{(k)}\f$ the solution at the \f$k^{th}\f$ iteration
+\li \c _atolerance : absolute tolerance, \f$\mid\mid r^{(k)} \mid\mid \f$ is inferior to the absolute tolerance
+\li \c _dtolerance : different tolerance, sometimes, the residue doesn’t decrease continuously during the iterations. The difference between two plots doesn’t have to exceed the parameter choosen for the difference tolerance.
+\li \c _transpose : boolean to use transpose matrix, instead of solving \f$Ax=b\f$, we solve \f$A^{t}x=b\f$. If \f$A\f$ is defined and positive, \f$A^{t}=A\f$.
+
+The library \c Boost::Parameters allows you to enter parameters in the order you want. It supports deduced parameters, that is to say parameters whose identity can be deduced from their types.
+
+
+
+
+*/
+}

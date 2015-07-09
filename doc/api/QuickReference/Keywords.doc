@@ -1,0 +1,237 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/*! \page Keywords Keywords
+
+
+\tableofcontents
+
+\li \b Next: \ref Environment
+
+<hr>
+
+One of \feel assets is it finite element embedded language. The language follows the C++ grammar, and provides keywords as well as operations between objects which are, mathematically, tensors of rank 0, 1 or 2.
+
+In all following tables we use the notations:<br>
+\f$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}\f$  with \f$n=1,2,3\f$, \f$m=1,2,3\f$, \f$p=1,2,3\f$<br>
+\f$\Omega^e\f$ current mesh element.
+
+The genesis of the language can be found in \cite prudhomme05:_domain_specif_embed_languag_c and an update on Feel++ is available in \cite PRUDHOMME:2012:HAL-00662868:3.
+
+\section Keywords_Points Points
+
+Current Point:
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} P()\endcode</td><td>\f$\overrightarrow{P}\f$</td><td> \f$(P_x, P_y, P_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Px()\endcode</td><td>\f$P_x\f$</td><td>\f$x\f$ coordinate of \f$\overrightarrow{P}\f$</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Py()\endcode</td><td>\f$P_y\f$</td><td>\f$y\f$ coordinate of \f$\overrightarrow{P}\f$<br>(value is 0 in 1D)</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Pz()\endcode</td><td>\f$P_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{P}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
+</table>
+
+Element Barycenter Point:
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} C()\endcode</td><td>\f$\overrightarrow{C}\f$</td><td> \f$(C_x, C_y, C_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Cx()\endcode</td><td>\f$C_x\f$</td><td>\f$x\f$ coordinate of \f$\overrightarrow{C}\f$</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Cy()\endcode</td><td>\f$C_y\f$</td><td>\f$y\f$ coordinate of \f$\overrightarrow{C}\f$<br>(value is 0 in 1D)</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Cz()\endcode</td><td>\f$C_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{C}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
+</table>
+
+Normal at Current Point:
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} N()\endcode</td><td>\f$\overrightarrow{N}\f$</td><td> \f$(N_x, N_y, N_z)^T\f$</td><td>\f$d \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Nx()\endcode</td><td>\f$N_x\f$</td><td>\f$x\f$ coordinate of \f$\overrightarrow{N}\f$</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Ny()\endcode</td><td>\f$N_y\f$</td><td>\f$y\f$ coordinate of \f$\overrightarrow{N}\f$<br>(value is 0 in 1D)</td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\code{.cpp} Nz()\endcode</td><td>\f$N_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{N}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
+</table>
+
+
+<a href="#" class="top">top</a>
+<hr>
+<br>
+\section Keywords_Array Vectors and Matrix
+\subsection BuildingVectors Building Vectors
+Usual syntax to create vectors:
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} vec<n>(v_1,v_2,...,v_n)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}\f$</td><td>Column Vector with \f$n\f$ rows<br>entries being expressions</td><td>\f$n \times 1\f$</td></tr>
+</table>
+You can also use expressions and the unit base vectors:
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\c oneX() </td><td> \f$\begin{pmatrix} 1\\0\\0 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{i}\f$</td></tr>
+<tr><td>\c oneY() </td><td> \f$\begin{pmatrix} 0\\1\\0 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{j}\f$</td></tr>
+<tr><td>\c oneZ() </td><td> \f$\begin{pmatrix} 0\\0\\1 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{k}\f$</td></tr>
+</table>
+
+
+\subsection BuildingMatrix Building Matrix
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} mat<m,n>(m_11,m_12,...,m_mn)\endcode</td><td>\f$\begin{pmatrix} m_{11} & m_{12} & ...\\ m_{21} & m_{22} & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix<br> entries beeing expressions </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} ones<m,n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 1 & ...\\ 1 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with 1 </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} zero<m,n>()\endcode</td><td>\f$\begin{pmatrix} 0 & 0 & ...\\ 0 & 0 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with 0 </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} constant<m,n>(c)\endcode</td><td>\f$\begin{pmatrix} c & c & ...\\ c & c & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with a constant c </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} eye<n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 0 & ...\\ 0 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>Unit diagonal Matrix <br> of size\f$n\times n\f$ </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\code{.cpp} Id<n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 0 & ...\\ 0 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>Unit diagonal Matrix <br> of size\f$n\times n\f$ </td><td>\f$n \times n\f$</td></tr>
+</table>
+
+\subsection Matrix_Manipulating Manipulating Vectors and Matrix
+Let \f$A\f$ be a square matrix of size \f$n\f$.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} inv(A)\endcode</td><td>\f$A^{-1}\f$</td><td>Inverse of matrix \f$A\f$ </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co sym(A)\eco</td><td>\f$\text{Sym}(A)\f$</td><td>Symmetric part of matrix \f$A\f$: \f$\frac{1}{2}(A+A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co antisym(A)\eco</td><td>\f$ \text{Asym}(A)\f$</td><td>Antisymmetric part of  \f$A\f$: \f$\frac{1}{2}(A-A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+</table>
+
+Let A and B be two matrix (or two vectors) of same dimension \f$m \times n\f$.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\co trace(A)\eco</td><td>\f$\text{tr}(A)\f$</td><td>Trace of matrix \f$A\f$<br>Generalized on non-squared Matrix<br>Generalized on Vectors </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co trans(B)\eco</td><td>\f$B^T\f$</td><td>Transpose of matrix \f$B\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$n \times m\f$</td></tr>
+<tr><td>\co inner(A,B)\eco</td><td>\f$ A.B \\ A:B = \text{tr}(A*B^T)\f$</td><td>Scalar product of two vectors<br>Generalized scalar product of two matrix </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co cross(A,B)\eco</td><td>\f$ A\times B\f$</td><td>Cross product of two vectors</td><td>\f$n \times 1\f$</td></tr>
+</table>
+
+
+
+
+<a href="#" class="top">top</a>
+<hr>
+<br>
+\section Keywords_Expr Expressions
+Following tables present tools to declare and manipulate expressions.
+<table class="example">
+<tr><th>\feel Keyword</th><th>Description</th></tr>
+<tr><td>\code{.cpp}
+Px()
+Py()
+Pz()
+cst( c )
+\endcode</td><td>
+Variable \f$x\f$<br>
+Variable \f$y\f$<br>
+Variable \f$z\f$<br>
+Constant function equal to \f$c\f$
+</td></tr>
+</table>
+
+You can of course use all current operators ( + - / * ) and the usual following functions:
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th>
+<tr><td>\code{.cpp} abs(expr) \endcode</td><td>\f$|f(\overrightarrow{x})|\f$</td><td>element wise absolute value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} cos(expr)\endcode</td><td>\f$\cos(f(\overrightarrow{x}))\f$</td><td>element wise cos value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} sin(expr)\endcode</td><td>\f$\sin(f(\overrightarrow{x}))\f$</td><td>element wise sin value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} tan(expr)\endcode</td><td>\f$\tan(f(\overrightarrow{x}))\f$</td><td>element wise tan value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} acos(expr)\endcode</td><td>\f$\acos(f(\overrightarrow{x}))\f$</td><td>element wise acos value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} asin(expr)\endcode</td><td>\f$\asin(f(\overrightarrow{x}))\f$</td><td>element wise asin value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} atan(expr)\endcode</td><td>\f$\atan(f(\overrightarrow{x}))\f$</td><td>element wise atan value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} cosh(expr)\endcode</td><td>\f$\cosh(f(\overrightarrow{x}))\f$</td><td>element wise cosh value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} sinh(expr)\endcode</td><td>\f$\sinh(f(\overrightarrow{x}))\f$</td><td>element wise sinh value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} tanh(expr)\endcode</td><td>\f$\tanh(f(\overrightarrow{x}))\f$</td><td>element wise tanh value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} exp(expr)\endcode</td><td>\f$\exp(f(\overrightarrow{x}))\f$</td><td>element wise exp value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} log(expr)\endcode</td><td>\f$\log(f(\overrightarrow{x}))\f$</td><td>element wise log value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} sqrt(expr)\endcode</td><td>\f$\sqrt{f(\overrightarrow{x})}\f$</td><td>element wise sqrt value of \f$f\f$</td></tr>
+<tr><td>\code{.cpp} sign(expr)\endcode</td><td>\f$\begin{cases} 1 & \text{if}\ f(\overrightarrow{x}) \geq 0\\-1 & \text{if}\ f(\overrightarrow{x}) < 0\end{cases}\f$</td><td>element wise sign value of \f$f\f$</td></tr>
+<tr><td>\code chi(expr)\endcode</td><td>\f$\chi(f(\overrightarrow{x}))=\begin{cases}0 & \text{if}\ f(\overrightarrow{x}) = 0\\1 & \text{if}\ f(\overrightarrow{x}) \neq 0\\\end{cases}\f$</td><td>element wise boolean test of \f$f\f$</td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+<hr>
+<br>
+\section Keywords_Operators Operators
+\subsection Operators_Operations Operations
+You can use the usual operations and logical operators.
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\code{.cpp} + \endcode </td><td>\f$ f+g\f$</td><td>tensor sum</td></tr>
+<tr><td>\code{.cpp} - \endcode </td><td>\f$ f-g\f$</td><td>tensor substraction</td></tr>
+<tr><td>\code{.cpp} * \endcode </td><td>\f$ f*g\f$</td><td>tensor product</td></tr>
+<tr><td>\code{.cpp} / \endcode </td><td>\f$ f/g\f$</td><td>tensor tensor division <br>(\f$g\f$ scalar field)</td></tr>
+<tr><td>\code{.cpp} < \endcode </td><td>\f$ f<g\f$</td><td>element wise less</td></tr>
+<tr><td>\code{.cpp} <= \endcode </td><td>\f$ f<=g\f$</td><td>element wise less or equal</td></tr>
+<tr><td>\code{.cpp} > \endcode </td><td>\f$ f>g\f$</td><td>element wise greater</td></tr>
+<tr><td>\code{.cpp} >= \endcode </td><td>\f$ f>=g\f$</td><td>element wise greater or equal</td></tr>
+<tr><td>\code{.cpp} == \endcode </td><td>\f$ f==g\f$</td><td>element wise equal</td></tr>
+<tr><td>\code{.cpp} != \endcode </td><td>\f$ f!=g\f$</td><td>element wise not equal</td></tr>
+<tr><td>\code{.cpp} - \endcode </td><td>\f$ -g\f$</td><td>element wise unary minus</td></tr>
+<tr><td>\code{.cpp} && \endcode </td><td>\f$ f\f$ and \f$g\f$</td><td>element wise logical and </td></tr>
+<tr><td>\code{.cpp} || \endcode </td><td>\f$ f\f$ or \f$g\f$</td><td>element wise logical or</td></tr>
+<tr><td>\code{.cpp} ! \endcode </td><td>\f$ !g\f$</td><td>element wise logical not</td></tr>
+</table>
+
+\subsection Operators_Differential Differential Operators
+\feel finit element language use <em>test</em> and <em>trial</em> functions. Keywords are different according to the kind of the manipulated function.<br>
+<strong>Usual operators</strong> are for <strong>test</strong> functions.<br>
+<strong>t-operators</strong> for <strong>trial</strong> functions.<br>
+<strong>v-operators</strong> to get an <strong>evaluation</strong>.
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Rank</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} id(f)\endcode </td><td> \f$f\f$ </td><td> test function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))\f$ </td><td> \f$m \times p \f$</td></tr>
+<tr><td>\code{.cpp} idt(f)\endcode</td><td> \f$f\f$ </td><td> trial function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))\f$ </td><td> \f$m \times p \f$</td></tr>
+<tr><td>\code{.cpp} idv(f)\endcode</td><td> \f$f\f$ </td><td> evaluation function   </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))\f$ </td><td> \f$m \times p \f$</td></tr>
+<tr><td>\code{.cpp} grad(f)\endcode </td><td> \f$\nabla f\f$ </td><td> gradient of test function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))+1\f$ </td><td> \f$m \times n \f$ <br> \f$p=1\f$</td></tr>
+<tr><td>\code{.cpp} gradt(f)\endcode</td><td> \f$\nabla f\f$ </td><td> grdient of trial function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))+1\f$ </td><td>\f$m \times n \f$<br> \f$p=1\f$</td></tr>
+<tr><td>\code{.cpp} gradv(f)\endcode</td><td> \f$\nabla f\f$ </td><td> evaluation function gradient  </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))+1\f$ </td><td>\f$m \times n \f$<br> \f$p=1\f$</td></tr>
+<tr><td>\code{.cpp} div(f)\endcode </td><td> \f$\nabla\cdot f\f$ </td><td> divergence of test function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))-1\f$ </td><td> \f$1 \times 1 \f$</td></tr>
+<tr><td>\code{.cpp} divt(f)\endcode</td><td> \f$\nabla\cdot f\f$ </td><td> divergence of trial function </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))-1\f$ </td><td>\f$1 \times 1 \f$</td></tr>
+<tr><td>\code{.cpp} divv(f)\endcode</td><td> \f$\nabla\cdot f\f$ </td><td> evaluation function divergence  </td><td> \f$\mathrm{rank}(f(\overrightarrow{x}))-1\f$ </td><td>\f$1 \times 1 \f$</td></tr>
+<tr><td>\code{.cpp} curl(f)\endcode </td><td> \f$\nabla\times f\f$ </td><td> curl of test function </td><td>1</td><td> \f$n \times 1 \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} curlt(f)\endcode</td><td> \f$\nabla\times f\f$ </td><td> curl of trial function </td><td>1 </td><td>\f$n \times 1 \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} curlv(f)\endcode</td><td> \f$\nabla\times f\f$ </td><td> evaluation function curl  </td><td>1 </td><td>\f$n \times 1 \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} hess(f)\endcode</td><td> \f$\nabla^2 f\f$ </td><td> hessian of test function  </td><td>2 </td><td>\f$n \times n \f$<br>\f$m=p=1\f$</td></tr>
+</table>
+
+\subsection Operators_TwoValued Two Valued Operators
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Rank</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} jump(f)\endcode </td><td>  \f$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}\f$ </td><td> jump of test function </td><td>0</td><td> \f$n \times 1 \f$<br>\f$m=1\f$</td></tr>
+<tr><td>\code{.cpp} jump(f)\endcode </td><td>  \f$[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}\f$ </td><td> jump of test function </td><td>0</td><td> \f$1 \times 1 \f$<br>\f$m=2\f$</td></tr>
+<tr><td>\code{.cpp} jumpt(f)\endcode </td><td>  \f$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}\f$ </td><td> jump of trial function </td><td>0</td><td> \f$n \times 1 \f$<br>\f$m=1\f$</td></tr>
+<tr><td>\code{.cpp} jumpt(f)\endcode </td><td>  \f$[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}\f$ </td><td> jump of trial function </td><td>0</td><td> \f$1 \times 1 \f$<br>\f$m=2\f$</td></tr>
+<tr><td>\code{.cpp} jumpv(f)\endcode </td><td>  \f$[f]=f_0\overrightarrow{N_0}+f_1\overrightarrow{N_1}\f$ </td><td> jump of function evaluation </td><td>0</td><td> \f$n \times 1 \f$<br>\f$m=1\f$</td></tr>
+<tr><td>\code{.cpp} jumpv(f)\endcode </td><td>  \f$[\overrightarrow{f}]=\overrightarrow{f_0}\cdot\overrightarrow{N_0}+\overrightarrow{f_1}\cdot\overrightarrow{N_1}\f$ </td><td> jump of function evaluation</td><td>0</td><td> \f$1 \times 1 \f$<br>\f$m=2\f$</td></tr>
+<tr><td>\code{.cpp} average(f)\endcode </td><td>  \f${f}=\frac{1}{2}(f_0+f_1)\f$ </td><td> average of test function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} averaget(f)\endcode </td><td>  \f${f}=\frac{1}{2}(f_0+f_1)\f$ </td><td> average of trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} averagev(f)\endcode </td><td>  \f${f}=\frac{1}{2}(f_0+f_1)\f$ </td><td> average of function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} leftface(f)\endcode </td><td>  \f$f_0\f$ </td><td>left test function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} leftfacet(f)\endcode </td><td>  \f$f_0\f$ </td><td>left trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} leftfacev(f)\endcode </td><td>  \f$f_0\f$ </td><td>left function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} rightface(f)\endcode </td><td>  \f$f_1\f$ </td><td>right test function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} rightfacet(f)\endcode </td><td>  \f$f_1\f$ </td><td>right trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} rightfacev(f)\endcode </td><td>  \f$f_1\f$ </td><td>right function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times n \f$<br>\f$m=n\f$</td></tr>
+<tr><td>\code{.cpp} maxface(f)\endcode </td><td>  \f$\max(f_0,f_1)\f$ </td><td>maximum of right and left<br>test function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+<tr><td>\code{.cpp} maxfacet(f)\endcode </td><td>  \f$\max(f_0,f_1)\f$ </td><td>maximum of right and left<br>trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+<tr><td>\code{.cpp} maxfacev(f)\endcode </td><td>  \f$\max(f_0,f_1)\f$ </td><td>maximum of right and left<br>function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+<tr><td>\code{.cpp} minface(f)\endcode </td><td>  \f$\min(f_0,f_1)\f$ </td><td>minimum of right and left<br>test function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+<tr><td>\code{.cpp} minfacet(f)\endcode </td><td>  \f$\min(f_0,f_1)\f$ </td><td>minimum of right and left<br>trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+<tr><td>\code{.cpp} minfacev(f)\endcode </td><td>  \f$\min(f_0,f_1)\f$ </td><td>minimum of right and left<br>function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
+</table>
+
+
+<a href="#" class="top">top</a>
+<hr>
+<br>
+\section Kyewords_Geometric Geometric Transformations
+\subsection Matrix_Jacobian Jacobian Matrix
+You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, using the keyword:
+\co J() \eco
+There are some tools to manipulate this jacobian.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\code{.cpp} detJ()\endcode</td><td>\f$\det(J)\f$</td><td>Determinant of jacobian matrix </td></tr>
+<tr><td>\code{.cpp} invJT()\endcode</td><td>\f$(J^{-1})^T\f$</td><td>Transposed inverse of jacobian matrix </td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+<hr>
+
+\li \b Next: \ref Environment
+
+
+
+*/
+}

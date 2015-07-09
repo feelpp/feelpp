@@ -1,0 +1,281 @@
+%%\documentclass{../doc/tex/lifestyle}
+\documentclass[a4paper]{book}
+%\documentclass{article}
+
+\usepackage{a4wide}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%%\usepackage{fullpage}
+\usepackage{longtable}
+
+% Fonts and chapter styles
+\usepackage{sectsty}
+\sectionfont{\sf}
+\subsectionfont{\it}
+\usepackage[Sonny]{fncychap}
+\usepackage{newcent}
+\lhead{}
+\rhead{}
+\usepackage{doxygen}
+\usepackage{url}
+\usepackage{fancybox}
+%\usepackage{fancyvrb}
+%\usepackage{color}
+\usepackage{xspace}
+\usepackage{multicol}
+\usepackage{makeidx}
+\usepackage{subfigure}
+\usepackage{verbatim}
+
+\usepackage[english]{babel}
+\usepackage{tabularx}
+
+\usepackage{subfigure}
+\usepackage{graphicx}
+\graphicspath{%
+  {pdfs/}%
+  {pngs/}%
+  {@LIFE_HOME_DIR@/doc/tutorial/pngs/}
+}
+
+\usepackage{amsmath,amssymb}
+
+\usepackage{xspace,pgf,pgfkeys,pgfmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows,patterns,plotmarks,shapes,snakes,er,3d,automata,backgrounds,topaths,trees,petri,mindmap}
+
+%
+% les trois parties (front, main et back)
+%
+
+\renewcommand\backmatter{%
+%  \let\minisommaire\null
+  \cleardoublepage
+ % \@mainmatterfalse
+ % \@frontmatterfalse
+  \fancyfoot{}
+  \fancyhead[LE]{\bfseries\thepage}
+  \fancyhead[RO]{\bfseries\thepage}
+  \fancyhead[LO]{\bfseries\rightmark}
+  \fancyhead[RE]{\bfseries\leftmark}
+ % \renewcommand{\toclevel@chapter}{-1}% pour avoir le bookmark au même niveau
+ %                                     % que part
+}
+
+
+
+
+
+
+
+
+
+%-----------------------------------------------------------------------
+% index
+\usepackage{index}
+%-----------------------------------------------------------------------
+%
+% espace verticale entre les groupes dans l'index
+%
+\renewcommand\indexspace{\par \vskip 20pt plus5pt minus3pt\relax}
+%-----------------------------------------------------------------------
+
+
+%-----------------------------------------------------------------------
+%
+% pour avoir un lien correct dans les bookmark du pdf, sur l'index
+%
+\let\printindexORIG\printindex
+\renewcommand{\printindex}{%
+  \cleardoublepage
+  \phantomsection% création d'une fausse section
+  \addcontentsline{toc}{chapter}{Index}
+  \printindexORIG}
+
+
+\AtBeginDocument{%
+  \makeindex%
+}
+
+%-----------------------------------------------------------------------
+
+
+%-----------------------------------------------------------------------
+% fancyvrb unixcom environment
+%\usepackage{styles/fvrb}
+
+%-----------------------------------------------------------------------
+% nota environment
+%\usepackage{styles/nota}
+%\newcommand{\ficnota}{attention}
+%\newcommand{\ficnota}{}
+%\newcommand{\ficnote}{note}
+\newcommand{\ficnote}{}
+%\newcommand{\ficnotahack}{question}
+\newcommand{\ficnotahack}{}
+
+% \setlength{\largeurnota}{.8cm}
+% \newenvironment{nota}{%
+%   \begin{pictonote}{\ficnota}}{\end{pictonote}}
+% \newenvironment{note}{%
+%   \begin{pictonote}{\ficnote}}{\end{pictonote}}
+% \newenvironment{notahack}{%
+%   \begin{pictonote}{\ficnotahack}}{\end{pictonote}}
+
+
+\usepackage{xcolor}
+\newtheorem{problem}{Problem}
+\newtheorem{remark}{Remark}
+
+
+
+\definecolor{lbcolor}{rgb}{0.95,0.95,0.95}
+\definecolor{cblue}{rgb}{0.,0.0,0.6}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{filecontents,listings}
+\lstset{language=c++,showspaces=false,showstringspaces=false,captionpos=t,literate={>>}{\ensuremath{>>}}1,mathescape}
+%\lstset{float}
+\lstset{basicstyle=\small\ttfamily}
+\lstset{lineskip=-2pt}
+\lstset{keywordstyle=\color{red}\bfseries}
+%\lstset{keywordstyle=\mdseries\color{red}}
+\lstset{emph={inline},emphstyle=\color{red}\bfseries}
+%\lstset{stringstyle=\ttfamily}
+\lstset{commentstyle=\ttfamily\color{cblue}}
+\lstset{backgroundcolor=\color{lbcolor},rulecolor=}
+%\lstset{numbers=left}
+%\lstset{numbers={none}}
+%\lstset{numberstyle=\tiny}
+%\lstset{numbersep=1pt}
+\lstset{frame=single,framerule=0.5pt}
+\lstset{belowskip=\smallskipamount}
+\lstset{aboveskip=\smallskipamount}
+\lstset{emph={constant,cst,cst_ref,constant_ref,val,integrate,on,grad,gradt,gradv,dot,id,dx,dy,dz,idt,dxt,dyt,dzt,div,divt,idv,dxv,dyv,dzv,dn,dnt,mass,stiffness,trans,trace,jump,jumpt,average,averaget,maxface,project,P,Px,Py,Pz,h,H,Hface,hFace,N,Nx,Ny,Nz,sqrt,sin,cos,min,max,abs,sign,pow,chi,exp,log,form1,form2, FunctionSpace, bases,
+prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,markedfaces,boundaryfaces,_Q},emphstyle=\color{blue}}
+\lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
+  rangesuffix=\ \#}% space plus curly right brace
+
+\newcommand{\acos}{\ensuremath{\mathrm{acos}}\xspace}
+\newcommand{\asin}{\ensuremath{\mathrm{asin}}\xspace}
+\newcommand{\atan}{\ensuremath{\mathrm{atan}}\xspace}
+%\newcommand{\tanh}{\ensuremath{\mathrm{tanh}}\xspace}
+\newcommand{\cc}{{\sl\sffamily C}\xspace}
+\newcommand{\cpp}{C{\hspace{-.3em}\vspace{-.2em}\tiny++}\xspace}
+\newcommand{\polyP}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
+\newcommand{\life}{Life\xspace}
+\newcommand{\cmake}{\texttt{cmake}\xspace}
+\newcommand{\ccmake}{\texttt{ccmake}\xspace}
+
+
+\newcommand{\In}{\operatorname{in}}
+\newcommand{\Out}{\operatorname{out}}
+
+\newcommand{\setR}[1]{{\ensuremath{\mathbb{R}^{#1}}}\xspace}
+\newcommand{\Om}[1]{{\ensuremath{\Omega^{#1}}}\xspace}
+\newcommand{\Omst}{{\ensuremath{\Omega^{\text{st}}}}\xspace}
+
+\newcommand{\aloc}[1]{{\ensuremath{a^{#1}_{\text{loc}}}}\xspace}
+\newcommand{\iloc}{{\ensuremath{i_{\text{loc}}}}\xspace}
+\newcommand{\jloc}{{\ensuremath{j_{\text{loc}}}}\xspace}
+\newcommand{\nldof}{{\ensuremath{N_{\text{localdof}}}}\xspace}
+\newcommand{\ngdof}{{\ensuremath{N_{\text{geomdof}}}}\xspace}
+\newcommand{\ndof}{{\ensuremath{N_{\text{dof}}}}\xspace}
+\newcommand{\nel}{{\ensuremath{N_{\text{el}}}}\xspace}
+\newcommand{\PS}[1]{{\ensuremath{\mathbb{P}_N}}\xspace}
+\newcommand{\QS}[1]{{\ensuremath{\mathbb{Q}_N}}\xspace}
+\newcommand{\GT}[1]{{\ensuremath{\mathcal{T}^{#1}}}\xspace}
+\newcommand{\GQ}[1]{{\ensuremath{\mathcal{Q}^{#1}}}\xspace}
+
+%% Macros
+\renewcommand{\div}{\operatorname{div}}
+\newcommand{\rot}{\operatorname{rot}}
+
+\newcommand{\meter}{\ensuremath{\mathrm{m}}\xspace}
+
+\newcommand{\PP}[1]{{\ensuremath{\mathbb{P}_{#1}}}\xspace}
+
+\newcommand{\pHat}{{\ensuremath{\Hat{p}}}\xspace}
+\newcommand{\xHat}{{\ensuremath{\Hat{x}}}\xspace}
+\newcommand{\wHat}{{\ensuremath{\Hat{w}}}\xspace}
+\newcommand{\THat}{{\ensuremath{\Hat{T}}}\xspace}
+\newcommand{\Pk}{\ensuremath{\mathbb{P}_k(K)}\xspace}
+\newcommand{\PN}{\ensuremath{\mathbb{P}_N(K)}\xspace}
+\newcommand{\Pkmun}{\ensuremath{\mathbb{P}_{k-1}(K)}\xspace}
+
+
+\InputIfFileExists{version}{}{\def\lifeversion{\texttt{x.y.z}}}
+\title{Life Manual\\
+A Library for Finite and Spectral Element Methods in 1D, 2D and 3D\\
+{\small \lifeversion }}
+\author{Christophe Prud'homme\thanks{Université de Grenoble,
+51, rue des Mathématiques, BP53,38041 Grenoble}}
+\date{}
+
+\thispagestyle{empty}
+\begin{document}
+\thispagestyle{empty}
+
+
+% \CssFile
+% /* css.sty */
+% body { width: 75% }
+% h1,h2,h3,h4,h5,h6,pre,code,p {font-size: 1em; font-weight: normal; }
+% dl,li,dt,dd,h1,h2,h3,h4,h5,h6,pre,form,body,html,p,blockquote,fieldset,input {margin: 0; padding: 0;}
+% h2,h3,h4,h5,h6 { color: #B30000; }
+% h1 { color: #FFB267; }
+% h2 { border-bottom: 1px dotted #FFB267; border-left: 1px dotted #FFB267; }
+% h3 { border-bottom: 1px dotted #D95934; }
+
+% div.lstlisting{background: #eee; border: thin solid #000;  }
+% div.lstinputlisting{background: #eee; border: thin solid #000; }
+
+% \EndCssFile
+
+%\maketitle
+
+\begin{center}
+  {\Large
+    LIFE MANUAL\\
+    A LIBRARY FOR \\
+    FINITE AND SPECTRAL ELEMENT METHODS IN\\
+    1D, 2D AND 3D\\
+    \bigskip
+    {\small Version \lifeversion }}\\[0.6cm]
+  Christophe \textsc{Prud'homme}\\
+  \texttt{christophe.prudhomme@ujf-grenoble.fr}\\
+  \par\vspace{2cm}
+
+  % \begin{flushright}
+  %   \footnotesize
+  %   Version du \lifesvndate\\
+  %   Revision \lifesvnrevision
+  % \end{flushright}
+  % \par\vspace{5cm}
+
+  % \centerline{\begin{minipage}[l]{0.35\linewidth}
+  %   \includegraphics[width=.7\linewidth]{logo-ujf}
+  % \end{minipage}
+  % \begin{minipage}[r]{0.35\linewidth}
+  %   \includegraphics[width=.7\linewidth]{logo-ljk}
+  % \end{minipage}}
+
+
+\end{center}
+
+\vfill \mbox{} \clearpage
+
+\thispagestyle{empty}
+
+
+\vfill
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.2
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled "GNU
+Free Documentation License".
+
+\newpage
+
+\tableofcontents

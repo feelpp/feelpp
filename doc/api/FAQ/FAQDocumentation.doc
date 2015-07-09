@@ -1,0 +1,12 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+
+namespace Feel
+{
+/**
+\page FAQDocumentation Documentation
+
+\subpage FAQDocumentationDoxygenHowto
+
+
+*/
+}
