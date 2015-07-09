@@ -21,12 +21,11 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_REINIT_FMS_HPP
-#define FEELPP_REINIT_FMS_HPP 1
+#ifndef FEELPP_LS_HPP
+#define FEELPP_LS_HPP 1
 
-#warning This file includes at least one deprecated or antiquated header \
-    Please include <feel/feells/reinit_fms.hpp> instead.
-
+#include <feel/feells/lstypes.hpp>
 #include <feel/feells/reinit_fms.hpp>
+
 
 #endif
