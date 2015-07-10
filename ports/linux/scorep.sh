@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# On Ubuntu:
+# apt-get install libopenmpi-dev libpapi-dev
+
 VERSION=1.4.2
 
 if [[ -f "./scorep-${VERSION}.tar.gz" ]]; then 
