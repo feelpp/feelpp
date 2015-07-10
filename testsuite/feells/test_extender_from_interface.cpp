@@ -102,19 +102,25 @@ public:
         M_radius( radius )
     {}
 
-    /// First method: let the FMM search for the elements crossed by the interface
-    /// and the maximum distance is checked for a circle/sphere.
-    void wallDist_1()
+
+    void operator()()
     {
         auto Xh = Pch<H_ORDER>(M_mesh);
         auto thefms = fms( Xh );
         auto phio = Xh->element();
-        phio = vf::project(Xh, elements(M_mesh), h() );
+        phio.on( _range=elements(M_mesh), _expr=h());
         phio.on( _range=boundaryfaces(M_mesh), _expr= -h()/100. );
         auto phi = thefms->march(phio);
         auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
         auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
+        auto psi = Xh->element();
+        psi.on( _range=boundaryelements(M_mesh), _expr=cst(1.) );
+
+        ExtenderFromInterface<DIM> ext( Xh,  phi );
+        ext.extendFromInterface( psi );
+
+        psi.printMatlab("psi.m" );
 #if defined(USE_BOOST_TEST)
         // Max error around mesh size h.
         //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
@@ -123,52 +129,17 @@ public:
 
         LOG(INFO) << "phi1 max" << phi.max();
         LOG(INFO) << "err1 max: " << err.max();
-        auto exp = exporter(_mesh=M_mesh, _name="testsuite_extenderFromInterface_distw1");
-        exp->step(0)->add("phi1", phi);
-        exp->step(0)->add("phio1", phio);
-        exp->step(0)->add("dist1", dist);
-        exp->step(0)->add("err1", err);
+        auto exp = exporter(_mesh=M_mesh, _name="extend");
+        exp->add("phi", phi);
+        exp->add("phio", phio);
+        exp->add("dist", dist);
+        exp->add("psi", psi);
+        exp->add("marker", ext.marker());
         exp->save();
 #endif
     }
 
-    /// Second method: give to the FMM the elements having the good value to start with,
-    /// and the maximum distance is checked for a circle/sphere.
-    void wallDist_2()
-    {
-        auto Xh = Pch<H_ORDER>(M_mesh);
-        auto Xh0 = Pdh<0>(M_mesh);
-        auto thefms = fms( Xh );
-        auto phio = Xh->element();
-        auto mark = Xh0->element();
-
-        phio.on( _range=boundaryelements(M_mesh), _expr=h() );
-        phio.on( _range=boundaryfaces(M_mesh), _expr=cst(0) );
-
-        mark.on( _range=boundaryelements(M_mesh), _expr=cst(1) );
-        M_mesh->updateMarker2( mark );
-
-        auto phi = thefms->march(phio, true);
-        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
-        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
-
-#if defined(USE_BOOST_TEST)
-        // Max error around mesh size h.
-        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
-        BOOST_CHECK_SMALL( err.max(), h() )
-#else
-        LOG(INFO) << "phi2_max" << phi.max();
-        LOG(INFO) << "err2 max: " << err.max();
-        auto exp = exporter(_mesh=M_mesh, _name="testsuite_extenderFromInterface_distw2");
-        exp->step(0)->add("phio2", phio);
-        exp->step(0)->add("phi2", phi);
-        exp->step(0)->add("dist2", dist);
-        exp->step(0)->add("err2", err);
-        exp->step(0)->add("mark2", mark);
-        exp->save();
-#endif
-    }
-
+    
 private:
     mesh_ptrtype M_mesh;
     double M_radius;
@@ -184,29 +155,18 @@ BOOST_AUTO_TEST_SUITE( extenderFromInterface )
 BOOST_AUTO_TEST_CASE( test_2d_p1g1 )
 {
     TestExtenderFromInterface<2,1,1> tls;
-    tls.wallDist_1();
+    tls();
 }
 
 // Unit 3D sphere P1G1.
 BOOST_AUTO_TEST_CASE( test_3d_p1g1 )
 {
     TestExtenderFromInterface<3,1,1> tls;
-    tls.wallDist_1();
+    tls();
 }
 
-// Unit 2D circle P1G2.
-BOOST_AUTO_TEST_CASE( test_2d_p1g2 )
-{
-    TestExtenderFromInterface<2,1,2> tls;
-    tls.wallDist_1();
-}
 
-// Unite 3D sphere P1G2.
-BOOST_AUTO_TEST_CASE( test_3D_p1g2 )
-{
-    TestExtenderFromInterface<3,1,2> tls;
-    tls.wallDist_1();
-}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -224,9 +184,8 @@ int main(int argc, char** argv )
 #endif
     //TestExtenderFromInterface<3,1,1> tls( 1, 0.1 );
     //TestExtenderFromInterface<2,1,2> tls( 1, 0.1 );
-    TestExtenderFromInterface<3,1,1> tls;
-    tls.wallDist_1();
-    tls.wallDist_2();
+    TestExtenderFromInterface<2,1,1> tls;
+    tls();
 
     return 0;
 }
