@@ -322,6 +322,14 @@ public:
     }
 
     /**
+     * get the prefix to \p __prefix
+     */
+    std::string getPrefix()
+    {
+        return M_prefix;
+    }
+
+    /**
      * set the save frequency to \p __freq
      */
     Exporter<MeshType,N>* setFreq( int __freq )
