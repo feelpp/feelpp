@@ -40,19 +40,22 @@ public:
     using mesh_ptrtype = ls_mesh_ptrtype<Dim,GeoOrder,Convex>;
     using space_ptrtype = ls_space_ptrtype<Dim,GeoOrder,Convex>;
     using element_type = ls_element_type<Dim,GeoOrder,Convex>;
+    template<typename Storage>
+    using element_s_type = typename ls_space_type<Dim,GeoOrder,Convex>::template Element<double,Storage>;
 
     ExtenderFromInterface( space_ptrtype Xh, element_type const& phi ) 
         : 
         M_Xh( Xh ), 
-        M_phi( phi ),
+        M_phi( Xh->element() ),
         M_marker( Xh->element() ),
         M_states_init(M_Xh->nDof(), TODO),
         M_interf_id()
         {
-            this->build();
+            this->update(phi);
         }
 
-    void extendFromInterface( element_type& field );
+    template<typename Storage>
+    void extendFromInterface( element_s_type<Storage>& field );
 
     double dist(double a, double b ) const
         {
@@ -60,8 +63,8 @@ public:
         }
     element_type const& marker() const { return M_marker; }
 
-private:
-    void build();
+
+    void update( element_type const& phi );
 
 private:
     
@@ -73,9 +76,10 @@ private:
 
 template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
 void
-ExtenderFromInterface<Dim,GeoOrder,Convex>::build()
+ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
 {
-    
+    M_phi = phi;
+    M_phi.close();
     
     auto it_elt = M_Xh->mesh()->beginElement();
     auto en_elt = M_Xh->mesh()->endElement();
@@ -126,8 +130,9 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::build()
 }
 
 template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
+template<typename Storage>
 void
-ExtenderFromInterface<Dim,GeoOrder,Convex>::extendFromInterface( element_type& field )
+ExtenderFromInterface<Dim,GeoOrder,Convex>::extendFromInterface( element_s_type<Storage>& field )
 {
     std::vector<state_type> states( M_states_init );
     LOG(INFO) << "states " << M_states_init;
