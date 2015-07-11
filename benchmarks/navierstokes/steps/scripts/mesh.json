@@ -1,0 +1,15 @@
+{
+    "meshes":
+    [
+        {
+            "geo":"../../../../benchmarks/navierstokes/nozzle/fda-3d.geo",
+            "h":[1.0, 2.0],
+            "lo":[0.18],
+            "hminPoints":[1,4,8],
+
+            "reynolds":"500",
+            "backend":["gmsh"],
+            "partitions":[4, 8, 32]
+        }
+    ]
+}
