@@ -21,12 +21,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file dist2wallsoptimized.cpp
-   \author Guillaume Dolle <gdolle at unistra.fr>
-   \date 2014-01-21
- */
-
 //#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE levelset

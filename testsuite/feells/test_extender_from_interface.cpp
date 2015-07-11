@@ -115,7 +115,7 @@ public:
         auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
 
         auto psi = Xh->element();
-        psi.on( _range=boundaryelements(M_mesh), _expr=cst(1.) );
+        psi.on( _range=boundaryelements(M_mesh), _expr=Px() );
 
         ExtenderFromInterface<DIM> ext( Xh,  phi );
         ext.extendFromInterface( psi );
