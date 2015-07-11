@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# On Ubuntu:
+# apt-get install libopenmpi-dev libpapi-dev
+
 VERSION=1.4.2
 
 if [[ -f "./scorep-${VERSION}.tar.gz" ]]; then 
@@ -18,6 +21,8 @@ wget http://www.vi-hps.org/upload/packages/scorep/scorep-${VERSION}.tar.gz
 tar zxvf scorep-${VERSION}.tar.gz
 
 cd scorep-${VERSION}/
-CXXFLAGS="-fpermissive" ./configure --prefix=/data/software/install/scorep-${VERSION}/gcc-4.9.0/openmpi-1.8.5 --enable-shared
-make
+#CXXFLAGS="-fpermissive" ./configure --prefix=/data/software/install/scorep-${VERSION}/gcc-4.9.0/openmpi-1.8.5 --enable-shared
+# permissive flag not required
+./configure --prefix=/data/software/install/scorep-${VERSION}/gcc-4.9.0/openmpi-1.8.5 --enable-shared
+# Directly do a make install, some intermediate libraries are installed through the process and needed for the following steps
 make install 
