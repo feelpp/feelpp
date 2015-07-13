@@ -1,8 +1,12 @@
-// -*- mode: c++ -*-
+// -- mode: c++ --
 namespace Feel
 {
+/** \page info Infos
+\subpage Types Feel
+\subpage Macros Feel
+*/
 /** \page FAQ Frequently Asked Questions
-   - \page FAQExecution
-   - \page FAQDocumentation
-   - \page FAQDevelopment
- */
+  - \subpage  FAQExecution
+  - \subpage  FAQDocumentation
+  - \subpage  FAQDevelopement
+*/
