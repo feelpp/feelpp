@@ -261,6 +261,8 @@ private:
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */
     mutable int M_timeExponent;
+    // file position for explicit pointers
+    mutable MPI_Offset posInFile;
 };
 
 
