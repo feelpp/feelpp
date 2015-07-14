@@ -184,7 +184,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(idv(J),id(v)));    // rhs
+                       _expr = (1./idv(M_mu))*inner(idv(J),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -241,7 +241,7 @@ class TestPrecAFP : public Application
                 << doption("gmsh.hsize") << "\t"
                 << Xh->nDof() << "\t"
                 << nnz << "\t"
-                << doption("mu") << "\t"
+                << soption("functions.m") << "\t"
                 << e21 << "\t"
                 << e21/e22 << std::endl;
         /* report */
@@ -249,7 +249,7 @@ class TestPrecAFP : public Application
             time_t now = std::time(0);
             tm *ltm = localtime(&now);
             std::ostringstream stringStream;
-            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
+            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<"_"<<soption("title")<<".md";
             std::ofstream outputFile( stringStream.str() );
             if( outputFile )
             {
@@ -289,8 +289,14 @@ class TestPrecAFP : public Application
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
                 outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
-                outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
-                outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
+
+                if(soption("ms.pc-type") == "blockms" ){
+                    outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
+                    outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
+                }else{
+                    outputFile << "|**Matrix**  |  " << nnz << "| 0 | 0 |" << std::endl;
+                    outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| 0 | 0 |" << std::endl;
+                }
             
                 outputFile << "##Timers" << std::endl;
                 Environment::saveTimersMD(outputFile); 

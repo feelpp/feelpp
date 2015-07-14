@@ -61,8 +61,8 @@ run()
                                                                           % p.string()
                                                                           ).str());
     checkMarker(mesh2);
-    /// Load the generated h5 file
-    p.replace_extension("h5");
+    /// Load the generated json metadata file
+    p.replace_extension("json");
     std::cout << "Check with " << p << std::endl;
     auto mesh3 = loadMesh(_mesh = new mesh_type, _filename=(boost::format( "%1%/%2%" )
                                                                           % boost::filesystem::current_path().string()

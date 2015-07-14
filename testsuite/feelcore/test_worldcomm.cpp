@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
         e->add((boost::format("u_%1%")%color).str(),u);
         e->save();
 
-        auto strcase = (boost::format("laplacian_%1%.case") % color).str();
+        auto strcase = soption( _name="exporter.format" ) + "/" + e->getPrefix() + "/" + (boost::format("laplacian_%1%.case") % color).str();
         auto caseFileExist = !(Environment::findFile( strcase )).empty();
 
         // Check if each communicator has created its ensight .case file.
