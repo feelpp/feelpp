@@ -63,7 +63,6 @@ public:
         }
     element_type const& marker() const { return M_marker; }
 
-
     void update( element_type const& phi );
 
 private:
