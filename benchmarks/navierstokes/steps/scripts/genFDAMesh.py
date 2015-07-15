@@ -1,9 +1,13 @@
 #!/usr/bin/python
 
+import argparse
 import json
 import os
 
-debug = 1
+params = {
+    "dry_run": False,
+    "verbose": False
+}
 
 def check(mesh):
     # Check that the geo file exists
@@ -59,7 +63,10 @@ def generateGMSH(mesh):
 
     # set output filename
     for cmd in lstc:
-        print cmd
+        if(params["verbose"] or params["dry_run"]):
+            print cmd
+        if(not params["dry_run"]):
+            os.system(cmd)
 
 def generateMG(mesh):
     # Get filename
@@ -72,14 +79,17 @@ def generateMG(mesh):
 
     # set output filename
     cmd = cmd + " -format mesh -o " + name + ".mesh"
-    print cmd
+    if(params["verbose"]):
+        print cmd
 
     # Generate tetrahedralization with meshgems
     cmd = "run_mg-tetra.sh" + " -i " + name + ".mesh"
-    print cmd
+    if(params["verbose"]):
+        print cmd
 
     cmd = "gmsh" + name + "_tetra.mesh" + " -3 -format msh -o " + name + ".msh"
-    print cmd
+    if(params["verbose"]):
+        print cmd
 
 def configureGEO(mesh):
     # get file info
@@ -89,10 +99,14 @@ def configureGEO(mesh):
 
     # build filename
     filename = name
+    if("name" in mesh):
+        filename = filename + "_" + str(mesh["name"]) + "_"
     if("h" in mesh):
         filename = filename + "_hmin" + str(mesh["h"][0]) + "_hmax" + str(mesh["h"][1])
     if("reynolds" in mesh):
         filename = filename + "_reynolds" + str(mesh["reynolds"])
+    if("lo" in mesh):
+        filename = filename + "_lo" + str(mesh["lo"][0])
     filename = filename
 
     # Check if we did not already create this file before
@@ -102,6 +116,9 @@ def configureGEO(mesh):
         i = i + 1
 
     filename = filename + "." + str(i) + ext
+
+    if(params["verbose"]):
+        print "Creating " + filename
 
     fin = open(mesh["geo"], "r")
     fout = open(filename, "w")
@@ -125,7 +142,7 @@ def configureGEO(mesh):
             else:
                 newln = l[0] + "=" + l[1].replace("hmin", "hmax")
             # output line to file
-            if(cleanline != newln):
+            if(cleanline != newln and params["verbose"]):
                 print "\"" + cleanline + "\""
                 print "\"" + newln + "\""
                 print "Changed line " + l[0]
@@ -135,6 +152,9 @@ def configureGEO(mesh):
         # change hmax
         elif(l[0].find("hmax") == 0):
             newln = "hmax = " + str(mesh["h"][1]) + ";"
+        # change hmax
+        elif(l[0].find("lo") == 0):
+            newln = "lo = " + str(mesh["lo"][0]) + ";"
         # by default we output the line to the file
         else:
             newln = cleanline
@@ -153,6 +173,17 @@ def main():
     # generate 3d mesh
     # gmsh -3 ../../../../benchmarks/navierstokes/nozzle/fda-3d.geo -o fda-3d.msh
 
+    # argument parser
+    parser = argparse.ArgumentParser(description='Generate FDA meshes with json configuration')
+    parser.add_argument('-n', '--dry-run', action="store_true", help='dry run')
+    parser.add_argument('-v', '--verbose', action="store_true", help='verbose mode')
+
+    args = parser.parse_args()
+
+    # configure app params
+    params["dry_run"] = args.dry_run
+    params["verbose"] = args.verbose
+
     f = open("mesh.json", "r")
     j = json.load(f)
     meshes = j["meshes"]
@@ -168,10 +199,12 @@ def main():
             newMesh["geo"] = filename
 
             if("gmsh" in newMesh["backend"]):
-                print "Generating using GMSH"
+                if(params["verbose"]):
+                    print "Generating using GMSH"
                 generateGMSH(newMesh)
             if("meshgems" in newMesh["backend"]):
-                print "Generating using Meshgems"
+                if(params["verbose"]):
+                    print "Generating using Meshgems"
                 generateMG(newMesh)
         else:
             print "Entry " + str(i) + " is invalid"
