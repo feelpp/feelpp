@@ -3,6 +3,7 @@
 \usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{filecontents}
+\usepackage{pgfplotstable}
 %\usepackage[active,tightpage]{preview}
 %\PreviewEnvironment{tikzpicture}
 %\setlength\PreviewBorder{4pt}
@@ -23,6 +24,12 @@
               \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err_rel] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
               \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err_rel] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
               \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err_rel] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
+              \addplot table[x=hSize,y={create col/linear regression={y=err_rel}}]{/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt}
+              coordinate [pos=0.25] (A)
+              coordinate [pos=0.4]  (B)
+              ;
+              \xdef\slope{\pgfplotstableregressiona}
+              \draw (A) -| (B) node [pos=0.75,anchor=west]{\pgfmathprintnumber{\slope}};
             \end{loglogaxis}
           \end{tikzpicture}
         \end{minipage}
