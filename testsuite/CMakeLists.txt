@@ -27,7 +27,7 @@ add_custom_target( testsuite )
 
 add_subdirectory(contrib)
 
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt pde ls)
+foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 
