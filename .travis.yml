@@ -65,11 +65,6 @@ branches:
 cache:
 - apt
 notifications:
-  email:
-    recipients:
-    - feelpp-devel@feelpp.org
-    on_success: change
-    on_failure: change
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/cf3f3fee0056f865adb2
