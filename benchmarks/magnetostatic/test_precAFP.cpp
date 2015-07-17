@@ -233,7 +233,12 @@ class TestPrecAFP : public Application
         }
         Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
-        auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
+        auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(u)));
+        auto e21_curl = integrate(_range=elements(mesh), _expr=sqrt(inner(idv(u)-idv(M_a),
+                                                                          idv(u)-idv(M_a))
+                                                                    +inner(curlv(u)-curlv(M_a),
+                                                                           curlv(u)-curlv(M_a))) );
+        auto e22_curl = integrate(_range=elements(mesh), _expr=sqrt(inner(idv(u),idv(u))+inner(curlv(u),curlv(u))) );
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
@@ -243,7 +248,10 @@ class TestPrecAFP : public Application
                 << nnz << "\t"
                 << soption("functions.m") << "\t"
                 << e21 << "\t"
-                << e21/e22 << std::endl;
+                << e21/e22 << "\t" 
+                << e21_curl << "\t"
+                << e21_curl/e22 _curl 
+                << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
             time_t now = std::time(0);
