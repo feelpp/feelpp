@@ -45,7 +45,7 @@ before_install:
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
 #install some submodules
 - git submodule update --init --recursive contrib/nlopt
-- git submodule update --init --recursive contrib/nt2
+#- git submodule update --init --recursive contrib/nt2
 - git submodule update --init --recursive contrib/ipopt
 - git submodule update --init --recursive quickstart
 
