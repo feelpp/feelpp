@@ -75,7 +75,7 @@ template<int DIM, int H_ORDER, int G_ORDER>
 class TestLevelSet
 {
 public:
-    using mesh_type = Mesh< Hypercube<DIM,G_ORDER> >;
+    using mesh_type = Mesh< Simplex<DIM,G_ORDER> >;
     using mesh_ptrtype = boost::shared_ptr< mesh_type >;
 
     /// Init the geometry with a circle/sphere from radius and characteristic length
@@ -83,8 +83,8 @@ public:
     ///     \param h        Mesh size.
     TestLevelSet( double radius=doption("radius") ) :
         M_mesh( createGMSHMesh( _mesh=new mesh_type,
-                                _desc=domain( _name="hypercube",
-                                              _shape="hypercube",
+                                _desc=domain( _name="ellipsoid_nd",
+                                              _shape="ellipsoid",
                                               _dim=DIM,
                                               _order=G_ORDER,
                                               _xmin=-radius,
@@ -93,8 +93,8 @@ public:
                                               _xmax=radius,
                                               _ymax=radius,
                                               _zmax=radius,
-                                              _h=doption("gmsh.hsize") )
-                                //,_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
+                                              _h=doption("gmsh.hsize") ),
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES
                               ) ),
         M_radius( radius )
     {}
