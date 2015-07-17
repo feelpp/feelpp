@@ -43,7 +43,7 @@ public:
     typedef T value_type;
 
     //         pair < phi_value,  index >
-    typedef std::pair<value_type, uint16_type> heap_entry_type;
+    typedef std::pair<value_type, size_type> heap_entry_type;
 
     /* constructor */
     FmsHeap() : maxValue( std::numeric_limits<value_type>::max() ) {}
@@ -95,7 +95,7 @@ public:
         return M_heap.front();
     }
 
-    bool checkExistingEntry(uint16_type index)
+    bool checkExistingEntry(size_type index)
     {
         for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
                 if (it->second == index)
@@ -104,7 +104,7 @@ public:
     }
 
     /* remove from the heap the entry having the specific value index*/
-    bool removeFromHeap(uint16_type index)
+    bool removeFromHeap(size_type index)
     {
         bool removed = false;
         for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
@@ -130,7 +130,7 @@ public:
     }
 
 
-    value_type valueAtIndex( uint16_type index )
+    value_type valueAtIndex( size_type index )
     {
         for (auto const& heapEntry : M_heap)
             if (heapEntry.second == index )
