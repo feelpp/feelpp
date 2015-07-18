@@ -77,8 +77,8 @@ branches:
   only:
   - develop
   - master
+
 cache:
-  - apt
   directories:
   - $HOME/software
 
