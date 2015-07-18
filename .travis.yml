@@ -14,7 +14,7 @@ compiler:
 - clang
 
 env:
-- BUILD="llvm-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="llvm-3.5" FEELPP_CXX=clang++ FEELPP_CC=clang BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="llvm-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
@@ -29,7 +29,7 @@ addons:
     - libtbb-dev
     - libboost-all-dev 
     - libboost-mpi-dev
-    - clang-3.5
+#    - clang-3.5
 #    - clang-3.6
 #    - clang-3.7
     - libglpk-dev
