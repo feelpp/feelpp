@@ -50,7 +50,6 @@ before_install:
 - echo $HOME
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
-
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
@@ -64,6 +63,7 @@ before_install:
 
 
 before_install:
+  - ls -lrt $HOME/software
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost;fi
   - echo $BOOSTROOT
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
