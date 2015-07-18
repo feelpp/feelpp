@@ -28,6 +28,7 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise
+    - llvm-toolchain-precise-3.5
     packages:
     - gfortran
     - cmake
