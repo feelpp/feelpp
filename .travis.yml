@@ -25,6 +25,8 @@ env:
 
 addons:
   apt:
+    sources:
+    - ubuntu-toolchain-r-test
     packages:
     - gfortran
     - cmake
@@ -33,9 +35,9 @@ addons:
 #    - libboost-all-dev 
 #    - libboost-mpi-dev
 # not available
-#    - clang-3.5
-#    - clang-3.6
-#    - clang-3.7
+    - clang-3.5
+    - clang-3.6
+    - clang-3.7
     - libopenmpi-dev
     - libglpk-dev
     - libxml2-dev
