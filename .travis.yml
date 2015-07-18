@@ -68,6 +68,8 @@ before_install:
   - echo $BOOSTROOT
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
   - echo $GMSH_DIR
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0;fi
+  - echo $PETSC_DIR
 
 install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
