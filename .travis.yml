@@ -17,7 +17,7 @@ compiler:
 
 env:
 - BUILD="llvm-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 #- BUILD="g-debug" BUILDTYPE=Debug
@@ -28,7 +28,7 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise
-    - llvm-toolchain-precise-3.6
+ #   - llvm-toolchain-precise-3.6
     packages:
     - gfortran
     - cmake
@@ -37,9 +37,9 @@ addons:
 #    - libboost-all-dev 
 #    - libboost-mpi-dev
 # not available
-    - gcc-5
+#    - gcc-5
     - clang-3.6
-    - clang-3.7
+#    - clang-3.7
     - libopenmpi-dev
     - libglpk-dev
     - libxml2-dev
@@ -58,6 +58,7 @@ before_install:
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install petsc slepc boost gmsh glpk; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
   #install some submodules
