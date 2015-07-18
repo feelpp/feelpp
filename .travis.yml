@@ -30,8 +30,8 @@ addons:
     - libboost-all-dev 
     - libboost-mpi-dev
     - clang-3.5
-    - clang-3.6
-    - clang-3.7
+#    - clang-3.6
+#    - clang-3.7
     - libglpk-dev
     - libxml2-dev
     - bison
