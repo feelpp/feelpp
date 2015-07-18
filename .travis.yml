@@ -27,8 +27,10 @@ addons:
     packages:
     - cmake
     - libtbb-dev
-    - libboost-all-dev 
-    - libboost-mpi-dev
+# too old on travis
+#    - libboost-all-dev 
+#    - libboost-mpi-dev
+# not available
 #    - clang-3.5
 #    - clang-3.6
 #    - clang-3.7
@@ -58,8 +60,13 @@ before_install:
 - git submodule update --init --recursive quickstart
 
 
+before_install:
+  - bash ports/travis/gmsh.sh
+  - echo $GMSH_DIR
+
 install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+
 
 script:
 - make -j16 feelpp_ginac
@@ -71,7 +78,10 @@ branches:
   - develop
   - master
 cache:
-- apt
+  - apt
+  directories:
+  - $HOME/software
+
 notifications:
   webhooks:
     urls:
