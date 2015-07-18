@@ -81,7 +81,7 @@ install:
 
 script:
 - make -j16 feelpp_ginac
-- make -j2 feelpp
+- make -j1 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
