@@ -46,24 +46,21 @@ addons:
 
 
 before_install:
-- echo $TRAVIS_OS_NAME
-- echo $HOME
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
-#install some submodules
-- git submodule update --init --recursive contrib/nlopt
-#- git submodule update --init --recursive contrib/nt2
-- git submodule update --init --recursive contrib/ipopt
-- git submodule update --init --recursive quickstart
-
-
-before_install:
+  - echo $TRAVIS_OS_NAME
+  - echo $HOME
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+  #install some submodules
+  - git submodule update --init --recursive contrib/nlopt
+  #- git submodule update --init --recursive contrib/nt2
+  - git submodule update --init --recursive contrib/ipopt
+  - git submodule update --init --recursive quickstart
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost;fi
   - echo $BOOSTROOT
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
@@ -72,10 +69,12 @@ before_install:
   - echo $PETSC_DIR
 
 install:
+- mkdir opt-$BUILD
 #- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 
 script:
+- cd opt-$BUILD
 #- make -j16 feelpp_ginac
 #- make -j2 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
