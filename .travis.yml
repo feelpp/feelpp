@@ -13,12 +13,12 @@ language: cpp
 
 compiler:
 - clang
+- gcc
 
 env:
 - BUILD="llvm-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 - BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="gcc-5" FEELPP_CXX=g++-5.0 FEELPP_CC=gcc-5.0 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-#- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 #- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
@@ -28,6 +28,7 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise
+    - llvm-toolchain-precise-3.6
     packages:
     - gfortran
     - cmake
