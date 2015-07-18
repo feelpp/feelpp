@@ -72,12 +72,14 @@ before_install:
   - echo $PETSC_DIR
 
 install:
-- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+- ls -lrt $HOME/software
+#- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 
 script:
-- make -j16 feelpp_ginac
-- make -j2 feelpp
+- ls -lrt $HOME/software
+#- make -j16 feelpp_ginac
+#- make -j2 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
