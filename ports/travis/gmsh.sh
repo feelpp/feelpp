@@ -6,8 +6,8 @@
 # - Exclude all petsc installation on system if custom install
 
 VERSION=2.9.3
-#basedir=$HOME
-basedir=/tmp
+basedir=$HOME
+#basedir=/tmp
 
 set -e
 # check to see if protobuf folder is empty
