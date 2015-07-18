@@ -1,5 +1,6 @@
 os:
   - linux
+  - osx
 
 # force use of container based worker
 sudo: false  
@@ -49,11 +50,11 @@ before_install:
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
 
-#- if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
-#- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
-#- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
-#- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
-#- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
+- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
 #install some submodules
 - git submodule update --init --recursive contrib/nlopt
 #- git submodule update --init --recursive contrib/nt2
@@ -62,7 +63,7 @@ before_install:
 
 
 before_install:
-  - bash ports/travis/gmsh.sh
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
   - echo $GMSH_DIR
 
 install:
