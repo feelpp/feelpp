@@ -96,6 +96,7 @@ branches:
 cache:
   directories:
   - $HOME/software
+  - /usr/local/Cellar
 
 notifications:
   webhooks:
@@ -109,4 +110,4 @@ notifications:
 matrix:
   allow_failures:
   - gcc
-  - osx
+  - os: osx
