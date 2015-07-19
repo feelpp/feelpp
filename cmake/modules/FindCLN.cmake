@@ -12,10 +12,10 @@ FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   PATH_SUFFIXES
   cln
   )
-
-message(STATUS "cln 1: ${CLN_INCLUDE_DIR} cln dir ${CLN_DIR}")
+message(STATUS "[cln] first pass ${CLN_INCLUDE_DIR}")
 # use the version available in contrib if the system version is not available
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
+  HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
@@ -26,7 +26,7 @@ FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   cln
   NO_DEFAULT_PATH
   )
-message(STATUS "cln 2: ${CLN_INCLUDE_DIR}")
+message(STATUS "[cln] second pass ${CLN_INCLUDE_DIR}")
 
 IF ( NOT CLN_INCLUDE_DIR )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/cln-compile)
