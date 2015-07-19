@@ -96,7 +96,6 @@ branches:
 cache:
   directories:
   - $HOME/software
-  - /usr/local/Cellar
 
 notifications:
   webhooks:
