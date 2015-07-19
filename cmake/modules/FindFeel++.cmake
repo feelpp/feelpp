@@ -475,7 +475,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   #
   # cln and ginac
   #
-  find_package(cln)
+  find_package(CLN)
   add_subdirectory(contrib/ginac)
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)

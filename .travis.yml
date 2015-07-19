@@ -57,7 +57,9 @@ before_install:
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
- # - if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew upgrade; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install petsc slepc boost gmsh glpk; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
