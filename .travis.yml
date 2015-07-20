@@ -14,6 +14,7 @@ language: cpp
 compiler:
 - clang
 
+osx_image: xcode6.4
 
 env:
 - BUILD="llvm-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
@@ -58,27 +59,21 @@ before_install:
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
-  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated boost || brew upgrade boost; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
-#  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install petsc; fi
-  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install slepc; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install gmsh; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install glpk; fi
-  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install cln; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
   #install some submodules
   - git submodule update --init --recursive contrib/nlopt
   #- git submodule update --init --recursive contrib/nt2
   - git submodule update --init --recursive contrib/ipopt
   - git submodule update --init --recursive quickstart
-  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost;fi
-  - echo $BOOSTROOT
+  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
   - echo $GMSH_DIR
   - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
-  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln;fi
-  - echo $CLN_DIR
+  - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 
 install:
 - $CXX --version
