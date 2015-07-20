@@ -84,10 +84,16 @@ int main(int argc, char**argv )
 	a.solveb(_rhs=l,_solution=u2, _backend=myBackend); // Compute with myBackend
 	/// [marker_hm]
 
+  auto myExpr = expr(soption("functions.f"), "u1",idv(u1));
+  auto u3 = vf::project(Vh,elements(mesh), myExpr);
+
 	// save results
 	auto e = exporter( _mesh=mesh );
 	e->step(0) -> add( "u", u1 );
+	e->save();
 	e->step(1) -> add( "u", u2 );
+	e->save();
+	e->step(2) -> add( "u", u3 );
 	e->save();
 }
 /// [marker_main]

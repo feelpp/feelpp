@@ -1,6 +1,10 @@
 os:
   - linux
-  
+  - osx
+
+# force use of container based worker
+sudo: false  
+
 git:
   depth: 1
   submodules: false
@@ -10,66 +14,88 @@ language: cpp
 compiler:
 - clang
 
+osx_image: xcode6.4
+
 env:
-- BUILD="llvm-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-#- BUILD="llvm-3.4" FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+- BUILD="llvm-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 #- BUILD="g-debug" BUILDTYPE=Debug
 #- BUILDTYPE=Release TARGET=tutorial
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+ #   - llvm-toolchain-precise
+    - llvm-toolchain-precise-3.6
+    packages:
+    - gfortran
+    - cmake
+    - libtbb-dev
+# too old on travis
+#    - libboost-all-dev 
+#    - libboost-mpi-dev
+# not available
+#    - gcc-5
+    - clang-3.6
+#    - clang-3.7
+    - libopenmpi-dev
+    - libglpk-dev
+    - libxml2-dev
+    - bison
+    - flex
+    - doxygen
+    - imagemagick
+
+
 before_install:
-- echo $TRAVIS_OS_NAME
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:boost-latest/ppa; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:feelpp/petsc; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository --yes ppa:ubuntu-toolchain-r/test; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main'; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main'; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-add-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.5 main'; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key|sudo apt-key add -; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get update; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install $FEELPP_CC; fi
-
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.55-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
-    libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
-    imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
-
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
-#install some submodules
-- git submodule update --init --recursive contrib/nlopt
-- git submodule update --init --recursive contrib/nt2
-- git submodule update --init --recursive contrib/ipopt
-- git submodule update --init --recursive quickstart
-
+  - echo $TRAVIS_OS_NAME
+  - echo $HOME
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
+ # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
+ # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install gmsh; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install glpk; fi
+  #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
+  #install some submodules
+  - git submodule update --init --recursive contrib/nlopt
+  #- git submodule update --init --recursive contrib/nt2
+  - git submodule update --init --recursive contrib/ipopt
+  - git submodule update --init --recursive quickstart
+  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3;fi
+  - echo $GMSH_DIR
+  - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
+  - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 
 install:
+- $CXX --version
+- $CC --version
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+
 
 script:
 - make -j16 feelpp_ginac
-- make -j2 feelpp
+- make -j1 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
   only:
   - develop
   - master
+
 cache:
-- apt
+  directories:
+  - $HOME/software
+
 notifications:
-  email:
-    recipients:
-    - feelpp-devel@feelpp.org
-    on_success: change
-    on_failure: change
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/cf3f3fee0056f865adb2
@@ -81,4 +107,4 @@ notifications:
 matrix:
   allow_failures:
   - gcc
-  - osx
+  - os: osx
