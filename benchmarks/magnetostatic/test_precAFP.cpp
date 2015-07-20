@@ -156,7 +156,8 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-        auto Jh = lag_v_space_type::New(M_mesh); // lag_v
+        //auto Jh = lag_v_space_type::New(M_mesh); // lag_v
+        auto Jh = curl_space_type::New(M_mesh); // lag_v
 
         auto model = ModelProperties(Environment::expand(soption("myModel")));
         auto J = vf::project(_space=Jh,
@@ -170,10 +171,11 @@ class TestPrecAFP : public Application
                                _expr=expr<DIM,1>(soption("functions.a")));
         
         auto U = Xh->element();
+        auto V = Xh->element();
         auto u = U.template element<0>();
-        auto v = U.template element<0>();
+        auto v = V.template element<0>();
         auto phi = U.template element<1>();
-        auto psi = U.template element<1>();
+        auto psi = V.template element<1>();
         
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
@@ -234,11 +236,16 @@ class TestPrecAFP : public Application
         Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(u)));
-        auto e21_curl = integrate(_range=elements(mesh), _expr=sqrt(inner(idv(u)-idv(M_a),
-                                                                          idv(u)-idv(M_a))
-                                                                    +inner(curlv(u)-curlv(M_a),
-                                                                           curlv(u)-curlv(M_a))) );
-        auto e22_curl = integrate(_range=elements(mesh), _expr=sqrt(inner(idv(u),idv(u))+inner(curlv(u),curlv(u))) );
+        auto e21_curl = integrate(_range=elements(M_mesh),
+                                  _expr = inner(idv(u)-idv(M_a),
+                                                idv(u)-idv(M_a))
+                                  + inner(curlv(u)-curlv(M_a),
+                                          curlv(u)-curlv(M_a))
+                                 ).evaluate()(0,0);
+        auto e22_curl = integrate(_range=elements(M_mesh),
+                                  _expr = inner(idv(u),idv(u))
+                                  + inner(curlv(u),curlv(u))
+                                 ).evaluate()(0,0);
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
@@ -248,9 +255,9 @@ class TestPrecAFP : public Application
                 << nnz << "\t"
                 << soption("functions.m") << "\t"
                 << e21 << "\t"
-                << e21/e22 << "\t" 
+                << e21/e22 << "\t"
                 << e21_curl << "\t"
-                << e21_curl/e22 _curl 
+                << e21_curl/e22_curl 
                 << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
@@ -270,7 +277,7 @@ class TestPrecAFP : public Application
                 outputFile << "#Physique" << std::endl;
                 model.saveMD(outputFile);    
                 
-                outputFile << "##Physique spécifique" << std::endl;
+                outputFile << "##Physique spÃÂÃÂ©cifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
                 outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
