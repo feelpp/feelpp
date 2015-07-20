@@ -9,12 +9,12 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        19884
+svn.revision        21697
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.9.0-svn-${svn.revision}
+version             2.9.3-svn-${svn.revision}
 categories          science
 platforms           darwin
 maintainers         feelpp.org:christophe.prudhomme
@@ -30,8 +30,8 @@ homepage            http://www.geuz.org/gmsh/
 worksrcdir          trunk
 conflicts           gmsh
 
-patchfiles     gmsh-devel.patch  \
-    centerlinefield.patch
+patchfiles     gmsh-devel.patch
+    #centerlinefield.patch
     #gmsh-devel-petsc.patch
 patch.dir      ${worksrcpath}
 # https://trac.macports.org/ticket/33925
