@@ -534,6 +534,9 @@ Environment::clearSomeMemory()
 
 Environment::~Environment()
 {
+    if ( boption( "display-stats" ) )
+        Environment::saveTimers( true );
+    
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
     Environment::destroyHwlocTopology();
@@ -1218,6 +1221,7 @@ Environment::doOptions( int argc, char** argv,
                     if ( !fs::exists( cfgfile ) ) continue;
                     LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
+                    S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
                     po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 }
@@ -1996,6 +2000,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
+    boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
     
 
     typedef std::vector< std::string > split_vector_type;

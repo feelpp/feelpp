@@ -67,7 +67,7 @@ unset LC_CTYPE
 # cd ${PREVPATH}
 
 # Load the latest feelpp dependencies modules here
-# module load feelpp.profile
+module load feelpp.profile
 
 #cd /workdir/math/whoami
 cd ${CMAKE_CURRENT_BINARY_DIR}/
@@ -80,15 +80,15 @@ cd ${CMAKE_CURRENT_BINARY_DIR}/
         foreach( cfg ${FEELPP_APP_CFG} )
             get_filename_component( CFG_NAME ${cfg} NAME )
             file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm 
-            "mpirun --bind-to-core ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other feel++  options here
-            "
+            "mpirun --bind-to core ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  
+# "
             )
         endforeach()
     # Otherwise do not provide the config-file option
     else( FEELPP_APP_CFG )
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm
-            "mpirun --bind-to-core ${CMAKE_CURRENT_BINARY_DIR}/${execname} # add other feel++ options here
-            "
+            "mpirun --bind-to core ${CMAKE_CURRENT_BINARY_DIR}/${execname} 
+# "
         )
     endif( FEELPP_APP_CFG )
 endif( FEELPP_ENABLE_SCHED_SLURM )

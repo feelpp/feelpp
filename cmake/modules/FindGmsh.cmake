@@ -61,7 +61,18 @@ find_program( GMSH_EXECUTABLE
   $ENV{GMSH_DIR}/bin
   ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
+  DOC "GMSH mesh generator"
+  NO_DEFAULT_PATH
+  )
+if(NOT GMSH_EXECUTABLE)
+find_program( GMSH_EXECUTABLE
+  NAMES gmsh
+  PATHS
+  $ENV{GMSH_DIR}/bin
+  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
+  PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
+endif()
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
