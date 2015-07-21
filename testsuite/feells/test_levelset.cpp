@@ -21,13 +21,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file dist2wallsoptimized.cpp
-   \author Guillaume Dolle <gdolle at unistra.fr>
-   \date 2014-01-21
- */
-
 //#define USE_BOOST_TEST 1
+#undef USE_BOOST_TEST
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE levelset
 #include <testsuite/testsuite.hpp>
@@ -171,6 +166,47 @@ public:
 #endif
     }
 
+    /// Third test: distance from a circle inside the domain
+    void circle()
+    {
+        auto Xh = Pch<H_ORDER>(M_mesh);
+        auto Xh0 = Pdh<0>(M_mesh);
+        auto thefms = fms( Xh );
+        auto x_center =  0.;
+        auto y_center =  0.;
+        auto radius = doption("radius")*0.25;
+
+        auto phio = vf::project(Xh, elements(M_mesh), (Px()-x_center)*(Px()-x_center) + (Py()-y_center)*(Py()-y_center) - radius);
+        auto dist = vf::project(Xh, elements(M_mesh), sqrt((Px()-x_center)*(Px()-x_center) + (Py()-y_center)*(Py()-y_center)) - radius);
+        
+        auto phi1 = thefms->march(phio, false) ;
+
+        auto mark = vf::project(Xh0, elements(M_mesh), chi(abs(idv(phio)) <= 2.*doption("gmsh.hsize"))) ;
+        M_mesh->updateMarker2( mark ) ;
+
+        auto phi2 = thefms->march(phio, true) ;
+        
+        auto err1 = vf::project( Xh, elements(M_mesh), abs( idv(phi1) - idv(dist) ) );
+        auto err2 = vf::project( Xh, elements(M_mesh), abs( idv(phi2) - idv(dist) ) );
+#if defined(USE_BOOST_TEST)
+        // Max error around mesh size h.
+        //BOOST_CHECK_CLOSE( phi.max(), M_radius, h() );
+        BOOST_CHECK_SMALL( err1.max(), h() )
+        BOOST_CHECK_SMALL( err2.max(), h() )
+#else
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_levelset_circle2");
+        for(int i = 0; i < 3; i++){
+        exp->step(i)->add("phio", phio);
+        exp->step(i)->add("phi1", phi1);
+        exp->step(i)->add("phi2", phi2);
+        exp->step(i)->add("dist", dist);
+        exp->step(i)->add("err1", err1);
+        exp->step(i)->add("err2", err2);
+        exp->step(i)->add("mark", mark);
+        exp->save();
+        }
+#endif
+    }
 private:
     mesh_ptrtype M_mesh;
     double M_radius;
@@ -210,6 +246,13 @@ BOOST_AUTO_TEST_CASE( test_3D_p1g2 )
     tls.wallDist_1();
 }
 
+// Unit 2D circle P1G1
+BOOST_AUTO_TEST_CASE( test_2d_circle )
+{
+    TestLevelSet<2,1,1> tls;
+    tls.circle();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
@@ -226,9 +269,10 @@ int main(int argc, char** argv )
 #endif
     //TestLevelSet<3,1,1> tls( 1, 0.1 );
     //TestLevelSet<2,1,2> tls( 1, 0.1 );
-    TestLevelSet<3,1,1> tls;
+    TestLevelSet<2,1,1> tls;
     tls.wallDist_1();
     tls.wallDist_2();
+    tls.circle();
 
     return 0;
 }
