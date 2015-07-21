@@ -94,7 +94,6 @@ matrix:
             - llvm-toolchain-precise-3.6
           packages:
             - clang-3.6
-            
     - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       os: linux
       compiler: clang37
@@ -104,7 +103,6 @@ matrix:
             - llvm-toolchain-precise
           packages:
             - clang-3.7
-      
      - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       os: linux
       compiler: gcc5
@@ -114,7 +112,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-5
-
   allow_failures:
   - os: osx
   - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
