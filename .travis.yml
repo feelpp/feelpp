@@ -60,6 +60,7 @@ before_install:
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool; fi
+  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
 #  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
   #install some submodules
@@ -67,20 +68,22 @@ before_install:
   #- git submodule update --init --recursive contrib/nt2
   - git submodule update --init --recursive contrib/ipopt
   - git submodule update --init --recursive quickstart
-  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
-  - bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
-  - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
+  - export NPROCS=3
+#  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
+#  - bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
+#  - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
   - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 
 install:
 - $CXX --version
 - $CC --version
-- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+#- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
 
 
 script:
-- make -j16 feelpp_ginac
-- make -j1 feelpp
+- ls -R $HOME/software
+#- make -j16 feelpp_ginac
+#- make -j1 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 branches:
