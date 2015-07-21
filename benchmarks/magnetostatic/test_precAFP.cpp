@@ -156,20 +156,13 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-        //auto Jh = lag_v_space_type::New(M_mesh); // lag_v
-        auto Jh = curl_space_type::New(M_mesh); // lag_v
 
         auto model = ModelProperties(Environment::expand(soption("myModel")));
-        auto J = vf::project(_space=Jh,
-                             _range=elements(M_mesh),
-                             _expr=expr<DIM,1>(soption("functions.j")));
         auto M_mu = vf::project(_space=Mh,
                                _range=elements(M_mesh),
                                _expr=expr(soption("functions.m")));
-        auto M_a = vf::project(_space=Xh->template functionSpace<0>(),
-                               _range=elements(M_mesh),
-                               _expr=expr<DIM,1>(soption("functions.a")));
-        
+        auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
+        //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
         auto V = Xh->element();
         auto u = U.template element<0>();
@@ -186,7 +179,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = (1./idv(M_mu))*inner(idv(J),id(v)));    // rhs
+                       _expr = (1./idv(M_mu))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -234,18 +227,20 @@ class TestPrecAFP : public Application
             toc("Inverse",FLAGS_v>0);
         }
         Environment::saveTimers(boption("saveTimers")); 
-        auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
-        auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(u)));
+        auto e21 = normL2(_range=elements(M_mesh), _expr=(f_M_a-idv(u)));
+        auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
+#if 0
         auto e21_curl = integrate(_range=elements(M_mesh),
-                                  _expr = inner(idv(u)-idv(M_a),
-                                                idv(u)-idv(M_a))
-                                  + inner(curlv(u)-curlv(M_a),
-                                          curlv(u)-curlv(M_a))
+                                  _expr = inner(idv(u)-f_M_a,
+                                                idv(u)-f_M_a)
+                                  + inner(curlv(u)-c_M_a,
+                                          curlv(u)-c_M_a)
                                  ).evaluate()(0,0);
         auto e22_curl = integrate(_range=elements(M_mesh),
                                   _expr = inner(idv(u),idv(u))
                                   + inner(curlv(u),curlv(u))
                                  ).evaluate()(0,0);
+#endif
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
@@ -255,9 +250,12 @@ class TestPrecAFP : public Application
                 << nnz << "\t"
                 << soption("functions.m") << "\t"
                 << e21 << "\t"
-                << e21/e22 << "\t"
+                << e21/e22 
+#if 0
+                << "\t"
                 << e21_curl << "\t"
                 << e21_curl/e22_curl 
+#endif
                 << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
@@ -280,9 +278,9 @@ class TestPrecAFP : public Application
                 outputFile << "##Physique spÃÂÃÂ©cifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
-                outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
-                outputFile << "| Rhs | " << expr<DIM,1>(soption("functions.j")) << "|" << std::endl;
-                outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
+                outputFile << "| mu | "    << soption("functions.m") << "| " << std::endl;
+                outputFile << "| Rhs | "   << soption("functions.j") << "|" << std::endl;
+                outputFile << "| Exact | " << soption("functions.a") << "|" << std::endl;
 
                 outputFile << "#Numerics" << std::endl;
                 
@@ -325,9 +323,7 @@ class TestPrecAFP : public Application
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("rhs"                ,J  );
             ex->add("potential"          ,u  );
-            ex->add("exact_potential"    ,M_a);
             ex->add("lagrange_multiplier",phi);
             ex->save();
         }
