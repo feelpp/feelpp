@@ -6,7 +6,7 @@ git:
   submodules: false
 
 language: cpp
-
+compiler: clang
 # osx_image: xcode6.4
 
 #- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
