@@ -7,6 +7,11 @@
 
 #include <feel/feelcore/environment.hpp>
 
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include <vtkStdString.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkObjectFactory.h>
@@ -60,4 +65,9 @@ class vtkBaseInsituPipeline : public vtkCPPipeline
 };
 
 }
+
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+
 #endif

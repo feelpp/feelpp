@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -148,6 +148,23 @@ void run()
     CHECK( std::abs( A_lp->l1Norm() - a_lp.matrixPtr()->l1Norm() ) < 1e-9 ) << "must be identicaly";
     CHECK( std::abs( A_tt->l1Norm() - a_tt.matrixPtr()->l1Norm() ) < 1e-9 ) << "must be identicaly";
 #endif
+
+
+    BlocksBaseSparseMatrix<double> myblockMat1(4,4);
+    myblockMat1(0,0) = A_uu;
+    myblockMat1(0,1) = A_up;
+    myblockMat1(1,0) = A_pu;
+    myblockMat1(1,2) = A_pl;
+    myblockMat1(2,1) = A_lp;
+    myblockMat1(3,3) = A_tt;
+    auto Afromsubmat = backend()->newBlockMatrix(_block=myblockMat1, _copy_values=true);
+    // check
+#if USE_BOOST_TEST
+    BOOST_CHECK_CLOSE( Afromsubmat->l1Norm(), A->l1Norm(), 1e-9 );
+#else
+    CHECK( std::abs( Afromsubmat->l1Norm() - A->l1Norm() ) < 1e-9 ) << "must be identicaly";
+#endif
+
     A_uu->addMatrix(-1.0, a_uu.matrixPtr() );
     A_up->addMatrix(-1.0, a_up.matrixPtr() );
     A_pu->addMatrix(-1.0, a_pu.matrixPtr() );

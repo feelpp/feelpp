@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -387,12 +387,12 @@ public:
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
     void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
-    
+
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
     void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
-    
+
     /**
      * Call the assemble functions
      */
@@ -664,6 +664,14 @@ public:
     value_type dot( Vector<T> const& __v );
 
     /**
+     * This function creates a vector which is defined
+     * by the row indices given in the "rows" entries.
+     */
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const;
+
+    /**
      * Serialization for PETSc VECSEQ
      */
     template<class Archive>
@@ -686,7 +694,6 @@ public:
         VecRestoreArray(this->vec(), &array);
     }
     //@}
-
 
 
 protected:

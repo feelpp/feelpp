@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -76,6 +76,9 @@ public:
 
     typedef storage_type::iterator iterator;
     typedef storage_type::const_iterator const_iterator;
+
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<DataMap> datamap_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -93,11 +96,11 @@ public:
               size_type last_col_entry_on_proc = 0,
               WorldComm const& worldcomm = Environment::worldComm() );
 
-    GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
-              boost::shared_ptr<DataMap> const& mapCol );
+    GraphCSR( datamap_ptrtype const& mapRow,
+              datamap_ptrtype const& mapCol );
 
-    GraphCSR( DataMap const& mapRow,
-              DataMap const& mapCol );
+    GraphCSR( datamap_type const& mapRow,
+              datamap_type const& mapCol );
 
     GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
               bool diagIsNonZero=true,
@@ -328,12 +331,12 @@ public:
         M_last_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
-    DataMap const& mapRow() const { return *M_mapRow; }
-    DataMap const& mapCol() const { return *M_mapCol; }
-    boost::shared_ptr<DataMap> const& mapRowPtr() const { return M_mapRow; }
-    boost::shared_ptr<DataMap> const& mapColPtr() const { return M_mapCol; }
-    boost::shared_ptr<DataMap> mapRowPtr() { return M_mapRow; }
-    boost::shared_ptr<DataMap> mapColPtr() { return M_mapCol; }
+    datamap_type const& mapRow() const { return *M_mapRow; }
+    datamap_type const& mapCol() const { return *M_mapCol; }
+    datamap_ptrtype const& mapRowPtr() const { return M_mapRow; }
+    datamap_ptrtype const& mapColPtr() const { return M_mapCol; }
+    datamap_ptrtype mapRowPtr() { return M_mapRow; }
+    datamap_ptrtype mapColPtr() { return M_mapCol; }
 
     //@}
 
@@ -356,6 +359,14 @@ public:
      * transpose graph
      */
     self_ptrtype transpose( bool doClose = true );
+
+    /**
+     * create subgraph from a list of global process index
+     */
+    self_ptrtype createSubGraph( std::vector<size_type> const& rows, std::vector<size_type> const& cols,
+                                 datamap_ptrtype const& submapRow = datamap_ptrtype(),
+                                 datamap_ptrtype const& submapCol = datamap_ptrtype(),
+                                 bool useSameDataMap=false, bool checkAndFixRange=true ) const;
 
     /**
      * add missing zero entries diagonal
@@ -407,7 +418,7 @@ private:
 
     self_ptrtype M_graphT;
 
-    boost::shared_ptr<DataMap> M_mapRow, M_mapCol;
+    datamap_ptrtype M_mapRow, M_mapCol;
 };
 
 

@@ -86,6 +86,11 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
           #OUTPUT_QUIET
           )
       endif()
+      if ( APPLE AND (NOT FEELPP_USE_STATIC_LINKAGE) )
+        message(STATUS "GLog: use @rpath in dynamic lib installed")
+        EXECUTE_PROCESS(COMMAND install_name_tool -id @rpath/libfeelpp_glog.0.dylib ${CMAKE_BINARY_DIR}/contrib/glog/lib/libfeelpp_glog.dylib )
+      endif()
+
     endif()
   endif()
   FIND_LIBRARY(GLOG_LIBRARY

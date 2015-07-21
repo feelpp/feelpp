@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -1188,7 +1188,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 {
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                         {
-                            const auto& gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
+                            const size_type gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
                             if (!dof_done[gdof])
                                 {
                                     //------------------------

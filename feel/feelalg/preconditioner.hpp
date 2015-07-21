@@ -227,6 +227,18 @@ public:
         return M_auxiliarySparseMatrix.find( key )->second;
     }
 
+    bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
+    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners.find(key)->second;
+    }
+    preconditioner_ptrtype & inHousePreconditioners( std::string const& key )
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners[key];
+    }
+
     //@}
 
     /** @name  Mutators
@@ -269,12 +281,19 @@ public:
     {
         M_nearNullSpace[splitIds] = nearNullSpace;
     }
-    //@}
 
     void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
     {
         M_auxiliarySparseMatrix[key] = mat;
     }
+
+    void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
+    {
+        M_inHousePreconditioners[key] = pc;
+    }
+
+    //@}
+
     /** @name  Methods
      */
     //@{
@@ -307,7 +326,7 @@ protected:
     Side M_side;
     
     /**
-     * Enum statitng with type of preconditioner to use.
+     * Enum stating with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
 
@@ -332,6 +351,8 @@ protected:
     std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
     std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+
+    std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -439,7 +460,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         {
             p->setMatrix( matrix );
         }
-        VLOG(2) << "storing preconditionerin singleton" << "\n";
+        VLOG(2) << "storing preconditioner in singleton" << "\n";
         Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;

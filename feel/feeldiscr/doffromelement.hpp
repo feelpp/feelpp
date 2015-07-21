@@ -412,6 +412,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
+            
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
             // Polynomial order in each direction
@@ -449,14 +450,21 @@ private:
                             gDof += l;
                         else
                             gDof += M_doftable->vector_permutation[permutation][l];
-
+                        
+                        /*
                         if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
                         else
                         {
                             sign=-1;
                             M_doftable->M_locglob_signs[ie][l] = -1;
-                        }
+                         }*/
+                        if ( __elt.face(i).ad_first() == __elt.id() )
+                            M_doftable->M_locglob_signs[ie][lc] = 1;
+                        else
+                            M_doftable->M_locglob_signs[ie][lc] = -1;
+
+                        //std::cout << "e=" << __elt.id() << " l=" << lc << " sign =" << M_doftable->M_locglob_signs[ie][lc] << "\n";
                     }
                     else
                     {
@@ -483,7 +491,7 @@ private:
 
                     }
                 }
-
+                
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }

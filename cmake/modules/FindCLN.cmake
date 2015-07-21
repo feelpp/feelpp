@@ -7,11 +7,15 @@
 
 # try the system version
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
+  HINTS
+  $ENV{CLN_DIR}/include
   PATH_SUFFIXES
   cln
   )
+message(STATUS "[cln] first pass ${CLN_INCLUDE_DIR}")
 # use the version available in contrib if the system version is not available
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
+  HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
@@ -22,6 +26,7 @@ FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   cln
   NO_DEFAULT_PATH
   )
+message(STATUS "[cln] second pass ${CLN_INCLUDE_DIR}")
 
 IF ( NOT CLN_INCLUDE_DIR )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/cln-compile)
@@ -80,11 +85,12 @@ IF ( NOT CLN_INCLUDE_DIR )
   endif()
 endif()
 string(REPLACE "include/cln" "" CLN_DIR ${CLN_INCLUDE_DIR} )
-FIND_LIBRARY(CLN_LIBRARY  NAMES cln feelpp_cln   )
+FIND_LIBRARY(CLN_LIBRARY  NAMES cln feelpp_cln  PATHS  $ENV{CLN_DIR}/lib NO_DEFAULT_PATH  )
 
 FIND_LIBRARY(CLN_LIBRARY
   NAMES cln feelpp_cln
   PATHS
+  $ENV{CLN_DIR}/lib  
   ${CMAKE_BINARY_DIR}/contrib/cln/lib/
   $ENV{FEELPP_DIR}/lib
   NO_DEFAULT_PATH
@@ -132,25 +138,29 @@ set(CLN_LIBRARIES)
 #	pkg_check_modules(_cln cln)
 #endif()
 
-find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h )
+find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h HINTS $ENV{CLN_DIR}/include NO_DEFAULT_PATH)
 find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h feel/cln/cln.h
   HINTS
+  $ENV{CLN_DIR}/include
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   ${_cln_INCLUDE_DIRS}
   $ENV{CLN_DIR}/include
   NO_DEFAULT_PATH
 )
 find_library(CLN_LIBRARIES NAMES cln libcln
+  PATH
+  $ENV{CLN_DIR}/lib
   ${_cln_LIBRARY_DIR}
   ${_cln_LIBRARY_DIRS}
+  NO_DEFAULT_PATH
 )
 
-find_library(CLN_LIBRARIES NAMES feelpp_cln libcln cln
+find_library(CLN_LIBRARIES NAMES cln libcln feelpp_cln 
   HINTS
+  $ENV{CLN_DIR}/lib
   ${CMAKE_BINARY_DIR}/contrib/cln/lib
   ${_cln_LIBRARY_DIR}
   ${_cln_LIBRARY_DIRS}
-  $ENV{CLN_DIR}/lib
   NO_DEFAULT_PATH
 )
 message(STATUS "Cln includes: ${CLN_INCLUDE_DIR} Libraries: ${CLN_LIBRARIES}" )

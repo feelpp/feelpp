@@ -25,10 +25,14 @@
 #define FEELPP_PARTITIONIO_HPP 1
 
 #if defined(FEELPP_HAS_HDF5)
+#include <boost/algorithm/string/split.hpp>
 #include <feel/feelcore/hdf5.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp> 
 
 namespace Feel
 {
+namespace pt =  boost::property_tree;
 /**
    \brief Class that handles I/O of mesh parts (for offline partitioning mode)
 
@@ -217,6 +221,17 @@ private:
 
     //! Private Methods
     //@{
+    
+    /**
+     * write meta data 
+     */
+    void writeMetaData( mesh_ptrtype mesh );
+    
+    /**
+     * read meta data
+     */
+    void readMetaData( mesh_ptrtype mesh );
+
     // Methods for writing
     void writeStats();
     void writePoints();
@@ -246,7 +261,8 @@ private:
     //@{
     WorldComm M_comm;
     size_type M_myRank;
-    std::string M_fileName;
+    std::string M_filename;
+    std::string M_h5_filename;
     bool M_transposeInFile;
     meshparts_ptrtype M_meshPartsOut;
     mesh_ptrtype M_meshPartIn;
@@ -275,7 +291,8 @@ private:
 template<typename MeshType>
 inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
                                            const bool transposeInFile) :
-    M_fileName (fileName),
+    M_filename (fileName),
+    M_h5_filename (),
     M_transposeInFile (transposeInFile),
     M_elementNodes(0),
     M_faceNodes(0),
@@ -291,7 +308,8 @@ template<typename MeshType>
 inline void PartitionIO<MeshType>::setup (const std::string& fileName,
                                           const bool transposeInFile)
 {
-    M_fileName = fileName;
+    M_filename = fileName;
+    M_h5_filename;
     M_transposeInFile = transposeInFile;
     M_maxNumPoints = 0;
     M_maxNumEdges = 0;
@@ -305,14 +323,17 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 template<typename MeshType>
 void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 {
-    LOG(INFO) << "writing mesh in HDF5 format in " << M_fileName;
+    if ( Environment::isMasterRank() )
+        writeMetaData( meshParts );
+    M_h5_filename = fs::path(M_filename).stem().string() + ".h5";
+    LOG(INFO) << "writing mesh in HDF5 format in " << M_h5_filename;
     M_meshPartsOut = meshParts;
     // 1 partition per process
     // in the future we have to handle many partitions in one process
     M_numParts = 1;//M_meshParts->size();
 
     tic();
-    M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), false);
+    M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), false);
     writeStats();
     tic();
     writePoints();
@@ -329,14 +350,27 @@ void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
     toc("writing hdf5 file",FLAGS_v>0);
 
 }
-
+template<typename MeshType>
+void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
+{
+    pt::ptree pt;
+    fs::path p(M_filename);
+    pt.put("mesh.h5",p.stem().string()+".h5");
+    for( auto m : meshParts->markerNames() )
+    {
+        pt.put("mesh.physicals."+m.first, m.second );
+    }
+    
+    pt::write_json(M_filename, pt);
+}
 template<typename MeshType>
 void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 {
+    readMetaData( meshParts );
     M_meshPartIn = meshParts;
     M_numParts = meshParts->worldComm().localSize();
     tic();
-    M_HDF5IO.openFile (M_fileName, meshParts->worldComm(), true);
+    M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
     readStats();
     tic();
     readPoints();
@@ -359,7 +393,34 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
     M_meshPartIn->updateForUse();
     toc("mesh update for use",FLAGS_v>0);
 }
-
+template<typename MeshType>
+void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
+{
+    pt::ptree pt;
+    pt::read_json(M_filename, pt);
+    M_h5_filename = pt.get<std::string>("mesh.h5");
+    auto physicals = pt.get_child_optional("mesh.physicals");
+    if ( physicals )
+    {
+        for (auto& item : pt.get_child("mesh.physicals"))
+        {
+            std::string v = item.second.data();//item.get<std::string>();
+            LOG(INFO) << "name: " << item.first << " " << v;
+            typedef std::vector< std::string > split_vector_type;
+    
+            split_vector_type SplitVec; 
+            boost::split( SplitVec, v, boost::is_any_of(" "), boost::token_compress_on ); 
+            std::vector<size_type> m;
+            std::for_each( SplitVec.begin(), SplitVec.end(), 
+                           [&m]( std::string const& s )
+                           {
+                              m.push_back( std::stoi( s ) );  
+                           } );
+            meshParts->addMarkerName( std::make_pair( item.first, m ) );
+            
+        }
+    }
+}
 template<typename MeshType>
 void PartitionIO<MeshType>::writeStats()
 {

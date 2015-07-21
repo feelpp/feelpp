@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel++ library
 
@@ -29,7 +29,7 @@ int main(int argc, char**argv )
 {
     constexpr int dim = FEELPP_DIM;
     constexpr int order_p= FEELPP_ORDER_P;
-    
+
     using namespace Feel;
 	po::options_description stokesoptions( "Steady NS options" );
 	stokesoptions.add_options()
@@ -72,23 +72,47 @@ int main(int argc, char**argv )
 
     if ( Environment::isMasterRank() )
     {
-        std::cout << "Re\tFunctionSpace\tVelocity\tPressure\n";
+        std::cout<<"\n\n\nMesh name: "<<soption("gmsh.filename")<<"\n\n";
+        std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;
         std::cout.width(16);
+        std::cout << std::left << order_p+1;
+        std::cout.width(16);
+        std::cout << std::left << order_p;
+        std::cout << std::left << doption( "gmsh.hsize" )<<"\t";
+        std::cout.width(16);
         std::cout << std::left << Vh->nDof();
+        std::cout.width(16);
+        std::cout << std::left << Vh->nLocalDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<0>()->nDof();
         std::cout.width(16);
         std::cout << std::left << Vh->functionSpace<1>()->nDof() << "\n";
+        if( soption("picard.preconditioner") != "petsc" )
+        {
+            std::cout << "[blockns]\n";
+            std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
+            std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
+            std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
+            std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
+            std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
 
-        std::cout << "[blockns]\n";
-        std::cout << " - cd: " << boption( "blockns.cd" ) << "\n";
-        std::cout << " - pcd: " << boption( "blockns.pcd" ) << "\n";
-        std::cout << " - pcd.inflow: " << soption( "blockns.pcd.inflow" ) << "\n";
-        std::cout << " - pcd.outflow: " << soption( "blockns.pcd.outflow" ) << "\n";
-        std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n";
+            std::cout << " - Stokes rtol: " << doption( "stokes.ksp-rtol" ) << "\n";
+            std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
 
+            std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
+            std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
+            std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
+
+            std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
+            std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
+            std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
+
+            std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
+            std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
+            std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";
+        }
     }
     auto deft = gradt( u );
     auto def = grad( v );
@@ -97,7 +121,7 @@ int main(int argc, char**argv )
     double newtonTol = doption(_name="newton.tol");
     int newtonMaxIt = doption(_name="newton.maxit");
 
-    
+
     BoundaryConditions bcs;
     map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "velocity", "Dirichlet" ) };
 
@@ -124,7 +148,7 @@ int main(int argc, char**argv )
     }
     auto e = exporter( _mesh=mesh );
 
-    
+
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
     at+=a;
@@ -149,7 +173,7 @@ int main(int argc, char**argv )
     tic();
     auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
-    
+
     a_blockns->setMatrix( at.matrixPtr() );
 
     auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
@@ -184,6 +208,7 @@ int main(int argc, char**argv )
     e->step(0)->add( "p", p );
     e->save();
     toc(" - Exporting Stokes results...");
+    Environment::saveTimers( true );
 
     // Picard
     if ( boption("picard") )
@@ -195,11 +220,12 @@ int main(int argc, char**argv )
         do
         {
             tic();
+            tic();
             r.zero();
             at.zero();
             at += a;
             at += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradt(u)*idv(u)) );
-            toc( " - Picard:: Assemble nonlinear terms  ..." );
+            toc( "Picard::Assemble nonlinear terms" );
 
             tic();
             for( auto const& c : m_dirichlet )
@@ -218,7 +244,7 @@ int main(int argc, char**argv )
                            _expr=c.second ) ;
                 }
             }
-            toc(" - Picard:: Assemble BC   ...");
+            toc("Picard::Assemble BC");
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Picard:: non linear iteration " << fixedpt_iter << " \n";
@@ -226,31 +252,46 @@ int main(int argc, char**argv )
             tic();
             if ( soption("picard.preconditioner") != "petsc" )
             {
+                tic();
                 a_blockns->update( at.matrixPtr(), idv(u), m_dirichlet );
-                at.solveb(_rhs=r,_solution=U,_backend=backend(_name="picard",_rebuild=true),_prec=a_blockns );
+                toc("Picard::update blockns");
+                tic();
+                auto b = backend(_name="picard",_rebuild=true);
+                toc("Picard::update backend");
+                tic();
+                at.solveb(_rhs=r,_solution=U,_backend=b,_prec=a_blockns );
+                toc("Picard::update solveb");
             }
             else
             {
                 //at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
                 backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
-            toc(" - Picard:: Solve   ...");
+            toc("Picard::Solve");
+            tic();
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-            fixedpt_iter++;
             
+            fixedpt_iter++;
+
             if ( Environment::isMasterRank() )
             {
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
-                            }
+            }
             Un = U;
             Un.close();
-
+            toc("Picard::Update increment");
+            tic();
             e->step(fixedpt_iter)->add( "u", u );
             e->step(fixedpt_iter)->add( "p", p );
             e->save();
+            toc("Picard::Export");
+            toc("Picard::Iteration Total");
+            Environment::saveTimers( true );
+            
+            
         }
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }

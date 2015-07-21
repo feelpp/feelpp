@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -1474,6 +1474,7 @@ public:
             M_ref_ele( __RefEle ),
 
             M_gmc( __gmc ),
+            M_dofs( nDofs() ),
             M_phi( __pc->phi() ),
             M_gradphi( __pc->gradPtr() ),
             M_dn(),
@@ -1482,6 +1483,8 @@ public:
             M_dy(),
             M_dz()
         {
+            std::iota( M_dofs.begin(), M_dofs.end(), 0 );
+            
             //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
             {
@@ -1534,6 +1537,8 @@ public:
             M_ref_ele( c.M_ref_ele ),
 
             M_gmc( c.M_gmc ),
+            
+            M_dofs( c.M_dofs ),
             M_phi( c.M_phi ),
             M_gradphi( c.M_gradphi ),
             M_dn( c.M_dn ),
@@ -1642,6 +1647,16 @@ public:
         {
             return M_gmc->id();
         }
+
+        /**
+         * @return the number of basis functions
+         */
+        constexpr uint16_type nDofs() const { return nDof*( reference_element_type::is_product?nComponents1*nComponents2:1 ); }
+        
+        /**
+         * @return the degrees of freedom
+         */
+        std::vector<uint16_type> const& dofs() const { return M_dofs; }
 
         //! \return the points in the reference element
         matrix_node_t_type const& xRefs() const
@@ -2066,7 +2081,7 @@ public:
         reference_element_ptrtype M_ref_ele;
 
         geometric_mapping_context_ptrtype M_gmc;
-
+        std::vector<uint16_type> M_dofs;
         boost::multi_array<id_type,2> M_phi;
         boost::multi_array<ref_grad_type,2> const* M_gradphi;
         boost::multi_array<hess_type,2> M_hessphi;

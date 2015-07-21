@@ -1,5 +1,5 @@
 
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -627,6 +627,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
+    LOG(INFO) << "[solverlinearpetsc] reason = " << reason ;
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
@@ -754,9 +755,16 @@ SolverLinearPetsc<T>::setPetscConstantNullSpace()
         MatNullSpace nullsp;
 
         ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+#if PETSC_VERSION_LESS_THAN( 3,5,4 )
         ierr = KSPSetNullSpace( M_ksp, nullsp );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+#else
+        Mat A;
+        ierr = KSPGetOperators( M_ksp, &A, NULL );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = MatSetNullSpace( A, nullsp );
+#endif
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
         PETSc::MatNullSpaceDestroy( nullsp );
     }
 }
