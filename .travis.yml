@@ -15,11 +15,6 @@ compiler:
 
 osx_image: xcode6.4
 
-#- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-#- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-
-#- BUILD="g-debug" BUILDTYPE=Debug
-#- BUILDTYPE=Release TARGET=tutorial
 
 addons:
   apt:
@@ -31,7 +26,6 @@ addons:
     - gfortran
     - cmake
     - libtbb-dev
-    - $COMPILER_VERSION
     - libopenmpi-dev
     - libglpk-dev
     - libxml2-dev
