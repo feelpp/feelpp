@@ -1,6 +1,3 @@
-os:
-  - linux
-
 # force use of container based worker
 sudo: false  
 
@@ -10,15 +7,8 @@ git:
 
 language: cpp
 
-compiler:
-- clang
+# osx_image: xcode6.4
 
-osx_image: xcode6.4
-
-env:
-- BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-- BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 #- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
@@ -27,15 +17,10 @@ env:
 
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-precise
-    - llvm-toolchain-precise-3.6
     packages:
     - gfortran
     - cmake
     - libtbb-dev
-    - ${COMPILER_VERSION}
     - libopenmpi-dev
     - libglpk-dev
     - libxml2-dev
@@ -99,6 +84,37 @@ notifications:
 
 
 matrix:
+  include:
+    - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+      os: linux
+      compiler: clang36
+      addons: &clang36
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            
+    - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+      os: linux
+      compiler: clang37
+      addons: &clang37
+        apt:
+          sources:
+            - llvm-toolchain-precise
+          packages:
+            - clang-3.7
+      
+     - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+      os: linux
+      compiler: gcc5
+      addons: &gcc5
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+
   allow_failures:
   - os: osx
   - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
