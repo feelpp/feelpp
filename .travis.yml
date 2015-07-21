@@ -17,7 +17,7 @@ compiler: clang
 
 addons:
   apt:
-    packages:
+    packages: &std_packages
     - gfortran
     - cmake
     - libtbb-dev
@@ -92,6 +92,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
           packages:
+            - *std_packages
             - clang-3.6
     - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       addons: &clang37
@@ -100,6 +101,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise
           packages:
+            - *std_packages
             - clang-3.7
     - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       addons: &gcc5
@@ -107,6 +109,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - *std_packages
             - g++-5
   allow_failures:
   - os: osx
