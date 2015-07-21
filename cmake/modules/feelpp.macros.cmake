@@ -236,25 +236,27 @@ macro(feelpp_add_test)
 
 
     # add TIMEOUT to test
-    if ( FEELPP_TEST_TIMEOUT )
-      if ( NOT FEELPP_TEST_NO_TEST )
+    if ( NOT FEELPP_TEST_NO_TEST )
+      if ( FEELPP_TEST_TIMEOUT )
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
           set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
         endif()
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
-      endif()
-    else()
-      if ( NOT FEELPP_TEST_NO_TEST )
+      else()
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
           set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_DEFAULT_TEST_TIMEOUT})
         endif()
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
+
+    # cfg
     set(cfgname test_${FEELPP_TEST_NAME}.cfg)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
       configure_file(  ${cfgname} ${cfgname} )
     endif()
+
+    # test_geo
     if ( FEELPP_TEST_GEO )
       foreach(  geo ${FEELPP_TEST_GEO} )
         # extract geo filename  to be copied in binary dir

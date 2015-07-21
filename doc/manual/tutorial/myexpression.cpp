@@ -54,58 +54,58 @@ int main(int argc, char**argv )
 
     //! [expr]
     auto g = expr(soption(_name="functions.g"));
-    std::cout << "g=" << g << std::endl;
+    std::cout << "g = " << g << std::endl;
 
-    auto f = expr<2,1>(soption(_name="functions.f"));
-    std::cout << "f=" << f << std::endl;
+    // auto f = expr<2,1>(soption(_name="functions.f"));
+    // std::cout << "f=" << f << std::endl;
 
-    double aVal = doption("a")+doption("b");
-    std::map<std::string,double> myMap; myMap["aVal"]=aVal;
-    auto i = expr(soption("functions.i"),myMap);
-    std::cout << "i=" << i << std::endl;
-    //! [expr]
+    // double aVal = doption("a")+doption("b");
+    // std::map<std::string,double> myMap; myMap["aVal"]=aVal;
+    // auto i = expr(soption("functions.i"),myMap);
+    // std::cout << "i=" << i << std::endl;
+    // //! [expr]
 
-    //! [grad]
-    auto grad_g=grad<2>(g);
-    auto grad_f=grad(f);
-    std::cout << "grad(g)=" << grad_g << std::endl;
-    std::cout << "grad(f)=" << grad_f << std::endl;
-    //! [grad]
+    // //! [grad]
+    // auto grad_g=grad<2>(g);
+    // auto grad_f=grad(f);
+    // std::cout << "grad(g)=" << grad_g << std::endl;
+    // std::cout << "grad(f)=" << grad_f << std::endl;
+    // //! [grad]
 
-    //! [laplacian]
-    auto laplacian_g=laplacian(g);
-    std::cout << "laplacian(g)=" << laplacian_g << std::endl;
+    // //! [laplacian]
+    // auto laplacian_g=laplacian(g);
+    // std::cout << "laplacian(g)=" << laplacian_g << std::endl;
 
-    auto laplacian_f=laplacian(f);
-    std::cout << "laplacian(f)=" << laplacian_f << std::endl;
+    // auto laplacian_f=laplacian(f);
+    // std::cout << "laplacian(f)=" << laplacian_f << std::endl;
 
-    //! [laplacian]
+    // //! [laplacian]
 
-    //! [div]
-    auto div_f=div(f);
-    std::cout << "div(f)=" << div_f << std::endl;
-    //! [div]
+    // //! [div]
+    // auto div_f=div(f);
+    // std::cout << "div(f)=" << div_f << std::endl;
+    // //! [div]
 
-    //! [curl]
-    auto curl_f=curl(f);
-    std::cout << "curl(f)=" << curl_f << std::endl;
-    //! [curl]
+    // //! [curl]
+    // auto curl_f=curl(f);
+    // std::cout << "curl(f)=" << curl_f << std::endl;
+    // //! [curl]
 
-    //! [eval]
-    std::cout << "Evaluation  at  (" << doption("x") << "," << doption("y") << "):" << std::endl;
-    std::cout << "           g(x,y)=" << g.evaluate() << std::endl;
-    std::cout << "           f(x,y)=" << f.evaluate() << std::endl;
-    std::cout << "           i(x,y)=" << i.evaluate() << std::endl;
-    std::cout << "Gradient:\n";
-    std::cout << "     grad(g)(x,y)=" << grad_g.evaluate() << std::endl;
-    std::cout << "     grad(f)(x,y)=" << grad_f.evaluate() << std::endl;
-    std::cout << "Divergence:\n";
-    std::cout << "      div(f)(x,y)=" << div_f.evaluate() << std::endl;
-    std::cout << "Curl:\n";
-    std::cout << "     curl(f)(x,y)=" << curl_f.evaluate() << std::endl;
-    std::cout << "Laplacian:\n";
-    std::cout << "laplacian(g)(x,y)=" << laplacian_g.evaluate() << std::endl;
-    std::cout << "laplacian(f)(x,y)=" << laplacian_f.evaluate() << std::endl;
-    //! [eval]
+    // //! [eval]
+    // std::cout << "Evaluation  at  (" << doption("x") << "," << doption("y") << "):" << std::endl;
+    // std::cout << "           g(x,y)=" << g.evaluate() << std::endl;
+    // std::cout << "           f(x,y)=" << f.evaluate() << std::endl;
+    // std::cout << "           i(x,y)=" << i.evaluate() << std::endl;
+    // std::cout << "Gradient:\n";
+    // std::cout << "     grad(g)(x,y)=" << grad_g.evaluate() << std::endl;
+    // std::cout << "     grad(f)(x,y)=" << grad_f.evaluate() << std::endl;
+    // std::cout << "Divergence:\n";
+    // std::cout << "      div(f)(x,y)=" << div_f.evaluate() << std::endl;
+    // std::cout << "Curl:\n";
+    // std::cout << "     curl(f)(x,y)=" << curl_f.evaluate() << std::endl;
+    // std::cout << "Laplacian:\n";
+    // std::cout << "laplacian(g)(x,y)=" << laplacian_g.evaluate() << std::endl;
+    // std::cout << "laplacian(f)(x,y)=" << laplacian_f.evaluate() << std::endl;
+    // //! [eval]
 }
 //! [all]

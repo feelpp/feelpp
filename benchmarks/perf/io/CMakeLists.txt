@@ -1,7 +1,7 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-28
+#  Author(s): Yacine OUld Rouis <yacine.ouldrouis@cea.fr>
+#       Date: 2015-06-22
 #
 #  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
 #
@@ -21,14 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-add_custom_target( testsuite )
+add_executable( feel_perf_io
+bench_perf_io.cpp
+  )
 
-add_subdirectory(contrib)
-
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls)
-  add_custom_target( test${testdir} )
-  add_subdirectory( feel${testdir} )
-
-endforeach()
+target_link_libraries(feel_perf_io feelpp ${FEELPP_LIBRARIES} )
