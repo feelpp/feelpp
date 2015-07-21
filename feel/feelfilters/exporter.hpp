@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,6 +60,9 @@ enum file_type
  * \class Exporter
  * \brief export Feel generated data to some file formats
  * \ingroup Exporter
+ *
+ * \tparam MeshType     mesh type
+ * \tparam N            mesh geometrical order
  *
  * Use the visitor and factory pattern.
  *
@@ -319,6 +322,14 @@ public:
     }
 
     /**
+     * get the prefix to \p __prefix
+     */
+    std::string getPrefix()
+    {
+        return M_prefix;
+    }
+
+    /**
      * set the save frequency to \p __freq
      */
     Exporter<MeshType,N>* setFreq( int __freq )
@@ -383,13 +394,13 @@ public:
     void
     add( std::string const& name, F const& u )
         {
-            this->step( 0 )->add( this->prefix()+"."+name, u );
+            this->step( 0 )->add( name, u );
         }
 
     void
     addRegions()
         {
-            this->step( 0 )->addRegions( this->prefix() );
+            this->step( 0 )->addRegions( "" );
         }
     step_ptrtype step( double time )
     {
@@ -533,7 +544,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), soption("exporter.format")+"/"+name )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;

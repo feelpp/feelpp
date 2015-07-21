@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
  
@@ -97,13 +97,13 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
 #endif
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-W#warnings"
+#pragma GCC diagnostic ignored "-Wcpp"
 #endif
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic pop
 #endif
 #if defined(__clang__)

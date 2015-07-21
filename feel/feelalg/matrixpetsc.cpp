@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -979,7 +979,7 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
     datamap_ptrtype subMapCol = ( useSameDataMap )? subMapRow : this->mapColPtr()->createSubDataMap( cols, false );
 
     // build submatrix petsc
-    Mat subMatPetsc;
+    Mat subMatPetsc = NULL;
     this->getSubMatrixPetsc( rows,cols,subMatPetsc );
 
     // build matrixsparse object
@@ -988,7 +988,26 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
         subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
     else
         subMat.reset( new MatrixPetsc<T>( subMatPetsc,subMapRow,subMapCol,true ) );
+
+    bool computeSubGraph = true;
+    if ( computeSubGraph && this->hasGraph() )
+    {
+        auto subgraph = this->graph()->createSubGraph( rows, cols, subMapRow, subMapCol, useSameDataMap, false );
+        subMat->setGraph( subgraph );
+    }
+
     return subMat;
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                                 std::vector<size_type> const& rows,
+                                 std::vector<size_type> const& cols )
+{
+    CHECK( submatrix ) << "submatrix is not init";
+    boost::shared_ptr<MatrixPetsc<T> > submatrixPetsc = boost::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
+    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() );
 }
 
 
@@ -1058,7 +1077,10 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
-    ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    if ( submat == NULL )
+        ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &submat);
+    else
+        ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_REUSE_MATRIX, &submat);
     CHKERRABORT( this->comm(),ierr );
 
     ierr = PETSc::ISDestroy( isrow );

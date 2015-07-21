@@ -55,7 +55,7 @@ struct ModelParameter
     void setMin( double v ) { M_min = v; }
     double max() const { return M_max; }
     void setMax( double v ) { M_max = v; }
-        
+    
 private:
     std::string M_name;
     double M_value, M_min, M_max;
@@ -76,6 +76,7 @@ public:
             return pv;
         }
     
+   void saveMD(std::ostream &os); 
 private:
     void setup();
 private:

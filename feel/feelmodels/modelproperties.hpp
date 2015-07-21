@@ -25,6 +25,7 @@
 #define FEELPP_MODELPROPERTIES_HPP 1
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
@@ -67,6 +68,8 @@ public:
     ModelPostprocess const& postProcess() const { return M_postproc; }
 
     std::string getEntry(std::string &s);
+
+    void saveMD(std::ostream &os);
     
 private:
     pt::ptree M_p;

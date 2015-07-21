@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -62,6 +62,7 @@ extern "C"
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelcore/feelpetsc.hpp>
+#include <feel/feelcore/timertable.hpp>
 #include <feel/options.hpp>
 
 #define stringize2(x) #x
@@ -510,6 +511,12 @@ Environment::Environment( int argc, char** argv,
 
     freeargv( envargv );
 
+    /* Initialize hwloc topology */
+    /* to extract info about architecture */
+#if defined(FEELPP_HAS_HARTS)
+    Environment::initHwlocTopology();
+#endif
+
 }
 void
 Environment::clearSomeMemory()
@@ -527,6 +534,9 @@ Environment::clearSomeMemory()
 
 Environment::~Environment()
 {
+    if ( boption( "display-stats" ) )
+        Environment::saveTimers( true );
+    
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
     Environment::destroyHwlocTopology();
@@ -1211,6 +1221,7 @@ Environment::doOptions( int argc, char** argv,
                     if ( !fs::exists( cfgfile ) ) continue;
                     LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
+                    S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
                     po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 }
@@ -1682,9 +1693,6 @@ void Environment::bindToCore( unsigned int id )
     hwloc_cpuset_t set;
     hwloc_obj_t coren;
 
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
-
     /* get the nth core object */
     coren = hwloc_get_obj_by_type( Environment::S_hwlocTopology, HWLOC_OBJ_CORE, id );
     /* get the cpu mask of the nth core */
@@ -1696,7 +1704,24 @@ void Environment::bindToCore( unsigned int id )
     hwloc_bitmap_free( set );
 }
 
-int Environment::countCoresInSubtree( hwloc_obj_t node )
+int Environment::getNumberOfCores(bool logical)
+{
+    int nCores = -1;
+    int depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+    if(logical)
+    { depth = hwloc_get_type_depth( Environment::S_hwlocTopology, HWLOC_OBJ_PU ); }
+    else
+    { depth = hwloc_get_type_depth( Environment::S_hwlocTopology, HWLOC_OBJ_CORE ); }
+
+    if(depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+    {
+        nCores = hwloc_get_nbobjs_by_depth(Environment::S_hwlocTopology, depth);
+    }
+
+    return nCores;
+}
+
+int Environment::countCoresInSubtree( hwloc_obj_t node, bool logical )
 {
     int res = 0;
 
@@ -1707,7 +1732,10 @@ int Environment::countCoresInSubtree( hwloc_obj_t node )
     }
 
     /* if we are a core node, we increment the counter */
-    if ( node->type == HWLOC_OBJ_CORE )
+    /* count the number of real cores or logical cores */
+    /* according to the logical parameter */
+    if ( (logical && node->type == HWLOC_OBJ_PU) 
+    || (!logical && node->type == HWLOC_OBJ_CORE) )
     {
         res++;
     }
@@ -1723,9 +1751,6 @@ void Environment::bindNumaRoundRobin( int lazy )
     hwloc_obj_t numaNode;
 
     std::cout << "Round Robin Numa" << std::endl;
-
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
 
     /* get the first numa node */
     numaNode = hwloc_get_obj_by_type( Environment::S_hwlocTopology, HWLOC_OBJ_NODE, 0 );
@@ -1805,6 +1830,50 @@ void Environment::bindNumaRoundRobin( int lazy )
     hwloc_bitmap_free( set );
 }
 
+void Environment::getLastBoundCPU( std::vector<int> * lastCPU, std::vector<int> * cpuAffinity )
+{
+    int cid;
+    hwloc_cpuset_t set;
+
+    /* get a cpuset object */
+    set = hwloc_bitmap_alloc();
+
+    if(cpuAffinity)
+    {
+        /* Get the cpu thread affinity info of the current process/thread */
+        hwloc_get_cpubind( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            cpuAffinity->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
+
+    hwloc_bitmap_zero(set);
+
+    if(lastCPU)
+    {
+        /* Get the latest core location of the current process/thread */
+        hwloc_get_last_cpu_location( Environment::S_hwlocTopology, set, 0 );
+
+        /* write the corresponding processor indexes */
+        cid = hwloc_bitmap_first( set );
+
+        while ( cid != -1 )
+        {
+            lastCPU->push_back(cid);
+            cid = hwloc_bitmap_next( set, cid );
+        }
+    }
+
+    /* free memory */
+    hwloc_bitmap_free( set );
+}
+
 void Environment::writeCPUData( std::string fname )
 {
     hwloc_cpuset_t set;
@@ -1814,9 +1883,6 @@ void Environment::writeCPUData( std::string fname )
     unsigned int depth;
 
     std::ostringstream oss;
-
-    /* init and load hwloc topology for the current node */
-    Environment::initHwlocTopology();
 
     /* get a cpuset object */
     set = hwloc_bitmap_alloc();
@@ -1883,6 +1949,7 @@ void Environment::writeCPUData( std::string fname )
         MPI_File_close( &fh );
     }
 }
+
 #endif
 
 MemoryUsage
@@ -1933,6 +2000,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$repository", Environment::rootRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
+    boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
     
 
     typedef std::vector< std::string > split_vector_type;
@@ -1959,6 +2027,27 @@ Environment::expand( std::string const& expr )
     VLOG(1) << "Expand " << expr << " to "  << res;
     return res;
 }
+
+void
+Environment::addTimer( std::string const& msg, double t )
+{
+    S_timers.add( msg, t );
+}
+
+void
+Environment::saveTimers( bool display )
+{
+    //S_timers.save( Environment::about().appName(), display );
+    S_timers.save( display );
+}
+
+void
+Environment::saveTimersMD( std::ostream &os )
+{
+    //S_timers.save( Environment::about().appName(), display );
+    S_timers.saveMD( os );
+}
+
 
 
 AboutData Environment::S_about;
@@ -1988,6 +2077,8 @@ std::vector<std::string> Environment::olAutoloadFiles;
 #if defined(FEELPP_HAS_HARTS)
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
+
+TimerTable Environment::S_timers;
 
 }
 

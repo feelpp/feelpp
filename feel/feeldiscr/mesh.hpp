@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -997,6 +997,20 @@ public:
      */
     void recv( int p, int tag );
 
+    void saveMD(std::ostream &out)
+    {
+      out << "| Shape              |" << Shape << "|\n";
+      out << "|---|---|\n";
+      out << "| DIM              |" << dimension() << "|\n";
+      out << "| Order              |" << nOrder << "|\n";
+      out << "| hMin              |" << hMin() << "|\n";
+      out << "| hMax              |" << hMax() << "|\n";
+      out << "| hAverage              |" << hAverage() << "|\n";
+      out << "| nPoints              |" << this->numPoints() << "|\n";
+      out << "| nEdges              |" << this->numEdges() << "|\n";
+      out << "| nFaces              |" << this->numFaces() << "|\n";
+      out << "| nVertices              |" << this->numVertices() << "|\n\n";
+    }
 #if defined(FEELPP_HAS_HDF5)
     /**
      * load mesh in hdf5

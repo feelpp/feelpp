@@ -94,5 +94,20 @@ ModelPostprocess::setup()
     }
 }
 
+void
+ModelPostprocess::saveMD(std::ostream &os)
+{
+  os << "### PostProcess\n";
+  os << "|Kind | data |\n";
+  os << "|---|---|\n";
+  for(auto it = this->begin(); it != this->end(); it++)
+  {
+    os << "|" << it->first;
+    os << "|<ul>";
+    for(auto iit = it->second.begin(); iit != it->second.end(); iit++)
+      os << "<li>" << *iit << "</li>";
+    os << "</ul>|\n";
+  }
+}
 
 }

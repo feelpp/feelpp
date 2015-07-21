@@ -109,6 +109,33 @@ ModelMaterials::getMaterial( pt::ptree const& v )
     LOG(INFO) << "adding material " << m;
     return m;
 }
+void
+ModelMaterials::saveMD(std::ostream &os)
+{
+  os << "### Materials\n";
+  os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|\n";
+  os << "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n";
+  for(auto it = this->begin(); it!= this->end(); it++ )
+    os << "|" << it->first
+       << "|" << it->second.name()
+       << "|" << it->second.rho()
+       << "|" << it->second.mu()
+       << "|" << it->second.Cp()
+       << "|" << it->second.Cv()
+       << "|" << it->second.Tref()
+       << "|" << it->second.beta()
+       << "|" << it->second.k11()
+       << "|" << it->second.k12()
+       << "|" << it->second.k13()
+       << "|" << it->second.k22()
+       << "|" << it->second.k23()
+       << "|" << it->second.k33()
+       << "|" << it->second.E()
+       << "|" << it->second.nu()
+       << "|" << it->second.sigma()
+       << "|\n";
+  os << "\n";
+}
 
 }
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -32,6 +32,13 @@
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/ginac.hpp>
 
+#include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
+
+#if defined(FEELPP_HAS_OPENMP)
+#include <omp.h>
+#endif
+
 #if defined(FEELPP_HAS_HARTS)
 #include "RunTimeSystem/Model/RunTimeSysEnv.h"
 #include "RunTimeSystem/DataMng/DataHandler.h"
@@ -47,162 +54,176 @@
 #include "Utils/PerfTools/PerfCounterMng.h"
 #endif
 
-#define USE_BOOST_TEST 1
-#define BOOST_TEST_MODULE multithread
-#include <testsuite/testsuite.hpp>
+using namespace Feel;
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
 
-#if 0
-template<value_type>
-class Task
+typedef Mesh<Simplex<3>> MeshType;
+
+double getElapsedTime(struct timespec start, struct timespec end)
 {
-    public:
-        void computeCPU(DataArgsType& args)
-        {
+    double ts, te;
+    ts = (double)(start.tv_sec) + (double)(start.tv_nsec) / (double)(1e9); 
+    te = (double)(end.tv_sec) + (double)(end.tv_nsec) / (double)(1e9); 
 
-        }
-
-        value_type result() const
-        {
-            return M_ret;
-        }
-    private:
-        value_type M_ret;
+    return (te - ts);
 }
-#endif
-
-void reduceAndCompare( double * array, int n, double refval )
-{
-    double total = 0.0;
-
-    for( int i = 0; i < n; i++ )
-    {
-        total += array[i];
-    }
-
-    std::cout << total << " " << refval << std::endl;
-    BOOST_CHECK_CLOSE_FRACTION(total, refval, 0.00000001);
-}
-
-#if 1
-BOOST_AUTO_TEST_SUITE(HARTS)
-
-BOOST_AUTO_TEST_CASE(integrate_coarse)
-{
-    BOOST_CHECK( true );
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-#endif
 
 #if defined(FEELPP_HAS_OPENMP)
-BOOST_AUTO_TEST_SUITE(OpenMP)
-
-BOOST_AUTO_TEST_CASE(integrate_coarse)
+template<typename MeshTypePtr>
+void omp_integrate(MeshTypePtr mesh, int nCores)
 {
-    using namespace Feel;
+    double seqRes, seqTime;
+    struct timespec ts1, ts2;
+    double * coarseParRes, * coarseParTime;
+    double fineParRes, fineParTime;
 
-    typedef Mesh<Simplex<3>> MeshType;
-    // create the mesh (specify the dimension of geometric entity)
-    auto mesh = loadMesh( _mesh=new MeshType );
+    /* store option values */
+    bool parCPUEnable = boption( _name="parallel.cpu.enable" );
+    std::string parCPUImpl = soption( _name="parallel.cpu.impl" );
+    int parCPURestrict = ioption( _name="parallel.cpu.restrict" );
+    
+    /* Set the number of threads to use */
+    omp_set_num_threads(nCores);
 
-    typedef typename Feel::detail::quadptlocrangetype< decltype(elements(mesh)) >::type range_type;
-    typedef decltype(cst(1.0)) expr_type;
-    typedef _Q< ExpressionOrder<range_type,expr_type>::value > quad_type;
-    typedef _Q< ExpressionOrder<range_type,expr_type>::value_1 > quad1_type;
-    typedef Integrator<range_type, quad_type, expr_type, quad1_type> int_type;
-
-    //int nbcores = 4;
-    //omp_set_num_threads(nbcores);
-    int nbcores = omp_get_num_threads();
-    std::cout << "Using " << nbcores << " threads" << std::endl;
-
-    //std::cout << "Using " << nbcores << " threads" << std::endl;
-    //std::cout << boption( _name="parallel.cpu.enable" ) << " " << soption( _name="parallel.cpu.impl") << " " << ioption( _name="parallel.cpu.restrict") << std::endl;
-
-    struct timespec ts1;
-    struct timespec ts2;
-    double t1, t2;
+    coarseParRes = new double[nCores];
+    coarseParTime = new double[nCores];
 
     /* sequential with a constant */
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-    auto intf1 = integrate( _range = elements( mesh ),
-            _expr = cst(1.0) ).evaluate(false);
-    std::cout << "sequential res= " << intf1( 0, 0 ) << std::cout;
+    auto intfCst = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    seqRes = intfCst(0 , 0);
 
-#if 1
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-    t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-    std::cout << Environment::worldComm().globalRank() << " sequential (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+    seqTime = getElapsedTime(ts1, ts2);
 
     /* parallel with constant */
-    double * res = new double[nbcores];
+#pragma omp parallel
+    {
+        struct timespec tts1, tts2;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
+
+        auto intf = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+        coarseParRes[omp_get_thread_num()] = intf(0, 0);
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
+        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
+    }
+
+    for(int i = 0; i < nCores; i++)
+    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")" << std::endl; }
+
+    /* paralel implementation in Feel++ with a constant */
+    Environment::setOptionValue("parallel.cpu.enable", bool(true));
+    Environment::setOptionValue("parallel.cpu.impl", std::string("openmp"));
+    Environment::setOptionValue("parallel.cpu.restrict", int(nCores));
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 
-#pragma omp parallel
-    {
-        //std::cout << omp_get_thread_num() << std::endl;
-        auto intf = integrate( _range = elements( mesh ),
-                                     _expr = cst(1.0) ).evaluate(false);
-        res[omp_get_thread_num()] = intf(0, 0);
-        std::cout << omp_get_thread_num() << " res: " << intf( 0, 0) << std::endl;
-    }
+    auto intfCstPar = integrate( _range = elements( mesh ), _expr = cst(1.0) ).evaluate(false);
+    fineParRes = intfCstPar(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-    t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-    std::cout << Environment::worldComm().globalRank() << " parallel max (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+    fineParTime = getElapsedTime(ts1, ts2);
 
-    //reduceAndCompare( res, nbcores, nbcores * 1.0 );
-#endif
-#if 0
+    Environment::setOptionValue("parallel.cpu.enable", parCPUEnable);
+    Environment::setOptionValue("parallel.cpu.impl", parCPUImpl);
+    Environment::setOptionValue("parallel.cpu.restrict", parCPURestrict);
+
+    CHECK( fineParRes  == seqRes ) << "Test failed (" << __FUNCTION__ << ") (" << fineParRes << " != " << seqRes << ")" << std::endl;
+
+    std::cout << "Test OK: seqTime=" << seqTime << ", coarseParTime=";
+    if(nCores > 0)
+    {
+        std::cout << coarseParTime[0];
+        for(int i = 1; i < nCores; i++)
+        { std::cout << ", " << coarseParTime[i]; }
+    }
+    std::cout << "), fineParTime=" << fineParTime << std::endl;
 
     /* sequential with an expression */
     // our function to integrate
     auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
-    auto intf2 = integrate( _range = elements( mesh ),
-                                 _expr = g ).evaluate(false);
-    std::cout << "sequential res= " << intf2( 0, 0 ) << std::cout;
+
+    auto intfExpr = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+    seqRes = intfExpr(0 , 0);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-    t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-    std::cout << Environment::worldComm().globalRank() << " sequential (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+    seqTime = getElapsedTime(ts1, ts2);
 
 #pragma omp parallel
     {
+        struct timespec tts1, tts2;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tts1);
+
         // our function to integrate
         auto g = expr( "sin(pi*x)*cos(pi*y):x:y" );
-        //std::cout << omp_get_thread_num() << std::endl;
-        auto intf = integrate( _range = elements( mesh ),
-                                     _expr = g ).evaluate(false);
-        res[omp_get_thread_num()] = intf(0, 0);
-        std::cout << omp_get_thread_num() << " res: " << intf(0, 0) << std::endl;
+        auto intf = integrate( _range = elements( mesh ), _expr = g ).evaluate(false);
+        coarseParRes[omp_get_thread_num()] = intf(0, 0);
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tts2);
+        coarseParTime[omp_get_thread_num()] = getElapsedTime(tts1, tts2);
     }
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-    t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-    t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-    std::cout << Environment::worldComm().globalRank() << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+    for(int i = 0; i < nCores; i++)
+    { CHECK( coarseParRes[i] == seqRes ) << "Test failed (" << __FUNCTION__ << ") in thread " << i << "(" << coarseParRes[i] << " != " << seqRes << ")\n"; }
+
+    std::cout << "Test OK: seqTime=" << seqTime << ", parTime=(";
+    if(nCores > 0)
+    {
+        std::cout << coarseParTime[0];
+        for(int i = 1; i < nCores; i++)
+        { std::cout << ", " << coarseParTime[i]; }
+    }
+    std::cout << ")" << std::endl;
+
+    delete[] coarseParRes;
+    coarseParRes = nullptr;
+    delete[] coarseParTime;
+    coarseParTime = nullptr;
+}
 #endif
 
-    delete[] res;
-    res = nullptr;
-}
-
-BOOST_AUTO_TEST_CASE(integrate_fine)
+#if defined(FEELPP_HAS_HARTS)
+template<typename MeshTypePtr>
+void harts_integrate(MeshTypePtr mesh, int nCores)
 {
-    BOOST_CHECK( true );
+    typedef typename Feel::detail::quadptlocrangetype< decltype(elements(mesh)) >::type range_type;
+    typedef decltype(cst(1.0)) expr_type;
+    typedef _Q< ExpressionOrder<range_type,expr_type>::value > quad_type;
+    typedef _Q< ExpressionOrder<range_type,expr_type>::value_1 > quad1_type;
+    typedef Integrator<range_type, quad_type, expr_type, quad1_type> int_type;
 }
-
-BOOST_AUTO_TEST_SUITE_END()
 #endif
+
+int main(int argc, char ** argv)
+{
+    Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="test_multithread",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
+    // create the mesh (specify the dimension of geometric entity)
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
+
+    int nCores = 4;//omp_get_num_threads();
+    std::cout << "Using " << nCores << " threads" << std::endl;
+
+#ifdef FEELPP_HAS_OPENMP
+    omp_integrate(mesh, nCores);
+#else
+    std::cout << "OpenMP is not activated. Skipping associated tests." << std::endl;
+#endif 
+
+#if 0
+#ifdef FEELPP_HAS_HARTS
+    harts_integrate(mesh, nCores);
+#else
+    std::cout << "HARTS is not activated. Skipping associated tests." << std::endl;
+#endif 
+#endif
+
+    return 0;
+}

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -88,6 +88,9 @@ template<typename A0,typename A1,typename A2,typename A3,typename A4> class Func
  * \class TimeSet
  * \ingroup SpaceTime
  * \brief data TimeSet
+ *
+ * \tparam MeshType     Mesh type
+ * \tparam N            Mesh geometrical order
  *
  * \author Christophe Prud'homme
  */
@@ -521,7 +524,9 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
         {
+            tic();
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
         template<typename TSet>
