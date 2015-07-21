@@ -16,13 +16,13 @@ cd boost_1_58_0
 echo "using mpi ;" >> user-config.jam
 echo "" >> user-config.jam
 ./bootstrap.sh
-./bjam -j4 install \
+./bjam -j$NPROCS install \
       --layout=tagged \
       --prefix=$basedir/software/install/boost \
       --user-config=user-config.jam \
       variant=release \
       threading=multi \
-      link=static,shared
+      link=shared
 else
     echo 'Using cached directory $basedir/software/install/boost';
 
