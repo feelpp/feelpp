@@ -1370,7 +1370,7 @@ public:
     {
         typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
-        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<meshes_list_noref>::type,
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
 
@@ -1379,8 +1379,6 @@ public:
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
-
-
     };
     template<typename BasisType>
     struct ChangeBasis
@@ -1399,13 +1397,31 @@ public:
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
     template<typename BasisType>
+    struct ChangeMeshToComponentBasis
+    {
+        typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
+        typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
+                                                     typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+        typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
+
+        typedef typename BasisType::component_basis_type component_basis_type;
+
+        typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
+                              Feel::detail::bases<component_basis_type>,value_type,
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              mortar_list> _type;
+        typedef boost::shared_ptr<_type> type;
+    };
+
+    template<typename BasisType>
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
                                   mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
-                                  mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
+                                  mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
     };
 
     typedef typename mpl::transform<bases_list,
