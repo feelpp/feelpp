@@ -12,7 +12,10 @@ FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   PATH_SUFFIXES
   cln
   )
-FIND_LIBRARY(CLN_LIBRARY cln)
+FIND_LIBRARY(CLN_LIBRARY cln
+  HINTS
+  $ENV{CLN_DIR}/lib
+)
 
 message(STATUS "[cln] first pass ${CLN_INCLUDE_DIR}; ${CLN_LIBRARY}")
 
