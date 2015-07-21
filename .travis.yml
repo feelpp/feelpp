@@ -1,6 +1,6 @@
 # force use of container based worker
 sudo: false  
-
+os: linux
 git:
   depth: 1
   submodules: false
@@ -86,8 +86,6 @@ notifications:
 matrix:
   include:
     - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-      os: linux
-      compiler: clang36
       addons: &clang36
         apt:
           sources:
@@ -95,17 +93,13 @@ matrix:
           packages:
             - clang-3.6
     - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-      os: linux
-      compiler: clang37
       addons: &clang37
         apt:
           sources:
             - llvm-toolchain-precise
           packages:
             - clang-3.7
-     - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-      os: linux
-      compiler: gcc5
+    - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       addons: &gcc5
         apt:
           sources:
