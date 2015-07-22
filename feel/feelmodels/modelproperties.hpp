@@ -70,6 +70,16 @@ public:
     std::string getEntry(std::string &s);
 
     void saveMD(std::ostream &os);
+
+    /**
+     * Add an entry to the tree
+     **/
+    void put(std::string, std::string);
+
+    /**
+     * Save the stree
+     **/
+    void write(std::string /*filename*/);
     
 private:
     pt::ptree M_p;
