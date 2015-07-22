@@ -127,7 +127,6 @@ branches:
   only:
   - develop
   - master
-  - feature/fsi
 
 cache:
   directories:
