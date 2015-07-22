@@ -9,12 +9,6 @@ language: cpp
 compiler: clang
 # osx_image: xcode6.4
 
-#- BUILD="llvm-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-#- BUILD="gcc-5.1" FEELPP_CXX=g++-5.1 FEELPP_CC=gcc-5.1 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-
-#- BUILD="g-debug" BUILDTYPE=Debug
-#- BUILDTYPE=Release TARGET=tutorial
-
 addons:
   apt:
     packages: &std_packages
@@ -83,8 +77,13 @@ before_install:
   - echo $TRAVIS_OS_NAME
   - echo $HOME
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
-  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CXX=$FEELPP_CXX; fi
-  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then export CC=$FEELPP_CC; fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then
+      if test "x$FEELPP_CC" != "x"; then
+        export CC=$FEELPP_CC;
+        export CXX=$FEELPP_CXX;
+      fi
+    fi
+  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then  fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
@@ -118,6 +117,7 @@ branches:
   only:
   - develop
   - master
+  - feature/fsi
 
 cache:
   directories:
