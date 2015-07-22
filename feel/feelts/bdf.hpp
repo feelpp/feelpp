@@ -488,10 +488,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
-    this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
-                        %this->bdfOrder()
-                        %this->timeStep()
-                        %this->bdfPrefix()  ).str() );
+    if ( this->path().empty() )
+        this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
+                            %this->bdfOrder()
+                            %this->timeStep()
+                            %this->bdfPrefix()  ).str() );
 
     super::init();
 
