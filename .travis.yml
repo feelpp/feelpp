@@ -83,7 +83,6 @@ before_install:
         export CXX=$FEELPP_CXX;
       fi;
     fi
-  - if test "x$TRAVIS_OS_NAME" = "xlinux"; then  fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
   - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
