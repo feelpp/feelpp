@@ -30,6 +30,8 @@ addons:
     - imagemagick
 
 matrix:
+  exclude: 
+   - env:
   include:
    - env: BUILD="llvm-3.5" COMPILER_VERSION="clang-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
       addons: 
