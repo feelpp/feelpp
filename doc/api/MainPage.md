@@ -45,18 +45,12 @@ Lausanne(Suisse) and is now a joint effort between Université de
 Strasbourg, Université Joseph Fourier (Grenoble), University of
 Coimbra (Portugal), CNRS and [CeMoSiS](http://www.cemosis.fr/).   
 
-<center>
-<table border=0px">
-<tr>
-  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_uds.png" width="100"/></a></td>
-  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_cemosis.png" width="100"/></a></td>
-  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_ujf.jpg" width="100"/></a></td>
-  <td><a href="http://www.uc.pt/"><img alt="UC" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_uc.png" width="100"/></a></td>
-  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_cnrs.png" width="100"/></a></td>
-  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_imati.jpg" width="100"/></a></td>
-</tr>
-</table>
-</center>
+- [![UdS](logo_uds.png)](http://www.unistra.fr/)     
+- [![Cemosis](logo_cemosis.png)](http://www.cemosis.fr/)     
+- [![UJF](logo_ujf.jpg)](http://www.ujf-grenoble.fr/)
+- [![UC](logo_uc.png)](http://www.uc.pt/)          
+- [![CNRS](logo_cnrs.png)](http://www.cnrs.fr/)        
+- [![IMATI](logo_imati.jpg)](http://www.imati.cnr.it/)   
  
 
 ##Current Sponsors   
