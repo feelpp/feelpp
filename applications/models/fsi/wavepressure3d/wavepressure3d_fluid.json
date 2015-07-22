@@ -1,0 +1,56 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Blood fluid mechanics",
+    "ShortName":"Blood",
+    "Model":"Oseen",
+    "Parameters":
+    {
+        "pIn":
+        {
+            "value":"1.3332e4"
+        },
+        "pTimeMax":
+        {
+            "value":"0.003"
+        }
+    },
+    "Materials":
+    {
+        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Neumann_scalar":
+            {
+                "inletBlood":
+                {
+                    "expr": "-(pIn/2.)*(1-cos(pi*t/(pTimeMax/2.)))*(t<pTimeMax):pIn:pTimeMax:t"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsiWall":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "outletBlood":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","displacement"]
+    }
+
+}

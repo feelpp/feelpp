@@ -113,11 +113,15 @@ class BoundaryConditions
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
      */
-    template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type )
+    template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type ) const
     {
         using namespace Feel::vf;
         map_scalar_field<Order> m_f;
-        for ( auto f : this->operator[](field)[type]  )
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
             m_f[std::get<0>(f)] = expr<Order>( f.expression() );
@@ -127,35 +131,65 @@ class BoundaryConditions
     /**
      * retrieve scalar field pair \p field with boundary conditions of type \p type
      */
-    template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::string && field, std::string && type )
+    template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::string && field, std::string && type ) const
         {
             using namespace Feel::vf;
             map_scalar_fields<Order> m_f;
-            for ( auto const& f : this->operator[](field)[type]  )
+            auto const& itFindField = this->find(field);
+            if ( itFindField == this->end() ) return std::move(m_f);
+            auto const& itFindType = itFindField->second.find(type);
+            if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+            for ( auto f : itFindType->second )
             {
                 CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
-                LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
+                LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.marker();
                 m_f[f.marker()].push_back( expr<Order>( f.expression1() ) );
+                LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.marker();
                 m_f[f.marker()].push_back( expr<Order>( f.expression2() ) );
             }
             return std::move(m_f);
         }
-    template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )
+    template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
         map_vector_field<d> m_f;
-        for ( auto const& f : this->operator[](field)[type]  )
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
             m_f[std::get<0>(f)] = expr<d,1,2>( f.expression() );
         }
         return std::move(m_f);
     }
-    template<int d> map_matrix_field<d,d> getMatrixFields( std::string && field, std::string && type )
+    template<int d> map_vector_fields<d> getVectorFieldsList( std::string && field, std::string && type )  const
+    {
+        using namespace Feel::vf;
+        map_vector_fields<d> m_f;
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
+        {
+            CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
+            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression1() ) );
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression2() ) );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_matrix_field<d,d> getMatrixFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
         map_matrix_field<d,d> m_f;
-        for ( auto const& f : this->operator[](field)[type]  )
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
             m_f[std::get<0>(f)] = expr<d,d,2>( f.expression() );
