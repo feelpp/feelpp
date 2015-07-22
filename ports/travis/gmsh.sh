@@ -29,7 +29,7 @@ if [ ! -d "$basedir/software/install/gmsh-$VERSION" ]; then
         -DENABLE_MUMPS=OFF \
         -DENABLE_OPENMP=ON  \
         ..
-    make -j4
+    make -j$NPROCS
     make install
     export GMSH_DIR=$basedir/software/install/gmsh-$VERSION
 else
