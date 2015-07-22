@@ -6,7 +6,3 @@ namespace Feel
    - \subpage Macros Feel   
    - \subpage FAQ Frequently Asked Questions
 */
-/** \page FAQ Frequently Asked Questions
-   - \subpage  FAQExecution
-   - \subpage  FAQDocumentation
-   - \subpage  FAQDevelopment
