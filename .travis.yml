@@ -81,7 +81,7 @@ before_install:
       if test "x$FEELPP_CC" != "x"; then
         export CC=$FEELPP_CC;
         export CXX=$FEELPP_CXX;
-      fi
+      fi;
     fi
   - if test "x$TRAVIS_OS_NAME" = "xlinux"; then  fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
