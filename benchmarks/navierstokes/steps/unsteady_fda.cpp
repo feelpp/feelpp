@@ -37,6 +37,7 @@ int main(int argc, char**argv )
         ( "Um", po::value<double>()->default_value( 0.3 ), "max velocity at inflow" )
         ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
         ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "Q", po::value<double>()->default_value( 0.0000052166503023447670669 ), "Flow rate" )
         ( "ns.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Navier-Stokes preconditioner: petsc, PCD, PMM" )
         ;
     unsteadyfdaoptions.add( backend_options( "ns" ) );
