@@ -6311,68 +6311,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  }
  /// \endcond
  
-#if 0
- /**
-  * integrate an expression \c expr over a set of convexes \c elts
-  * using the integration rule \c im .
-  */
- template<typename Elts, typename Im, typename ExprT>
-     Expr<Integrator<Elts, Im, ExprT, Im> >
-     integrate( Elts const& elts,
-                Im const& im,
-                ExprT const& expr,
-                GeomapStrategyType const& gt,
-                Im2 const& im2,
-                bool use_tbb,
-                bool use_harts,
-                int grainsize,
-                std::string const& partitioner,
-                boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
-                = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
-{
-
-    typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
-    typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
-
-    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1,range_type>::type >::type element_iterator;
-    static const uint16_type geoOrder = element_iterator::value_type::nOrder;
-    LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
-}
-
-
-/// \cond DETAIL
-namespace detail
-{
-template<typename Args>
-struct integrate_type
-{
-    typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
-    typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
-    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1, _range_type>::type >::type _element_iterator;
-    static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
-
-    //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-    static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
-    static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
-    typedef typename clean2_type<Args,tag::quad, _Q< exprOrder  > >::type _quad_type;
-    typedef typename clean2_type<Args,tag::quad1, _Q< exprOrder_1 > >::type _quad1_type;
-    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
-
-    typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
-};
-} // detail
-
-/// \endcond
-
-
-
-                GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
- {
-     typedef Integrator<Elts, Im, ExprT, Im> expr_t;
-     return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
- }
-#endif
  
  //Macro which get the good integration order
 # define VF_VALUE_OF_IM(O)                                              \
@@ -6435,8 +6373,6 @@ struct integrate_type
  /// \endcond
  
  
- 
-#endif
 } // vf
 
 
