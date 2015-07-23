@@ -27,7 +27,7 @@
 #ifndef __TestMultiScale_H
 #define __TestMultiScale_H 1
 
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 
 
 

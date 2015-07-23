@@ -960,6 +960,10 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
         //double factor = 1;
         switch ( nDim )
         {
+        case 0:
+            M_meas=0;
+            break;
+
         case 1:
             M_meas = 2;
             break;
