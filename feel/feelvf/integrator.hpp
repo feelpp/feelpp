@@ -6362,6 +6362,17 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
      
      //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+     static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
+     static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
+     /**
+      * @return expression order
+      */
+     static constexpr uint16_type expressionOrder() { return exprOrder ; }
+     /**
+      * @return expression order in the context of an order 1 geometry
+      */
+     static constexpr uint16_type expressionOrderG1() { return exprOrder_1 ; }
+
      typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
      typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
      typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
