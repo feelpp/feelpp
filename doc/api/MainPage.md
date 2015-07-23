@@ -45,6 +45,7 @@ Lausanne(Suisse) and is now a joint effort between Université de
 Strasbourg, Université Joseph Fourier (Grenoble), University of
 Coimbra (Portugal), CNRS and [CeMoSiS](http://www.cemosis.fr/).   
 
+<<<<<<< HEAD
 <center>
 <table border=0px">
 <tr>
@@ -57,6 +58,14 @@ Coimbra (Portugal), CNRS and [CeMoSiS](http://www.cemosis.fr/).
 </tr>
 </table>
 </center>
+=======
+- [![UdS](logo_uds.png)](http://www.unistra.fr/)     
+- [![Cemosis](logo_cemosis.png)](http://www.cemosis.fr/)     
+- [![UJF](logo_ujf.jpg)](http://www.ujf-grenoble.fr/)
+- [![UC](logo_uc.png)](http://www.uc.pt/)          
+- [![CNRS](logo_cnrs.png)](http://www.cnrs.fr/)        
+- [![IMATI](logo_imati.jpg)](http://www.imati.cnr.it/)   
+>>>>>>> aa24e82a5b2cdb18d7a0c51a7230250c83ec3142
  
 
 ##Current Sponsors   
