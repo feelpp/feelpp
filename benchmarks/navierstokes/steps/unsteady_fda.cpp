@@ -24,6 +24,9 @@
 #include <feel/feel.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 
+bool display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates, double Q );
+bool display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates );
+
 int main(int argc, char**argv )
 {
     //! [marker1]
@@ -34,6 +37,7 @@ int main(int argc, char**argv )
         ( "Um", po::value<double>()->default_value( 0.3 ), "max velocity at inflow" )
         ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
         ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "Q", po::value<double>()->default_value( 0.0000052166503023447670669 ), "Flow rate" )
         ( "ns.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Navier-Stokes preconditioner: petsc, PCD, PMM" )
         ;
     unsteadyfdaoptions.add( backend_options( "ns" ) );
@@ -45,7 +49,6 @@ int main(int argc, char**argv )
     constexpr int dim = FEELPP_DIM;
     constexpr int p_order = FEELPP_ORDER_P;
     tic();
-    double Di=0.012;
     auto mesh = loadMesh( new Mesh<Simplex<dim>> );
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
@@ -78,12 +81,13 @@ int main(int argc, char**argv )
     
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
+    double Q = doption(_name="Q");
     
     if ( Environment::isMasterRank() )
     {
         std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
-        std::cout << std::left << 0.0461*0.012*rho/mu;
+        std::cout << std::left << Q*0.012*rho/(pi*0.006*0.006*mu);
         std::cout.width(16);
         std::cout << std::left << p_order+1;
         std::cout.width(16);
@@ -107,19 +111,19 @@ int main(int argc, char**argv )
             std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
             
             /*std::cout << " - Stokes rtol: " << doption( "stokes.ksp-rtol" ) << "\n";
-            std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
+             std::cout << " - Picard rtol: " << doption( "picard.ksp-rtol" ) << "\n\n";
             
-            std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
-            std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
-            std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
+             std::cout << " - Ap preconditioner: " << soption( "Ap.pc-type" ) << "\n";
+             std::cout << " - Ap relative tolerence: " << doption( "Ap.ksp-rtol" ) << "\n";
+             std::cout << " - Ap reuse-prec: " << boption( "Ap.reuse-prec" ) << "\n\n";
             
-            std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
-            std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
-            std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
+             std::cout << " - Mp preconditioner: " << soption( "Mp.pc-type" ) << "\n";
+             std::cout << " - Mp relative tolerence: " << doption( "Mp.ksp-rtol" ) << "\n";
+             std::cout << " - Mp reuse-prec: " << boption( "Mp.reuse-prec" ) << "\n\n";
             
-            std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
-            std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
-            std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";*/
+             std::cout << " - Fu preconditioner: " << soption( "Fu.pc-type" ) << "\n";
+             std::cout << " - Fu relative tolerence: " << doption( "Fu.ksp-rtol" ) << "\n";
+             std::cout << " - Fu reuse-prec: " << boption( "Fu.reuse-prec" ) << "\n\n";*/
 
         }
         
@@ -134,7 +138,24 @@ int main(int argc, char**argv )
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
     U = mybdf->unknown(0);
-    
+ 
+    std::vector<std::string> flowrates_str={"inlet","outlet","face1","face2","face3","face4","face5","face6","face7","face8","face9","face10","face11","face12"};
+    auto f_flowIn = form1(_test=Vh->functionSpace<0>() );
+    std::map<std::string,form1_type<functionspace_type<decltype(Vh->functionSpace<0>())>>> flowrates_f;
+    for( auto const& f : flowrates_str )
+    {
+        flowrates_f[f] = form1(_test=Vh->functionSpace<0>() );
+        flowrates_f[f] = integrate(_range=markedfaces(mesh,f), _expr=inner(id(u),N()));
+        
+    }
+    std::ofstream ofs( "flowrates.md" );
+    std::map<std::string,double> flowrates;
+    for( auto & f : flowrates_f )
+    {
+        flowrates[f.first]= 0;;
+    }
+    display_flowrates_header( ofs, flowrates );
+
     auto ft = form1( _test=Vh );
 
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
@@ -171,6 +192,8 @@ int main(int argc, char**argv )
         {
             std::cout << "------------------------------------------------------------\n";
             std::cout << "Time " << mybdf->time() << "s\n";
+            LOG(INFO) << "------------------------------------------------------------\n";
+            LOG(INFO) << "Time " << mybdf->time() << "s\n";
         }
         tic();
         tic();
@@ -180,19 +203,28 @@ int main(int argc, char**argv )
         auto extrapu = extrap.element<0>();
         // add BDF term to the right hand side from previous time steps
         ft = integrate( _range=elements(mesh), _expr=rho*(trans(idv(rhsu))*id(u) ) );
-        toc("update rhs");tic();
+        toc("update rhs");
+        tic();
 
+        tic();
         at.zero();
+        toc("update lhs zero");
+        tic();
         at += a;
+        toc("update lhs at += a ");
+        tic();
         at += integrate( _range=elements( mesh ), _expr= rho*trans(gradt(u)*idv(extrapu))*id(v) );
+        toc("update lhs at += convection ");
+        tic();
         for( auto const& condition : dirichlet_conditions )
         {
             dirichlet_conditions.setParameterValues( { {"t",mybdf->time()}}  );
             at+=on(_range=markedfaces(mesh,marker(condition)), _rhs=ft, _element=u,_expr=expression(condition));
             /*at+=on(_range=markedfaces(mesh,"wall"), _rhs=ft, _element=u,
-            _expr=zero<FEELPP_DIM,1>() );
+             _expr=zero<FEELPP_DIM,1>() );
              at+=on(_range=markedfaces(mesh,"inlet"), _rhs=ft, _element=u, _expr=-g*N() );*/
         }
+        toc("update lhs dirichlet ");
         toc("update lhs");tic();
 
         if ( soption("ns.preconditioner") != "petsc" )
@@ -205,93 +237,41 @@ int main(int argc, char**argv )
             // use petsc preconditioner
             at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns"));
         }
-        toc("Solve");tic();
-        Environment::saveTimers( true );
+        toc("Solve");
 
-        if (dim!=3)
+        tic();
+        
+        for( auto & f : flowrates_f )
         {
-            
-        /*double areaIn = integrate(_range=markedfaces(mesh,"inlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
-        double areaOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=vf::cst(1.) ).evaluate()(0,0);
-
-        auto Uz= minmax(_range=markedfaces(mesh,"inlet"),_pset=_Q<2>(),_expr=idv(u.comp(Component::X)));
-        double ReynoldsIn =rho*Uz.get<1>()*Di/mu;
-
-        auto intUz = integrate(_range=markedfaces(mesh,"inlet"), _expr=idv(u.comp(Component::X)) ).evaluate()(0,0) ;
-        auto meanU = intUz/areaIn;
-
-        double nElt = nelements(markedfaces(mesh, "face1"),true);
-        double area1 = integrate(_range=markedfaces(mesh,"face1"), _expr=cst(1.) ).evaluate()(0,0);*/
-
-        auto flowIn = integrate(_range=markedfaces(mesh,"inlet"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
-        auto flowOut = integrate(_range=markedfaces(mesh,"outlet"), _expr=inner(idv(u),N())).evaluate()(0,0) ;
-
-        auto flow1 = integrate(_range=markedfaces(mesh,"face1"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow2 = integrate(_range=markedfaces(mesh,"face2"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow3 = integrate(_range=markedfaces(mesh,"face3"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow4 = integrate(_range=markedfaces(mesh,"face4"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow5 = integrate(_range=markedfaces(mesh,"face5"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow6 = integrate(_range=markedfaces(mesh,"face6"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow7 = integrate(_range=markedfaces(mesh,"face7"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow8 = integrate(_range=markedfaces(mesh,"face8"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow9 = integrate(_range=markedfaces(mesh,"face9"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow10 = integrate(_range=markedfaces(mesh,"face10"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow11 = integrate(_range=markedfaces(mesh,"face11"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-        auto flow12 = integrate(_range=markedfaces(mesh,"face12"), _expr=inner(idv(u),oneZ() )).evaluate()(0,0) ;
-
-        //double Reynolds =rho*meanU*Di/mu;
+            if (f.first=="inlet" || f.first=="outlet")
+                flowrates[f.first]= f.second(u);
+            else
+                flowrates[f.first]= 0.5*f.second(u);
+        }
 
         if (Environment::isMasterRank())
         {
-
-            /*std::cout<<  "     Time  "
-                     << "flowIn  " << "flowOut "  << "sum(flowIn+flowOut) "
-                     << "areaIn "
-                     << "areaOut "
-                     << "Reynolds"
-                     << "\n";
-
-            std::cout <<  mybdf->time() << " "
-                      << std::scientific
-                      << flowIn << " " << flowOut << " " << std::abs(flowIn+flowOut) << " "
-                      << areaIn << " "
-                      << areaOut << " "
-                      <<ReynoldsIn<<" "
-                      << "\n";*/
-
             std::cout<< "\n \n \n ============= FLOW OVER RADIAL SECTIONS =================\n";
-            std::cout<< "Flow in: "<<flowIn<<"\n";
-            std::cout<< "Flow out: "<<flowOut<<"\n";
-            /*std::cout<< "Nb elem face 1: "<<nElt<<"\n";
-            std::cout<< "Area of face 1: "<<area1<<"\n";*/
-            std::cout<< "Flow 1: "<<flow1<<"  ( "<< ((flow1-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 2: "<<flow2<<"  ( "<< ((flow2-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 3: "<<flow3<<"  ( "<< ((flow3-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 4: "<<flow4<<"  ( "<< ((flow4-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 5: "<<flow5<<"  ( "<< ((flow5-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 6: "<<flow6<<"  ( "<< ((flow6-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 7: "<<flow7<<"  ( "<< ((flow7-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 8: "<<flow8<<"  ( "<< ((flow8-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 9: "<<flow9<<"  ( "<< ((flow9-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 10: "<<flow10<<"  ( "<< ((flow10-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 11: "<<flow11<<"  ( "<< ((flow11-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
-            std::cout<< "Flow 12: "<<flow12<<"  ( "<< ((flow12-5.216650303e-6)/5.216650303e-6)*100<<"  ) \n";
+            bool ok = display_flowrates( std::cout, mybdf->time(), flowrates, Q );
+            if ( !ok ) 
+                std::cout << "WARNING ! flow rate issue at time " << mybdf->time() << "\n";
+            display_flowrates( ofs, mybdf->time(), flowrates, Q );
             std::cout<< "\n \n \n ==========================================================\n";
-
-            }
-
+            
         }
-        w.on( _range=elements(mesh), _expr=curlv(u) );
+        
+        toc("Postprocess");
+        tic();
         e->step(mybdf->time())->add( "u", u );
-        //e->step(mybdf->time())->add( "w", w );
+        w.on( _range=elements(mesh), _expr=curlv(u) );
+        e->step(mybdf->time())->add( "w", w );
         e->step(mybdf->time())->add( "p", p );
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
         e->save();
         //e->restart( mybdf->time() );
-        toc("export");
+        toc("Exporter");
         toc("time step");
-
 
     }
     //! [marker1]
