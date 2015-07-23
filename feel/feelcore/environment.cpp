@@ -1221,6 +1221,7 @@ Environment::doOptions( int argc, char** argv,
                     if ( !fs::exists( cfgfile ) ) continue;
                     LOG( INFO ) << "Reading " << cfgfile << "...";
                     S_configFileNames.insert( fs::absolute( cfgfile ).string() );
+                    S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
                     po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 }

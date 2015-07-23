@@ -30,6 +30,9 @@ namespace Feel
 template boost::shared_ptr<Mesh<Simplex<2,1>>>
 straightenMesh<Mesh<Simplex<2,1>>>( boost::shared_ptr<Mesh<Simplex<2,1>>>, 
                                     WorldComm const& , bool, bool  );
+template boost::shared_ptr<Mesh<Simplex<2,1,3>>>
+straightenMesh<Mesh<Simplex<2,1,3>>>( boost::shared_ptr<Mesh<Simplex<2,1,3>>>, 
+                                    WorldComm const& , bool, bool  );
 template boost::shared_ptr<Mesh<Hypercube<2,1>>>
 straightenMesh<Mesh<Hypercube<2,1>>>( boost::shared_ptr<Mesh<Hypercube<2,1>>>, 
                                     WorldComm const& , bool, bool  );

@@ -57,6 +57,7 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
@@ -155,24 +156,19 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-        auto Jh = lag_v_space_type::New(M_mesh); // lag_v
 
         auto model = ModelProperties(Environment::expand(soption("myModel")));
-        auto J = vf::project(_space=Jh,
-                             _range=elements(M_mesh),
-                             _expr=expr<DIM,1>(soption("functions.j")));
         auto M_mu = vf::project(_space=Mh,
                                _range=elements(M_mesh),
                                _expr=expr(soption("functions.m")));
-        auto M_a = vf::project(_space=Xh->template functionSpace<0>(),
-                               _range=elements(M_mesh),
-                               _expr=expr<DIM,1>(soption("functions.a")));
-        
+        auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
+        //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
+        auto V = Xh->element();
         auto u = U.template element<0>();
-        auto v = U.template element<0>();
+        auto v = V.template element<0>();
         auto phi = U.template element<1>();
-        auto psi = U.template element<1>();
+        auto psi = V.template element<1>();
         
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
@@ -183,7 +179,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(idv(J),id(v)));    // rhs
+                       _expr = (1./idv(M_mu))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -231,36 +227,60 @@ class TestPrecAFP : public Application
             toc("Inverse",FLAGS_v>0);
         }
         Environment::saveTimers(boption("saveTimers")); 
-        auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)-idv(u)));
-        auto e22 = normL2(_range=elements(M_mesh), _expr=(idv(M_a)));
+        auto e21 = normL2(_range=elements(M_mesh), _expr=(f_M_a-idv(u)));
+        auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
+#if 0
+        auto e21_curl = integrate(_range=elements(M_mesh),
+                                  _expr = inner(idv(u)-f_M_a,
+                                                idv(u)-f_M_a)
+                                  + inner(curlv(u)-c_M_a,
+                                          curlv(u)-c_M_a)
+                                 ).evaluate()(0,0);
+        auto e22_curl = integrate(_range=elements(M_mesh),
+                                  _expr = inner(idv(u),idv(u))
+                                  + inner(curlv(u),curlv(u))
+                                 ).evaluate()(0,0);
+#endif
+        auto nnzVec = f2.matrixPtr()->graph()->nNz();
+        int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         if(Environment::worldComm().globalRank()==0)
-            std::cout << doption("gmsh.hsize") << "\t"
+            std::cout << "RES\t"
+                << doption("gmsh.hsize") << "\t"
+                << Xh->nDof() << "\t"
+                << nnz << "\t"
+                << soption("functions.m") << "\t"
                 << e21 << "\t"
-                << e21/e22 << std::endl;
+                << e21/e22 
+#if 0
+                << "\t"
+                << e21_curl << "\t"
+                << e21_curl/e22_curl 
+#endif
+                << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
             time_t now = std::time(0);
             tm *ltm = localtime(&now);
             std::ostringstream stringStream;
-            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<".md";
+            stringStream << 1900+ltm->tm_year<<"_"<<ltm->tm_mon<<"_"<<ltm->tm_mday<<"-"<<ltm->tm_hour<<ltm->tm_min<<ltm->tm_sec<<"_"<<soption("title")<<".md";
             std::ofstream outputFile( stringStream.str() );
             if( outputFile )
             {
                 outputFile 
                         << "---\n"
-                        << "title: \"noTitle\"\n"
+                        << "title: \""<< soption("title") << "\"\n"
                         << "date: " << stringStream.str() << "\n"
                         << "categories: simu\n"
                         << "--- \n\n";
                 outputFile << "#Physique" << std::endl;
                 model.saveMD(outputFile);    
                 
-                outputFile << "##Physique spécifique" << std::endl;
+                outputFile << "##Physique spÃÂÃÂ©cifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
-                outputFile << "| mu | " << expr(soption("functions.m")) << " | " << std::endl;
-                outputFile << "| Rhs | " << expr<DIM,1>(soption("functions.j")) << "|" << std::endl;
-                outputFile << "| Exact | " << expr<DIM,1>(soption("functions.a")) << "|" << std::endl;
+                outputFile << "| mu | "    << soption("functions.m") << "| " << std::endl;
+                outputFile << "| Rhs | "   << soption("functions.j") << "|" << std::endl;
+                outputFile << "| Exact | " << soption("functions.a") << "|" << std::endl;
 
                 outputFile << "#Numerics" << std::endl;
                 
@@ -282,8 +302,14 @@ class TestPrecAFP : public Application
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
                 outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
-                outputFile << "|**Matrix**  |  " << f2.matrixPtr()->graph()->size() << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
-                outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
+
+                if(soption("ms.pc-type") == "blockms" ){
+                    outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
+                    outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| "; M_prec->printIter(1,outputFile); outputFile << "| "; M_prec->printIter(2,outputFile);outputFile  << "|" << std::endl;
+                }else{
+                    outputFile << "|**Matrix**  |  " << nnz << "| 0 | 0 |" << std::endl;
+                    outputFile << "|**nb Iter**  |  " << ret.nIterations() << "| 0 | 0 |" << std::endl;
+                }
             
                 outputFile << "##Timers" << std::endl;
                 Environment::saveTimersMD(outputFile); 
@@ -297,9 +323,7 @@ class TestPrecAFP : public Application
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("rhs"                ,J  );
             ex->add("potential"          ,u  );
-            ex->add("exact_potential"    ,M_a);
             ex->add("lagrange_multiplier",phi);
             ex->save();
         }

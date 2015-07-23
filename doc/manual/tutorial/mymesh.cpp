@@ -39,9 +39,11 @@ int main( int argc, char** argv )
     //! [load]
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = loadMesh(_mesh=new  Mesh<Simplex<2>>);
+    auto mesh2 =loadMesh(_mesh=new  Mesh<Simplex<2>>,_filename="toto.geo");
+    (*mesh) += (*mesh2);
     //! [load]
 
-#if 0
+#if 1
     //! [export]
     // export results for post processing
     auto e = exporter( _mesh=mesh );
