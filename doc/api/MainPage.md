@@ -46,35 +46,36 @@ Strasbourg, Université Joseph Fourier (Grenoble), University of
 Coimbra (Portugal), CNRS and [CeMoSiS](http://www.cemosis.fr/).   
 
 <center>
-<table border=0px">
 <tr>
-  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_uds.png" width="100"/></a></td>
-  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_cemosis.png" width="100"/></a></td>
-  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_ujf.jpg" width="100"/></a></td>
-  <td><a href="http://www.uc.pt/"><img alt="UC" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_uc.png" width="100"/></a></td>
-  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_cnrs.png" width="100"/></a></td>
-  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_imati.jpg" width="100"/></a></td>
+  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="pngs/logos/logo_uds.png" width="100"/></a></td>
+  <td><a href="http://www.cemosis.fr/"><img alt="CeMoSiS" src="pngs/logos/logo_cemosis.png" width="100"/></a></td>
+  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="pngs/logos/logo_ujf.jpg" width="100"/></a></td>
+  <td><a href="http://www.uc.pt/"><img alt="UC" src="pngs/logos/logo_uc.png" width="100"/></a></td>
+  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="pngs/logos/logo_cnrs.png" width="100"/></a></td>
+  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="pngs/logos/logo_imati.jpg" width="100"/></a></td>
 </tr>
-</table>
+</center>
+
+    
+ 
+
+##Current Sponsors
+
+<center>
+<tr>
+<td><a href="http://www.agence-nationale-recherche.fr/"><img alt="ANR" src="pngs/logos/logo_anr.png" width="100"/></a></td>
+<td><a href="http://agence-maths-entreprises.fr/"><img alt="AMIES" src="pngs/logos/logo_amies.png" width="100"/></a></td>
+<td><a href="http://labex-irmia.u-strasbg.fr/"><img alt="Labex IRMIA" src="pngs/logos/logoIRMIA.png" width="100"/></a></td>
+</tr>
 </center>
 
 
-##Current Sponsors   
-<center>
-<table border=0px">
-<tr>
-  <td><a href="http://www.agence-nationale-recherche.fr/ "><img alt="ANR" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_anr.png" width="100"/></a></td>
-</tr>
-</table>
-</center>  
+##Former Sponsors
 
-##Former Sponsors  
 <center>
-<table border=0px">
 <tr>
-<td><a href="http://www.rhonealpes.fr/ "><img alt="RA" src="https://github.com/wkyoshe/feelpp/blob/master/doc/api/pngs/logos/logo_ra.png" width="100"/></a></td>
-<td><a href="http://cluster-isle.grenoble-inp.fr/ "><img alt="RA" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/logo_isle.jpg" width="100"/></a></td> 
-<td><a href="http://www.gnu.org/licenses/lgpl-2.1.html "><img alt="RA" src="https://github.com/wkyoshe/feelpp/blob/develop/doc/api/pngs/logos/cc-LGPL-a.png" width="100"/></a></td>   
+<td><a href="http://cluster-isle.grenoble-inp.fr/ "><img alt="ISLE" src="pngs/logos/logo_isle.jpeg" width="100"/></a></td>
+<td><a href="http://www.rhonealpes.fr/ "><img alt="RA" src="pngs/logos/logo_ra.png" width="100"/></a></td>
+<td><a href="http://www.gnu.org/licenses/lgpl-2.1.html "><img alt="RA" src="pngs/logos/cc-LGPL-a.png" width="100"/></a></td>
 </tr>
-</table>
-</center> 
+</center>
