@@ -4,6 +4,12 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+# define the feel++ c++ standard level, it used to be hardcoded, this way we can
+# have builds to test the different standard flavors
+if (NOT DEFINED FEELPP_STD_CPP ) 
+  set(FEELPP_STD_CPP "11") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+endif()
+message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -33,7 +39,7 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
   endif()
