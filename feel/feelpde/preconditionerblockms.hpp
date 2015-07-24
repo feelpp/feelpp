@@ -233,15 +233,19 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
         auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
         auto f1A = form1(_test=M_Vh);
         f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-        for(auto const & it : m_dirichlet_u )
+        for(auto const & it : m_dirichlet_u ){
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.11\n";
             f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+        }
         
         /* Compute the L matrix */
         auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
         auto f1B = form1(_test=M_Qh);
         f2B = integrate(_range=elements(M_Qh->mesh()), _expr=inner(gradt(phi), grad(phi)));
-        for(auto const & it : m_dirichlet_p)
+        for(auto const & it : m_dirichlet_p){
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
             f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type")); 
+        }
        
         /* Initialize the blockAS prec */ 
         M_pcAs = blockas(_space=M_Xh,
@@ -286,8 +290,10 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             auto f1A = form1(_test=M_Vh);
             f2A = integrate(_range=elements(M_Vh->mesh()), _expr=cst(1.)/idv(mu)*trans(curlt_op(u))*curl_op(u) // mu^-1 A
                                                                 +cst(1.-M_k*M_k)*idv(M_er)*inner(idt(u),id(u))); // g M
-            for(auto const & it : m_dirichlet_u )
+            for(auto const & it : m_dirichlet_u ){
+                LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
                 f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+            }
         }else{
             M_11->zero();
             A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
