@@ -88,7 +88,6 @@ matrix:
             - g++-5
   allow_failures:
   - os: osx
-#  - env: BUILD="gcc-4.8" COMPILER_VERSION="g++-4.8" FEELPP_CXX=g++-4.8 FEELPP_CC=gcc-4.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
   - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
 
 before_install:
