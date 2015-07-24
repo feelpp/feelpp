@@ -51,7 +51,7 @@ matrix:
           packages:
             - *std_packages
             - clang-3.6
-   - env: BUILD="llvm-3.6-std=c++14" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+   - env: BUILD="llvm-3.6-stdc++14" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
      addons: &clang36
         apt:
           sources:
@@ -69,7 +69,7 @@ matrix:
           packages:
             - *std_packages
             - clang-3.7
-   - env: BUILD="llvm-3.7-std=c++14" COMPILER_VERSION="clang-3.7" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+   - env: BUILD="llvm-3.7-stdc++14" COMPILER_VERSION="clang-3.7" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
      addons: &clang37
         apt:
           sources:
