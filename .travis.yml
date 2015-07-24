@@ -102,6 +102,7 @@ before_install:
       else
         export CC=clang-3.5;
         export CXX=clang++-3.5;
+        export FEELPP_STD_CPP=11;
       fi;
     fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
