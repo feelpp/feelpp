@@ -31,6 +31,15 @@ addons:
 
 matrix:
   include:
+   - env: BUILD="llvm-3.4" COMPILER_VERSION="clang-3.4" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.4 FEELPP_CC=clang-3.4 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+     addons: &clang34
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.4
+          packages:
+            - *std_packages
+            - clang-3.4
    - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Debug TARGET=quickstart 
      addons: &clang35
         apt:
