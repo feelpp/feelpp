@@ -8,28 +8,26 @@ git:
 language: cpp
 compiler: clang
 # osx_image: xcode6.4
-env:
-  global:
-    secure: "CTLCka3IUMbxHk3+cC/7jlxF9y59AxYXPm5J+8msx2TuPzxXKolv9wglyp1NS09laE7ZnFngzL27tYkEUQ0pRY+CFGybs8jPDoe0qY9+VNd7CcRgl17SSNpsY0PVCSfy5PrcqgJExa543rH+z8VY/MUUjdOJlTwadia9nuuxGWE="
-#addons:
-#  apt:
-#    packages: &std_packages
-#    - gfortran
-#    - cmake
-#    - libtbb-dev
-#    - libopenmpi-dev
-#    - libglpk-dev
-#    - libxml2-dev
-#    - bison
-#    - flex
-#    - doxygen
-#    - imagemagick
-#    sources:
-#    - ubuntu-toolchain-r-test
-#    - llvm-toolchain-precise-3.5
-#    packages:
-#    - *std_packages
-#    - clang-3.5
+
+addons:
+  apt:
+    packages: &std_packages
+    - gfortran
+    - cmake
+    - libtbb-dev
+    - libopenmpi-dev
+    - libglpk-dev
+    - libxml2-dev
+    - bison
+    - flex
+    - doxygen
+    - imagemagick
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.5
+    packages:
+    - *std_packages
+    - clang-3.5
 
 matrix:
   include:
@@ -112,36 +110,30 @@ before_install:
 #  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
   #install some submodules
-  #- git submodule update --init --recursive contrib/nlopt
+  - git submodule update --init --recursive contrib/nlopt
   #- git submodule update --init --recursive contrib/nt2
-  #- git submodule update --init --recursive contrib/ipopt
-  #- git submodule update --init --recursive quickstart
-  #- export NPROCS=3
-    #- bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
-    #- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
-    #- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
-    #- bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
+  - git submodule update --init --recursive contrib/ipopt
+  - git submodule update --init --recursive quickstart
+  - export NPROCS=3
+  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
+  - bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
+  - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
+  - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 
 install:
 - $CXX --version
 - $CC --version
-  #- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS" --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
+- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS" --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
 
 
 script:
-  #- make -j16 feelpp_ginac
-  #- make -j1 feelpp
-- mkdir -p $HOME/software/install/feelpp/ 
-- echo Hello > $HOME/software/install/feelpp/toto
+- make -j16 feelpp_ginac
+- make -j1 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 after_success:
 - make install 
-- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 .
-- rm batchFile
-- touch batchFile
-- echo "put  feelpp-ubuntu-precise-latest.tar.bz2 writeable/feelpp-ubuntu-precise-latest.tar.bz2" > batchFile
-- sftp -b batchFile travis:$SFTP_PASS@csmi.math.unistra.fr 
+- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 . 
 
 branches:
   only:
