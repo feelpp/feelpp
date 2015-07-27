@@ -127,12 +127,12 @@ void ModelProperties::saveMD(std::ostream &os)
   M_postproc.saveMD(os);
 }
 
-void ModelProperties::put(std::string key, std::string entry)
+void ModelProperties::put(std::string const &key, std::string const &entry)
 {
   M_p.put(key,entry);
 }
 
-void ModelProperties::write(std::string f)
+void ModelProperties::write(std::string const &f)
 {
     pt::write_json(f,M_p);
 }
