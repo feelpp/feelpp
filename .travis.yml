@@ -8,7 +8,9 @@ git:
 language: cpp
 compiler: clang
 # osx_image: xcode6.4
-
+env:
+  global:
+    secure: "CTLCka3IUMbxHk3+cC/7jlxF9y59AxYXPm5J+8msx2TuPzxXKolv9wglyp1NS09laE7ZnFngzL27tYkEUQ0pRY+CFGybs8jPDoe0qY9+VNd7CcRgl17SSNpsY0PVCSfy5PrcqgJExa543rH+z8VY/MUUjdOJlTwadia9nuuxGWE="
 addons:
   apt:
     packages: &std_packages
@@ -30,10 +32,8 @@ addons:
     - clang-3.5
 
 matrix:
-  exclude: 
-   - env:
   include:
-   - env: BUILD="llvm-3.5" COMPILER_VERSION="clang-3.5" FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+   - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.5 FEELPP_CC=clang-3.5 BUILDTYPE=Debug TARGET=quickstart 
      addons: &clang35
         apt:
           sources:
@@ -42,7 +42,7 @@ matrix:
           packages:
             - *std_packages
             - clang-3.5
-   - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+   - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
      addons: &clang36
         apt:
           sources:
@@ -51,24 +51,34 @@ matrix:
           packages:
             - *std_packages
             - clang-3.6
-   - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7 FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-     addons: &clang37
+   - env: BUILD="llvm-3.6-stdc++14" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+     addons: &clang36
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise
+            - llvm-toolchain-precise-3.6
           packages:
             - *std_packages
-            - clang-3.7
-   - env: BUILD="gcc-4.8" COMPILER_VERSION="g++-4.8" FEELPP_CXX=g++-4.8 FEELPP_CC=gcc-4.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-     addons: &gcc48
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - *std_packages
-            - g++-4.8
-   - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+            - clang-3.6            
+#   - env: BUILD="llvm-3.8" COMPILER_VERSION="clang-3.8" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.8 FEELPP_CC=clang-3.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#     addons: &clang38
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#            - llvm-toolchain-precise
+#          packages:
+#            - *std_packages
+#            - clang-3.8
+#   - env: BUILD="llvm-3.8-stdc++14" COMPILER_VERSION="clang-3.8" FEELPP_STD_CPP=14 FEELPP_CXX=clang++-3.8 FEELPP_CC=clang-3.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+#     addons: &clang38
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#            - llvm-toolchain-precise
+#          packages:
+#            - *std_packages
+#            - clang-3.8
+   - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
      addons: &gcc5
         apt:
           sources:
@@ -78,8 +88,7 @@ matrix:
             - g++-5
   allow_failures:
   - os: osx
-  - env: BUILD="gcc-4.8" COMPILER_VERSION="g++-4.8" FEELPP_CXX=g++-4.8 FEELPP_CC=gcc-4.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5 FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
 
 before_install:
   - echo $TRAVIS_OS_NAME
@@ -92,6 +101,7 @@ before_install:
       else
         export CC=clang-3.5;
         export CXX=clang++-3.5;
+        export FEELPP_STD_CPP=11;
       fi;
     fi
  # - if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
@@ -102,26 +112,36 @@ before_install:
 #  - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap homebrew/science; fi
   #- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
   #install some submodules
-  - git submodule update --init --recursive contrib/nlopt
+  #- git submodule update --init --recursive contrib/nlopt
   #- git submodule update --init --recursive contrib/nt2
-  - git submodule update --init --recursive contrib/ipopt
-  - git submodule update --init --recursive quickstart
-  - export NPROCS=3
-  - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
-  - bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
-  - bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
-  - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
+  #- git submodule update --init --recursive contrib/ipopt
+  #- git submodule update --init --recursive quickstart
+  #- export NPROCS=3
+    #- bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo $BOOSTROOT
+    #- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo $GMSH_DIR
+    #- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0; echo $PETSC_DIR
+    #- bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 
 install:
 - $CXX --version
 - $CC --version
-- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
+  #- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS" --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
 
 
 script:
-- make -j16 feelpp_ginac
-- make -j1 feelpp
+  #- make -j16 feelpp_ginac
+  #- make -j1 feelpp
+- mkdir -p $HOME/software/install/feelpp/ 
+- echo Hello > $HOME/software/install/feelpp/toto
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
+
+after_success:
+- make install 
+- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 .
+- rm batchFile
+- touch batchFile
+- echo "put  feelpp-ubuntu-precise-latest.tar.bz2 writeable/feelpp-ubuntu-precise-latest.tar.bz2" > batchFile
+- sftp -b batchFile travis:$SFTP_PASS@csmi.math.unistra.fr 
 
 branches:
   only:
