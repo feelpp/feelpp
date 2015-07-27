@@ -131,7 +131,7 @@ install:
 script:
   #- make -j16 feelpp_ginac
   #- make -j1 feelpp
-  - mkdir -p $HOME/software/install/feelpp/ 
+- mkdir -p $HOME/software/install/feelpp/ 
 - echo Hello > $HOME/software/install/feelpp/toto
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
