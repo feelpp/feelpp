@@ -137,10 +137,11 @@ script:
 
 after_success:
 - make install 
-- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 . 
-- sftp travis:$SFTP_PASS@csmi.math.unistra.fr <<EOF
-  put  feelpp-ubuntu-precise-latest.tar.bz2 writeable/feelpp-ubuntu-precise-latest.tar.bz2
-  EOF
+- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 .
+- rm batchFile
+- touch batchFile
+- echo "put  feelpp-ubuntu-precise-latest.tar.bz2 writeable/feelpp-ubuntu-precise-latest.tar.bz2" > batchFile
+- sftp -b batchFile travis:$SFTP_PASS@csmi.math.unistra.fr 
 
 branches:
   only:
