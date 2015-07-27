@@ -123,13 +123,17 @@ before_install:
 install:
 - $CXX --version
 - $CC --version
-- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS" --std=c++$FEELPP_STD_CPP
+- mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS" --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
 
 
 script:
 - make -j16 feelpp_ginac
 - make -j1 feelpp
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
+
+after_success:
+- make install 
+- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 . 
 
 branches:
   only:
