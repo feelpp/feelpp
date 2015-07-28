@@ -190,6 +190,7 @@ echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
 echo "# Do not edit" > cmake.configure
 if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
   echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+  echo "SET(CMAKE_SKIP_RPATH ON)" >> cmake.configure
 fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
