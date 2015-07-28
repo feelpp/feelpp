@@ -132,8 +132,13 @@ script:
 #- if ! test "x$TARGET" = "x"; then make $TARGET-check; fi
 
 after_success:
-- make install 
-- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 . 
+- make install-feelpp
+- cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 `find . -maxdepth 1 -mindepth 1     -type d -exec basename {} \;`
+- ls $HOME/software/install 
+# upload tarball
+# clean cache
+- rm $HOME/software/install/*.tar.bz2; rm -rf $HOME/software/install/feelpp
+- ls $HOME/software/install 
 
 branches:
   only:
