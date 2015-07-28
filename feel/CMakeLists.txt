@@ -42,13 +42,14 @@ add_subdirectory (feelpoly)
 add_subdirectory (feelopt)
 add_subdirectory (feelcrb)
 add_subdirectory (feeldiscr)
+add_subdirectory (feelmodels)
 add_subdirectory (feelts)
 add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
 add_subdirectory (feelpde)
 add_subdirectory (feells)
-add_subdirectory (feelmodels)
+
 add_subdirectory (feelpython)
 
 
@@ -69,7 +70,7 @@ set_property(TARGET feelpp PROPERTY LABELS feel++)
 target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 
 # Install feelpp
-INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)
