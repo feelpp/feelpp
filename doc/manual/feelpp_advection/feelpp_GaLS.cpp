@@ -1,29 +1,27 @@
-//.......
-using namespace Feel;
+#include <feel/feel.hpp>
 
-int
-main( int argc, char** argv )
+int main( int argc, char* argv[] )
 {
+  using namespace Feel;
+
   Environment env( _argc=argc, _argv=argv,
-		   _desc=opts,
-		   _about=about(_name="myadvection",
-				_author="kyoshe winstone",
-				_email="wkyoshe@gmail.com") );
+		   _about=about( _name="env",
+				 _author="Feel++ Consortium",
+				 _email="feelpp-devel@feelpp.org") );
 
   auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
   auto Vh = Pch<3>( mesh );
   auto u = Vh->element();
   auto v = Vh->element();
   //# endmarker2 #
-
-  auto vars = symbols<2>();
-  auto f = expr( option(_name="f",_prefix="functions").as<std::string>(), vars );
-  auto beta_x = expr( option(_name="beta_x",_prefix="functions").as<std::string>(), vars );
-  auto beta_y = expr( option(_name="beta_y",_prefix="functions").as<std::string>(), vars );
+   
+  auto f = expr( soption(_name="f",_prefix="functions") );
+  auto beta_x = expr( soption(_name="beta_x",_prefix="functions") );
+  auto beta_y = expr( soption(_name="beta_y",_prefix="functions") );
   auto beta = vec( beta_x, beta_y );
-  auto epsilon = expr( option(_name="epsilon",_prefix="functions").as<std::string>(), vars );
-  auto mu = expr( option(_name="mu",_prefix="functions").as<std::string>(), vars );
-  auto stable = expr( option(_name="delta",_prefix="functions").as<std::string>(), vars );
+  auto epsilon = expr( soption(_name="epsilon",_prefix="functions") );
+  auto mu = expr( soption(_name="mu",_prefix="functions") );
+  auto stable = expr( soption(_name="delta",_prefix="functions") );
   auto delta = stable*constant(1.0)/(1.0/h() + epsilon/(h()*h()));
 
   auto  cal = -epsilon*trace(hess(v))+ grad(v)*beta + mu*id(v);
@@ -49,5 +47,6 @@ main( int argc, char** argv )
   e->add( "u", u );
   e->save();
   return 0;
-  //# endmarker4 #
+  //# endmarker4 # 
+
 }
