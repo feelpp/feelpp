@@ -100,7 +100,6 @@ script:
 - make -j16 feelpp_ginac
 - make -j1 feelpp
 - make install-feelpp
-
 branches:
   only:
   - develop
@@ -114,23 +113,23 @@ notifications:
     - https://webhooks.gitter.im/e/cf3f3fee0056f865adb2
     on_success: always
     on_failure: always
-
 before_deploy:
 - cd $HOME/software/install &&  tar cjf feelpp-ubuntu-precise-latest.tar.bz2 `find
-  . -maxdepth 1 -mindepth 1     -type d -exec basename {} \;` 
-- mkdir $HOME/travis-builds && mv $HOME/software/install/feelpp-ubuntu-precise-latest.tar.bz2 $HOME/travis-builds
+  . -maxdepth 1 -mindepth 1     -type d -exec basename {} \;`
+- mkdir $HOME/travis-builds && mv $HOME/software/install/feelpp-ubuntu-precise-latest.tar.bz2
+  $HOME/travis-builds
 - ls $HOME/ && ls $HOME/travis-builds
-    
 deploy:
   provider: s3
-  access_key_id: AKIAILPOROLJZZNCWSVA
-  secret_access_key:
-    secure: JKqpJRkK+t7xA2nY3kujJjF/GfKxcP9ypUOFoU97kNntsyyXPLcVtncdfltZuRrwNtCvbpBAAcKEt0FDTzKI5UzZy8HsYIi5EDbCCXfAsqkD+1lWDHDRg1skKuDlfRbAxZGkmgrccJiHkXRxz3hIf5iyLt91rnt6kvly0omrHKY=
+  access_key_id: AKIAII5MVUJW72VPYDXA
   bucket: feelpp
   region: eu-central-1
   local-dir: $HOME/travis-builds/
   upload-dir: travis-builds
+  skip_cleanup: true
   acl: public_read
   on:
     repo: feelpp/feelpp
     branch: develop
+  secret_access_key:
+    secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=
