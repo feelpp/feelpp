@@ -1038,6 +1038,11 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   find_package(CLN)
+  if ( CLN_FOUND )
+    include_directories( ${CLN_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif( CLN_FOUND )
+
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
