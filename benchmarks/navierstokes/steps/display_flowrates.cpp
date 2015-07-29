@@ -26,6 +26,7 @@
 #include <map>
 #include <string>
 
+
 bool
 display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates )
 {
@@ -36,11 +37,11 @@ display_flowrates_header( std::ostream& os, std::map<std::string, double> const&
     return true;
 }
 bool
-display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates )
+display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates, double Q )
 {
-    os << "| " << t << " | ";
+    os << "| " << t << " | "<< std::setw(11) << std::scientific << std::setprecision( 2 )<< 1056*Q*0.012/(0.0035*3.14*0.006*0.006)<< " | ";
     for( auto & f : flowrates )
-        os<< std::setw(11) << std::scientific << std::setprecision( 2 )<< f.second << " | " << std::setw(11) << std::scientific << std::setprecision( 2 ) << ((f.second-5.216650303e-6)/5.216650303e-6)*100 << "  | " ;
+        os<< std::setw(11) << std::scientific << std::setprecision( 2 ) << f.second<< " | " << std::setw(11) << std::scientific << std::setprecision( 2 )<<((f.second-Q)/Q)*100 << "  | " ;
     os << "|\n";
     return true;
 }

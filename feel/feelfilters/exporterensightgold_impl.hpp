@@ -1357,6 +1357,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // all procs writing : 
     // - calculate mp.ids.size()*sizeOfInt32_t
     int ptIdWritingSize = mp.ids.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan(...)
     MPI_Exscan(&ptIdWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1371,6 +1372,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // All procs write :
     // - calculate every proc size of part to write
     int coordsWritingSize = __nv*sizeOfFloat;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&coordsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     sumOffsets = localOffset + coordsWritingSize;
@@ -1420,6 +1422,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // All procs write :
     // - calculate every proc size of part to write
     int idnodeWritingSize = idnode.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&idnodeWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1449,6 +1452,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // All procs write :
     // - calculate every proc size of part to write
     int idelemWritingSize = idelem.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&idelemWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1548,6 +1552,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // All procs write :
     // - calculate every proc size of part to write
     int pointidsWritingSize = pointids.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&pointidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1565,6 +1570,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // All procs write :
     // - calculate every proc size of part to write
     int coordsWritingSize = __nv*sizeOfFloat;
+    localOffset = 0;
 // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&coordsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
 
@@ -1626,6 +1632,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // All procs write :
     // - calculate every proc size of part to write
     int elidsWritingSize = elids.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1654,6 +1661,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // All procs write :
     // - calculate every proc size of part to write
     int ptidsWritingSize = ptids.size()*sizeOfInt32_t;
+    localOffset = 0;
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
@@ -1710,6 +1718,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         // All procs write :
         // - calculate every proc size of part to write
         int elidsWritingSize = elids.size()*sizeOfInt32_t;
+        localOffset = 0;
         // - calculate every proc offset "localOffset" with Mpi_Exscan
         MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
         // - write in file on cursor : posInFile + localOffset
@@ -1738,6 +1747,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         // All procs write :
         // - calculate every proc size of part to write
         int ptidsWritingSize = ptids.size()*sizeOfInt32_t;
+        localOffset = 0;
         // - calculate every proc offset "localOffset" with Mpi_Exscan
         MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
         // - write in file on cursor : posInFile + localOffset
@@ -2019,6 +2029,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 // All procs write :
                 // - calculate every proc size of part to write
                 int fieldWritingSize = nfaces*sizeOfFloat;
+                localOffset = 0;
                 // - calculate every proc offset "localOffset" with Mpi_Exscan
                 MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
                 sumOffsets = localOffset + fieldWritingSize;
@@ -2135,6 +2146,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             // All procs write :
             // - calculate every proc size of part to write
             int fieldWritingSize = npts*sizeOfFloat;
+            localOffset = 0;
             // - calculate every proc offset "localOffset" with Mpi_Exscan
             MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
             sumOffsets = localOffset + fieldWritingSize;
@@ -2387,6 +2399,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             // All procs write :
             // - calculate every proc size of part to write
             int fieldWritingSize = ncells*sizeOfFloat;
+            localOffset = 0;
             // - calculate every proc offset "localOffset" with Mpi_Exscan
             MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
             sumOffsets = localOffset + fieldWritingSize;

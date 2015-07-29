@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 23 Feb 2015
@@ -23,17 +23,14 @@
 #
 SET( SRC
   modelproperties.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
+
+  #solid/solidmechanics.cpp
   )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp solid/*.hpp fluid/*.hpp )
 feel_append_src(feelmodels "${SRC};${HDR}")
 
 add_subdirectory(solid_oldversion)
-
-
-
-
-
 
 SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
