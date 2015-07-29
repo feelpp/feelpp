@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-09-10
  */
-#ifndef __Policy_H
-#define __Policy_H 1
+#ifndef FEELPP_FEELCORE_POLICY_HPP
+#define FEELPP_FEELCORE_POLICY_HPP 1
 
 namespace Feel
 {
@@ -75,4 +75,4 @@ struct PolicyFeelTimeDefault
 
 }
 
-#endif /* __Policy_H */
+#endif /* FEELPP_FEELCORE_POLICY_HPP */
