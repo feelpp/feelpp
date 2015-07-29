@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# On Ubuntu:
-# apt-get install libopenmpi-dev libpapi-dev
+# On Ubuntu 14.04.2:
+# apt-get install libopenmpi-dev libpapi-dev opari
 
 VERSION=1.4.2
 

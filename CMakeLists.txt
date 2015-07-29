@@ -96,6 +96,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
@@ -154,21 +155,14 @@ else(APPLE)
   set(FEELPP_OS "${CMAKE_SYSTEM_NAME}")
 endif(APPLE)
 
+
+
 if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8.0)
-     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-     # A cosmetic change - do not work properly within emacs
-     #if (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9.0)
-     #  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always" )
-     #endif()
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
-  endif()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic  -ftemplate-depth-256 -Wno-inline" )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
+#  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
@@ -314,7 +308,7 @@ feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
     string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" )
+    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "HYDROMORPHO" OR ${PROJECT} STREQUAL "SIVIBIRPP"  )
       option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
     else()
       option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)

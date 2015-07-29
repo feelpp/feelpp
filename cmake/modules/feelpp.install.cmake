@@ -75,3 +75,15 @@ add_dependencies(tutorial feelpp_doc_${example})
 ")
 endforeach()
 INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT Doc RENAME CMakeLists.txt)
+
+#
+# this target installs the libraries, header files and cmake files
+#
+add_custom_target(install-feelpp
+  DEPENDS feelpp
+  COMMAND
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Libs
+      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Devel
+      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+)
