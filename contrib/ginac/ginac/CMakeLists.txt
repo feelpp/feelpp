@@ -163,10 +163,10 @@ else()
   set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
 endif()
 
-install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
-		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}"
-		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}")
-install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac")
+install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs
+		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
+		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
+install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac" COMPONENT Devel)
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.h
