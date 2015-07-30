@@ -77,7 +77,7 @@ holo3_image<float> FFTtoHbf (fftw_complex* const& imfft, int nLi, int nCo )
     return im;
 }
 
-void fftshift(fftw_complex* const& data)
+void fftshift(fftw_complex* data)
 {
     int k = 0;
     int count = sizeof(data)/sizeof(data[0]);
@@ -125,13 +125,16 @@ void gradImage (holo3_image<float> const& im )
     nbOndes=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp);
     for (int i=0;i<meshp;i++)
     {
-        nbOndes[i][0]=-meshp/2.+i;
+        nbOndes[i][0]=-(meshp+1)/2.+i;
         nbOndes[i][1]=0.0;
+        //std::cout << nbOndes[i][0] << std::endl;
     }
     fftshift(nbOndes);
     for (int i=0;i<meshp;i++)
-        nbOndes[i][0]*=2*(4./math::atan(1.));
-
+    {
+        nbOndes[i][0]*=2*(4.*math::atan(1.))/doption("msi.pixelsize");
+        
+    }
     // define image fft
     fftw_complex* image=hbfToFFT(im);
     fftw_complex* imageFFTtmp = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*nLi*nCo);
@@ -156,11 +159,11 @@ void gradImage (holo3_image<float> const& im )
     {
         for (int j=0;j<nCo;j++)
         {
-            FFTx[nCo*i+j][0]=imageFFT[nCo*i+j][0]*nbOndes[i%(meshp+1)][0];
-            FFTx[nCo*i+j][1]=imageFFT[nCo*i+j][1]*nbOndes[i%(meshp+1)][0];
+            FFTy[nCo*i+j][0]=imageFFT[nCo*i+j][0]*nbOndes[i%(meshp)][0];
+            FFTy[nCo*i+j][1]=imageFFT[nCo*i+j][1]*nbOndes[i%(meshp)][0];
 
-            FFTy[nCo*i+j][0]=imageFFT[nCo*i+j][0]*nbOndes[j%(meshp+1)][0];
-            FFTy[nCo*i+j][1]=imageFFT[nCo*i+j][1]*nbOndes[j%(meshp+1)][0];
+            FFTx[nCo*i+j][0]=imageFFT[nCo*i+j][0]*nbOndes[j%(meshp)][0];
+            FFTx[nCo*i+j][1]=imageFFT[nCo*i+j][1]*nbOndes[j%(meshp)][0];
         }
     }
 
@@ -181,8 +184,9 @@ void gradImage (holo3_image<float> const& im )
     {
         for (int j=0;j<nCo;j++)
         {
-            imageX(i,j)=FFTx[nCo*i+j][0]/(meshp*meshp);
-            imageY(i,j)=FFTy[nCo*i+j][0]/(meshp*meshp);
+            imageX(i,j)=FFTx[nCo*i+j][0]/(nLi*nCo);
+            imageY(i,j)=FFTy[nCo*i+j][0]/(nLi*nCo);
+            //std::cout << imageX(i,j) << std::endl;
         }
     }
 
@@ -209,11 +213,342 @@ holo3_image<float> getY()
     return imageY;
 }
 
+
+void gradImage3 (holo3_image<float> const& im )
+{
+    // define useful parameters 
+    int meshp=std::pow(2,ioption("msi.level")); 
+    int nLi=im.rows()/meshp; 
+    int nCo=im.cols()/meshp;
+
+    // define wave number 
+    fftw_complex* nbOndes;
+    nbOndes=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1));
+    if (meshp==1)
+    {
+        nbOndes[0][0]=-1.0;
+        nbOndes[0][1]=0.0;
+        nbOndes[1][0]=1.0;
+        nbOndes[1][1]=0.0;
+    }
+    else
+    {   
+        for (int i=0;i<=meshp/2;i++)
+        {
+            nbOndes[i][0]=i;
+        }
+
+        for ( int i=0;i<meshp/2;i++)
+        {
+            nbOndes[meshp/2+1+i][0]=-nbOndes[meshp/2-i][0];
+        }
+    }
+
+       
+    for (int i=0;i<meshp+1;i++)
+    {
+        nbOndes[i][0]*=2*(4.*math::atan(1.))/(doption("msi.pixelsize")*doption("msi.pixelsize"));
+        
+        std::ofstream fichierOndes ("Ondes.txt",std::ios::out|std::ios::trunc);
+        if (fichierOndes)
+        {
+        for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                fichierOndes << nbOndes[i][0] << " " ;
+            }
+        fichierOndes.close();
+        }
+
+
+        //std::cout << "nb2 :\t" << nbOndes[i][0] << std::endl;
+    }
+
+   // holo3_image<float> tabX [nLi][nCo];
+   // holo3_image<float> tabY [nLi][nCo];
+    
+    tabFFTX=new holo3_image<float>* [nLi];
+    tabFFTY=new holo3_image<float>* [nLi];
+
+    for (int i=0;i<nLi;i++)
+    {
+        tabFFTX[i]=new holo3_image<float> [nCo];
+        tabFFTY[i]=new holo3_image<float> [nCo]; 
+        for (int j=0;j<nCo;j++)
+        {
+            tabFFTX[i][j]= holo3_image<float>(meshp+1,meshp+1);
+            tabFFTY[i][j]= holo3_image<float>(meshp+1,meshp+1);
+            fftw_complex* image = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
+            
+            for (int k=0;k<meshp+1;k++)
+            {
+                for (int l=0;l<meshp+1;l++)
+                {
+                    image[(meshp+1)*k+l][0]=im((i)*(meshp)+k,(j)*(meshp)+l);
+                    image[(meshp+1)*k+l][1]=0;
+                   //std::cout << "image \t:" <<tabFFTX[i][j](k,l) << std::endl;
+                }
+            }
+
+            // define image fft
+            std::ofstream fichierImage ("vImage.txt",std::ios::out|std::ios::trunc);
+            if (fichierImage)
+            {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierImage << image[(meshp+1)*i+j][0] << "+i" <<  image[(meshp+1)*i+j][1] << " " ;
+                }
+                fichierImage << "\n" ;
+            }
+            fichierImage.close();
+            }
+
+            fftw_complex* imageFFT = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
+            fftw_complex* imageFFTtmp = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
+
+            fftw_plan forward= fftw_plan_dft_2d(meshp+1,meshp+1,image,imageFFTtmp,FFTW_FORWARD,FFTW_ESTIMATE);
+            fftw_execute(forward);
+            fftw_destroy_plan(forward);
+
+            std::ofstream fichierFFT ("vPreFFT.txt",std::ios::out|std::ios::trunc);
+            if (fichierFFT)
+            {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierFFT << imageFFTtmp[(meshp+1)*i+j][0] << "+i" <<  imageFFTtmp[(meshp+1)*i+j][1] << " " ;
+                }
+                fichierFFT << "\n" ;
+            }
+            fichierFFT.close();
+            }
+             
+            // multi by i 
+            for (int k=0;k<(meshp+1)*(meshp+1);k++)
+            {
+                imageFFT[k][0]=-1*imageFFTtmp[k][1];
+                imageFFT[k][1]=imageFFTtmp[k][0];
+                //std::cout << "\t FFT :\t" << imageFFT[k][1] << std::endl;
+            }
+
+            std::ofstream fichierFFT2 ("vFFT.txt",std::ios::out|std::ios::trunc);
+            if (fichierFFT)
+            {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierFFT2 << imageFFT[(meshp+1)*i+j][0] << "+i" <<  imageFFT[(meshp+1)*i+j][1] << " " ;
+                }
+                fichierFFT2 << "\n" ;
+            }
+            fichierFFT2.close();
+            }   
+
+
+            // estimation ifft entry
+            fftw_complex* FFTx = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
+            fftw_complex* FFTy = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
+
+            for (int k=0;k<meshp+1;k++)
+            {
+                for (int l=0;l<meshp+1;l++)
+                {
+                    FFTy[(meshp+1)*k+l][0]=imageFFT[(meshp+1)*k+l][0]*nbOndes[k][0];
+                    FFTy[(meshp+1)*k+l][1]=imageFFT[(meshp+1)*k+l][1]*nbOndes[k][0];
+
+                    //std::cout << "\t FFT2 :\t" << FFTy[(meshp+1)*k+l][1] << std::endl;
+
+                    FFTx[(meshp+1)*k+l][0]=imageFFT[(meshp+1)*k+l][0]*nbOndes[l][0];
+                    FFTx[(meshp+1)*k+l][1]=imageFFT[(meshp+1)*k+l][1]*nbOndes[l][0];
+                }
+            }
+
+            std::ofstream fichierFFT3 ("vOFFT.txt",std::ios::out|std::ios::trunc);
+            if (fichierFFT3)
+            {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierFFT3 << FFTx[(meshp+1)*i+j][0] << "+i" <<  FFTx[(meshp+1)*i+j][1] << " " ;
+                }
+                fichierFFT3 << "\n" ;
+            }
+            fichierFFT3.close();
+            }
+
+            fftw_plan backwardX = fftw_plan_dft_2d(meshp+1,meshp+1,FFTx,FFTx,FFTW_BACKWARD,FFTW_ESTIMATE);
+            fftw_plan backwardY = fftw_plan_dft_2d(meshp+1,meshp+1,FFTy,FFTy,FFTW_BACKWARD,FFTW_ESTIMATE);
+            fftw_execute(backwardX);
+            fftw_execute(backwardY);
+
+            fftw_destroy_plan(backwardX);
+            fftw_destroy_plan(backwardY);
+            
+            std::ofstream fichierFFT4 ("vBFFT.txt",std::ios::out|std::ios::trunc);
+            if (fichierFFT4)
+            {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierFFT4 << FFTx[(meshp+1)*i+j][0] << "+i" <<  FFTx[(meshp+1)*i+j][1] << " " ;
+                }
+                fichierFFT4 << "\n" ;
+            }
+            fichierFFT4.close();
+            }
+
+
+            for (int k=0;k<meshp+1;k++)
+            {
+                for (int l=0;l<meshp+1;l++)
+                {
+                    tabFFTX[i][j](k,l)=FFTx[(meshp+1)*k+l][0]/((meshp+1));
+                    
+                    tabFFTY[i][j](k,l)=FFTy[(meshp+1)*k+l][0]/((meshp+1));
+                    //std::cout << "\t final :\t"<<tabFFTX[i][j] (k,l) << std::endl;
+                }
+            }
+
+            
+            fftw_free(image);
+            fftw_free(imageFFTtmp);
+            fftw_free(imageFFT);
+            fftw_free(FFTx);
+            fftw_free(FFTy);
+        }
+    }
+    //fftw_free(nbOndes);
+    //return imY;
+}
+
+holo3_image<float>** getFFTX()
+{
+    return tabFFTX;
+}
+
+holo3_image<float>** getFFTY()
+{
+    return tabFFTY;
+}
+
+
+
+/*
+void gradImage2 (holo3_image<float> const& im, ublas::vector<double> const& begin )
+{
+    // define useful parameters 
+    int meshp=std::pow(2,ioption("msi.level"))+1; 
+    //int nLi=im.rows(); 
+    //int nCo=im.cols();
+    
+    holo3_image<float> work = holo3_image<float> (meshp,meshp);
+    for (int i=0;i<meshp;i++)
+    {
+        for (int j=0;j<meshp;j++)
+        {
+            work(i,j)=im(begin[0]+i,begin[1]+j);
+            std::cout << work(i,j) << std::endl;
+        }
+    }
+
+    // define wave number 
+    fftw_complex* nbOndes;
+    nbOndes=(fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp);
+    for (int i=0;i<meshp;i++)
+    {
+        nbOndes[i][0]=-(meshp+1)/2.+i;
+        nbOndes[i][1]=0.0;
+        //std::cout << nbOndes[i][0] << std::endl;
+    }
+    fftshift(nbOndes);
+    for (int i=0;i<meshp;i++)
+    {
+        nbOndes[i][0]*=2*(4.*math::atan(1.));
+        
+    }
+    // define image fft
+    fftw_complex* image=hbfToFFT(work);
+    fftw_complex* imageFFTtmp = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp*meshp);
+    fftw_complex* imageFFT = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp*meshp);
+
+    fftw_plan forward= fftw_plan_dft_2d(meshp,meshp,image,imageFFTtmp, FFTW_FORWARD,FFTW_ESTIMATE);
+    fftw_execute(forward);
+    fftw_destroy_plan(forward);
+
+    // multi by i 
+    for (int i=0;i<meshp*meshp;i++)
+    {
+        imageFFT[i][0]=-1*imageFFTtmp[i][1];
+        imageFFT[i][1]=imageFFTtmp[i][0];
+    }
+
+    // estimation ifft entry
+    fftw_complex* FFTx = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp*meshp);
+    fftw_complex* FFTy = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*meshp*meshp);
+
+    for (int i=0;i<meshp;i++)
+    {
+        for (int j=0;j<meshp;j++)
+        {
+            FFTy[meshp*i+j][0]=imageFFT[meshp*i+j][0]*nbOndes[i][0];
+            FFTy[meshp*i+j][1]=imageFFT[meshp*i+j][1]*nbOndes[i][0];
+
+            FFTx[meshp*i+j][0]=imageFFT[meshp*i+j][0]*nbOndes[j][0];
+            FFTx[meshp*i+j][1]=imageFFT[meshp*i+j][1]*nbOndes[j][0];
+        }
+    }
+
+    fftw_plan backwardX = fftw_plan_dft_2d(meshp,meshp,FFTx,FFTx,FFTW_BACKWARD,FFTW_ESTIMATE);
+    fftw_plan backwardY = fftw_plan_dft_2d(meshp,meshp,FFTy,FFTy,FFTW_BACKWARD,FFTW_ESTIMATE);
+    fftw_execute(backwardX);
+    fftw_execute(backwardY);
+
+    fftw_destroy_plan(backwardX);
+    fftw_destroy_plan(backwardY);
+
+    imageX =  holo3_image<float> (meshp,meshp);
+    imageY =  holo3_image<float> (meshp,meshp);
+    
+
+    for (int i=0;i<meshp;i++)
+    {
+        for (int j=0;j<meshp;j++)
+        {
+            imageX(i,j)=FFTx[meshp*i+j][0]/(meshp*meshp);
+            imageY(i,j)=FFTy[meshp*i+j][0]/(meshp*meshp);
+        }
+    }
+
+
+    fftw_free(nbOndes);
+    fftw_free(image);
+    fftw_free(imageFFTtmp);
+    fftw_free(imageFFT);
+    fftw_free(FFTx);
+    fftw_free(FFTy);
+
+
+
+    //return imY;
+}
+*/
+
 private :
 
 holo3_image<float> imageX;
 holo3_image<float> imageY;
+
+holo3_image<float>** tabFFTX;
+holo3_image<float>** tabFFTY;
+
+
 };
+
 
 
 }// Feel
