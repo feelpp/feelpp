@@ -119,7 +119,7 @@ class TestPrecAFP : public Application
 
     //! Pch 0 space
     typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
-    typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>, Continuous> lag_0_space_type;
+    typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
     typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
     typedef typename lag_0_space_type::element_type lag_0_element_type;
 
@@ -156,11 +156,19 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-
+        auto M_mu = Mh->element();
         auto model = ModelProperties(Environment::expand(soption("myModel")));
-        auto M_mu = vf::project(_space=Mh,
-                               _range=elements(M_mesh),
-                               _expr=expr(soption("functions.m")));
+        
+        for(auto it : model.materials() ){
+            std::string key = "Materials.";
+            key += marker(it);
+            key += ".B";
+            auto curve = expr(model.getEntry(key),{"H","B"},{cst(1.),cst(1.)});
+            curve.setParameterValues(model.parameters().toParameterValues());
+            M_mu += vf::project(_space=Mh,
+                                _range=markedelements(M_mesh,marker(it)),
+                                _expr=curve);
+        }
         auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
         //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
@@ -323,6 +331,7 @@ class TestPrecAFP : public Application
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
+            ex->add("perm"               ,M_mu  );
             ex->add("potential"          ,u  );
             ex->add("lagrange_multiplier",phi);
             ex->save();
