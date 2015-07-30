@@ -23,9 +23,11 @@
 #
 SET( SRC
   modelproperties.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
+  
+  #solid/solidmechanics.cpp
   )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp solid/*.hpp fluid/*.hpp )
 feel_append_src(feelmodels "${SRC};${HDR}")
 
-add_subdirectory(solid)
+
