@@ -30,6 +30,8 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/special_functions/round.hpp>
 #include <feel/feeldiscr/fftmultiscale.hpp>
+#include <iostream>
+#include <fstream>
 using namespace boost::numeric;
 
 namespace Feel
@@ -55,10 +57,59 @@ public :
         :
         dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
+        
         FFTFeel fft;
-        fft.gradImage(im);
-        imageGradX=fft.getX();
-        imageGradY=fft.getY();
+        std::ofstream fichierInit ("vinit.txt",std::ios::out|std::ios::trunc );
+        std::ofstream fichierX ("vfinalX.txt",std::ios::out|std::ios::trunc);
+        std::ofstream fichierY ("vfinalY.txt",std::ios::out|std::ios::trunc);
+        //fft.gradImage(im);
+        if (fichierInit)
+        {
+            // for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            for (int i=im.rows()-1-std::pow(2,ioption("msi.level"));i<im.rows();i++)
+            {
+                //for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                for (int j=im.cols()-1-std::pow(2,ioption("msi.level"));j<im.cols();j++)
+                {
+                    fichierInit << im(i,j ) << " " ;
+                }
+                fichierInit << "\n" ;
+            }
+            fichierInit.close();
+        }
+        fft.gradImage3(im);
+        //imageGradX=fft.getX();
+        //imageGradY=fft.getY();
+        gradFFTX=fft.getFFTX();
+        if (fichierX)
+        {
+            for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierX << gradFFTX[1][0](i,j) << " " ;
+                }
+                fichierX << "\n" ;
+            }
+            fichierX.close();
+        }
+        gradFFTY=fft.getFFTY();
+         if (fichierY)
+        {
+        for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
+            {
+                for (int j=0;j<std::pow(2,ioption("msi.level"))+1;j++)
+                {
+                    fichierY << gradFFTY[0][0](i,j) << " " ;
+                }
+                fichierY << "\n" ;
+            }
+
+            fichierY.close();
+        }
+
+        for (int i =0;i< std::pow(2,ioption("msi.level"))+1;i++)
+        std::cout << "mat:" << gradFFTX[0][0](1,i) << std::endl; 
     }
 
     value_type 
@@ -66,21 +117,77 @@ public :
         {
             double x = real[0];
             double y = real[1];
-             
-            int i = boost::math::iround(x/dx);
+            int meshp= std::pow(2,ioption("msi.level"));
+
+            bool testX=true;
+            bool testY=true;
+            
+            //int i = boost::math::iround(x/dx);
             //int j = image.cols()-1-boost::math::iround(y/dy);
-            int j = boost::math::iround(y/dy);
+            //int j = boost::math::iround(y/dy);
+            
+            int Ax = boost::math::iround(x/dx);
+            int Ay = image.cols()-1-boost::math::iround(y/dy);
+
+            int Bx=Ax/meshp;
+            int By=Ay/meshp;
+            
+            if (Ax%meshp==0)
+                {
+                    if (ref[0]==1)
+                        {
+                            Bx--;
+                            Ax=meshp;
+                            testX=false;
+                        }
+                }
+
+            if (Ay%meshp==0)
+               {
+                   if (ref[1]==-1)
+                        {
+                            By--;
+                            Ay=meshp;
+                            testY=false;
+                        }
+               }
             
             // x component
             if (c==0)
             {
-                return imageGradX(j,i);
+                //std::cout <<"ay0:" << Ay << "ax0:" << Ax << "By:" << By << "Bx:" << Bx << "Ay:" << Ay%meshp << "Ax:" << Ax%meshp << std::endl;
+               //return fft.getX()(j,i);
+               //return imageGradX(j,i);
+               
+               if (testX && testY){
+                std::cout <<"ay0:" << Ay << "  ax0:" << Ax << "  By:" << By << "  Bx:" << Bx << "  Ay:" << Ay%meshp << "  Ax:" << Ax%meshp << std::endl;
+
+                   return gradFFTX[By][Bx](Ay%meshp,Ax%meshp);
+               }
+               else if (testX && !testY)
+                        return gradFFTX[By][Bx](Ay,Ax%meshp);
+                    else if (!testX && testY)
+                            return gradFFTX[By][Bx](Ay%meshp,Ax);
+                        else return gradFFTX[By][Bx](Ay,Ax);
+                        
             }
             // y component
             else 
             {
-                return imageGradY(j,i);
+                // return fft.getY()(j,i);
+               //return imageGradY(j,i);
+               if (testX && testY)
+                   return gradFFTY[By][Bx](Ay%meshp,Ax%meshp);
+               else if (testX && !testY)
+                        return gradFFTY[By][Bx](Ay,Ax%meshp);
+                    else if (!testX && testY)
+                            return gradFFTY[By][Bx](Ay%meshp,Ax);
+                        else return gradFFTY[By][Bx](Ay,Ax);
+                        
+
             }
+         //testX=true;
+         //testY=true;   
         }
 
     /**
@@ -206,7 +313,7 @@ public :
             // note that it would be differently handled if we use the fft and ifft
             return v2;
         }
-        */
+        */ 
     /**
      * @return the value of the image at point \c real in the coarse grid
      */
@@ -217,10 +324,10 @@ public :
             double y = real[1];
              
             int i = boost::math::iround(x/dx);
-            //int j = image.cols()-1-boost::math::iround(y/dy);
-            int j = boost::math::iround(y/dy);
+            int j = image.cols()-1-boost::math::iround(y/dy);
+            //int j = boost::math::iround(y/dy);
             
-            double v=  image(j,i);
+            double v=image(j,i);
 #if 0
             std::cout << "Value " << v << " Coarse real (" << x <<"," << y 
                       << ") Ref : ("<< ref[0] << "," << ref[1]  
@@ -236,6 +343,9 @@ private :
     holo3_image<value_type> image;
     holo3_image<value_type> imageGradX;
     holo3_image<value_type> imageGradY;
+    holo3_image<value_type>** gradFFTX;
+    holo3_image<value_type>** gradFFTY;
+
     int level;
 };
 
