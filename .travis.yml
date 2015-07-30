@@ -97,9 +97,12 @@ install:
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
   --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
 script:
+- make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
 - make install-feelpp
+- ls $HOME/software/install/feelpp/include/feel
+
 branches:
   only:
   - develop
