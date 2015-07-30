@@ -38,8 +38,7 @@ namespace Feel
 {
 enum { ComputeGradient = 1 << 0  };
 
-//template <typename T = float>
-//using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
+
 
 template<typename T, int _Options = 0>
 class MultiScaleImage
@@ -53,16 +52,17 @@ public :
     // true if must compute gradient, false otherwise.
     static const bool needs_gradient = needs_gradient_t::value;
 
+    // constructor which will estimate gradient image by the FFT method and store it 
     MultiScaleImage(holo3_image<value_type> const& im, float L)
         :
         dx(doption("msi.pixelsize")),dy(doption("msi.pixelsize")),image(im),level(L)
     {
         
         FFTFeel fft;
+        // print for test  
         std::ofstream fichierInit ("vinit.txt",std::ios::out|std::ios::trunc );
         std::ofstream fichierX ("vfinalX.txt",std::ios::out|std::ios::trunc);
         std::ofstream fichierY ("vfinalY.txt",std::ios::out|std::ios::trunc);
-        //fft.gradImage(im);
         if (fichierInit)
         {
             // for (int i=0;i<std::pow(2,ioption("msi.level"))+1;i++)
@@ -77,9 +77,7 @@ public :
             }
             fichierInit.close();
         }
-        fft.gradImage3(im);
-        //imageGradX=fft.getX();
-        //imageGradY=fft.getY();
+        fft.gradImage(im);
         gradFFTX=fft.getFFTX();
         if (fichierX)
         {
@@ -112,6 +110,7 @@ public :
         std::cout << "mat:" << gradFFTX[0][0](1,i) << std::endl; 
     }
 
+    // Allow us to acces to value of the gradient at coordinate store in real 
     value_type 
     operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -132,6 +131,7 @@ public :
             int Bx=Ax/meshp;
             int By=Ay/meshp;
             
+            // Define on which element we are when nodes belong to multiple elments
             if (Ax%meshp==0)
                 {
                     if (ref[0]==1)
@@ -155,12 +155,10 @@ public :
             // x component
             if (c==0)
             {
-                //std::cout <<"ay0:" << Ay << "ax0:" << Ax << "By:" << By << "Bx:" << Bx << "Ay:" << Ay%meshp << "Ax:" << Ax%meshp << std::endl;
-               //return fft.getX()(j,i);
-               //return imageGradX(j,i);
                
                if (testX && testY){
-                std::cout <<"ay0:" << Ay << "  ax0:" << Ax << "  By:" << By << "  Bx:" << Bx << "  Ay:" << Ay%meshp << "  Ax:" << Ax%meshp << std::endl;
+
+                //std::cout <<"ay0:" << Ay << "  ax0:" << Ax << "  By:" << By << "  Bx:" << Bx << "  Ay:" << Ay%meshp << "  Ax:" << Ax%meshp << std::endl;
 
                    return gradFFTX[By][Bx](Ay%meshp,Ax%meshp);
                }
@@ -174,27 +172,21 @@ public :
             // y component
             else 
             {
-                // return fft.getY()(j,i);
-               //return imageGradY(j,i);
-               if (testX && testY)
-                   return gradFFTY[By][Bx](Ay%meshp,Ax%meshp);
-               else if (testX && !testY)
+                if (testX && testY)
+                    return gradFFTY[By][Bx](Ay%meshp,Ax%meshp);
+                else if (testX && !testY)
                         return gradFFTY[By][Bx](Ay,Ax%meshp);
-                    else if (!testX && testY)
+                     else if (!testX && testY)
                             return gradFFTY[By][Bx](Ay%meshp,Ax);
-                        else return gradFFTY[By][Bx](Ay,Ax);
-                        
-
+                          else return gradFFTY[By][Bx](Ay,Ax);
+ 
             }
-         //testX=true;
-         //testY=true;   
+         testX=true;
+         testY=true;   
         }
 
-    /**
-     * @return the component \c c of the gradient of the image at point \c real
-     * in the coarse grid
-     */
-     /*
+// method using  base functions
+/*
     value_type 
     operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -314,9 +306,9 @@ public :
             return v2;
         }
         */ 
-    /**
-     * @return the value of the image at point \c real in the coarse grid
-     */
+
+    
+     //return the value of the image at point \c real in the coarse grid  
     value_type 
     operator()(ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -338,14 +330,15 @@ public :
         }
 
 private :
+    // size between pixels in each direction
     double dx;
     double dy;
+    // store the image we work on 
     holo3_image<value_type> image;
-    holo3_image<value_type> imageGradX;
-    holo3_image<value_type> imageGradY;
+    // store gradient obtain by FFT
     holo3_image<value_type>** gradFFTX;
     holo3_image<value_type>** gradFFTY;
-
+    // level we work on 
     int level;
 };
 
