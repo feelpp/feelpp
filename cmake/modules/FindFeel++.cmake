@@ -490,10 +490,15 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   
-
 endif()
 
-
+find_package(FFTW)
+if( FFTW_FOUND )
+  set(FEELPP_HAS_FFTW 1)
+  include_directories( FFTW_INCLUDES )
+  set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
+endif()
 
 #
 # submodules
@@ -503,6 +508,7 @@ include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
+include(feelpp.module.jsonlab)
 
 #
 # HARTS
@@ -550,9 +556,15 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
+else()
+  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+    PATHS
+    $ENV{FEELPP_DIR}/include/feel
+    NO_DEFAULT_PATH
+    )
 endif()
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
-message(STATUS "[feelpp] Eigen3: ${EIGEN3_INCLUDE_DIR}" )
+message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -1032,6 +1044,12 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  find_package(CLN)
+  if ( CLN_FOUND )
+    include_directories( ${CLN_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif( CLN_FOUND )
+
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
