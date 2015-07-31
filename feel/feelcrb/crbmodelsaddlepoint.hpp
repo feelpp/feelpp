@@ -150,6 +150,7 @@ public :
         {
             bool transpose = boption("crb.saddlepoint.transpose");
             M_current_mu = mu;
+            auto mesh = this->Xh->mesh();
 
             /// We first merge the affine decomposition for all block
             /// with the given parameter
@@ -189,10 +190,41 @@ public :
             block_sol(1)=p;
             auto blockSOL = backend()->newBlockVector( _block=block_sol, _copy_values=false );
 
-            /// We solve the linear system
-            backend( _rebuild=true )->solve( _matrix=blockLHS, _rhs=blockRHS, _solution=blockSOL );
+            if ( boption("weak-dir"))
+            {
+                backend( _rebuild=true )->solve( _matrix=blockLHS, _rhs=blockRHS, _solution=blockSOL );
+                M_U = *blockSOL;
+            }
+            else
+            {
+                auto a = form2( _test=this->Xh, _trial=this->Xh, _matrix=blockLHS );
+                auto l = form1( _test=this->Xh, _vector=blockRHS );
+                auto v = M_U.template element<0>();
 
-            M_U=*blockSOL;
+                a += on( _range=markedfaces(mesh,"gamma0"), _rhs=l,
+                         _expr=zero<2,1>(), _element=v );
+                a += on( _range=markedfaces(mesh,"gamma26"), _rhs=l,
+                         _expr=zero<2,1>(), _element=v );
+                a += on( _range=markedfaces(mesh,"gamma48"), _rhs=l,
+                         _expr=zero<2,1>(), _element=v );
+                a += on( _range=markedfaces(mesh,"gamma5"), _rhs=l,
+                         _expr=zero<2,1>(), _element=v );
+                a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=v,
+                      _expr=vec( 4*Py()*(1-Py())*oneX(),cst(0) ) );
+
+                a.solve( _rhs=l, _solution=M_U, _rebuild=true );
+            }
+
+
+            auto u_flux = M_U.template element<0>();
+            double flux_inlet = integrate( markedfaces(mesh,"inlet"),
+                                           inner(idv(u_flux),N()) ).evaluate() (0,0);
+            double flux_middle = integrate( markedfaces(mesh, "midflux"),
+                                            inner(idv(u_flux),N()) ).evaluate() (0,0);
+
+            CRB_COUT << "FLUX TEST : inlet="<<flux_inlet <<", middle="<<flux_middle <<", diff="<<flux_inlet+flux_middle<<std::endl;
+
+
             return M_U;
         }
 

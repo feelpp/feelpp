@@ -653,9 +653,9 @@ public:
     template<int Row=0>
     size_type Ql( int output) const
         {
-            auto F=M_F[output].template get<Row>();
-            if (F)
-                return F->Q();
+            CHECK ( output<M_F.size() ) << "Ql called with bad output index. output="<<output<<", and max M_F.size()=" << M_F.size();
+            if (M_F[output].template get<Row>() )
+                return M_F[output].template get<Row>()->Q();
             return 0;
         }
     size_type Nl() const

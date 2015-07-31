@@ -683,12 +683,12 @@ CRBSaddlePoint<TruthModelType>::offline()
         CRB_COUT << "============================================================\n";
     } // while( this->M_maxerror>this->M_tolerance && this->M_N<this->M_iter_max )
 
-    /*std::vector< vectorN_type > uN;
+    std::vector< vectorN_type > uN;
     std::vector< vectorN_type > uNdu;
     std::vector< vectorN_type > uNold;
-     std::vector< vectorN_type > uNduold;*/
+    std::vector< vectorN_type > uNduold;
 
-    vectorN_type uN(M_N0[this->M_N]+M_N1[this->M_N]);
+    //vectorN_type uN(M_N0[this->M_N]+M_N1[this->M_N]);
     if (boption("crb.saddlepoint.test-residual"))
     {
         CRB_COUT << "\n TEST RESIDUAL \n";
@@ -697,17 +697,18 @@ CRBSaddlePoint<TruthModelType>::offline()
         {
             CRB_COUT << "====================================================\n";
             parameter_type mu_test = this->M_WNmu->at(k);
-            uN.setZero();
-            uN(k)=1;
-            uN(M_N0[this->M_N]+k)=1;
+            //uN.setZero();
+            //uN(k)=1;
+            //uN(M_N0[this->M_N]+k)=1;
 
-            //lb( this->M_N, mu_test, uN, uNdu, uNold, uNduold );
+            lb( this->M_N, mu_test, uN, uNdu, uNold, uNduold );
+            CRB_COUT <<"uN =\n"<<uN[0]<<std::endl;
             CRB_COUT<< "mu_test = [";
             for ( int i=0; i<mu.size(); i++ )
                 CRB_COUT<<mu_test( i )<<",";
             CRB_COUT<<"]"<<std::endl;
-            double rez_test0 = onlineResidual<0>( this->M_N, mu_test, uN, true );
-            double rez_test1 = onlineResidual<1>( this->M_N, mu_test, uN, true );
+            double rez_test0 = onlineResidual<0>( this->M_N, mu_test, uN[0], true );
+            double rez_test1 = onlineResidual<1>( this->M_N, mu_test, uN[0], true );
             CRB_COUT << "rez_test0="<< std::sqrt(rez_test0)
                      << ", rez_test1="<< std::sqrt(rez_test1) <<std::endl;
         }
@@ -764,7 +765,15 @@ CRBSaddlePoint<TruthModelType>::lb( size_type N, parameter_type const& mu,
     std::vector<double>output_vector(1);
     output_vector[0] = L.dot( uN[0] );
 
-    auto matrix_info = boost::make_tuple( 0., 0. );
+    double condition_number = 0;
+    double determinant = 0;
+    if( boption(_name="crb.compute-matrix-information") )
+    {
+        condition_number = this->computeConditioning( A );
+        determinant = A.determinant();
+    }
+
+    auto matrix_info = boost::make_tuple( condition_number, determinant );
 
     return boost::make_tuple( output_vector, matrix_info);
 } // lb()
