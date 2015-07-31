@@ -492,7 +492,13 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   
 endif()
 
-
+find_package(FFTW)
+if( FFTW_FOUND )
+  set(FEELPP_HAS_FFTW 1)
+  include_directories( ${FFTW_INCLUDES} )
+  set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
+endif()
 
 #
 # submodules

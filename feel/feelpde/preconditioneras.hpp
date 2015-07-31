@@ -198,6 +198,7 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     M_y = backend()->newVector(M_Qh3);
 
     // Create the interpolation and keep only the matrix
+    /// ** That is _really_ long !
     auto pi_curl = opInterpolation(_domainSpace=M_Qh3, _imageSpace=M_Vh);
     M_P = pi_curl->matPtr();
     M_Pt= backend()->newMatrix(M_Qh3,M_Vh);

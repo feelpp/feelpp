@@ -85,7 +85,7 @@ public:
     typedef PreconditionerAS<space_type, coef_space_type> pc_as_type;
     typedef boost::shared_ptr<pc_as_type> pc_as_ptrtype;
 
-    typedef OperatorBase<value_type> op_type;
+    typedef OperatorMatrix<value_type> op_type;
     typedef boost::shared_ptr<op_type> op_ptrtype;
 
     typedef OperatorMatrix<value_type> op_mat_type;
@@ -248,9 +248,11 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(
         }
        
         /* Initialize the blockAS prec */ 
+        if(soption("blockms.11.pc-type") == "AS"){
         M_pcAs = blockas(_space=M_Xh,
                          _space2=M_Mh,
                          _bc = M_bcFlags);
+        }
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
