@@ -24,16 +24,18 @@
    \author Thomas Lantz 
    \date 2015-04-27
  */
+#ifndef FEELPP_MULTISCALEIMAGE_HPP
+#define FEELPP_MULTISCALEIMAGE_HPP 1
 
-//#ifndef _MULTISCALEIMAGE_HPP_
-//#define _MULTISCALEIMAGE_HPP_
+#include <iostream>
+#include <fstream>
+
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/special_functions/round.hpp>
 #include <feel/feeldiscr/fftmultiscale.hpp>
-#include <iostream>
-#include <fstream>
 using namespace boost::numeric;
 
+#if defined( FEELPP_HAS_FFTW )
 namespace Feel
 {
 enum { ComputeGradient = 1 << 0  };
@@ -343,3 +345,6 @@ private :
 };
 
 } // Feel
+#endif // FEELPP_HAS_FFTW
+
+#endif
