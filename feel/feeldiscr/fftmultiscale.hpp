@@ -5,7 +5,7 @@
    Author(s): Thomas Lantz <lantz.thomas0@gmail.com>
    Date: 2015-07-31
 
-Copyright (C) 2014 Feel++ Consortium
+Copyright (C) 2014-2015 Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,8 @@ You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#ifndef FEELPP_FFTMULTISCALE_HPP
+#define FEELPP_FFTMULTISCALE_HPP 1
 
 #include <Eigen/Core>
 #include <boost/bimap.hpp>
@@ -34,7 +36,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/expr.hpp>
+#if defined( FEELPP_HAS_FFTW )
 #include <fftw3.h>
+
 
 // define a class to estimate gradient by FFT 
 using namespace boost::numeric;
@@ -453,3 +457,8 @@ holo3_image<float>** tabFFTY;
 
 
 }// Feel
+
+#endif // FEELPP_HAS_FFTW
+
+
+#endif // FEELPP_FFTMULTISCALE_HPP
