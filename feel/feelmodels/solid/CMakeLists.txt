@@ -1,7 +1,10 @@
 
 # geo order 1
 foreach( _DIM 2 3)
-  foreach( _DISP_ORDER 1 2 3 4 )
+  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  feelpp_max( MAX_ORDER 1 ${_D_ORDER})
+  message(STATUS "[feelpp] SOLID ${_DIM}D PNG1 N=1..${MAX_ORDER}")
+  foreach( _DISP_ORDER RANGE 1 ${MAX_ORDER} )
     genLibSolidMechanics(
       DIM ${_DIM}
       DISP_ORDER ${_DISP_ORDER}
@@ -14,7 +17,10 @@ endforeach()
 
 # iso-parametric
 foreach( _DIM 2 3)
-  foreach( _DISP_ORDER 2 3 4 )
+  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  feelpp_max( MAX_ORDER 2 ${_D_ORDER})
+  message(STATUS "[feelpp] SOLID ${_DIM}D PNGN N=2..${MAX_ORDER}")
+  foreach( _DISP_ORDER RANGE 2 ${MAX_ORDER} )
     genLibSolidMechanics(
       DIM ${_DIM}
       DISP_ORDER ${_DISP_ORDER}
