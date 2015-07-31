@@ -96,14 +96,12 @@ install:
 - $CXX --version
 - $CC --version
 - mkdir opt-$BUILD && cd opt-$BUILD && ../configure --build=$BUILDTYPE -v --cxxflags="$CXXFLAGS"
-  --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp
+  --std=c++$FEELPP_STD_CPP --prefix=$HOME/software/install/feelpp --max-order=1
 script:
 - make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
-- make -j1 feelpp_model_fluid
-- make -j1 feelpp_model_solidmechanics
-- make -j1 feelpp_model_fsi
+- make -j1 feelpp_models
 - make install-feelpp
 - ls $HOME/software/install/feelpp/include/feel
 
