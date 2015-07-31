@@ -520,6 +520,7 @@ crbSaddlePointOptions( std::string const& prefix )
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
         ( "crb.saddlepoint.orthonormalize0",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #0")
         ( "crb.saddlepoint.orthonormalize1",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #1")
+        ( "crb.saddlepoint.test-residual",Feel::po::value<bool>()->default_value( 0 ), "test residual evaluation")
         ;
 
     crboptions.add( backend_options("backend-Xh0") );
