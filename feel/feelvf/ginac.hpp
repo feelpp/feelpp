@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2012-10-15
 
    Copyright (C) 2012 Université de Strasbourg
@@ -23,13 +23,15 @@
 */
 /**
    \file ginac.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-10-15
 */
 #ifndef FEELPP_GINAC_HPP
 #define FEELPP_GINAC_HPP 1
 
 #include <ginac/ginac.h>
+#include <boost/fusion/container/vector.hpp>
+
 #include <boost/parameter/preprocessor.hpp>
 
 #include <boost/foreach.hpp>
@@ -405,7 +407,7 @@ expr( std::string const& s, std::string const& se, ExprT const& e, std::string f
     auto it = std::find_if( g.second.begin(), g.second.end(),
                             [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
     LOG_IF( WARNING, (it == g.second.end() ) ) << "invalid symbol " << se << " in expression " << s;
-    std::cout << "g.second.size() " << g.second.size() << "\n";
+    LOG(INFO) << "g.second.size() " << g.second.size() << "\n";
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
     return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, s, VFmap, filename, world ) );
@@ -639,6 +641,186 @@ laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", World
 {
     std::string exprDesc = (boost::format("laplacian(%1%)")% s.expression().exprDesc() ).str();
     return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+}
+
+template<int Order=2>
+using scalar_field_expression=Expr<GinacEx<Order>>;
+
+/**
+ * defines a dictionary of scalar fields
+ * 
+ * this data structure creates a dictionary of scalar fields, it associates a
+ * string to a Ginac Expr of rank 0.
+ * 
+ * \code
+ * auto e = expr("x+y:x:y");
+ * auto z = expr("0:x:y");
+ * map_scalar_field m { { "inlet", e }, { "wall", z } };
+ * \endcode
+ */
+template<int Order=2>
+struct map_scalar_field: public std::map<std::string,scalar_field_expression<Order>>
+{
+    typedef std::map<std::string,scalar_field_expression<Order>> super;
+    typedef super type;
+    using value_type = typename super::value_type;
+    map_scalar_field() = default;
+    map_scalar_field(std::initializer_list<value_type> __l ) : super( __l ) {}
+    map_scalar_field(map_scalar_field&& f ) = default;
+    map_scalar_field(map_scalar_field const& f ) = default;
+    map_scalar_field& operator=(map_scalar_field && f ) = default;
+    map_scalar_field& operator=(map_scalar_field const& f ) = default;
+    void setParameterValues( std::map<std::string,double> const& pv )
+    {
+        for( auto & f : *this )
+            f.second.setParameterValues( pv );
+    }
+    
+};
+
+typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
+
+template<int Order=2>
+struct map_scalar_fields: public std::map<std::string,std::vector<scalar_field_expression<Order>>>
+{
+    typedef std::map<std::string,std::vector<scalar_field_expression<Order>>> super;
+    typedef super type;
+    using value_type = typename super::value_type;
+    map_scalar_fields() = default;
+    map_scalar_fields(std::initializer_list<value_type> __l ) : super( __l ) {}
+    map_scalar_fields(map_scalar_fields&& f ) = default;
+    map_scalar_fields(map_scalar_fields const& f ) = default;
+    map_scalar_fields& operator=(map_scalar_fields && f ) = default;
+    map_scalar_fields& operator=(map_scalar_fields const& f ) = default;
+};
+
+template<int Order>
+std::string const&
+marker( std::pair<const std::string, scalar_field_expression<Order>> const& p  )
+{
+    return p.first;
+}
+template<int Order>
+scalar_field_expression<Order> const&
+expression( std::pair<const std::string, scalar_field_expression<Order>> const& p  ) 
+{
+    return p.second;
+}
+template<int Order>
+scalar_field_expression<Order>&
+expression( std::pair<const std::string, scalar_field_expression<Order>> & p  ) 
+{
+    return p.second;
+}
+
+template<int Order>
+std::string const&
+marker( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  )
+{
+    return p.first;
+}
+template<int Order>
+scalar_field_expression<Order> const&
+expression1( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+{
+    return p.second[0];
+}
+template<int Order>
+scalar_field_expression<Order>&
+expression1( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+{
+    return p.second[0];
+}
+
+template<int Order>
+scalar_field_expression<Order> const&
+expression2( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+{
+    return p.second[1];
+}
+template<int Order>
+scalar_field_expression<Order>&
+expression2( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+{
+    return p.second[1];
+}
+
+template<int Order>
+std::vector<scalar_field_expression<Order>> const&
+expression( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> const& p  ) 
+{
+    return p.second;
+}
+
+template<int Order>
+std::vector<scalar_field_expression<Order>>&
+expression( std::pair<const std::string, std::vector<scalar_field_expression<Order>>> & p  ) 
+{
+    return p.second;
+}
+
+
+template<int M, int N=1, int Order=2>
+using vector_field_expression=Expr<GinacMatrix<M,N,Order>>;
+
+template<int M, int N, int Order=2>
+using matrix_field_expression=vector_field_expression<M,N,Order>;
+
+/**
+ * defines a dictionary of vector fields
+ * 
+ * this data structure creates a dictionary of fields, it associates a string to
+ * a Ginac Expr of rank 1. In the case of vector fields the size of the vector
+ * field must be given
+ * 
+ * \code
+ * auto e = expr("{x,y}:x:y");
+ * auto z = expr("{0,0}:x:y");
+ * map_vector_field<2> m { { "inlet", e }, { "wall", z } };
+ * \endcode
+ */
+template<int M, int N=1, int Order=2>
+struct map_vector_field: public std::map<std::string,Expr<GinacMatrix<M,N,Order>>>
+{
+    typedef std::map<std::string,Expr<GinacMatrix<M,N,Order>>> super;
+    typedef super type;
+    using value_type = typename super::value_type;
+    map_vector_field() = default;
+    map_vector_field(std::initializer_list<value_type> __l ) : super( __l ) {}
+    map_vector_field(map_vector_field&& f ) = default;
+    map_vector_field(map_vector_field const& f ) = default;
+    map_vector_field& operator=(map_vector_field && f ) = default;
+    map_vector_field& operator=(map_vector_field const& f ) = default;
+    void setParameterValues( std::map<std::string,double> const& pv )
+    {
+        for( auto & f : *this )
+            f.second.setParameterValues( pv );
+    }    
+};
+
+/**
+ * define a matrix field map. providing M and N is required
+ */
+template<int M, int N, int Order=2>
+using map_matrix_field = map_vector_field<M,N,Order>;
+
+template<int M, int N, int Order>
+std::string const&
+marker( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p  )
+{
+    return p.first;
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> const&
+expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> const& p  ) 
+{
+    return p.second;
+}
+template<int M, int N, int Order>
+Expr<GinacMatrix<M,N,Order>> &
+expression( std::pair<const std::string, Expr<GinacMatrix<M,N,Order>>> & p  ) 
+{
+    return p.second;
 }
 
 } // vf

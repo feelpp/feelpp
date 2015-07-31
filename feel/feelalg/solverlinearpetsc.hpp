@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -242,6 +242,14 @@ public:
             bool transpose );
 
     /**
+     * @retun the Krylov SubsPace  data structure
+     */
+    KSP ksp()
+        {
+            this->init();
+            return M_ksp;
+        }
+    /**
      * Returns the raw PETSc preconditioner context pointer.  This allows
      * you to specify the PCShellSetApply() and PCShellSetSetUp() functions
      * if you desire.  Just don't do anything crazy like calling PCDestroy()!
@@ -283,6 +291,8 @@ private:
     void setPetscPreconditionerType ();
 
     void setPetscConstantNullSpace ();
+    void updateNullSpace( Mat A, Vec rhs );
+    void updateNearNullSpace( Mat A );
 
     // SLES removed from >= PETSc 2.2.0
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -30,6 +30,7 @@
 #include <boost/unordered_map.hpp>
 
 #include <feel/feelalg/matrixeigensparse.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
 
 namespace Feel
 {
@@ -225,37 +226,88 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
                                 Context const& on_context )
 {
     LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << M_mat.IsRowMajor;
-    Feel::detail::ignore_unused_variable_warning( rhs );
-    Feel::detail::ignore_unused_variable_warning( vals );
-    boost::unordered_map<int,std::set<int>> m;
-    for (int k=0; k<rows.size(); ++k)
-    {
-        for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
-        {
-            m[it.row()].insert(it.col());
-            value_type value = 1.0;
-            if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
-                value = it.value();
-            rhs.add( it.row(), -it.value() * vals(rows[k]) );
-            it.valueRef() = 0;
+    //std::cout << "M_mat \n " << M_mat << "\n";
+    //VectorEigen<value_type>* erhs = dynamic_cast<VectorEigen<value_type>*> ( &rhs );
+    //std::cout << "vec \n " << erhs->vec() << "\n";
 
-            if ( it.row() == it.col() )
+    if ( !on_context.test( ContextOn::ELIMINATION) )
+        return;
+
+    if ( !M_mat.IsRowMajor )
+    {
+        std::set<int> eliminatedRow;
+        for (int k=0; k<rows.size(); ++k)
+        {
+            eliminatedRow.insert( rows[k] );
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
             {
-                it.valueRef() = value;
-                rhs.set( it.row(), value * vals(rows[k]) );
+                value_type value = 1.0;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
+
+                if ( on_context.test( ContextOn::SYMMETRIC ) )
+                    if ( eliminatedRow.find( it.row() ) == eliminatedRow.end() )
+                        rhs.add( it.row(), -it.value() * vals(rows[k]) );
+
+                if ( it.row() == it.col() )
+                {
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else if ( on_context.test( ContextOn::SYMMETRIC ) )
+                {
+                    it.valueRef() = 0;
+                }
+
             }
         }
-    }
-    for(auto rit = m.begin();rit != m.end();++rit )
-    {
-        for (typename matrix_type::InnerIterator it(M_mat,rit->first); it; ++it)
+        // eliminated row
+#if 1
+        M_mat.prune([&eliminatedRow](int i, int j, value_type) {
+                return (i==j || eliminatedRow.find(i) == eliminatedRow.end() );
+            });
+#else
+        typedef int Index;
+        for(Index j=0; j< M_mat.outerSize(); ++j)
         {
-            double value = 1.0;
-            if( rit->second.find( it.row() ) != rit->second.end() )
+            Index previousStart = M_mat.outerIndexPtr()[j];
+            Index end = M_mat.outerIndexPtr()[j+1];
+            for(Index i=previousStart; i<end; ++i)
             {
-                // don't change diagonal, it was done in the first pass
-                if ( it.row() != it.col() )
+                if ( M_mat.data().index(i)!=j )
+                {
+                    if ( eliminatedRow.find(/*j*/M_mat.data().index(i)) != eliminatedRow.end() )
+                    {
+                        double theval=0.0;
+                        M_mat.coeffRef(M_mat.data().index(i),j ) = theval;
+                        M_mat.data().value(i) = theval;
+                    }
+                }
+            }
+        }
+#endif
+    }
+    else // rowMajor
+    {
+        CHECK( !on_context.test( ContextOn::SYMMETRIC ) ) << "symetric case not supported with row major\n";
+
+        for (int k=0; k<rows.size(); ++k)
+        {
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
+            {
+                value_type value = 1.0;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
+
+                if ( it.row() == it.col() )
+                {
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else
+                {
                     it.valueRef() = 0;
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -652,6 +652,37 @@ public:
     /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
+     * useSameDataMap : (opimisation) put at true if dataMapCol == dataMapRow and rows == cols for each proc
+     * checkAndFixRange : add missing dof entries in // ( typically a ghost dof present but not active dof associated )
+     */
+    virtual
+    boost::shared_ptr<MatrixSparse<T> >
+    createSubMatrix( std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols,
+                     bool useSameDataMap=false,
+                     bool checkAndFixRange=true ) const
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+        boost::shared_ptr<MatrixSparse<T> > res;
+        return res;
+    }
+
+    /**
+     * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
+     * row and column indices given in the "rows" and "cols" entries.
+     */
+    virtual
+    void
+    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                     std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols )
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+    }
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
      */
     virtual void createSubmatrix( MatrixSparse<T>& submatrix,
@@ -748,11 +779,10 @@ protected:
                                  const std::vector<size_type>& ,
                                  const std::vector<size_type>& ,
                                  const bool ) const
-    {
-        std::cerr << "Error! This function is not yet implemented in the base class!"
-                  << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
-    }
+        {
+            CHECK(0) << "getSubMatrix is not implemented in the base class MatrixSparse!"
+                     << std::endl;
+        }
 
     //! mpi communicator
     //mpi::communicator M_comm;

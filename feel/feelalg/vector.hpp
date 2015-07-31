@@ -165,6 +165,11 @@ public:
     }
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    virtual int reciprocal();
+
+    /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
@@ -230,6 +235,16 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<T> & operator= ( const std::vector<T> &v );
+
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      * \return the sum of the components of the vector
@@ -548,6 +563,22 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
+
+    /**
+     * Creates the subvector "subvector" from the indices in the
+     * "rows" array.  Similar to the create_submatrix routine for
+     * the SparseMatrix class, it is currently only implemented for
+     * PetscVectors.
+     */
+    virtual
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+            boost::shared_ptr<Vector<T> > res;
+            return res;
+        }
 
 protected:
 

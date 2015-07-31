@@ -22,18 +22,21 @@ fi
 cd $base_dir/www.feelpp.org
 
 git checkout master
+git pull --no-edit
+
 # the resulting static pages are in _site that is not tracked by github
 jekyll build
 git checkout gh-pages
+git pull --no-edit
+
+rsync -avz _site/ .
+git add -A
+git commit -m "Update web site" -a
 
 # Copy the generated doc from doxygen
 rsync -avz $gh_pages/ docs
 git add -A
 git commit -m "Update documentation" -a
-
-rsync -avz _site ./
-git add -A
-git commit -m "Update web site" -a
 
 git push
 

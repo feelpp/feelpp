@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -325,9 +325,21 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
 
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
-    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
-    solver.compute(A.mat());
-    x.vec() = solver.solve(b.vec());
+    if ( false )
+    {
+#if 0
+        // not compile with sparse matrix and row major
+        Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+#endif
+    }
+    else
+    {
+        Eigen::SparseLU<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+    }
 
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed

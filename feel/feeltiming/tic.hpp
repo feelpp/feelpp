@@ -70,7 +70,9 @@ inline void tic()
 
 inline double  toc( std::string const& msg = "", bool display = true )
 {
-    return Feel::details::sec_timer.toc( msg, display );
+    double t = Feel::details::sec_timer.toc( msg, display );
+    Environment::addTimer( msg, t );
+    return t;
 }
 } // time
 } // Feel

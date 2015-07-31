@@ -1,3 +1,6 @@
+
+[![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=develop)](https://travis-ci.org/feelpp/feelpp)
+
 ## Introduction
 
 [Feel++](www.feelpp.org) is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
@@ -12,7 +15,7 @@ Some basic installation procedure are available in the [INSTALL](INSTALL.md) fil
 
 ## Releases
 
-Here are the latest releases of Feel++ 
+Here are the latest releases of Feel++
 
    - Feel++ [0.99.0](https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1) [![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
 

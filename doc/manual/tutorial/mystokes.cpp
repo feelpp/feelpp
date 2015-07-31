@@ -158,6 +158,7 @@ int main(int argc, char**argv )
     auto u = U.element<0>();
     auto p = U.element<1>();
 
+    /// [marker_form2]
     // left hand side
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
@@ -165,6 +166,7 @@ int main(int argc, char**argv )
 
     a+= integrate(_range=elements(mesh),
                   _expr=-div(u)*idt(p)-divt(u)*id(p));
+    /// [marker_form2]
 
     auto syms = symbols<2>();
     auto u1 = parse( option(_name="functions.alpha").as<std::string>(), syms );
@@ -179,8 +181,10 @@ int main(int argc, char**argv )
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=trans(expr<2,1,5>( f, syms ))*id(u));
+    /// [marker_on]
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=expr<2,1,5>(u_exact,syms));
+    /// [marker_on]
 
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);

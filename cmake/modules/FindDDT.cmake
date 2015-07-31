@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-07-30
 #
-#  Copyright (C) 2013 Université de Strasbourg
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,9 +24,8 @@
 FIND_LIBRARY(DDT_DMALLOC_LIBRARY
   NAMES dmalloc
   PATHS
+  /opt/allinea/forge/lib
   /opt/allinea/tools/lib
-  /opt/allinea/tools/4.0/lib
-  /opt/allinea/tools/4.1/lib
   PATH_SUFFIXES
   64
   )

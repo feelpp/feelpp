@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -141,9 +141,7 @@ public:
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
 
-        if ( is_tensor2 )
-            std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
-
+#if 0
         if ( !( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                        m ) < 1e-10 ) )
             std::cout << "m1=" << m << "\n"
@@ -152,6 +150,7 @@ public:
 
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                               m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+#endif
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -263,12 +262,13 @@ public:
 
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
-
+#if 0
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
 
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                               m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+#endif
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 

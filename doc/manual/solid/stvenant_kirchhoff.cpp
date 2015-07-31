@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -38,7 +38,7 @@ makeOptions()
     ( "penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter" )
     ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
     ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-    ;
+        ;
     return stvenant_kirchhoffoptions.add( Feel::feel_options() );
 }
 
@@ -111,15 +111,15 @@ public:
         super(),
         M_lambda( doption(_name="lambda") ),
         M_Xh(),
-        dt( doption(_name="dt") ),
-        ft( doption(_name="ft") ),
+        dt( doption(_name="bdf.time-step") ),
+        ft( doption(_name="bdf.time-final") ),
         omega( doption(_name="omega") )
         {
             this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                                     % this->about().appName()
                                     % entity_type::name()
                                     % Order
-                                    % doption(_name="hsize")
+                                    % doption(_name="gmsh.hsize")
                 );
 
             /**
@@ -142,7 +142,7 @@ public:
                                                               _usenames=true,
                                                               _xmin=0., _xmax=20,
                                                               _ymin=-1., _ymax=1.,
-                                                              _h=meshSize ) );
+                                                              _h=doption("gmsh.hsize") ) );
 
             M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
             un2 = element_ptrtype( new element_type( M_Xh, "un2" ) );
@@ -170,7 +170,6 @@ private:
 
 private:
 
-    double meshSize;
     double M_lambda;
 
     functionspace_ptrtype M_Xh;

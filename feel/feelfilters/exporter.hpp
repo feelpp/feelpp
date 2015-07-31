@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,7 +6,8 @@
        Date: 2004-11-09
 
   Copyright (C) 2004 EPFL
-  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -59,6 +60,9 @@ enum file_type
  * \class Exporter
  * \brief export Feel generated data to some file formats
  * \ingroup Exporter
+ *
+ * \tparam MeshType     mesh type
+ * \tparam N            mesh geometrical order
  *
  * Use the visitor and factory pattern.
  *
@@ -139,6 +143,14 @@ public:
      */
     Exporter( po::variables_map const& vm,
               std::string const& exporter_prefix = "",
+              WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+
+    /**
+     * Constructor
+     * \param prefix the prefix for the file names of the exported data
+     * \param freq an integer giving the frequency at which the data should be saved
+     */
+    Exporter( std::string const& exporter_prefix,
               WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -157,7 +169,7 @@ public:
      * files.
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
-                                                         std::string prefix = Environment::about().appName(),
+                                                         std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     /**
@@ -167,6 +179,12 @@ public:
      */
     static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
+                                                         WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    /**
+     * Static function instantiating from the Exporter Factory an exporter using
+     * \p prefix for the prefix of the data files.
+     */    
+    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -304,6 +322,14 @@ public:
     }
 
     /**
+     * get the prefix to \p __prefix
+     */
+    std::string getPrefix()
+    {
+        return M_prefix;
+    }
+
+    /**
      * set the save frequency to \p __freq
      */
     Exporter<MeshType,N>* setFreq( int __freq )
@@ -368,13 +394,13 @@ public:
     void
     add( std::string const& name, F const& u )
         {
-            this->step( 0 )->add( this->prefix()+"."+name, u );
+            this->step( 0 )->add( name, u );
         }
 
     void
     addRegions()
         {
-            this->step( 0 )->addRegions( this->prefix() );
+            this->step( 0 )->addRegions( "" );
         }
     step_ptrtype step( double time )
     {
@@ -518,16 +544,16 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), soption("exporter.format")+"/"+name )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
+    auto e =  exporter_type::New( name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    if ( geo == "change_coords_only" )
+    if ( std::string(geo).compare("change_coords_only") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
-    else if ( geo == "change" )
+    else if ( std::string(geo).compare("change") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
     else // default
         e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );

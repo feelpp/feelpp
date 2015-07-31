@@ -10,10 +10,6 @@
 	path = projects/hifimagnet
 	url = https://github.com/feelpp/hifimagnet
     fetchRecurseSubmodules = on-demand
-[submodule "hamm"]
-	path = projects/hamm
-	url = https://github.com/feelpp/hamm
-    fetchRecurseSubmodules = on-demand
 [submodule "pmp"]
 	path = projects/pmp
 	url = https://github.com/feelpp/pmp
@@ -43,10 +39,6 @@
 	url = https://github.com/feelpp/chorus
     fetchRecurseSubmodules = on-demand
     branch = master
-[submodule "holo3"]
-	path = projects/holo3
-	url = https://github.com/feelpp/holo3
-    fetchRecurseSubmodules = on-demand
 [submodule "projects/map"]
 	path = projects/map
 	url = https://github.com/feelpp/map.git
@@ -68,15 +60,42 @@
 [submodule "contrib/nt2"]
 	path = contrib/nt2
 	url = https://github.com/feelpp/nt2.git
-[submodule "contrib/hpddm"]
-	path = contrib/hpddm
-	url = https://github.com/hpddm/hpddm.git
+	fetchRecurseSubmodules = on-demand
 [submodule "projects/tr"]
 	path = projects/tr
 	url = https://github.com/feelpp/tr.git
+	fetchRecurseSubmodules = on-demand
 [submodule "contrib/cereal"]
 	path = contrib/cereal
 	url = https://github.com/USCiLab/cereal
+	fetchRecurseSubmodules = on-demand
+[submodule "projects/lncmi"]
+	path = projects/lncmi
+	url = https://github.com/feelpp/lncmi.git
+	fetchRecurseSubmodules = on-demand
 [submodule "projects/eye2brain"]
 	path = projects/eye2brain
 	url = https://github.com/feelpp/eye2brain.git
+	fetchRecurseSubmodules = on-demand
+[submodule "contrib/hpddm"]
+	path = contrib/hpddm
+	url = https://github.com/feelpp/hpddm.git
+[submodule "projects/solodem"]
+	path = projects/solodem
+	url = https://github.com/feelpp/solodem.git
+[submodule "contrin/paralution"]
+	path = contrin/paralution
+	url = https://github.com/feelpp/paralution.git
+[submodule "contrib/paralution"]
+	path = contrib/paralution
+	url = https://github.com/feelpp/paralution.git
+[submodule "projects/holo3"]
+	path = projects/holo3
+	url = https://github.com/feelpp/holo3
+	fetchRecurseSubmodules = on-demand
+[submodule "contrib/jsonlab"]
+	path = contrib/jsonlab
+	url = https://github.com/fangq/jsonlab.git
+[submodule "projects/hamm"]
+	path = projects/hamm
+	url = https://github.com/feelpp/hamm.git

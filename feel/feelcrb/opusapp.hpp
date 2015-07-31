@@ -50,28 +50,19 @@
 namespace Feel
 {
 po::options_description opusapp_options( std::string const& prefix );
-std::string _o( std::string const& prefix, std::string const& opt )
-{
-    std::string o = prefix;
-
-    if ( !o.empty() )
-        o += ".";
-
-    return o + opt;
-}
-
+std::string _o( std::string const& prefix, std::string const& opt );
 
 enum class SamplingMode
 {
     RANDOM = 0, EQUIDISTRIBUTED = 1, LOGEQUIDISTRIBUTED = 2, READFROMCOMMANDLINE = 3
 };
 
-#define prec 4
+#define oprec 4
 #define Pdim 7
-#define fill ' '
-#define dmanip std::scientific << std::setprecision( prec )
-#define hdrmanip(N) std::setw(N) << std::setfill(fill) << std::right
-#define tabmanip(N) std::setw(N) << std::setfill(fill) << std::right << dmanip
+#define ofill ' '
+#define dmanip std::scientific << std::setprecision( oprec )
+#define hdrmanip(N) std::setw(N) << std::setfill(ofill) << std::right
+#define tabmanip(N) std::setw(N) << std::setfill(ofill) << std::right << dmanip
 
 
 /**
@@ -358,7 +349,26 @@ public:
             }
         }
 
+    element_type paraFeelRun( std::map<std::string,double> mu_map, int N=-1)
+        {
+            vectorN_type time_crb;
+            double online_tol = doption(_name="crb.online-tolerance");
+            bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
+            parameter_type mu;
+            for( int i=0; i<mu.size(); i++)
+            {
+                std::string mu_str = (boost::format("mu%1%") %i).str();
+                mu(i)=mu_map[mu_str];
+            }
+            auto o = crb->run( mu, time_crb, online_tol, N, print_rb_matrix);
+            auto solutions = o.template get<2>();
+            auto uN = solutions.template get<0>();
+            auto WN = crb->wn();
+            auto u_crb = crb->expansion( uN[uN.size()-1], N, WN );
+            return u_crb;
+        }
 
+    
     FEELPP_DONT_INLINE
     void run()
         {
@@ -2085,7 +2095,7 @@ private:
             {
                 std::ostringstream s;
                 s << "mu" << i;
-                os  << hdrmanip( prec+7 ) << s.str();
+                os  << hdrmanip( oprec+7 ) << s.str();
             }
 
             BOOST_FOREACH( auto output, outputhdrs )
@@ -2094,14 +2104,14 @@ private:
             }
             os << "\n";
 
-            return N*( prec+7 )+outputhdrs.size()*15;
+            return N*( oprec+7 )+outputhdrs.size()*15;
         }
     void printEntry( std::ostream& os,
                      typename ModelType::parameter_type const& mu,
                      std::vector<double> const& outputs )
         {
             for ( int i = 0; i < mu.size(); ++i )
-                os  << std::right <<std::setw( prec+7 ) << dmanip << mu[i];
+                os  << std::right <<std::setw( oprec+7 ) << dmanip << mu[i];
 
             BOOST_FOREACH( auto o, outputs )
             {

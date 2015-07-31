@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-20
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -250,6 +250,8 @@ public:
         CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
+        if ( boption(prefixvm(M_prefix,"ts.display-stats")) )
+            Environment::saveTimers( true );
         M_time += M_dt;
         ++M_iteration;
         return M_time;
@@ -301,17 +303,26 @@ public:
         return  M_rankProcInNameOfFiles ;
     }
 
+    //! return file format saved and loaded : binary or hdf5
+    std::string fileFormat() const { return M_fileFormat; }
+
+
     WorldComm const& worldComm() const
     {
         return M_worldComm;
     }
+
+    /**
+     * @return prefix for the TimeStepping method options
+     */
+    std::string const& prefix() const { return M_prefix; }
 
     TSStragegy strategy() const
     {
         //return M_strategy;
         return TSStragegy::TS_STRATEGY_DT_CONSTANT;
     }
-
+    bool isSteady() const { return M_steady; }
 
     void setPathSave( std::string s )
     {
@@ -331,6 +342,7 @@ public:
     }
     void setSteady( bool steady = true )
     {
+        M_steady = steady;
         if ( steady )
         {
             M_dt=1e30;
@@ -361,6 +373,10 @@ public:
     {
         M_rankProcInNameOfFiles = b;
     }
+    void setfileFormat( std::string s )
+    {
+        M_fileFormat = s;
+    }
 
     virtual void print() const
     {
@@ -381,6 +397,9 @@ protected:
     //! iteration
     mutable int M_iteration;
 
+    //! is steady
+    bool M_steady;
+    
     //! initial time to start
     double M_Ti;
 
@@ -432,8 +451,13 @@ protected:
     //! put the rank of the processor in generated files
     bool M_rankProcInNameOfFiles;
 
+    //! file format saved and loaded : binary or hdf5
+    std::string M_fileFormat;
+
     //!  mpi communicator tool
     WorldComm M_worldComm;
+
+    std::string M_prefix;
 
 protected:
     void init();

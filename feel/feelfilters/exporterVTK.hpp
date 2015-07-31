@@ -1,4 +1,4 @@
-/* -* -mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -* -mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -41,6 +41,15 @@
 #include <cstring>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
@@ -87,10 +96,18 @@
 #include <vtkCPPythonScriptPipeline.h>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
-#endif
 
-#endif
+#include <feel/feelfilters/vtkBaseInsituPipeline.h>
+#endif // FEELPP_VTK_INSITU_ENABLED
 
+#endif // VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
+
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 namespace Feel
 {
@@ -188,7 +205,8 @@ public:
 
     ExporterVTK( WorldComm const& worldComm = Environment::worldComm() );
     ExporterVTK( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterVTK( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterVTK( ExporterVTK const & __ex );
 
@@ -239,6 +257,11 @@ public:
        save the timeset
      */
     void save() const;
+
+    /** 
+     * Returns a VTK structure representing the last timestep 
+     */ 
+    vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
 
     /**
      * export mesh

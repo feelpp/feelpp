@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-03
 #
 #  Copyright (C) 2012 Universit� Joseph Fourier (Grenoble I)
@@ -39,6 +39,7 @@ set(FEELPP_WORK_DIR ${WORK_DIR})
 set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
 
 #Options
+set(DEFAULT_TEST_TIMEOUT "60")
 set(ENABLE_ALTIVEC OFF)
 set(ENABLE_BUILD_STATIC OFF)
 set(ENABLE_DOXYGEN OFF)

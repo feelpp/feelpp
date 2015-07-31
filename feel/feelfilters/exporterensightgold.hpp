@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -124,7 +124,8 @@ public:
     */
     ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex );
 
@@ -256,11 +257,12 @@ private:
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
-    mutable int time_index;
     mutable std::set<int> M_markersToWrite;
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */
     mutable int M_timeExponent;
+    // file position for explicit pointers
+    mutable MPI_Offset posInFile;
 };
 
 

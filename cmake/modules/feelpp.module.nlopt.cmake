@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-19
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,8 @@ if ( FEELPP_ENABLE_NLOPT )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/nlopt
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE git.nlopt.log
+        ERROR_FILE git.nlopt.log
         )
       MESSAGE(STATUS "Git submodule contrib/nlopt updated.")
     else()

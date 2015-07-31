@@ -13,6 +13,8 @@ Options:
  -d, --debug                         debug mode
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
+     --std=c++xx                     c++ standard c++11, c++14, c++1z
+     --cxxflags                      override cxxflags 
      --prefix=PATH                   define install path
  -v, --verbose                       enable verbose output
  -h, --help                          help page
@@ -26,6 +28,7 @@ EOT
 _HAS_ERROR=no
 _WANT_HELP=no
 PROJECT_INSTALL_PREFIX=`pwd`
+PROJECT_STD_CPP=11
 PROJECTSRCROOT=`dirname $0`
 GENERATOR="Unix Makefiles"
 
@@ -50,6 +53,7 @@ _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
+CXXFLAGS=
 ENABLE_NUMA=TRUE
 ENABLE_CUDA=TRUE
 
@@ -128,8 +132,16 @@ while [ -n "$1" ]; do
        BUILDTYPE=Release
        ;;
 #   --og)
-#       _WANT_OG=no
-#       ;;
+   #       _WANT_OG=no
+   #       ;;
+   --std=c++*)
+       PROJECT_STD_CPP=`echo $1 | sed "s,^--std=c++\(.*\),\1,"`
+       echo "using c++$PROJECT_STD_CPP..."
+       export PROJECT_STD_CPP
+       ;;   
+   --cxxflags=*)
+       CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
+       ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
        LOCAL_CONFIG_DIR=CMake.local
@@ -178,9 +190,11 @@ echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
 echo "# Do not edit" > cmake.configure
 if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
   echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+  echo "SET(CMAKE_SKIP_RPATH ON)" >> cmake.configure
 fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++11, c++14 or c++1z\")"  >> cmake.configure
 echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH "Project root")" >> cmake.configure
 echo "SET(ARCH \"`arch`\" CACHE STRING \"Project ARCH\" FORCE)" >> cmake.configure
 if [ "X${MKL_ROOT}" != "X" ]; then
@@ -214,6 +228,10 @@ echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root direc
 fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
 echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+fi
+if [ "X${CXXFLAGS}" != "X" ]; then
+    echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
+    echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure
 fi
 #if [ "X${_WANT_OG}" != "X" ]; then
 #echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure

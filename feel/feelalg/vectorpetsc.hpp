@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -139,21 +139,33 @@ public:
      * This allows ownership of v to remain with the original creator,
      * and to simply provide additional functionality with the VectorPetsc.
      */
-    VectorPetsc( Vec v )
+    VectorPetsc( Vec v, bool duplicate = false )
         :
         super(),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
-    VectorPetsc( Vec v, datamap_ptrtype const& dm )
+    VectorPetsc( Vec v, datamap_ptrtype const& dm, bool duplicate = false )
         :
         super( dm ),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
@@ -372,6 +384,16 @@ public:
     //@{
 
     /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+
+    /**
      * Call the assemble functions
      */
     void close ()
@@ -553,6 +575,11 @@ public:
     void add ( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    int reciprocal();
+
+    /**
      * @return the minimum element in the vector.
      * In case of complex numbers, this returns the minimum
      * Real part.
@@ -637,6 +664,14 @@ public:
     value_type dot( Vector<T> const& __v );
 
     /**
+     * This function creates a vector which is defined
+     * by the row indices given in the "rows" entries.
+     */
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const;
+
+    /**
      * Serialization for PETSc VECSEQ
      */
     template<class Archive>
@@ -659,7 +694,6 @@ public:
         VecRestoreArray(this->vec(), &array);
     }
     //@}
-
 
 
 protected:
@@ -717,7 +751,7 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
     VectorPetscMPI( datamap_ptrtype const& dm );
 

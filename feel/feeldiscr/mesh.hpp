@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -66,9 +66,6 @@
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomapinv.hpp>
 
-
-
-
 #include <boost/preprocessor/comparison/less.hpp>
 #include <boost/preprocessor/logical/and.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -86,6 +83,8 @@
 
 namespace Feel
 {
+enum class IOStatus { isLoading, isSaving };
+
 const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
 const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
 const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
@@ -140,23 +139,23 @@ template<typename Mesh> class Partitioner;
 template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
-public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
-    mpl::identity<Mesh0D<GeoShape > >,
-    typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-    mpl::identity<Mesh1D<GeoShape > >,
-    typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-    mpl::identity<Mesh2D<GeoShape> >,
-    mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
-public boost::addable<Mesh<GeoShape,T,Tag> >,
-public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public mpl::if_<is_0d<GeoShape>,
+                        mpl::identity<Mesh0D<GeoShape > >,
+                        typename mpl::if_<is_1d<GeoShape>,
+                                          mpl::identity<Mesh1D<GeoShape > >,
+                                          typename mpl::if_<is_2d<GeoShape>,
+                                                            mpl::identity<Mesh2D<GeoShape> >,
+                                                            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
+        public boost::addable<Mesh<GeoShape,T,Tag> >,
+        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
-            mpl::identity<Mesh0D<GeoShape> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-            mpl::identity<Mesh1D<GeoShape> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-            mpl::identity<Mesh2D<GeoShape> >,
-            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type super;
+    using super = typename mpl::if_<is_0d<GeoShape>,
+                                    mpl::identity<Mesh0D<GeoShape > >,
+                                    typename mpl::if_<is_1d<GeoShape>,
+                                                      mpl::identity<Mesh1D<GeoShape > >,
+                                                      typename mpl::if_<is_2d<GeoShape>,
+                                                                        mpl::identity<Mesh2D<GeoShape> >,
+                                                                        mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type;
 public:
 
 
@@ -176,7 +175,7 @@ public:
     //@{
     typedef Mesh<GeoShape,T,Tag> type;
     typedef boost::shared_ptr<type> ptrtype;
-    
+
     typedef T value_type;
     typedef GeoShape shape_type;
     typedef typename super::return_type return_type;
@@ -214,6 +213,11 @@ public:
         typedef boost::shared_ptr<type> ptrtype;
     };
 
+    template<size_type ContextID>
+    using gmc_type = typename gmc<ContextID>::type;
+    template<size_type ContextID>
+    using gmc_ptrtype = typename gmc<ContextID>::ptrtype;
+
     typedef Mesh<shape_type, T, Tag> self_type;
     typedef self_type mesh_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -227,18 +231,20 @@ public:
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
 
-    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                              mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
-                              mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type P1_mesh_type;
+
+    using P1_mesh_type = typename mpl::if_<is_simplex<GeoShape>,
+                                           mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
+                                           mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type ;
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
     template<int TheTag>
     struct trace_mesh
     {
+        static const int d = (GeoShape::nDim==0)?0:GeoShape::nDim-1;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
-                                  mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+                                  mpl::identity< Mesh< Simplex< d,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<d,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
         typedef boost::shared_ptr<type> ptrtype;
         typedef boost::shared_ptr<const type> const_ptrtype;
     };
@@ -296,8 +302,6 @@ public:
      */
     //@{
 
-
-
     /**
      * @brief get the global number of elements
      * @details it requires communication in parallel to
@@ -305,6 +309,12 @@ public:
      * @return the global number of elements
      */
     size_type numGlobalElements() const { return M_numGlobalElements; }
+
+    /**
+     * @return the maximum number of elements over all subdomains
+     */
+    size_type maxNumElements() const { return M_maxNumElements; }
+
     /**
      * @brief get the global number of faces
      * @details it requires communication in parallel to
@@ -314,6 +324,11 @@ public:
     size_type numGlobalFaces() const { return M_numGlobalFaces; }
 
     /**
+     * @return the maximum number of faces over all subdomains
+     */
+    size_type maxNumFaces() const { return M_maxNumFaces; }
+
+    /**
      * @brief get the global number of edges
      * @details it requires communication in parallel to
      * retrieve and sum the number of edges in each subdomain.
@@ -321,6 +336,10 @@ public:
      */
     size_type numGlobalEdges() const { return M_numGlobalEdges; }
 
+    /**
+     * @return the maximum number of edges over all subdomains
+     */
+    size_type maxNumEdges() const { return M_maxNumEdges; }
 
     /**
      * @brief get the global number of points
@@ -331,6 +350,11 @@ public:
     size_type numGlobalPoints() const { return M_numGlobalPoints; }
 
     /**
+     * @return the maximum number of edges over all subdomains
+     */
+    size_type maxNumPoints() const { return M_maxNumPoints; }
+
+    /**
      * @brief get the global number of vertices
      * @details it requires communication in parallel to
      * retrieve and sum the number of vertices in each subdomain.
@@ -339,19 +363,37 @@ public:
     size_type numGlobalVertices() const { return M_numGlobalVertices; }
 
     /**
+     * @return the maximum number of vertices over all subdomains
+     */
+    size_type maxNumVertices() const { return M_maxNumVertices; }
+
+    /**
+     * set the global number of points, edges, faces and elements in the mesh
+     */
+    void setNumGlobalElements( std::vector<size_type> I )
+        {
+            CHECK(I.size()==4) << "Invalid information data on elements: num points, num edges, num faces, num elements ";
+            M_numGlobalPoints = I[0];
+            M_numGlobalEdges = I[1];
+            M_numGlobalFaces = I[2];
+            M_numGlobalElements = I[3];
+
+        }
+    /**
      * @brief compute the global number of elements,faces,points and vertices
      * @details it requires communications in parallel to
      * retrieve and sum the contribution of each subdomain.
      */
-    void updateNumGlobalElements()
+    template<typename MT>
+    void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
         //int ne = numElements();
         int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                 this->endElementWithProcessId( this->worldComm().rank() ) );
         int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
                                 this->endFaceWithProcessId( this->worldComm().rank() ) );
-        int ned = 0;/*std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
-                      this->endEdgeWithProcessId( this->worldComm().rank() ) );*/
+        int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
+                                this->endEdgeWithProcessId( this->worldComm().rank() ) );
         int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
                                 this->endPointWithProcessId( this->worldComm().rank() ) );
 
@@ -361,16 +403,30 @@ public:
 #if BOOST_VERSION >= 105500
             std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
             mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
+            std::vector<int> maxs { (int)this->numElements(), 
+                    (int)this->numFaces(), 
+                    (int)this->numEdges(), 
+                    (int)this->numPoints(), 
+                    (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
 #else
-            std::vector<int> locals{ ne, nf, ned, np, (int)this->numVertices() };
+            std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
             std::vector<int> globals( 5, 0 );
             mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
+            std::vector<int> maxs( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
 #endif
             M_numGlobalElements = globals[0];
             M_numGlobalFaces = globals[1];
             M_numGlobalEdges = globals[2];
             M_numGlobalPoints = globals[3];
             M_numGlobalVertices = globals[4];
+
+            M_maxNumElements = maxs[0];
+            M_maxNumFaces = maxs[1];
+            M_maxNumEdges = maxs[2];
+            M_maxNumPoints = maxs[3];
+            M_maxNumVertices = maxs[4];
         }
         else
         {
@@ -379,8 +435,75 @@ public:
             M_numGlobalEdges = ned;
             M_numGlobalPoints = np;
             M_numGlobalVertices = this->numVertices();
+
+            M_maxNumElements = ne;
+            M_maxNumFaces = nf;
+            M_maxNumEdges = ned;
+            M_maxNumPoints = np;
+            M_maxNumVertices = this->numVertices();
         }
     }
+
+    template<typename MT>
+    void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
+    {
+        //int ne = numElements();
+        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                this->endElementWithProcessId( this->worldComm().rank() ) );
+        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
+                                this->endFaceWithProcessId( this->worldComm().rank() ) );
+        int ned = 0;
+        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
+                                this->endPointWithProcessId( this->worldComm().rank() ) );
+
+
+        if ( this->worldComm().localSize() >1 )
+        {
+#if BOOST_VERSION >= 105500
+            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
+            std::vector<int> maxs { (int)this->numElements(), 
+                    (int)this->numFaces(), 
+                    (int)this->numEdges(), 
+                    (int)this->numPoints(), 
+                    (int)this->numVertices() };
+            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
+#else
+            std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
+            std::vector<int> globals( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
+            std::vector<int> maxs( 5, 0 );
+            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
+#endif
+            M_numGlobalElements = globals[0];
+            M_numGlobalFaces = globals[1];
+            M_numGlobalEdges = globals[2];
+            M_numGlobalPoints = globals[3];
+            M_numGlobalVertices = globals[4];
+
+            M_maxNumElements = maxs[0];
+            M_maxNumFaces = maxs[1];
+            M_maxNumEdges = maxs[2];
+            M_maxNumPoints = maxs[3];
+            M_maxNumVertices = maxs[4];
+        }
+        else
+        {
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = this->numVertices();
+
+            M_maxNumElements = ne;
+            M_maxNumFaces = nf;
+            M_maxNumEdges = ned;
+            M_maxNumPoints = np;
+            M_maxNumVertices = this->numVertices();
+        }
+    }
+
+
     /**
      * @return the topological dimension
      */
@@ -522,6 +645,19 @@ public:
         return invalid_size_type_value;
     }
     /**
+     * @return the marker name associated to the \p marker id
+     */
+    std::string markerName( size_type marker ) const
+        {
+            for( auto const& n : M_markername )
+            {
+                if (n.second[0] == marker )
+                    return n.first;
+            }
+            return std::string();
+        }
+
+    /**
      * @return the topological dimension associated to the \p marker
      */
     size_type markerDim( std::string const& marker ) const
@@ -643,10 +779,7 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        std::vector<size_type> data(2);
-        data[0]=__id;
-        data[1]=__topoDim;
-        M_markername[__name]=data;
+        M_markername[__name] = { static_cast<size_type>(__id), static_cast<size_type>(__topoDim) };
     }
     /**
       * @return true if all markers are defined in the mesh, false otherwise
@@ -864,6 +997,41 @@ public:
      */
     void recv( int p, int tag );
 
+    void saveMD(std::ostream &out)
+    {
+      out << "| Shape              |" << Shape << "|\n";
+      out << "|---|---|\n";
+      out << "| DIM              |" << dimension() << "|\n";
+      out << "| Order              |" << nOrder << "|\n";
+      out << "| hMin              |" << hMin() << "|\n";
+      out << "| hMax              |" << hMax() << "|\n";
+      out << "| hAverage              |" << hAverage() << "|\n";
+      out << "| nPoints              |" << this->numPoints() << "|\n";
+      out << "| nEdges              |" << this->numEdges() << "|\n";
+      out << "| nFaces              |" << this->numFaces() << "|\n";
+      out << "| nVertices              |" << this->numVertices() << "|\n\n";
+    }
+#if defined(FEELPP_HAS_HDF5)
+    /**
+     * load mesh in hdf5
+     */
+    void loadHDF5( std::string const& filename ) { ioHDF5( IOStatus::isLoading, filename ); }
+
+    /**
+     * save mesh in hdf5
+     */
+    void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
+#endif
+
+
+private:
+#if defined(FEELPP_HAS_HDF5)
+    /**
+     * save mesh in hdf5
+     */
+    void ioHDF5( IOStatus status, std::string const& filename );
+#endif
+public:
     /**
      * encode the mesh data structure into a tighter data structure and to avoid
      * pointers in order to serialize it for saving/loading and
@@ -1029,6 +1197,11 @@ public:
      * properly \p setComponents(), \p components()
      */
     void updateForUse();
+
+    /**
+     * update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+     */
+    void updateMeasures();
 
     void meshModified()
         {
@@ -1248,6 +1421,7 @@ public:
             M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
             M_doExtrapolation( L.M_doExtrapolation ),
+            M_gic( L.M_gic ), M_gic1( L.M_gic1 ),
             M_barycenter( L.M_barycenter ),
             M_barycentersWorld( L.M_barycentersWorld )
         {}
@@ -1483,6 +1657,8 @@ public:
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
+        mutable boost::shared_ptr<gmc_inverse_type> M_gic;
+        mutable boost::shared_ptr<gmc1_inverse_type> M_gic1;
 
         node_type M_barycenter;
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
@@ -1589,6 +1765,7 @@ private:
 
     //! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
+    size_type M_maxNumElements, M_maxNumFaces, M_maxNumEdges, M_maxNumPoints, M_maxNumVertices;
 
     bool M_is_gm_cached = false;
     gm_ptrtype M_gm;
@@ -1629,7 +1806,7 @@ private:
     boost::multi_array<element_edge_type,2> M_e2e;
 
     /**
-     * marker name disctionnary ( std::string -> <int,int> )
+     * marker name dictionnary ( std::string -> <int,int> )
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */
@@ -2191,6 +2368,7 @@ struct MeshPoints
     int globalNumberOfPoints() const { return global_npts; }
     int globalNumberOfElements() const { return global_nelts; }
 
+    std::vector<int> numberOfPoints, numberOfElements;
     int global_nelts{0}, global_npts{0};
     std::vector<int32_t> ids;
     std::map<int32_t, int32_t> new2old;
@@ -2212,7 +2390,7 @@ struct MeshPoints
  * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
  * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
  * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
- * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction)
+ * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
  */
 template<typename T>
 template<typename MeshType, typename IteratorType>
@@ -2227,7 +2405,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     for( auto eit = it ; eit != en; ++eit )
     {
         auto const& elt = boost::unwrap_ref( *eit );
-        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
+        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
         {
             int pid = elt.point( j ).id();
             auto ins = nodeset.insert( pid );
@@ -2237,8 +2415,11 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                 { ids.push_back( p + startIndex ); }
                 else
                 { ids.push_back( pid ); }
+                /* old id -> new id */
                 old2new[pid]=ids[p];
+                /* old id -> new id */
                 new2old[ids[p]]=pid;
+                /* old id -> index of the new id */
                 nodemap[pid] = p;
                 ++p;
             }
@@ -2272,9 +2453,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         if ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
-            { coords[nv+i] = ( T ) p.node()[1]; }
+            { coords[nv+i] = ( T )( p.node()[1] ); }
             else
-            { coords[3*i+1] = ( T ) p.node()[1]; }
+            { coords[3*i+1] = ( T )( p.node()[1] ); }
         }
         /* Fill 2nd components with 0 if told to do so */
         else
@@ -2291,9 +2472,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         if ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
-            { coords[2*nv+i] = T( p.node()[2] ); }
+            { coords[2*nv+i] = ( T )( p.node()[2] ); }
             else
-            { coords[3*i+2] = T( p.node()[2] ); }
+            { coords[3*i+2] = ( T )( p.node()[2] ); }
         }
         /* Fill 3nd components with 0 if told to do so */
         else
@@ -2311,14 +2492,16 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     /* number of local elements */
     int __ne = std::distance( it, en );
 
-    /* only do this resize if we have at least one elements in the iterator */
+    /* only do this resize if we have at least one element in the iterator */
     /* otherwise it will segfault */
     if(it != en)
     {
-        elem.resize( __ne*boost::unwrap_ref( *it ).numLocalVertices );
+        elem.resize( __ne * MeshType::element_type::numPoints );
         //elem.resize( __ne*mesh->numLocalVertices() );
         elemids.resize( __ne );
     }
+
+    int tcount = 0;
 
     /* build the array containing the id of each vertex for each element */
     elt_it = it;
@@ -2329,12 +2512,12 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         elemids[e] = elt.id()+1;
         //std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
         //for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
-        for ( size_type j = 0; j < elt.numLocalVertices; j++ )
+        for ( size_type j = 0; j < MeshType::element_type::numPoints ; j++ )
         {
             //std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
             //std::cout << elt.point( j ).id() << std::endl;
             // ensight id start at 1
-            elem[e*elt.numLocalVertices+j] = old2new[elt.point( j ).id()];
+            elem[e * MeshType::element_type::numPoints + j] = old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
                 << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]
@@ -2365,6 +2548,14 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     std::vector<std::vector<int>> ospe;
 
     mpi::all_gather( worldComm.comm(), ost, ospe );
+
+    /* copy information about number of points/elements
+     * per process in a local array */
+    for( size_type i = 0; i < ospe.size(); i++)
+    {
+        numberOfPoints.push_back(ospe[i][0]);
+        numberOfElements.push_back(ospe[i][1]);
+    }
 
     /* compute offsets to shift the point and element ids */
     /* regarding to the processor rank */
@@ -2430,6 +2621,7 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 
 //#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
+# include <feel/feeldiscr/meshio.hpp>
 //#endif //
 
 #endif /* FEELPP_MESH_HPP */

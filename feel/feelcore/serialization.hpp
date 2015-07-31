@@ -197,6 +197,37 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
+template<class Archive>
+void load( Archive & ar,
+           Eigen::MatrixXf & t,
+           const unsigned int file_version )
+{
+    int n0;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    int n1;
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( n0, n1 );
+    ar >> make_array( t.data(), t.rows()*t.cols() );
+}
+template<typename Archive>
+void save( Archive & ar,
+           const Eigen::MatrixXf & t,
+           const unsigned int file_version )
+{
+    int n0 = t.rows();
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    int n1 = t.cols();
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.rows()*t.cols() );
+}
+template<class Archive>
+void serialize( Archive & ar,
+                Eigen::MatrixXf& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
 
 //
 // VectorXd
@@ -233,9 +264,9 @@ void serialize( Archive & ar,
 //
 // Matrix<N,M>
 //
-template<int N, int M, class Archive>
+template<typename T, int N, int M, class Archive>
 void load( Archive & ar,
-           Eigen::Matrix<double,N,M> & t,
+           Eigen::Matrix<T,N,M> & t,
            const unsigned int file_version )
 {
     int n0;
@@ -244,9 +275,9 @@ void load( Archive & ar,
     ar >> BOOST_SERIALIZATION_NVP( n1 );
     ar >> make_array( t.data(), n0*n1 );
 }
-template<int N, int M, typename Archive>
+template<typename T, int N, int M, typename Archive>
 void save( Archive & ar,
-           const Eigen::Matrix<double,N,M> & t,
+           const Eigen::Matrix<T,N,M> & t,
            const unsigned int file_version )
 {
     int n0 = t.rows();
@@ -255,9 +286,9 @@ void save( Archive & ar,
     ar << BOOST_SERIALIZATION_NVP( n1 );
     ar << boost::serialization::make_array( t.data(), n0*n1 );
 }
-template<int N, int M, class Archive>
+template<typename T, int N, int M, class Archive>
 void serialize( Archive & ar,
-                Eigen::Matrix<double,N,M>& t,
+                Eigen::Matrix<T,N,M>& t,
                 const unsigned int file_version )
 {
     split_free( ar, t, file_version );

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -42,6 +42,10 @@
 #include <parallel_for.h>
 #include <blocked_range.h>
 #endif // FEELPP_HAS_TBB
+
+#ifdef FEELPP_HAS_HDF5
+#include <feel/feelcore/hdf5.hpp>
+#endif
 
 namespace Feel
 {
@@ -227,6 +231,17 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
 }
 
 template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_global_values_updated( false )
+{
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
+}
+
+template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
@@ -235,6 +250,14 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
 {
     //this->init( m.size(), m.size(), false );
 }
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
+{}
+
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range )
     :
@@ -248,6 +271,14 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     this->init( invalid_size_type_value, M_vec.size(), true );
 
 }
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
+{}
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range )
@@ -615,11 +646,9 @@ template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::checkInvariant() const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( this->localSize() <= this->size() )
-    ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( M_vec.size() == this->localSize() )
-    ( M_vec.size() )( this->localSize() ).error( "vector invalid size" );
+    DCHECK ( this->isInitialized() ) <<  "vector not initialized" ;
+    DCHECK ( this->localSize() <= this->size() ) << "vector invalid size: " << this->size() << "," << this->localSize();
+    DCHECK ( this->localSize() == M_vec.size() ) << "vector invalid size: " << M_vec.size() << "," << this->localSize();
     DCHECK( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() ||
             (this->localSize()==0 && this->comm().globalSize()>1 ) )
         << "vector invalid size"
@@ -715,6 +744,102 @@ VectorUblas<T,Storage>::dot( Vector<T> const& __v )
     return global_in_prod;
 
 }
+
+#ifdef FEELPP_HAS_HDF5
+
+template<typename T, typename Storage>
+void
+VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
+{
+    bool useTransposedStorage = true;
+    const int dimsComp0 = (useTransposedStorage)? 1 : 0;
+    const int dimsComp1 = (useTransposedStorage)? 0 : 1;
+    std::vector<uint> sizeValues(1, this->map().nLocalDofWithGhost() );
+    hsize_t dims[2];
+    dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;
+    hsize_t dims2[2];
+
+    dims2[dimsComp0] = sizeValues.size();dims2[dimsComp1] = 1;
+    hsize_t offset[2];
+    offset[dimsComp0] = this->comm().localRank(); offset[dimsComp1] = 0;
+
+    size_type nLocalDofWithGhostTotal = 0;
+    for (rank_type p=0 ; p < this->comm().localSize() ; ++p )
+        nLocalDofWithGhostTotal += this->map().nLocalDofWithGhost( p );
+
+    hsize_t dimsElt[2];
+    dimsElt[dimsComp0] = nLocalDofWithGhostTotal;//this->map().nDof();
+    dimsElt[dimsComp1] = 1;
+
+    hsize_t dimsElt2[2];
+    dimsElt2[dimsComp0] = this->map().nLocalDofWithGhost();
+    dimsElt2[dimsComp1] = 1;
+    hsize_t offsetElt[2];
+    size_type offsetCount = 0;
+    for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
+        offsetCount += this->map().nLocalDofWithGhost( p );
+
+    offsetElt[dimsComp0] = offsetCount;
+    offsetElt[dimsComp1] = 0;
+
+    HDF5 hdf5;
+    hdf5.openFile( filename, this->comm().localComm(), isLoad );
+
+    if ( isLoad )
+    {
+        if ( false )
+        {
+            std::vector<uint> sizeValuesReload( 1 );
+            hdf5.openTable( "size",dims );
+            hdf5.read( "size", H5T_NATIVE_UINT, dims2, offset, sizeValuesReload.data() );
+            hdf5.closeTable( "size" );
+            CHECK( sizeValuesReload[0] == this->map().nLocalDofWithGhost() ) << "error : must be equal "  << sizeValuesReload[0] << " " << this->map().nLocalDofWithGhost();
+        }
+
+        hdf5.openTable( "element",dimsElt );
+        if ( this->map().nLocalDofWithGhost() > 0 )
+            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
+        else
+        {
+            double uselessValue=0;
+            hdf5.read( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &uselessValue );
+        }
+        hdf5.closeTable( "element" );
+    }
+    else // save
+    {
+        if ( false )
+        {
+            // create size tab
+            hdf5.createTable( "size", H5T_NATIVE_UINT, dims );
+            hdf5.write( "size", H5T_NATIVE_UINT, dims2, offset, sizeValues.data() );
+            hdf5.closeTable( "size" );
+        }
+
+        // create double tab
+        hdf5.createTable( "element", H5T_NATIVE_DOUBLE, dimsElt );
+        //hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, M_vec.data().begin()) );
+        if ( this->map().nLocalDofWithGhost() > 0 )
+            hdf5.write( "element", H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &(M_vec[0]) );
+        hdf5.closeTable( "element" );
+    }
+    hdf5.closeFile();
+
+}
+
+template<typename T, typename Storage>
+void
+VectorUblas<T,Storage>::saveHDF5( std::string const& filename )
+{
+    this->ioHDF5( false, filename );
+}
+template<typename T, typename Storage>
+void
+VectorUblas<T,Storage>::loadHDF5( std::string const& filename )
+{
+    this->ioHDF5( true, filename );
+}
+#endif
 
 //
 // instantiation

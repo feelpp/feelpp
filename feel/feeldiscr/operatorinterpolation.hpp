@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -784,12 +784,12 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
 
     gmcDomain->update( domaindof->mesh()->element(domainEltId) );
 
-    auto const imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
+    auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
     bool find=false;
     size_type thelocDofToFind = invalid_size_type_value;
     for ( uint16_type jloc = 0; jloc < new_basis_type::nLocalDof; ++jloc )
     {
-        auto const domainGlobDofPt = gmcDomain->xReal(jloc);
+        auto const& domainGlobDofPt = gmcDomain->xReal(jloc);
         bool find2=true;
         for (uint16_type d=0;d< DomainDofType::nRealDim;++d)
         {
@@ -848,7 +848,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             if ( meshAreRelated )
             {
                 auto idElem = detailsup::idElt( theImageElt,idim_type() );
-                auto const domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
                 if ( domains_eid_set.size() == 0 )
                     continue;
             }
@@ -1188,7 +1188,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 {
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                         {
-                            const auto gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
+                            const size_type gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
                             if (!dof_done[gdof])
                                 {
                                     //------------------------

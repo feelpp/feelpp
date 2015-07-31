@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-01-22
 #
 #  Copyright (C) 2010 Université Joseph Fourier
@@ -22,6 +22,14 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+set(DARWIN_FLAVORS real complex)
+
+IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+  set( DARWIN_FLAVORS darwin-cxx-debug arch-darwin-cxx-debug arch-darwin-cxx-opt darwin-cxx-opt   ${DARWIN_FLAVORS})
+ELSE()
+  set( DARWIN_FLAVORS darwin-cxx-opt  arch-darwin-cxx-opt darwin-cxx-debug arch-darwin-cxx-debug  ${DARWIN_FLAVORS})
+ENDIF()
+
 foreach( debian_arches linux kfreebsd )
   IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
     set( DEBIAN_FLAVORS ${debian_arches}-gnu-c-debug ${debian_arches}-gnu-c-opt ${DEBIAN_FLAVORS})
@@ -30,26 +38,7 @@ foreach( debian_arches linux kfreebsd )
   ENDIF()
 endforeach()
 
-
-find_path (SLEPC_DIR include/slepc.h
-  HINTS ENV SLEPC_DIR
-  PATHS
-  /usr/lib/slepc
-  /usr/lib/slepcdir/3.4.4 # Debian
-  /usr/lib/slepcdir/3.4.3 # Debian
-  /usr/lib/slepcdir/3.4.2 # Debian
-  /usr/lib/slepcdir/3.2 # Debian
-  /usr/lib/slepcdir/3.1 # Debian
-  /usr/lib/slepcdir/3.0.0 # Debian
-  /opt/local/lib/petsc # macports
-  /opt/local/lib/slepc # macports
-  # Homebrew
-  /usr/local/Cellar/slepc/3.5.0
-  /usr/local/Cellar/slepc/3.4.4
-  /usr/local/Cellar/slepc/3.4.3
-  $ENV{HOME}/slepc
-  DOC "SLEPc Directory")
-
+set(PETSC_VERSIONS 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
 
 if ( NOT SLEPC_DIR )
   foreach( version ${PETSC_VERSIONS} )
@@ -65,6 +54,30 @@ if ( NOT SLEPC_DIR )
   endforeach()
 endif()
 message(STATUS "SLEPc Dir: ${SLEPC_DIR}")
+
+
+find_path (SLEPC_DIR include/slepc.h
+  HINTS ENV SLEPC_DIR
+  PATHS
+  /usr/lib/slepc
+  /usr/lib/slepcdir/3.4.4 # Debian
+  /usr/lib/slepcdir/3.4.3 # Debian
+  /usr/lib/slepcdir/3.4.2 # Debian
+  /usr/lib/slepcdir/3.2 # Debian
+  /usr/lib/slepcdir/3.1 # Debian
+  /usr/lib/slepcdir/3.0.0 # Debian
+  /opt/local/lib/petsc # macports
+  /opt/local/lib/slepc # macports
+  # Homebrew
+  /usr/local/Cellar/slepc/3.5.2
+  /usr/local/Cellar/slepc/3.5.1
+  /usr/local/Cellar/slepc/3.5.0
+  /usr/local/Cellar/slepc/3.4.4
+  /usr/local/Cellar/slepc/3.4.3
+  $ENV{HOME}/slepc
+  DOC "SLEPc Directory")
+
+
 
 SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
 CHECK_INCLUDE_FILE( ${SLEPC_INCLUDE_DIR}/slepc.h FEELPP_HAS_SLEPC_H )

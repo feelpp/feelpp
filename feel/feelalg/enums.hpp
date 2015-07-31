@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,15 +35,18 @@ namespace Feel
 /**
  * Context for 'on' operation on sparse matrices
  */
-enum class OnContext
+struct ContextOn
 {
-    NONE                        = 0x0, /**< none */
-    ELIMINATION                 = 0x1, /**< elimination */
-    PENALISATION                = 0x2, /**< penalisation */
-    ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
+    enum Options
+    {
+        PENALISATION                = 0x0,  /**< penalisation */
+        ELIMINATION                 = 0x1, /**< elimination */
+        KEEP_DIAGONAL   = 0x2, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+        SYMMETRIC       = 0x4,  /**< enables elimination and make a symmetric elimination */
+        CHECK           = 0x6
+    };
 };
-extern std::map<std::string, OnContext> OnContextMap;
+extern std::map<std::string, size_type> ContextOnMap;
 
 
 enum   MatrixProperties
@@ -100,7 +103,7 @@ enum SolverType {CG=0,
                  RICHARDSON,
                  CHEBYSHEV,
                  PREONLY,
-
+                 GCR,
                  INVALID_SOLVER
                 };
 
@@ -124,6 +127,9 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
                          LSC_PRECOND,
+                         LSC2_PRECOND,
+                         FEELPP_BLOCKNS_PRECOND,
+                         FEELPP_BLOCKMS_PRECOND,
                          ML_PRECOND,
                          GAMG_PRECOND,
                          BOOMERAMG_PRECOND,
@@ -319,6 +325,8 @@ kspTypeConvertStrToEnum( std::string const& type );
 
 SolverNonLinearType
 snesTypeConvertStrToEnum( std::string const& type );
+std::string
+snesTypeConvertEnumToStr( SolverNonLinearType type );
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type );

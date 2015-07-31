@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-16
 
   Copyright (C) 2013 Université de Strasbourg
@@ -24,7 +24,7 @@
 /**
    \file hdf5.hpp
   @author Radu Popescu <radu.popescu@epfl.ch> (LifeV)
-   \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
    \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
    \date 2013-10-16
  */
@@ -51,7 +51,7 @@ namespace Feel
 /*!
   @brief Convenience wrapper for the C interface of the HDF5 library
   @author Radu Popescu <radu.popescu@epfl.ch>
-  @author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
 
   This class provides an easy way to write and read data from an HDF5 container.
   It is designed to handle a single open file at one time, with multiple open
@@ -108,6 +108,12 @@ public:
      */
     void openFile (const std::string& fileName, const comm_type& comm,
                    const bool& existing);
+
+    //! Create a new group
+    /*!
+     * Create a new group in the open file
+     */
+    void createGroup (const std::string& tableName);
     //! Create a new table
     /*!
      * Create a new table in the open file

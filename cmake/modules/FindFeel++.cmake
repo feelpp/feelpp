@@ -4,9 +4,16 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+# define the feel++ c++ standard level, it used to be hardcoded, this way we can
+# have builds to test the different standard flavors
+if (NOT DEFINED FEELPP_STD_CPP ) 
+  set(FEELPP_STD_CPP "11") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+endif()
+message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
   # require at least gcc 4.7
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
     message(WARNING "GCC version must be at least 4.7!")
@@ -33,7 +40,7 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
   endif()
@@ -187,14 +194,25 @@ IF ( MPI_FOUND )
 
   # Check if we have the types from the 2.2 standard
   # needed for MPI IO
+  # This minimal sample test for the 2.2 Types (produces garbage if tested)
   CHECK_CXX_SOURCE_COMPILES(
       "
+      #include <stdint.h>
       #include <mpi.h>
-
+      #define SIZE 64
       int main(int argc, char** argv)
       {
-      MPI_INT32_T i32;
-      MPI_INT64_T i64;
+          int32_t buf32[SIZE];
+          int64_t buf64[SIZE];
+          MPI_File file;
+          MPI_Status status;
+
+          MPI_Init(&argc, &argv);
+          MPI_File_open( MPI_COMM_WORLD, \"output.bin\", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file );
+          MPI_File_write( file, buf32, SIZE, MPI_INT32_T, &status );
+          MPI_File_write( file, buf64, SIZE, MPI_INT64_T, &status );
+          MPI_File_close( &file );
+          MPI_Finalize();
       }
       "
       MPIIO_HAS_STD_22_TYPES)
@@ -332,7 +350,7 @@ endif (XDMF_FOUND)
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
 
 # Boost
-SET(BOOST_MIN_VERSION "1.49.0")
+SET(BOOST_MIN_VERSION "1.55.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -342,8 +360,16 @@ FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
 if(Boost_PYTHON_FOUND)
     set(FEELPP_HAS_BOOST_PYTHON 1)
     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+
+    if(FEELPP_ENABLE_PYTHON_WRAPPING)
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+    endif()
 else()
-    message(STATUS "[feelpp] Boost.Python was not found on your system." )
+    if(FEELPP_ENABLE_PYTHON_WRAPPING)
+        message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
+    else()
+        message(STATUS "[feelpp] Boost.Python was not found on your system." )
+    endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -456,20 +482,33 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   #
   # cln and ginac
   #
-  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-  include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
-  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-  set(DL_LIBS ${CMAKE_DL_LIBS})
+  find_package(CLN)
   add_subdirectory(contrib/ginac)
 
+  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+  include_directories( ${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+  
+endif()
+
+find_package(FFTW)
+if( FFTW_FOUND )
+  set(FEELPP_HAS_FFTW 1)
+  include_directories( FFTW_INCLUDES )
+  set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
 endif()
 
 #
-# nlopt / ipopt
+# submodules
 #
+include(feelpp.module.hpddm)
 include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
+include(feelpp.module.paralution)
+include(feelpp.module.jsonlab)
 
 #
 # HARTS
@@ -483,23 +522,17 @@ if ( FEELPP_ENABLE_HARTS )
     ADD_DEFINITIONS(${HARTS_DEFINITIONS})
     SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_HAS_HARTS 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+
+    OPTION( FEELPP_ENABLE_HARTS_DEBUG "Enable Harts Debugging" OFF )
+    if ( FEELPP_ENABLE_HARTS_DEBUG )
+        SET(FEELPP_HARTS_DEBUG 1)
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS(Debug)" )
+    else()
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+    endif()
   endif()
 endif()
 
-#
-# HPDDM
-#
-OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" OFF )
-if ( FEELPP_ENABLE_HPDDM )
-  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/src)
-  if( HPDDM_INCLUDE_DIR )
-    INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
-    SET(FEELPP_HAS_HPDDM 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HPDDM" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_HPDDM )
-  endif()
-endif()
 
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
@@ -523,9 +556,15 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
+else()
+  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+    PATHS
+    $ENV{FEELPP_DIR}/include/feel
+    NO_DEFAULT_PATH
+    )
 endif()
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
-message(STATUS "[feelpp] Eigen3: ${EIGEN3_INCLUDE_DIR}" )
+message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -533,16 +572,6 @@ message(STATUS "[feelpp] Eigen3: ${EIGEN3_INCLUDE_DIR}" )
 #INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 #add_definitions( -DEIGEN_NO_STATIC_ASSERT )
 
-#
-# Metis
-#
-FIND_PACKAGE(Metis)
-if ( METIS_FOUND )
-  INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-  #  LINK_DIRECTORIES(${METIS_LIBRARIES})
-  SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
-endif( METIS_FOUND )
 
 #
 # Ann
@@ -647,19 +676,7 @@ if(PYTHONINTERP_FOUND)
   message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
 endif()
 
-# metis
-FIND_LIBRARY(METIS_LIBRARY
-  NAMES
-  metis
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  #    "/opt/local/lib"
-  )
-message(STATUS "[feelpp] Metis: ${METIS_LIBRARY}" )
-IF( METIS_LIBRARY )
-  SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
-ENDIF()
+include(feelpp.module.metis)
 
 FIND_LIBRARY(PARMETIS_LIBRARY
   NAMES
@@ -875,7 +892,9 @@ if ( FEELPP_ENABLE_VTK )
     # We need to look for the Paraview package for the corresponding headers
     # As Paravie integrates vtk headers we don't need them
     if ( FEELPP_ENABLE_VTK_INSITU )
-        FIND_PACKAGE(ParaView REQUIRED COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst)
+        FIND_PACKAGE(ParaView REQUIRED 
+            COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
+            PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
 
@@ -1025,6 +1044,12 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  find_package(CLN)
+  if ( CLN_FOUND )
+    include_directories( ${CLN_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif( CLN_FOUND )
+
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()

@@ -1,4 +1,4 @@
-/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -526,13 +526,18 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_tensor_expr.evalq( c1, c2, q );
+            value_type e = M_tensor_expr.evalq( c1, c2, q );
+            return e;
         }
 
         gmc_ptrtype M_geo;
         //Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
+
+    template<typename Geo_t>
+    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    
 #if 0
     class Diff
     {
@@ -633,7 +638,12 @@ public:
     {
         return M_expr.evaluate( parallel,worldcomm );
     }
-
+    template<typename T, int M, int N=1>
+    std::vector<Eigen::Matrix<T,M,N> >
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
+        {
+            return M_expr.evaluate( v );
+        }
     typename expression_type::value_type
     evaluateAndSum() const
     {
@@ -681,6 +691,9 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
 extern Expr<LambdaExpr1> _e1;
 extern Expr<LambdaExpr2> _e2;
 extern Expr<LambdaExpr3> _e3;
+extern Expr<LambdaExpr1V> _e1v;
+extern Expr<LambdaExpr2V> _e2v;
+extern Expr<LambdaExpr3V> _e3v;
 
 /**
  * \class ExpressionOrder

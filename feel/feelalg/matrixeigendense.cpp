@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -273,7 +273,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
     {
         value_type value = 1.0;
 
-        if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+        if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );
         M_mat.row( rows[i] ).setZero();
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -51,6 +51,7 @@
 #include <feel/feelvf/formcontextbase.hpp>
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
+#include <feel/feelvf/matvec.hpp>
 #include <feel/feeldiscr/quadptlocalization.hpp>
 #if defined( FEELPP_HAS_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
@@ -479,6 +480,13 @@ public:
         auto p0 = broken( P0h, mpl::int_<iDim>() );
         return p0;
     }
+    /**
+     * evaluate the integral for each entry of the vector \c v
+     */
+    template<typename T,int M, int N=1>
+    std::vector<Eigen::Matrix<T,M,N> >
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
+
 #if 1
     matrix_type
     evaluate( bool parallel=true,
@@ -1235,6 +1243,11 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         if ( 1 )
 #endif
         {
+            // mortar context
+            static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+            static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+            static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+
             //
             // some typedefs
             //
@@ -1244,13 +1257,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             typedef typename eval::gmc1_type gmc1_type;
             typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
             typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
-
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
             typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
             typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,true> form_mortar_context_type;
+            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
             typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,true> form1_mortar_context_type;
+            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
             //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
             typedef form_context_type fcb_type;
             typedef form_mortar_context_type mortar_fcb_type;
@@ -1344,6 +1356,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     if ( formc->isZero( idElt ) )
                         continue;
 
+                    bool useMortarAssembly= ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
+
                     switch ( M_gt )
                     {
                     default:
@@ -1362,7 +1376,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
-                        if ( eltTest.isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
                             formcm->update( mapgmc,mapgmc,mapgmc );
                             formcm->integrate();
@@ -1402,9 +1416,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
-                        if ( eltTest.isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
-                            formc1m->update( mapgmc,mapgmc,mapgmc );
+                            formc1m->update( mapgmc1,mapgmc1,mapgmc1 );
                             formc1m->integrate();
                             formc1m->assemble();
                         }
@@ -1429,7 +1443,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                     case GeomapStrategyType::GEOMAP_OPT:
                     {
-                        if ( it->isOnBoundary() )
+                        if ( useMortarAssembly )
                         {
                             //ti0.restart();
                             __c->update( eltTest );
@@ -2057,12 +2071,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     im_formtest_type imTest;
     im_formtrial_type imTrial;
 
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,mortarTag> form_mortar_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
-    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type,mortarTag> form1_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef form_mortar_context_type mortar_fcb_type;
     typedef form1_context_type fcb1_type;
@@ -2163,7 +2182,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                         detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
                                                                        gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                          idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                        if ( elt_it->isOnBoundary()  )
+                        if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                             ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                         {
                             formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
                             formcm->integrate();
@@ -2197,7 +2217,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                            gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                              idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                            if ( elt_it->isOnBoundary()  )
+                            if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                                 ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                             {
                                 formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
                                 formcm->integrate();
@@ -2445,9 +2466,15 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type, mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef form_mortar_context_type mortar_fcb_type;
     typedef fcb_type* focb_ptrtype;
@@ -2479,19 +2506,21 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
     VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
     // mortar
-    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<true>()->points() ) );
+    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar>()->points() ) );
     VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
+    pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar>()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     focb_ptrtype formc( new form_context_type( __form,
                                                mapgmcFormTest,
@@ -2499,12 +2528,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                mapgmcExpr,
                                                this->expression(),
                                                imRange ) );
-    mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
-                                                              mapgmcFormTestMortar,
-                                                              mapgmcFormTrial,
-                                                              mapgmcExpr,
-                                                              this->expression(),
-                                                              imRange ) );
+    mortar_focb_ptrtype formcmTest( new form_mortar_context_type( __form,
+                                                                  mapgmcFormTestMortar,
+                                                                  mapgmcFormTrial,
+                                                                  mapgmcExpr,
+                                                                  this->expression(),
+                                                                  imRange ) );
+
+    mortar_focb_ptrtype formcmTrial( new form_mortar_context_type( __form,
+                                                                   mapgmcFormTest,
+                                                                   mapgmcFormTrialMortar,
+                                                                   mapgmcExpr,
+                                                                   this->expression(),
+                                                                   imRange ) );
 
     //-----------------------------------------------//
 
@@ -2540,45 +2576,53 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
                 auto gmcExpr_it = vec_gmcExpr.begin();
                 auto const gmcExpr_en = vec_gmcExpr.end();
-                bool isFirstExperience = true;
+                bool isFirstExperience = true, isFirstExperienceMortarTest = true, isFirstExperienceMortarTrial = true;
                 for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
                 {
-                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
-                    gmcFormTrial->update( eltTrial,geopcFormTrial );
-                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
-
-                    if ( eltTest.isOnBoundary() )
+                    if ( mortarTag == 1 && eltTest.isOnBoundary() )
                     {
                         geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
                         gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
-
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
-
-                        formcm->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
-                        formcm->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formcmTest->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formcmTest->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTest );
+                        isFirstExperienceMortarTest = false;
+                    }
+                    else if ( mortarTag == 2 && eltTrial.isOnBoundary() )
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrialMortar->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrialMortar->update( eltTrial,geopcFormTrialMortar );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
+                        formcmTrial->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrialMortar, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formcmTrial->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTrial );
+                        isFirstExperienceMortarTrial = false;
                     }
                     else
                     {
                         geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
                         gmcFormTest->update( eltTest,geopcFormTest );
-
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                         formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
                         formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        isFirstExperience = false;
                     }
-                    isFirstExperience = false;
                 }
-                if ( eltTest.isOnBoundary() )
-                {
-                    formcm->assembleInCaseOfInterpolate();
-                }
-                else
-                {
+                if ( !isFirstExperience )
                     formc->assembleInCaseOfInterpolate();
-                }
-
+                if ( !isFirstExperienceMortarTest )
+                    formcmTest->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTrial )
+                    formcmTrial->assembleInCaseOfInterpolate();
             }
         }
     } // if (!M_QPL->hasPrecomputeBF())
@@ -3255,7 +3299,34 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         ( it->id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c0->update( elt0Test, __face_id_in_elt_0 );
+#if 0
                     __c1->update( elt1Test, __face_id_in_elt_1 );
+                    bool check=true;
+                    for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
+                        for (uint16_type d=0;d<gmc1_type::NDim;++d)
+                            check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
+                    CHECK( check ) << "quad points in each sides are not connected";
+#else
+                    bool findPermutation=false;
+                    for ( permutation_type __p( permutation_type::IDENTITY );
+                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !findPermutation; ++__p )
+                        {
+                            // update only xReal in gmc
+                            __c1->update( elt1Test, __face_id_in_elt_1, __p, false );
+
+                            bool check=true;
+                            for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
+                            {
+                                //LOG(INFO) << "c0.xreal = " << __c0->xReal(i);
+                                //LOG(INFO) << "c1.xreal(" << __p << ") = " << __c1->xReal(i);
+                                for (uint16_type d=0;d<gmc1_type::NDim;++d)
+                                    check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
+                            }
+                            // if check compute full gmc context with the good permutation
+                            if (check) { __c1->update( elt1Test, __face_id_in_elt_1, __p ); findPermutation=true; }
+                         }
+                    CHECK(findPermutation) << "the permutation of quad point is not find\n";
+#endif
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
@@ -3784,11 +3855,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     bool hasInitGeoPc=false;
 
     //-----------------------------------------------------//
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type,mortarTag> form_mortar_context_type;
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
-    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,mortarTag> form1_mortar_context_type;
 
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
     typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
@@ -3959,17 +4036,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>(*elt_it,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                LOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
-                if ( elt_it->isOnBoundary() )
+                DLOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
+                     ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                 {
-                    LOG(INFO) << "mortar element";
+                    DLOG(INFO) << "mortar element";
                     mortar_form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     mortar_form->integrate();
                     mortar_form->assemble( /*elt_it->element( 0 ).id()*/ );
                 }
                 else
                 {
-                    LOG(INFO) << "internal element";
+                    DLOG(INFO) << "internal element";
                     form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     form->integrate();
                     form->assemble( /*elt_it->element( 0 ).id()*/ );
@@ -4060,10 +4138,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     bool hasInitGeoPc=false;
 
     //-----------------------------------------------------//
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test)? 1 : 0;
+
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTest_type,mortarTag> form_mortar_context_type;
+
     typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type> form1_context_type;
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
     typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
 
 
@@ -4124,6 +4209,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
         form_context_ptrtype form;
+        form_mortar_context_ptrtype formMortar;
         form1_context_ptrtype form1;
 
 
@@ -4183,9 +4269,23 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                 gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                form->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
-                form->integrate();
-                form->assemble();
+
+                bool useMortarAssembly = has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary();
+                if ( useMortarAssembly )
+                {
+                    if ( !formMortar )
+                        formMortar = form_mortar_context_ptrtype( new form_mortar_context_type( __form, mapgmcFormTest, mapgmcExpr,
+                                                                                                this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest ) );
+                    formMortar->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    formMortar->integrate();
+                    formMortar->assemble();
+                }
+                else
+                {
+                    form->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    form->integrate();
+                    form->assemble();
+                }
             }
 
         } // for ( ; elt_it ... )
@@ -4458,15 +4558,21 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
-
-
     // typedef on formcontext
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    // mortar context
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+    BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE_TEST_TRIAL_MORTAR, (mpl::int_<mortarTag>) );
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type, mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
-
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
 
     element_iterator elt_it, elt_en;
     bool findEltForInit = false;
@@ -4519,12 +4625,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
 
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+
+    // mortar
+    pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar/*true*/>()->points() ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
+    pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar/*true*/>()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     //-----------------------------------------------//
 
@@ -4535,7 +4648,20 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                this->expression(),
                                                face_ims[__face_id_in_elt_0],
                                                imRange ) );
-
+    form_mortar_context_ptrtype formcMortarTest( new form_mortar_context_type( __form,
+                                                                               mapgmcFormTestMortar,
+                                                                               mapgmcFormTrial,
+                                                                               mapgmcExpr,
+                                                                               this->expression(),
+                                                                               face_ims[__face_id_in_elt_0],
+                                                                               imRange ) );
+    form_mortar_context_ptrtype formcMortarTrial( new form_mortar_context_type( __form,
+                                                                                mapgmcFormTest,
+                                                                                mapgmcFormTrialMortar,
+                                                                                mapgmcExpr,
+                                                                                this->expression(),
+                                                                                face_ims[__face_id_in_elt_0],
+                                                                                imRange ) );
     //-----------------------------------------------//
 
     auto meshTrial = __form.trialSpace()->mesh();
@@ -4569,32 +4695,63 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 auto const& ptRefTest = map_it->second.template get<1>();
                 auto const& ptRefTrial = map_it->second.template get<2>();
                 auto const& themapQuad = map_it->second.template get<0>();
+                //std::cout << "eltTest.id() " << eltTest.id() << " eltTest.G() " << eltTest.G()
+                //          << " eltTrial.id() "<< eltTrial.id() << " eltTrial.G() " << eltTrial.G() << std::endl;
 
                 auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
                 auto gmcExpr_it = vec_gmcExpr.begin();
                 auto const gmcExpr_en = vec_gmcExpr.end();
-                bool isFirstExperience = true;
+                bool isFirstExperience = true, isFirstExperienceMortarTest = true, isFirstExperienceMortarTrial = true;
 
                 for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
                 {
-                    geopcFormTest->update( gmcExpr_it->template get<2>() );
-                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
-
-                    gmcFormTest->update( eltTest,geopcFormTest );
-                    gmcFormTrial->update( eltTrial,geopcFormTrial );
-                    //std::cout << "eltTest.id() " << eltTest.id() << " eltTest.G() " << eltTest.G()
-                    //          << " eltTrial.id() "<< eltTrial.id() << " eltTrial.G() " << eltTrial.G() << std::endl;
-                    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
                     __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
-                    formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
-                    isFirstExperience = false;
+                    if ( mortarTag == 1 && eltTest.isOnBoundary() )
+                    {
+                        geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
+                        gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formcMortarTest->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formcMortarTest->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTest );
+                        isFirstExperienceMortarTest = false;
+                    }
+                    else if ( mortarTag == 2 && eltTrial.isOnBoundary() )
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrialMortar->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrialMortar->update( eltTrial,geopcFormTrialMortar );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
+                        formcMortarTrial->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrialMortar, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formcMortarTrial->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortarTrial );
+                        isFirstExperienceMortarTrial = false;
+                    }
+                    else
+                    {
+                        geopcFormTest->update( gmcExpr_it->template get<2>() );
+                        geopcFormTrial->update( gmcExpr_it->template get<3>() );
+                        gmcFormTest->update( eltTest,geopcFormTest );
+                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                        formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                        formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                        isFirstExperience = false;
+                    }
                 }
 
-                formc->assembleInCaseOfInterpolate();
+                if ( !isFirstExperience )
+                    formc->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTest )
+                    formcMortarTest->assembleInCaseOfInterpolate();
+                if ( !isFirstExperienceMortarTrial )
+                    formcMortarTrial->assembleInCaseOfInterpolate();
             }
 
         }
@@ -4799,6 +4956,151 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 }
 
 
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename T, int M,int N>
+std::vector<Eigen::Matrix<T, M,N>>
+Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v ) const
+{
+    DLOG(INFO)  << "integrating over "
+                << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
+
+    using m_t = Eigen::Matrix<T, M,N>;
+    
+    std::vector<m_t> res( v.size() );
+    for( auto& e : res ) e = m_t::Zero();
+    
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        auto it = lit->template get<1>();
+        auto en = lit->template get<2>();
+
+        // make sure that we have elements to iterate over (return 0
+        // otherwise)
+        if ( it == en )
+            continue;
+
+        auto gm = it->gm();
+        auto gm1 = it->gm1();
+        
+        auto geopc = gm->preCompute( this->im().points() );
+        auto geopc1 = gm1->preCompute( this->im().points() );
+        auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+        auto ctx = gm->template context<context|vm::JACOBIAN>( *it, geopc );
+        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( *it, geopc );
+        double x=100,y=101,z=102;
+        auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
+        auto expr_evaluator = expr_.evaluator( mapgmc(ctx) );
+
+        for ( ; it != en; ++it )
+        {
+            switch ( M_gt )
+            {
+            default:
+            case  GeomapStrategyType::GEOMAP_HO :
+            {
+                ctx->update( *it );
+                expr_evaluator.update( mapgmc(ctx) );
+                M_im.update( *ctx );
+
+                int i = 0;
+                for( auto const& e : v )
+                {
+                    x=e(0,0);
+                    y=e(1,0);
+                    z=e(2,0);
+                    for ( uint16_type c1 = 0; c1 < M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                        {
+                            double v = M_im( expr_evaluator, c1, c2 );
+                            res[i]( (int)c1,(int)c2 ) += v;
+                        }
+                    ++i;
+                }
+            }
+            break;
+
+            case GeomapStrategyType::GEOMAP_O1:
+            {
+                ctx1->update( *it );
+                expr_evaluator.update( mapgmc(ctx) );
+                M_im.update( *ctx1 );
+
+                int i = 0;
+                for( auto const& e : v )
+                {
+                    x=e(0,0);
+                    y=e(1,0);
+                    z=e(2,0);
+
+                    for ( uint16_type c1 = 0; c1 < M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                        {
+                            res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
+                        }
+                    ++i;
+                }
+                
+            }
+            break;
+
+            case GeomapStrategyType::GEOMAP_OPT:
+            {
+                //DDLOG(INFO) << "geomap opt" << "\n";
+                if ( it->isOnBoundary() )
+                {
+                    ctx->update( *it );
+                    expr_evaluator.update( mapgmc(ctx) );
+                    M_im.update( *ctx );
+
+                    int i = 0;
+                    for( auto const& e : v )
+                    {
+                        x=e(0,0);
+                        y=e(1,0);
+                        z=e(2,0);
+
+                        for ( uint16_type c1 = 0; c1 < M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                                
+                            {
+                                res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
+                            }
+                        ++i;
+                    }
+                }
+
+                else
+                {
+                    ctx1->update( *it );
+                    expr_evaluator.update( mapgmc(ctx) );
+                    M_im.update( *ctx1 );
+                    
+                    int i = 0;
+                    for( auto const& e : v )
+                    {
+                        x=e(0,0);
+                        y=e(1,0);
+                        z=e(2,0);
+                        
+                        for ( uint16_type c1 = 0; c1 < M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                            {
+                                res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
+                            }
+                        ++i;
+                    }
+                }
+            }
+            
+            //break;
+            }
+        }
+    }
+    return res;
+        
+}
+    
+
 
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -4806,9 +5108,9 @@ typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
     DLOG(INFO)  << "integrating over "
-             << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
+                << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
-
+    
 #if defined(FEELPP_HAS_TBB)
     if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
     {
@@ -4816,24 +5118,24 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
         typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
-
+        
         if ( it == en )
             return eval::zero();
-
+        
         std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
+        
         for ( auto _it = it; _it != en; ++_it )
             _v.push_back( boost::cref( *_it ) );
-
+        
         tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
         context_type thecontext( this->expression(), this->im(), *it );
-
+        
         if ( M_partitioner == "auto" )
             tbb::parallel_reduce( r,  thecontext );
-
+        
         else if ( M_partitioner == "simple" )
             tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
-
+        
         //else if ( M_partitioner == "affinity" )
         //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
         return thecontext.result();
@@ -4841,669 +5143,668 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     else
 #endif // defined(FEELPP_HAS_TBB)
 #if defined(FEELPP_HAS_HARTS)
-    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
-    {
-        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
-        perf_mng.init("total") ;
-        perf_mng.start("total") ;
-
-        perf_mng.init("init") ;
-        perf_mng.start("init") ;
-
-        perf_mng.init("init0") ;
-        perf_mng.start("init0") ;
-
-        typename eval::matrix_type res( eval::matrix_type::Zero() );
-        typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
-
-        //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
-
-        // typedef basic types
-        typedef RunTimeSystem::PThreadDriver                        PTHDriverType ;
-        typedef RunTimeSystem::TaskMng::Task<harts_context_type>    TaskType;
-        typedef RunTimeSystem::TaskMng                              TaskMngType;
-        typedef RunTimeSystem::TaskMng::ForkJoin<PTHDriverType>     PTHForkJoinTaskType;
-        typedef RunTimeSystem::ThreadEnv                            ThreadEnv;
-
-        typedef RunTimeSystem::DataHandler                          DataHandlerType;
-        typedef RunTimeSystem::DataMng                              DataMngType;
-        typedef RunTimeSystem::NumaAffinityMng                      NumaAffinityMngType;
-
-        // Compute Number of MPI processes
-        char * str = NULL;
-        int nMPIProc = Environment::worldComm().size();
-
-        // Compute a number of available cores for computation
-        // Taking into account the number of MPI processes launched for this app on this node
-        //NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Interleave);
-        NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
-
-        // Compute Number of available CPU cores
-        int paramNbCores = ioption(_name="parallel.cpu.restrict");
-        int nTotalCoresNode = numaAffMng.get_num_cores();
-        int nAvailCores = nTotalCoresNode - nMPIProc;
-        int coresPerProcess = 0;
-        int remainder = 0;
-
-        // TOFIX: Have a repartition taking into account the NUMA architecture
-        // Guess the number of threads that can be spawned
-        if(paramNbCores <= 0)
+        if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
         {
-            coresPerProcess = nAvailCores / nMPIProc;
-            remainder = nAvailCores % nMPIProc;
-        }
-        // Try to match the nb of cores in parameter
-        else
-        {
-            int nWantedCores = nMPIProc * paramNbCores;
-            if(nAvailCores - nWantedCores >= 0)
-            {
-                coresPerProcess = paramNbCores;
-                remainder = nAvailCores - nMPIProc * paramNbCores;
-            }
-            /* if we can't match the asked number of cores */
-            /* Then guess the maximal occupation repartition */
-            else
+            RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
+            perf_mng.init("total") ;
+            perf_mng.start("total") ;
+
+            perf_mng.init("init") ;
+            perf_mng.start("init") ;
+
+            perf_mng.init("init0") ;
+            perf_mng.start("init0") ;
+
+            typename eval::matrix_type res( eval::matrix_type::Zero() );
+            typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
+
+            //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
+
+            // typedef basic types
+            typedef RunTimeSystem::PThreadDriver                        PTHDriverType ;
+            typedef RunTimeSystem::TaskMng::Task<harts_context_type>    TaskType;
+            typedef RunTimeSystem::TaskMng                              TaskMngType;
+            typedef RunTimeSystem::TaskMng::ForkJoin<PTHDriverType>     PTHForkJoinTaskType;
+            typedef RunTimeSystem::ThreadEnv                            ThreadEnv;
+
+            typedef RunTimeSystem::DataHandler                          DataHandlerType;
+            typedef RunTimeSystem::DataMng                              DataMngType;
+            typedef RunTimeSystem::NumaAffinityMng                      NumaAffinityMngType;
+
+            // Compute Number of MPI processes
+            char * str = NULL;
+            int nMPIProc = Environment::worldComm().size();
+
+            // Compute a number of available cores for computation
+            // Taking into account the number of MPI processes launched for this app on this node
+            //NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Interleave);
+            NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
+
+            // Compute Number of available CPU cores
+            int paramNbCores = ioption(_name="parallel.cpu.restrict");
+            int nTotalCoresNode = numaAffMng.get_num_cores();
+            int nAvailCores = nTotalCoresNode - nMPIProc;
+            int coresPerProcess = 0;
+            int remainder = 0;
+
+            // TOFIX: Have a repartition taking into account the NUMA architecture
+            // Guess the number of threads that can be spawned
+            if(paramNbCores <= 0)
             {
                 coresPerProcess = nAvailCores / nMPIProc;
                 remainder = nAvailCores % nMPIProc;
             }
-        }
+            // Try to match the nb of cores in parameter
+            else
+            {
+                int nWantedCores = nMPIProc * paramNbCores;
+                if(nAvailCores - nWantedCores >= 0)
+                {
+                    coresPerProcess = paramNbCores;
+                    remainder = nAvailCores - nMPIProc * paramNbCores;
+                }
+                /* if we can't match the asked number of cores */
+                /* Then guess the maximal occupation repartition */
+                else
+                {
+                    coresPerProcess = nAvailCores / nMPIProc;
+                    remainder = nAvailCores % nMPIProc;
+                }
+            }
 
-        /* create a task and data managers */
-        TaskMngType taskMng;
-        DataMngType dataMng;
+            /* create a task and data managers */
+            TaskMngType taskMng;
+            DataMngType dataMng;
 
-        /* create a task list */
-        std::vector<harts_context_type * > hce;
-        std::vector<int> taskList;
+            /* create a task list */
+            std::vector<harts_context_type * > hce;
+            std::vector<int> taskList;
 
-        /* Using pthread */
-        int nbThreads = coresPerProcess;
+            /* Using pthread */
+            int nbThreads = coresPerProcess;
 
-        //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
+            //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
 
-        perf_mng.stop("init0") ;
+            perf_mng.stop("init0") ;
 
-        perf_mng.init("init1") ;
-        perf_mng.start("init1") ;
+            perf_mng.init("init1") ;
+            perf_mng.start("init1") ;
 
-        std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
-        _v.resize(nbThreads);
+            std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
+            _v.resize(nbThreads);
 
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
-        {
-            /* set the iterator at the beginning of the elements */
-            auto sit = lit->template get<1>();
-            auto eit = lit->template get<2>();
-            auto cit = sit;
+            for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
+            {
+                /* set the iterator at the beginning of the elements */
+                auto sit = lit->template get<1>();
+                auto eit = lit->template get<2>();
+                auto cit = sit;
 
-            /* get number of elements */
-            int nbElts = std::distance(sit, eit);
-            int nbEltPerRange = nbElts / nbThreads;
-            int remainderElt = nbElts % nbThreads;
+                /* get number of elements */
+                int nbElts = std::distance(sit, eit);
+                int nbEltPerRange = nbElts / nbThreads;
+                int remainderElt = nbElts % nbThreads;
 
-            int j = 0;
+                int j = 0;
+                for(int i = 0; i < nbThreads; i++)
+                {
+                    int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+
+                    std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+
+                    /* save the current iterator position */
+                    cit = sit;
+                    /* advance the iterator and save the new position */
+                    std::advance(sit, nb);
+                    //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
+                    //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                    j = j + nb;
+                    _v.at(i).push_back(std::make_pair(cit, sit));
+                }
+            }
+
+            perf_mng.stop("init1") ;
+
+            perf_mng.init("init2") ;
+            perf_mng.start("init2") ;
+
+            ThreadEnv * threadEnv = new ThreadEnv(nbThreads);
+
+            //threadEnv->SetAffinity(numaAffMng);
+
+            PTHDriverType forkjoin(threadEnv);
+            PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
+            taskList.push_back(taskMng.addNew(compFkTask));
+
+            std::ostringstream oss1;
+            perf_mng.init("init2.2") ;
+            perf_mng.start("init2.2") ;
+
+            perf_mng.init("init2.2.0") ;
+            perf_mng.init("init2.2.1") ;
+            perf_mng.init("init2.2.2") ;
+            perf_mng.init("init2.2.3") ;
+
+            /* getting parameters to avoid problems with const */
+            expression_type expr = this->expression();
+            im_type im = this->im();
+            element_iterator elt_it = M_elts.begin()->template get<1>();
+
+            /* create tasks and associate them data */
+            for(int i = 0 ; i< nbThreads; i++)
+            {
+                DataHandlerType * d_tid = dataMng.getNewData();
+                d_tid->set<int>(&i);
+                DataHandlerType * d_elts = dataMng.getNewData();
+                d_elts->set<std::vector<std::pair<element_iterator, element_iterator> > >(&_v[i]);
+                DataHandlerType * d_expr = dataMng.getNewData();
+                d_expr->set<expression_type>(&expr);
+                DataHandlerType * d_im = dataMng.getNewData();
+                d_im->set<im_type>(&im);
+                DataHandlerType * d_elt = dataMng.getNewData();
+                d_elt->set<element_iterator>(&elt_it);
+
+                if(i == 0) { perf_mng.start("init2.2.0") ; }
+                //harts_context_type * t = new harts_context_type(i, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+                harts_context_type * t = new harts_context_type();
+                if(i == 0) { perf_mng.stop("init2.2.0") ; }
+                if(i == 0) { perf_mng.start("init2.2.1") ; }
+                hce.push_back(t);
+                if(i == 0) { perf_mng.stop("init2.2.1") ; }
+                if(i == 0) { perf_mng.start("init2.2.2") ; }
+                TaskType* task = new TaskType(t);
+                if(i == 0) { perf_mng.stop("init2.2.2") ; }
+                if(i == 0) { perf_mng.start("init2.2.3") ; }
+                task->args().add("threadId", DataHandlerType::R, d_tid);
+                task->args().add("elements", DataHandlerType::R, d_elts);
+                task->args().add("expr", DataHandlerType::R, d_expr);
+                task->args().add("im", DataHandlerType::R, d_im);
+                task->args().add("elt", DataHandlerType::R, d_elt);
+                if(i == 0) { perf_mng.stop("init2.2.3") ; }
+
+                typename TaskType::FuncType f = &harts_context_type::computeCPU;
+                task->set("cpu",f);
+                int uid = taskMng.addNew(task);
+                compFkTask->add(uid);
+            }
+            perf_mng.stop("init2.2") ;
+
+            perf_mng.stop("init2") ;
+
+            perf_mng.stop("init") ;
+
+            perf_mng.init("comp") ;
+            perf_mng.start("comp") ;
+
+            //Environment::writeCPUData(""); 
+
+            RunTimeSystem::StdScheduler scheduler;
+            taskMng.run(scheduler, taskList);
+
+            //Environment::writeCPUData(""); 
+
+            perf_mng.stop("comp") ;
+
+            for(int i = 0 ; i< nbThreads; i++)
+            {
+                res += hce[i]->result();
+            }
+
             for(int i = 0; i < nbThreads; i++)
             {
-                int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
-
-                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
-
-                /* save the current iterator position */
-                cit = sit;
-                /* advance the iterator and save the new position */
-                std::advance(sit, nb);
-                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
-                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
-                j = j + nb;
-                _v.at(i).push_back(std::make_pair(cit, sit));
+                std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
+                hce[i]->printPerfInfo();
             }
-        }
 
-        perf_mng.stop("init1") ;
+            // Free memory
+#if 1
+            delete threadEnv;
+            //delete compFkTask;
 
-        perf_mng.init("init2") ;
-        perf_mng.start("init2") ;
+            for(int i = 0 ; i < nbThreads; i++)
+            {
+                delete hce[i];
+            }
+#endif
 
-        ThreadEnv * threadEnv = new ThreadEnv(nbThreads);
-
-        //threadEnv->SetAffinity(numaAffMng);
-
-        PTHDriverType forkjoin(threadEnv);
-        PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
-        taskList.push_back(taskMng.addNew(compFkTask));
-
-        std::ostringstream oss1;
-        perf_mng.init("init2.2") ;
-        perf_mng.start("init2.2") ;
-
-        perf_mng.init("init2.2.0") ;
-        perf_mng.init("init2.2.1") ;
-        perf_mng.init("init2.2.2") ;
-        perf_mng.init("init2.2.3") ;
-
-        /* getting parameters to avoid problems with const */
-        expression_type expr = this->expression();
-        im_type im = this->im();
-        element_iterator elt_it = M_elts.begin()->template get<1>();
-
-        /* create tasks and associate them data */
-        for(int i = 0 ; i< nbThreads; i++)
-        {
-            DataHandlerType * d_tid = dataMng.getNewData();
-            d_tid->set<int>(&i);
-            DataHandlerType * d_elts = dataMng.getNewData();
-            d_elts->set<std::vector<std::pair<element_iterator, element_iterator> > >(&_v[i]);
-            DataHandlerType * d_expr = dataMng.getNewData();
-            d_expr->set<expression_type>(&expr);
-            DataHandlerType * d_im = dataMng.getNewData();
-            d_im->set<im_type>(&im);
-            DataHandlerType * d_elt = dataMng.getNewData();
-            d_elt->set<element_iterator>(&elt_it);
-
-            if(i == 0) { perf_mng.start("init2.2.0") ; }
-            //harts_context_type * t = new harts_context_type(i, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
-            harts_context_type * t = new harts_context_type();
-            if(i == 0) { perf_mng.stop("init2.2.0") ; }
-            if(i == 0) { perf_mng.start("init2.2.1") ; }
-            hce.push_back(t);
-            if(i == 0) { perf_mng.stop("init2.2.1") ; }
-            if(i == 0) { perf_mng.start("init2.2.2") ; }
-            TaskType* task = new TaskType(t);
-            if(i == 0) { perf_mng.stop("init2.2.2") ; }
-            if(i == 0) { perf_mng.start("init2.2.3") ; }
-            task->args().add("threadId", DataHandlerType::R, d_tid);
-            task->args().add("elements", DataHandlerType::R, d_elts);
-            task->args().add("expr", DataHandlerType::R, d_expr);
-            task->args().add("im", DataHandlerType::R, d_im);
-            task->args().add("elt", DataHandlerType::R, d_elt);
-            if(i == 0) { perf_mng.stop("init2.2.3") ; }
-
-            typename TaskType::FuncType f = &harts_context_type::computeCPU;
-            task->set("cpu",f);
-            int uid = taskMng.addNew(task);
-            compFkTask->add(uid);
-        }
-        perf_mng.stop("init2.2") ;
-
-        perf_mng.stop("init2") ;
-
-        perf_mng.stop("init") ;
-
-        perf_mng.init("comp") ;
-        perf_mng.start("comp") ;
-
-        //Environment::writeCPUData(""); 
-
-        RunTimeSystem::StdScheduler scheduler;
-        taskMng.run(scheduler, taskList);
-
-        //Environment::writeCPUData(""); 
-
-        perf_mng.stop("comp") ;
-
-        for(int i = 0 ; i< nbThreads; i++)
-        {
-            res += hce[i]->result();
-        }
-
-        for(int i = 0; i < nbThreads; i++)
-        {
-            std::cout << Environment::worldComm().rank() << "|" << i << " elapsed=" << hce[i]->elapsed() << std::endl;
-            hce[i]->printPerfInfo();
-        }
-
-        // Free memory
-        #if 1
-        delete threadEnv;
-        //delete compFkTask;
-
-        for(int i = 0 ; i < nbThreads; i++)
-        {
-            delete hce[i];
-        }
-        #endif
-
-        perf_mng.stop("total") ;
+            perf_mng.stop("total") ;
         
 #if 0
-        std::ostringstream oss;
-        oss << fs::current_path().string() << "/" << Environment::worldComm().size() << "_" << Environment::worldComm().rank() << "-" << nbThreads << ".dat";
-        std::ofstream f;
+            std::ostringstream oss;
+            oss << fs::current_path().string() << "/" << Environment::worldComm().size() << "_" << Environment::worldComm().rank() << "-" << nbThreads << ".dat";
+            std::ofstream f;
 
-        f.open(oss.str().c_str(), std::ofstream::out | std::ofstream::trunc);
+            f.open(oss.str().c_str(), std::ofstream::out | std::ofstream::trunc);
 
-        for(int i = 0; i < nbThreads; i++)
-        {
-            f << hce[i]->elapsed() << " ";
-            std::cout << Environment::worldComm().rank() << "|" << i << " " << hce[i]->elapsed() << std::endl;
-        }
-
-        f << perf_mng.getValueInSeconds("total") << std::endl;
-
-        f.close();
-#endif
-
-        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
-                  << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
-                  << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
-                  << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
-
-        std::cout << Environment::worldComm().rank() <<  " Evaluation " 
-                  << perf_mng.getValueInSeconds("init2.2.0") << " "
-                  << perf_mng.getValueInSeconds("init2.2.1") << " "
-                  << perf_mng.getValueInSeconds("init2.2.2") << " "
-                  << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
-
-        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-        return res;
-    }
-    else
-#endif // defined(FEELPP_HAS_HARTS)
-#if defined(FEELPP_HAS_OPENMP)
-    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl") == "openmp" )
-    {
-        // alternative: measure time with omp_get_wtime()
-#if defined(FEELPP_HAS_HARTS)
-        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
-        perf_mng.init("total") ;
-        perf_mng.start("total") ;
-
-        perf_mng.init("init") ;
-        perf_mng.start("init") ;
-
-        perf_mng.init("init0") ;
-        perf_mng.start("init0") ;
-#endif
-
-        typename eval::matrix_type res( eval::matrix_type::Zero() );
-        typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
-
-        //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
-
-        // Compute Number of MPI processes
-        char * str = NULL;
-        int nMPIProc = Environment::worldComm().size();
-
-        // Compute a number of available cores for computation
-        // Taking into account the number of MPI processes launched for this app on this node
-        //std::cout << "omp_get_num_procs()=" << omp_get_num_procs() << std::endl;
-
-        // Compute Number of available CPU cores
-        int paramNbCores = ioption(_name="parallel.cpu.restrict");
-        int nTotalCoresNode = omp_get_num_procs();
-        int nAvailCores = nTotalCoresNode - nMPIProc;
-        int coresPerProcess = 0;
-        int remainder = 0;
-
-        // TOFIX: Have a repartition taking into account the NUMA architecture
-        // Guess the number of threads that can be spawned
-        if(paramNbCores <= 0)
-        {
-            coresPerProcess = nAvailCores / nMPIProc;
-            remainder = nAvailCores % nMPIProc;
-        }
-        // Try to match the nb of cores in parameter
-        else
-        {
-            int nWantedCores = nMPIProc * paramNbCores;
-            if(nAvailCores - nWantedCores >= 0)
-            {
-                coresPerProcess = paramNbCores;
-                remainder = nAvailCores - nMPIProc * paramNbCores;
-            }
-            /* if we can't match the asked number of cores */
-            /* Then guess the maximal occupation repartition */
-            else
-            {
-                coresPerProcess = nAvailCores / nMPIProc;
-                remainder = nAvailCores % nMPIProc;
-            }
-        }
-
-        /* create a task list */
-        std::vector<harts_context_type * > hce;
-
-        /* Using pthread */
-        int nbThreads = coresPerProcess;
-
-        std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
-
-#if defined(FEELPP_HAS_HARTS)
-        perf_mng.stop("init0") ;
-        perf_mng.init("init1") ;
-        perf_mng.start("init1") ;
-#endif
-
-        std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
-        _v.resize(nbThreads);
-
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
-        {
-            /* set the iterator at the beginning of the elements */
-            auto sit = lit->template get<1>();
-            auto eit = lit->template get<2>();
-            auto cit = sit;
-
-            /* get number of elements */
-            int nbElts = std::distance(sit, eit);
-            int nbEltPerRange = nbElts / nbThreads;
-            int remainderElt = nbElts % nbThreads;
-
-            int j = 0;
             for(int i = 0; i < nbThreads; i++)
             {
-                int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
-
-                std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
-
-                /* save the current iterator position */
-                cit = sit;
-                /* advance the iterator and save the new position */
-                std::advance(sit, nb);
-                //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
-                std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
-                j = j + nb;
-                _v.at(i).push_back(std::make_pair(cit, sit));
+                f << hce[i]->elapsed() << " ";
+                std::cout << Environment::worldComm().rank() << "|" << i << " " << hce[i]->elapsed() << std::endl;
             }
-        }
 
-#if defined(FEELPP_HAS_HARTS)
-        perf_mng.stop("init1") ;
+            f << perf_mng.getValueInSeconds("total") << std::endl;
 
-        perf_mng.stop("init") ;
-
-        perf_mng.init("comp") ;
-        perf_mng.start("comp") ;
+            f.close();
 #endif
 
-        /* Save the previous count of openmp threads */
-        /* in case the use set OMP_NUM_THREADS */
-        /* and we don't want to influence the next omp loop */
-        int prevThreadCount = omp_get_num_threads();
-        omp_set_num_threads(nbThreads);
+            std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+                      << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
+                      << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
+                      << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 
-        value_type * out = new value_type[nbThreads];
+            std::cout << Environment::worldComm().rank() <<  " Evaluation " 
+                      << perf_mng.getValueInSeconds("init2.2.0") << " "
+                      << perf_mng.getValueInSeconds("init2.2.1") << " "
+                      << perf_mng.getValueInSeconds("init2.2.2") << " "
+                      << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-        expression_type expr = this->expression();
-        im_type im = this->im();
-        element_iterator elt_it = M_elts.begin()->template get<1>();
+            DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+            return res;
+        }
+        else
+#endif // defined(FEELPP_HAS_HARTS)
+#if defined(FEELPP_HAS_OPENMP)
+            if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl") == "openmp" )
+            {
+                // alternative: measure time with omp_get_wtime()
+#if defined(FEELPP_HAS_HARTS)
+                RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
+                perf_mng.init("total") ;
+                perf_mng.start("total") ;
+
+                perf_mng.init("init") ;
+                perf_mng.start("init") ;
+
+                perf_mng.init("init0") ;
+                perf_mng.start("init0") ;
+#endif
+
+                typename eval::matrix_type res( eval::matrix_type::Zero() );
+                typedef Feel::vf::integrator::parallel::HartsContextEvaluate<expression_type, im_type, element_iterator, eval> harts_context_type;
+
+                //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
+
+                // Compute Number of MPI processes
+                char * str = NULL;
+                int nMPIProc = Environment::worldComm().size();
+
+                // Compute a number of available cores for computation
+                // Taking into account the number of MPI processes launched for this app on this node
+                //std::cout << "omp_get_num_procs()=" << omp_get_num_procs() << std::endl;
+
+                // Compute Number of available CPU cores
+                int paramNbCores = ioption(_name="parallel.cpu.restrict");
+                int nTotalCoresNode = omp_get_num_procs();
+                int nAvailCores = nTotalCoresNode - nMPIProc;
+                int coresPerProcess = 0;
+                int remainder = 0;
+
+                // TOFIX: Have a repartition taking into account the NUMA architecture
+                // Guess the number of threads that can be spawned
+                if(paramNbCores <= 0)
+                {
+                    coresPerProcess = nAvailCores / nMPIProc;
+                    remainder = nAvailCores % nMPIProc;
+                }
+                // Try to match the nb of cores in parameter
+                else
+                {
+                    int nWantedCores = nMPIProc * paramNbCores;
+                    if(nAvailCores - nWantedCores >= 0)
+                    {
+                        coresPerProcess = paramNbCores;
+                        remainder = nAvailCores - nMPIProc * paramNbCores;
+                    }
+                    /* if we can't match the asked number of cores */
+                    /* Then guess the maximal occupation repartition */
+                    else
+                    {
+                        coresPerProcess = nAvailCores / nMPIProc;
+                        remainder = nAvailCores % nMPIProc;
+                    }
+                }
+
+                /* create a task list */
+                std::vector<harts_context_type * > hce;
+
+                /* Using pthread */
+                int nbThreads = coresPerProcess;
+
+                std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
+
+#if defined(FEELPP_HAS_HARTS)
+                perf_mng.stop("init0") ;
+                perf_mng.init("init1") ;
+                perf_mng.start("init1") ;
+#endif
+
+                std::vector<std::vector<std::pair<element_iterator, element_iterator> > > _v;
+                _v.resize(nbThreads);
+
+                for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
+                {
+                    /* set the iterator at the beginning of the elements */
+                    auto sit = lit->template get<1>();
+                    auto eit = lit->template get<2>();
+                    auto cit = sit;
+
+                    /* get number of elements */
+                    int nbElts = std::distance(sit, eit);
+                    int nbEltPerRange = nbElts / nbThreads;
+                    int remainderElt = nbElts % nbThreads;
+
+                    int j = 0;
+                    for(int i = 0; i < nbThreads; i++)
+                    {
+                        int nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+
+                        std::cout << Environment::worldComm().rank() << "|" << i << " nbElts=" << nb << std::endl;
+
+                        /* save the current iterator position */
+                        cit = sit;
+                        /* advance the iterator and save the new position */
+                        std::advance(sit, nb);
+                        //std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange <<  std::endl;
+                        std::cout << "T" << i << " adv:" << nb << " " << nbEltPerRange << "(" << j << ", " << (j + nb) << ")" << std::endl;
+                        j = j + nb;
+                        _v.at(i).push_back(std::make_pair(cit, sit));
+                    }
+                }
+
+#if defined(FEELPP_HAS_HARTS)
+                perf_mng.stop("init1") ;
+
+                perf_mng.stop("init") ;
+
+                perf_mng.init("comp") ;
+                perf_mng.start("comp") ;
+#endif
+
+                /* Save the previous count of openmp threads */
+                /* in case the use set OMP_NUM_THREADS */
+                /* and we don't want to influence the next omp loop */
+                int prevThreadCount = omp_get_num_threads();
+                omp_set_num_threads(nbThreads);
+
+                value_type * out = new value_type[nbThreads];
+
+                expression_type expr = this->expression();
+                im_type im = this->im();
+                element_iterator elt_it = M_elts.begin()->template get<1>();
 
 
 #pragma omp parallel
-        {
-            int id = omp_get_thread_num();
+                {
+                    int id = omp_get_thread_num();
 
 #if defined(FEELPP_HAS_HARTS)
-            RunTimeSystem::PerfCounterMng<std::string> local_perf_mng ;
+                    RunTimeSystem::PerfCounterMng<std::string> local_perf_mng ;
 #endif
 
-            //local_perf_mng.init("Creation") ;
-            //local_perf_mng.start("Creation") ;
-            //harts_context_type * t = new harts_context_type(id, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
-            harts_context_type * t = new harts_context_type();
-            //local_perf_mng.stop("Creation") ;
+                    //local_perf_mng.init("Creation") ;
+                    //local_perf_mng.start("Creation") ;
+                    //harts_context_type * t = new harts_context_type(id, this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
+                    harts_context_type * t = new harts_context_type();
+                    //local_perf_mng.stop("Creation") ;
 
 #if defined(FEELPP_HAS_HARTS)
-            std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
+                    std::cout << Environment::worldComm().rank() << "|" << id << " Creation:" << local_perf_mng.getValueInSeconds("Creation") << std::endl;
 #endif
 
 #if defined(FEELPP_HAS_HARTS)
-        struct timespec ts1;
-        struct timespec ts2;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
+                    struct timespec ts1;
+                    struct timespec ts2;
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts1);
 #endif
 
-            t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
-            out[id] = t->result();
+                    t->computeCPUOMP(id, &expr, &im, &elt_it, &(_v[id]));
+                    out[id] = t->result();
 
 #if defined(FEELPP_HAS_HARTS)
-        clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
-        double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
-        double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
-        std::cout << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
+                    clock_gettime(CLOCK_MONOTONIC_RAW, &ts2);
+                    double t1 = (double)(ts1.tv_sec) + (double)(ts1.tv_nsec) / (1000000000.0); 
+                    double t2 = (double)(ts2.tv_sec) + (double)(ts2.tv_nsec) / (1000000000.0); 
+                    std::cout << Environment::worldComm().globalRank() << "|" << id << " elapsed (MONOTONIC_RAW)=" <<  (t2 - t1) << std::endl;
 #endif
 
-            std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
-            t->printPerfInfo();
+                    std::cout << Environment::worldComm().rank() << "|" << id << " elapsed=" << t->elapsed() << std::endl;
+                    t->printPerfInfo();
 
-            delete t;
-        }
+                    delete t;
+                }
 
-        /* restore previous openmp thread count */
-        omp_set_num_threads(prevThreadCount);
+                /* restore previous openmp thread count */
+                omp_set_num_threads(prevThreadCount);
 
 #if defined(FEELPP_HAS_HARTS)
-        perf_mng.stop("comp") ;
+                perf_mng.stop("comp") ;
 #endif
 
-        for(int i = 0 ; i< nbThreads; i++)
-        {
-            res += out[i];
-        }
-        delete[] out;
+                for(int i = 0 ; i< nbThreads; i++)
+                {
+                    res += out[i];
+                }
+                delete[] out;
 
 #if defined(FEELPP_HAS_HARTS)
-        perf_mng.stop("total") ;
+                perf_mng.stop("total") ;
         
-        std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
-                  << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
-                  << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
-                  << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
+                std::cout << Environment::worldComm().rank() <<  " Evaluation output: " << res << " in " 
+                          << perf_mng.getValueInSeconds("total") << " (" << perf_mng.getValueInSeconds("init") << " ("
+                          << perf_mng.getValueInSeconds("init0") << ", " << perf_mng.getValueInSeconds("init1") << ", " << perf_mng.getValueInSeconds("init2") << ") "
+                          << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-        return res;
-    }
-    else
+                DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                return res;
+            }
+            else
 #endif
-    if ( 1 )
-    {
+                if ( 1 )
+                {
 #if defined(FEELPP_HAS_HARTS)
-        RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
-        perf_mng.init("total") ;
-        perf_mng.start("total") ;
+                    RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
+                    perf_mng.init("total") ;
+                    perf_mng.start("total") ;
 #endif
 
-        //
-        // some typedefs
-        //
-        typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-        typedef typename boost::remove_const<const_t>::type the_element_type;
-        typedef the_element_type element_type;
-        typedef typename the_element_type::gm_type gm_type;
-        typedef boost::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename eval::gmc_type gmc_type;
-        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+                    //
+                    // some typedefs
+                    //
+                    typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
+                    typedef typename boost::remove_const<const_t>::type the_element_type;
+                    typedef the_element_type element_type;
+                    typedef typename the_element_type::gm_type gm_type;
+                    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+                    typedef typename eval::gmc_type gmc_type;
+                    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
-        typedef typename the_element_type::gm1_type gm1_type;
-        typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
-        typedef typename eval::gmc1_type gmc1_type;
-        typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+                    typedef typename the_element_type::gm1_type gm1_type;
+                    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+                    typedef typename eval::gmc1_type gmc1_type;
+                    typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
 
-        //typedef typename eval_expr_type::value_type value_type;
-        //typedef typename Im::value_type value_type;
-        typename eval::matrix_type res( eval::matrix_type::Zero() );
+                    //typedef typename eval_expr_type::value_type value_type;
+                    //typedef typename Im::value_type value_type;
+                    typename eval::matrix_type res( eval::matrix_type::Zero() );
 
-        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-        {
-            auto it = lit->template get<1>();
-            auto en = lit->template get<2>();
+                    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+                    {
+                        auto it = lit->template get<1>();
+                        auto en = lit->template get<2>();
 
-            // make sure that we have elements to iterate over (return 0
-            // otherwise)
-            if ( it == en )
-                continue;
+                        // make sure that we have elements to iterate over (return 0
+                        // otherwise)
+                        if ( it == en )
+                            continue;
 
-            //std::cout << "nbElts: " << std::distance(it, en) << std::endl;
+                        //std::cout << "nbElts: " << std::distance(it, en) << std::endl;
 
-            //std::cout << "0" << std::endl;
+                        //std::cout << "0" << std::endl;
 
-            //
-            // Precompute some data in the reference element for
-            // geometric mapping and reference finite element
-            //
-            // warning this is not efficient here, we want to use the geometric mapping
-            // from the elements in order to take advantage of the cache if possible
-            // this change hsa been made in order to circumvent a bug which is not yet found
-            //#warning INEFFICIENT CODE HERE : TO DEBUG
-            //gm_ptrtype gm( new gm_type) ;//it->gm();
-            gm_ptrtype gm( it->gm() );
-            //std::cout << "0.5" << std::endl;
-            gm1_ptrtype gm1( new gm1_type ); //it->gm1();
-            //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
-            //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-            typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
-                                                                               this->im().points() ) );
-            //std::cout << "1" << std::endl;
-            typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
-                                                                                  this->im().points() ) );
+                        //
+                        // Precompute some data in the reference element for
+                        // geometric mapping and reference finite element
+                        //
+                        // warning this is not efficient here, we want to use the geometric mapping
+                        // from the elements in order to take advantage of the cache if possible
+                        // this change hsa been made in order to circumvent a bug which is not yet found
+                        //#warning INEFFICIENT CODE HERE : TO DEBUG
+                        //gm_ptrtype gm( new gm_type) ;//it->gm();
+                        gm_ptrtype gm( it->gm() );
+                        //std::cout << "0.5" << std::endl;
+                        gm1_ptrtype gm1( new gm1_type ); //it->gm1();
+                        //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
+                        //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+                        typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
+                                                                                           this->im().points() ) );
+                        //std::cout << "1" << std::endl;
+                        typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
+                                                                                              this->im().points() ) );
 
-            //std::cout << "2" << std::endl;
-            //it = this->beginElement();
+                        //std::cout << "2" << std::endl;
+                        //it = this->beginElement();
 
-            // wait for all the guys
+                        // wait for all the guys
 #ifdef FEELPP_HAS_MPI
-            auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+                        auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
 #if 0
-            if ( worldComm.localSize() > 1 )
-            {
-                worldComm.localComm().barrier();
-            }
-#endif
-#endif
-
-            // possibly high order
-            gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-            //std::cout << "3" << std::endl;
-            typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-            eval_expr_type expr( expression(), mapgmc );
-            typedef typename eval_expr_type::shape shape;
-            //std::cout << "4" << std::endl;
-
-            // order 1
-            gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-            //std::cout << "5" << std::endl;
-            typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
-            eval_expr1_type expr1( expression(), mapgmc1 );
-
-            //std::cout << "6" << std::endl;
-
-
-            //value_type res1 = 0;
-            for ( ; it != en; ++it )
-            {
-                switch ( M_gt )
-                {
-                default:
-                case  GeomapStrategyType::GEOMAP_HO :
-                {
-#if 1
-                    __c->update( *it );
-                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                    expr.update( mapgmc );
-                    const gmc_type& gmc = *__c;
-
-                    M_im.update( gmc );
-#endif
-
-
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        if ( worldComm.localSize() > 1 )
                         {
-                            res( c1,c2 ) += M_im( expr, c1, c2 );
+                            worldComm.localComm().barrier();
                         }
-                }
-                break;
-
-                case GeomapStrategyType::GEOMAP_O1:
-                {
-#if 1
-                    //DDLOG(INFO) << "geomap o1" << "\n";
-                    __c1->update( *it );
-                    map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                    expr1.update( mapgmc );
-                    const gmc1_type& gmc = *__c1;
-
-                    M_im.update( gmc );
+#endif
 #endif
 
-
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                        {
-                            res( c1,c2 ) += M_im( expr1, c1, c2 );
-                        }
-                }
-                break;
-
-                case GeomapStrategyType::GEOMAP_OPT:
-                {
-                    //DDLOG(INFO) << "geomap opt" << "\n";
-                    if ( it->isOnBoundary() )
-                    {
-#if 1
-                        //DDLOG(INFO) << "boundary element using ho" << "\n";
-                        __c->update( *it );
+                        // possibly high order
+                        gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
+                        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                        expr.update( mapgmc );
-                        const gmc_type& gmc = *__c;
+                        //std::cout << "3" << std::endl;
+                        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+                        eval_expr_type expr( expression(), mapgmc );
+                        typedef typename eval_expr_type::shape shape;
+                        //std::cout << "4" << std::endl;
 
-                        M_im.update( gmc );
-#endif
+                        // order 1
+                        gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
+                        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+                        map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+                        //std::cout << "5" << std::endl;
+                        typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
+                        eval_expr1_type expr1( expression(), mapgmc1 );
+
+                        //std::cout << "6" << std::endl;
 
 
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                            for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        //value_type res1 = 0;
+                        for ( ; it != en; ++it )
+                        {
+                            switch ( M_gt )
                             {
-                                res( c1,c2 ) += M_im( expr, c1, c2 );
-                            }
-                    }
-
-                    else
-                    {
+                            default:
+                            case  GeomapStrategyType::GEOMAP_HO :
+                            {
 #if 1
-                        //DDLOG(INFO) << "interior element using order 1" << "\n";
-                        __c1->update( *it );
-                        map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                        expr1.update( mapgmc );
-                        const gmc1_type& gmc = *__c1;
+                                __c->update( *it );
+                                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+                                expr.update( mapgmc );
+                                const gmc_type& gmc = *__c;
 
-                        M_im.update( gmc );
+                                M_im.update( gmc );
 #endif
 
-                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                            for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                            {
-                                res( c1,c2 ) += M_im( expr1, c1, c2 );
+
+                                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                                    {
+                                        res( c1,c2 ) += M_im( expr, c1, c2 );
+                                    }
                             }
-                    }
-                }
+                            break;
 
-                //break;
-                }
-            }
-        }
-#if defined(FEELPP_HAS_HARTS)
-        perf_mng.stop("total") ;
-        std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+                            case GeomapStrategyType::GEOMAP_O1:
+                            {
+#if 1
+                                //DDLOG(INFO) << "geomap o1" << "\n";
+                                __c1->update( *it );
+                                map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+                                expr1.update( mapgmc );
+                                const gmc1_type& gmc = *__c1;
+
+                                M_im.update( gmc );
 #endif
 
-        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-        return res;
-    }
+                                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                                    {
+                                        res( c1,c2 ) += M_im( expr1, c1, c2 );
+                                    }
+                            }
+                            break;
+
+                            case GeomapStrategyType::GEOMAP_OPT:
+                            {
+                                //DDLOG(INFO) << "geomap opt" << "\n";
+                                if ( it->isOnBoundary() )
+                                {
+#if 1
+                                    //DDLOG(INFO) << "boundary element using ho" << "\n";
+                                    __c->update( *it );
+                                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+                                    expr.update( mapgmc );
+                                    const gmc_type& gmc = *__c;
+
+                                    M_im.update( gmc );
+#endif
+
+
+                                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                                
+                                        {
+                                            res( c1,c2 ) += M_im( expr, c1, c2 );
+                                        }
+                                }
+
+                                else
+                                {
+#if 1
+                                    //DDLOG(INFO) << "interior element using order 1" << "\n";
+                                    __c1->update( *it );
+                                    map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+                                    expr1.update( mapgmc );
+                                    const gmc1_type& gmc = *__c1;
+
+                                    M_im.update( gmc );
+#endif
+                                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                                        {
+                                            res( c1,c2 ) += M_im( expr1, c1, c2 );
+                                        }
+                                }
+                            }
+
+                            //break;
+                            }
+                        }
+                    }
+#if defined(FEELPP_HAS_HARTS)
+                    perf_mng.stop("total") ;
+                    std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+#endif
+
+                    DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                    return res;
+                }
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
-typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
+    typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+    Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 {
     DLOG(INFO) << "integrating over "
-                  << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
+               << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
     boost::timer __timer;
 
     //
@@ -5518,13 +5819,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
-
-    //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<the_face_element_type>, mpl::identity<the_element_type> ) );;
-
+    
+    //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<thise_face_element_type>, mpl::identity<the_element_type> ) );;
+    
     QuadMapped<im_type> qm;
     typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-
+    
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
@@ -5533,35 +5834,36 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     typedef typename eval::gmpc_ptrtype pc_ptrtype;
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
     typedef typename im_type::face_quadrature_type face_im_type;
-
+    
     std::vector<im_face_type> __integrators;
-
+    
     typename eval::matrix_type res( eval::matrix_type::Zero() );
     typename eval::matrix_type res0( eval::matrix_type::Zero() );
     typename eval::matrix_type res1( eval::matrix_type::Zero() );
-
-
+    
+    
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
         auto it = lit->template get<1>();
         auto en = lit->template get<2>();
-
+        
         // make sure that we have elements to iterate over (return 0
         // otherwise)
         if ( (it == en) || (it->isConnectedTo0()==false) )
             continue;
         //return typename eval::matrix_type( eval::matrix_type::Zero() );
-
+        
         CHECK( it->isConnectedTo0() ) << "invalid face with id=" << it->id();
         CHECK( it->element(0).gm() ) << "invalid geometric transformation assocated to face id="
                                      <<  it->id() << " and element id " << it->element(0).id();
+      
         gm_ptrtype gm = it->element( 0 ).gm();
-
+        
         //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
         for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( im( __f ) );
-
+            
             for ( permutation_type __p( permutation_type::IDENTITY );
                   __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
@@ -5569,46 +5871,46 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
             }
         }
-
+        
         uint16_type __face_id_in_elt_0 = it->pos_first();
-
+        
         // get the geometric mapping associated with element 0
         gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
-
+        
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
+        
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
         eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
         expr->init( im() );
-
+        
         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
         typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
         typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
         eval2_expr_ptrtype expr2;
-
+        
         // true if connected to another element, false otherwise
         bool isConnectedTo1 = it->isConnectedTo1();
-
+        
         // get the geometric mapping associated with element 1
         gmc_ptrtype __c1;
-
+        
         //value_type res = 0;
         //value_type res1 = 0;
         if ( isConnectedTo1 )
         {
             uint16_type __face_id_in_elt_1 = it->pos_second();
-
+            
             __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
-
+            
             map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
                                   fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
+            
             expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
             expr2->init( im() );
         }
-
+        
         //
         // start the real intensive job:
         // -# iterate over all elements to integrate over
@@ -5626,17 +5928,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
             // if is a interprocess faces, only integrate in one process
             if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
                 continue;
-
+            
             if ( it->isConnectedTo1() )
             {
                 FEELPP_ASSERT( it->isOnBoundary() == false   )
                     ( it->id() ).error( "face on boundary but connected on both sides" );
                 uint16_type __face_id_in_elt_0 = it->pos_first();
                 uint16_type __face_id_in_elt_1 = it->pos_second();
-
+                
                 __c0->update( it->element( 0 ), __face_id_in_elt_0 );
                 __c1->update( it->element( 1 ), __face_id_in_elt_1 );
-
+                
 #if 0
                 std::cout << "face " << it->id() << "\n"
                           << " id in elt = " << __face_id_in_elt_1 << "\n"
@@ -5655,24 +5957,24 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                           << " ref nodes 1 :" << __c1->xRefs() << "\n"
                           << " real nodes 1:" << __c1->xReal() << "\n";
 #endif
-
+                
                 __typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
                 //std::cout << "pts = " << im_face.points() << "\n";
                 map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
                                       fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
+                
                 expr2->update( mapgmc, __face_id_in_elt_0 );
                 const gmc_type& gmc = *__c0;
-
+                
                 __integrators[__face_id_in_elt_0].update( gmc );
-
+                
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
                         res( c1,c2 ) += __integrators[__face_id_in_elt_0]( *expr2, c1, c2 );
                     }
             }
-
+            
             else
             {
                 //LOG_IF( !it->isConnectedTo0(), WARN ) << "integration invalid boundary face";
@@ -5684,9 +5986,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 expr->update( mapgmc, __face_id_in_elt_0 );
                 //expr->update( mapgmc );
                 const gmc_type& gmc = *__c0;
-
+                
                 __integrators[__face_id_in_elt_0].update( gmc );
-
+                
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
@@ -5700,394 +6002,394 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     return res;
 }
-
-template<typename Elements, typename Im, typename Expr, typename Im2>
-typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_POINTS> ) const
-{
-    DLOG(INFO)  << "integrating over "
-             << std::distance( this->beginElement(), this->endElement() )  << " points\n";
-
-    // first loop on the points, then retrieve the elements to which they belong
-    // and evaluate the integrand expression and accumulate it
-
-
-}
-
-template<typename Elements, typename Im, typename Expr, typename Im2>
-template<typename P0hType>
-typename P0hType::element_type
-Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
-{
-    DLOG(INFO) << "integrating over "
-                  << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-    boost::timer __timer;
-
-    //
-    // some typedefs
-    //
-    typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_element_type;
-    typedef the_element_type element_type;
-    typedef typename the_element_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT, the_element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    //typedef typename eval::gm_type gmc_type;
-    //typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-
-    //typedef typename eval_expr_type::value_type value_type;
-    //typedef typename Im::value_type value_type;
-
-    auto p0 = P0h->element( "p0" );
-    // set to 0 first
-    p0.zero();
-
-    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-    {
-        auto it = lit->template get<1>();
-        auto en = lit->template get<2>();
-
-
-        // make sure that we have elements to iterate over (return 0
-        // otherwise)
-        if ( it == en )
-            continue;
-            //return p0;
-
-        //
-        // Precompute some data in the reference element for
-        // geometric mapping and reference finite element
-        //
-        gm_ptrtype gm = it->gm();
-        //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-        typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
-                                                                           this->im().points() ) );
-
-
-        it = this->beginElement();
-        // wait for all the guys
+ 
+ template<typename Elements, typename Im, typename Expr, typename Im2>
+     typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+     Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_POINTS> ) const
+ {
+     DLOG(INFO)  << "integrating over "
+                 << std::distance( this->beginElement(), this->endElement() )  << " points\n";
+     
+     // first loop on the points, then retrieve the elements to which they belong
+     // and evaluate the integrand expression and accumulate it
+     
+     
+ }
+ 
+ template<typename Elements, typename Im, typename Expr, typename Im2>
+     template<typename P0hType>
+     typename P0hType::element_type
+     Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
+ {
+     DLOG(INFO) << "integrating over "
+                << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
+     boost::timer __timer;
+     
+     //
+     // some typedefs
+     //
+     typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
+     typedef typename boost::remove_const<const_t>::type the_element_type;
+     typedef the_element_type element_type;
+     typedef typename the_element_type::gm_type gm_type;
+     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT, the_element_type> gmc_type;
+     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     //typedef typename eval::gm_type gmc_type;
+     //typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     
+     //typedef typename eval_expr_type::value_type value_type;
+     //typedef typename Im::value_type value_type;
+     
+     auto p0 = P0h->element( "p0" );
+     // set to 0 first
+     p0.zero();
+     
+     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+     {
+         auto it = lit->template get<1>();
+         auto en = lit->template get<2>();
+         
+         
+         // make sure that we have elements to iterate over (return 0
+         // otherwise)
+         if ( it == en )
+             continue;
+         //return p0;
+         
+         //
+         // Precompute some data in the reference element for
+         // geometric mapping and reference finite element
+         //
+         gm_ptrtype gm = it->gm();
+         //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+         typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
+                                                                            this->im().points() ) );
+         
+         
+         it = this->beginElement();
+         // wait for all the guys
 #ifdef FEELPP_HAS_MPI
-        auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
-
+         auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+         
 #if 0
-        if ( worldComm.size() > 1 )
-        {
-            worldComm.barrier();
-        }
+         if ( worldComm.size() > 1 )
+         {
+             worldComm.barrier();
+         }
 #endif
 #endif
-
-
-
-        gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        eval_expr_type expr( expression(), mapgmc );
-        typedef typename eval_expr_type::shape shape;
-
-        //value_type res1 = 0;
-        for ( ; it != en; ++it )
-        {
-            boost::timer ti;
-            __c->update( *it );
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-            expr.update( mapgmc );
-            const gmc_type& gmc = *__c;
-
-            M_im.update( gmc );
-
-
-            for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-            {
-                size_type i= P0h->dof()->localToGlobal( it->id(), 0, c1 ).index();
+         
+         
+         
+         gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
+         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+         
+         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+         eval_expr_type expr( expression(), mapgmc );
+         typedef typename eval_expr_type::shape shape;
+         
+         //value_type res1 = 0;
+         for ( ; it != en; ++it )
+         {
+             boost::timer ti;
+             __c->update( *it );
+             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+             expr.update( mapgmc );
+             const gmc_type& gmc = *__c;
+             
+             M_im.update( gmc );
+             
+             
+             for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+             {
+                 size_type i= P0h->dof()->localToGlobal( it->id(), 0, c1 ).index();
                  double v = M_im( expr, c1, 0 );
-                p0.set( i, v );
-            }
-        }
-    }
-    //std::cout << "res=" << res << "\n";
-    //std::cout << "res1=" << res1 << "\n";
-    DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
-
-    return p0;
-}
-template<typename Elements, typename Im, typename Expr, typename Im2>
-template<typename P0hType>
-typename P0hType::element_type
-Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
-{
-    DLOG(INFO) << "integrating over "
-                  << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
-    boost::timer __timer;
-
-    //
-    // some typedefs
-    //
-    typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
-    typedef typename the_face_element_type::super2::entity_type the_element_type;
-    typedef typename the_element_type::gm_type gm_type;
-    typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, the_element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    //typedef typename eval_expr_type::value_type value_type;
-    //typedef typename Im::value_type value_type;
-
-    //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<the_face_element_type>, mpl::identity<the_element_type> ) );;
-
-    QuadMapped<im_type> qm;
-    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
-    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typedef typename eval::gmpc_type pc_type;
-    typedef typename eval::gmpc_ptrtype pc_ptrtype;
-    std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
-    typedef typename im_type::face_quadrature_type face_im_type;
-
-    std::vector<im_face_type> __integrators;
-
-    auto p0 = P0h->element( "p0" );
-    // set to 0 first
-    p0.zero();
-
-    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
-    {
-        auto it = lit->template get<1>();
-        auto en = lit->template get<2>();
-
-        // make sure that we have elements to iterate over (return 0
-        // otherwise)
-        if ( it == en )
-            continue;
-        //return p0;
-
-        gm_ptrtype gm = it->element( 0 ).gm();
-
-        //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
-        for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
-        {
-            __integrators.push_back( im( __f ) );
-
-            for ( permutation_type __p( permutation_type::IDENTITY );
-                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
-            }
-        }
-
-
-        uint16_type __face_id_in_elt_0 = it->pos_first();
-
-        // get the geometric mapping associated with element 0
-        gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
-
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-        eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
-        expr->init( im() );
-
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
-        typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
-        typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
-        eval2_expr_ptrtype expr2;
-
-        // true if connected to another element, false otherwise
-        bool isConnectedTo1 = it->isConnectedTo1();
-
-        // get the geometric mapping associated with element 1
-        gmc_ptrtype __c1;
-
-        //value_type res = 0;
-        //value_type res1 = 0;
-        if ( isConnectedTo1 )
-        {
-            uint16_type __face_id_in_elt_1 = it->pos_second();
-
-            __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
-
-            map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                  fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
-            expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
-            expr2->init( im() );
-        }
-
-        //
-        // start the real intensive job:
-        // -# iterate over all elements to integrate over
-        // -# construct the associated geometric mapping with the reference element
-        // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
-        // -# assemble the local contribution in the global representation of the bilinear form
-        //
-        for ( ; it != en; ++it )
-        {
-
-            if ( it->isConnectedTo1() )
-            {
-                FEELPP_ASSERT( it->isOnBoundary() == false   )
-                    ( it->id() ).error( "face on boundary but connected on both sides" );
-                uint16_type __face_id_in_elt_0 = it->pos_first();
-                uint16_type __face_id_in_elt_1 = it->pos_second();
-
-                __c0->update( it->element( 0 ), __face_id_in_elt_0 );
-                __c1->update( it->element( 1 ), __face_id_in_elt_1 );
-
+                 p0.set( i, v );
+             }
+         }
+     }
+     //std::cout << "res=" << res << "\n";
+     //std::cout << "res1=" << res1 << "\n";
+     DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+     
+     return p0;
+ }
+ template<typename Elements, typename Im, typename Expr, typename Im2>
+     template<typename P0hType>
+     typename P0hType::element_type
+     Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
+ {
+     DLOG(INFO) << "integrating over "
+                << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
+     boost::timer __timer;
+     
+     //
+     // some typedefs
+     //
+     typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
+     typedef typename boost::remove_const<const_t>::type the_face_element_type;
+     typedef typename the_face_element_type::super2::entity_type the_element_type;
+     typedef typename the_element_type::gm_type gm_type;
+     typedef boost::shared_ptr<gm_type> gm_ptrtype;
+     typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, the_element_type> gmc_type;
+     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+     //typedef typename eval_expr_type::value_type value_type;
+     //typedef typename Im::value_type value_type;
+     
+     //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<thise_face_element_type>, mpl::identity<the_element_type> ) );;
+     
+     QuadMapped<im_type> qm;
+     typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+     
+     //
+     // Precompute some data in the reference element for
+     // geometric mapping and reference finite element
+     //
+     typedef typename eval::gmpc_type pc_type;
+     typedef typename eval::gmpc_ptrtype pc_ptrtype;
+     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
+     typedef typename im_type::face_quadrature_type face_im_type;
+     
+     std::vector<im_face_type> __integrators;
+     
+     auto p0 = P0h->element( "p0" );
+     // set to 0 first
+     p0.zero();
+     
+     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+     {
+         auto it = lit->template get<1>();
+         auto en = lit->template get<2>();
+         
+         // make sure that we have elements to iterate over (return 0
+         // otherwise)
+         if ( it == en )
+             continue;
+         //return p0;
+         
+         gm_ptrtype gm = it->element( 0 ).gm();
+         
+         //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+         for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
+         {
+             __integrators.push_back( im( __f ) );
+             
+             for ( permutation_type __p( permutation_type::IDENTITY );
+                   __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+             {
+                 //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
+                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
+             }
+         }
+         
+         
+         uint16_type __face_id_in_elt_0 = it->pos_first();
+         
+         // get the geometric mapping associated with element 0
+         gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
+         
+         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+         
+         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+         typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
+         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
+         eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
+         expr->init( im() );
+         
+         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+         typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
+         typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
+         eval2_expr_ptrtype expr2;
+         
+         // true if connected to another element, false otherwise
+         bool isConnectedTo1 = it->isConnectedTo1();
+         
+         // get the geometric mapping associated with element 1
+         gmc_ptrtype __c1;
+         
+         //value_type res = 0;
+         //value_type res1 = 0;
+         if ( isConnectedTo1 )
+         {
+             uint16_type __face_id_in_elt_1 = it->pos_second();
+             
+             __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
+             
+             map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                   fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+             
+             expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
+             expr2->init( im() );
+         }
+         
+         //
+         // start the real intensive job:
+         // -# iterate over all elements to integrate over
+         // -# construct the associated geometric mapping with the reference element
+         // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
+         // -# assemble the local contribution in the global representation of the bilinear form
+         //
+         for ( ; it != en; ++it )
+         {
+             
+             if ( it->isConnectedTo1() )
+             {
+                 FEELPP_ASSERT( it->isOnBoundary() == false   )
+                     ( it->id() ).error( "face on boundary but connected on both sides" );
+                 uint16_type __face_id_in_elt_0 = it->pos_first();
+                 uint16_type __face_id_in_elt_1 = it->pos_second();
+                 
+                 __c0->update( it->element( 0 ), __face_id_in_elt_0 );
+                 __c1->update( it->element( 1 ), __face_id_in_elt_1 );
+                 
 #if 0
-                std::cout << "face " << it->id() << "\n"
-                          << " id in elt = " << __face_id_in_elt_1 << "\n"
-                          << "  elt 0 : " << it->element( 0 ).id() << "\n"
-                          << "  elt 0 G: " << it->element( 0 ).G() << "\n"
-                          << "  node elt 0 0 :" << it->element( 0 ).point( it->element( 0 ).fToP( __face_id_in_elt_0, 0 ) ).node() << "\n"
-                          << "  node elt 0 1 :" << it->element( 0 ).point( it->element( 0 ).fToP( __face_id_in_elt_0, 1 ) ).node() << "\n"
-                          << "  ref nodes 0 :" << __c0->xRefs() << "\n"
-                          << "  real nodes 0: " << __c0->xReal() << "\n";
-                std::cout << "face " << it->id() << "\n"
-                          << " id in elt = " << __face_id_in_elt_1 << "\n"
-                          << " elt 1 : " << it->element( 1 ).id() << "\n"
-                          << "  elt 1 G: " << it->element( 1 ).G() << "\n"
-                          << "  node elt 1 0 :" << it->element( 1 ).point( it->element( 1 ).fToP( __face_id_in_elt_1, 1 ) ).node() << "\n"
-                          << "  node elt 1 1 :" << it->element( 1 ).point( it->element( 1 ).fToP( __face_id_in_elt_1, 0 ) ).node() << "\n"
-                          << " ref nodes 1 :" << __c1->xRefs() << "\n"
-                          << " real nodes 1:" << __c1->xReal() << "\n";
+                 std::cout << "face " << it->id() << "\n"
+                           << " id in elt = " << __face_id_in_elt_1 << "\n"
+                           << "  elt 0 : " << it->element( 0 ).id() << "\n"
+                           << "  elt 0 G: " << it->element( 0 ).G() << "\n"
+                           << "  node elt 0 0 :" << it->element( 0 ).point( it->element( 0 ).fToP( __face_id_in_elt_0, 0 ) ).node() << "\n"
+                           << "  node elt 0 1 :" << it->element( 0 ).point( it->element( 0 ).fToP( __face_id_in_elt_0, 1 ) ).node() << "\n"
+                           << "  ref nodes 0 :" << __c0->xRefs() << "\n"
+                           << "  real nodes 0: " << __c0->xReal() << "\n";
+                 std::cout << "face " << it->id() << "\n"
+                           << " id in elt = " << __face_id_in_elt_1 << "\n"
+                           << " elt 1 : " << it->element( 1 ).id() << "\n"
+                           << "  elt 1 G: " << it->element( 1 ).G() << "\n"
+                           << "  node elt 1 0 :" << it->element( 1 ).point( it->element( 1 ).fToP( __face_id_in_elt_1, 1 ) ).node() << "\n"
+                           << "  node elt 1 1 :" << it->element( 1 ).point( it->element( 1 ).fToP( __face_id_in_elt_1, 0 ) ).node() << "\n"
+                           << " ref nodes 1 :" << __c1->xRefs() << "\n"
+                           << " real nodes 1:" << __c1->xReal() << "\n";
 #endif
-
-                __typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
-                //std::cout << "pts = " << im_face.points() << "\n";
-                map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                      fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
-                expr2->update( mapgmc, __face_id_in_elt_0 );
-                const gmc_type& gmc = *__c0;
-
-                __integrators[__face_id_in_elt_0].update( gmc );
-
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                {
-                    size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
-                    size_type i1 =  P0h->dof()->localToGlobal( it->element( 1 ), 0, c1 ).index();
-                    double v = __integrators[__face_id_in_elt_0]( *expr2, c1, 0 );
-                    p0.add( i0, v );
-                    p0.add( i1, v );
-                }
-            }
-
-            else
-            {
-                uint16_type __face_id_in_elt_0 = it->pos_first();
-                __c0->update( it->element( 0 ), __face_id_in_elt_0 );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-                expr->update( mapgmc, __face_id_in_elt_0 );
-                //expr->update( mapgmc );
-                const gmc_type& gmc = *__c0;
-
-                __integrators[__face_id_in_elt_0].update( gmc );
-
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                {
-                    size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
-                    double v = __integrators[__face_id_in_elt_0]( *expr, c1, 0 );
-                    p0.add( i0, v );
-                }
-            } // !isConnectedTo1
-        } // for loop on face
-    }
-    //std::cout << "res=" << res << "\n";
-    //std::cout << "res1=" << res1 << "\n";
-    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
-    return p0;
-}
-/// \endcond
-
+                 
+                 __typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
+                 //std::cout << "pts = " << im_face.points() << "\n";
+                 map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                       fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+                 
+                 expr2->update( mapgmc, __face_id_in_elt_0 );
+                 const gmc_type& gmc = *__c0;
+                 
+                 __integrators[__face_id_in_elt_0].update( gmc );
+                 
+                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                 {
+                     size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
+                     size_type i1 =  P0h->dof()->localToGlobal( it->element( 1 ), 0, c1 ).index();
+                     double v = __integrators[__face_id_in_elt_0]( *expr2, c1, 0 );
+                     p0.add( i0, v );
+                     p0.add( i1, v );
+                 }
+             }
+             
+             else
+             {
+                 uint16_type __face_id_in_elt_0 = it->pos_first();
+                 __c0->update( it->element( 0 ), __face_id_in_elt_0 );
+                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
+                 expr->update( mapgmc, __face_id_in_elt_0 );
+                 //expr->update( mapgmc );
+                 const gmc_type& gmc = *__c0;
+                 
+                 __integrators[__face_id_in_elt_0].update( gmc );
+                 
+                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                 {
+                     size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
+                     double v = __integrators[__face_id_in_elt_0]( *expr, c1, 0 );
+                     p0.add( i0, v );
+                 }
+             } // !isConnectedTo1
+         } // for loop on face
+     }
+     //std::cout << "res=" << res << "\n";
+     //std::cout << "res1=" << res1 << "\n";
+     DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+     return p0;
+ }
+ /// \endcond
+ 
 #if 0
-/**
- * integrate an expression \c expr over a set of convexes \c elts
- * using the integration rule \c im .
- */
-template<typename Elts, typename Im, typename ExprT>
-Expr<Integrator<Elts, Im, ExprT, Im> >
-integrate( Elts const& elts,
-           Im const& im,
-           ExprT const& expr,
-           GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
-{
-    typedef Integrator<Elts, Im, ExprT, Im> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
-}
-#endif
-
-//Macro which get the good integration order
-# define VF_VALUE_OF_IM(O)                                              \
-    boost::mpl::if_< boost::mpl::bool_< O::imIsPoly > ,                 \
-                     typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<O::imorder>, boost::mpl::int_<19> > , \
-                                               boost::mpl::int_<19>,    \
-                                               boost::mpl::int_<O::imorder> >::type >::type , \
-                                                                               boost::mpl::int_<10> >::type::value \
-/**/
-
-/**
- * integrate an expression \c expr over a set of convexes \c elts
- * using the integration rule \c im .
- */
-template<typename Elts, typename Im, typename ExprT, typename Im2 = Im>
-Expr<Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> >
-integrate_impl( Elts const& elts,
+ /**
+  * integrate an expression \c expr over a set of convexes \c elts
+  * using the integration rule \c im .
+  */
+ template<typename Elts, typename Im, typename ExprT>
+     Expr<Integrator<Elts, Im, ExprT, Im> >
+     integrate( Elts const& elts,
                 Im const& im,
                 ExprT const& expr,
-                GeomapStrategyType const& gt,
-                Im2 const& im2,
-                bool use_tbb,
-                bool use_harts,
-                int grainsize,
-                std::string const& partitioner,
-                boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
-                = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
-{
-
-    typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
-    typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
-
-    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1,range_type>::type >::type element_iterator;
-    static const uint16_type geoOrder = element_iterator::value_type::nOrder;
-    LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
-}
-
-
-/// \cond DETAIL
-namespace detail
-{
-template<typename Args>
-struct integrate_type
-{
-    typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
-    typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
-    typedef typename boost::unwrap_reference< typename boost::tuples::template element<1, _range_type>::type >::type _element_iterator;
-    static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
-
-    //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-    typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-    typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
-    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
-
-    typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
-};
-} // detail
-
-/// \endcond
-
-
-
+                GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
+ {
+     typedef Integrator<Elts, Im, ExprT, Im> expr_t;
+     return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
+ }
+#endif
+ 
+ //Macro which get the good integration order
+# define VF_VALUE_OF_IM(O)                                              \
+ boost::mpl::if_< boost::mpl::bool_< O::imIsPoly > ,                    \
+                  typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<O::imorder>, boost::mpl::int_<19> > , \
+                                            boost::mpl::int_<19>,       \
+                                            boost::mpl::int_<O::imorder> >::type >::type , \
+     boost::mpl::int_<10> >::type::value                                \
+     /**/
+ 
+ /**
+  * integrate an expression \c expr over a set of convexes \c elts
+  * using the integration rule \c im .
+  */
+ template<typename Elts, typename Im, typename ExprT, typename Im2 = Im>
+     Expr<Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> >
+     integrate_impl( Elts const& elts,
+                     Im const& im,
+                     ExprT const& expr,
+                     GeomapStrategyType const& gt,
+                     Im2 const& im2,
+                     bool use_tbb,
+                     bool use_harts,
+                     int grainsize,
+                     std::string const& partitioner,
+                     boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
+                     = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
+ {
+     
+     typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
+     typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
+     
+     typedef typename boost::unwrap_reference< typename boost::tuples::template element<1,range_type>::type >::type element_iterator;
+     static const uint16_type geoOrder = element_iterator::value_type::nOrder;
+     LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
+     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
+ }
+ 
+ 
+ /// \cond DETAIL
+ namespace detail
+ {
+ template<typename Args>
+ struct integrate_type
+ {
+     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
+     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
+     typedef typename boost::unwrap_reference< typename boost::tuples::template element<1, _range_type>::type >::type _element_iterator;
+     static const uint16_type geoOrder = _element_iterator::value_type::nOrder;
+     
+     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
+     typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
+     typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
+     
+     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
+ };
+ } // detail
+ 
+ /// \endcond
+ 
+ 
+ 
 } // vf
 
 
