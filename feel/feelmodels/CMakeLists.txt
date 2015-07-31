@@ -53,3 +53,7 @@ add_subdirectory(thermodyn)
 add_subdirectory(solid)
 add_subdirectory(fluid)
 add_subdirectory(fsi)
+
+add_custom_target(feelpp_models)
+#add_dependencies(feelpp_models feelpp_model_thermodyn feelpp_model_solid feelpp_model_fluid feelpp_model_fsi)
+add_dependencies(feelpp_models feelpp_model_fluid)
