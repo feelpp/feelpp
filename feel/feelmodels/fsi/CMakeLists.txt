@@ -1,7 +1,11 @@
 
+
+
 # Taylor Hood geo order 1 , solid : P1G1
 foreach( _DIM 2 3)
-  foreach( _FLUID_U_ORDER 2 3 4 5 )
+  feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FSI ${_DIM}D PN+1PNG1 N=2..${MAX_ORDER}")
+  foreach( _FLUID_U_ORDER RANGE 2 ${MAX_ORDER} )
     math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
     genLibFSI(
       DIM ${_DIM}
@@ -18,7 +22,9 @@ endforeach()
 
 # Taylor Hood iso-parametric with pressure , solid same order pressusre
 foreach( _DIM 2 3)
-  foreach( _FLUID_U_ORDER 3 4 5 )
+  feelpp_max( MAX_ORDER 3 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FSI ${_DIM}D iso-parametric PN+1PNG1 N=3..${MAX_ORDER}")
+  foreach( _FLUID_U_ORDER RANGE 3 ${MAX_ORDER} )
     math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
     genLibFSI(
       DIM ${_DIM}
@@ -35,7 +41,9 @@ endforeach()
 
 # same order velocty,pressure,displacement (geo1)
 foreach( _DIM 2 3)
-  foreach( _FLUID_U_ORDER 1 2 )
+  feelpp_max( MAX_ORDER 1 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FSI ${_DIM}D same order PNPNPNG1 N=1..${MAX_ORDER}")
+  foreach( _FLUID_U_ORDER RANGE 1 ${MAX_ORDER} )
     math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}')
     genLibFSI(
       DIM ${_DIM}

@@ -765,7 +765,7 @@ markededges( MeshType const& mesh,
     {
         flag_type theflag = mesh->markerId( it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_edges.push_back( Feel::detail::markededges( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_edges.push_back( Feel::detail::markededges( mesh, theflag, rank( mesh ), is_ptr_or_shared_ptr() ) );
     }
     return list_edges;
 }
@@ -874,7 +874,7 @@ markedpoints( MeshType const& mesh, std::list<std::string> const& __markers )
     {
         flag_type theflag = mesh->markerId( it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_points.push_back( Feel::detail::markedpoints( mesh, theflag/*, meshrank( mesh, is_ptr_or_shared_ptr() )*/, is_ptr_or_shared_ptr() ) );
+        list_points.push_back( Feel::detail::markedpoints( mesh, theflag/*, rank( mesh )*/, is_ptr_or_shared_ptr() ) );
     }
     return list_points;
 }
