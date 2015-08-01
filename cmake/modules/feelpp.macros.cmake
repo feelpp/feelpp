@@ -356,3 +356,13 @@ MACRO(feelpp_list_subdir result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
+#
+# compute the max of two variables
+macro(feelpp_max max var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${max} ${var1})
+  else()
+    set(${max} ${var2})
+  endif()
+endmacro(feelpp_max)
+

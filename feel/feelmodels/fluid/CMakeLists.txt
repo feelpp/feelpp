@@ -1,7 +1,9 @@
 
 # Taylor Hood geo order 1
 foreach( _DIM 2 3)
-  foreach( _U_ORDER 2 3 4 5 )
+  feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FLUID ${_DIM}D PNPN-1G1 N=2..${MAX_ORDER}")
+  foreach( _U_ORDER RANGE 2 ${MAX_ORDER} )
     math(EXPR _P_ORDER '${_U_ORDER}-1')
     genLibFluidMechanics(
       DIM ${_DIM}
@@ -16,7 +18,9 @@ endforeach()
 
 # Taylor Hood iso-parametric with pressure
 foreach( _DIM 2 3)
-  foreach( _U_ORDER 3 4 5 )
+  feelpp_max( MAX_ORDER 3 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FLUID ${_DIM}D PNPN-1GN-1 N=3..${MAX_ORDER}")
+  foreach( _U_ORDER RANGE 3 ${MAX_ORDER} )
     math(EXPR _P_ORDER '${_U_ORDER}-1')
     genLibFluidMechanics(
       DIM ${_DIM}
@@ -31,7 +35,9 @@ endforeach()
 
 # PnPn geo 1 : same order velocity/pressure
 foreach( _DIM 2 3)
-  foreach( _U_ORDER 1 2 )
+  feelpp_max( MAX_ORDER 1 ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FLUID ${_DIM}D PNPNG1 N=1..${MAX_ORDER}")
+  foreach( _U_ORDER RANGE 1 ${MAX_ORDER} )
     genLibFluidMechanics(
       DIM ${_DIM}
       GEO_ORDER 1
