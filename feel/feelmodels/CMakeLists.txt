@@ -54,8 +54,11 @@ add_subdirectory(solid)
 add_subdirectory(fluid)
 add_subdirectory(fsi)
 
+add_custom_target(feelpp_model_algebra)
+add_dependencies(feelpp_model_algebra feelpp_modelalg)
+
 add_custom_target(feelpp_model_mesh)
-add_dependencies(feelpp_model_mesh feelpp_modelmesh)
+add_dependencies(feelpp_model_mesh feelpp_model_algebra)
 
 add_custom_target(feelpp_models)
 #add_dependencies(feelpp_models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
