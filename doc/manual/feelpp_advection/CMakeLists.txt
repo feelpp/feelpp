@@ -1,0 +1,15 @@
+#######
+####
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+cmake_minimum_required(VERSION 2.8)
+find_path(FEELPP_CMAKE_MODULES FindFeel++.cmake PATHS /usr/share/feel/cmake/modules/ /usr/local/share/feel/cmake/modules/ )
+if(FEELPP_CMAKE_MODULES)
+	set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
+else()
+	message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
+endif()
+find_package(Feel++)
+endif()
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+feelpp_add_application(feelpp_advection SRCS feelpp_advection.cpp )
+feelpp_add_application(feelpp_GaLS SRCS feelpp_GaLS.cpp )
