@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
     BOOST_TEST_MESSAGE( "*** projection on cube ***" );
     Feel::TestHDiv3D t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
+    Feel::Environment::changeRepository( boost::format( "%1%/test_projection/" )
                                          % Feel::Environment::about().appName() );
     t.testProjector();
 }
@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
     Feel::TestHDiv3D t;
 
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_Darcy/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "%1%/test_Darcy/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % t.hSize() );
 
