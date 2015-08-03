@@ -86,7 +86,7 @@ generic_options()
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
         ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
-        ( "display-stats", po::value<bool>()->default_value(true), "display statistics (timers, iterations counts...)" )
+        ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
         ;
     return generic;
 }
@@ -333,7 +333,7 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
         ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
         ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
-        ( prefixvm( prefix, "ts.display-stats").c_str(), po::value<bool>()->default_value(true), "display statistics (timers, iterations counts...) at each ts iteration" )
+        ( prefixvm( prefix, "ts.display-stats").c_str(), po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...) at each ts iteration" )
         ;
     return _options;
 }
