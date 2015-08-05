@@ -22,6 +22,52 @@
 #
 #
   if (FEELPP_ENABLE_SCHED_OAR )
+if (FEELPP_MACHINE_NAME MATCHES "rheticus")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
+#OAR -n ${execname}                # Set Job name to app name
+#OAR -l core=64, walltime=20:00:00  # Number of tasks to use and Elapsed time limit of the job
+#OAR -O ${execname}_%jobid%.out     # Standard output.
+#OAR -E ${execname}_%jobid%.err     # Error output. 
+#OAR -p cluster     # Launch job on cluster queue by default
+##OAR -p smp='YES' AND nodetype='SMP2Tb'    # Uncomment to submit a job on the SMP machine
+#OAR -q medium      # Choose queue between development, short, medium & long
+
+# Source modules for cemracs
+source /softs/cemracs_2015/cemracs.sh
+
+# To display some info:
+# Number of cores
+#nbcores=`cat $OAR_NODE_FILE|wc -l`
+# Number of nodes
+#nbnodes=`cat $OAR_NODE_FILE|sort|uniq|wc -l`
+#Name of the first node
+#firstnode=`head -1 $OAR_NODE_FILE`
+
+#Number of cores allocated on the first node (it is the same on all the nodes)
+#pernode=`grep "$firstnode\$" $OAR_NODE_FILE|wc -l`
+#echo "nbcores=" $nbcores
+#echo "nbnodes=" $nbnodes
+
+# Important note:
+# If you export additional variables like FEELPP_WORKDIR and FEELPP_SCRATCHDIR
+# you need to export them for mpirun with -x
+# We ended up having problem with Ginac when not exporting those variables
+# (They were only set for for several processes)
+# sample exports
+#export FEELPP_WORKDIR=/home/user/logfiles/job.$OAR_JOBID
+#export FEELPP_SCRATCHDIR=/home/user/feel/job.$OAR_JOBID
+
+# launch the application
+# For OpenMPI 1.6, use orte_rsh_agent instead of plm_rsh_agent
+# See https://www.grid5000.fr/mediawiki/index.php/Run_MPI_On_Grid%275000
+# See http://oar.imag.fr/docs/2.5/user/usecases.html
+# Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent."
+mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \
+ -mca plm_rsh_agent "oarsh" \
+ ${execname}
+")
+
+else
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oarsub "#! /bin/bash
 #OAR -r ${execname}                # Request name
 #OAR -l /nodes=64,walltime=0:30:00 # Number of tasks to use and Elapsed time limit of the job
