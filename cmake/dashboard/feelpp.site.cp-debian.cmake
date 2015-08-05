@@ -53,7 +53,7 @@ set(FEELPP_BENCHMARK_FLAG OFF) #
 set(ENABLE_TESTS ON) #testsuite
 set(ENABLE_DOCUMENTATION ON) #doc
 set(ENABLE_BENCHMARKS ON) #benchmarkes
-set(ENABLE_RESEARCH OFF) #research
+set(ENABLE_RESEARCH ON) #research
 set(ENABLE_APPLICATIONS OFF) #applications
 set(ENABLE_CRB_ALL ON) #Applications/CRB
 set(ENABLE_APPLICATIONS_CRB ON)#Applications/CRB
