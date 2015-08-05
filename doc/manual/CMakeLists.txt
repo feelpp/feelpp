@@ -24,10 +24,6 @@
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  add_subdirectory(tutorial)
-endif()
-
 find_program(LATEX NAMES latex pdflatex)
 find_program(CONVERT NAMES convert)
 if ( LATEX AND CONVERT )
@@ -39,7 +35,7 @@ endif()
 if ( FEELPP_ENABLE_MANUAL )
   include(UseLATEX OPTIONAL)
 
-  foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
+  foreach(cppfile "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
       "laplacian/laplacian.cpp"
       "stokes/stokes.cpp"
       )
@@ -71,7 +67,7 @@ if ( FEELPP_ENABLE_MANUAL )
   #FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
   #FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
-  FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
+  FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} )
 
   #CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
 
