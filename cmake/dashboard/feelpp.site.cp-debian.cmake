@@ -36,7 +36,7 @@ set(FEELPP_WORK_DIR ${WORK_DIR})
 # set(CTEST_BUILD_DIRECTORY "${WORK_DIR}/ctest_build")
 
 #Directories to update at run time
-set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
+set(FEELPP_MODULES "research/hifimagnet" "research/fluid" "research/feelpp-book")
 
 #Options
 set(DEFAULT_TEST_TIMEOUT "60")
