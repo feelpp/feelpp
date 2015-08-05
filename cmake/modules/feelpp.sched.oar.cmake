@@ -1,6 +1,7 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#             Alexandre Ancel <alexandre.ancel@cemosis.fr>
 #       Date: 2013-04-26
 #
 #  Copyright (C) 2013 Université de Strasbourg
@@ -21,9 +22,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-  if (FEELPP_ENABLE_SCHED_OAR )
-if (FEELPP_MACHINE_NAME MATCHES "rheticus")
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
+if (FEELPP_ENABLE_SCHED_OAR )
+    if (FEELPP_MACHINE_NAME MATCHES "rheticus")
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
 #OAR -n ${execname}                # Set Job name to app name
 #OAR -l core=64, walltime=20:00:00  # Number of tasks to use and Elapsed time limit of the job
 #OAR -O ${execname}_%jobid%.out     # Standard output.
@@ -62,29 +63,30 @@ source /softs/cemracs_2015/cemracs.sh
 # See https://www.grid5000.fr/mediawiki/index.php/Run_MPI_On_Grid%275000
 # See http://oar.imag.fr/docs/2.5/user/usecases.html
 # Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent.
-")
-if ( FEELPP_APP_CFG )
-    foreach( cfg ${FEELPP_APP_CFG} )
-        get_filename_component( CFG_NAME ${cfg} NAME )
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
-        "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
-            -mca plm_rsh_agent \"oarsh\" \\
-            ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-            --config-file=${cfg}  
-# "
-        )
-    endforeach()
-else()
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
-        "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
-            -mca plm_rsh_agent \"oarsh\" \\
-            ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-# "
-        )
-endif()
+        ")
 
-else()
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oarsub "#! /bin/bash
+        if ( FEELPP_APP_CFG )
+            foreach( cfg ${FEELPP_APP_CFG} )
+                get_filename_component( CFG_NAME ${cfg} NAME )
+                file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
+                    "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
+    -mca plm_rsh_agent \"oarsh\" \\
+    ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
+    --config-file=${cfg}  
+# "
+                )
+            endforeach()
+        else()
+            file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
+            "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
+    -mca plm_rsh_agent \"oarsh\" \\
+    ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
+# "
+            )
+        endif()
+
+    else()
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oarsub "#! /bin/bash
 #OAR -r ${execname}                # Request name
 #OAR -l /nodes=64,walltime=0:30:00 # Number of tasks to use and Elapsed time limit of the job
 #OAR --stdout ${execname}_%I.o     # Standard output. %I is the job id
@@ -112,8 +114,8 @@ cat $OAR_NODE_FILE
 
 # launch the application
 mpirun -np $nbcores -x LD_LIBRARY_PATH --prefix $openmpi_DIR --machinefile $OAR_NODE_FILE  \\
- -mca plm_rsh_agent \"oarsh\" \\
- ${CMAKE_CURRENT_BINARY_DIR}/${execname}
+    -mca plm_rsh_agent \"oarsh\" \\
+    ${CMAKE_CURRENT_BINARY_DIR}/${execname}
 ")
-  endif()
-  endif()
+    endif()
+endif()
