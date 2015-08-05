@@ -44,9 +44,9 @@ source /softs/cemracs_2015/cemracs.sh
 #firstnode=`head -1 $OAR_NODE_FILE`
 
 #Number of cores allocated on the first node (it is the same on all the nodes)
-#pernode=`grep "$firstnode\$" $OAR_NODE_FILE|wc -l`
-#echo "nbcores=" $nbcores
-#echo "nbnodes=" $nbnodes
+#pernode=`grep \"$firstnode\$\" $OAR_NODE_FILE|wc -l`
+#echo \"nbcores=\" $nbcores
+#echo \"nbnodes=\" $nbnodes
 
 # Important note:
 # If you export additional variables like FEELPP_WORKDIR and FEELPP_SCRATCHDIR
@@ -61,13 +61,29 @@ source /softs/cemracs_2015/cemracs.sh
 # For OpenMPI 1.6, use orte_rsh_agent instead of plm_rsh_agent
 # See https://www.grid5000.fr/mediawiki/index.php/Run_MPI_On_Grid%275000
 # See http://oar.imag.fr/docs/2.5/user/usecases.html
-# Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent."
-mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \
- -mca plm_rsh_agent "oarsh" \
- ${execname}
+# Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent.
 ")
+if ( FEELPP_APP_CFG )
+    foreach( cfg ${FEELPP_APP_CFG} )
+        get_filename_component( CFG_NAME ${cfg} NAME )
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
+        "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
+            -mca plm_rsh_agent \"oarsh\" \\
+            ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
+            --config-file=${cfg}  
+# "
+        )
+    endforeach()
+else()
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
+        "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
+            -mca plm_rsh_agent \"oarsh\" \\
+            ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
+# "
+        )
+endif()
 
-else
+else()
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oarsub "#! /bin/bash
 #OAR -r ${execname}                # Request name
 #OAR -l /nodes=64,walltime=0:30:00 # Number of tasks to use and Elapsed time limit of the job
@@ -88,15 +104,16 @@ nbnodes=`cat $OAR_NODE_FILE|sort|uniq|wc -l`
 #Name of the first node
 firstnode=`head -1 $OAR_NODE_FILE`
 #Number of cores allocated on the first node (it is the same on all the nodes)
-pernode=`grep "$firstnode\$" $OAR_NODE_FILE|wc -l`
-echo "nbcores=" $nbcores
-echo "nbnodes=" $nbnodes
+pernode=`grep \"$firstnode\$\" $OAR_NODE_FILE|wc -l`
+echo \"nbcores=\" $nbcores
+echo \"nbnodes=\" $nbnodes
 
 cat $OAR_NODE_FILE
 
 # launch the application
-mpirun -np $nbcores -x LD_LIBRARY_PATH --prefix $openmpi_DIR --machinefile $OAR_NODE_FILE  \
- -mca plm_rsh_agent "oarsh" \
- ${execname}
+mpirun -np $nbcores -x LD_LIBRARY_PATH --prefix $openmpi_DIR --machinefile $OAR_NODE_FILE  \\
+ -mca plm_rsh_agent \"oarsh\" \\
+ ${CMAKE_CURRENT_BINARY_DIR}/${execname}
 ")
+  endif()
   endif()
