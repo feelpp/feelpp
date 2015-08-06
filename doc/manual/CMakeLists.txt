@@ -67,7 +67,7 @@ if ( FEELPP_ENABLE_MANUAL )
   #FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
   #FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
-  FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} )
+  # FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex )
 
   #CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
 
@@ -135,7 +135,7 @@ add_custom_target(
   ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
-add_dependencies(tut-prerequisites feelpp_tut_mymesh)
+#add_dependencies(tut-prerequisites feelpp_tut_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
