@@ -207,7 +207,7 @@ foreach(module ${FEELPP_MODULES})
     COMMAND "${CTEST_GIT_COMMAND}" "pull"
     WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}/${module}
     OUTPUT_VARIABLE MODULE_OUTPUT
-    ERROR_VARIABLE MODULE_OUTPUT
+    ERROR_VARIABLE MODULE_OUTPUT )
   message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
 endforeach()
 ####################################################################
@@ -352,7 +352,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND)
   ctest_submit(PARTS Build)
 
-  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
+  message(WARNING "BUILD " ${CTEST_BINARY_DIRECTORY})
   # runs only tests that have a LABELS property matching "${subproject}"
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
   # Submit results to a dashboard server.
