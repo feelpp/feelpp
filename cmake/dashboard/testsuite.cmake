@@ -204,9 +204,10 @@ set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 foreach(module ${FEELPP_MODULES})
   # update the modules using svn update
   execute_process(
-    #COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update"
-    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_GIT_COMMAND} pull"
-    OUTPUT_VARIABLE MODULE_OUTPUT)
+    COMMAND "${CTEST_GIT_COMMAND}" "pull"
+    WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}/${module}
+    OUTPUT_VARIABLE MODULE_OUTPUT
+    ERROR_VARIABLE MODULE_OUTPUT
   message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
 endforeach()
 ####################################################################
