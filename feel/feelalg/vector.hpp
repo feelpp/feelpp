@@ -565,6 +565,18 @@ public:
     }
 
     /**
+     * copy vector entries in subvector ( subvector is already built from a createSubVector)
+     * row indices given in the "rows" entries.
+     */
+    virtual
+    void
+    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                     std::vector<size_type> const& rows )
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+        }
+
+    /**
      * Creates the subvector "subvector" from the indices in the
      * "rows" array.  Similar to the create_submatrix routine for
      * the SparseMatrix class, it is currently only implemented for
