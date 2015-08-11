@@ -672,12 +672,13 @@ public:
                      bool checkAndFixRange=true ) const;
 
     /**
-     * copy vector entries in subvector ( subvector is already built from a createSubVector)
-     * row indices given in the "rows" entries.
+     * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
+     * into row indices given in the "rows" entries.
      */
     void
     updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
-                     std::vector<size_type> const& rows );
+                     std::vector<size_type> const& rows,
+                     bool init=true );
 
     /**
      * Serialization for PETSc VECSEQ
@@ -723,7 +724,8 @@ public:
     }
 
     void getSubVectorPetsc( std::vector<size_type> const& rows,
-                            Vec &subvec ) const;
+                            Vec &subvec,
+                            bool init=true ) const;
 
 
 protected:
