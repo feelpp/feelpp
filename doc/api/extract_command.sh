@@ -1,9 +1,6 @@
 #$/bin/bash
 
-if [ -a tmpFile ]
-then
-  rm tmpFile
-fi
+rm tmpFile
 touch tmpFile
 today=$(date +"%F")
 echo "/**" >> tmpFile
@@ -22,7 +19,7 @@ echo "" >> tmpFile
 
 echo "<table class=\"manual\">" >> tmpFile
 echo "<tr><th>Option Name</th><th>Description</th><th>Default value</th></tr>" >> tmpFile
-find $1 \( -name CMakeLists.txt -o -name "*.cmake" \) -exec grep -i 'option(' {} \; | grep -i feelpp_enable | grep -v \# | sed "s/ [oO][pP][tT][iI][oO][nN]*(//" | sed "s/\t//g" | sed "s/^[ \t]*//g" | sed "s/)$//g" | awk '{printf "<tr><th>"$1"</th><th>" ; for(i=2;i<NF;i++) printf $i" "; print "</th><th>"$NF"</th></tr>"}' | sort >> tmpFile
+find $1 \( -name CMakeLists.txt -o -name "*.cmake" \) -exec grep -i 'option(' {} \; | grep -i feelpp_enable | grep -v \# | sed "s/[oO][pP][tT][iI][oO][nN]*(//" | sed "s/\t//g" | sed "s/^[ \t]*//g" | sed "s/)$//g" | awk '{printf "<tr><th>"$1"</th><th>" ; for(i=2;i<NF;i++) printf $i" "; print "</th><th>"$NF"</th></tr>"}' | sort >> tmpFile
 echo "</table>" >> tmpFile
 
 echo "Here are now given the list of used Env Variable" >> tmpFile
@@ -35,4 +32,4 @@ echo "</table>" >> tmpFile
 echo "">> tmpFile
 echo "*/" >> tmpFile
 
-mv tmpFile $1/doc/api/GettingStarted/DocCmakeLists.doc
+mv tmpFile $1/doc/api/DocCmakeLists.doc

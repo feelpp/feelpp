@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -411,12 +411,12 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     size_type nDof = 0;
     for (rank_type p=0;p<this->worldComm().localSize();++p)
     {
-        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].template get<0>();
+        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].get<0>();
         dataMapRes->setFirstDof( p, 0 );
         dataMapRes->setLastDof( p, (nLocalDofWithGhostOnProc > 0)? nLocalDofWithGhostOnProc-1 :0  );
         dataMapRes->setNLocalDofWithGhost( p, nLocalDofWithGhostOnProc );
 
-        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].template get<1>();
+        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].get<1>();
         if ( p == 0 )
         {
             dataMapRes->setFirstDofGlobalCluster( p, 0 );
@@ -725,6 +725,41 @@ DataMap::buildIndexSplit()
 }
 
 void
+DataMap::buildIndexSplitWithComponents( uint16_type nComp )
+{
+    CHECK( ( this->nLocalDofWithoutGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
+    CHECK( ( this->nLocalDofWithGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
+
+    M_indexSplitWithComponents.reset( new indexsplit_type( nComp ) );
+    size_type nLocalDofCompWithoutGhost = this->nLocalDofWithoutGhost() / nComp;
+    size_type nLocalDofCompWithGhost = this->nLocalDofWithGhost() / nComp;
+    for ( uint16_type k=0;k<nComp;++k )
+    {
+        M_indexSplitWithComponents->operator[](k).resize( nLocalDofCompWithoutGhost );
+        M_indexSplitWithComponents->setFirstIndex( k, this->firstDofGlobalCluster() + k );
+        M_indexSplitWithComponents->setLastIndex( k, this->lastDofGlobalCluster() - (nComp-1-k) );
+        M_indexSplitWithComponents->setNIndex( k, nLocalDofCompWithoutGhost );
+
+        const size_type firstDof = this->firstDofGlobalCluster();
+
+        for ( size_type index = 0; index < nLocalDofCompWithGhost ; ++index )
+        {
+            if ( this->dofGlobalProcessIsGhost( index*nComp+k ) ) continue;
+            const size_type globalDof = this->mapGlobalProcessToGlobalCluster(index*nComp+k);
+
+            const size_type theindexInSplit = (size_type(globalDof - firstDof -k ) ) / nComp;
+            M_indexSplitWithComponents->operator[](k)[theindexInSplit] = globalDof;
+
+        }
+
+        size_type nDofForSmallerRankId=0;
+        for ( rank_type proc=0;proc<this->worldComm().globalRank();++proc )
+            nDofForSmallerRankId+=this->nLocalDofWithoutGhost( proc ) / nComp;
+        M_indexSplitWithComponents->setNIndexForSmallerRankId( k, nDofForSmallerRankId );
+    }
+}
+
+void
 IndexSplit::FieldsDef::showMe() const
 {
     std::cout << "FieldsDef showMe\n ";
@@ -820,6 +855,7 @@ IndexSplit::resize( int size )
     M_lastIndex.resize( size );
     M_nIndex.resize( size );
     M_nIndexForSmallerRankId.resize( size );
+    M_tag.resize( size );
 }
 
 
@@ -831,25 +867,57 @@ IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit 
     const int newSize = sizeIS1+sizeIS2;
     this->resize( newSize );
 
+    // first pass : addedIndexSplit is considered as a new tag
+    int newTag=0;
+    for ( int k = 0 ; k < newSize ; ++k )
+    {
+        if ( k< sizeIS1 )
+            newTag = this->tag(k) + 1;
+        else
+        {
+            this->setTag( k,newTag + addedIndexSplit->tag( k-sizeIS1 ) );
+        }
+    }
+
+    // second pass : add new index splits
+    int fixIndexShift = 0; // only usefull when component splits are present
     size_type startIS = startSplit;
     for ( int k = 0 ; k < newSize ; ++k )
     {
         if ( k >= sizeIS1 )
         {
             int sizeSplitAdded = addedIndexSplit->split(k-sizeIS1).size();
+            const size_type firstIndexAdded = addedIndexSplit->firstIndex(k-sizeIS1);
+            const size_type lastIndexAdded = addedIndexSplit->lastIndex(k-sizeIS1);
 
             this->setFirstIndex( k, startIS );
             this->setLastIndex( k, (sizeSplitAdded>0)? startIS+sizeSplitAdded-1 : startIS  );
+            this->setLastIndex( k, (sizeSplitAdded>0)? startIS+lastIndexAdded-firstIndexAdded : startIS  );
             this->setNIndex( k, sizeSplitAdded );
 
             this->operator[](k).resize( sizeSplitAdded );
-            const size_type firstIndexAdded = addedIndexSplit->firstIndex(k-sizeIS1);
             for ( int l=0 ; l<sizeSplitAdded ; ++l )
                 this->operator[](k)[l] = startIS + addedIndexSplit->split(k-sizeIS1)[l] - firstIndexAdded;
             this->setNIndexForSmallerRankId( k, addedIndexSplit->nIndexForSmallerRankId( k-sizeIS1 ) );
         }
 
-        startIS += this->operator[](k).size();
+        int currentTag = this->tag( k );
+        int nextTag = currentTag;
+        if ( (k+1) < newSize )
+            nextTag = this->tag( k+1 );
+
+        if ( currentTag == nextTag ) // is a another components (we suppose that split is ordering with component x,y,z)
+        {
+            startIS += 1;
+            fixIndexShift = this->operator[](k).size() - 1;
+        }
+        else
+        {
+            startIS += this->operator[](k).size() + fixIndexShift;
+            fixIndexShift = 0;
+        }
+
+        //startIS += this->operator[](k).size();
     }
 
 }
@@ -858,33 +926,6 @@ IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit 
 IndexSplit::self_ptrtype
 IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
 {
-#if 0
-    int nField = fieldsDef.size();
-    self_ptrtype newIS( new self_type( nField ) );
-    auto it = fieldsDef.begin();
-    auto const en = fieldsDef.end();
-    for ( ; it!=en ; ++it)
-    {
-        int k = it->first;
-        int sizeNewField = 0;
-        for ( int field : it->second )
-        {
-            sizeNewField += this->operator[]( field ).size();
-        }
-        newIS->operator[](k).resize( sizeNewField );
-
-        int startField=0;
-        for ( int field : it->second )
-        {
-            int sizeField = this->operator[]( field ).size();
-            for ( int i = 0 ; i < sizeField; ++i )
-                newISoperator[](k)[startField+i] = this->operator[]( field )[i];
-            startField += sizeField;
-        }
-    }
-
-    return newIS;
-#else
     int nField = fieldsDef.size();
 
     self_ptrtype newIS( new self_type( nField ) );
@@ -919,6 +960,7 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
         }
     }
 
+    int currentNewTag = 0;
     // update new index split
     for ( it = fieldsDef.begin() ; it != en ; ++it)
     {
@@ -928,7 +970,7 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
             sizeNewSplit += this->operator[]( splitId ).size();
 
         newIS->operator[](fieldId).resize( sizeNewSplit );
-
+        std::set<size_type> splitIndexOrdered;
         bool hasInitFirstIndex = false;
         size_type startIndexSplit=0, nIndexForSmallerRank=0;
         for ( int splitId : it->second )
@@ -941,20 +983,25 @@ IndexSplit::applyFieldsDef( IndexSplit::FieldsDef const& fieldsDef ) const
 
             int sizeSplit = this->operator[]( splitId ).size();
             for ( int i = 0 ; i < sizeSplit; ++i )
-                newIS->operator[](fieldId)[startIndexSplit+i] = startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId );
-            //newIS[fieldId][startIndexSplit+i] =  this->operator[]( splitId )[i];
+                splitIndexOrdered.insert( startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId ) );
+                //newIS->operator[](fieldId)[startIndexSplit+i] = startSplit[splitId] + this->operator[]( splitId )[i] - this->firstIndex( splitId );
+
             startIndexSplit += sizeSplit;
 
             nIndexForSmallerRank += this->nIndexForSmallerRankId( splitId );
         }
+        CHECK( splitIndexOrdered.size() == sizeNewSplit ) << "invalid new split index size " << splitIndexOrdered.size() << " must be "<< sizeNewSplit;
+        int k = 0;
+        for ( size_type dofid : splitIndexOrdered )
+            newIS->operator[](fieldId)[k++] = dofid;
 
         newIS->setLastIndex( fieldId, (sizeNewSplit>0)? newIS->firstIndex(fieldId)+sizeNewSplit-1 : newIS->firstIndex(fieldId) );
         newIS->setNIndex( fieldId, sizeNewSplit );
         newIS->setNIndexForSmallerRankId( fieldId, nIndexForSmallerRank );
+        newIS->setTag( fieldId, currentNewTag++ );
     }
 
     return newIS;
-#endif
 
 }
 
@@ -972,6 +1019,7 @@ IndexSplit::showMe() const
     {
         size_type nDofInSplit = this->operator[](k).size();
         ostr << "-split : " << k << "\n"
+             << "-tag : " << this->tag(k) << "\n"
              << "-firstIndex : " << this->firstIndex(k) << "\n"
              << "-lastIndex : " << this->lastIndex(k) << "\n"
              << "-nIndex : " << this->nIndex(k) << "\n"

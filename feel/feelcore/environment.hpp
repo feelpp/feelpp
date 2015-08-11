@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -48,6 +48,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+#include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -60,6 +61,7 @@
 
 namespace Feel
 {
+class TimerTable;
 struct MemoryUsage
 {
     MemoryUsage()
@@ -332,6 +334,14 @@ public:
     {
         return S_vm;
     }
+  
+    template<typename T>
+    static void setOptionValue(std::string s,T val)
+    {
+        auto it = S_vm.find( s );
+        CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
+        S_vm.at(s).value() = val;
+    } 
 
     static AboutData const& about()
     {
@@ -385,6 +395,7 @@ public:
     }
 
 #if defined(FEELPP_HAS_HARTS)
+
     /**
      * Init Hwloc topology structure
      */
@@ -408,9 +419,19 @@ public:
     static void bindToCore( unsigned int id );
 
     /**
-     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     * Counts the number of cores on the current server
+     * Calls countCoresInSubtree done on the whole topology
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
      */
-    static int countCoresInSubtree( hwloc_obj_t node );
+    static int getNumberOfCores( bool logical = false );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
+     */
+    static int countCoresInSubtree( hwloc_obj_t node, bool logical = false );
 
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes
@@ -418,12 +439,17 @@ public:
     static void bindNumaRoundRobin( int lazy = false );
 
     /**
+     * Get information about the last CPU bound. You must use --bind-to core with MPI for this feature to work.
+     */
+    static void getLastBoundCPU( std::vector<int> * cpuAffinity, std::vector<int> * lastCPU );
+
+    /**
      * Writes data about processor affinity and last location of the different processes/threads
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
     static void writeCPUData( std::string fname = "CPUData.dat" );
-#endif
 
+#endif
 
     //@}
 
@@ -516,6 +542,17 @@ public:
      * \param message message to print to identity the associated memory operation
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
+
+    /**
+     * add timer to a map of timers that can be shown using \c displayTimers()
+     */
+    static void addTimer( std::string const& msg, double t );
+
+    /**
+     * display and save timers
+     */
+    static void saveTimers( bool save );
+    static void saveTimersMD( std::ostream & os );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -642,6 +679,8 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+
+    static TimerTable S_timers;
 };
 
 BOOST_PARAMETER_FUNCTION(

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -115,8 +115,8 @@ public:
     ~BackendPetsc();
     void clear();
 
-    sparse_matrix_ptrtype 
-    newMatrix() 
+    sparse_matrix_ptrtype
+    newMatrix()
     {
         sparse_matrix_ptrtype mat;
         if ( this->comm().globalSize()>1 )
@@ -390,7 +390,7 @@ public:
     int PAPt( sparse_matrix_ptrtype const& A,
               sparse_matrix_ptrtype const& P,
               sparse_matrix_ptrtype& C ) const;
-    
+
     template <class Vector>
     static value_type dot( const vector_type& f,
                            const Vector& x )
@@ -407,10 +407,10 @@ public:
      */
     SolverLinearPetsc<double> const& linearSolver() const { return M_solver_petsc; }
     /**
-     * @return the linear solver 
+     * @return the linear solver
      */
     SolverLinearPetsc<double> & linearSolver() { return M_solver_petsc; }
-    
+
 private:
 
     SolverLinearPetsc<double> M_solver_petsc;

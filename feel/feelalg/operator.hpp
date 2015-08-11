@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 30 Sep 2014
  
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2014-2015 Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,11 @@ class OperatorBase
 {
   public:
     typedef T value_type;
+    typedef typename Backend<value_type>::solve_return_type solve_return_type;
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
+    typedef boost::shared_ptr<Preconditioner<T>> pc_ptrtype;
+
 
     OperatorBase() 
         : 
@@ -83,8 +86,12 @@ class OperatorBase
     virtual int apply(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
     virtual int apply(const vector_type& X, vector_type& Y) const = 0;
     
-    virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return apply( *X, *Y ); }
+    virtual int applyInverse(const vector_ptrtype& X, vector_ptrtype& Y) const { return applyInverse( *X, *Y ); }
     virtual int applyInverse(const vector_type& X, vector_type& Y) const = 0;
+    
+    virtual void setPc(pc_ptrtype p){
+      M_pc = p;
+    }
  
     /* Returns the quantity \f$ \| A \|_\infty\f$ such that
      \f[\| A \|_\infty = \max_{1\lei\lem} \sum_{j=1}^n |a_{ij}| \f].
@@ -153,7 +160,11 @@ class OperatorBase
      * \return the WorldComm of the Operator
      */
     virtual const WorldComm& comm() const { return M_domain_map->worldComm(); }
- 
+
+    int nIterations(void){return M_return.nIterations();}
+    solve_return_type solveReturn(void){return M_return;}
+    pc_ptrtype M_pc;
+    mutable solve_return_type M_return;
 protected:
     // domain and image map 
     datamap_ptrtype M_domain_map, M_image_map;
@@ -168,13 +179,14 @@ class OperatorMatrix : public OperatorBase<T>
 public:
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
+
+    typedef typename Backend<value_type>::solve_return_type solve_return_type;
     
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
 
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
-
 
     OperatorMatrix()
         :
@@ -187,8 +199,8 @@ public:
         M_hasInverse( 1 ),
         M_hasApply( 1 )
     {
-        auto b = backend(_name=this->label(),_rebuild=true);
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
+        auto b = backend(_name=this->label(),_rebuild=true);
     }
 
     OperatorMatrix( const OperatorMatrix& tc )
@@ -212,30 +224,40 @@ public:
         return M_hasApply;
     }
 
-
     int apply( const vector_type& X, vector_type& Y ) const
     {
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
+        tic();
         M_F->multVector( X, Y );
         Y.close();
+        toc((boost::format("OperatorMatrix::apply %1%")%this->label()).str(),FLAGS_v>0);
         return !hasApply();
     }
     
     int applyInverse ( const vector_type& X, vector_type& Y ) const
     {
         CHECK( hasInverse() ) << "Operator " << this->label() << "cannot be inverted.";
-        LOG(INFO) << "OperatorMatrix: applyInverse(X,Y)";
+        LOG(INFO) << "OperatorMatrix: applyInverse(X,Y) with backend " << this->label();
+        tic();
         auto xx = backend(_name=this->label())->newVector( X.mapPtr() );
         *xx = X;
         xx->close();
         auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
-        auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+        bool cv;
+        if(!this->M_pc){
+          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+          cv = this->M_return.isConverged();
+        }
+        else{
+          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
+          cv = this->M_return.isConverged();
+        }
         Y=*yy;
         Y.close();
-        return r.isConverged();
+        toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
+        return cv;
     }
-
 
     value_type normInf() const
     {
@@ -252,10 +274,12 @@ private:
     sparse_matrix_ptrtype M_F;
 
     bool M_hasInverse, M_hasApply;
+
 };
+
 /**
  * \param M matrix
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
@@ -265,6 +289,7 @@ op( boost::shared_ptr<MatrixType> M, std::string label, bool transpose = false )
 {
     return boost::make_shared<OperatorMatrix<typename MatrixType::value_type>>(M,label,transpose) ;
 }
+
 /**
  * Operator class to model an inverse operator
  */
@@ -353,7 +378,7 @@ private:
 
 /**
  * \param op an operator
- * \oaram l label of the operator
+ * \param l label of the operator
  * \param transpose boolean to say wether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
@@ -427,13 +452,15 @@ public:
 
         LOG(INFO) << "OperatorCompose: apply operator " << this->label() << " ...\n";
 
-        
+        tic();
         
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->apply( X,*M_ZG );
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->apply( *M_ZG,Y );
 
+        toc((boost::format("OperatorCompose::apply %1%")%this->label()).str(),FLAGS_v>0);
+        
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
         return !hasApply();
@@ -445,10 +472,12 @@ public:
 
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " ...\n";
 
+        tic();
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->applyInverse( X,*M_ZF );
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->applyInverse( *M_ZF,Y );
+        toc((boost::format("OperatorCompose::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
         LOG(INFO) << "OperatorCompose applyInverse operator " << this->label() << " done.\n";
         return hasInverse();
     }

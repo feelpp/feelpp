@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -644,11 +644,102 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         CHKERRABORT( this->comm(),ierr );
     }
 
+template <typename T>
+boost::shared_ptr<Vector<T> >
+VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
+                                 bool checkAndFixRange ) const
+{
+    // update maybe input index set
+    std::vector<size_type> rows = ( checkAndFixRange )?
+        this->mapPtr()->buildIndexSetWithParallelMissingDof( _rows ) : _rows;
+
+    // build subdatamap row
+    datamap_ptrtype subMapRow = this->mapPtr()->createSubDataMap( rows, false );
+
+    // build subvector petsc
+    Vec subVecPetsc = NULL;
+    this->getSubVectorPetsc( rows, subVecPetsc );
+
+    // build vectorsparse object
+    boost::shared_ptr<Vector<T> > subVec;
+    if ( this->comm().size()>1 )
+        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
+    else
+        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
+
+    // VecRestoreSubVector(this->vec(), isrow, &subVecPetsc);
+
+    return subVec;
+}
+
+template <typename T>
+void
+VectorPetsc<T>::updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                                 std::vector<size_type> const& rows )
+{
+    CHECK( subvector ) << "subvector is not init";
+    boost::shared_ptr<VectorPetsc<T> > subvectorPetsc = boost::dynamic_pointer_cast<VectorPetsc<T> >( subvector );
+    this->getSubVectorPetsc( rows, subvectorPetsc->vec() );
+}
+
+template <typename T>
+void
+VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
+                                   Vec &subvec ) const
+{
+    std::set<size_type> rowMapOrdering;
+    if ( this->comm().size()>1 )
+    {
+        // convert global process ids into global cluster ids, remove ghost dofs
+        // and build ordering row map
+        for (int i=0; i<rows.size(); i++)
+        {
+            if ( !this->map().dofGlobalProcessIsGhost( rows[i] ) )
+                rowMapOrdering.insert( this->map().mapGlobalProcessToGlobalCluster( rows[i] ) );
+        }
+    }
+    else
+    {
+        // build ordering row map
+        rowMapOrdering.insert( rows.begin(), rows.end() );
+    }
+
+    // copying into PetscInt vector
+    PetscInt *rowMap;
+    int nrow = rowMapOrdering.size();
+    rowMap = new PetscInt[nrow];
+    size_type curId=0;
+    for ( auto& rowId : rowMapOrdering )
+    {
+        rowMap[curId] = rowId;
+        ++curId;
+    }
+
+    int ierr=0;
+    IS isrow;
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    ierr = VecGetSubVector(this->vec(), isrow, &subvec);
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = PETSc::ISDestroy( isrow );
+    CHKERRABORT( this->comm(),ierr );
+
+    delete[] rowMap;
+}
+
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
+
 
 template <typename T>
 typename VectorPetscMPI<T>::clone_ptrtype
@@ -674,9 +765,9 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
 //----------------------------------------------------------------------------------------------------//
 
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super( v,dm )
+    super( v,dm,duplicate )
 {
     int ierr=0;
     int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );

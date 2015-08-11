@@ -204,6 +204,11 @@ public:
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
     /**
+     * Return true if the preconditioner will be reuse
+     */
+    bool reusePrec() const { return M_prec_matrix_structure == MatrixStructure::SAME_PRECONDITIONER; }
+
+    /**
      * @return the side of the system to which the preconditioner applies
      */
     Side side() const { return M_side; }
@@ -213,6 +218,25 @@ public:
     {
         CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
         return M_nearNullSpace.find(splitIds)->second;
+    }
+
+    bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
+    sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
+        return M_auxiliarySparseMatrix.find( key )->second;
+    }
+
+    bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
+    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners.find(key)->second;
+    }
+    preconditioner_ptrtype & inHousePreconditioners( std::string const& key )
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners[key];
     }
 
     //@}
@@ -257,6 +281,17 @@ public:
     {
         M_nearNullSpace[splitIds] = nearNullSpace;
     }
+
+    void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_auxiliarySparseMatrix[key] = mat;
+    }
+
+    void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
+    {
+        M_inHousePreconditioners[key] = pc;
+    }
+
     //@}
 
     /** @name  Methods
@@ -291,7 +326,7 @@ protected:
     Side M_side;
     
     /**
-     * Enum statitng with type of preconditioner to use.
+     * Enum stating with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
 
@@ -315,6 +350,9 @@ protected:
      */
     std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
+    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+
+    std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -422,7 +460,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         {
             p->setMatrix( matrix );
         }
-        VLOG(2) << "storing preconditionerin singleton" << "\n";
+        VLOG(2) << "storing preconditioner in singleton" << "\n";
         Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;

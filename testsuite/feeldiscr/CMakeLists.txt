@@ -42,15 +42,23 @@ feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
+feelpp_add_test( projector )
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( vect_comp )
+feelpp_add_test( matrixfield )
+
+if ( FEELPP_HAS_FFTW )
+  feelpp_add_test( multiscaleimage)
+endif()
+
 feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
+feelpp_add_test( mortar2 NO_MPI_TEST)
 
 feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
@@ -61,3 +69,10 @@ feelpp_add_test( project_prodspace )
 if ( FEELPP_HAS_SLEPC )
   feelpp_add_test( eigs )
 endif()
+
+feelpp_add_test( twolaplaciansdistributed )
+
+feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
+feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
+
+feelpp_add_test( upmarker_faces )

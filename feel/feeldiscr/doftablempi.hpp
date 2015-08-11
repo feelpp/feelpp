@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
   This file is part of the Feel library
 
   Copyright (C) 2012 Université de Grenoble 1
@@ -54,7 +54,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
 
         for ( int i = 0; i < FEType::nLocalDof; ++i )
         {
-            int nc1 = ( is_product?nComponents1:1 );
+            int nc1 = ( is_product?nComponents:1 );
 
             for ( int c1 =0; c1 < nc1; ++c1 )
             {
@@ -1162,7 +1162,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         else
             for ( int i = 0; i < FEType::nLocalDof; ++i )
             {
-                int nc1 = ( is_product?nComponents1:1 );
+                int nc1 = ( is_product?nComponents:1 );
 
                 for ( int c1 =0; c1 < nc1; ++c1 )
                 {
@@ -1419,7 +1419,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
         for ( int i = 0; i < FEType::nLocalDof; ++i )
         {
-            int nc1 = ( is_product?nComponents1:1 );
+            int nc1 = ( is_product?nComponents:1 );
 
             for ( int c1 =0; c1 < nc1; ++c1 )
             {

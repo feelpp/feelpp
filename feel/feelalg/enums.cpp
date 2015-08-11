@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-06
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -82,6 +82,9 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="shell" )        return PreconditionerType::SHELL_PRECOND;
     else if ( type=="fieldsplit" )   return PreconditionerType::FIELDSPLIT_PRECOND;
     else if ( type=="lsc" )          return PreconditionerType::LSC_PRECOND;
+    else if ( type=="lsc2" )         return PreconditionerType::LSC2_PRECOND;
+    else if ( type=="blockns" )      return PreconditionerType::FEELPP_BLOCKNS_PRECOND;
+    else if ( type=="blockms" )      return PreconditionerType::FEELPP_BLOCKMS_PRECOND;
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;

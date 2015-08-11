@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Pierre Jolivet <pierre.jolivet@imag.fr>
        Date: 2013-12-21
 
@@ -86,13 +86,13 @@ static inline void coefficients(double* r, boost::shared_ptr<FunctionSpace<Mesh<
     if(!std::is_same<Type<Dim>, Vectorial<Dim>>::value) {
         kappa k;
         k.val = doption("parameters.kappa");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(k) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(k) * one()));
     }
     else {
         stripes s;
         s.first  = doption("parameters.n");
         s.second = doption("parameters.nu");
-        x = vf::project(Vh, elements(Vh->mesh()), idf(s) * one());
+        x = vf::project(Vh, elements(Vh->mesh()), val(idf(s) * one()));
     }
     std::copy(x.begin(), x.end(), r);
 }
@@ -102,7 +102,7 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     kappa k;
     k.val = doption("parameters.kappa");
     auto a = form2(_trial = Vh, _test = Vh, _matrix = A);
-    a = integrate(_range = elements(Vh->mesh()), _expr = idf(k) * gradt(u) * trans(grad(v)));
+    a = integrate(_range = elements(Vh->mesh()), _expr = val(idf(k)) * gradt(u) * trans(grad(v)));
     auto l = form1(_test = Vh, _vector = f);
     l = integrate(_range = elements(Vh->mesh()), _expr = id(v));
     a += on(_range = markedfaces(Vh->mesh(), "Dirichlet"), _rhs = l, _element = u, _expr = cst(0.0));
@@ -114,12 +114,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
@@ -138,12 +139,13 @@ static inline void assemble(Backend<double>::sparse_matrix_ptrtype& A, Backend<d
     stripes s;
     s.first  = doption("parameters.epsilon");
     s.second = doption("parameters.e");
-    auto E = idf(s);
+    auto Ph = Pdh<0>(Vh->mesh());
+    auto E = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
     s.first  = doption("parameters.n");
     s.second = doption("parameters.nu");
-    auto nu = idf(s);
-    auto mu = E / (2 * (1 + nu));
-    auto lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+    auto nu = vf::project(Ph, elements(Ph->mesh()), val(idf(s)));
+    auto mu = idv(E) / (2 * (1 + idv(nu)));
+    auto lambda = idv(E) * idv(nu) / ((1 + idv(nu)) * (1 - 2 * idv(nu)));
 
     const double density = 1.0e+3;
 
@@ -233,13 +235,15 @@ void Geneopp<Dim, Order, Type>::run()
         bComm.barrier();
         time.restart();
         {
-            std::vector<std::vector<int>> map(mesh->faceNeighborSubdomains().size());
+            std::vector<std::vector<int>> map(mesh->neighborSubdomains().size());
             std::string kind = soption(_name = "backend");
             boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
             Backend<double>::vector_ptrtype f = ptr_backend->newVector(VhLocal);
 #pragma omp parallel for shared(map) schedule(static, 4)
-            for(int i = 0; i < map.size(); ++i) {
-                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->faceNeighborSubdomains().begin(), i)),
+            for(int i = 0; i < map.size(); ++i) { // faces
+                if(mesh->faceNeighborSubdomains().find(*std::next(mesh->neighborSubdomains().begin(), i)) == mesh->faceNeighborSubdomains().end())
+                    continue;
+                auto trace = createSubmesh(mesh, interprocessfaces(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
                                            Environment::worldCommSeq());
                 auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
                 auto l = ptr_backend->newVector(Xh);
@@ -257,6 +261,35 @@ void Geneopp<Dim, Order, Type>::run()
                         if(std::round(*pt) != 0)
                             map[i][std::round(*pt) - 1] = j;
                 }
+            }
+            for(int i = 0; i < map.size(); ++i) { // edges
+                if(!map[i].empty())
+                    continue;
+                auto trace = createSubmesh(mesh, interprocessedges(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
+                                           Environment::worldCommSeq());
+                auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_trace_mesh_type, bases<Lagrange<Order, Type>>>::New(_mesh = trace, _worldscomm = Environment::worldsCommSeq(1));
+                if(Xh->nDof() == 0)
+                    continue;
+                auto l = ptr_backend->newVector(Xh);
+                double* pt = &(*l)(0);
+                std::iota(pt, pt + Xh->nDof(), 1.0);
+                auto op = opInterpolation(_domainSpace = VhLocal,
+                        _imageSpace  = Xh,
+                        _backend     = ptr_backend, _ddmethod = true);
+                map[i].resize(Xh->nDof());
+                ptr_backend->prod(op->mat(), *l, *f, true);
+                pt = &(*f)(0);
+                for(int j = 0; j < VhLocal->nDof(); ++j, ++pt)
+                    if(std::round(*pt) != 0)
+                        map[i][std::round(*pt) - 1] = j;
+            }
+            for(int i = 0; i < map.size(); ++i) { // vertices
+                if(!map[i].empty())
+                    continue;
+                else
+                    CHECK(false) << "- interprocess vertices connection with " << *std::next(mesh->neighborSubdomains().begin(), i);
+                // auto trace = createSubmesh(mesh, interprocessvertices(mesh, *std::next(mesh->neighborSubdomains().begin(), i)),
+                //                            Environment::worldCommSeq());
             }
             {
                 std::set<int> unique;
@@ -318,7 +351,7 @@ void Geneopp<Dim, Order, Type>::run()
                 if(Eigen != &EigenA)
                     delete Eigen;
             }
-            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->faceNeighborSubdomains(), map, &comm);
+            K->Subdomain::initialize(new HPDDM::MatrixCSR<double>(VhLocal->nDof(), VhLocal->nDof(), ic[VhLocal->nDof()], c, ic, jc, false, true), mesh->neighborSubdomains(), map, &comm);
             decltype(map)().swap(map);
             if(nu == 0) {
                 if(nelements(markedfaces(meshLocal, "Dirichlet")) == 0) {
@@ -421,7 +454,7 @@ void Geneopp<Dim, Order, Type>::run()
 
         K->originalNumbering(interface, &(uLocal[0]));
 
-        double stats[3] = { K->getMult() / 2.0, mesh->faceNeighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
+        double stats[3] = { K->getMult() / 2.0, mesh->neighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
@@ -512,7 +545,7 @@ int main(int argc, char** argv) {
         ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct coarse solver (only useful when using MUMPS)")
         ("eps", po::value<double>()->default_value(1e-8), "relative preconditioned residual")
         ("threshold", po::value<double>()->default_value(0.0), "threshold for dropping eigenpairs")
-        ("it", po::value<int>()->default_value(50), "maximum number of iterations")
+        ("it", po::value<int>()->default_value(100), "maximum number of iterations")
         ("nu", po::value<int>()->default_value(0), "number of eigenvalues")
         ("exclude", po::value<bool>()->default_value(false), "exclude the master processes")
         ;
@@ -526,8 +559,8 @@ int main(int argc, char** argv) {
     Application app;
     // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());
-    app.add(new Geneopp<2, 3, Vectorial>());
+    // app.add(new Geneopp<2, 3, Vectorial>());
     // app.add(new Geneopp<2, 7, Vectorial>());
-    // app.add(new Geneopp<3, 2, Vectorial>());
+    app.add(new Geneopp<3, 1, Vectorial>());
     app.run();
 }

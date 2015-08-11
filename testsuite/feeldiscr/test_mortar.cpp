@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-27
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file test_mortar.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-10-27
  */
 #define USE_BOOST_TEST 1
@@ -48,7 +48,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS(Feel::makeAboutDefault("test_mortar"))
 
 BOOST_AUTO_TEST_SUITE( mortar )
 #if 0
@@ -77,7 +77,7 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_1, T, order_types )
 {
     using namespace Feel;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_1/h_%2%/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/test_mortar_1/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize")
                                          % T::value );
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_1, T, order_types )
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate, T, order_types )
 {
     using namespace Feel;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate/h_%2%/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/test_mortar_integrate/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize")
                                          % T::value );
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate, T, order_types )
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 {
     using namespace Feel;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh/h_%2%/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/test_mortar_integrate_submesh/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize")
                                          % T::value );
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 {
     LOG(INFO) << "test_mortar_integrate_submesh2: P" << T::value << " test case";
     using namespace Feel;
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/test_mortar_integrate_submesh2/h_%2%/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize2")
                                          % T::value );

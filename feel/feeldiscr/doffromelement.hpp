@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-23
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file doflocal.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-10-23
  */
 #ifndef FEELPP_DofFromElement_H
@@ -90,7 +90,7 @@ public:
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
     //@}
 
@@ -412,6 +412,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
+            
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
             // Polynomial order in each direction
@@ -449,14 +450,21 @@ private:
                             gDof += l;
                         else
                             gDof += M_doftable->vector_permutation[permutation][l];
-
+                        
+                        /*
                         if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
                         else
                         {
                             sign=-1;
                             M_doftable->M_locglob_signs[ie][l] = -1;
-                        }
+                         }*/
+                        if ( __elt.face(i).ad_first() == __elt.id() )
+                            M_doftable->M_locglob_signs[ie][lc] = 1;
+                        else
+                            M_doftable->M_locglob_signs[ie][lc] = -1;
+
+                        //std::cout << "e=" << __elt.id() << " l=" << lc << " sign =" << M_doftable->M_locglob_signs[ie][lc] << "\n";
                     }
                     else
                     {
@@ -483,7 +491,7 @@ private:
 
                     }
                 }
-
+                
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }

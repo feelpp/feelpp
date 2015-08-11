@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -684,7 +684,7 @@ void SolverNonLinearPetsc<T>::init ()
             default:
             case preconditioner_type::LEFT:
                 VLOG(2) << " . PC is set to left side\n";
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
                 KSPSetPreconditionerSide( M_ksp, PC_LEFT );
 #else
                 KSPSetPCSide( M_ksp, PC_LEFT );
@@ -692,7 +692,7 @@ void SolverNonLinearPetsc<T>::init ()
                 break;
             case preconditioner_type::RIGHT:
                 VLOG(2) << " . PC is set to right side\n";
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
                 KSPSetPreconditionerSide( M_ksp, PC_RIGHT );
 #else
                 KSPSetPCSide( M_ksp, PC_RIGHT );
@@ -700,7 +700,7 @@ void SolverNonLinearPetsc<T>::init ()
                 break;
             case preconditioner_type::SYMMETRIC:
                 VLOG(2) << " . PC is set to symmetric\n";
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
                 KSPSetPreconditionerSide( M_ksp, PC_SYMMETRIC );
 #else
                 KSPSetPCSide( M_ksp, PC_SYMMETRIC );
@@ -841,8 +841,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
 #else
-    ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    // no longer necessary here!
+    //ierr = KSPSetReusePreconditioner( M_ksp, (this->precMatrixStructure() == Feel::SAME_PRECONDITIONER)? PETSC_TRUE : PETSC_FALSE );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
     ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat() );
 #endif
     CHKERRABORT( this->worldComm().globalComm(),ierr );

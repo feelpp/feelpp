@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -91,6 +91,7 @@
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feeldiscr/mortar.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
@@ -1169,15 +1170,25 @@ struct computeStartOfFieldSplit
             }
         return boost::make_tuple( ++cptSpaces, start );
     }
+};
 
+struct hasSubSpaceWithComponentsSplit
+{
+    typedef bool result_type;
+    template<typename T>
+    result_type operator()( result_type const &  previousRes, T const& t )
+    {
+        //return ( T::element_type::dof_type::is_product && T::element_type::dof_type::nComponents > 1 ) || previousRes;
+        return t->map().hasIndexSplitWithComponents() || previousRes;
+    }
 };
 
 // compute split
+template<bool UseComponentsSplit>
 struct computeNDofForEachSpace
 {
-
     computeNDofForEachSpace(size_type startSplit)
-    :
+        :
         M_indexSplit( new IndexSplit() ),
         M_startSplit(startSplit)
     {}
@@ -1186,35 +1197,21 @@ struct computeNDofForEachSpace
 
     typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
 
-#if 0
-    template<typename T>
-    result_type operator()( result_type const & previousRes, T const& t )
-    {
-        const size_type nDofWithoutGhost = t->dof()->nLocalDofWithoutGhost();
-        const size_type nDofWithGhost = t->dof()->nLocalDofWithGhost();
-        const size_type firstDof = t->dof()->firstDofGlobalCluster();
-        uint16_type cptSpaces = previousRes.get<0>();
-        const size_type start = previousRes.get<1>();
-        auto is = previousRes.get<2>();
-
-        is[cptSpaces].resize(nDofWithoutGhost);
-
-        for ( size_type i=0; i<nDofWithGhost; ++i )
-        {
-            if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
-            const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            M_is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
-        }
-
-        return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
-    }
-#else
     template<typename T>
     void operator()( T const& t ) const
     {
+        this->operator()( t, mpl::bool_<UseComponentsSplit>() );
+    }
+    template<typename T>
+    void operator()( T const& t, mpl::false_ ) const
+    {
         M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
     }
-#endif
+    template<typename T>
+    void operator()( T const& t, mpl::true_ ) const
+    {
+        M_indexSplit->addSplit( M_startSplit, t->map().indexSplitWithComponents() );
+    }
 
     mutable boost::shared_ptr<IndexSplit> M_indexSplit;
     size_type M_startSplit;
@@ -1373,7 +1370,7 @@ public:
     {
         typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
-        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<meshes_list_noref>::type,
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
 
@@ -1382,8 +1379,6 @@ public:
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
-
-
     };
     template<typename BasisType>
     struct ChangeBasis
@@ -1402,13 +1397,31 @@ public:
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
     template<typename BasisType>
+    struct ChangeMeshToComponentBasis
+    {
+        typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
+        typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
+                                                     typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+        typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
+
+        typedef typename BasisType::component_basis_type component_basis_type;
+
+        typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
+                              Feel::detail::bases<component_basis_type>,value_type,
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              mortar_list> _type;
+        typedef boost::shared_ptr<_type> type;
+    };
+
+    template<typename BasisType>
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
                                   mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
-                                  mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
+                                  mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
     };
 
     typedef typename mpl::transform<bases_list,
@@ -1499,6 +1512,10 @@ public:
     static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
     static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
+
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
 
     static const uint16_type nComponents = mpl::transform<bases_list,
                              GetNComponents<mpl::_1>,
@@ -1606,6 +1623,8 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::face_type>, mpl::identity<mpl::void_> >::type::type geoface_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::edge_type>, mpl::identity<mpl::void_> >::type::type geoedge_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::point_type>, mpl::identity<mpl::void_> >::type::type geopoint_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
@@ -1649,7 +1668,8 @@ public:
         typedef typename mpl::at_c<functionspace_vector_type,i>::type ptrtype;
         typedef typename ptrtype::element_type type;
     };
-
+    template<int i> using sub_functionspace_type = typename sub_functionspace<i>::type;
+    template<int i> using sub_functionspace_ptrtype = typename sub_functionspace<i>::ptrtype;
     /**
        @name Subclasses
     */
@@ -1848,7 +1868,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
     {
     public:
         typedef T value_type;
@@ -1904,7 +1924,8 @@ public:
         static const uint16_type nComponents = functionspace_type::nComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
-
+        static const int rank = functionspace_type::rank;
+        
         /** @name Typedefs
          */
         //@{
@@ -1949,6 +1970,9 @@ public:
             typedef typename mpl::at_c<element_vector_type,i>::type::second_type ptrtype;
             typedef typename ptrtype::element_type type;
         };
+        template<int i> using sub_element_ptrtype = typename mpl::at_c<element_vector_type,i>::type::second_type;
+        template<int i> using sub_element_type = typename mpl::at_c<element_vector_type,i>::type::second_type::element_type;
+        
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
@@ -2249,6 +2273,37 @@ public:
                 super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
+        template<typename EltType>
+        void assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = e.elements().begin()->first;
+                uint16_type edgeid_in_element = e.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    
+                    size_type index= ldof.index();
+                    super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                }
+            }
+        
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
+                }
+            }
+
         void assign( geoface_type const& e, local_interpolant_type const& Ihloc )
         {
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element(0).id() );
@@ -2276,7 +2331,34 @@ public:
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
-
+        template<typename EltType>
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc,
+                     typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
+        {
+            // we assume here that we are in CG
+            // TODO : adapt to DG and loop over all element to which the point belongs to
+            size_type eid = e.elements().begin()->first;
+            uint16_type edgeid_in_element = e.elements().begin()->second;
+            auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+            for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type index= ldof.index();
+                super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+            }
+        }
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
+            {
+                // we assume here that we are in CG
+                // TODO : adapt to DG and loop over all element to which the point belongs to
+                size_type eid = p.elements().begin()->first;
+                uint16_type ptid_in_element = p.elements().begin()->second;
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
+                }
+            }
         //@}
 
         /** @name Accessors
@@ -2284,7 +2366,7 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
-        typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
+        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
         typedef Eigen::Matrix<value_type,1,1> _div_type;
@@ -2415,8 +2497,8 @@ public:
          * data structure that stores the interpolated values of the
          * element at a set of points
          */
-        typedef Feel::detail::ID<value_type,nComponents1,nComponents2> id_type;
-
+        using id_type =  Feel::detail::ID<value_type,nComponents1,nComponents2>;
+        using laplacian_type = id_type;
 
         /**
          * \return the extents of the interpolation of the function at
@@ -2962,6 +3044,7 @@ public:
         void
         hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const;
 
+
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
@@ -2989,6 +3072,54 @@ public:
             hess_( *gmc, *pcPtr( elt ), v );
         }
 
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        laplacianExtents( ContextType const & context ) const
+            {
+                BOOST_STATIC_ASSERT( rank <= 1 );
+
+                boost::array<typename array_type::index, 1> shape;
+                shape[0] = context.xRefs().size2();
+                //shape[1] = nRealDim;
+                //shape[2] = nRealDim;
+                return shape;
+            }
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v ) const;
+
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const;
+        template<typename ContextType>
+        void
+        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const;
+
+        void
+        laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
+        template<typename ContextType>
+        laplacian_type
+        laplacian( ContextType const & context ) const
+        {
+            return laplacian_type( *this, context );
+        }
+
+        template<typename ContextType>
+        void
+        laplacian( ContextType const & context, id_array_type& v ) const
+        {
+            laplacian_( context, v );
+        }
+        template<typename ElementType>
+        void
+        laplacian( ElementType const& elt, id_array_type& v )
+        {
+            gmc_ptrtype gmc( geomapPtr( elt ) );
+            v.resize( laplacianExtents(  *gmc ) );
+            laplacian_( *gmc, *pcPtr( elt ), v );
+        }
         /**
            \return the finite element space
         */
@@ -3486,8 +3617,15 @@ public:
 
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
+        
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
+
+        template<typename IteratorType, typename ExprType>
+        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
 
     private:
 
@@ -4071,10 +4209,23 @@ public:
     buildDofIndexSplit()
     {
         auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-        auto computeSplit = Feel::detail::computeNDofForEachSpace(startSplit);
+        auto computeSplit = Feel::detail::computeNDofForEachSpace<false>(startSplit);
         boost::fusion::for_each( functionSpaces(), computeSplit );
         return computeSplit.indexSplit();
-
+    }
+    boost::shared_ptr<IndexSplit>
+    buildDofIndexSplitWithComponents()
+    {
+        bool hasCompSplit = boost::fusion::fold( functionSpaces(), false, Feel::detail::hasSubSpaceWithComponentsSplit() );
+        if ( hasCompSplit )
+        {
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
+            auto computeSplit = Feel::detail::computeNDofForEachSpace<true>(startSplit);
+            boost::fusion::for_each( functionSpaces(), computeSplit );
+            return computeSplit.indexSplit();
+        }
+        else
+            return boost::shared_ptr<IndexSplit>();
     }
 
     boost::shared_ptr<IndexSplit> const&
@@ -4617,6 +4768,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         M_dofOnOff->setNDof( this->nDof() );
     }
     M_dof->setIndexSplit( this->buildDofIndexSplit() );
+    M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
     //M_dof->indexSplit().showMe();
 
 }
@@ -4944,6 +5096,10 @@ template<typename FuncSpaceType>
 struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
 } // detail
 
+template<typename FESpace>
+using functionspace_type = typename mpl::if_<Feel::detail::is_function_space_ptr<FESpace>,
+                                             mpl::identity<typename FESpace::element_type>,
+                                             mpl::identity<FESpace>>::type::type;
 
 
 

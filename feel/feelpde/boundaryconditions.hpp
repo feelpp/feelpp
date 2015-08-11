@@ -30,25 +30,40 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelvf/ginac.hpp>
 
-
+#include <boost/property_tree/ptree.hpp>
 
 namespace Feel
 {
-struct ExpressionStringAtMarker : public std::pair<std::string,std::string>
+namespace pt =  boost::property_tree;
+struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string>
 {
-    typedef std::pair<std::string,std::string> super;
+    typedef std::tuple<std::string,std::string,std::string> super;
 
     ExpressionStringAtMarker( super && s ) : super( s ) {}
     
     /**
      * @return the marker
      */
-    std::string const& marker() const { return this->first; }
+    std::string const& marker() const { return std::get<0>( *this ); }
     
     /**
      * @return the expression
      */
-    std::string const& expression() const { return this->second; }
+    std::string const& expression() const { return std::get<1>( *this ); }
+    
+    /**
+     * @return the expression
+     */
+    std::string const& expression1() const { return std::get<1>( *this ); }
+
+    /**
+     * @return the expression
+     */
+    std::string const& expression2() const { return std::get<2>( *this ); }
+
+    bool hasExpression() const { return !std::get<1>( *this ).empty(); } 
+    bool hasExpression1() const { return !std::get<1>( *this ).empty(); } 
+    bool hasExpression2() const { return !std::get<2>( *this ).empty(); } 
 };
 /**
  * Defines boundary conditions dictionary
@@ -87,39 +102,106 @@ class BoundaryConditions
      */
     void setPrefix( std::string p ) { M_prefix = p; }
 
+    void setPTree( pt::ptree const& p );
+        
     /**
      * load property tree from file \p filename 
      */
     void load(const std::string &filename);
 
+    void saveMD(std::ostream &os);
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
      */
-    template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type )
+    template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type ) const
     {
         using namespace Feel::vf;
         map_scalar_field<Order> m_f;
-        for ( auto f : this->operator[](field)[type]  )
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.second << " for " << f.first;
-            m_f[f.first] = expr<Order>( f.second );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
+            m_f[std::get<0>(f)] = expr<Order>( f.expression() );
         }
         return std::move(m_f);
     }
-    template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )
+    /**
+     * retrieve scalar field pair \p field with boundary conditions of type \p type
+     */
+    template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::string && field, std::string && type ) const
+        {
+            using namespace Feel::vf;
+            map_scalar_fields<Order> m_f;
+            auto const& itFindField = this->find(field);
+            if ( itFindField == this->end() ) return std::move(m_f);
+            auto const& itFindType = itFindField->second.find(type);
+            if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+            for ( auto f : itFindType->second )
+            {
+                CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
+                LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.marker();
+                m_f[f.marker()].push_back( expr<Order>( f.expression1() ) );
+                LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.marker();
+                m_f[f.marker()].push_back( expr<Order>( f.expression2() ) );
+            }
+            return std::move(m_f);
+        }
+    template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
         map_vector_field<d> m_f;
-        for ( auto f : this->operator[](field)[type]  )
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
         {
-            LOG(INFO) << "Building expr " << f.second << " for " << f.first;
-            m_f[f.first] = expr<d,1,2>( f.second );
+            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
+            m_f[std::get<0>(f)] = expr<d,1,2>( f.expression() );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_vector_fields<d> getVectorFieldsList( std::string && field, std::string && type )  const
+    {
+        using namespace Feel::vf;
+        map_vector_fields<d> m_f;
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
+        {
+            CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
+            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression1() ) );
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression2() ) );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_matrix_field<d,d> getMatrixFields( std::string && field, std::string && type )  const
+    {
+        using namespace Feel::vf;
+        map_matrix_field<d,d> m_f;
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() ) return std::move(m_f);
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() ) return std::move(m_f);
+        for ( auto f : itFindType->second )
+        {
+            LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
+            m_f[std::get<0>(f)] = expr<d,d,2>( f.expression() );
         }
         return std::move(m_f);
     }
   private:
+    void setup();
+  private:
 
     std::string M_prefix;
+    pt::ptree M_pt;
 };
 
 using BoundaryConditionFactory = Singleton<BoundaryConditions>;

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -81,7 +81,7 @@ public Elements<Shape>,
 public Points<Shape::nRealDim>
 {
     // check at compilation time that the shape has indeed dimension 1
-    BOOST_STATIC_ASSERT( Shape::nDim == 1 );
+    BOOST_STATIC_ASSERT( Shape::nDim == 0 && Shape::nRealDim >= 1 );
 
 public:
 
@@ -115,6 +115,12 @@ public:
     typedef Mesh0D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    using face_type = point_type;
+    using face_iterator = element_iterator;
+    using face_const_iterator = element_const_iterator;
+    using edge_type = point_type;
+    using edge_iterator = element_iterator;
+    using edge_const_iterator = element_const_iterator;
     //@}
 
     /** @name Constructors, destructor
@@ -232,6 +238,11 @@ public:
      */
     //@{
 
+    void setWorldComm( WorldComm const& _worldComm )
+        {
+            this->setWorldCommMeshBase( _worldComm );
+            this->setWorldCommPoints( _worldComm );
+        }
 
     //@}
 

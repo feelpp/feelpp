@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -6,6 +6,7 @@
    Date: 2006-12-30
 
    Copyright (C) 2006-2008 Université Joseph Fourier (Grenoble)
+   Copyright (C) 2011-2015 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -151,8 +152,7 @@ public:
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta ),
-        M_prefix( b.M_prefix )
+        M_beta( b.M_beta )
     {}
 
     ~Bdf();
@@ -192,7 +192,7 @@ public:
     //!return the prefix
     std::string bdfPrefix() const
     {
-        return M_prefix;
+        return this->M_prefix;
     }
 
     //! return the number of iterations between order change
@@ -308,6 +308,10 @@ public:
     //! Return a vector with the last n state vectors
     element_type& unknown( int i );
 
+    element_type const& prior() const { return *M_unknowns[0]; }
+
+    element_type& prior() { return *M_unknowns[0]; }
+    
     template<typename container_type>
     void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {
@@ -376,7 +380,6 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
-    std::string M_prefix;
 };
 
 template <typename SpaceType>
@@ -392,8 +395,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
     M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( prefix )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -417,8 +419,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_iterations_between_order_change( 1 ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( "" )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -487,38 +488,45 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
-    this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
-                        %this->bdfOrder()
-                        %this->timeStep()
-                        %this->bdfPrefix()  ).str() );
+    if ( this->path().empty() )
+        this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
+                            %this->bdfOrder()
+                            %this->timeStep()
+                            %this->bdfPrefix()  ).str() );
 
     super::init();
 
     if ( this->isRestart() )
     {
+        fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
+
         for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
         {
-            // create and open a character archive for output
-            std::ostringstream ostr;
+            if ( fileFormat() == "hdf5")
+            {
+#ifdef FEELPP_HAS_HDF5
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
+            }
+            else if ( this->fileFormat() == "binary")
+            {
+                // create and open a character archive for output
+                std::ostringstream ostr;
+                if( M_rankProcInNameOfFiles )
+                    ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                else
+                    ostr << M_name << "-" << M_iteration-p;
+                DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
-            if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-            else
-                ostr << M_name << "-" << M_iteration-p;
+                fs::ifstream ifs;
+                ifs.open( dirPath/ostr.str() );
 
-            DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
-
-            fs::ifstream ifs;
-
-            if ( this->restartPath().empty() ) ifs.open( this->path()/ostr.str() );
-
-            else ifs.open( this->restartPath()/this->path()/ostr.str() );
-
-            //fs::ifstream ifs (this->restartPath() / this->path() / ostr.str(), std::ios::binary);
-
-            // load data from archive
-            boost::archive::binary_iarchive ia( ifs );
-            ia >> *M_unknowns[p];
+                // load data from archive
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *M_unknowns[p];
+            }
         }
     }
 }
@@ -570,6 +578,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start()
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     double ti = super::start();
     M_last_iteration_since_order_change = 1;
@@ -586,6 +597,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( u0 );
     double ti = super::start();
@@ -603,6 +617,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( uv0 );
     double ti = super::start();
@@ -688,19 +705,29 @@ Bdf<SpaceType>::saveCurrent()
     bdfsaver.save();
 
     {
-        std::ostringstream ostr;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+        if ( this->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->fileFormat() == "binary")
+        {
+            std::ostringstream ostr;
 
-        fs::ofstream ofs( M_path_save / ostr.str() );
+            if( M_rankProcInNameOfFiles )
+                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_name << "-" << M_iteration;
+            // load data from archive
+            fs::ofstream ofs( M_path_save / ostr.str() );
+            boost::archive::binary_oarchive oa( ofs );
+            oa << *M_unknowns[0];
+        }
 
-
-        // load data from archive
-        boost::archive::binary_oarchive oa( ofs );
-        oa << *M_unknowns[0];
     }
 }
 
@@ -712,18 +739,31 @@ Bdf<SpaceType>::loadCurrent()
     //bdfsaver.save();
 
     {
-        std::ostringstream ostr;
 
-        if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
-        else
-            ostr << M_name << "-" << M_iteration;
+        if ( this->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+            M_unknowns[0]->loadHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->fileFormat() == "binary")
+        {
 
-        fs::ifstream ifs( M_path_save / ostr.str() );
+            std::ostringstream ostr;
 
-        // load data from archive
-        boost::archive::binary_iarchive ia( ifs );
-        ia >> *M_unknowns[0];
+            if( M_rankProcInNameOfFiles )
+                ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_name << "-" << M_iteration;
+
+            fs::ifstream ifs( M_path_save / ostr.str() );
+
+            // load data from archive
+            boost::archive::binary_iarchive ia( ifs );
+            ia >> *M_unknowns[0];
+        }
     }
 }
 

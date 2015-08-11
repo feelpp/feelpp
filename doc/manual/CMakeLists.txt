@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
 #  Copyright (C) 2009-2012 Université Joseph Fourier (Grenoble I)
@@ -24,10 +24,6 @@
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  add_subdirectory(tutorial)
-endif()
-
 find_program(LATEX NAMES latex pdflatex)
 find_program(CONVERT NAMES convert)
 if ( LATEX AND CONVERT )
@@ -39,7 +35,7 @@ endif()
 if ( FEELPP_ENABLE_MANUAL )
   include(UseLATEX OPTIONAL)
 
-  foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
+  foreach(cppfile "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
       "laplacian/laplacian.cpp"
       "stokes/stokes.cpp"
       )
@@ -71,7 +67,7 @@ if ( FEELPP_ENABLE_MANUAL )
   #FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
   #FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
-  FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
+  # FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex )
 
   #CONFIGURE_FILE(tex/version.tex.in  tex/version.tex  @ONLY)
 
@@ -139,7 +135,7 @@ add_custom_target(
   ${CMAKE_CURRENT_BINARY_DIR}/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
-add_dependencies(tut-prerequisites feelpp_tut_mymesh)
+#add_dependencies(tut-prerequisites feelpp_tut_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
@@ -200,7 +196,7 @@ ENDIF( OCTAVE_FOUND )
 add_subdirectory(python)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  foreach(DIR laplacian stokes advection accoustic dd heat solid ns heatns nonlinear adapt nirb fd maxwell opt eikonal eigen magnetostatic)
+  foreach(DIR laplacian stokes advection accoustic dd heat solid ns heatns nonlinear adapt nirb fd maxwell opt eikonal eigen magnetostatic )
     add_subdirectory(${DIR})
   endforeach()
 endif()

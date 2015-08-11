@@ -59,11 +59,22 @@ BoundaryConditions::load(const std::string &filename)
 {
     // Create an empty property tree object
     using boost::property_tree::ptree;
-    ptree pt;
 
-    read_json(filename, pt);
+    read_json(filename, M_pt);
+    setup();
+}
+void
+BoundaryConditions::setPTree( pt::ptree const& p )
+{
+    M_pt = p;
+    setup();
+}
 
-    for( auto const& v : pt )
+
+void
+BoundaryConditions::setup()
+{
+    for( auto const& v : M_pt )
     {
         
         //std::cout << "v.first:" << v.first  << "\n";
@@ -77,12 +88,22 @@ BoundaryConditions::load(const std::string &filename)
                 {
                     auto e= c.second.get<std::string>("expr");
                     LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                    this->operator[](t)[f.first].push_back( std::make_pair( c.first, e ) );
+                    this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e, std::string("") ) );
                 }
                 catch( ... )
                 {
-                    LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                    this->operator[]( t )[f.first].push_back( std::make_pair( c.first, std::string("") ) );
+                    try
+                    {
+                        auto e1= c.second.get<std::string>("expr1");
+                        auto e2= c.second.get<std::string>("expr2");
+                        LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
+                        this->operator[](t)[f.first].push_back( std::make_tuple( c.first, e1, e2 ) );
+                    }
+                    catch( ... )
+                    {
+                        LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
+                        this->operator[]( t )[f.first].push_back( std::make_tuple( c.first, std::string(""), std::string("") ) );
+                    }
                 }
             }
         }
@@ -98,7 +119,10 @@ BoundaryConditions::load(const std::string &filename)
                 LOG(INFO) << " - type " << t.first << "\n";
                 for( auto const& c : t.second )
                 {
-                    LOG(INFO) << "  . boundary  " << c.first << " expr : " << c.second << "\n";
+                    if ( c.hasExpression2() )
+                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                    else
+                        LOG(INFO) << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
                 }
                 
             }
@@ -107,5 +131,30 @@ BoundaryConditions::load(const std::string &filename)
 }
     
 
+void
+BoundaryConditions::saveMD(std::ostream &os)
+{
+  os << "### Boundary Conditions\n";
+  os << "|Name|Type|Expressions|\n";
+  os << "|---|---|---|\n";
+  for (auto it = this->begin(); it!= this->end(); it++)
+  {
+    os << "|**" << it->first << "**"; // Var name
+    for(auto iit = it->second.begin(); iit !=  it->second.end(); iit++)
+    {
+     os << "|" << iit->first; // Type
+     os << "|<ul>";
+     for(auto iiit = iit->second.begin(); iiit !=  iit->second.end(); iiit++)
+     {
+       os << "<li>**" << iiit->marker()      << "**</li>";
+       os << "<li>" << iiit->expression()  << "</li>";
+       os << "<li>" << iiit->expression1() << "</li>";
+       os << "<li>" << iiit->expression2() << "</li>";
+     }
+    }
+    os << "</ul>|\n";
+  }
+  os << "\n";
+}
 
 }//Feel

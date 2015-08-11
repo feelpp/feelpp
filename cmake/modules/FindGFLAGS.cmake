@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-27
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -83,6 +83,12 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           OUTPUT_FILE "gflags-install"
           )
       endif()
+
+      if ( APPLE AND (NOT FEELPP_USE_STATIC_LINKAGE) )
+        message(STATUS "GFlags: use @rpath in dynamic lib installed")
+        EXECUTE_PROCESS(COMMAND install_name_tool -id @rpath/libfeelpp_gflags.2.dylib ${CMAKE_BINARY_DIR}/contrib/gflags/lib/libfeelpp_gflags.dylib )
+      endif()
+
     endif()
   endif()
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
  
@@ -93,7 +93,22 @@
 #pragma warning push
 #pragma warning(disable:780)
 #endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
+#endif
 #include <glog/logging.h>
+#include <glog/stl_logging.h>
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #if defined(__INTEL_COMPILER)
 #pragma warning pop
 #endif
@@ -352,6 +367,9 @@ typedef uint16_type dim_type;
 
 //! Indices (starting from 0)
 typedef size_t size_type;
+
+//! dof id type 
+typedef size_type dof_id_type;
 
 //! type for mpi rank ids
 typedef uint16_type rank_type;

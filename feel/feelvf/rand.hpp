@@ -30,14 +30,14 @@
 #define FEELPP_VF_RAND_HPP 1
 
 #include <random>
-
+#include <boost/math/special_functions/round.hpp>
 #include <feel/feelvf/expr.hpp>
 
 namespace Feel
 {
 namespace vf
 {
-namespace details
+namespace vfdetails
 {
 template<typename T>
 class Rand_d
@@ -227,13 +227,13 @@ public:
         {
             return M_r();
         }
-        details::Rand_d<value_type> M_r;
+        vfdetails::Rand_d<value_type> M_r;
     };
 
 private:
     value_type M_low;
     value_type M_high;
-    details::Rand_d<value_type> M_r;
+    vfdetails::Rand_d<value_type> M_r;
 };
 
 

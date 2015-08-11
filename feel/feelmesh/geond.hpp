@@ -290,7 +290,18 @@ public:
     {
         return M_has_points;
     }
-
+    //! @return true if the element has at least a point with marker1 active
+    bool hasPointWithMarker() const
+        {
+            bool pt_with_marker = false;
+            for ( int i = 0; i < numPoints; ++i )
+            {
+                pt_with_marker = this->point( i ).marker().isOn();
+                break;
+            }
+            return pt_with_marker;
+        }
+    
 #if 0
     /**
      * assignment operator
@@ -989,6 +1000,10 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type con
     M_points[ i ] = const_cast<point_type *>( &p );
     //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     DCHECK( const_cast<point_type *>( &p ) != 0 ) <<  "invalid Geo0D<>";
+    DCHECK( M_G.size1() == M_points[i]->node().size()) 
+        << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
+        << " n=" << M_points[i]->node();
+
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
 }
@@ -1078,8 +1093,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         M_h_min = ( M_h_min > M_h_edge[__e] )?M_h_edge[__e]:M_h_min;
     }
 #endif
-    //auto M = glas::average( M_G );
-    //M_barycenter = ublas::column( M, 0 );
+
 #if 0
     M_pneighbors.clear();
 
@@ -1089,7 +1103,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
                    M_points[__p]->elements().end(),
                    std::inserter( M_pneighbors, M_pneighbors.begin() ) );
     }
-
+#endif
     auto ctx = M_gm->template context<vm::JACOBIAN>( *this, pc );
     //M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() ) );
     double w = ( nDim == 3 )?4./3.:2;

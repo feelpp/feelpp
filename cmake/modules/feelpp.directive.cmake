@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-04
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,8 @@ if ( FEELPP_ENABLE_SCHED_LOADLEVELER )
    set( FEELPP_SCHEDULER "LoadLeveler" )
 elseif ( FEELPP_ENABLE_SCHED_SLURM )
      set( FEELPP_SCHEDULER "Slurm"  )
+elseif ( FEELPP_ENABLE_SCHED_OAR )
+     set( FEELPP_SCHEDULER "oar"  )
 elseif ( FEELPP_ENABLE_SCHED_CCC )
      set( FEELPP_SCHEDULER "CCC"  )
 endif()
@@ -64,28 +66,27 @@ MESSAGE(STATUS "           CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
 MESSAGE(STATUS "              FEELPP_INCLUDE_DIR: ${FEELPP_INCLUDE_DIR}")
 MESSAGE(STATUS "                 FEELPP_DATA_DIR: ${FEELPP_DATA_DIR}")
 MESSAGE(STATUS "")
-MESSAGE(STATUS "          FEELPP_ENABLE_GIT: ${FEELPP_ENABLE_GIT}")
-MESSAGE(STATUS "     FEELPP_ENABLE_MPI_MODE: ${FEELPP_ENABLE_MPI_MODE} Nprocs: ${N} Nprocs(build): ${N2}")
-MESSAGE(STATUS "      FEELPP_MESH_MAX_ORDER: ${FEELPP_MESH_MAX_ORDER}")
-MESSAGE(STATUS "  FEELPP_INSTANTIATION_MODE: ${FEELPP_INSTANTIATION_MODE}")
-MESSAGE(STATUS "     FEELPP_ENABLED_OPTIONS: ${FEELPP_ENABLED_OPTIONS}")
-MESSAGE(STATUS "    FEELPP_ENABLED_PROJECTS: ${FEELPP_ENABLED_PROJECTS}")
-MESSAGE(STATUS "                  SCHEDULER: ${FEELPP_SCHEDULER}")
+MESSAGE(STATUS "             FEELPP_MACHINE_NAME: ${FEELPP_MACHINE_NAME}")
+MESSAGE(STATUS "               FEELPP_ENABLE_GIT: ${FEELPP_ENABLE_GIT}")
+MESSAGE(STATUS "          FEELPP_ENABLE_MPI_MODE: ${FEELPP_ENABLE_MPI_MODE} Nprocs: ${N} Nprocs(build): ${N2}")
+MESSAGE(STATUS "           FEELPP_MESH_MAX_ORDER: ${FEELPP_MESH_MAX_ORDER}")
+MESSAGE(STATUS "       FEELPP_INSTANTIATION_MODE: ${FEELPP_INSTANTIATION_MODE}")
+MESSAGE(STATUS "  FEELPP_INSTANTIATION_ORDER_MAX: ${FEELPP_INSTANTIATION_ORDER_MAX}")
+MESSAGE(STATUS "          FEELPP_ENABLED_OPTIONS: ${FEELPP_ENABLED_OPTIONS}")
+MESSAGE(STATUS "         FEELPP_ENABLED_PROJECTS: ${FEELPP_ENABLED_PROJECTS}")
+MESSAGE(STATUS "                       SCHEDULER: ${FEELPP_SCHEDULER}")
 
 MESSAGE(STATUS "================================================================================")
 
 string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
 if(cmake_generator_tolower MATCHES "makefile")
   message(STATUS "Some things you can do now with Feel++:")
-  MESSAGE(STATUS "================================================================================")
-  message(STATUS "Command        |   Description")
-  MESSAGE(STATUS "===============|================================================================")
-  message(STATUS "make           | Compile the Feel++ library and quickstart examples ")
-  message(STATUS "make install   | Install to ${CMAKE_INSTALL_PREFIX}. To change that:")
-  message(STATUS "               |     cmake ${FEELPP_SOURCE_DIR} -DCMAKE_INSTALL_PREFIX=yourpath")
-  message(STATUS "               |   Feel++ headers will then be installed to:")
-  message(STATUS "               |     ${INCLUDE_INSTALL_DIR}")
-  message(STATUS "make check     | Build and run quickstart checks.")
+  MESSAGE(STATUS "==================================================================================")
+  message(STATUS "Command            |   Description")
+  MESSAGE(STATUS "===================|================================================================")
+  message(STATUS "make feelpp        | Compile the Feel++ library")
+  message(STATUS "make install-feelpp| Compile the Feel++ library and install it to ${CMAKE_INSTALL_PREFIX}")
+  message(STATUS "make feelpp_models | build feel++ models: fluid, solid, fsi, thermodynamics ")
   MESSAGE(STATUS "================================================================================")
 endif()
 

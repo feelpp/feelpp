@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -30,6 +30,9 @@
 #define __MESHIMPL_HPP 1
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
+#include <feel/feeltiming/tic.hpp>
+
+
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -207,7 +210,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
-
+            this->check();
             VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
 
         }
@@ -264,13 +267,60 @@ Mesh<Shape, T, Tag>::updateForUse()
                                          []( element_type& e )
                                          {
                                              for ( int i = 0; i < e.numPoints; ++i )
-                                                 e.point( i ).addElement( e.id() );
+                                                 e.point( i ).addElement( e.id(), i );
                                          });
             }
             VLOG(1) << "[Mesh::updateForUse] update add element info : " << ti.elapsed() << "\n"; 
         }
 
-        this->updateNumGlobalElements();
+        ti.restart();
+        tic();
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
+        {
+            // first look if the element has a point with a marker
+            // if not we skip this element
+            if ( iv->hasPointWithMarker() && !iv->isGhostCell())
+            {
+                this->elements().modify( iv,
+                                         []( element_type& e )
+                                         {
+                                             for ( int i = 0; i < e.numPoints; ++i )
+                                             {
+                                                 if ( e.point( i ).marker().isOn() )
+                                                 {
+                                                     e.point( i ).addElement( e.id(), i );
+#if 0                                                     
+                                                     LOG(INFO) << "added to point " << e.point(i).id() << " marker " << e.point(i).marker()
+                                                               << " element " << e.id() << " pt id in element " << i
+                                                               << " pt(std::set) " << boost::prior( e.point(i).elements().end())->first
+                                                               << ", " << boost::prior( e.point(i).elements().end())->second;
+#endif
+                                                 }
+                                             }
+                                         });
+            }
+        }
+        //auto& mpts = this->pointsByMarker();
+        //auto& mpts = this->pointsRange();
+        for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
+        {
+            if ( p_it->marker() > 0 )
+            {
+                if (!p_it->elements().size())
+                {
+                    this->points().modify( p_it,
+                                           []( point_type& e )
+                                           {
+                                               e.setProcessId( invalid_rank_type_value );
+                                           });
+                }
+            }
+        }
+        toc("register elements associated to marked points" , FLAGS_v > 0 );
+        VLOG(1) << "[Mesh::updateForUse] update add element info for marked points : " << ti.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+        
+        this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {
@@ -1995,10 +2045,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 // update id face in other partition
-                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+                this->faces().modify( face_it, [&idProc,&idFaceRecv]( face_type& f )
+                                      {
+                                          f.addNeighborPartitionId( idProc );
+                                          f.setIdInOtherPartitions( idProc, idFaceRecv );
+                                      } );
+                                      
                 // maybe the face is not really on boundary
                 if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
-                    this->faces().modify( face_it, Feel::detail::UpdateFaceOnBoundary( false ) );
+                    this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -2026,7 +2081,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
+                this->points().modify( point_it, [&idProc,&idPointRecv]( point_type& p )
+                                       {
+                                           p.addNeighborPartitionId( idProc );
+                                           p.setIdInOtherPartitions( idProc, idPointRecv );
+                                       } );
+                                       
 
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
@@ -2047,8 +2107,10 @@ Mesh<Shape, T, Tag>::check() const
         return;
 #if !defined( NDEBUG )
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
-    element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto iv = this->beginElement();
+    auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
 
     //boost::tie( iv, en ) = this->elementsRange();
@@ -2806,7 +2868,7 @@ boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
 Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
-    double dmin;
+    double dmin=0;
     node_type x_ref;
 
     auto mesh = M_mesh.lock();

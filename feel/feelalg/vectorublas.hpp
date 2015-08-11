@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -879,6 +879,11 @@ public:
     value_type dot( Vector<T> const& __v );
     //@}
 
+#ifdef FEELPP_HAS_HDF5
+    void saveHDF5( std::string const& filename );
+    void loadHDF5( std::string const& filename );
+    void ioHDF5( bool isLoad, std::string const& filename );
+#endif
 
 
 protected:
