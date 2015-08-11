@@ -706,15 +706,18 @@ public:
     double faceMeasure( uint16_type f ) const
     {
         //return M_measurefaces[f];
+        CHECK( 0 ) << "Invalid call to faceMeasure(" << f << ")";
         return -1;
     }
 
     /**
      * \return the measure of the element faces
      */
-    FEELPP_DEPRECATED std::vector<double> const& faceMeasures() const
+    FEELPP_DEPRECATED std::vector<double> faceMeasures() const
     {
-        return std::vector<double>();
+        std::vector<double> m( numTopologicalFaces, 0 );
+        CHECK( 0 ) << "Invalid call";
+        return m;
     }
 
     /**
