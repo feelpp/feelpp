@@ -894,9 +894,12 @@ public:
         std::set<size_type> n;
         for ( uint16_type __p = 0; __p < numPoints; ++__p )
         {
-            std::copy( M_points[__p]->elements().begin(),
-                       M_points[__p]->elements().end(),
-                       std::inserter( n, n.begin() ) );
+            std::for_each( M_points[__p]->elements().cbegin(),
+                           M_points[__p]->elements().cend(),
+                           [&n]( std::pair<size_type,uint16_type> const& e )
+                           {
+                               n.insert( e.first );
+                           } );
         }
         return n;
     }
@@ -1092,7 +1095,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
         M_h = ( M_h > M_h_edge[__e] )?M_h:M_h_edge[__e];
         M_h_min = ( M_h_min > M_h_edge[__e] )?M_h_edge[__e]:M_h_min;
     }
-#endif
+
 
 #if 0
     M_pneighbors.clear();
