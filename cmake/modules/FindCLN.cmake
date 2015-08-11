@@ -9,8 +9,6 @@
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   HINTS
   $ENV{CLN_DIR}/include
-  PATH_SUFFIXES
-  cln
   )
 FIND_LIBRARY(CLN_LIBRARY cln
   HINTS
@@ -23,14 +21,20 @@ if( NOT CLN_INCLUDE_DIR OR NOT CLN_LIBRARY)
   # use the version available in contrib if the system version is not available
   FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
     HINTS
-    ${CMAKE_BINARY_DIR}/contrib/cln/include
     $ENV{FEELPP_DIR}/include
     $ENV{FEELPP_DIR}/include/feel
+    ${CMAKE_BINARY_DIR}/contrib/cln/include
     /usr/include/feel
     /usr/local/include/feel
     /opt/local/include/feel
-    PATH_SUFFIXES
-    cln
+    NO_DEFAULT_PATH
+  )
+  FIND_LIBRARY(CLN_LIBRARY
+    NAMES cln feelpp_cln
+    HINTS
+    $ENV{CLN_DIR}/lib  
+    $ENV{FEELPP_DIR}/lib
+    ${CMAKE_BINARY_DIR}/contrib/cln/lib/
     NO_DEFAULT_PATH
   )
   message(STATUS "[cln] second pass ${CLN_INCLUDE_DIR}; ${CLN_LIBRARY}")
@@ -98,8 +102,8 @@ IF ( NOT CLN_INCLUDE_DIR OR NOT CLN_LIBRARY )
         NAMES cln feelpp_cln
         PATHS
         $ENV{CLN_DIR}/lib  
-        ${CMAKE_BINARY_DIR}/contrib/cln/lib/
         $ENV{FEELPP_DIR}/lib
+        ${CMAKE_BINARY_DIR}/contrib/cln/lib/
         NO_DEFAULT_PATH
         )
 endif()
