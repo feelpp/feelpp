@@ -25,13 +25,20 @@
 if (FEELPP_ENABLE_SCHED_OAR )
     if (FEELPP_MACHINE_NAME MATCHES "rheticus")
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
-#OAR -n ${execname}                # Set Job name to app name
-#OAR -l core=64, walltime=20:00:00  # Number of tasks to use and Elapsed time limit of the job
-#OAR -O ${execname}_%jobid%.out     # Standard output.
-#OAR -E ${execname}_%jobid%.err     # Error output. 
-#OAR -p cluster     # Launch job on cluster queue by default
-##OAR -p smp='YES' AND nodetype='SMP2Tb'    # Uncomment to submit a job on the SMP machine
-#OAR -q medium      # Choose queue between development, short, medium & long
+## Set Job name to app name
+#OAR -n ${execname}
+## Number of tasks to use and Elapsed time limit of the job
+#OAR -l core=64, walltime=20:00:00
+## Standard output
+#OAR -O ${execname}_%jobid%.out
+## Error output
+#OAR -E ${execname}_%jobid%.err
+## Launch job on cluster queue by default
+#OAR -p cluster
+## Uncomment to submit a job on the SMP machine
+##OAR -p smp='YES' AND nodetype='SMP2Tb'
+## Choose queue between development, short, medium & long
+#OAR -q medium
 
 # Source modules for cemracs
 source /softs/cemracs_2015/cemracs.sh
