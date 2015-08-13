@@ -34,8 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeltiming/tic.hpp>
-#include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/expr.hpp>
+
 #if defined( FEELPP_HAS_FFTW )
 #include <fftw3.h>
 
