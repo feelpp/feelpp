@@ -62,8 +62,8 @@ source /softs/cemracs_2015/cemracs.sh
 # We ended up having problem with Ginac when not exporting those variables
 # (They were only set for for several processes)
 # sample exports
-#export FEELPP_WORKDIR=/home/user/logfiles/job.$OAR_JOBID
-#export FEELPP_SCRATCHDIR=/home/user/feel/job.$OAR_JOBID
+#export FEELPP_WORKDIR=/home/user/feel/job.$OAR_JOBID
+#export FEELPP_SCRATCHDIR=/home/user/logfiles/job.$OAR_JOBID
 
 # launch the application
 # For OpenMPI 1.6, use orte_rsh_agent instead of plm_rsh_agent
