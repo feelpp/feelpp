@@ -413,9 +413,7 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
 
     BOOST_CHECK_CLOSE( T_mean, 344, 2e-1 );
 
-    TestNLSolveComposite::export_ptrtype exporter( TestNLSolveComposite::export_type::New( this->vm(),
-                                                                                           (boost::format( "%1%" )
-                                                                                            % this->about().appName() ).str() ) );
+    auto e = exporter( _mesh = mesh, _name= (boost::format( "%1%" ) % this->about().appName() ).str());
 
     if ( exporter->doExport() )
         {
