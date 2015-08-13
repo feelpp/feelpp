@@ -70,6 +70,8 @@ source /softs/cemracs_2015/cemracs.sh
 # See https://www.grid5000.fr/mediawiki/index.php/Run_MPI_On_Grid%275000
 # See http://oar.imag.fr/docs/2.5/user/usecases.html
 # Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent.
+
+# Advice: Use absolute paths to ensure that the executables and config files are found
         ")
 
         if ( FEELPP_APP_CFG )
@@ -79,7 +81,7 @@ source /softs/cemracs_2015/cemracs.sh
                     "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
     -mca plm_rsh_agent \"oarsh\" \\
     ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-    --config-file=${cfg}  
+    --config-file=${CMAKE_CURRENT_BINARY_DIR}/${cfg}  
 # "
                 )
             endforeach()
