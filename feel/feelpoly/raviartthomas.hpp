@@ -124,7 +124,7 @@ class RaviartThomasPolynomialSet
     typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> super;
 
 public:
-    static const uint16_type Om1 = (O==0)?0:O-1;
+    static constexpr uint16_type Om1 = (O==0)?0:O-1;
     typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Convex> Pk_v_type;
     typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> Pkp1_v_type;
     typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, TheTAG, Convex> Pkm1_v_type;
@@ -143,10 +143,10 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
-    static const bool is_product = false;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nOrder = super::nOrder;
+    static constexpr uint16_type nComponents = super::nComponents;
+    static constexpr bool is_product = false;
     RaviartThomasPolynomialSet()
         :
         super()
@@ -221,8 +221,8 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -238,7 +238,7 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
-    static const uint16_type nbPtsPerVertex = 0;
+    static constexpr uint16_type nbPtsPerVertex = 0;
     static constexpr uint16_type nbPtsPerEdge = (nDim==2)?reference_convex_type::nbPtsPerEdge:0;
     static constexpr uint16_type nbPtsPerFace2d = (nOrder)*(nOrder+2)-reference_convex_type::numEdges*nbPtsPerEdge;
     static constexpr uint16_type nbPtsPerFace3d = reference_convex_type::nbPtsPerFace;
@@ -250,19 +250,19 @@ public:
     static constexpr uint16_type numPoints = (nDim==2)?numPoints2d:numPoints3d;
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = 0;
+    static constexpr uint16_type nDofPerVertex = 0;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static constexpr uint16_type nDofPerEdge = nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static constexpr uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static constexpr uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static constexpr uint16_type nLocalDof = numPoints;
 
     RaviartThomasDual( primal_space_type const& primal )
         :
@@ -454,14 +454,14 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    //static const bool isTransformationEquivalent = false;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = true;
+    static constexpr uint16_type nDim = N;
+    //static constexpr bool isTransformationEquivalent = false;
+    static constexpr bool isTransformationEquivalent = true;
+    static constexpr bool isContinuous = true;
     typedef Continuous continuity_type;
-    static const uint16_type TAG = TheTAG;
+    static constexpr uint16_type TAG = TheTAG;
 
-    //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
+    //static constexpr polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
@@ -470,10 +470,10 @@ public:
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const bool is_product = false;
+    static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    static constexpr bool is_scalar = polyset_type::is_scalar;
+    static constexpr uint16_type nComponents = polyset_type::nComponents;
+    static constexpr bool is_product = false;
 
 
     typedef typename dual_space_type::convex_type convex_type;
@@ -483,20 +483,20 @@ public:
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
 
-    static const uint16_type nOrder =  dual_space_type::nOrder;
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
-    static const uint16_type numPoints = dual_space_type::numPoints;
+    static constexpr uint16_type nOrder =  dual_space_type::nOrder;
+    static constexpr uint16_type nbPtsPerVertex = 0;
+    static constexpr uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static constexpr uint16_type numPoints = dual_space_type::numPoints;
 
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static constexpr uint16_type nLocalDof = dual_space_type::nLocalDof;
 
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    static constexpr uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static constexpr uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static constexpr uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static constexpr uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static constexpr uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
     //@}
@@ -894,14 +894,11 @@ public:
     };
 
     template<uint16_type TheNewTAG>
-    struct ChangeTag
-    {
-        typedef RaviartThomas<Order,TheNewTAG> type;
-    };
+    using ChangeTag = RaviartThomas<Order,TheNewTAG>;
 
-    typedef Lagrange<Order,Scalar> component_basis_type;
+    using component_basis_type = Lagrange<Order,Scalar>;
 
-    static const uint16_type TAG = TheTAG;
+    static constexpr uint16_type TAG = TheTAG;
 
 };
 

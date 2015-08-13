@@ -69,8 +69,8 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -83,11 +83,11 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    static constexpr uint16_type numPoints = reference_convex_type::numPoints;
+    static constexpr uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    static constexpr uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
 #if 0
     /**
@@ -100,29 +100,29 @@ public:
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 #endif
 
-    static const uint16_type nVertices = reference_convex_type::numVertices;
-    static const uint16_type nFaces = reference_convex_type::numFaces;
-    static const uint16_type nGeometricFaces = reference_convex_type::numFaces;
-    static const uint16_type nEdges = reference_convex_type::numEdges;
-    static const uint16_type nNormals = reference_convex_type::numNormals;
+    static constexpr uint16_type nVertices = reference_convex_type::numVertices;
+    static constexpr uint16_type nFaces = reference_convex_type::numFaces;
+    static constexpr uint16_type nGeometricFaces = reference_convex_type::numFaces;
+    static constexpr uint16_type nEdges = reference_convex_type::numEdges;
+    static constexpr uint16_type nNormals = reference_convex_type::numNormals;
 
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = nbPtsPerVertex;
+    static constexpr uint16_type nDofPerVertex = nbPtsPerVertex;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static constexpr uint16_type nDofPerEdge = nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static constexpr uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static constexpr uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static constexpr uint16_type nLocalDof = numPoints;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+    static constexpr uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                              mpl::int_<nVertices>,
                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                              mpl::int_<nEdges>,
@@ -335,36 +335,37 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder =  O;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = ContinuityType::is_continuous;
+    static constexpr uint16_type nDim = N;
+    static constexpr uint16_type nRealDim = RealDim;
+    static constexpr uint16_type nOrder =  O;
+    static constexpr bool isTransformationEquivalent = true;
+    static constexpr bool isContinuous = ContinuityType::is_continuous;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef ContinuityType continuity_type;
-    static const uint16_type TAG = TheTAG;
+    static constexpr uint16_type TAG = TheTAG;
 
     /**
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const uint16_type nComponents1 = polyset_type::nComponents1;
-    static const uint16_type nComponents2 = polyset_type::nComponents2;
-    static const bool is_product = true;
+    static constexpr bool is_tensor2 = polyset_type::is_tensor2;
+    static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    static constexpr bool is_scalar = polyset_type::is_scalar;
+    static constexpr uint16_type nComponents = polyset_type::nComponents;
+    static constexpr uint16_type nComponents1 = polyset_type::nComponents1;
+    static constexpr uint16_type nComponents2 = polyset_type::nComponents2;
+    static constexpr bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
+    static constexpr int Nm1 = (N>0)?N-1:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-            mpl::identity<boost::none_t>,
-            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+    using face_basis_type = typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+                                              mpl::identity<boost::none_t>,
+                                              mpl::identity< Lagrange<Nm1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
     typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
@@ -381,22 +382,22 @@ public:
     typedef typename convex_type::topological_face_type face_type;
     typedef typename convex_type::edge_type edge_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    static constexpr uint16_type numPoints = reference_convex_type::numPoints;
+    static constexpr uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    static constexpr uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    static constexpr uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static constexpr uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static constexpr uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static constexpr uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static constexpr uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static constexpr uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
-    static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
+    static constexpr uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
                                                edge_type::numEdges * nDofPerEdge);
-    static const uint16_type nLocalVertexDof = nDofPerVertex;
+    static constexpr uint16_type nLocalVertexDof = nDofPerVertex;
     template<int subN>
     struct SubSpace
     {
@@ -418,7 +419,7 @@ public:
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
-    static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
+    static constexpr bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 
@@ -656,15 +657,12 @@ public:
     };
 
     template<uint16_type TheNewTAG>
-    struct ChangeTag
-    {
-        typedef Lagrange<Order,PolySetType,ContinuityType,Pts,TheNewTAG> type;
-    };
+    using ChangeTag = Lagrange<Order,PolySetType,ContinuityType,Pts,TheNewTAG>;
 
-    typedef Lagrange<Order,Scalar,ContinuityType,Pts,TheTAG> component_basis_type;
+    using component_basis_type = Lagrange<Order,Scalar,ContinuityType,Pts,TheTAG>;
 
-    static const uint16_type nOrder =  Order;
-    static const uint16_type TAG = TheTAG;
+    static constexpr uint16_type nOrder =  Order;
+    static constexpr uint16_type TAG = TheTAG;
 
 };
 template<uint16_type Order,
