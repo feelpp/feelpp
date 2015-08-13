@@ -100,7 +100,7 @@ public:
     {
         auto Xh = Pch<H_ORDER>(M_mesh);
         auto Xdh0 = Pdh<0>(M_mesh);
-//        auto mark = Xdh0->element();
+        auto mark = Xdh0->element();
         int fid = 1;
         double R = doption("radius");
         auto test_boundary = Xdh0->element();
