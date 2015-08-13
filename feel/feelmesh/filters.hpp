@@ -748,6 +748,45 @@ markededges( MeshType const& mesh,
                              mesh->endFaceWithMarker() );
 }
 
+
+template<typename MeshType>
+std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
+                       typename MeshTraits<MeshType>::marker_edge_const_iterator,
+                       typename MeshTraits<MeshType>::marker_edge_const_iterator> >
+markededges( MeshType const& mesh,
+             std::list<std::string> const& __markers,
+             typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
+                           typename MeshTraits<MeshType>::marker_edge_const_iterator,
+                           typename MeshTraits<MeshType>::marker_edge_const_iterator> > list_edges;
+    for ( auto const& it : __markers )
+    {
+        flag_type theflag = mesh->markerId( it );
+        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
+        list_edges.push_back( Feel::detail::markededges( mesh, theflag, rank( mesh ), is_ptr_or_shared_ptr() ) );
+    }
+    return list_edges;
+}
+/**
+ * this function in 2D is a no-op
+ */
+template<typename MeshType>
+std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
+                       typename MeshTraits<MeshType>::marker_face_const_iterator,
+                       typename MeshTraits<MeshType>::marker_face_const_iterator> >
+markededges( MeshType const& mesh,
+             std::list<std::string> const& __markers,
+             typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
+{
+    std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
+                           typename MeshTraits<MeshType>::marker_face_const_iterator,
+                           typename MeshTraits<MeshType>::marker_face_const_iterator> > list_edges;
+    return list_edges;
+}
+
+
 /**
  *
  * \ingroup MeshIterators
@@ -819,6 +858,25 @@ markedpoints( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     return Feel::detail::markedpoints( mesh, mesh->markerName(flag), is_ptr_or_shared_ptr() );
+}
+
+template<typename MeshType>
+std::list<boost::tuple<mpl::size_t<MESH_POINTS>,
+                       typename MeshTraits<MeshType>::marker_point_const_iterator,
+                       typename MeshTraits<MeshType>::marker_point_const_iterator> >
+markedpoints( MeshType const& mesh, std::list<std::string> const& __markers )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    std::list<boost::tuple<mpl::size_t<MESH_POINTS>,
+                           typename MeshTraits<MeshType>::marker_point_const_iterator,
+                           typename MeshTraits<MeshType>::marker_point_const_iterator> > list_points;
+    for ( auto const& it : __markers )
+    {
+        flag_type theflag = mesh->markerId( it );
+        VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
+        list_points.push_back( Feel::detail::markedpoints( mesh, theflag/*, rank( mesh )*/, is_ptr_or_shared_ptr() ) );
+    }
+    return list_points;
 }
 
 /**

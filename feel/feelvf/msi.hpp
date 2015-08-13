@@ -24,7 +24,10 @@
 #ifndef FEELPP_VF_MSI_HPP
 #define FEELPP_VF_MSI_HPP 1
 
+#include <feel/feelconfig.h>
 
+
+#if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
 #include <feel/feelvf/expr.hpp>
@@ -72,13 +75,13 @@ public:
     //@{
     static const size_type context = vm::POINT;
 
-    static const size_type Options = _Options;
+    static const int Options = _Options;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
-    typedef MultiScaleImage<T,Options> msi_type;
+    typedef Feel::MultiScaleImage<T,Options> msi_type;
     using needs_gradient_t = typename msi_type::needs_gradient_t;
     using do_compute_gradient_t = typename msi_type::do_compute_gradient_t;
     using no_compute_gradient_t = typename msi_type::no_compute_gradient_t;
@@ -317,4 +320,7 @@ msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, in
 
 } // vf
 } // Feel
+
+#endif // FEELPP_HAS_FFTW
+
 #endif /* __MSI_H */

@@ -753,7 +753,7 @@ public:
     bool
     hasFaceMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-1 );
+            return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
         }
 
     /**
@@ -763,7 +763,17 @@ public:
     bool
     hasEdgeMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-2 );
+            return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is 0, false otherwise
+     */
+    bool
+    hasPointMarker( std::string marker ) const
+        {
+            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
         }
 
     /**
