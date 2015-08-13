@@ -733,6 +733,7 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     }
     else //updateSubVector
     {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 5)
         //ierr = VecRestoreSubVector(this->vec(), isrow, &subvec);
         if( init )
         {
@@ -741,6 +742,9 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
         }
         ierr = VecISAXPY(this->vec(), isrow, 1, subvec); //vec[isrow[i]] += alpha*subvec[i] with alpha=1
         CHKERRABORT( this->comm(),ierr );
+#else
+        std::cerr << "ERROR : update of subvectors requires petsc version >= 3.5" << std::endl;
+#endif
     }
 
     ierr = PETSc::ISDestroy( isrow );
