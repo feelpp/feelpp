@@ -4,8 +4,9 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-05-06
-
+ 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -44,7 +45,7 @@ public:
     //@{
 
     static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
+    static const uint16_type nOrder = Order;//super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
 
     static const uint16_type topological_dimension = super::topological_dimension;
@@ -76,11 +77,13 @@ public:
     static const uint16_type numEdges = super::numEdges;
     static const uint16_type numNormals = super::numNormals;
 
+#if 0
     static const uint16_type numPoints = super::numPoints;
     static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
     static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+#endif
 
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
@@ -104,10 +107,14 @@ public:
 
     Reference()
         :
-        super(),
+        Reference( 1 )
+        {}
+    constexpr Reference( uint16_type _Order )
+        :
+        super(_Order),
         M_id( 0 ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_points( nRealDim, this->numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numEdges ),
         M_barycenter( nRealDim ),
@@ -166,10 +173,10 @@ public:
 
     Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
-        super(),
+        super(e.order()),
         M_id( __f ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_points( nRealDim, this->numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numNormals ),
         M_barycenter( nRealDim ),
@@ -233,10 +240,10 @@ public:
 
     Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY)
         :
-        super(),
+        super(e.order()),
         M_id( __f ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_points( nRealDim, this->numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numNormals ),
         M_barycenter( nRealDim ),
@@ -273,6 +280,7 @@ public:
     }
 
     Reference( Reference const & r ) = default;
+    Reference( Reference && r ) = default;
 
     ~Reference() = default;
 
@@ -283,6 +291,7 @@ public:
     //@{
 
     Reference& operator=( Reference const& r ) = default;
+    Reference& operator=( Reference && r ) = default;
 
     //@}
 
@@ -290,22 +299,14 @@ public:
      */
     //@{
 
-    uint16_type topologicalDimension() const
-    {
-        return topological_dimension;
-    }
-    uint16_type dimension() const
-    {
-        return real_dimension;
-    }
 
     uint16_type nVertices() const
     {
         return numVertices;
     }
-    uint16_type nPoints() const
+    constexpr uint16_type nPoints() const
     {
-        return numPoints;
+        return this->numberOfPoints();
     }
     uint16_type nEdges() const
     {
@@ -328,7 +329,7 @@ public:
 
     ublas::matrix_column<points_type const> edgeVertex( uint16_type __e, uint16_type __p ) const
     {
-        return ublas::column( M_vertices, edge_to_point_t::e2p( __e,__p ) );
+        return ublas::column( M_vertices, this->e2p( __e,__p ) );
     }
 
     /**
@@ -336,7 +337,7 @@ public:
      */
     ublas::matrix_column<points_type const> faceVertex( uint16_type f, uint16_type p ) const
     {
-        return ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
+        return ublas::column( M_vertices, this->f2p( f,p ) );
     }
 
     /**
@@ -353,11 +354,11 @@ public:
             {
             case 1:
             case 3:
-                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
+                ublas::column( v, p ) = ublas::column( M_vertices, this->f2p( f,p ) );
                 break;
 
             case 2:
-                ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::e2p( f,p ) );
+                ublas::column( v, p ) = ublas::column( M_vertices, this->e2p( f,p ) );
                 break;
             }
         }
@@ -656,7 +657,7 @@ public:
     points_type
     makeLattice( uint16_type interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( this->order() > 0 )
         {
             if ( shape == SHAPE_LINE )
                 return make_line_points( interior );
@@ -668,7 +669,7 @@ public:
                 return make_tetrahedron_points( interior );
         }
 
-        DCHECK ( nOrder == 0 ) << "Invalid polynomial order";
+        DCHECK ( this->order() == 0 ) << "Invalid polynomial order";
         return glas::average( M_vertices );
     }
 
@@ -782,38 +783,38 @@ public:
 
 private:
 
-    int n_line_points( int interior = 0 ) const
+    static constexpr int n_line_points( int _Order, int interior = 0 ) 
     {
-        return std::max( 0, int( Order )+1-2*interior );
+        return std::max( 0, int( _Order )+1-2*interior );
     }
-    int n_triangle_points( int interior = 0 ) const
+    static constexpr int n_triangle_points( int _Order, int interior = 0 ) 
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )/2 );
+            return std::max( 0, ( int( _Order )+1-2*interior )*( int( _Order )-2*interior )/2 );
 
-        return ( Order+1 )*( Order+2 )/2;
+        return ( _Order+1 )*( _Order+2 )/2;
     }
-    int n_tetrahedron_points( int interior = 0 ) const
+    static constexpr int n_tetrahedron_points( int _Order, int interior = 0 ) 
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )*( int( Order )-1-2*interior )/6 );
+            return std::max( 0, ( int( _Order )+1-2*interior )*( int( _Order )-2*interior )*( int( _Order )-1-2*interior )/6 );
 
-        return ( Order+1 )*( Order+2 )*( Order+3 )/6;
+        return ( _Order+1 )*( _Order+2 )*( _Order+3 )/6;
     }
 
     points_type
     make_line_points( int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( this->order() > 0 )
         {
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-            points_type p( nRealDim, n_line_points( interior ) );
+            points_type p( nRealDim, n_line_points( this->order(), interior ) );
 
-            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
+            for ( int i = interior, indp = 0; i < int( this->order() )+1-interior; ++i, ++indp )
             {
-                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
+                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( this->order() );
             }
 
             return p;
@@ -827,7 +828,7 @@ private:
     points_type
     make_triangle_points( int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( this->order() > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h *= 0;
@@ -835,14 +836,14 @@ private:
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             //std::cout << "h = " << h << "\n";
             //DVLOG(2) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
-            points_type G( nRealDim, n_triangle_points( interior ) );
+            points_type G( nRealDim, n_triangle_points( this->order(), interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( this->order() )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                for ( int j = interior; j < int( this->order() ) + 1 - i-interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = vertex( 0 ) + ( value_type( j ) * h( 0 )+
-                                                            value_type( i ) * h( 1 ) )/ value_type( Order );
+                                                            value_type( i ) * h( 1 ) )/ value_type( this->order() );
                 }
             }
 
@@ -856,24 +857,24 @@ private:
     points_type
     make_tetrahedron_points( int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( this->order() > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             h( 2 ) = vertex( 3 ) - vertex( 0 );
-            points_type G( 3, n_tetrahedron_points( interior ) );
+            points_type G( 3, n_tetrahedron_points( this->order(), interior ) );
 
             //DVLOG(2) << "n tetra pts = " << n_tetrahedron_points( interior ) << "\n";
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( this->order() )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
+                for ( int j = interior; j < int( this->order() ) + 1 - i - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
+                    for ( int k = interior; k < int( this->order() ) + 1 - i - j - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = vertex( 0 ) + ( value_type( i ) * h( 2 ) +
                                                                 value_type( j ) * h( 1 ) +
-                                                                value_type( k ) * h( 0 ) ) / value_type( Order );
+                                                                value_type( k ) * h( 0 ) ) / value_type( this->order() );
 
                     }
                 }
@@ -1062,13 +1063,14 @@ private:
 
     value_type M_meas;
 };
-
+#if 0
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
+#endif
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
 const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
 
@@ -1159,5 +1161,12 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
     }
 }
 
+template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim,  typename T = double>
+Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
+reference( Simplex<Dim, Order, RDim> const& S )
+{
+    return Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>();
 }
+
+} // Feel
 #endif /* __refsimplex_H */

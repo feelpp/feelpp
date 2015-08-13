@@ -38,7 +38,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feelmesh/hypercube.hpp>
+//#include <feel/feelmesh/hypercube.hpp>
 
 namespace Feel
 {
@@ -156,5 +156,5 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
 } // Feel
 
 #include <feel/feelmesh/refsimplex.hpp>
-#include <feel/feelmesh/refhypercube.hpp>
+//#include <feel/feelmesh/refhypercube.hpp>
 #endif /* __RefEntity_H */

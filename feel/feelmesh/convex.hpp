@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-30
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,12 +27,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-04-30
  */
-#ifndef __Convex_H
-#define __Convex_H 1
+#ifndef FEELPP_MESH_CONVEX_HPP
+#define FEELPP_MESH_CONVEX_HPP 1
 
 namespace Feel
 {
-class ConvexBase {};
 /**
  * \class Convex
  * \brief Convex base class
@@ -39,8 +39,7 @@ class ConvexBase {};
  * @author Christophe Prud'homme
  * @see
  */
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
-class Convex : public ConvexBase
+class Convex 
 {
 public:
 
@@ -48,10 +47,6 @@ public:
     /** @name Constants
      */
     //@{
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
-
 
     //@}
 
@@ -67,13 +62,15 @@ public:
     //@{
 
     //! default constructor
-    Convex() {}
+    constexpr Convex( uint16_type Dim, uint16_type Order, uint16_type RDim) 
+        : 
+        M_dim( Dim ),
+        M_order( Order ),
+        M_rdim( RDim )
+        {}
 
-    //! copy constructor
-    Convex( Convex const & ) {}
-
-    //! destructor
-    virtual ~Convex() {}
+    Convex( Convex const & ) = default;
+    Convex( Convex && ) = default;
 
     //@}
 
@@ -82,20 +79,20 @@ public:
     //@{
 
     //! copy operator
-    Convex& operator=( Convex const & o )
-    {
-        if ( this != &o )
-        {
-        }
+    Convex& operator=( Convex const & o ) = default;
+    Convex& operator=( Convex && o ) = default;
 
-        return *this;
-    }
     //@}
 
     /** @name Accessors
      */
     //@{
 
+    constexpr uint16_type dimension() const { return M_rdim; }
+    constexpr uint16_type topologicalDimension() const { return M_dim; }
+    constexpr uint16_type geometricalDimension() const { return M_rdim; }
+    constexpr uint16_type realDimension() const { return M_rdim; }
+    constexpr uint16_type order() const { return M_order; }
 
     //@}
 
@@ -103,6 +100,7 @@ public:
      */
     //@{
 
+    constexpr void setOrder( uint16_type o ) { M_order = o; }
 
     //@}
 
@@ -116,9 +114,15 @@ public:
 
 
 protected:
-
+    uint16_type M_dim;
+    uint16_type M_order;
+    uint16_type M_rdim;
 private:
 
 };
+
+// Alias to Convex for compatibility
+using ConvexBase = Convex;
+
 } // Feel
-#endif /* __Convex_H */
+#endif /* FEELPP_MESH_CONVEX_HPP */
