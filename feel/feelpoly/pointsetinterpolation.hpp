@@ -175,7 +175,7 @@ public:
     }
 
     //Returns the local indices of all the subentities that compose the entity
-    index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 )
+    index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         index_map_type indices( top_dim+1 );
 
@@ -247,7 +247,7 @@ public:
     }
 
 
-    points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 )
+    points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 

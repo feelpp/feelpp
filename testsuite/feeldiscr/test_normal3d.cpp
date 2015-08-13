@@ -17,8 +17,6 @@ using namespace Feel;
 namespace test_normal3d
 {
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -58,7 +56,7 @@ makeAbout()
 
 template <uint32_type orderGeo = 1>
 void
-runtest( Application_ptrtype test_app )
+runtest()
 {
     BOOST_MESSAGE( "================================================================================\n"
                    << "Order: " << orderGeo << "\n" );
@@ -74,10 +72,10 @@ runtest( Application_ptrtype test_app )
 
     //-----------------------------------------------------------//
 
-    double meshSize = test_app->vm()["hsize"].as<double>();
-    bool exportResults = test_app->vm()["exporter.export"].as<bool>();
-    int straighten = test_app->vm()["straighten"].as<int>();
-    GeomapStrategyType geomap = ( GeomapStrategyType )test_app->vm()["geomap"].as<int>();
+    double meshSize = doption(_name="hsize");
+    bool exportResults = boption(_name="exporter.export");
+    int straighten = ioption(_name="straighten");
+    GeomapStrategyType geomap = ( GeomapStrategyType )ioption(_name="geomap");
     GeoTool::Node Centre( 0,0,0 );
     GeoTool::Node Rayon( 1 );
     GeoTool::Node Dir( 1,0,0 );
@@ -142,15 +140,8 @@ BOOST_AUTO_TEST_CASE( normal3d )
 
     using namespace test_normal3d;
 
-    auto test_app = Application_ptrtype( new Application_type );
-
-    test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                                % test_app->about().appName()
-                              );
-
-
-    runtest<1>( test_app );
-    runtest<2>( test_app );
+    runtest<1>();
+    runtest<2>();
     //runtest<3>( test_app );
     //runtest<4>( test_app );
 

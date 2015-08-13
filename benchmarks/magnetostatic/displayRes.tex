@@ -21,10 +21,10 @@
         \begin{minipage}{.49\linewidth}
           \begin{tikzpicture}[scale=0.6]
             \begin{loglogaxis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Relative Error},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$}]
-              \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
-              \addplot table[x=hSize,y={create col/linear regression={y=err}}]{/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt}
+              \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
+              \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
+              \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
+              \addplot table[x=hSize,y={create col/linear regression={y=err}}]{/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt}
               coordinate [pos=0.25] (A)
               coordinate [pos=0.4]  (B)
               ;
@@ -37,9 +37,9 @@
         \begin{minipage}{.49\linewidth}
           \begin{tikzpicture}[scale=0.6]
             \begin{axis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Time to Inverse (s)},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$},xmode=log]
-              \addplot+[color=black,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=red,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=blue,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
+              \addplot+[color=black,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
+              \addplot+[color=red,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
+              \addplot+[color=blue,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
             \end{axis}
           \end{tikzpicture}
         \end{minipage}
