@@ -71,7 +71,8 @@ source /softs/cemracs_2015/cemracs.sh
 # See http://oar.imag.fr/docs/2.5/user/usecases.html
 # Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent.
 
-# Advice: Use absolute paths to ensure that the executables and config files are found
+# Advice: Use absolute paths to ensure that the executables and config files are found. 
+# Options that modify the paths, like --nochdir, might also be the source of errors for failing submissions
         ")
 
         if ( FEELPP_APP_CFG )
