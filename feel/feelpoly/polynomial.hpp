@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2011 Universite de Grenoble
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-06
  */
-#ifndef __Polynomial_H
-#define __Polynomial_H 1
+#ifndef FEELPP_POLYNOMIAL_HPP
+#define FEELPP_POLYNOMIAL_HPP 1
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
@@ -73,7 +74,6 @@ public:
     //@{
 
     static const uint16_type nDim = Poly::nDim;
-    static const uint16_type nOrder = Poly::nOrder;
 
     //@}
 
