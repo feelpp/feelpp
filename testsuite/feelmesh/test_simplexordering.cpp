@@ -23,22 +23,42 @@
  */
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/refentity.hpp>
+#include <feel/feelpoly/equispaced.hpp>
 
-int main()
+template<typename C>
+void
+test_convex( C && c )
 {
     using namespace Feel;
-    Simplex<2> T2(3);
-    std::cout << "T2: " << T2 << std::endl;
-    auto Tref21 = reference( T2 );
-    std::cout << "Tref21: " << Tref21 << std::endl;
-    T21.setOrder( 2 );
+    std::cout << c.name() << ":" << c << std::endl;
+    auto Tref21 = reference( c, 1 );
+    std::cout << "reference(C,1): " << Tref21 << std::endl;
+    Tref21.setOrder( 2 );
+    std::cout << "reference(C,2): " << Tref21 << std::endl;
+}
+template<typename C>
+void
+test_equispaced( C && c, int o )
+{
+    using namespace Feel;
+    PointSetEquiSpaced<C,double> pset( o );
+    std::cout << pset << std::endl;
+}
+int main()
+{
+    using namespace Feel; 
+    test_convex( Simplex<1>() );
+    test_convex( Simplex<1,3>() );
+    test_convex( Simplex<2>() );
+    test_convex( Simplex<2,3>() );
+    test_convex( Simplex<3>() );
 
-    Simplex<3> T3(3);
-    auto Tref31 = reference( T3 );
-    std::cout << "T3: " << T3 << std::endl;
-    std::cout << "Tref31: " << Tref31 << std::endl;
-    
-    
+    test_convex( Hypercube<1>() );
+    test_convex( Hypercube<2>() );
+    test_convex( Hypercube<3>() );
+
+    test_equispaced( Simplex<2>(), 1 );
+    test_equispaced( Simplex<3>(), 1 );
     
 }
 

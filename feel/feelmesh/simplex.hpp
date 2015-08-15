@@ -78,7 +78,6 @@ class SimplexBase {};
  *  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<uint16_type Dim,
-         uint16_type Order = 1,
          uint16_type RDim = Dim>
 class Simplex : public Convex, SimplexBase
 {
@@ -95,16 +94,8 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1> volumes_t;
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 
-#if 0
-    typedef typename details::points<Order>::type points_t;
-    typedef typename details::points<Order>::interior_type points_interior_t;
-    typedef typename details::points<Order>::edge_type points_edge_t;
-    typedef typename details::points<Order>::face_type points_face_t;
-    typedef typename details::points<Order>::volume_type points_volume_t;
-#endif
-
-    typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
-    typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
+    typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA, SHAPE_TETRA> shapes_t;
+    typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_VOLUME> geometries_t;
 
     
     typedef mpl::vector<details::vertex, details::line, details::triangle, details::tetra > map_entity_to_point_t;
@@ -112,14 +103,9 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 
     template<int rdim>
-    using faces_t = mpl::vector<Simplex<0, Order, rdim>,
-                                Simplex<0, Order, rdim>,
-                                Simplex<1, Order, rdim>,
-                                Simplex<2, Order, rdim> >;
-    using v_edges_t = mpl::vector<Simplex<0, Order,0>,Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t >; 
-
-    
-    typedef mpl::vector<Simplex<1, Order>, Simplex<2, Order>, Simplex<3, Order>, boost::none_t > elements_t;
+    using faces_t = mpl::vector<Simplex<0, rdim>,Simplex<0, rdim>,Simplex<1, rdim>,Simplex<2, rdim>>;
+    using v_edges_t = mpl::vector<Simplex<0, 0>,Simplex<1, 1>, Simplex<1, 2>, Simplex<1, 3>, boost::none_t >; 
+    using elements_t = mpl::vector<Simplex<1>, Simplex<2>, Simplex<3>, Simplex<3>, Simplex<3>>;
 
 public:
 
@@ -127,19 +113,19 @@ public:
     static constexpr bool is_hypercube = false;
 
     static constexpr uint16_type nDim = Dim;
-    //static constexpr uint16_type nOrder = Order;
     static constexpr uint16_type nRealDim = RDim;
 
     static constexpr uint16_type topological_dimension = nDim;
     static constexpr uint16_type real_dimension = nRealDim;
 
+    static constexpr uint16_type dim_topological_faces = (nDim==0)?0:nDim-1;
+    
     static constexpr size_type Shape = mpl::at<shapes_t, mpl::int_<nDim> >::type::value;
     static constexpr size_type Geometry = mpl::at<geometries_t, mpl::int_<nDim> >::type::value;
 
-    using element_type = typename mpl::at<elements_t, mpl::int_<nDim> >::type;
-    using topological_face_type = typename mpl::at<faces_t<real_dimension>, mpl::int_<nDim> >::type;
-    using edge_type = typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type;
-    typedef topological_face_type GeoBShape;
+    using element_type = typename mpl::at<elements_t, mpl::int_<nDim+1> >::type;
+    using topological_face_type = Simplex<dim_topological_faces,real_dimension>;
+    using edge_type = Simplex<1,real_dimension>;
 
     static constexpr uint16_type numVertices = nDim+1;
     static constexpr uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
@@ -175,6 +161,12 @@ public:
     typedef mpl::vector_c<size_type, 0,         0, ( _Order-1 )*( _Order-2 )/2,             ( _Order-1 )*( _Order-2 )/2 > face_type;
     typedef mpl::vector_c<size_type, 0,         0,                         0, ( _Order-1 )*( _Order-2 )*( _Order-3 )/6 > volume_type;
 #endif
+    static constexpr uint16_type numberOfVertices()  { return numVertices; }
+    static constexpr uint16_type numberOfEdges()  { return numEdges; }
+    static constexpr uint16_type numberOfFaces()  { return numGeometricFaces; }
+    static constexpr uint16_type numberOfTopologicalFaces()   { return numTopologicalFaces; }
+    static constexpr uint16_type numberOfVolumes()  { return numVolumes; }
+
     static constexpr uint16_type numberOfPoints( uint16_type _Order )
         { 
             return ( numVertices * numberOfPointsPerVertex( _Order ) +
@@ -212,21 +204,13 @@ public:
             mpl::identity<face_permutation_type>,
             mpl::identity<no_permutation> >::type>::type::type permutation_type;
 
-    template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
-    struct shape
-    {
-        typedef Simplex<shape_dim, O, R> type;
-    };
+    template<uint16_type shape_dim, uint16_type R=nDim>
+    using shape = Simplex<shape_dim, R>;
 
 
-    constexpr Simplex() : Simplex( Dim, Order, RDim ) {}
+    constexpr Simplex() : Convex( Dim, 1, RDim ) {}
     constexpr Simplex( uint16_type O ) : Convex( Dim, O, RDim ) {}
  
-    static constexpr uint16_type numberOfVertices() { return numVertices; }
-    static constexpr uint16_type numberOfEdges() { return numEdges; }
-    static constexpr uint16_type numberOfFaces() { return numFaces; }
-    static constexpr uint16_type numberOfTopologicalFaces() { return numTopologicalFaces; }
-    static constexpr uint16_type numberOfVolumes() { return numVolumes; }
 
     /**
      * \return the number of polynomials of total degree \c n on the
@@ -260,7 +244,7 @@ public:
      * or 1) of a point in the edge \p e , \return the index in the
      * element of the point.
      */
-    constexpr uint16_type e2p( uint16_type e,  uint16_type p )
+    constexpr uint16_type e2p( uint16_type e,  uint16_type p ) const
     {
         return edge_to_point_t::e2p( order(), e, p );
     }
@@ -270,7 +254,7 @@ public:
      * edge in the face \p f, \return the index in the element of the
      * edge.
      */
-    constexpr uint16_type f2e( uint16_type f,  uint16_type e )
+    constexpr uint16_type f2e( uint16_type f,  uint16_type e ) const
     {
         return face_to_edge_t::f2e( f, e );
     }
@@ -280,7 +264,7 @@ public:
      * edge in the face \p f, \return the local index in the element of the
      * edge.
      */
-    constexpr uint16_type f2eLoc( uint16_type f,  uint16_type e )
+    constexpr uint16_type f2eLoc( uint16_type f,  uint16_type e ) const
     {
         return face_to_edge_t::f2eLoc( f, e );
     }
@@ -290,7 +274,7 @@ public:
      * point in the face \p f , \return the index in the element of
      * the point.
      */
-    constexpr uint16_type f2p( uint16_type f,  uint16_type p )
+    constexpr uint16_type f2p( uint16_type f,  uint16_type p ) const
     {
         return face_to_point_t::f2p( order(), f, p );
     }
@@ -314,17 +298,17 @@ public:
     }
 };
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Simplex<Dim, Order, RDim>::topological_dimension;
+template<uint16_type Dim, uint16_type RDim >
+const uint16_type Simplex<Dim, RDim>::topological_dimension;
 
-template<int RDim> using Line = Simplex<1, 1, RDim>;
-template<int RDim> using Triangle = Simplex<2, 1, RDim>;
-template<int RDim> using Tetrahedron = Simplex<3, 1>;
+template<int RDim> using Line = Simplex<1, RDim>;
+template<int RDim> using Triangle = Simplex<2, RDim>;
+template<int RDim> using Tetrahedron = Simplex<3>;
 
 
-template<uint16_type D, uint16_type O, uint16_type R>
+template<template<uint16_type,uint16_type> class C, uint16_type D, uint16_type R>
 inline std::ostream& 
-operator<<( std::ostream& os, Feel::Simplex<D,O,R> const& s )
+operator<<( std::ostream& os, C<D,R> const& s )
 {
     os << "Simplez<" << s.topologicalDimension() << "," << s.order() << "," << s.realDimension() << ">\n"
        << " - Topology:\n"

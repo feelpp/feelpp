@@ -73,7 +73,7 @@ struct triangle
             ((o==2)?e2p( e,p,boost::mpl::int_<2>() ):
              ((o==3)?e2p( e,p,boost::mpl::int_<3>() ):
               ((o==4)?e2p( e,p,boost::mpl::int_<4>() ):
-               ((o==5)?e2p( e,p,boost::mpl::int_<5>() ):invalid_uint16_type_value ))));
+               ((o==5)?e2p( e,p,boost::mpl::int_<5>() ): e2p( e,p,boost::mpl::int_<1>() )))));
     }
 
     static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
@@ -205,7 +205,7 @@ struct tetra
             (o==1)?f2p( e,p,boost::mpl::int_<1>() ):
             ((o==2)?f2p( e,p,boost::mpl::int_<2>() ):
              ((o==3)?f2p( e,p,boost::mpl::int_<3>() ):
-              ((o==4)?f2p( e,p,boost::mpl::int_<4>() ):invalid_uint16_type_value)));
+              ((o==4)?f2p( e,p,boost::mpl::int_<4>() ):f2p( e,p,boost::mpl::int_<1>() ))));
                
     }
     static constexpr uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<1> )
@@ -232,7 +232,7 @@ struct tetra
             ((o==2)?e2p( e,p,boost::mpl::int_<2>() ):
              ((o==3)?e2p( e,p,boost::mpl::int_<3>() ):
               ((o==4)?e2p( e,p,boost::mpl::int_<4>() ):
-               ((o==5)?e2p( e,p,boost::mpl::int_<5>() ):invalid_uint16_type_value ))));
+               ((o==5)?e2p( e,p,boost::mpl::int_<5>() ):e2p( e,p,boost::mpl::int_<1>() ) ))));
     }
     static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
     {
@@ -387,6 +387,17 @@ static constexpr int16_type __f2e_orientation[12] =
 };
 
 };
+
+constexpr uint16_type tetra::__e2p_order1[12];
+constexpr uint16_type tetra::__e2p_order2[18];
+constexpr uint16_type tetra::__e2p_order3[24];
+constexpr uint16_type tetra::__e2p_order4[30];
+constexpr uint16_type tetra::__e2p_order5[36];
+constexpr uint16_type tetra::__f2p_order1[12];
+constexpr uint16_type tetra::__f2p_order2[24];
+constexpr uint16_type tetra::__f2p_order3[40];
+constexpr uint16_type tetra::__f2p_order4[60];
+constexpr uint16_type tetra::__f2e[12];
 
 } // details
 /// \endcond

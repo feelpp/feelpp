@@ -86,7 +86,7 @@ struct line
         return std::move( __entity );
     }
 };
-//uint16_type  line::__e2p[11] 
+constexpr uint16_type  line::__e2p[11];
 }
 /// \endcond
 }
