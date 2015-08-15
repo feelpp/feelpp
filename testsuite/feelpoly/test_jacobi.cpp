@@ -40,12 +40,18 @@ using boost::unit_test::test_suite;
 
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/range.hpp>
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
+#if 0
+#include <feel/feelpoly/expansions.hpp>
+
 #include <feel/feelpoly/polynomial.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/lagrange.hpp>
+#endif
+
+using namespace Feel;
 
 unsigned int fact( unsigned int   n )
 {
@@ -59,17 +65,18 @@ T f( T const& t )
 {
     return sin( t );
 }
-template<Feel::uint16_type N, typename T>
+template<typename T>
 class TestJacobi
 {
 public:
     typedef T value_type;
     value_type M_factor_eps;
-    TestJacobi( value_type factor_eps = value_type( 1 ) )
+    
+    constexpr TestJacobi( value_type factor_eps = value_type( 1 ) )
         :
         M_factor_eps( factor_eps )
     {}
-    void operator()() const
+    void operator()( const uint16_type N ) const
     {
         using namespace Feel;
 
@@ -77,7 +84,7 @@ public:
 
         for ( int n = 0; n < 10000; ++n )
         {
-            Jacobi<N, T> p( 0.0, 0.0 );
+            Jacobi<T> p( N, 0.0, 0.0 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
             BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
             //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
@@ -86,12 +93,12 @@ public:
             if ( N > 0 )
             {
                 // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
+                Jacobi<T> dp( N-1,1.0, 1.0 );
                 value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
                 BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
             }
 
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<T>( N, f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
 
         }
 
@@ -114,17 +121,17 @@ public:
                 BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
             }
 
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<T>( N, f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
         }
 
         std::cout << "dyna::jacobi test done in " << __timer.elapsed()/1000 << "\n";
 
         {
-            Jacobi<N, T> p( 0.0, 0.0 );
+            Jacobi<T> p( N, 0.0, 0.0 );
             ublas::vector<T> pts( 2 );
             pts[0] = 1.0;
             pts[1] = 1.0;
-            ublas::matrix<T> P ( JacobiBatchEvaluation<N, T>( 0, 0, pts ) );
+            ublas::matrix<T> P ( JacobiBatchEvaluation<T>( N, 0, 0, pts ) );
             BOOST_CHECK( P.size1() == N+1 );
             BOOST_CHECK( P.size2() == 2 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
@@ -137,13 +144,13 @@ public:
             if ( N > 0 )
             {
                 // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
+                Jacobi<T> dp( N-1, 1.0, 1.0 );
                 value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
                 BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
                 ublas::vector<T> pts( 2 );
                 pts[0] = 0.6;
                 pts[1] = 0.6;
-                ublas::matrix<T> dP ( JacobiBatchDerivation<N, T>( 0.0, 0.0, pts ) );
+                ublas::matrix<T> dP ( JacobiBatchDerivation( N, 0.0, 0.0, pts ) );
 
                 if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
                 {
@@ -156,42 +163,52 @@ public:
         }
     }
 };
-
-template<Feel::uint16_type N, typename T>
+#if 1
+template<typename T>
 class TestDubiner
 {
 public:
     typedef T value_type;
     TestDubiner()
     {}
-    void operator()() const
+    void operator()( int N ) const
     {
         using namespace Feel;
-        Dubiner<2,2,N,Normalized<true>,T> dubexp;
+        Dubiner<2,2,Normalized<true>,T> dubexp( N );
         ublas::matrix<T,ublas::column_major> pts( 2,2  );
         ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
         ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
         std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
         std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-        Dubiner<2,2,N> dub;
     }
 };
+#endif
 
 
-
-typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, test_types )
+BOOST_AUTO_TEST_CASE( test_jacobi_double )
 {
-    BOOST_TEST_MESSAGE( "o- TestJacobi<" << T::value << ", double>()" );
-    TestJacobi<T::value, double> a;
+    BOOST_TEST_MESSAGE( "o- TestJacobi<double>()" );
+    TestJacobi<double> a;
+    for( auto N : range( 1, 10 ) )
+    {
+        BOOST_TEST_MESSAGE( "  - testing order " << N );
+        a( N );
+    }
 }
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
+#if 1
+BOOST_AUTO_TEST_CASE( test_dubiner_double )
 {
-    BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
-    TestDubiner<T::value, double> d0;
+    BOOST_TEST_MESSAGE( "o- TestDubiner<double>()" );
+    TestDubiner<double> d0;
+    for( auto N : range( 1, 10 ) )
+    {
+        BOOST_TEST_MESSAGE( "  - testing order " << N );
+        d0(N);
+    }
+        
 }
+#endif
+    
 #if 0
 #if 1
 //
