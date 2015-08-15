@@ -39,7 +39,7 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class Convex 
+class Convex
 {
 public:
 
@@ -62,14 +62,21 @@ public:
     //@{
 
     //! default constructor
-    constexpr Convex( uint16_type Dim, uint16_type Order, uint16_type RDim) 
-        : 
+    constexpr Convex( uint16_type Dim, uint16_type Order, uint16_type RDim )
+        :
         M_dim( Dim ),
         M_order( Order ),
         M_rdim( RDim )
         {}
 
-    Convex( Convex const & ) = default;
+    constexpr Convex( uint16_type Dim, uint16_type RDim )
+        :
+        M_dim( Dim ),
+        M_order( 1 ),
+        M_rdim( RDim )
+        {}
+
+    constexpr Convex( Convex const & ) = default;
     Convex( Convex && ) = default;
 
     //@}
@@ -94,12 +101,14 @@ public:
     constexpr uint16_type realDimension() const { return M_rdim; }
     constexpr uint16_type order() const { return M_order; }
 
+
     //@}
 
     /** @name  Mutators
      */
     //@{
 
+    //! set the order to \p o, allow for constexpr
     constexpr void setOrder( uint16_type o ) { M_order = o; }
 
     //@}
@@ -117,6 +126,7 @@ protected:
     uint16_type M_dim;
     uint16_type M_order;
     uint16_type M_rdim;
+
 private:
 
 };
