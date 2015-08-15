@@ -27,8 +27,8 @@
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2005-08-10
 */
-#ifndef __RefEntity_H
-#define __RefEntity_H 1
+#ifndef FEELPP_MESH_REFENTITY_HPP
+#define FEELPP_MESH_REFENTITY_HPP 1
 
 #include <stdexcept>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -38,7 +38,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
 #include <feel/feelmesh/simplex.hpp>
-//#include <feel/feelmesh/hypercube.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 
 namespace Feel
 {
@@ -54,21 +54,24 @@ class Entity
  * @author Christophe Prud'homme
  * @see
  */
-template<typename Geo, uint16_type Dim = 1, uint16_type Order = 1, uint16_type RDim = Dim, typename T = double>
+template<typename ConvexType, uint16_type Dim, uint16_type RDim, typename T = double>
 class Reference
 {};
 
-template<typename Geo, uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
+
+template<typename ConvexType, uint16_type Dim, uint16_type RDim, typename T = double>
 std::ostream&
 operator<<( std::ostream& os,
-            Reference<Geo, Dim, Order, RDim, T> const& ref )
+            Reference<ConvexType, Dim, RDim, T> const& ref )
 {
-    typedef Reference<Geo, Dim, Order, RDim, T> ref_type;
-    os << "     Dimension: " << ref_type::nDim << "\n"
-       << "         Order: " << ref_type::nOrder << "\n"
-       << "Real dimension: " << ref_type::nRealDim << "\n";
+    using ref_type = Reference<ConvexType, Dim, RDim, T>;
+    
+    os << "     Dimension: " << ref.topologicalDimension() << "\n"
+       << "         Order: " << ref.order() << "\n"
+       << "Real dimension: " << ref.realDimension() << "\n";
     os << " Vertices: " << ref.vertices() << "\n";
     os << "  Normals: " << ref.normals() << "\n";
+    os << "  Points: " << ref.points() << "\n";
     return os;
 }
 template<typename RefEntity>
@@ -78,16 +81,16 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
     typedef typename RefEntity::node_type node_type;
     std::ostringstream ostr;
     ostr << str
-         << "_" << RefEntity::nDim
-         << "_" << RefEntity::nOrder
-         << "_" << RefEntity::nRealDim
+         << "_" << e.topologicalDimension()
+         << "_" << e.order()
+         << "_" << e.realDimension()
          << ".py";
     std::ofstream ofs( ostr.str().c_str() );
 
     ofs << "from pyx import *\n";
     ofs << "p=path.path(";
 
-    for ( int i = 0; i < RefEntity::numEdges; ++i )
+    for ( int i = 0; i < e.numberOfEdges(); ++i )
     {
         for ( int j = 0; j < 2; ++j )
         {
@@ -153,8 +156,22 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
         << "\", paperformat=\"a4\")\n";
 }
 
+template<typename ConvexType, typename T = double>
+using reference_convex_t = Reference<ConvexType, ConvexType::nDim, ConvexType::nRealDim,T>;
+
+template<typename ConvexType, typename T = double>
+constexpr reference_convex_t<ConvexType,T>
+reference( ConvexType const& S, int order  = 1)
+{
+    return reference_convex_t<ConvexType,T>( order );
+}
+
 } // Feel
 
+
 #include <feel/feelmesh/refsimplex.hpp>
-//#include <feel/feelmesh/refhypercube.hpp>
-#endif /* __RefEntity_H */
+#include <feel/feelmesh/refhypercube.hpp>
+
+
+
+#endif /* FEELPP_MESH_REFENTITY_HPP */

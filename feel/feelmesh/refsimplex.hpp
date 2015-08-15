@@ -32,58 +32,48 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-class Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
+
+template<uint16_type Dim, uint16_type RDim, typename T>
+class Reference<Simplex<Dim, RDim>, Dim, RDim, T>
     :
-public Simplex<Dim, Order, RDim>
+public Simplex<Dim, RDim>
 {
 public:
-    typedef Simplex<Dim, Order, RDim> super;
+    typedef Simplex<Dim, RDim> super;
 
     /** @name Typedefs
      */
     //@{
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = Order;//super::nOrder;
-    static const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
-    static const uint16_type topological_dimension = super::topological_dimension;
-    static const uint16_type real_dimension = super::real_dimension;
+    static constexpr uint16_type topological_dimension = super::topological_dimension;
+    static constexpr uint16_type real_dimension = super::real_dimension;
 
     typedef super GeoShape;
     static const size_type Shape = super::Shape;
     static const size_type Geometry = super::Geometry;
 
     typedef T value_type;
-    typedef Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
+    using convex_type = super;
+    
+    using self_type = reference_convex_t<convex_type, value_type>;
 
-    typedef typename mpl::if_<boost::is_same<typename super::element_type, boost::none_t>,
-            mpl::identity<boost::none_t>,
-            mpl::identity<Reference<typename super::element_type, nDim+1, nOrder, nRealDim, T> > >::type::type element_type;
-    typedef Reference<typename super::topological_face_type,
-            super::topological_face_type::nDim, nOrder, nRealDim, T> topological_face_type;
-    typedef Reference<typename super::edge_type,
-                      super::edge_type::nDim, nOrder, nRealDim, T> edge_type;
-
+    using element_type = reference_convex_t<typename super::element_type, value_type>;
+    using topological_face_type = reference_convex_t<typename super::topological_face_type, value_type>;
+    using edge_type = reference_convex_t<typename super::edge_type, value_type>;
+        
     typedef typename super::edge_to_point_t edge_to_point_t;
     typedef typename super::face_to_point_t face_to_point_t;
     typedef typename super::face_to_edge_t face_to_edge_t;
 
-    static const uint16_type numVertices = super::numVertices;
-    static const uint16_type numFaces = super::numFaces;
-    static const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static const uint16_type numEdges = super::numEdges;
-    static const uint16_type numNormals = super::numNormals;
-
-#if 0
-    static const uint16_type numPoints = super::numPoints;
-    static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
-#endif
+    static constexpr uint16_type numVertices = super::numVertices;
+    static constexpr uint16_type numFaces = super::numFaces;
+    static constexpr uint16_type numGeometricFaces = super::numGeometricFaces;
+    static constexpr uint16_type numTopologicalFaces = super::numTopologicalFaces;
+    static constexpr uint16_type numEdges = super::numEdges;
+    static constexpr uint16_type numNormals = super::numNormals;
 
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
@@ -109,18 +99,24 @@ public:
         :
         Reference( 1 )
         {}
+    constexpr void setOrder( uint16_type o ) { super::setOrder(o); init(); }
     constexpr Reference( uint16_type _Order )
         :
         super(_Order),
         M_id( 0 ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, this->numberOfPoints() ),
+        M_points( nRealDim, super::numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numEdges ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
+        {
+            init();
+        }
+    constexpr void init()
     {
+        M_points.resize( nRealDim, this->numberOfPoints() ),
         M_vertices *= 0;
         M_points *= 0;
 
@@ -625,7 +621,7 @@ public:
 
             if ( topo_dim == 1 )
             {
-                Reference<Simplex<1, Order, 1>, 1, Order, 1, T> refline;
+                auto refline = reference( Simplex<1>(), this->order() );
                 G = refline.template makeLattice<SHAPE_LINE>( interior );
                 pt_to_entity<Shape,1> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
@@ -638,7 +634,7 @@ public:
 
             else if ( topo_dim == 2 )
             {
-                Reference<Simplex<2, Order, 2>, 2, Order, 2, T> refface;
+                auto refface = reference( Simplex<2>(), this->order() );
                 G = refface.template makeLattice<SHAPE_TRIANGLE>( interior );
                 pt_to_entity<Shape,2> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
@@ -1063,27 +1059,15 @@ private:
 
     value_type M_meas;
 };
-#if 0
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
-#endif
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
+
+template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1>, 1, 1, T> {};
+template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2, 2>, 2, 2, T> {};
+template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 3>, 3, 3, T> {};
 
 
-
-template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1, 1>,1,1, 1, T> {};
-template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2, 1, 2>,2,1, 2, T> {};
-template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 1, 3>,3,1, 3, T> {};
-
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, uint16_type RDim,  typename T>
 void
-Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
+Reference<Simplex<Dim, RDim>, Dim, RDim, T>::computeBarycenters()
 {
     M_barycenter = ublas::column( glas::average( M_vertices ), 0 );
 
@@ -1093,9 +1077,9 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, uint16_type RDim,  typename T>
 void
-Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
+Reference<Simplex<Dim, RDim>, Dim, RDim, T>::computeMeasure()
 {
     if ( nDim == nRealDim )
     {
@@ -1159,13 +1143,6 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 
 #endif
     }
-}
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim,  typename T = double>
-Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
-reference( Simplex<Dim, Order, RDim> const& S )
-{
-    return Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>();
 }
 
 } // Feel
