@@ -224,7 +224,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
         std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
-        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true);
+        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
         map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
         map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
@@ -254,6 +254,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
         {
             M_pcAs = blockas(_space=M_Xh,
                              _space2=M_Mh,
+                             _matrix=M_11,
                              _bc = M_bcFlags);
         }
     }
