@@ -726,6 +726,7 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
 #endif
+
     if( subvec == NULL ) //createSubVector
     {
         ierr = VecGetSubVector(this->vec(), isrow, &subvec);
@@ -796,6 +797,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 
     IS isGlob;
     IS isLoc;
+    ISLocalToGlobalMapping isLocToGlobMap;
 
     // create IS for vecScatter
     PetscInt *idx;
@@ -810,6 +812,12 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 #else
     ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
 #endif
+    CHKERRABORT( this->comm(),ierr );
+
+    // create LocalToGlobalMapping
+    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
 
     ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
