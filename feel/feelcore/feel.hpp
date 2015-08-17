@@ -119,6 +119,7 @@
 #include <feel/feelcore/feelassert.hpp>
 
 #include <feel/feelcore/flags.hpp>
+
 #include <feel/feelcore/serialization.hpp>
 
 #if defined( FEELPP_HAS_TBB )
@@ -617,5 +618,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 
 #include <feel/feelcore/ptr.hpp>
+#include <feel/feelcore/range.hpp>
 
 #endif
