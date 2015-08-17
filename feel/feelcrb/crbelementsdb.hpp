@@ -60,7 +60,7 @@ public :
 
     //! element of the functionspace type
     typedef typename space_type::element_type element_type;
-    typedef typename space_type::element_ptrtype element_ptrtype;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     //! mesh type
     typedef typename space_type::mesh_type mesh_type;

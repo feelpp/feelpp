@@ -121,17 +121,17 @@ public:
     //@}
 
     template<int T>
-    using subspace_type = typename model_type::template subspace_type<T>;
+        using subspace_type = typename model_type::template subspace_type<T>;
     template<int T>
-    using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
+        using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
 
     template <int T>
-    using rbspace_ptrtype = typename model_type::template rbspace_ptrtype<T>;
+        using rbspace_ptrtype = typename model_type::template rbspace_ptrtype<T>;
 
     template<int T>
         using crbelementsdb_type = CRBElementsDB<subspace_type<T>,model_type>;
     template<int T>
-    using crbelementsdb_ptrtype = boost::shared_ptr<crbelementsdb_type<T>>;
+        using crbelementsdb_ptrtype = boost::shared_ptr<crbelementsdb_type<T>>;
 
     template<int T>
     using subelement_type = typename subspace_type<T>::element_type;

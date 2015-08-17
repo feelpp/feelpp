@@ -931,7 +931,7 @@ public:
     typedef typename mpl::range_c< int, 0, space_type::nSpaces > rangespace_type;
 
     template< int T >
-    using sub_space = typename space_type::template sub_functionspace<T>::type::element_type;
+    using sub_space = typename space_type::template sub_functionspace_type<T>;
 
     template< int Row >
     using oneblock_type = typename mpl::if_< mpl::bool_<use_block_structure>,
@@ -1034,7 +1034,7 @@ public :
     typedef typename mpl::range_c< int, 0, space_type::nSpaces > rangespace_type;
 
     template< int T >
-    using sub_space = typename space_type::template sub_functionspace<T>::type::element_type;
+    using sub_space = typename space_type::template sub_functionspace_type<T>;
 
     template< int Row, int Col >
     using oneblock_type = typename mpl::if_< mpl::bool_<use_block_structure>,

@@ -278,7 +278,7 @@ public:
         :
         super(),
         M_elements_database(),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", Environment::worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2 ),
@@ -309,7 +309,7 @@ public:
             ( boost::format( "%1%-%2%-%3%-elements" )
               %name % ioption("crb.output-index") %ioption("crb.error-type") ).str(),
             model ),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", Environment::worldComm() ) ),
         M_model( model ),
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),

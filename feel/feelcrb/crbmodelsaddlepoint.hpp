@@ -84,7 +84,8 @@ public :
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
     template <int T>
-    using subspace_type = typename space_type::template sub_functionspace<T>::type::element_type;
+    //using subspace_type = typename space_type::template sub_functionspace<T>::type::element_type;
+    using subspace_type = typename space_type::template sub_functionspace<T>::type;
     template <int T>
     using subspace_ptrtype = boost::shared_ptr<subspace_type<T>>;
     template<int T>
@@ -119,6 +120,8 @@ public :
             this->M_backend_l2[0]=backend( _name="backend-Xh0" );
             this->M_backend_l2[1]=backend( _name="backend-Xh1" );
         }
+
+    virtual ~CRBModelSaddlePoint(){}
 
     /**
      * The user can specifie the inner product of each space

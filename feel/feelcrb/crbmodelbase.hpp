@@ -245,6 +245,8 @@ public:
             M_backend_l2[0] = backend( _name="backend-l2" );
         }
 
+    virtual ~CRBModelBase(){}
+
     virtual void initModel()=0;
 
     void init( CRBModelMode mode=CRBModelMode::PFEM )
