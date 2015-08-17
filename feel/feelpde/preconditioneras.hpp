@@ -103,6 +103,7 @@ public:
                       coef_space_ptrtype Mh,
                       BoundaryConditions bcFlags,
                       std::string const& s,
+                      sparse_matrix_ptrtype Pm,
                       double k
                       );
 
@@ -132,7 +133,7 @@ private:
 
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
-    std::vector<size_type> M_Qh3_1_indices,M_Qh3_2_indices,M_Qh3_3_indices;
+    std::vector< std::vector<size_type> > M_Qh3_indices;
 
     sparse_matrix_ptrtype M_P;
     sparse_matrix_ptrtype M_Pt;
@@ -175,11 +176,12 @@ private:
 
 template < typename space_type, typename coef_space_type >
 PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
-                                                              space_ptrtype Xh,
-                                                              coef_space_ptrtype Mh,
-                                                              BoundaryConditions bcFlags,
-                                                              std::string const& p,
-                                                              double k)
+                                                                space_ptrtype Xh,
+                                                                coef_space_ptrtype Mh,
+                                                                BoundaryConditions bcFlags,
+                                                                std::string const& p,
+                                                                sparse_matrix_ptrtype Pm,
+                                                                double k )
     :
         M_type( AS ),
         M_Xh( Xh ),
@@ -188,9 +190,7 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
         M_Mh( Mh ),
         M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
         M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_1_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_2_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_3_indices( M_Qh->nLocalDofWithGhost() ),
+        M_Qh3_indices( Dim ),
         A(backend()->newVector(M_Vh)),
         B(backend()->newVector(M_Vh)),
         C(backend()->newVector(M_Vh)),
@@ -209,6 +209,8 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
 {
     tic();
     LOG(INFO) << "[PreconditionerAS] setup starts";
+    this->setMatrix( Pm ); // Needed only if worldComm > 1
+
     // QH3 : Lagrange vectorial space type
     M_Qh3 = lag_v_space_type::New(Xh->mesh());
 
@@ -231,15 +233,28 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
     M_C = M_P; //TEMP
     M_Ct = M_Pt; //TEMP
-    //std::cout << "Size of M_Ct : " << M_Ct->size1() << "," << M_Ct->size1() << std::endl;
 
     // Create vector of indices to create subvectors/matrices
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 ); // Vh indices in Xh
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() ); // Qh indices in Xh
+
     // "Components" of Qh3
-    std::iota( M_Qh3_1_indices.begin(), M_Qh3_1_indices.end(), 0 );
-    std::iota( M_Qh3_2_indices.begin(), M_Qh3_2_indices.end(), M_Qh->nLocalDofWithGhost() );
-    std::iota( M_Qh3_3_indices.begin(), M_Qh3_3_indices.end(), 2*M_Qh->nLocalDofWithGhost() );
+    auto Qh3_dof_begin = M_Qh3->dof()->dofPointBegin();
+    auto Qh3_dof_end = M_Qh3->dof()->dofPointEnd();
+    int idx=0;
+    for(int i=0; i<M_Qh3_indices.size(); i++)
+        M_Qh3_indices[i].resize( M_Qh3->compSpace()->nLocalDofWithGhost() );
+
+    int dof_comp, dof_idx;
+    for( auto it = Qh3_dof_begin; it!= Qh3_dof_end; it++ )
+    {
+        dof_comp = it->template get<2>(); //Component
+        dof_idx = it->template get<1>(); //Global index
+        M_Qh3_indices[dof_comp][idx] = dof_idx;
+        if( dof_comp == Dim - 1 )
+            idx++;
+    }
+
 
     this->setType ( t );
     toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
@@ -255,10 +270,10 @@ PreconditionerAS<space_type,coef_space_type>::setType( std::string t )
 
 template < typename space_type, typename coef_space_type >
 //template< typename Expr_convection, typename Expr_bc >
-    void
-PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm, 
-                                                    sparse_matrix_ptrtype L,
-                                                    element_coef_type mu )
+void
+PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
+                                                      sparse_matrix_ptrtype L,
+                                                      element_coef_type mu )
 {
     tic();
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));
@@ -351,15 +366,15 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // s = P^t r
         M_Pt->multVector(M_r,M_s);
 
-        auto y1 = M_y->createSubVector(M_Qh3_1_indices, true);
-        auto y2 = M_y->createSubVector(M_Qh3_2_indices, true);
+        auto y1 = M_y->createSubVector(M_Qh3_indices[0], true);
+        auto y2 = M_y->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto y3 = M_y->createSubVector(M_Qh3_3_indices, true);
+        auto y3 = M_y->createSubVector(M_Qh3_indices[2], true);
 #endif
-        auto s1 = M_s->createSubVector(M_Qh3_1_indices, true);
-        auto s2 = M_s->createSubVector(M_Qh3_2_indices, true);
+        auto s1 = M_s->createSubVector(M_Qh3_indices[0], true);
+        auto s2 = M_s->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto s3 = M_s->createSubVector(M_Qh3_3_indices, true);
+        auto s3 = M_s->createSubVector(M_Qh3_indices[2], true);
 #endif
         /*
          * hat(L) + g Q is a (Qh,Qh) matrix
@@ -374,10 +389,10 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #endif
 
         // y = [ y1, y2, y3 ]
-        M_y->updateSubVector(y1, M_Qh3_1_indices);
-        M_y->updateSubVector(y2, M_Qh3_2_indices);
+        M_y->updateSubVector(y1, M_Qh3_indices[0]);
+        M_y->updateSubVector(y2, M_Qh3_indices[1]);
 #if FM_DIM == 3
-        M_y->updateSubVector(y3, M_Qh3_3_indices);
+        M_y->updateSubVector(y3, M_Qh3_indices[2]);
 #endif
         // B = P*y
         M_P->multVector(M_y,B);
@@ -390,16 +405,16 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // 14.b : bar(L) z = t
         //M_lOp->applyInverse(M_t,M_z);
 
-        auto z1 = M_z->createSubVector(M_Qh3_1_indices, true);
-        auto z2 = M_z->createSubVector(M_Qh3_2_indices, true);
+        auto z1 = M_z->createSubVector(M_Qh3_indices[0], true);
+        auto z2 = M_z->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto z3 = M_z->createSubVector(M_Qh3_3_indices, true);
+        auto z3 = M_z->createSubVector(M_Qh3_indices[2], true);
 #endif
 
-        auto t1 = M_t->createSubVector(M_Qh3_1_indices, true);
-        auto t2 = M_t->createSubVector(M_Qh3_2_indices, true);
+        auto t1 = M_t->createSubVector(M_Qh3_indices[0], true);
+        auto t2 = M_t->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto t3 = M_t->createSubVector(M_Qh3_3_indices, true);
+        auto t3 = M_t->createSubVector(M_Qh3_indices[2], true);
 #endif
         /*
          * hat(L) is a (Qh,Qh) matrix
@@ -413,10 +428,10 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_lOp->applyInverse(t3,z3);
 #endif
         // z = [ z1, z2, z3 ]
-        M_z->updateSubVector(z1, M_Qh3_1_indices);
-        M_z->updateSubVector(z2, M_Qh3_2_indices);
+        M_z->updateSubVector(z1, M_Qh3_indices[0]);
+        M_z->updateSubVector(z2, M_Qh3_indices[1]);
 #if FM_DIM == 3
-        M_z->updateSubVector(z3, M_Qh3_3_indices);
+        M_z->updateSubVector(z3, M_Qh3_indices[2]);
 #endif
 
         // C = C z
@@ -466,6 +481,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
                                  ( required
                                    ( space, *)
                                    ( space2, *)
+                                   ( matrix, *)
                                  )
                                  ( optional
                                    ( type, *, "AS")
@@ -485,7 +501,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
         typename parameter::value_type<Args, tag::space>::type::element_type,
         typename parameter::value_type<Args, tag::space2>::type::element_type
                      >::type pas_type;
-    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, h ) );
+    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, matrix, h ) );
     return p;
 #endif
 } //
