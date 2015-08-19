@@ -5,6 +5,10 @@ git:
   submodules: false
 language: cpp
 compiler: clang
+env: 
+  global:
+    FEELPP_STD_CPP=14
+
 addons:
   apt:
     packages:
@@ -26,7 +30,7 @@ addons:
     - llvm-toolchain-precise-3.5
 matrix:
   include:
-  - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.5
+  - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_CXX=clang++-3.5
       FEELPP_CC=clang-3.5 BUILDTYPE=Debug TARGET=quickstart
     addons:
       apt:
@@ -36,7 +40,7 @@ matrix:
         packages:
         - *1
         - clang-3.5
-  - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.6
+  - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6
       FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
     addons:
       apt:
@@ -46,7 +50,7 @@ matrix:
         packages:
         - *1
         - clang-3.6
-  - env: BUILD="llvm-3.6-stdc++14" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=14
+  - env: BUILD="llvm-3.6-stdc++14" COMPILER_VERSION="clang-3.6" 
       FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart
       CXXFLAGS="-O2 -DNDEBUG"
     addons:
@@ -57,7 +61,7 @@ matrix:
         packages:
         - *1
         - clang-3.6
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5
+  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
     addons:
       apt:
@@ -68,15 +72,14 @@ matrix:
         - g++-5
   allow_failures:
   - os: osx
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5
+  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then if test "x$FEELPP_CC" != "x"; then export
-  CC=$FEELPP_CC; export CXX=$FEELPP_CXX; else export CC=clang-3.5; export CXX=clang++-3.5;
-  export FEELPP_STD_CPP=11; fi; fi
+  CC=$FEELPP_CC; export CXX=$FEELPP_CXX; else export CC=clang-3.5; export CXX=clang++-3.5; fi; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool;
   fi
