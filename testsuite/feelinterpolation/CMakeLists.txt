@@ -28,3 +28,5 @@ feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO
 
 feelpp_add_test( darcy_on_2d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=2 )
 feelpp_add_test( darcy_on_3d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=3 )
+
+feelpp_add_test( on_project SRCS test_on_project GEO square_mmarked.geo )
