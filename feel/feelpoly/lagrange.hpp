@@ -572,7 +572,7 @@ public:
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
     {
-        constexpr bool has_grad =  vm::has_grad<std::decay_t<ExprType>::tensor_expr_type::expression_type::context>::value;
+        constexpr bool has_grad =  vm::has_grad<std::decay_t<ExprType>::tensor_expr_type::context>::value;
         return interpolateBasisFunction( std::forward<ExprType>( expr ), Ihloc, mpl::bool_<has_grad>() );
     }
     template<typename ExprType>
@@ -605,15 +605,16 @@ public:
     interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc, mpl::bool_<true> ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
+#if 0
         BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
                               (mpl::int_<nComponents1>,mpl::int_<shape::M>));
-        BOOST_MPL_ASSERT_MSG( nComponents2*nComponents1==shape::N,
+        BOOST_MPL_ASSERT_MSG( nComponents1==shape::N,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
                               (mpl::int_<nComponents2>,mpl::int_<shape::N>));
-
+#endif
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        typedef typename std::decay_t<ExprType>::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        typedef typename std::decay_t<ExprType>::tensor_expr_type::expression_type::expression_type::fe_type fe_expr_type;
 
         for( int q = 0; q <expr.geom()->nPoints(); ++q )
             for( int I = 0; I < fe_expr_type::nLocalDof; ++I )
@@ -625,9 +626,8 @@ public:
                     for( int c1 = 0; c1 < shape::M; ++c1 )
                         for( int c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            int ldof = (c2+shape::N*c1)*fe_expr_type::nLocalDof + i;
-                            int ldof2 = (fe_expr_type::is_product)? ldof : i;
-                            Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
+                            int ldof = (c2+shape::N*c1)*fe_expr_type::nLocalDof + I;
+                            Ihloc( ldof, q ) = expr.evaliq( I, c1, c2, q );
                         }
                 }
             }
