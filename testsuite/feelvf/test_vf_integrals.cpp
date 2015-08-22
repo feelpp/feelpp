@@ -23,7 +23,6 @@
  */
 #define BOOST_TEST_MODULE test_integrals
 #include <testsuite/testsuite.hpp>
-#endif
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
