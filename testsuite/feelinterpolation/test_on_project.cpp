@@ -22,10 +22,8 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_on
 #include <testsuite/testsuite.hpp>
-#endif
 
 #include <feel/feel.hpp>
 
@@ -80,8 +78,14 @@ public:
         auto s = Xh->element();
         auto v = Xh->element();
 
+        LOG_IF(WARNING, nelements( markedpoints( M_mesh,"P") ) == 0 ) << "no points marked P:"  << nelements( markedpoints( M_mesh,"P") );
         p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42) );
+        if ( Environment::isMasterRank() )
+            p.printMatlab("P.m");
+        LOG_IF(WARNING, nelements( markededges( M_mesh,"L") ) == 0 ) << "no edges marked L:"  << nelements( markededges( M_mesh,"L") );
         l.on( _range=markededges( M_mesh,"L"), _expr=cst(42) );
+        if ( Environment::isMasterRank() )
+            l.printMatlab("L.m");
         s.on( _range=markedfaces( M_mesh,"S"), _expr=cst(42) );
         v.on( _range=elements( M_mesh ), _expr=cst(42) );
 
@@ -97,7 +101,7 @@ private:
     mesh_ptrtype M_mesh;
 };
 
-#if defined(USE_BOOST_TEST)
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( on_project )
 
@@ -116,16 +120,3 @@ BOOST_AUTO_TEST_CASE( test_3d )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#else
-int main(int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _about=makeAbout(),
-                           _desc=makeOptions() );
-
-    TestOnProject<3> top;
-    top.test();
-
-    return 0;
-}
-#endif
