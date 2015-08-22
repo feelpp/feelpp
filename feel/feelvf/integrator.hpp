@@ -227,6 +227,7 @@ public:
 
     };
 
+    using shape = typename eval::shape;
     typedef typename eval::im_type im_type;
     typedef typename eval::im2_type im2_type;
     typedef typename im_type::face_quadrature_type im_face_type;
@@ -484,7 +485,7 @@ public:
      * evaluate the integral for each entry of the vector \c v
      */
     template<typename T,int M, int N=1>
-    std::vector<Eigen::Matrix<T,M,N> >
+    std::vector<Eigen::Matrix<T,eval::shape::M,eval::shape::N> >
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
 
 #if 1
@@ -4958,13 +4959,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
-std::vector<Eigen::Matrix<T, M,N>>
+std::vector<Eigen::Matrix<T, Integrator<Elements, Im, Expr, Im2>::eval::shape::M,Integrator<Elements, Im, Expr, Im2>::eval::shape::N>>
 Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v ) const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
 
-    using m_t = Eigen::Matrix<T, M,N>;
+    using m_t = Eigen::Matrix<T, eval::shape::M,eval::shape::N>;
     
     std::vector<m_t> res( v.size() );
     for( auto& e : res ) e = m_t::Zero();
@@ -5008,8 +5009,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     x=e(0,0);
                     y=e(1,0);
                     z=e(2,0);
-                    for ( uint16_type c1 = 0; c1 < M; ++c1 )
-                        for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
                             double v = M_im( expr_evaluator, c1, c2 );
                             res[i]( (int)c1,(int)c2 ) += v;
@@ -5032,8 +5033,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     y=e(1,0);
                     z=e(2,0);
 
-                    for ( uint16_type c1 = 0; c1 < M; ++c1 )
-                        for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                    for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
                             res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
                         }
@@ -5059,8 +5060,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                         y=e(1,0);
                         z=e(2,0);
 
-                        for ( uint16_type c1 = 0; c1 < M; ++c1 )
-                            for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                                 
                             {
                                 res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
@@ -5082,8 +5083,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                         y=e(1,0);
                         z=e(2,0);
                         
-                        for ( uint16_type c1 = 0; c1 < M; ++c1 )
-                            for ( uint16_type c2 = 0; c2 < N; ++c2 )
+                        for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                            for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                             {
                                 res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
                             }
