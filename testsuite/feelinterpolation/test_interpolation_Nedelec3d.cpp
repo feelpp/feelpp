@@ -130,7 +130,7 @@ public :
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        exporter( Exporter<mesh_type>::New() )
     {
         this->changeRepository( boost::format( "%1%/" )
                                 % this->about().appName()
