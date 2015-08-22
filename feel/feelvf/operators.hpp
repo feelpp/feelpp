@@ -271,6 +271,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 struct tensor                                           \
             {                                                           \
                 typedef this_type expression_type;                      \
+                static constexpr size_type context = expression_type::context; \
+                                                                        \
                 typedef BOOST_PP_CAT( Basis_,BOOST_PP_CAT(VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ), i ,j ), _t)) map_basis_context_type; \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
@@ -315,7 +317,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
                                                                         \
-                template<typename E>\
+                template<typename E>                                    \
                 struct ttt {                                                            \
                     typedef typename mpl::if_<boost::is_same<E,mpl::int_<0> >, \
                                               mpl::identity<functionspace_type>, \
