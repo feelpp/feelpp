@@ -4958,7 +4958,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
-std::vector<Eigen::Matrix<T, Integrator<Elements, Im, Expr, Im2>::eval::shape::M,Integrator<Elements, Im, Expr, Im2>::eval::shape::N>>
+decltype(auto)
 Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v ) const
 {
     DLOG(INFO)  << "integrating over "
