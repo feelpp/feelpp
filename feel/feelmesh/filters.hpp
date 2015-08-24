@@ -733,19 +733,15 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
 }
 
 /**
- * this function in 2D is a no-op
+ * @return the range of faces of the \p mesh associated to \p __marker
  */
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename MeshTraits<MeshType>::marker_face_const_iterator,
-             typename MeshTraits<MeshType>::marker_face_const_iterator>
+decltype(auto)
 markededges( MeshType const& mesh,
              std::string const& __marker,
              typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
-    return boost::make_tuple(mpl::size_t<MESH_EDGES>(),
-                             mesh->endFaceWithMarker(),
-                             mesh->endFaceWithMarker() );
+    return markedfaces( mesh, __marker );
 }
 
 
@@ -770,20 +766,15 @@ markededges( MeshType const& mesh,
     return list_edges;
 }
 /**
- * this function in 2D is a no-op
+ * @return the range of faces of the \p mesh associated to \p __marker
  */
 template<typename MeshType>
-std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
-                       typename MeshTraits<MeshType>::marker_face_const_iterator,
-                       typename MeshTraits<MeshType>::marker_face_const_iterator> >
+decltype(auto)
 markededges( MeshType const& mesh,
              std::list<std::string> const& __markers,
              typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
-    std::list<boost::tuple<mpl::size_t<MESH_EDGES>,
-                           typename MeshTraits<MeshType>::marker_face_const_iterator,
-                           typename MeshTraits<MeshType>::marker_face_const_iterator> > list_edges;
-    return list_edges;
+    return markedfaces(mesh, __markers);
 }
 
 
