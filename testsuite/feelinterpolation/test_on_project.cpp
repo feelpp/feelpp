@@ -78,11 +78,13 @@ public:
         auto s = Xh->element();
         auto v = Xh->element();
 
-        LOG_IF(WARNING, nelements( markedpoints( M_mesh,"P") ) == 0 ) << "no points marked P:"  << nelements( markedpoints( M_mesh,"P") );
-        p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42) );
+        size_type np = nelements( markedpoints( M_mesh,"P") );
+        LOG_IF(WARNING, np == 0 ) << "no points marked P:"  << np ;
+        //p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42) );
         if ( Environment::isMasterRank() )
             p.printMatlab("P.m");
-        LOG_IF(WARNING, nelements( markededges( M_mesh,"L") ) == 0 ) << "no edges marked L:"  << nelements( markededges( M_mesh,"L") );
+        size_type ne = nelements( markededges( M_mesh,"L") );
+        LOG_IF(WARNING, ne  == 0 ) << "no edges marked L:"  << ne;
         l.on( _range=markededges( M_mesh,"L"), _expr=cst(42) );
         if ( Environment::isMasterRank() )
             l.printMatlab("L.m");
