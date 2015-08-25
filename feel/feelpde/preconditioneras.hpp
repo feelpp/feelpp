@@ -231,8 +231,14 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // TODO: create M_C and M_Ct
     M_C = backend()->newMatrix(M_Vh,M_Qh3);
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
-    M_C = M_P; //TEMP
-    M_Ct = M_Pt; //TEMP
+#if 1 //Temporary
+    M_C = M_P;
+    M_Ct = M_Pt;
+#else //Waiting for Grad() operator
+    auto Igrad  = Grad( _domainSpace=M_Qh );
+    M_C = Igrad->matPtr();
+    M_C->transpose(M_Ct,MATRIX_TRANSPOSE_UNASSEMBLED);
+#endif
 
     // Create vector of indices to create subvectors/matrices
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 ); // Vh indices in Xh
@@ -254,7 +260,6 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
         if( dof_comp == Dim - 1 )
             idx++;
     }
-
 
     this->setType ( t );
     toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
@@ -309,23 +314,11 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
         // Operator hat(L)
         M_lOp = op( f11_2.matrixPtr(), "blockms.11.2" );
         // TODO : boundary conditions ?
-
-#if 0
-        this->createMatrices();
-
-        if ( type() == AS )
-        {
-            tic();
-            afpOp->update( expr_b, g );
-            toc( "Preconditioner::update AS", FLAGS_v > 0 );
-
-        }
-#endif
     }
     else if(this->type() == SIMPLE)
     {
         auto uu = M_Vh->element("uu");
-        auto f22 = form2(M_Vh, M_Vh); 
+        auto f22 = form2(M_Vh, M_Vh);
         f22 = integrate(_range=elements(M_Vh->mesh()),
                         _expr=inner(id(uu),idt(uu)));
         SimpleOp = op( f22.matrixPtr(),"blockms.11.1");
@@ -394,6 +387,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #if FM_DIM == 3
         M_y->updateSubVector(y3, M_Qh3_indices[2]);
 #endif
+        M_y->close();
         // B = P*y
         M_P->multVector(M_y,B);
 
@@ -427,12 +421,14 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #if FM_DIM == 3
         M_lOp->applyInverse(t3,z3);
 #endif
+
         // z = [ z1, z2, z3 ]
         M_z->updateSubVector(z1, M_Qh3_indices[0]);
         M_z->updateSubVector(z2, M_Qh3_indices[1]);
 #if FM_DIM == 3
         M_z->updateSubVector(z3, M_Qh3_indices[2]);
 #endif
+        M_z->close();
 
         // C = C z
         M_C->multVector(M_z,C);
@@ -440,6 +436,10 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 
         A->add(*C);
         A->add(*B);
+
+        C->close();
+        B->close();
+        A->close();
 
         toc("15 assembled",FLAGS_v>0);
         *M_uout = *A; // 15 : w = A + B + C
@@ -454,6 +454,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         Y=U;
         *M_uout = Y;
     }
+    M_uout->close();
 
     tic();
     Y=*M_uout;
