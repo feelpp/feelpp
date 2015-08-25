@@ -34,7 +34,8 @@ po::options_description makeOptions()
 {
     po::options_description options( "Test Options" );
     options.add_options()
-        ( "N",po::value<int>()->default_value( 10 ),"N" )
+        ( "f",po::value<std::vector<std::string>>()->default_value( {"1"} ),
+          "list of functions to test the Grad interpolation operator (default : {\"1\"}" )
         ;
     return options;
 }
@@ -65,10 +66,24 @@ public :
             auto Xh = Pch<1>(mesh);
             auto Gh = Pdhv<0>(mesh);
             auto Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
-            auto u = Xh->element(Px());
             auto e = exporter(_mesh=mesh);
-            e->add("u",u);
-            e->add("grad(u)",Igrad(u));
+            
+            int i = 0;
+            for( auto f : vsoption( _name="f" ) )
+            {
+                
+                std::string n { str(format("u%1%")%i) };
+                auto u = Xh->element( expr(f), n, f );
+                std::string Ign { str(format("Igrad_u%1%")%i) };
+                e->add(n,u);
+                e->add(Ign,Igrad(u));
+
+                std::string gn = str(boost::format("grad_u%1%")%i);
+                auto v = Gh->element(trans(grad<Dim>(expr(f))), gn, str(grad<Dim>(expr(f))));
+                
+                e->add(gn,v);
+                                     
+            }
             e->save();
         }
 };

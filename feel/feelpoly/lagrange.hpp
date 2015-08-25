@@ -619,15 +619,16 @@ public:
         for( int q = 0; q <expr.geom()->nPoints(); ++q )
             for( int I = 0; I < fe_expr_type::nLocalDof; ++I )
             {
-                int ncomp= ( fe_expr_type::is_product?nComponents1:1 );
+                int ncomp= ( fe_expr_type::is_product?fe_expr_type::nComponents1:1 );
                 for( int c = 0; c < ncomp; ++c )
                 {
                     uint16_type i = fe_expr_type::nLocalDof*c + I;
                     for( int c1 = 0; c1 < shape::M; ++c1 )
                         for( int c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            int ldof = (c2+shape::N*c1)*fe_expr_type::nLocalDof + I;
-                            Ihloc( ldof, q ) = expr.evaliq( I, c1, c2, q );
+                            int ldof = (c2+shape::N*c1)*fe_expr_type::nLocalDof + i;
+                            int dof_expr = (fe_expr_type::is_product)? ldof : i;
+                            Ihloc( ldof, q ) = expr.evaliq( i, c1, c2, q );
                         }
                 }
             }
