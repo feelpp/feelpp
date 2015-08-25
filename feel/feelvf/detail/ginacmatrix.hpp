@@ -134,6 +134,7 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
+    GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun )
     :
         super(fun),
@@ -171,6 +172,8 @@ public:
      */
     //@{
 
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -387,6 +390,20 @@ operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 {
     os << e.expression();
     return os;
+}
+
+template<int M, int N, int Order>
+std::string
+str( GinacMatrix<M,N,Order> && e )
+{
+    return str( std::forward<GinacMatrix<M,N,Order>>(e).expression() );
+}
+
+template<int M, int N, int Order>
+std::string
+str( GinacMatrix<M,N,Order> const& e )
+{
+    return str( e.expression() );
 }
 
 /// \endcond

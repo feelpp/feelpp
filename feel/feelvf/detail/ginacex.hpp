@@ -110,15 +110,8 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
-    GinacEx( GinacEx const & fun )
-        :
-        super(fun),
-        M_fun( fun.M_fun ),
-        M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename ),
-        M_exprDesc( fun.M_exprDesc )
-        {
-        }
+    GinacEx( GinacEx const& fun ) = default;
+    GinacEx( GinacEx && fun ) = default;
 
 
     //@}
@@ -126,7 +119,8 @@ public:
     /** @name Operator overloads
      */
     //@{
-
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -348,6 +342,20 @@ operator<<( std::ostream& os, GinacEx<Order> const& e )
     os << e.expression();
     return os;
 }
+
+template<int Order>
+std::string
+str( GinacEx<Order> && e )
+{
+    return str( std::forward<GinacEx<Order>>(e).expression() );
+}
+template<int Order>
+std::string
+str( GinacEx<Order> const& e )
+{
+    return str( e.expression() );
+}
+
 } // vf
 } // feel
 

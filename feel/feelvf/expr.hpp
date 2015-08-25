@@ -687,6 +687,13 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
     return os;
 }
 
+template <typename ExprT>
+std::string
+str( Expr<ExprT> && exprt )
+{
+    return str(std::forward<Expr<ExprT>>(exprt).expression());
+}
+
 
 extern Expr<LambdaExpr1> _e1;
 extern Expr<LambdaExpr2> _e2;
