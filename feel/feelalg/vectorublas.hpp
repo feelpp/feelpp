@@ -880,7 +880,7 @@ public:
     //@}
 
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename );
+    void saveHDF5( std::string const& filename ) const;
     void loadHDF5( std::string const& filename );
     void ioHDF5( bool isLoad, std::string const& filename );
 #endif

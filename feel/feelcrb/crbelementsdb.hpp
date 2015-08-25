@@ -227,12 +227,34 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
 
     int size = M_WN.size();
 
-    LOG( INFO ) << "saving Elements DB";
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-    for(int i=0; i<size; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-    LOG( INFO ) << "Elements DB saved";
+    if(soption(_name="crb.db.format").compare("boost") == 0)
+    {
+        LOG( INFO ) << "saving Elements DB";
+        for(int i=0; i<size; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
+        for(int i=0; i<size; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+        LOG( INFO ) << "Elements DB saved";
+    }
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        LOG( INFO ) << "saving Elements DB in hdf5";
+        for(int i=0; i<size; i++)
+        {
+            std::ostringstream oss;
+            oss << this->dbLocalPath().string() << "/" << "WN_" << i << ".db";
+            LOG( INFO ) << oss.str();
+            M_WN[i].saveHDF5(oss.str());
+            oss.str("");
+            oss << this->dbLocalPath().string() << "/" << "WNdu_" << i << ".db";
+            M_WNdu[i].saveHDF5(oss.str());
+        }
+        LOG( INFO ) << "Elements DB saved in hdf5";
+    }
+    else
+    {
+        LOG( ERROR ) << "Unknown CRB db format (" << soption(_name="crb.db.format") << "): Cannot save database";
+    }
 }
 
 template<typename ModelType>
@@ -266,20 +288,48 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
 
     element_type temp = Xh->element();
 
-    for( int i = 0 ; i < M_N ; i++ )
+    if(soption(_name="crb.db.format").compare("boost") == 0)
     {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WN[i] = temp;
-    }
+        LOG( INFO ) << "loading Elements DB (boost)";
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WN[i] = temp;
+        }
 
-    for( int i = 0 ; i < M_N ; i++ )
-    {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WNdu[i] = temp;
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WNdu[i] = temp;
+        }
+        LOG( INFO ) << "Elements DB loaded";
     }
-    LOG( INFO ) << " Elements DB loaded";
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        LOG( INFO ) << "loading Elements DB (hdf5)";
+        for(int i=0; i<M_N; i++)
+        {
+            std::ostringstream oss;
+            oss << this->dbLocalPath().string() << "/" << "WN_" << i << ".db";
+
+            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            temp.loadHDF5(oss.str());
+            M_WN[i] = temp;
+
+            oss.str("");
+            oss << this->dbLocalPath().string() << "/" << "WNdu_" << i << ".db";
+            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            temp.loadHDF5(oss.str());
+            M_WNdu[i] = temp;
+        }
+        LOG( INFO ) << "Elements DB loaded";
+    }
+    else
+    {
+        LOG( ERROR ) << "Unknown CRB db format (" << soption(_name="crb.db.format") << "): Cannot load database";
+    }
 }
 
 
