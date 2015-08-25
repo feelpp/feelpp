@@ -256,6 +256,14 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
                              _space2=M_Mh,
                              _matrix=M_11,
                              _bc = M_bcFlags);
+
+            // M_pcAs = boost::make_shared< pc_as_type >("AS",
+            //                                           M_Xh,
+            //                                           M_Mh,
+            //                                           M_bcFlags,
+            //                                           "",
+            //                                           M_11,
+            //                                           0.0);
         }
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
