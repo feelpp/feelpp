@@ -93,7 +93,13 @@ public :
 
     static constexpr bool isConforming() noexcept { return is_conforming; }
     static constexpr interpolation_operand_type interpolationOperand() noexcept { return interpolation_operand; }
-
+    static constexpr bool requiresDerivatives() noexcept 
+        { 
+            return interpolation_operand == interpolation_operand_type::GRADIENT || 
+                interpolation_operand == interpolation_operand_type::CURL || 
+                interpolation_operand == interpolation_operand_type::DIV;
+        }
+                
     template<typename Elt>
     static constexpr decltype(auto) operand( Elt&& e ) 
         {
@@ -254,9 +260,7 @@ idElt( EltType & elt,mpl::size_t<MESH_FACES> )
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
-         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator>,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = decltype(makeInterpolation<nonconforming_t>(nonconforming_t())) >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
@@ -643,7 +647,8 @@ struct PrecomputeDomainBasisFunction
 
     void update( geoelement_type const& elt )
     {
-        if ( !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
+        if ( !vm::has_grad<context>::value && !vm::has_curl<context>::value && !vm::has_div<context>::value && 
+             !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
              !mpl::or_<is_hdiv_conforming<typename ImageSpaceType::fe_type>, is_hcurl_conforming<typename ImageSpaceType::fe_type> >::type::value )
             return;
 
@@ -686,7 +691,11 @@ private :
         constexpr bool has_grad =  vm::has_grad<ExprType::context>::value;
         using shape = typename t_expr_type::shape;
         if ( has_grad ) 
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::N*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        {
+            LOG(INFO) << "Shape: " << shape::M << "x" << shape::N;
+            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::M*fe_type::nLocalDof, texpr.geom()->nPoints() );
+            LOG(INFO) << "IhLoc: " << M_IhLoc;
+        }
         else
             M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
@@ -716,7 +725,7 @@ private :
         constexpr bool has_grad =  vm::has_grad<ExprType::context>::value;
         using shape = typename t_expr_type::shape;
         if ( has_grad ) 
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::N*fe_type::nLocalDof, texpr.geom()->nPoints() );
+            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::M*fe_type::nLocalDof, texpr.geom()->nPoints() );
         else
             M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
         
@@ -1213,7 +1222,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 {
-                                    uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
+                                    uint16_type compDomain = (domain_basis_type::is_product && 
+                                                              InterpType::interpolationOperand()!=interpolation_operand_type::GRADIENT)? comp : 0;
 
                                     // get column
                                     const size_type j = domaindof->localToGlobal( domain_eid, jloc, compDomain ).index();
@@ -3214,17 +3224,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 
+
 namespace detail
 {
 template <typename RangeType>
 struct opinterprangetype
 {
-    typedef typename mpl::if_< boost::is_std_list<RangeType>,
-                               mpl::identity<RangeType>,
-                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+    typedef range_t<RangeType> type;
 };
 }
 
+
+/**
+ * get the type of an OperatorInterpolation
+ * \code
+ * operator_interpolation_t<space_1_type,space_2_type,elements_t<typename space_2_type::mesh_type>, >
+ * \endcode
+ */
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
+using operator_interpolation_t = 
+    OperatorInterpolation<DomainSpaceType, 
+                          ImageSpaceType,
+                          range_t<IteratorRange>,
+                          InterpType>;
+    
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
