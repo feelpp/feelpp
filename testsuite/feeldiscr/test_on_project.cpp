@@ -23,7 +23,7 @@
  */
 
 #if defined(USE_BOOST_TEST)
-#define BOOST_TEST_MODULE test_on
+#define BOOST_TEST_MODULE test_on_project
 #include <testsuite/testsuite.hpp>
 #endif
 
