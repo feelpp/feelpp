@@ -1235,6 +1235,7 @@ public:
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     virtual model_solution_type computeRbExpansion( parameter_type const& mu )=0;
+    virtual double ErrorEstimationSER( model_solution_type & solution )=0;
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1922,23 +1923,29 @@ public:
 
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
-        //return M_model->solve( mu );
         return M_model->functionSpace()->element();
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
-        int N = this->M_crb->dimension();
-        auto WN = M_crb->wn(); //reduced basis approximation space
+        return M_crb->expansion( mu, M_crb->dimension() );
+    }
 
-        vectorN_type time;
-        auto o = M_crb->run( mu, time, doption(_name="crb.online-tolerance") , N);
-        auto solutions=o.template get<2>();
-        auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
+    double ErrorEstimationSER( model_solution_type & solution )
+    {
+        vector_ptrtype qun( backend()->newVector( M_model->functionSpace() ) );
+        auto v = M_model->functionSpace()->element();
 
-        int size=uN.size();
-        auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+        // Compute \int_{\Omega} q_{m+1} (1-u(\mu)) v
+        auto last_q_idx = M_q_vector.size()-1;
+        form1( _test=M_model->functionSpace(), _vector=qun ) =
+            integrate( _range= elements( this->functionSpace()->mesh() ), _expr=( idv(this->q(last_q_idx))*(1-idv(solution))*id(v) ) );
+        qun->close();
 
-        return u_crb;
+        vector_ptrtype __e_eim(  backend()->newVector( M_model->functionSpace() ) );
+        M_crb->l2solve( __e_eim, qun );
+        double dual_norm = math::sqrt( M_crb->scalarProduct( __e_eim,__e_eim ) );
+
+        return dual_norm;
     }
 
     //Let g the expression that we want to have an eim expasion

@@ -374,7 +374,101 @@ public:
             return u_crb;
         }
 
-    
+    void SER()
+        {
+            bool do_offline_eim = false;
+            // Identifiy is offline eim still needs to be done
+            auto eim_sc_vector = model->scalarContinuousEim();
+            auto eim_sd_vector = model->scalarDiscontinuousEim();
+            for( auto eim_sc : eim_sc_vector )
+                do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+            for( auto eim_sd : eim_sd_vector )
+                do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+
+            int i=0;
+            double errorEstimationSER;
+            do
+            {
+                LOG(INFO) << "[SER] step i= " << i << "\n";
+                //Begin with rb since first eim has already been built in initModel
+                if( i == 0 || crb->getOfflineStep() )
+                {
+                    this->loadDB(); // update AffineDecomposition and enrich RB database
+                }
+                crb->setRebuild( false ); //do not rebuild since co-build is not finished
+
+                if( do_offline_eim )
+                {
+                    do_offline_eim = false; //re-init
+                    for( auto eim_sc : eim_sc_vector )
+                    {
+                        eim_sc->setRestart(false); //do not restart since co-build is not finished
+
+                        if( boption(_name="eim.use-rb-in-mu-selection") )
+                        {
+                            eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+                        }
+
+                        eim_sc->offline();
+                        do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                    }
+                    for( auto eim_sd : eim_sd_vector )
+                    {
+                        eim_sd->setRestart(false); //do not restart since co-build is not finished
+
+                        if( boption(_name="eim.use-rb-in-mu-selection") )
+                        {
+                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+                        }
+
+                        eim_sd->offline();
+                        do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+                    }
+
+                    // Error Estimation in SER
+                    if( i > 0 )
+                        this->ErrorEstimationSER();
+
+                    model->assemble(); //Affine decomposition has changed since eim has changed
+                }
+                ++i;
+            }
+            while( crb->getOfflineStep() || do_offline_eim );
+        }
+
+    void ErrorEstimationSER()
+        {
+            double errorEstimationSER = 0;
+            auto mu = crb->wnmu()->lastElement();
+            auto u_crb = crb->expansion( mu, crb->dimension() );
+
+            // Compute error from RB
+            auto ub_rb = crb->computeSquareDualNormOfPrimalResidual(mu, u_crb);
+            errorEstimationSER += ub_rb;
+
+            if( Environment::worldComm().isMasterRank() )
+                std::cout << "[SER] Error estimation (crb) : " << errorEstimationSER << std::endl;
+
+            // Compute error from EIM (if needed)
+            for( auto eim_sc : model->scalarContinuousEim() )
+            {
+                auto ub_eim_sc = eim_sc->ErrorEstimationSER( u_crb );
+                errorEstimationSER += ub_eim_sc;
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout << "[SER] Error estimation eim " << eim_sc->name() << " = " << ub_eim_sc << std::endl;
+            }
+            for( auto eim_sd : model->scalarDiscontinuousEim() )
+            {
+                auto ub_eim_sd = eim_sd->ErrorEstimationSER( u_crb );
+                errorEstimationSER += ub_eim_sd;
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout << "[SER] Error estimation eim " << eim_sd->name() << " = " << ub_eim_sd << std::endl;
+            }
+
+            if( Environment::worldComm().isMasterRank() )
+                std::cout << "[SER] Error estimation (crb+eim) : " << errorEstimationSER << std::endl;
+        }
+
     FEELPP_DONT_INLINE
     void run()
         {
@@ -408,63 +502,14 @@ public:
             }
 
             bool cobuild = ( (ioption(_name = "eim.cobuild-frequency") != 0) || (ioption(_name = "crb.cobuild-frequency") != 0) );
+            tic();
             if( model->hasEim() && cobuild)
             {
-                bool do_offline_eim = false;
-                // Identifiy is offline eim still needs to be done
-                auto eim_sc_vector = model->scalarContinuousEim();
-                auto eim_sd_vector = model->scalarDiscontinuousEim();
-                for( auto eim_sc : eim_sc_vector )
-                    do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
-                for( auto eim_sd : eim_sd_vector )
-                    do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
-
-                int i=0;
-                do
-                {
-                    LOG(INFO) << "[cobuild] step i= " << i << "\n";
-                    //Begin with rb since first eim has already been built in initModel
-                    if( i == 0 || crb->getOfflineStep() )
-                    {
-                        this->loadDB(); // update AffineDecomposition and enrich RB database
-                    }
-                    crb->setRebuild( false ); //do not rebuild since co-build is not finished
-
-                    if( do_offline_eim )
-                    {
-                        do_offline_eim = false; //re-init
-                        for( auto eim_sc : eim_sc_vector )
-                        {
-                            eim_sc->setRestart(false); //do not restart since co-build is not finished
-
-                            if( boption(_name="eim.use-rb-in-mu-selection") )
-                            {
-                                eim_sc->setRB( crb ); //update rb model member to be used in eim offline
-                            }
-
-                            eim_sc->offline();
-                            do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
-                        }
-                        for( auto eim_sd : eim_sd_vector )
-                        {
-                            eim_sd->setRestart(false); //do not restart since co-build is not finished
-
-                            if( boption(_name="eim.use-rb-in-mu-selection") )
-                            {
-                                eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                            }
-
-                            eim_sd->offline();
-                            do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
-                        }
-                        //std::cout << "do offline eim(" << i << ") = " << do_offline_eim << std::endl;
-                        model->assemble(); //Affine decomposition has changed since eim has changed
-                    }
-                    ++i;
-                }
-                while( crb->getOfflineStep() || do_offline_eim );
+                this->SER(); // Simultaneous EIM - RB
             }
             this->loadDB();
+            this->ErrorEstimationSER();
+            toc("Offline", FLAGS_v>0);
 
             int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));
             SamplingMode run_sampling_type = ( SamplingMode )ioption(_name=_o( this->about().appName(),"run.sampling.mode" ));
