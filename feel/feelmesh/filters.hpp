@@ -150,7 +150,13 @@ using markededges_t = boost::tuple<mpl::size_t<MESH_EDGES>,
                                    typename MeshTraits<MeshType>::marker_edge_const_iterator,
                                    typename MeshTraits<MeshType>::marker_edge_const_iterator>;
 
+template<typename MeshType>
+using boundaryedges_t = boost::tuple<mpl::size_t<MESH_EDGES>,
+                                     typename MeshTraits<MeshType>::location_edge_const_iterator,
+                                     typename MeshTraits<MeshType>::location_edge_const_iterator>;
 
+template<typename MeshType>
+using internaledges_t = boundaryedges_t<MeshType>;
 
 template<typename MeshType>
 using points_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
@@ -162,7 +168,14 @@ using markedpoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
                                     typename MeshTraits<MeshType>::marker_point_const_iterator,
                                     typename MeshTraits<MeshType>::marker_point_const_iterator>;
 
+template<typename MeshType>
+using boundarypoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
+                                      typename MeshTraits<MeshType>::location_point_const_iterator,
+                                      typename MeshTraits<MeshType>::location_point_const_iterator>;
 
+
+template<typename MeshType>
+using internalpoints_t = boundarypoints_t<MeshType>;
 
 /**
  * namespace for meta mesh computation data structure 
