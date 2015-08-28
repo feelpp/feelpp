@@ -25,6 +25,7 @@
 #include <testsuite/testsuite.hpp>
 
 #include <feel/feel.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -64,7 +65,7 @@ public :
         {
             auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>>() );
             auto Xh = Pch<1>(mesh);
-            auto Gh = Pdhv<0>(mesh);
+            auto Gh = Ned1h<0>(mesh);
             auto Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
             auto e = exporter(_mesh=mesh);
             
@@ -76,13 +77,20 @@ public :
                 auto u = Xh->element( expr(f), n, f );
                 std::string Ign { str(format("Igrad_u%1%")%i) };
                 e->add(n,u);
-                e->add(Ign,Igrad(u));
-
+                auto w = Igrad(u);
+                
+                if ( Environment::isSequential() )
+                {
+                    Igrad.matPtr()->printMatlab("Igrad.m");
+                    w.printMatlab("w.m");
+                }
+                e->add(Ign,w);
+                
                 std::string gn = str(boost::format("grad_u%1%")%i);
                 auto v = Gh->element(trans(grad<Dim>(expr(f))), gn, str(grad<Dim>(expr(f))));
                 
                 e->add(gn,v);
-                                     
+                ++i;
             }
             e->save();
         }
