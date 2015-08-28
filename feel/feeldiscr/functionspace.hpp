@@ -1528,6 +1528,8 @@ public:
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
     static const bool is_mortar = mortar_0_type::is_mortar;
+    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
+    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
 
     //@}
 
@@ -1925,6 +1927,8 @@ public:
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
         static const int rank = functionspace_type::rank;
+        static const bool is_hcurl_conforming = functionspace_type::is_hcurl_conforming;
+        static const bool is_hdiv_conforming = functionspace_type::is_hdiv_conforming;
         
         /** @name Typedefs
          */
