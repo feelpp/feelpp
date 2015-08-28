@@ -206,6 +206,38 @@ struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,int
     InterpolationGradient( InterpolationGradient && ) = default;
 };
 
+template<typename C>
+struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>
+{
+    using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>;
+    constexpr InterpolationCurl( C c,
+                                     bool useComm = true,
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationCurl( InterpolationCurl const& ) = default;
+    InterpolationCurl( InterpolationCurl && ) = default;
+};
+
+template<typename C>
+struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>
+{
+    using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>;
+    constexpr InterpolationDiv( C c,
+                                     bool useComm = true,
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationDiv( InterpolationDiv const& ) = default;
+    InterpolationDiv( InterpolationDiv && ) = default;
+};
+
 template<typename C, typename ...Args>
 InterpolationID<C>
 makeInterpolation( C&& c, Args&&... args )
@@ -219,6 +251,21 @@ makeGradientInterpolation( C&& c, Args&&... args )
 {
     return InterpolationGradient<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
+
+template<typename C, typename ...Args>
+InterpolationCurl<C>
+makeCurlInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationCurl<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
+template<typename C, typename ...Args>
+InterpolationDiv<C>
+makeDivInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationDiv<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
 
 
 namespace detailsup
@@ -692,9 +739,7 @@ private :
         using shape = typename t_expr_type::shape;
         if ( has_grad ) 
         {
-            LOG(INFO) << "Shape: " << shape::M << "x" << shape::N;
             M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::M*fe_type::nLocalDof, texpr.geom()->nPoints() );
-            LOG(INFO) << "IhLoc: " << M_IhLoc;
         }
         else
             M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
@@ -1181,15 +1226,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
                 if ( domains_eid_set.size() == 0 )
                     continue;
-
+                auto const& s = imagedof->localToGlobalSigns( theImageElt.id() );
                 for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
-                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                    int nc = (image_basis_type::is_product)? image_basis_type::nComponents : 1;
+                    for ( uint16_type comp = 0; comp < nc; ++comp )
                     {
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
                         auto const& thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
-
+                        
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
                              ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
                         {
@@ -1222,31 +1268,25 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 {
-                                    uint16_type compDomain = (domain_basis_type::is_product && 
-                                                              InterpType::interpolationOperand()!=interpolation_operand_type::GRADIENT)? comp : 0;
-
-                                    // get column
-                                    const size_type j = domaindof->localToGlobal( domain_eid, jloc, compDomain ).index();
-
-                                    if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+                                    uint16_type nCompDomain = (domain_basis_type::is_product)?domain_basis_type::nComponents:1;
+                                    for(int cdomain = 0;cdomain < nCompDomain;++cdomain )
                                     {
-                                        //up the pattern graph
-                                        auto& row = sparsity_graph->row( ig1 );
-                                        row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-                                    }
-                                    else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
-                                    {
-                                        const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
-                                                                                       ilocprime );
-                                        this->matPtr()->set( i,j,val );
-#if 0
-                                        // get interpolated value ( by call fe->evaluate() )
-                                        // keep this code in order to memory ordering of this one
-                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
-                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                     comp,
-                                                                     ilocprime );
-#endif
+
+                                        // get column
+                                        const size_type j = domaindof->localToGlobal( domain_eid, jloc, cdomain ).index();
+
+                                        if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+                                        {
+                                            //up the pattern graph
+                                            auto& row = sparsity_graph->row( ig1 );
+                                            row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
+                                        }
+                                        else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
+                                        {
+                                            const value_type val = IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
+                                                                          ilocprime );
+                                            this->matPtr()->set( i,j,val );
+                                        }
                                     }
                                 }
 
@@ -3343,6 +3383,28 @@ BOOST_PARAMETER_FUNCTION(
 
 } // opInterpolation
 
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
+    I,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, InterpolationNonConforming() )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+    Feel::detail::ignore_unused_variable_warning( args );
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
 
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_opInterpolation_return<Args,InterpolationGradient<nonconforming_t>>::type ), // 1. return type
@@ -3356,6 +3418,52 @@ BOOST_PARAMETER_FUNCTION(
       ( range,          *, elements( imageSpace->mesh() )  )
       ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( type,           *, makeGradientInterpolation<nonconforming_t>( nonconforming_t() ) )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+    Feel::detail::ignore_unused_variable_warning( args );
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // Grad
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args,InterpolationCurl<nonconforming_t>>::type ), // 1. return type
+    Curl,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, makeCurlInterpolation<nonconforming_t>( nonconforming_t() ) )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+    Feel::detail::ignore_unused_variable_warning( args );
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args,InterpolationDiv<nonconforming_t>>::type ), // 1. return type
+    Div,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, makeDivInterpolation<nonconforming_t>( nonconforming_t() ) )
       ( ddmethod,  (bool),  false )
     ) // optional
 )
