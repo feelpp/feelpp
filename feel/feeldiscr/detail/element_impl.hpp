@@ -2350,7 +2350,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
 
     typedef typename element_type::functionspace_type::fe_type fe_type;
-    const size_type context = mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
                                         mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
 
