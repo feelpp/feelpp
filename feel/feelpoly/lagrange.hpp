@@ -572,66 +572,36 @@ public:
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
     {
-        constexpr bool has_grad =  vm::has_grad<std::decay_t<ExprType>::tensor_expr_type::context>::value;
-        return interpolateBasisFunction( std::forward<ExprType>( expr ), Ihloc, mpl::bool_<has_grad>() );
-    }
-    template<typename ExprType>
-    void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc, mpl::bool_<false> ) const
-    {
         using shape = typename std::decay_t<ExprType>::shape;
+        /*
         BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
                               (mpl::int_<nComponents1>,mpl::int_<shape::M>));
         BOOST_MPL_ASSERT_MSG( nComponents2==shape::N,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
                               (mpl::int_<nComponents2>,mpl::int_<shape::N>));
-
+         */
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
         typedef typename std::decay_t<ExprType>::tensor_expr_type::expression_type::fe_type fe_expr_type;
 
-        for( int q = 0; q <expr.geom()->nPoints(); ++q )
+        for( int q = 0; q < nLocalDof; ++q )
+        {
             for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
-                for( int c1 = 0; c1 < shape::M; ++c1 )
-                    for( int c2 = 0; c2 < shape::N; ++c2 )
-                    {
-                        int ldof = (c2+fe_expr_type::nComponents2*c1)*fe_expr_type::nLocalDof + i;
-                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
-                        Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
-                    }
-    }
-    template<typename ExprType>
-    void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc, mpl::bool_<true> ) const
-    {
-        using shape = typename std::decay_t<ExprType>::shape;
-#if 0
-        BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
-                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents1>,mpl::int_<shape::M>));
-        BOOST_MPL_ASSERT_MSG( nComponents1==shape::N,
-                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents2>,mpl::int_<shape::N>));
-#endif
-        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        typedef typename std::decay_t<ExprType>::tensor_expr_type::expression_type::expression_type::fe_type fe_expr_type;
-
-        for( int q = 0; q <expr.geom()->nPoints(); ++q )
-            for( int I = 0; I < fe_expr_type::nLocalDof; ++I )
             {
-                int ncomp= ( fe_expr_type::is_product?fe_expr_type::nComponents1:1 );
-                for( int c = 0; c < ncomp; ++c )
+                int ncomp1= ( fe_expr_type::is_product?fe_expr_type::nComponents1:1 );
+                
+                for ( uint16_type c = 0; c < ncomp1; ++c )
                 {
-                    uint16_type i = fe_expr_type::nLocalDof*c + I;
+                    uint16_type I = fe_expr_type::nLocalDof*c + i;
                     for( int c1 = 0; c1 < shape::M; ++c1 )
                         for( int c2 = 0; c2 < shape::N; ++c2 )
                         {
-                            int ldof = (c2+shape::N*c1)*fe_expr_type::nLocalDof + i;
-                            int dof_expr = (fe_expr_type::is_product)? ldof : i;
-                            Ihloc( ldof, q ) = expr.evaliq( i, c1, c2, q );
+                            int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
                         }
                 }
             }
+        }
     }
     //@}
 
