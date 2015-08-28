@@ -29,7 +29,7 @@
 namespace Feel {
 
 /**
- * HCurl conforming polynomialset base class
+ * H1 conforming polynomialset base class
  */
 class H1PolynomialSet {};
 
