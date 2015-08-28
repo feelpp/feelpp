@@ -32,7 +32,11 @@
 #define __FEELPP_FILTERS_HPP 1
 
 #include <utility>
+#if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
+#else
+#include <boost/spirit/home/phoenix/stl/algorithm/detail/is_std_list.hpp>
+#endif
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/traits.hpp>
@@ -172,8 +176,6 @@ template<typename MeshType>
 using boundarypoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
                                       typename MeshTraits<MeshType>::location_point_const_iterator,
                                       typename MeshTraits<MeshType>::location_point_const_iterator>;
-
-
 template<typename MeshType>
 using internalpoints_t = boundarypoints_t<MeshType>;
 
