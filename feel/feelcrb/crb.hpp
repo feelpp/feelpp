@@ -1080,6 +1080,14 @@ public:
      */
     element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
+    void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+    {
+        return M_model->l2solve( u, f );
+    }
+    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProduct( X, Y );
+    }
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
@@ -1091,8 +1099,11 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, vectorN_type & time,
-                                                                                                                           double eps = 1e-6, int N = -1, bool print_rb_matrix=false );
+    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu,
+                                                                                                                           vectorN_type & time,
+                                                                                                                           double eps = 1e-6,
+                                                                                                                           int N = -1,
+                                                                                                                           bool print_rb_matrix=false );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1386,6 +1397,7 @@ protected:
 
     size_type M_N;
     size_type M_Nm;
+    size_type number_of_added_elements;
 
     bool orthonormalize_primal;
     bool orthonormalize_dual;
@@ -2009,6 +2021,7 @@ CRB<TruthModelType>::offline()
     if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
     M_Nm = ioption(_name="crb.Nm") ;
+    number_of_added_elements = 1;
     bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
 
     boost::timer ti;
@@ -2115,280 +2128,6 @@ CRB<TruthModelType>::offline()
             std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
 
-#if 0
-        if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-        {
-
-            int __QLhs = M_model->Qa();
-            int __QRhs = M_model->Ql( 0 );
-            int __QOutput = M_model->Ql( M_output_index );
-            int __Qm = M_model->Qm();
-
-            //typename array_2_type::extent_gen extents2;
-            //M_C0_pr.resize( extents2[__QRhs][__QRhs] );
-            //M_C0_du.resize( extents2[__QOutput][__QOutput] );
-            M_C0_pr.resize( __QRhs );
-            for( int __q1=0; __q1< __QRhs; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxF(0,__q1);
-                M_C0_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_C0_pr[__q1][__m1].resize(  __QRhs );
-                    for( int __q2=0; __q2< __QRhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(0,__q2);
-                        M_C0_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_C0_du.resize( __QOutput );
-            for( int __q1=0; __q1< __QOutput; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxF(M_output_index,__q1);
-                M_C0_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_C0_du[__q1][__m1].resize(  __QOutput );
-                    for( int __q2=0; __q2< __QOutput; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                        M_C0_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            //typename array_3_type::extent_gen extents3;
-            //M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
-            //M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
-            M_Lambda_pr.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxA(__q1);
-                M_Lambda_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Lambda_pr[__q1][__m1].resize(  __QRhs );
-                    for( int __q2=0; __q2< __QRhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(0,__q2);
-                        M_Lambda_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_Lambda_du.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxA(__q1);
-                M_Lambda_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Lambda_du[__q1][__m1].resize(  __QOutput );
-                    for( int __q2=0; __q2< __QOutput; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                        M_Lambda_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            //typename array_4_type::extent_gen extents4;
-            //M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
-            //M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
-            M_Gamma_pr.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxA(__q1);
-                M_Gamma_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Gamma_pr[__q1][__m1].resize(  __QLhs );
-                    for( int __q2=0; __q2< __QLhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Gamma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_Gamma_du.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxA(__q1);
-                M_Gamma_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Gamma_du[__q1][__m1].resize(  __QLhs );
-                    for( int __q2=0; __q2< __QLhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Gamma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-
-            M_C0_pr_eim.resize( __QRhs );
-            for( int __q1=0; __q1< __QRhs; __q1++)
-            {
-                M_C0_pr_eim[__q1].resize(  __QRhs );
-            }
-
-            M_C0_du_eim.resize( __QOutput );
-            for( int __q1=0; __q1< __QOutput; __q1++)
-            {
-                M_C0_du_eim[__q1].resize(  __QOutput );
-            }
-
-            M_Lambda_pr_eim.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                M_Lambda_pr_eim[__q1].resize(  __QRhs );
-            }
-
-            M_Lambda_du_eim.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                M_Lambda_du_eim[__q1].resize(  __QOutput );
-            }
-
-            M_Gamma_pr_eim.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                M_Gamma_pr_eim[__q1].resize( __QLhs );
-            }
-
-            M_Gamma_du_eim.resize( __QLhs );
-            for( int __q1=0; __q1< __QLhs; __q1++)
-            {
-                M_Gamma_du_eim[__q1].resize( __QLhs );
-            }
-
-
-            if ( model_type::is_time_dependent )
-            {
-                // M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
-                // M_Cmf_du.resize( extents3[__Qm][__QRhs] );
-                M_Cmf_pr.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cmf_pr[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cmf_pr[__q1][__m1].resize(  __QRhs );
-                        for( int __q2=0; __q2< __QRhs; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxF(0,__q2);
-                            M_Cmf_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-                M_Cmf_du.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cmf_du[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cmf_du[__q1][__m1].resize( __QOutput );
-                        for( int __q2=0; __q2< __QOutput; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                            M_Cmf_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-                M_Cmf_du_ini.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cmf_du_ini[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cmf_du_ini[__q1][__m1].resize( __QOutput );
-                        for( int __q2=0; __q2< __QOutput; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                            M_Cmf_du_ini[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-                // M_Cma_pr.resize( extents4[__Qm][__QLhs] );
-                // M_Cma_du.resize( extents4[__Qm][__QLhs] );
-                M_Cma_pr.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cma_pr[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cma_pr[__q1][__m1].resize(  __QLhs );
-                        for( int __q2=0; __q2< __QLhs; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxA(__q2);
-                            M_Cma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-                M_Cma_du.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cma_du[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cma_du[__q1][__m1].resize( __QLhs );
-                        for( int __q2=0; __q2< __QLhs; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxA(__q2);
-                            M_Cma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-                // M_Cmm_pr.resize( extents4[__Qm][__Qm] );
-                // M_Cmm_du.resize( extents4[__Qm][__Qm] );
-                M_Cmm_pr.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cmm_pr[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cmm_pr[__q1][__m1].resize(  __Qm );
-                        for( int __q2=0; __q2< __Qm; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxM(__q2);
-                            M_Cmm_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-                M_Cmm_du.resize( __Qm );
-                for( int __q1=0; __q1< __Qm; __q1++)
-                {
-                    int __mMaxQ1=M_model->mMaxM(__q1);
-                    M_Cmm_du[__q1].resize( __mMaxQ1 );
-                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                    {
-                        M_Cmm_du[__q1][__m1].resize( __Qm );
-                        for( int __q2=0; __q2< __Qm; __q2++)
-                        {
-                            int __mMaxQ2=M_model->mMaxM(__q2);
-                            M_Cmm_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                        }
-                    }
-                }
-
-            }//end of if ( model_type::is_time_dependent )
-        }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-#endif
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
         ti.restart();
@@ -2441,66 +2180,6 @@ CRB<TruthModelType>::offline()
         delta_du = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
-#if 0
-        LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
-        M_Aqm_pr.resize( M_model->Qa() );
-        M_Aqm_du.resize( M_model->Qa() );
-        M_Aqm_pr_du.resize( M_model->Qa() );
-
-        if( M_use_newton )
-            M_Jqm_pr.resize( M_model->Qa() );
-
-        for(int q=0; q<M_model->Qa(); q++)
-        {
-            M_Aqm_pr[q].resize( M_model->mMaxA(q) );
-            M_Aqm_du[q].resize( M_model->mMaxA(q) );
-            M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
-
-            if(M_use_newton)
-                M_Jqm_pr[q].resize( M_model->mMaxA(q) );
-        }
-
-        M_Mqm_pr.resize( M_model->Qm() );
-        M_Mqm_du.resize( M_model->Qm() );
-        M_Mqm_pr_du.resize( M_model->Qm() );
-        for(int q=0; q<M_model->Qm(); q++)
-        {
-            M_Mqm_pr[q].resize( M_model->mMaxM(q) );
-            M_Mqm_du[q].resize( M_model->mMaxM(q) );
-            M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
-        }
-
-        int QInitialGuessV = M_model->QInitialGuess();
-        M_InitialGuessV_pr.resize( QInitialGuessV );
-        for(int q=0; q<QInitialGuessV; q++)
-        {
-            M_InitialGuessV_pr[q].resize( M_model->mMaxInitialGuess(q) );
-        }
-
-        M_Fqm_pr.resize( M_model->Ql( 0 ) );
-        M_Fqm_du.resize( M_model->Ql( 0 ) );
-        M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
-        M_Lqm_du.resize( M_model->Ql( M_output_index ) );
-
-        if(M_use_newton)
-            M_Rqm_pr.resize( M_model->Ql( 0 ) );
-
-        for(int q=0; q<M_model->Ql( 0 ); q++)
-        {
-            M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
-            M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
-
-            if(M_use_newton)
-                M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
-        }
-        for(int q=0; q<M_model->Ql( M_output_index ); q++)
-        {
-            M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
-            M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
-        }
-#endif
-
-        //this->updateAffineDecompositionSize();
     }//end of if( rebuild_database )
     else
     {
@@ -2939,7 +2618,7 @@ CRB<TruthModelType>::offline()
         //in the case of transient problem, we can add severals modes for a same mu
         //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
         //we add the initial condition in the basis (so one more element)
-        size_type number_of_added_elements = M_Nm + ( M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
+        number_of_added_elements = M_Nm + ( M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
 
         //in the case of steady problems, we add only one element
         if( M_model->isSteady() )
@@ -9193,7 +8872,6 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
     return Feel::expansion( WN, u, N );
 }
 
-
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
@@ -9628,7 +9306,11 @@ CRB<TruthModelType>::computeSquareDualNormOfPrimalResidual( parameter_type const
     sparse_matrix_ptrtype A;
     std::vector<vector_ptrtype> F;
 
-    boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
+    bool is_linear=M_model->isLinear();
+    if( is_linear )
+        boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
+    else
+        boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu, u );
 
     vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Un( M_backend->newVector( M_model->functionSpace() ) );
