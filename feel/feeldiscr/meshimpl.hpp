@@ -1788,11 +1788,114 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
 } // updateEntitiesCoDimensionOneGhostCell
 
+namespace detail
+{
+typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
+
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::false_ /**/ )
+{}
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::true_ /**/ )
+{
+    typedef typename ElementType::value_type value_type;
+    // get edges id and bary
+    //resultghost_edge_type idEdgesWithBary(ElementType::numLocalEdges/*this->numLocalEdges()*/,boost::make_tuple(0, false, std::vector<double>(ElementType::nRealDim) ));
+    idEdgesWithBary.resize(ElementType::numLocalEdges/*this->numLocalEdges()*/,boost::make_tuple(0, false, std::vector<double>(ElementType::nRealDim) ));
+    for ( size_type j = 0; j < ElementType::numLocalEdges/*this->numLocalEdges()*/; j++ )
+    {
+        auto const& theedge = theelt.edge( j );
+        idEdgesWithBary[j].template get<0>() = theedge.id();
+        idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
+
+        //compute edge barycenter
+        auto const& theGj = theedge.vertices();
+        typename ElementType::matrix_node_type/*Localization::matrix_node_type*/ v( theGj.size1(), 1 );
+        ublas::scalar_vector<value_type/*T*/> avg( theGj.size2(), /*T*/value_type( 1 ) );
+        value_type/*T*/ n_val = int( theGj.size2() );
+        for ( size_type i = 0; i < theGj.size1(); ++i )
+            v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg )/n_val;
+        auto baryEdge = ublas::column( v,0 );
+
+        // save edgebarycenter by components
+        for ( uint16_type comp = 0; comp<ElementType::nRealDim; ++comp )
+        {
+            idEdgesWithBary[j].template get<2>()[comp]=baryEdge[comp];
+        }
+    }
+    //return idEdgesWithBary;
+}
+
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+{}
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+{
+    typedef typename MeshType::element_type ElementType;
+    typedef typename MeshType::edge_type edge_type;
+    typedef typename ElementType::value_type value_type;
+    const rank_type idProc = theelt.processId();
+
+    //update edges data
+    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+    {
+        auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
+        const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
+        auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
+
+        //objective : find  edge_it (hence jBis in theelt ) (permutations would be necessary)
+        uint16_type jBis = invalid_uint16_type_value;
+        bool hasFind=false;
+        for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
+        {
+            auto const& theedgej2 = theelt.edge( j2 );
+            auto const& theGj2 = theedgej2.vertices();
+            //compute edge barycenter
+            typename ElementType::matrix_node_type v( theGj2.size1(), 1 );
+            ublas::scalar_vector<value_type> avg( theGj2.size2(), value_type( 1 ) );
+            value_type n_val = int( theGj2.size2() );
+            for ( size_type i = 0; i < theGj2.size1(); ++i )
+                v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg )/n_val;
+            auto baryEdge = ublas::column( v,0 );
+            // compare barycenter
+            bool find2=true;
+            for (uint16_type d=0;d<MeshType::nRealDim;++d)
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
+            if (find2) { hasFind=true;jBis=j2; }
+        }
+        CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
+
+        // get the good edge
+        auto edge_it = mesh./*this->*/edgeIterator( theelt.edge( jBis ).id() );
+        // update id edge in other partition
+        mesh./*this->*/edges().modify( edge_it, [&idProc,&idEdgeRecv]( edge_type& e )
+                              {
+                                  e.addNeighborPartitionId( idProc );
+                                  e.setIdInOtherPartitions( idProc, idEdgeRecv );
+                              } );
+
+        // maybe the edge is not really on boundary
+        if ( edge_it->isOnBoundary() && !edgeOnBoundaryRecv )
+            mesh./*this->*/edges().modify( edge_it, []( edge_type& e ){ e.setOnBoundary( false ); } );
+
+    } // for ( size_type j = 0; j < this->numLocalEdges(); j++ )
+
+
+}
+
+} // namespace detail
+
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
+    typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
     typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_face_type;
 
     DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
@@ -1901,7 +2004,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1943,6 +2046,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 }
             }
             //---------------------------//
+            // get edges id and bary
+            resultghost_edge_type idEdgesWithBary;
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1( theelt, idEdgesWithBary, mpl::bool_<element_type::nDim == 3>() );
+            //---------------------------//
             // get points id and nodes
             resultghost_point_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
@@ -1956,7 +2063,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
             }
             //---------------------------//
             // update container to ReSend
-            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idFacesWithBary);
+            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idEdgesWithBary,idFacesWithBary);
 
         } // for ( int k=0; k<nDataRecv; ++k )
     }
@@ -1972,7 +2079,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
 
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
@@ -1997,7 +2104,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         for ( int k=0; k<nDataRecv; ++k )
         {
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
-            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
+            auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
+            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
             auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
 
             //update faces data
@@ -2050,14 +2158,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                                           f.addNeighborPartitionId( idProc );
                                           f.setIdInOtherPartitions( idProc, idFaceRecv );
                                       } );
-                                      
+
                 // maybe the face is not really on boundary
                 if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
                     this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
+            // edges
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
 
+            // vertices
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
             {
                 auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
@@ -2086,7 +2197,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                                            p.addNeighborPartitionId( idProc );
                                            p.setIdInOtherPartitions( idProc, idPointRecv );
                                        } );
-                                       
 
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
