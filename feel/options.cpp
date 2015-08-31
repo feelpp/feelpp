@@ -657,6 +657,9 @@ exporter_options( std::string const& prefix )
         // matlab options
         ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
 
+        // spaces options (P0 to P1 smoothing)
+        ( prefixvm( prefix,"exporter.element-spaces" ).c_str(), Feel::po::value<std::string>()->default_value( "P0" ), "spaces for P0 fields export. Choices : P0 (=only P0 visu), P1 (=smoothed P0, only P1 visu), P0+P1 (P0 + smoothed P0 visu)" )
+
         //
         // ensightgold
         //
