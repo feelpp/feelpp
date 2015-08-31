@@ -393,7 +393,7 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         std::ostringstream oss;
         fs::path p = dbpath / fs::path(this->dbFilename());
         p.replace_extension("");
-        oss << p.string() << ".WN_" << i << ".h5";
+        oss << p.string() << ".0." << i << ".h5";
 
         temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
         temp.loadHDF5(oss.str());
@@ -402,7 +402,7 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         oss.str("");
         p = dbpath / fs::path(this->dbFilename());
         p.replace_extension("");
-        oss << p.string() << ".WNdu_" << i << ".h5";
+        oss << p.string() << ".1." << i << ".h5";
         temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
         temp.loadHDF5(oss.str());
         M_WNdu[i] = temp;
