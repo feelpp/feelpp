@@ -110,6 +110,16 @@ public :
      */
     bool loadDB();
 
+    /**
+     * save the database in hdf5 format
+     */
+    void saveHDF5DB();
+
+    /**
+     * load the database in hdf5 format
+     */
+    bool loadHDF5DB();
+
 
     boost::tuple<wn_type, wn_type> wn()
     {
@@ -157,15 +167,22 @@ template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveDB()
 {
-
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-
-    if ( ofs )
+    /* save in boost format */
+    if(soption(_name="crb.db.format").compare("boost") == 0)
     {
-        boost::archive::binary_oarchive oa( ofs );
-        // write class instance to archive
-        oa << *this;
-        // archive and stream closed when destructors are called
+        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+
+        if ( ofs )
+        {
+            boost::archive::binary_oarchive oa( ofs );
+            // write class instance to archive
+            oa << *this;
+            // archive and stream closed when destructors are called
+        }
+    }
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        this->saveHDF5DB();
     }
 }
 
@@ -184,23 +201,36 @@ CRBElementsDB<ModelType>::loadDB()
 
     fs::path db = this->lookForDB();
 
+    std::cout << "test1 done...\n";
     if ( db.empty() )
         return false;
 
+    std::cout << "test2 done...\n";
     if ( !fs::exists( db ) )
         return false;
 
-    //std::cout << "Loading " << db << "...\n";
-    fs::ifstream ifs( db );
-
-    if ( ifs )
+    std::cout << "test3 done...\n";
+    if(soption(_name="crb.db.format").compare("boost") == 0)
     {
-        boost::archive::binary_iarchive ia( ifs );
-        // write class instance to archive
-        ia >> *this;
-        //std::cout << "Loading " << db << " done...\n";
+        //std::cout << "Loading " << db << "...\n";
+        fs::ifstream ifs( db );
+
+        if ( ifs )
+        {
+            boost::archive::binary_iarchive ia( ifs );
+            // write class instance to archive
+            ia >> *this;
+            //std::cout << "Loading " << db << " done...\n";
+            this->setIsLoaded( true );
+            // archive and stream closed when destructors are called
+            return true;
+        }
+    }
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        this->loadHDF5DB();    
+        std::cout << "Loading " << db << " done...\n";
         this->setIsLoaded( true );
-        // archive and stream closed when destructors are called
         return true;
     }
 
@@ -227,34 +257,37 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
 
     int size = M_WN.size();
 
-    if(soption(_name="crb.db.format").compare("boost") == 0)
+    LOG( INFO ) << "saving Elements DB";
+    for(int i=0; i<size; i++)
+        ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
+    for(int i=0; i<size; i++)
+        ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+    LOG( INFO ) << "Elements DB saved";
+}
+
+template<typename ModelType>
+void
+CRBElementsDB<ModelType>::saveHDF5DB()
+{
+    int size = M_WN.size();
+
+    LOG( INFO ) << "saving HDF5 Elements DB";
+    for(int i=0; i<size; i++)
     {
-        LOG( INFO ) << "saving Elements DB";
-        for(int i=0; i<size; i++)
-            ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-        for(int i=0; i<size; i++)
-            ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-        LOG( INFO ) << "Elements DB saved";
+        std::ostringstream oss;
+        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".0." << i << ".h5";
+        LOG( INFO ) << oss.str();
+        M_WN[i].saveHDF5(oss.str());
+
+        oss.str("");
+        p = this->dbLocalPath() / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".1." << i << ".h5";
+        M_WNdu[i].saveHDF5(oss.str());
     }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        LOG( INFO ) << "saving Elements DB in hdf5";
-        for(int i=0; i<size; i++)
-        {
-            std::ostringstream oss;
-            oss << this->dbLocalPath().string() << "/" << "WN_" << i << ".db";
-            LOG( INFO ) << oss.str();
-            M_WN[i].saveHDF5(oss.str());
-            oss.str("");
-            oss << this->dbLocalPath().string() << "/" << "WNdu_" << i << ".db";
-            M_WNdu[i].saveHDF5(oss.str());
-        }
-        LOG( INFO ) << "Elements DB saved in hdf5";
-    }
-    else
-    {
-        LOG( ERROR ) << "Unknown CRB db format (" << soption(_name="crb.db.format") << "): Cannot save database";
-    }
+    LOG( INFO ) << "Elements DB saved in hdf5";
 }
 
 template<typename ModelType>
@@ -288,50 +321,94 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
 
     element_type temp = Xh->element();
 
-    if(soption(_name="crb.db.format").compare("boost") == 0)
+    LOG( INFO ) << "loading Elements DB (boost)";
+    for( int i = 0 ; i < M_N ; i++ )
     {
-        LOG( INFO ) << "loading Elements DB (boost)";
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WN[i] = temp;
-        }
-
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WNdu[i] = temp;
-        }
-        LOG( INFO ) << "Elements DB loaded";
+        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        ar & BOOST_SERIALIZATION_NVP( temp );
+        M_WN[i] = temp;
     }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+
+    for( int i = 0 ; i < M_N ; i++ )
     {
-        LOG( INFO ) << "loading Elements DB (hdf5)";
-        for(int i=0; i<M_N; i++)
-        {
-            std::ostringstream oss;
-            oss << this->dbLocalPath().string() << "/" << "WN_" << i << ".db";
+        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        ar & BOOST_SERIALIZATION_NVP( temp );
+        M_WNdu[i] = temp;
+    }
+    LOG( INFO ) << "Elements DB loaded";
+}
 
-            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-            temp.loadHDF5(oss.str());
-            M_WN[i] = temp;
+template<typename ModelType>
+bool
+CRBElementsDB<ModelType>::loadHDF5DB()
+{
+    LOG( INFO ) << " loading HDF5 Elements DB ... ";
 
-            oss.str("");
-            oss << this->dbLocalPath().string() << "/" << "WNdu_" << i << ".db";
-            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-            temp.loadHDF5(oss.str());
-            M_WNdu[i] = temp;
-        }
-        LOG( INFO ) << "Elements DB loaded";
+    M_WN.resize( M_N );
+    M_WNdu.resize( M_N );
+
+    mesh_ptrtype mesh;
+    space_ptrtype Xh;
+
+    if ( !M_model )
+    {
+        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+        mesh = mesh_type::New();
+        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+        Xh = space_type::New( mesh );
+        LOG(INFO) << "[load] loading fdb files done.\n";
     }
     else
     {
-        LOG( ERROR ) << "Unknown CRB db format (" << soption(_name="crb.db.format") << "): Cannot load database";
+        LOG(INFO) << "[load] get mesh/Xh from model...\n";
+        mesh = M_model->functionSpace()->mesh();
+        Xh = M_model->functionSpace();
+        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
     }
-}
 
+    element_type temp = Xh->element();
+
+    /* If we are loading a hdf5 database */
+    /* We passed a dummy databased in the load archive */
+    /* so we have to find the right path where they are located */
+
+    /* build the filename of db 0 */
+    std::ostringstream oss;
+    fs::path dbpath = this->dbLocalPath();
+    fs::path p = dbpath / fs::path(this->dbFilename());
+    p.replace_extension("");
+    oss << p.string() << ".0.0.h5";
+
+    std::cout << oss.str() << std::endl;
+    /* If the path does not exist then the db are in the system path */
+    if ( ! fs::exists( oss.str() ) )
+    {
+        dbpath = this->dbSystemPath();
+    }
+    std::cout << dbpath.string() << std::endl;
+
+    LOG( INFO ) << "loading Elements DB (hdf5)";
+    for(int i=0; i<M_N; i++)
+    {
+        std::ostringstream oss;
+        fs::path p = dbpath / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".WN_" << i << ".h5";
+
+        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        temp.loadHDF5(oss.str());
+        M_WN[i] = temp;
+
+        oss.str("");
+        p = dbpath / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".WNdu_" << i << ".h5";
+        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        temp.loadHDF5(oss.str());
+        M_WNdu[i] = temp;
+    }
+    LOG( INFO ) << "Elements DB loaded";
+}
 
 
 
