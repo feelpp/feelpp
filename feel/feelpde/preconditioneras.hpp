@@ -110,7 +110,8 @@ public:
     Type type() const { return M_type; }
     void setType( std::string t );
 
-    void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
+    //void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
+    void update( sparse_matrix_ptrtype A, element_coef_type mu );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -218,27 +219,24 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     M_s = backend()->newVector(M_Qh3);
     M_y = backend()->newVector(M_Qh3);
     // Block 11.2
-    M_z = backend()->newVector(M_Qh3);
-    M_t = backend()->newVector(M_Qh3);
+    M_z = backend()->newVector(M_Qh);
+    M_t = backend()->newVector(M_Qh);
 
     // Create the interpolation and keep only the matrix
     /// ** That is _really_ long !
-    auto pi_curl = opInterpolation(_domainSpace=M_Qh3, _imageSpace=M_Vh);
-    M_P = pi_curl->matPtr();
+    auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+    M_P = pi_curl.matPtr();
     M_Pt= backend()->newMatrix(M_Qh3,M_Vh);
     M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
 
-    // TODO: create M_C and M_Ct
     M_C = backend()->newMatrix(M_Vh,M_Qh3);
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
-#if 1 //Temporary
-    M_C = M_P;
-    M_Ct = M_Pt;
-#else //Waiting for Grad() operator
-    auto Igrad  = Grad( _domainSpace=M_Qh );
-    M_C = Igrad->matPtr();
+
+    auto Igrad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+    M_C = Igrad.matPtr();
+    std::cout << "size of M_C = " << M_C->size1() << ", " << M_C->size2() << std::endl;
+    std::cout << "size of M_P = " << M_P->size1() << ", " << M_P->size2() << std::endl;
     M_C->transpose(M_Ct,MATRIX_TRANSPOSE_UNASSEMBLED);
-#endif
 
     // Create vector of indices to create subvectors/matrices
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 ); // Vh indices in Xh
@@ -277,7 +275,7 @@ template < typename space_type, typename coef_space_type >
 //template< typename Expr_convection, typename Expr_bc >
 void
 PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
-                                                      sparse_matrix_ptrtype L,
+                                                      //sparse_matrix_ptrtype L,
                                                       element_coef_type mu )
 {
     tic();
@@ -338,7 +336,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
      *              + P (\bar L + g \bar Q) P^t (=B)
      *              + C (L^-1) C^T (=C)
      */
-#if 1
+
     tic();
     U = X;
     U.close();
@@ -391,43 +389,11 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // B = P*y
         M_P->multVector(M_y,B);
 
-        // WARNING : C and Ct are not yet available
-
         // t = C^t r
         M_Ct->multVector(M_r,M_t);
 
-        // 14.b : bar(L) z = t
-        //M_lOp->applyInverse(M_t,M_z);
-
-        auto z1 = M_z->createSubVector(M_Qh3_indices[0], true);
-        auto z2 = M_z->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
-        auto z3 = M_z->createSubVector(M_Qh3_indices[2], true);
-#endif
-
-        auto t1 = M_t->createSubVector(M_Qh3_indices[0], true);
-        auto t2 = M_t->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
-        auto t3 = M_t->createSubVector(M_Qh3_indices[2], true);
-#endif
-        /*
-         * hat(L) is a (Qh,Qh) matrix
-         * [[ hat(L), 0  ,     0   ],    [ z1 ]    [ t1 ]
-         * [   0,   hat(L),    0   ], *  [ z2 ] =  [ t2 ]
-         * [   0,     0   , hat(L) ]]    [ z3 ]    [ t3 ]
-         */
-        M_lOp->applyInverse(t1,z1);
-        M_lOp->applyInverse(t2,z2);
-#if FM_DIM == 3
-        M_lOp->applyInverse(t3,z3);
-#endif
-
-        // z = [ z1, z2, z3 ]
-        M_z->updateSubVector(z1, M_Qh3_indices[0]);
-        M_z->updateSubVector(z2, M_Qh3_indices[1]);
-#if FM_DIM == 3
-        M_z->updateSubVector(z3, M_Qh3_indices[2]);
-#endif
+        // 14.b : hat(L) z = t
+        M_lOp->applyInverse(M_t,M_z);
         M_z->close();
 
         // C = C z
@@ -460,7 +426,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
     Y=*M_uout;
     Y.close();
     toc("PreconditionerAS::applyInverse" );
-#endif
+
     return 0;
 }
 
