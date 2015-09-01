@@ -206,7 +206,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
     M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
     M_L(M_backend->newMatrix(M_Qh,M_Qh)),
     M_er( M_Mh, "er" ),
-    M_k(0.),
+    M_k(doption("parameters.k")),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
     u(M_Vh, "u"),
