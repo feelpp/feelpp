@@ -880,7 +880,6 @@ public:
                 // If user asks for smoothed P0 (P1) visu [exporter.element-spaces options contains P1]
                 if ( soption(_name="exporter.element-spaces").find( "P1" ) != std::string::npos )
                 {
-                    std::cout << "scalar" << std::endl;
                     if ( !M_ts->M_scalar_p1 )
                     {
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
@@ -948,7 +947,6 @@ public:
                 // If user asks for smoothed P0 (P1) visu [exporter.element-spaces options contains P1]
                 if ( soption(_name="exporter.element-spaces").find( "P1" ) != std::string::npos )
                 {
-                    std::cout << "vector" << std::endl;
                     if ( !M_ts->M_vector_p1 )
                     {
                         M_ts->M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
