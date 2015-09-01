@@ -106,7 +106,7 @@ endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
-SET(FEELPP_DEFAULT_TEST_TIMEOUT "30")
+SET(FEELPP_DEFAULT_TEST_TIMEOUT "60")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
