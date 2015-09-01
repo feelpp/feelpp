@@ -54,6 +54,13 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
 
 
     typedef One<CType> this_type;
@@ -78,9 +85,7 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;

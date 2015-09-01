@@ -177,6 +177,13 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        template<typename Func>                                         \
+            static const bool has_test_basis = false;                   \
+        template<typename Func>                                         \
+            static const bool has_trial_basis = false;                  \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
+                                                                        \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
         typedef value_type evaluate_type;                               \

@@ -95,9 +95,7 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -290,9 +288,7 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
