@@ -664,7 +664,8 @@ public:
     interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
-        typedef typename std::decay_t<ExprType>::tensor_expr_type::expression_type::expression_type::fe_type fe_expr_type;
+        using expr_basis_t = typename std::decay_t<ExprType>::expression_type::test_basis;
+
         Ihloc.setZero();
         auto g=expr.geom();
 
@@ -679,13 +680,13 @@ public:
             for ( int l = 0; l < nLocalDof; ++l )
             {
                 int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
                 {
-                    int ncomp= ( fe_expr_type::is_product?fe_expr_type::nComponents1:1 );
+                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
                     
                     for ( uint16_type c = 0; c < ncomp; ++c )
                     {
-                        uint16_type I = fe_expr_type::nLocalDof*c + i;
+                        uint16_type I = expr_basis_t::nLocalDof*c + i;
 
                         for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         {
