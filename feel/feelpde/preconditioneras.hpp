@@ -221,22 +221,22 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // Block 11.2
     M_z = backend()->newVector(M_Qh);
     M_t = backend()->newVector(M_Qh);
-
+    
     // Create the interpolation and keep only the matrix
-    /// ** That is _really_ long !
     auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
-    M_P = pi_curl.matPtr();
-    M_Pt= backend()->newMatrix(M_Qh3,M_Vh);
-    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
+    auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
-    M_C = backend()->newMatrix(M_Vh,M_Qh3);
+    M_P = pi_curl.matPtr();
+    M_C = Igrad.matPtr();
+    
+    M_Pt = backend()->newMatrix(M_Qh3,M_Vh);
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
 
-    auto Igrad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
-    M_C = Igrad.matPtr();
-    std::cout << "size of M_C = " << M_C->size1() << ", " << M_C->size2() << std::endl;
-    std::cout << "size of M_P = " << M_P->size1() << ", " << M_P->size2() << std::endl;
+    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
     M_C->transpose(M_Ct,MATRIX_TRANSPOSE_UNASSEMBLED);
+
+    LOG(INFO) << "size of M_C = " << M_C->size1() << ", " << M_C->size2() << std::endl;
+    LOG(INFO) << "size of M_P = " << M_P->size1() << ", " << M_P->size2() << std::endl;
 
     // Create vector of indices to create subvectors/matrices
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 ); // Vh indices in Xh
@@ -280,11 +280,13 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
 {
     tic();
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));
+    
+    map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
 
     if(this->type() == AS)
     {
         // A = Pm
-        //M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
+        // M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
         backend()->diag(Pm,M_diagPm);
 
         /*
@@ -299,19 +301,31 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
         auto u = M_Qh->element("u");
 
         auto f11_1 = form2(M_Qh, M_Qh);
+        auto rhs_11_1 = form1(M_Qh);
         f11_1 = integrate(_range=elements(M_Qh->mesh()),
                           _expr=1./idv(mu)*inner(grad(u),gradt(u))
                           + M_g*idv(M_er)*inner(id(u),idt(u)) );
+        // TODO : boundary conditions ?
+        for(auto const & it : m_dirichlet_u )
+        {
+            LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_1\n";
+            f11_1 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
+        }
         // Operator hat(L) + g Q
         M_lgqOp = op( f11_1.matrixPtr(), "blockms.11.1");
-        // TODO : boundary conditions ?
 
         auto f11_2 = form2(M_Qh, M_Qh); // hat(L)
+        // TODO: do not rebuild the matrix - use f11_1
         f11_2 = integrate(_range=elements(M_Qh->mesh()),
                           _expr=1./idv(mu)*inner(grad(u),gradt(u)) );
+        // TODO : boundary conditions ?
+        for(auto const & it : m_dirichlet_u )
+        {
+            LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_2\n";
+            f11_2 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
+        }
         // Operator hat(L)
         M_lOp = op( f11_2.matrixPtr(), "blockms.11.2" );
-        // TODO : boundary conditions ?
     }
     else if(this->type() == SIMPLE)
     {
@@ -350,9 +364,10 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         *M_r = U;
         M_r->close();
 
-        // A = diag(Pm)^-1*r
+        // étape A
+        // diag(Pm)^-1*r
         //M_diagPm->pointwiseDivide(*M_r,*A);
-        A->pointwiseMult(*M_diagPm,*M_r);
+        A->pointwiseDivide(*M_r,*M_diagPm);
 
         // s = P^t r
         M_Pt->multVector(M_r,M_s);
@@ -386,7 +401,8 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_y->updateSubVector(y3, M_Qh3_indices[2]);
 #endif
         M_y->close();
-        // B = P*y
+        // étape B 
+        // P*y
         M_P->multVector(M_y,B);
 
         // t = C^t r
@@ -396,7 +412,8 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_lOp->applyInverse(M_t,M_z);
         M_z->close();
 
-        // C = C z
+        // étape C 
+        // M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
 
@@ -425,7 +442,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
     tic();
     Y=*M_uout;
     Y.close();
-    toc("PreconditionerAS::applyInverse" );
+    toc("PreconditionerAS::applyInverse", FLAGS_v>0 );
 
     return 0;
 }
@@ -454,7 +471,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
                                    ( type, *, "AS")
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( bc, *, (BoundaryConditions ()) )
-                                   ( h, (double), 0.0 ) // for k ...
+                                   ( h, (double), doption("parameters.k") ) // for k ...
                                  )
                                )
 {
