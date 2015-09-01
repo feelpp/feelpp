@@ -11,6 +11,12 @@ fail_on_error()
 
 echo "This script will build a ParaView version for OS X"
 echo "This version will be compatible with Catalyst and ParaView plugins"
+echo "You need several dependencies for ParaView, check http://www.paraview.org/Wiki/ParaView:Build_And_Install for more info"
+echo ""
+echo "For example, to install the dependencies with homebrew:"
+echo "brew install openmpi"
+echo "brew install --only-dependencies paraview"
+echo ""
 
 if [[ ! -d "./ParaView-v4.3.1-source" ]]; then
     tar zxvf ./ParaView-v4.3.1-source.tar.gz || fail_on_error "Please download ParaView from http://www.paraview.org/download/"
