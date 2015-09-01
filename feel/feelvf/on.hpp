@@ -175,6 +175,14 @@ public:
         static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = typename element_type::functionspace_type::basis_type;
+
+
     static const uint16_type nComponents = element_type::nComponents;
 
     //@}

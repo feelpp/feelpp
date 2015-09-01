@@ -127,6 +127,12 @@ public:
     {
         static const bool result = Expr::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = Expr::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = Expr::template has_trial_basis<Func>;
+    using test_basis = typename Expr::test_basis;
+    using trial_basis = typename Expr::trial_basis;
 
     static const size_type iDim = boost::tuples::template element<0, Elements>::type::value;
     //@}

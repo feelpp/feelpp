@@ -62,6 +62,14 @@ public:
         static const bool result = false;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
+
     typedef GiNaC::ex expression_type;
     typedef GinacEx<Order> this_type;
     typedef double value_type;
@@ -164,13 +172,11 @@ public:
         //typedef typename expression_type::value_type value_type;
         typedef double value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-    // change 0 into rank
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
+        using key_type = key_t<Geo_t>;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        // change 0 into rank
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
                               mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
                               typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<1> >,
                                                 mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
