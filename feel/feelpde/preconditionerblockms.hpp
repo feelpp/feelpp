@@ -255,7 +255,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
             M_pcAs = blockas(_space=M_Xh,
                              _space2=M_Mh,
                              _matrix=M_11,
-                             _bc = M_bcFlags);
+                             _bc = M_bcFlags//,_type=soption("blockms.11.as-type")
+                             );
         }
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
