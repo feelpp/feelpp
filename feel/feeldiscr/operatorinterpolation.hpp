@@ -702,9 +702,7 @@ struct PrecomputeDomainBasisFunction
         M_gmc->update( elt );
         M_fec->update( M_gmc );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
-        map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
-        t_expr_type texpr( M_expr, mapgmc, mapfec );
+        t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
 
         //IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
@@ -735,14 +733,9 @@ private :
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
         map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
         t_expr_type texpr( M_expr, mapgmc, mapfec );
-        constexpr bool has_grad =  vm::has_grad<ExprType::context>::value;
         using shape = typename t_expr_type::shape;
-        if ( has_grad ) 
-        {
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::M*fe_type::nLocalDof, texpr.geom()->nPoints() );
-        }
-        else
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
+                                         texpr.geom()->nPoints() );
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
     void init(mpl::false_ )
@@ -767,13 +760,9 @@ private :
         map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
         t_expr_type texpr( M_expr, mapgmc, mapfec );
 
-        constexpr bool has_grad =  vm::has_grad<ExprType::context>::value;
         using shape = typename t_expr_type::shape;
-        if ( has_grad ) 
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents1*shape::M*fe_type::nLocalDof, texpr.geom()->nPoints() );
-        else
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
-        
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
+                                         texpr.geom()->nPoints() );
         newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
     }
 
@@ -1226,7 +1215,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
                 if ( domains_eid_set.size() == 0 )
                     continue;
-                auto const& s = imagedof->localToGlobalSigns( theImageElt.id() );
+
                 for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
                     int nc = (image_basis_type::is_product)? image_basis_type::nComponents : 1;
@@ -1257,6 +1246,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                             for ( auto const& domain_eid : domains_eid_set )
                             {
+                                auto const& s = domaindof->localToGlobalSigns( domain_eid );
 
                                 const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
 
@@ -1283,8 +1273,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         }
                                         else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                         {
-                                            const value_type val = IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
-                                                                          ilocprime );
+                                            
+                                            const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
+                                                                                  ilocprime );
                                             this->matPtr()->set( i,j,val );
                                         }
                                     }
