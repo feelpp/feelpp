@@ -109,6 +109,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT1::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
+    using test_basis = typename ExprT1::test_basis;
+    using trial_basis = typename ExprT1::trial_basis;
 
     typedef UnaryFunctor<typename ExprT1::value_type> super;
     typedef typename super::functordomain_type functordomain_type;

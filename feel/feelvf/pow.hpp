@@ -59,6 +59,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef Pow<ExprT1, ExprT2> this_type;
     typedef ExprT1 expression_1_type;
@@ -114,8 +120,8 @@ public:
 
 
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        using gmc_type = gmc_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
         typedef typename l_type::shape shape;
 
         typedef typename Eigen::Matrix<value_type,shape::M,shape::N> loc_type;

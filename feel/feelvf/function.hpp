@@ -67,6 +67,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Funct>
+    static const bool has_test_basis = false;
+    template<typename Funct>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef Func expression_type;
     typedef Function<Func> this_type;
