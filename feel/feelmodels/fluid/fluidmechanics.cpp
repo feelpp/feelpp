@@ -138,7 +138,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     M_bcFluidOutlets = this->modelProperties().boundaryConditions().getScalarFields( "fluid", "outlet" );
     for( auto const& d : M_bcFluidOutlets )
     {
-        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "slip", marker(d), "alemesh_bc" );
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
 
         std::string typeOutlet = soption(_name="fluid-outlet.type", _prefix=this->prefix());//"free";
