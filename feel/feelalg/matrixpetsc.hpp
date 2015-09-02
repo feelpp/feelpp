@@ -486,7 +486,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     /**
      * update a block matrix
@@ -621,7 +621,8 @@ public :
     void zeroRows( std::vector<int> const& rows,
                    Vector<value_type> const& values,
                    Vector<value_type>& rhs,
-                   Context const& on_context );
+                   Context const& on_context,
+                   value_type value_on_diagonal );
 
     real_type energy( Vector<value_type> const& __v,
                       Vector<value_type> const& __u,

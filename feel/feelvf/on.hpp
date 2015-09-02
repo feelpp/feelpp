@@ -190,12 +190,14 @@ public:
     /** @name Constructors, destructor
      */
     //@{
+    IntegratorOnExpr() = delete;
 
     IntegratorOnExpr( ElementRange const& __elts,
                       element_type const& __u,
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
-                      size_type __on )
+                      size_type __on,
+                      double value_on_diag )
         :
         M_elts(),
         M_eltbegin( __elts.template get<1>() ),
@@ -203,7 +205,8 @@ public:
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
-        M_on_strategy( __on )
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
     {
         M_elts.push_back( __elts );
     }
@@ -211,13 +214,15 @@ public:
                       element_type const& __u,
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
-                      size_type __on )
+                      size_type __on,
+                      double value_on_diag )
         :
         M_elts( __elts ),
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
-        M_on_strategy( __on )
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
     {
         if ( __elts.size() )
         {
@@ -225,19 +230,9 @@ public:
             M_eltend = __elts.begin()->template get<2>();
         }
     }
-    IntegratorOnExpr( IntegratorOnExpr const& ioe )
-        :
-        M_elts( ioe.M_elts ),
-        M_eltbegin( ioe.M_eltbegin ),
-        M_eltend( ioe.M_eltend ),
-        M_u( ioe.M_u ),
-        M_rhs( ioe.M_rhs ),
-        M_expr( ioe.M_expr ),
-        M_on_strategy( ioe.M_on_strategy )
-    {
-    }
-
-    ~IntegratorOnExpr() {}
+    IntegratorOnExpr( IntegratorOnExpr const& ioe ) = default;
+    IntegratorOnExpr( IntegratorOnExpr && ioe ) = default;
+    ~IntegratorOnExpr() = default;
 
     //@}
 
@@ -319,6 +314,7 @@ private:
     mutable rhs_element_type M_rhs;
     expression_type M_expr;
     Context M_on_strategy;
+    double M_value_on_diagonal { 1.0 };
 };
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
@@ -583,7 +579,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
 }
 
@@ -979,6 +975,7 @@ BOOST_PARAMETER_FUNCTION(
       ( prefix,   ( std::string ), "" )
       ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
       ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
+      ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
         )
     )
 {
@@ -986,7 +983,8 @@ BOOST_PARAMETER_FUNCTION(
                                                             element,
                                                             Feel::vf::detail::getRhsVector(rhs),
                                                             expr,
-                                                            size_type(ContextOnMap[type]) );
+                                                            size_type(ContextOnMap[type]),
+                                                            value_on_diagonal );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";

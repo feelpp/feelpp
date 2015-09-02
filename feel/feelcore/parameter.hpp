@@ -113,6 +113,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( solver )
     BOOST_PARAMETER_NAME( spectrum )
     BOOST_PARAMETER_NAME( transform )
+    BOOST_PARAMETER_NAME( value_on_diagonal )
 // parameter for exporter
     BOOST_PARAMETER_NAME( geo )
     BOOST_PARAMETER_NAME( fileset )
