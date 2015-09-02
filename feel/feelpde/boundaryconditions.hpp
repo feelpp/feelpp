@@ -110,9 +110,26 @@ class BoundaryConditions
     void load(const std::string &filename);
 
     void saveMD(std::ostream &os);
+
+    std::pair<bool,int> iparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+    std::pair<bool,double> dparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+    std::pair<bool,std::string> sparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
      */
+    template<int Order=2> map_scalar_field<Order> getScalarFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_scalar_field<Order> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getScalarFields<Order>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
+        }
+        return std::move(m_f);
+    }
     template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type ) const
     {
         using namespace Feel::vf;
@@ -131,6 +148,19 @@ class BoundaryConditions
     /**
      * retrieve scalar field pair \p field with boundary conditions of type \p type
      */
+    template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_scalar_fields<Order> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFieldsList = getScalarFieldsList<Order>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curFieldList : curFieldsList )
+                for ( auto const& curField : curFieldList.second )
+                    m_f[curFieldList.first].push_back( std::move(curField) );
+        }
+        return std::move(m_f);
+    }
     template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::string && field, std::string && type ) const
         {
             using namespace Feel::vf;
@@ -149,6 +179,18 @@ class BoundaryConditions
             }
             return std::move(m_f);
         }
+    template<int d> map_vector_field<d> getVectorFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_vector_field<d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getVectorFields<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
+        }
+        return std::move(m_f);
+    }
     template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
@@ -161,6 +203,19 @@ class BoundaryConditions
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
             m_f[std::get<0>(f)] = expr<d,1,2>( f.expression() );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_vector_fields<d> getVectorFieldsList( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_vector_fields<d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFieldsList = getVectorFieldsList<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curFieldList : curFieldsList )
+                for ( auto const& curField : curFieldList.second )
+                    m_f[curFieldList.first].push_back( std::move(curField) );
         }
         return std::move(m_f);
     }
@@ -181,6 +236,18 @@ class BoundaryConditions
         }
         return std::move(m_f);
     }
+    template<int d> map_matrix_field<d,d> getMatrixFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_matrix_field<d,d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getMatrixFields<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
+        }
+        return std::move(m_f);
+    }
     template<int d> map_matrix_field<d,d> getMatrixFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
@@ -198,6 +265,10 @@ class BoundaryConditions
     }
   private:
     void setup();
+
+    template <typename CastType>
+    std::pair<bool,CastType> param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const;
+
   private:
 
     std::string M_prefix;
