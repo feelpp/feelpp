@@ -209,10 +209,6 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"do_export_meshdisplacementoninterface").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshDisplacementOnInterface")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
 
-        (prefixvm(prefix,"fluid-outlet.number").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of fluid outlet")
-        (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
-        (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
-
         (prefixvm(prefix,"periodicity.translate-x").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-x")
         (prefixvm(prefix,"periodicity.translate-y").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-y")
         (prefixvm(prefix,"periodicity.translate-z").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-z")
@@ -223,13 +219,20 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         ;
 
+
+    fluidOptions.add_options()
+        //(prefixvm(prefix,"fluid-outlet.number").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of fluid outlet")
+        (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
+        (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
+        ;
+#if 0
         for (uint16_type nBFO=0;nBFO<=5;++nBFO)
             fluidOptions.add_options()
                 ((boost::format("%1%fluid-outlet.windkessel.Rd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
                 ((boost::format("%1%fluid-outlet.windkessel.Rp%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
                 ((boost::format("%1%fluid-outlet.windkessel.Cd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
                 ;
-
+#endif
     return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( alemesh_options( prefix ) );
 }
 
