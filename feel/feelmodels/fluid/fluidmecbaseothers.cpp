@@ -138,21 +138,33 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->densityViscosityModel()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoALEMeshBC();
-    if ( M_fluidOutletsBCType.size()>0 )
+           << this->getInfoNeumannBC();
+    for ( std::string typeOutlet : std::vector<std::string>({"free","windkessel"}) )
     {
-        for ( auto itBC = M_fluidOutletsBCType.begin(), enBC = M_fluidOutletsBCType.end() ; itBC!=enBC ; ++itBC )
+        if ( this->hasFluidOutlet(typeOutlet) )
         {
-            *_ostr << "\n       -- fluid outlets (" << itBC->first << " with " << this->nFluidOutlet() << " outlets) : ";
-            int cptMark = 0;
-            for ( auto itMark = itBC->second.begin(), enMark = itBC->second.end() ; itMark!= enMark ; ++itMark, ++cptMark)
+            *_ostr << "\n       -- fluid outlets ["<<typeOutlet<<"] : ";
+            bool hasDoneFirstElt = false;
+            for (auto const& outletbc : M_fluidOutletsBCType )
             {
-                if ( cptMark > 0) *_ostr << " , ";
-                *_ostr << *itMark;
+                if ( hasDoneFirstElt) *_ostr << " , ";
+                *_ostr << std::get<0>( outletbc );
+                if ( typeOutlet == "windkessel" )
+                {
+                    auto const& windkesselParam = std::get<2>( outletbc );
+                    *_ostr << " (" << std::get<0>(windkesselParam)
+                           << ",Rd=" << std::get<1>(windkesselParam)
+                           << ",Rp=" << std::get<2>(windkesselParam)
+                           << ",Cd=" << std::get<3>(windkesselParam) << ")";
+                }
+                hasDoneFirstElt=true;
             }
         }
     }
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if ( this->isMoveDomain() )
+    *_ostr << this->getInfoALEMeshBC();
+#endif
     *_ostr << "\n   Space Discretization"
            << "\n     -- msh file name   : " << this->mshfileStr()
            << "\n     -- nb elt in mesh  : " << M_mesh->numGlobalElements()//numElements()
@@ -723,10 +735,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         ++cptBlock;
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if (this->hasFluidOutletWindkesselImplicit() )
     {
-        for (int k=0;k<M_nFluidOutlet;++k)
+        for (int k=0;k<this->nFluidOutlet();++k)
         {
+            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                continue;
+
             if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
             {
                 M_fluidOutletWindkesselPressureDistal[k] = M_blockVectorSolution(cptBlock)->operator()(0);
@@ -820,25 +835,45 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     this->timerTool("TimeStepping").start();
 
     // windkessel outlet
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel")
+    if (this->hasFluidOutletWindkessel() )
     {
         bool doWriteOnDisk = this->worldComm().isMasterRank();
         // warning, in the implicit case, not all process have info
         // only process which have a face on outlet
-        if (this->fluidOutletWindkesselCoupling() == "implicit" )
+        if ( this->hasFluidOutletWindkesselImplicit() )
             doWriteOnDisk = (bool)(M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0);
 
-        for (int k=0;k<M_nFluidOutlet;++k)
+        if ( doWriteOnDisk )
         {
-            if ( doWriteOnDisk )
-            {
-                std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),(boost::format("bloodFlowOutlet.windkessel%1%.data") %k ).str());
-                std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
-                file << M_bdf_fluid->iteration() << " " << this->time() << " " << M_fluidOutletWindkesselPressureDistal[k] << " " << M_fluidOutletWindkesselPressureProximal[k] << "\n";
-                file.close();
-            }
+            std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+            std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
+            file.precision( 8 );
+            file.setf( std::ios::scientific );
+            file.width( 15 );
+            file.setf( std::ios::left );
+            file << M_bdf_fluid->iteration();
+            file.width( 20 );
+            file << this->time();
 
-            const int sizeOld = M_fluidOutletWindkesselPressureDistal_old[k].size();
+            for (int k=0;k<this->nFluidOutlet();++k)
+            {
+                if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
+
+                file.width( 20 );
+                file << M_fluidOutletWindkesselPressureDistal[k];
+                file.width( 20 );
+                file << M_fluidOutletWindkesselPressureProximal[k];
+            }
+            file << "\n";
+            file.close();
+        }
+
+        // update to next timestep
+        for (int k=0;k<this->nFluidOutlet();++k)
+        {
+            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
+
+            const int sizeOld = M_fluidOutletWindkesselPressureDistal_old.find(k)->second.size();
             for (int l=0;l<sizeOld-1;++l)
                 M_fluidOutletWindkesselPressureDistal_old[k][sizeOld-l-1] = M_fluidOutletWindkesselPressureDistal_old[k][sizeOld-l-2];
             M_fluidOutletWindkesselPressureDistal_old[k][0] = M_fluidOutletWindkesselPressureDistal[k];
@@ -874,6 +909,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
             M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
         }
     }
+
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -1234,7 +1270,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     //-------------------------------------------------------------------//
     // move winkessel submesh
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
         // revert on reference mesh
         M_fluidOutletWindkesselMeshDisp->scale(-1);
@@ -1602,8 +1638,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
-        nBlock += this->nFluidOutlet();
+    if ( this->hasFluidOutletWindkesselImplicit() )
+        nBlock += this->nFluidOutletWindkesselImplicit();
     return nBlock;
 }
 
@@ -1653,7 +1689,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
         BlocksStencilPattern patCouplingFirstCol(2,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingFirstCol(0,0) = size_type(Pattern::COUPLED);
@@ -1667,9 +1703,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
         for (int k=0;k<this->nFluidOutlet();++k)
         {
+            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                continue;
+            std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
             // first column
-            auto rangeFirstCol1 = stencilRange<0,0>( markedelements(this->fluidOutletWindkesselMesh(),this->fluidOutletMarkerName(k)) );
-            auto rangeFirstCol2 = stencilRange<1,0>( markedelements(this->fluidOutletWindkesselMesh(),this->fluidOutletMarkerName(k)) );
+            auto rangeFirstCol1 = stencilRange<0,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
+            auto rangeFirstCol2 = stencilRange<1,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
             myblockGraph(indexBlock+k,0) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=this->functionSpace(),
                                                    _pattern_block=patCouplingFirstCol,
                                                    _range=stencilRangeMap(rangeFirstCol1,rangeFirstCol2),
@@ -1690,7 +1729,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                               _pattern_block=patCouplingDiag,
                                                               _diag_is_nonzero=false,_close=false)->graph();
         }
-        indexBlock += this->nFluidOutlet();
+        indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
 
     myblockGraph.close();
@@ -1724,7 +1763,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
 
     indexsplit_ptrtype res = this->functionSpace()->dofIndexSplit();
 
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
         int procMasterWindkessel=0;bool findProc=false;
         for (int proc=0;proc<this->worldComm().globalSize() && !findProc;++proc)
@@ -1741,14 +1780,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
             {
                 const size_type splitSize = (*res)[k].size();
                 for ( size_type i=0; i<splitSize; ++i)
-                    (*res)[k][i]+=2*this->nFluidOutlet();
+                    (*res)[k][i]+=2*this->nFluidOutletWindkesselImplicit();//nFluidOutlet();
             }
         }
 
         if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
         {
             const size_type velocitySplitSize = (*res)[0].size();
-            (*res)[0].resize( velocitySplitSize + 2*this->nFluidOutlet(), 0 );
+            (*res)[0].resize( velocitySplitSize + 2*this->nFluidOutletWindkesselImplicit/*nFluidOutlet*/(), 0 );
             size_type cpt = velocitySplitSize;
             const size_type startSplitW = (*res)[0][0]+this->functionSpace()->nLocalDofWithoutGhost();
             for (int k=0;k<this->nFluidOutlet();++k)
@@ -1774,8 +1813,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
         res += M_XhMeanPressureLM->nLocalDofWithGhost();
     if (this->hasMarkerDirichletBClm())
         res += this->XhDirichletLM()->nLocalDofWithGhost();
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
-        res += 2*this->nFluidOutlet();
+    if ( this->hasFluidOutletWindkesselImplicit() )
+        res += 2*this->nFluidOutletWindkesselImplicit();
     return res;
 }
 
@@ -1794,7 +1833,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
     {}
     if (this->hasMarkerDirichletBClm())
     {}
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {}
 
 }
