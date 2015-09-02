@@ -14,6 +14,15 @@
       "value":1
     }
   },
+  "Materials":
+  {
+    "firstMat": // Physical marker
+    {
+      "name":"firstMat",
+      "file":"false",
+      "B":"mu_0:H:x:y:H:mu_0:B"
+    }
+  }, // materials
   "BoundaryConditions":
   {
     "u":
