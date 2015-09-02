@@ -46,7 +46,7 @@ constexpr bool is_conforming = C::value;
 
 enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV };
 
-std::ostream&
+inline std::ostream&
 operator<<( std::ostream& os, interpolation_operand_type const& o )
 {
     if ( o == interpolation_operand_type::ID )
