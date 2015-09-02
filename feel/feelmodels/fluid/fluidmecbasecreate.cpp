@@ -218,67 +218,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
-    // fluid outlet options
-    M_nFluidOutlet = this->hasFluidOutlet()? ioption(_name="fluid-outlet.number", _prefix=this->prefix()) : 0;
-    if ( this->hasFluidOutlet() )
-    {
-        M_fluidOutletMarkerName.resize(M_nFluidOutlet);
-
-        auto itMarkerFluidOutlet = M_fluidOutletsBCType[this->fluidOutletType()].begin();
-        CHECK( itMarkerFluidOutlet != M_fluidOutletsBCType[this->fluidOutletType()].end() ) << "no fluid outlet bc found with " << this->fluidOutletType() << "\n";
-
-        std::string markerNameBFOutletBase = *itMarkerFluidOutlet;
-        bool useGenericMarkerName = (M_fluidOutletsBCType[this->fluidOutletType()].size() == 1) && (M_nFluidOutlet > 1);
-
-        if ( !useGenericMarkerName )
-            CHECK( M_fluidOutletsBCType[this->fluidOutletType()].size() == M_nFluidOutlet )  << "invalid nFluidOutlet : "
-                                                                                             << M_fluidOutletsBCType[this->fluidOutletType()].size() << " and "
-                                                                                             << M_nFluidOutlet << "\n";
-
-        for (int k=0;k<M_nFluidOutlet;++k)
-        {
-            if ( useGenericMarkerName )
-            {
-                M_fluidOutletMarkerName[k] = markerNameBFOutletBase+(boost::format("%1%") %k).str();
-            }
-            else
-            {
-                M_fluidOutletMarkerName[k] = *itMarkerFluidOutlet;
-                ++itMarkerFluidOutlet;
-                //M_fluidOutletMarkerName[k] = markerNameBFOutletBase;
-            }
-            //M_meshAleBCType["free"].push_back( M_fluidOutletMarkerName[k] );
-            this->addMarkerALEMeshBC("free",M_fluidOutletMarkerName[k]);
-        }
-
-        if ( this->fluidOutletType()=="windkessel" )
-        {
-            M_fluidOutletWindkesselCoupling = soption(_name="fluid-outlet.windkessel.coupling", _prefix=this->prefix());
-
-            M_fluidOutletWindkesselPressureDistal.resize(M_nFluidOutlet,0);
-            M_fluidOutletWindkesselPressureDistal_old.resize(M_nFluidOutlet,std::vector<double>(Feel::BDF_MAX_ORDER));
-            M_fluidOutletWindkesselPressureProximal.resize(M_nFluidOutlet,0);
-            //M_fluidOutletMarkerName.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselRd.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselRp.resize(M_nFluidOutlet);
-            M_fluidOutletWindkesselCd.resize(M_nFluidOutlet);
-
-            for (int k=0;k<M_nFluidOutlet;++k)
-            {
-                // windkessel parameter
-                M_fluidOutletWindkesselRd[k] = doption(_name=(boost::format("fluid-outlet.windkessel.Rd%1%")%k).str(), _prefix=this->prefix());
-                M_fluidOutletWindkesselRp[k] = doption(_name=(boost::format("fluid-outlet.windkessel.Rp%1%")%k).str(), _prefix=this->prefix());
-                M_fluidOutletWindkesselCd[k] = doption(_name=(boost::format("fluid-outlet.windkessel.Cd%1%")%k).str(), _prefix=this->prefix());
-            }
-        } // windkessel
-    } // hasFluidOutlet
-
-
-
-    // physical parameters
-    //M_CstRho = doption(_name="rho",_prefix=this->prefix());
-    //M_CstMu = doption(_name="mu",_prefix=this->prefix());
-    //M_CstNu = this->viscosityModel()->cstMu()/M_CstRho;
 
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
@@ -815,12 +754,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     if (this->isMoveDomain()) this->createFunctionSpacesNormalStress();
     //----------------------------------------------------------------------------//
     // fluid outlet
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
         // list usefull to create the outlets submesh
         std::list<std::string> markerNameBFOutletForSubmesh;
-        for (int k=0;k<M_nFluidOutlet;++k)
-            markerNameBFOutletForSubmesh.push_back(M_fluidOutletMarkerName[k]);
+        for (int k=0;k<this->nFluidOutlet();++k)
+        {
+            if ( std::get<1>( M_fluidOutletsBCType[k] ) == "windkessel" &&  std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) == "implicit" )
+                markerNameBFOutletForSubmesh.push_back( std::get<0>( M_fluidOutletsBCType[k] ) );
+        }
 
         M_fluidOutletWindkesselMesh = createSubmesh( this->mesh(), markedfaces(this->mesh(),markerNameBFOutletForSubmesh) );
         M_fluidOutletWindkesselSpace = space_fluidoutlet_windkessel_type::New( _mesh=M_fluidOutletWindkesselMesh,
@@ -926,12 +868,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         // if restart else move submesh define from fluid mesh
         if (this->doRestart())
         {
-            if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+            if ( this->hasFluidOutletWindkesselImplicit() )
             {
                 // interpolate disp
                 M_fluidOutletWindkesselOpMeshDisp->apply( *M_meshALE->displacement(), *M_fluidOutletWindkesselMeshDisp );
                 // apply disp
-                M_fluidOutletWindkesselMeshMover.apply( /*this->*/M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
+                M_fluidOutletWindkesselMeshMover.apply( M_fluidOutletWindkesselMesh, *M_fluidOutletWindkesselMeshDisp );
             }
         }
 
@@ -954,62 +896,138 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
     //-------------------------------------------------//
     // windkessel outlet
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" )
+    if ( this->hasFluidOutletWindkessel() )
     {
-        for (int k=0;k<M_nFluidOutlet;++k)
+        for (int k=0;k<this->nFluidOutlet();++k)
         {
-            //std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"bloodFlowOutlet.windkessel.data");
-            //std::string nameFile =boost::format(this->appliRepository() + "/" + prefixvm(this->prefix(),"bloodFlowOutlet.windkessel%1%.data") %k ).str();
-            std::string nameFile =this->appliRepository() + "/" + prefixvm(this->prefix(),(boost::format("bloodFlowOutlet.windkessel%1%.data") %k ).str());
+            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
 
-            if (!this->doRestart())
+            // init containers
+            M_fluidOutletWindkesselPressureDistal[k] = 0;
+            M_fluidOutletWindkesselPressureProximal[k] = 0;
+            M_fluidOutletWindkesselPressureDistal_old[k].resize( Feel::BDF_MAX_ORDER, 0 );
+        }
+
+        std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+
+        if (!this->doRestart())
+        {
+            if (this->worldComm().isMasterRank())
             {
-                M_fluidOutletWindkesselPressureDistal[k] = 0;
-                M_fluidOutletWindkesselPressureProximal[k] = 0;
-                for (int l=0;l<M_fluidOutletWindkesselPressureDistal_old[k].size();++l)
-                    M_fluidOutletWindkesselPressureDistal_old[k][l] = 0;
-                if (this->worldComm().isMasterRank())
+                std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::trunc);
+                file.precision( 8 );
+                file.setf( std::ios::scientific );
+                file.width( 15 );
+                file.setf( std::ios::left );
+                file << int(0);
+                file.width( 20 );
+                file << this->timeInitial();
+
+                for (int k=0;k<this->nFluidOutlet();++k)
                 {
-                    std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::trunc);
-                    file << 0 << " " << this->timeInitial() << " " << M_fluidOutletWindkesselPressureDistal[k] << " " << M_fluidOutletWindkesselPressureProximal[k] << "\n";
-                    file.close();
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
+                    // write value on disk
+                    file.width( 20 );
+                    file << M_fluidOutletWindkesselPressureDistal.find(k)->second;
+                    file.width( 20 );
+                    file << M_fluidOutletWindkesselPressureProximal.find(k)->second;
                 }
+                file << "\n";
+                file.close();
             }
-            else
+        }
+        else
+        {
+            if (this->worldComm().isMasterRank())
             {
-                if (this->worldComm().isMasterRank())
-                {
-                    std::ifstream fileI(nameFile.c_str(), std::ios::in);
-                    int cptIter=0; double timeIter=0;double valPresDistal=0,valPresProximal=0;
-                    int askedIter = M_bdf_fluid->iteration() - 1;
-                    bool find=false; std::ostringstream buffer;
-                    while ( !fileI.eof() && !find )
-                    {
-                        fileI >> cptIter >> timeIter >> valPresDistal >> valPresProximal;
-                        buffer << cptIter << " " << timeIter << " " << valPresDistal << " " << valPresProximal << "\n";
+                std::ifstream fileI(nameFile.c_str(), std::ios::in);
+                int cptIter=0; double timeIter=0;double valPresDistal=0,valPresProximal=0;
+                int askedIter = M_bdf_fluid->iteration() - 1;
+                bool find=false; std::ostringstream buffer;
+                buffer.precision( 8 );
+                buffer.setf( std::ios::scientific );
 
-                        for (int l=0 ; l< M_fluidOutletWindkesselPressureDistal_old[k].size() ; ++l)
+                while ( !fileI.eof() && !find )
+                {
+                    fileI >> cptIter >> timeIter;
+                    buffer.width( 15 );
+                    buffer.setf( std::ios::left );
+                    buffer << cptIter;
+                    buffer.width( 20 );
+                    buffer << timeIter;
+
+                    for (int k=0;k<this->nFluidOutlet();++k)
+                    {
+                        if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
+                        fileI >> valPresDistal >> valPresProximal;
+                        buffer.width( 20 );
+                        buffer << valPresDistal;
+                        buffer.width( 20 );
+                        buffer << valPresProximal;
+
+                        for (int l=0 ; l< M_fluidOutletWindkesselPressureDistal_old.find(k)->second.size() ; ++l)
                             if (cptIter == askedIter - l) M_fluidOutletWindkesselPressureDistal_old[k][l] = valPresDistal;
 
-                        if (cptIter == askedIter) find=true;
-
-                        //if (cptIter == askedIter) { M_fluidOutletWindkesselPressureDistal_old[k][0]; find=true;}
-                        //if (cptIter == askedIter-1) { M_fluidOutletWindkesselPressureDistal_old[k][1]; find=true;}
+                        if (cptIter == askedIter)
+                        {
+                            M_fluidOutletWindkesselPressureDistal[k] = valPresDistal;
+                            M_fluidOutletWindkesselPressureProximal[k] = valPresProximal;
+                        }
                     }
-                    fileI.close();
-                    std::ofstream fileW(nameFile.c_str(), std::ios::out | std::ios::trunc);
-                    fileW << buffer.str();
-                    fileW.close();
-                    //std::cout << cptIter <<" " << timeIter << " " << valPresDistal << std::endl;
-                    //M_fluidOutletWindkesselPressureDistal_old[k][0] = valPresDistal;
+                    buffer << "\n";
+
+                    if (cptIter == askedIter) find=true;
                 }
+                fileI.close();
+                std::ofstream fileW(nameFile.c_str(), std::ios::out | std::ios::trunc);
+                fileW << buffer.str();
+                fileW.close();
+
+                //std::cout << cptIter <<" " << timeIter << " " << valPresDistal << std::endl;
+                //M_fluidOutletWindkesselPressureDistal_old[k][0] = valPresDistal;
             }
-            mpi::broadcast( this->worldComm().globalComm(), M_fluidOutletWindkesselPressureDistal_old, this->worldComm().masterRank() );
-        } // for (int k=0;k<M_nFluidOutlet;++k)
+
+            // broadcast windkessel data
+            if ( this->worldComm().globalSize() > 1 )
+            {
+                auto dataToBroadcast = boost::make_tuple(M_fluidOutletWindkesselPressureDistal,
+                                                         M_fluidOutletWindkesselPressureProximal,
+                                                         M_fluidOutletWindkesselPressureDistal_old );
+                mpi::broadcast( this->worldComm().globalComm(), dataToBroadcast, this->worldComm().masterRank() );
+                if ( !this->worldComm().isMasterRank() )
+                {
+                    M_fluidOutletWindkesselPressureDistal = boost::get<0>( dataToBroadcast );
+                    M_fluidOutletWindkesselPressureProximal = boost::get<1>( dataToBroadcast );
+                    M_fluidOutletWindkesselPressureDistal_old = boost::get<2>( dataToBroadcast );
+                }
+                this->log("FluidMechanics","init", "restart windkessel broadcast done" );
+            }
+        }
+        if (this->verbose())
+        {
+            std::ostringstream bufferLog;
+            bufferLog << "\n";
+            for (int k=0;k<this->nFluidOutlet();++k)
+            {
+                if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
+                bufferLog << " (" << M_fluidOutletWindkesselPressureDistal[k] <<","<< M_fluidOutletWindkesselPressureProximal[k] << ")";
+                bufferLog << " [";
+                const int sizeOld = M_fluidOutletWindkesselPressureDistal_old.find(k)->second.size();
+                bool hasDoneFirstElt = false;
+                for (int l=0;l<sizeOld;++l)
+                {
+                    if ( hasDoneFirstElt ) bufferLog << " , ";
+                    bufferLog << M_fluidOutletWindkesselPressureDistal_old[k][l];
+                    hasDoneFirstElt = true;
+                }
+                bufferLog << "]\n";
+            }
+            this->log("FluidMechanics","windkessel initialisation", bufferLog.str() );
+        }
 
         this->log("FluidMechanics","init", "restart windkessel done" );
 
-    } // if (M_hasFluidOutlet)
+    } // if (this->hasFluidOutletWindkessel())
 
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
@@ -1025,10 +1043,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         M_startDofIndexFieldsInMatrix["dirichletlm"] = currentStartIndex;
         currentStartIndex += this->XhDirichletLM()->nLocalDofWithGhost() ;
     }
-    if (this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
         M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
-        currentStartIndex += 2*this->nFluidOutlet();
+        currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
     }
 
     //-------------------------------------------------//
@@ -1050,10 +1068,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         ++cptBlock;
     }
     // windkessel outel with implicit scheme
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" &&
-         this->fluidOutletWindkesselCoupling() == "implicit" )
+    if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        for (int k=0;k<this->nFluidOutlet();++k)
+        for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
         {
             M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
             ++cptBlock;
