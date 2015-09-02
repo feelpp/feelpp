@@ -100,7 +100,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for( auto const& d : M_bcDirichlet )
     {
         this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
     M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "interface_fsi"/*"moving_boundary"*/ );
     for( auto const& d : M_bcMovingBoundary )
@@ -113,29 +115,63 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     for( auto const& d : M_bcNeumannScalar )
     {
         this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_scalar", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
     M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
     for( auto const& d : M_bcPressure )
     {
         this->addMarkerPressureBC(marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "weak", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
     M_bcSlip = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "slip" );
     for( auto const& d : M_bcSlip )
     {
         this->addMarkerSlipBC(marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "slip", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
-
-    this->M_hasFluidOutlet=false;
-    this->M_fluidOutletType = soption(_name="fluid-outlet.type", _prefix=this->prefix());
-    CHECK( this->M_fluidOutletType == "free" || this->M_fluidOutletType == "windkessel" ) << "invalid fluid-outlet.type " << this->M_fluidOutletType;
     M_bcFluidOutlets = this->modelProperties().boundaryConditions().getScalarFields( "fluid", "outlet" );
     for( auto const& d : M_bcFluidOutlets )
     {
-        this->M_fluidOutletsBCType[this->M_fluidOutletType].push_back(marker(d));
-        this->M_hasFluidOutlet=true;
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+
+        std::string typeOutlet = soption(_name="fluid-outlet.type", _prefix=this->prefix());//"free";
+        std::pair<bool,std::string> typeOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", marker(d), "type" );
+        if ( typeOutletRead.first )
+        {
+            typeOutlet = typeOutletRead.second;
+            CHECK( typeOutlet == "free" || typeOutlet == "windkessel" ) << "invalid outlet type " << typeOutlet;
+        }
+        std::string typeCouplingWindkesselOutlet = soption(_name="fluid-outlet.windkessel.coupling", _prefix=this->prefix());
+        std::pair<bool,std::string> typeCouplingWindkesselOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", marker(d), "windkessel_coupling" );
+        if ( typeCouplingWindkesselOutletRead.first )
+        {
+            typeCouplingWindkesselOutlet = typeCouplingWindkesselOutletRead.second;
+            CHECK( typeCouplingWindkesselOutlet == "implicit" || typeCouplingWindkesselOutlet == "explicit" ) << "invalid windkessel coupling type " << typeCouplingWindkesselOutlet;
+        }
+        std::pair<bool,double> WindkesselRdRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", marker(d), "windkessel_Rd" );
+        std::pair<bool,double> WindkesselRpRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", marker(d), "windkessel_Rp" );
+        std::pair<bool,double> WindkesselCdRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", marker(d), "windkessel_Cd" );
+        double WindkesselRd = ( WindkesselRdRead.first )? WindkesselRdRead.second : 1.;
+        double WindkesselRp = ( WindkesselRpRead.first )? WindkesselRpRead.second : 1.;
+        double WindkesselCd = ( WindkesselCdRead.first )? WindkesselCdRead.second : 1.;
+
+        std::pair<bool,int> nOutletRead = this->modelProperties().boundaryConditions().iparam( "fluid", "outlet", marker(d), "number" );
+        int nOutlet = ( nOutletRead.first )? nOutletRead.second : 1;
+        for (int k=0 ; k<nOutlet ; ++k )
+        {
+            std::string curOutletMarker = ( nOutlet == 1 )? marker(d) : (boost::format("%1%%2%")%marker(d) %k).str();
+            std::tuple<std::string,double,double,double> windkesselParam = std::make_tuple(typeCouplingWindkesselOutlet,WindkesselRd,WindkesselRp,WindkesselCd);
+            this->M_fluidOutletsBCType.push_back(std::make_tuple(curOutletMarker,typeOutlet, windkesselParam ));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,curOutletMarker);
+        }
+
     }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
