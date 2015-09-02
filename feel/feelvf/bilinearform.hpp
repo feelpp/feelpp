@@ -1388,7 +1388,8 @@ public:
     void zeroRows( std::vector<int> const& __dofs,
                    Vector<value_type> const& __values,
                    Vector<value_type>& rhs,
-                   Feel::Context const& on_context );
+                   Feel::Context const& on_context,
+                   double value_on_diagonal );
 
     /**
      * add value \p v at position (\p i, \p j) of the matrix
@@ -1701,9 +1702,10 @@ void
 BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
                                               Vector<value_type> const&__values,
                                               Vector<value_type>& rhs,
-                                              Feel::Context const& on_context )
+                                              Feel::Context const& on_context,
+                                              double value_on_diagonal )
 {
-    M_matrix->zeroRows( __dofs, __values, rhs, on_context );
+    M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 
 

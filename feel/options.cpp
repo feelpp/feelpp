@@ -260,6 +260,7 @@ on_options( std::string const& prefix )
     _options.add_options()
         ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
+        ( prefixvm( prefix,"on.value_on_diagonal" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "value on diagonal of operator when eliminating" )
         ;
     return _options;
 }
