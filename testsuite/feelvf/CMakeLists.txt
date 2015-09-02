@@ -14,5 +14,6 @@ feelpp_add_test( inner_laplacian )
 feelpp_add_test( vf_integrals )
 feelpp_add_test( vf_val )
 feelpp_add_test( vf_chi )
+feelpp_add_test( pow CFG test_pow.cfg)
 
 feelpp_add_test( projtangent )
