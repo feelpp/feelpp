@@ -161,6 +161,10 @@ private:
     mutable vector_ptrtype M_z;
     mutable vector_ptrtype M_z_t;
 
+    mutable potential_element_type M_vh_elt;
+    mutable lag_v_element_type M_qh3_elt;
+    mutable lagrange_element_type M_qh_elt;
+
     mutable potential_element_type U;
     element_coef_type M_mu;
     element_coef_type M_er;  // permittivity
@@ -214,6 +218,10 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
 
     // QH3 : Lagrange vectorial space type
     M_Qh3 = lag_v_space_type::New(Xh->mesh());
+
+    M_qh3_elt = M_Qh3->element();
+    M_qh_elt = M_Qh->element();
+    M_vh_elt = M_Vh->element();
 
     // Block 11.1
     M_s = backend()->newVector(M_Qh3);
@@ -372,6 +380,15 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // s = P^t r
         M_Pt->multVector(M_r,M_s);
 
+        // Impose boundary conditions on M_s
+        M_qh3_elt = *M_s;
+#if FM_DIM == 3
+        M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+        *M_s = M_qh3_elt;
+
         auto y1 = M_y->createSubVector(M_Qh3_indices[0], true);
         auto y2 = M_y->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
@@ -405,8 +422,22 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // P*y
         M_P->multVector(M_y,B);
 
+        // Impose boundary conditions on B = Py
+        M_vh_elt = *B;
+#if FM_DIM == 3
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+        *B = M_vh_elt;
+
         // t = C^t r
         M_Ct->multVector(M_r,M_t);
+
+        // Impose boundary conditions on M_t
+        M_qh_elt = *M_t;
+        M_qh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=cst(0.) );
+        *M_t = M_qh_elt;
 
         // 14.b : hat(L) z = t
         M_lOp->applyInverse(M_t,M_z);
@@ -416,6 +447,16 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
+
+        // Impose boundary conditions on C = Cz
+        M_vh_elt = *C;
+#if FM_DIM == 3
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+        *C = M_vh_elt;
+
 
         A->add(*C);
         A->add(*B);
