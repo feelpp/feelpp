@@ -712,13 +712,17 @@ public:
     }
 
     /**
-     * eliminate rows without change pattern, and put 1 on the diagonal
+     * eliminate rows without change pattern, and put \c value_on_diagonal on the diagonal
      * entry
      *
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
+    virtual void zeroRows( std::vector<int> const& rows, 
+                           Vector<value_type> const& values, 
+                           Vector<value_type>& rhs, 
+                           Context const& on_context,
+                           value_type value_on_diagonal ) = 0;
 
     /**
      * update a block matrix

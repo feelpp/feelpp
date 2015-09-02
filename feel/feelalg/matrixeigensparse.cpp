@@ -223,7 +223,8 @@ void
 MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
                                 Vector<value_type> const& vals,
                                 Vector<value_type>& rhs,
-                                Context const& on_context )
+                                Context const& on_context,
+                                value_type value_on_diagonal )
 {
     LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << M_mat.IsRowMajor;
     //std::cout << "M_mat \n " << M_mat << "\n";
@@ -241,7 +242,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
             eliminatedRow.insert( rows[k] );
             for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
             {
-                value_type value = 1.0;
+                value_type value = value_on_diagonal;
                 if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
                     value = it.value();
 
@@ -295,7 +296,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
         {
             for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
             {
-                value_type value = 1.0;
+                value_type value = value_on_diagonal;
                 if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
                     value = it.value();
 
