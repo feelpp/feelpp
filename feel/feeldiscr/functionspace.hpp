@@ -2286,7 +2286,8 @@ public:
                 {
                     
                     size_type index= ldof.index();
-                    super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                    //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                    super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
                 }
             }
         

@@ -7,8 +7,8 @@
 
   - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
   - the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
-  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
-  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
+  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE),
+  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic.
 
 
 Some basic installation procedure are available in the [INSTALL](INSTALL.md) file, the detailled process is available [here](http://www.feelpp.org/docs/develop/BuildingP.html)
@@ -163,3 +163,5 @@ main( int argc, char** argv )
     e->save();
 }
 ```
+
+

@@ -8,4 +8,10 @@ feelpp_add_application( application_fluid_2d SRCS main_fm.cpp
   DEFS FEELPP_DIM=2
 )
 
+feelpp_add_application( application_fluid_3d SRCS main_fm.cpp
+  LINK_LIBRARIES
+  feelpp_model_fluidmec3dP2P1G1
+  DEFS FEELPP_DIM=3
+)
+
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
