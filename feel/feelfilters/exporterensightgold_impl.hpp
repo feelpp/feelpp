@@ -1321,7 +1321,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
     if( this->worldComm().isMasterRank() )
     {
-        int32_t partid = m.second[0];
+        int32_t partid = m.second[0] + 1;
         MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
         // MPI_File_write_ordered(fh, &partid, 1, MPI_INT32_T, &status);
     }
@@ -1507,7 +1507,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // part id
     if ( this->worldComm().isMasterRank() )
     {
-        int32_t partid = markerid;
+        int32_t partid = markerid + 1;
         LOG(INFO) << "writing part " << partid << std::endl;
         // write number of points
         MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
@@ -1974,7 +1974,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             
                 if( this->worldComm().isMasterRank() )
                 {
-                    int32_t partid = m.second[0];
+                    int32_t partid = m.second[0] + 1;
                     MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
                     //MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
                 }
@@ -2054,7 +2054,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 strcpy( buffer, "part" );
                 //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
                 MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-                int32_t partid = *mit;
+                int32_t partid = *mit + 1;
                 MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
                 strcpy(buffer, "coordinates");
                 MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
@@ -2313,7 +2313,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
                 memset(buffer, '\0', sizeof(buffer));
                 strncpy(buffer, "part", 80);
                 MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-                int32_t partid = *mit;
+                int32_t partid = *mit + 1;
                 MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
                 DVLOG(2) << "part " << buffer << "\n";
                 memset(buffer, '\0', sizeof(buffer));
