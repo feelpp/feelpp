@@ -150,9 +150,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" )
+    if ( this->hasFluidOutletWindkessel() )
     {
-        if ( this->fluidOutletWindkesselCoupling() == "explicit" )
+        if ( this->hasFluidOutletWindkesselExplicit() )
         {
             if ( BuildCstPart )
             {
@@ -160,10 +160,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "explicit" )
+                        continue;
+
                     // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);
+                    double Rp=std::get<2>(windkesselParam);
+                    double Cd=std::get<3>(windkesselParam);
                     double Deltat = this->timeStepBDF()->timeStep();
 
                     double xiBF = Rd*Cd*this->timeStepBDF()->polyDerivCoefficient(0)*Deltat+Deltat;
@@ -171,17 +176,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                     double gammaBF = Rd*Deltat/xiBF;
                     double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
-                    std::string markerOutlet=this->fluidOutletMarkerName(k);
                     auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
                                              _expr=trans(idv(Beta.template element<0>()))*N() ).evaluate()(0,0);
 
                     double pressureDistalOld  = 0;
                     for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
 
                     M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
                     M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
-
 
                     linearForm_PatternCoupled +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
@@ -190,7 +193,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                 }
             }
         } // explicit
-        else if ( this->fluidOutletWindkesselCoupling() == "implicit" )
+        if ( this->hasFluidOutletWindkesselImplicit() )
         {
             CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
                 << " start dof index for windkessel is not present\n";
@@ -202,23 +205,29 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                 auto presDistal = presDistalProximal.template element<0>();
                 auto presProximal = presDistalProximal.template element<1>();
 
+                int cptOutletUsed = 0;
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
-                    // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
-                    double Deltat = this->timeStepBDF()->timeStep();
-                    std::string markerOutlet = this->fluidOutletMarkerName(k);
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                        continue;
 
-                    const size_type rowStartWindkessel = startDofIndexWindkessel + 2*k;
+                    // Windkessel model
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);
+                    double Rp=std::get<2>(windkesselParam);
+                    double Cd=std::get<3>(windkesselParam);
+                    double Deltat = this->timeStepBDF()->timeStep();
+
+                    const size_type rowStartWindkessel = startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
                     const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
+                    ++cptOutletUsed;
                     //----------------------------------------------------//
                     if ( BuildCstPart  && M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
                         // add in vector
                         R->add( rowStartInVectorWindkessel, -Cd*pressureDistalOld);
                     }

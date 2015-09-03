@@ -1719,8 +1719,8 @@ protected:
     /**
      * Update in ghost cells of entities of codimension 1
      */
-    void updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-    void updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
     /**
      * check mesh connectivity
