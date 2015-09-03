@@ -415,12 +415,12 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
 
     auto e = exporter( _mesh = mesh, _name= (boost::format( "%1%" ) % this->about().appName() ).str());
 
-    if ( exporter->doExport() )
+    if ( e->doExport() )
         {
-            exporter->step(0)->setMesh( mesh );
-            exporter->step(0)->add( "Potential", VT.template element<0>() );
-            exporter->step(0)->add( "Temperature", VT.template element<1>() );
-            exporter->save();
+            e->step(0)->setMesh( mesh );
+            e->step(0)->add( "Potential", VT.template element<0>() );
+            e->step(0)->add( "Temperature", VT.template element<1>() );
+            e->save();
         }
 }
 

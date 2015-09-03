@@ -97,17 +97,17 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
     fs::path meshesdirectories = this->mshPathFSI().parent_path();
 
 #if 1
-        // go in output path directory for launch loadMesh
-        fs::path curPath=fs::current_path();
-        bool hasChangedRep=false;
-        if ( curPath != meshesdirectories )
-        {
-            if ( this->worldComm().isMasterRank() )
-                std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
-            bool hasChangedRep=true;
-            Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
-                                           _worldcomm=this->worldComm() );
-        }
+    // go in output path directory for launch loadMesh
+    fs::path curPath=fs::current_path();
+    bool hasChangedRep=false;
+    if ( curPath != meshesdirectories )
+    {
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
+        bool hasChangedRep=true;
+        Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
+                                       _worldcomm=this->worldComm() );
+    }
 #endif
 
     if ( this->worldComm().isMasterRank() &&
@@ -185,11 +185,17 @@ FSIMesh<ConvexType>::buildSubMesh( mesh_ptrtype const& fsimesh )
     std::list<std::string> myFluidMarkers( this->markersNameFluidVolume().begin(),this->markersNameFluidVolume().end() );
     auto fluidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,myFluidMarkers));
     std::cout << "fluid mesh -> numGlobalElements : " << fluidMesh_temp->numGlobalElements() << "\n";
+    std::cout << "fluid mesh -> save sequential mesh in : " << this->mshPathFluidPart1() << "\n";
+    fs::path meshesdirectoriesFluid = this->mshPathFluidPart1().parent_path();
+    if ( !fs::exists( meshesdirectoriesFluid ) ) fs::create_directories( meshesdirectoriesFluid );
     saveGMSHMesh(_mesh=fluidMesh_temp,_filename=this->mshPathFluidPart1().string());
     // create struct submesh
     std::list<std::string> mySolidMarkers( this->markersNameSolidVolume().begin(),this->markersNameSolidVolume().end() );
     auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers));
     std::cout << "solid mesh -> numGlobalElements : " << solidMesh_temp->numGlobalElements()<<"\n";
+    std::cout << "solid mesh -> save sequential mesh in : " << this->mshPathSolidPart1() << "\n";
+    fs::path meshesdirectoriesSolid = this->mshPathSolidPart1().parent_path();
+    if ( !fs::exists( meshesdirectoriesSolid ) ) fs::create_directories( meshesdirectoriesSolid );
     saveGMSHMesh(_mesh=solidMesh_temp,_filename=this->mshPathSolidPart1().string());
 
     std::cout << "[FSIMesh] : build fluid and structure submesh finish\n";
