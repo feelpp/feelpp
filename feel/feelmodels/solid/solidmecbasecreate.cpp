@@ -904,6 +904,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
             M_newmark_displ_1dReduced->restart();
             // load a previous solution as current solution
             *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
+            this->updateInterfaceDispFrom1dDisp();
             // up initial time
             this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
             // restart exporter
