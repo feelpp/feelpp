@@ -1402,6 +1402,14 @@ interprocessedges( MeshType const& mesh, rank_type neighbor_pid = invalid_rank_t
 
 }
 
+template<size_t S, class ITERATOR, class CONTAINER>
+WorldComm const&
+worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
+{
+    return range.template get<1>()->mesh()->worldComm();
+}
+
+
 } // namespace Feel
 
 

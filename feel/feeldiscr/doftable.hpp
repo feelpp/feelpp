@@ -499,6 +499,21 @@ public:
         }
 
     /**
+     * @return the dof points data structure
+     * it allows for example to do:
+     * \code
+     * for( auto const& pt: dofPoints())
+     * {
+     *   // do something on pt
+     * }
+     * \endcode
+     */
+    dof_points_type const& dofPoints() const
+        {
+            if (!hasDofPoints()) this->generateDofPoints(*M_mesh);
+            return M_dof_points;
+        }
+    /**
      * @return an iterator at the beginning of dof points
      */
     dof_points_const_iterator dofPointBegin() const

@@ -21,8 +21,6 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#define USE_BOOST_TEST 1
-#if USE_BOOST_TEST
 #define BOOST_TEST_MODULE test_integrals
 #include <testsuite/testsuite.hpp>
 #endif
@@ -137,32 +135,16 @@ public :
 };
 
 
-#if USE_BOOST_TEST
- FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
- BOOST_AUTO_TEST_SUITE( inner_suite )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
- BOOST_AUTO_TEST_CASE( test_3 )
- {
-     Test<3> test;
-     test.run();
- }
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    Test<3> test;
+    test.run();
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
 
-int main(int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=makeOptions() );
-
-    std::cout<<"test scalair\n"
-             << "3D\n";
-
-    Test<3>  t;
-    t.run();
-
-
-}
-#endif
