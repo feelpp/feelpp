@@ -296,6 +296,7 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
         // A = Pm
         // M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
         backend()->diag(Pm,M_diagPm);
+        M_diagPm->close();
 
         /*
          * hat(L) = 1/mu L
@@ -359,16 +360,22 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
      *              + C (L^-1) C^T (=C)
      */
 
-    tic();
     U = X;
     U.close();
-    toc("Element created",FLAGS_v>0);
 
     // solve equ (12)
     if ( this->type() == AS )
     {
         tic();
         // RHS calculation
+#if 0
+#if FM_DIM == 3
+        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+#endif
+
         *M_r = U;
         M_r->close();
 
@@ -376,18 +383,20 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // diag(Pm)^-1*r
         //M_diagPm->pointwiseDivide(*M_r,*A);
         A->pointwiseDivide(*M_r,*M_diagPm);
-
+        A->close();
         // s = P^t r
         M_Pt->multVector(M_r,M_s);
 
         // Impose boundary conditions on M_s
         M_qh3_elt = *M_s;
+        M_qh3_elt.close();
 #if FM_DIM == 3
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *M_s = M_qh3_elt;
+        M_s->close();
 
         auto y1 = M_y->createSubVector(M_Qh3_indices[0], true);
         auto y2 = M_y->createSubVector(M_Qh3_indices[1], true);
@@ -424,20 +433,24 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 
         // Impose boundary conditions on B = Py
         M_vh_elt = *B;
+        M_vh_elt.close();
 #if FM_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *B = M_vh_elt;
+        B->close();
 
         // t = C^t r
         M_Ct->multVector(M_r,M_t);
 
         // Impose boundary conditions on M_t
         M_qh_elt = *M_t;
+        M_qh_elt.close();
         M_qh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=cst(0.) );
         *M_t = M_qh_elt;
+        M_t->close();
 
         // 14.b : hat(L) z = t
         M_lOp->applyInverse(M_t,M_z);
@@ -450,13 +463,14 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 
         // Impose boundary conditions on C = Cz
         M_vh_elt = *C;
+        M_vh_elt.close();
 #if FM_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *C = M_vh_elt;
-
+        C->close();
 
         A->add(*C);
         A->add(*B);
@@ -465,7 +479,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         B->close();
         A->close();
 
-        toc("15 assembled",FLAGS_v>0);
+        toc("assemble preconditioner AS",FLAGS_v>0);
         *M_uout = *A; // 15 : w = A + B + C
     }
     else if( this->type() == SIMPLE )
