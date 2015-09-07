@@ -17,9 +17,10 @@ endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
 if(    NOT cmake_build_type_tolower STREQUAL "debug"
    AND NOT cmake_build_type_tolower STREQUAL "release"
+   AND NOT cmake_build_type_tolower STREQUAL "minsizerel"
    AND NOT cmake_build_type_tolower STREQUAL "none"
    AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, RelWithDebInfo (case-insensitive).")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive).")
 endif()
 
 
@@ -73,8 +74,8 @@ set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
-  message(FATAL_ERROR
-    "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
+#  message(FATAL_ERROR
+#    "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
 
@@ -367,7 +368,7 @@ add_subdirectory(Eigen)
 #   add_subdirectory(lapack EXCLUDE_FROM_ALL)
 # endif()
 
-#add_subdirectory(unsupported)
+add_subdirectory(unsupported)
 
 # add_subdirectory(demos EXCLUDE_FROM_ALL)
 

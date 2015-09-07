@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -543,9 +543,8 @@ runLine( data_geo_ptrtype dg )
 {
     node_type PtA = param<0>( dg );
     node_type PtB = param<1>( dg );
-
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
+    writePoint( 1, dg , PtA );
+    writePoint( 2, dg , PtB );
     writeLine( 1, dg , 1 , 2 );
 }
 
@@ -557,9 +556,9 @@ runTriangle( data_geo_ptrtype dg )
     node_type PtB = param<1>( dg );
     node_type PtC = param<2>( dg );
 
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
+    writePoint( 1, dg , PtA );
+    writePoint( 2, dg , PtB );
+    writePoint( 3, dg , PtC );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -579,10 +578,11 @@ runRectangle( data_geo_ptrtype dg )
     node_type PtA = param<0>( dg );
     node_type PtB = param<1>( dg );
 
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 4, dg , PtA( 0 ), PtB( 1 ) );
+    double coordz = (PtA(2)+PtB(2))/2;
+    writePoint( 1, dg , PtA( 0 ), PtA( 1 ), coordz );
+    writePoint( 2, dg , PtB( 0 ), PtA( 1 ), coordz );
+    writePoint( 3, dg , PtB( 0 ), PtB( 1 ), coordz );
+    writePoint( 4, dg , PtA( 0 ), PtB( 1 ), coordz );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -604,10 +604,10 @@ runQuadrangle( data_geo_ptrtype dg )
     node_type PtC = param<2>( dg );
     node_type PtD = param<3>( dg );
 
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
+    writePoint( 1, dg , PtA );
+    writePoint( 2, dg , PtB );
+    writePoint( 3, dg , PtC );
+    writePoint( 4, dg , PtD );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -630,11 +630,11 @@ runPentagon( data_geo_ptrtype dg )
     node_type PtD = param<3>( dg );
     node_type PtE = param<4>( dg );
 
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
-    writePoint( 5, dg , PtE( 0 ), PtE( 1 ) );
+    writePoint( 1, dg , PtA );
+    writePoint( 2, dg , PtB );
+    writePoint( 3, dg , PtC );
+    writePoint( 4, dg , PtD );
+    writePoint( 5, dg , PtE );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -660,12 +660,12 @@ runHexagon( data_geo_ptrtype dg )
     node_type PtE = param<4>( dg );
     node_type PtF = param<5>( dg );
 
-    writePoint( 1, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 2, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 4, dg , PtD( 0 ), PtD( 1 ) );
-    writePoint( 5, dg , PtE( 0 ), PtE( 1 ) );
-    writePoint( 6, dg , PtF( 0 ), PtF( 1 ) );
+    writePoint( 1, dg , PtA );
+    writePoint( 2, dg , PtB );
+    writePoint( 3, dg , PtC );
+    writePoint( 4, dg , PtD );
+    writePoint( 5, dg , PtE );
+    writePoint( 6, dg , PtF );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -677,7 +677,6 @@ runHexagon( data_geo_ptrtype dg )
     writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4>>5>>6 );
 
     writePlaneSurface( 1, dg, 1 );
-
 }
 
 
@@ -687,9 +686,9 @@ runCircle( data_geo_ptrtype dg )
     node_type PtA = param<0>( dg );
     node_type PtB = param<1>( dg );
 
-    writePoint( 1, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 2, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , 2*PtA( 0 )-PtB( 0 ), 2*PtA( 1 )-PtB( 1 ) );
+    writePoint( 1, dg , PtB );
+    writePoint( 2, dg , PtA );
+    writePoint( 3, dg , 2*PtA( 0 )-PtB( 0 ), 2*PtA( 1 )-PtB( 1 ), 2*PtA( 2 )-PtB( 2 ) );
 
     writeCircle( 1, dg, 1, 2, 3 );
     writeCircle( 2, dg, 3, 2, 1 );
@@ -708,11 +707,11 @@ runEllipse( data_geo_ptrtype dg )
     node_type PtMinor = param<1>( dg );
     node_type PtMajor = param<2>( dg );
 
-    writePoint( 1, dg , PtC( 0 ), PtC( 1 ) );
-    writePoint( 2, dg , PtMinor( 0 ), PtMinor( 1 ) );
-    writePoint( 3, dg , 2*PtC( 0 )-PtMinor( 0 ), 2*PtC( 1 )-PtMinor( 1 ) );
-    writePoint( 4, dg , PtMajor( 0 ), PtMajor( 1 ) );
-    writePoint( 5, dg , 2*PtC( 0 )-PtMajor( 0 ), 2*PtC( 1 )-PtMajor( 1 ) );
+    writePoint( 1, dg , PtC );
+    writePoint( 2, dg , PtMinor );
+    writePoint( 3, dg , 2*PtC( 0 )-PtMinor( 0 ), 2*PtC( 1 )-PtMinor( 1 ), 2*PtC( 2 )-PtMinor( 2 ) );
+    writePoint( 4, dg , PtMajor );
+    writePoint( 5, dg , 2*PtC( 0 )-PtMajor( 0 ), 2*PtC( 1 )-PtMajor( 1 ), 2*PtC( 2 )-PtMajor( 2 ) );
 
     writeEllipse( 1, dg, 2, 1, 4, 4 );
     writeEllipse( 2, dg, 4, 1, 3, 3 );
@@ -734,9 +733,9 @@ runPie( data_geo_ptrtype dg )
     node_type PtB = param<1>( dg );
     node_type PtC = param<2>( dg );
 
-    writePoint( 1, dg , PtB( 0 ), PtB( 1 ) );
-    writePoint( 2, dg , PtA( 0 ), PtA( 1 ) );
-    writePoint( 3, dg , PtC( 0 ), PtC( 1 ) );
+    writePoint( 1, dg , PtB );
+    writePoint( 2, dg , PtA );
+    writePoint( 3, dg , PtC );
 
     writeCircle( 1, dg, 1, 2, 3 );
     writeLine( 2, dg , 3 , 2 );
@@ -886,14 +885,14 @@ runHexahedron( data_geo_ptrtype dg )
     node_type Pt7 = param<6>( dg );
     node_type Pt8 = param<7>( dg );
 
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
-    writePoint( 5, dg , Pt5( 0 ), Pt5( 1 ), Pt5( 2 ) );
-    writePoint( 6, dg , Pt6( 0 ), Pt6( 1 ), Pt6( 2 ) );
-    writePoint( 7, dg , Pt7( 0 ), Pt7( 1 ), Pt7( 2 ) );
-    writePoint( 8, dg , Pt8( 0 ), Pt8( 1 ), Pt8( 2 ) );
+    writePoint( 1, dg , Pt1 );
+    writePoint( 2, dg , Pt2 );
+    writePoint( 3, dg , Pt3 );
+    writePoint( 4, dg , Pt4 );
+    writePoint( 5, dg , Pt5 );
+    writePoint( 6, dg , Pt6 );
+    writePoint( 7, dg , Pt7 );
+    writePoint( 8, dg , Pt8 );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -933,10 +932,10 @@ runTetrahedron( data_geo_ptrtype dg )
     node_type Pt3 = param<2>( dg );
     node_type Pt4 = param<3>( dg );
 
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
+    writePoint( 1, dg , Pt1 );
+    writePoint( 2, dg , Pt2 );
+    writePoint( 3, dg , Pt3 );
+    writePoint( 4, dg , Pt4 );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );
@@ -990,14 +989,14 @@ runCube( data_geo_ptrtype dg )
     Pt8( 1 )+=leny;
     Pt8( 2 )+=lenz;
 
-    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
-    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
-    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
-    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
-    writePoint( 5, dg , Pt5( 0 ), Pt5( 1 ), Pt5( 2 ) );
-    writePoint( 6, dg , Pt6( 0 ), Pt6( 1 ), Pt6( 2 ) );
-    writePoint( 7, dg , Pt7( 0 ), Pt7( 1 ), Pt7( 2 ) );
-    writePoint( 8, dg , Pt8( 0 ), Pt8( 1 ), Pt8( 2 ) );
+    writePoint( 1, dg , Pt1 );
+    writePoint( 2, dg , Pt2 );
+    writePoint( 3, dg , Pt3 );
+    writePoint( 4, dg , Pt4 );
+    writePoint( 5, dg , Pt5 );
+    writePoint( 6, dg , Pt6 );
+    writePoint( 7, dg , Pt7 );
+    writePoint( 8, dg , Pt8 );
 
     writeLine( 1, dg , 1 , 2 );
     writeLine( 2, dg , 2 , 3 );

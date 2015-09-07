@@ -45,12 +45,12 @@ using Pdh_ptrtype=boost::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
 */
 template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>>
+Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>::New( _mesh=mesh,
-                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
+                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }

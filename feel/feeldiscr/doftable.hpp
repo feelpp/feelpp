@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  This file is part of the Feel library
 
  Copyright (C) 2010 Université de Grenoble 1
@@ -498,6 +498,21 @@ public:
             return M_dof_points[i];
         }
 
+    /**
+     * @return the dof points data structure
+     * it allows for example to do:
+     * \code
+     * for( auto const& pt: dofPoints())
+     * {
+     *   // do something on pt
+     * }
+     * \endcode
+     */
+    dof_points_type const& dofPoints() const
+        {
+            if (!hasDofPoints()) this->generateDofPoints(*M_mesh);
+            return M_dof_points;
+        }
     /**
      * @return an iterator at the beginning of dof points
      */
@@ -1747,6 +1762,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
     this->buildIndexSplit();
 
+    // build splits with components
+    if ( is_product && nComponents > 1 )
+        this->buildIndexSplitWithComponents( nComponents );
 
     VLOG(2) << "[Dof::build] done building the map\n";
 }

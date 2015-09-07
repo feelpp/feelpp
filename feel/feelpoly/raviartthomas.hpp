@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -606,7 +606,6 @@ public:
                           true );
 
         n *= g->element().faceMeasure(faceId)/ublas::norm_2(n);
-        LOG(INFO) << "[raviart thomas interpolant] N=" << n << "\n";
     }
 
     typedef Eigen::MatrixXd local_interpolant_type;
@@ -630,13 +629,15 @@ public:
                     getFaceNormal(expr, f, n);
                 else
                     getFaceNormal(expr, g->faceId(), n);
-
+                
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                              
+                    
                 }
             }
         }
@@ -651,20 +652,24 @@ public:
         {
             auto g = expr.geom();
             ublas::vector<value_type> n( nDim ); //normal
-
-            for( int f = 0; f < face_type::numFaces; ++f )
+            Ihloc.setZero();
+            //for( int f = 0; f < face_type::numFaces; ++f )
+            int f=0;
             {
                 if( g->faceId() == invalid_uint16_type_value)
                     getFaceNormal(expr, f, n);
                 else
                     getFaceNormal(expr, g->faceId(), n);
-
+                
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    {
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                    }
+                    
                 }
             }
         }

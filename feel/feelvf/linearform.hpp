@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -80,11 +80,12 @@ public:
     /** @name Typedefs
      */
     //@{
-    enum { nDim = SpaceType::nDim };
+
 
     typedef LinearForm<SpaceType, VectorType, ElemContType> self_type;
 
     using space_type = functionspace_type<SpaceType>;
+    enum { nDim = space_type::nDim };
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type test_space_type;
     typedef space_type trial_space_type;
@@ -95,6 +96,9 @@ public:
     typedef boost::shared_ptr<VectorType> vector_ptrtype;
     //typedef typename space_type::template Element<value_type, ElemContType> element_type;
     typedef typename space_type::template Element<value_type> element_type;
+    template<typename Storage>
+    using space_element_s_type = typename space_type::template Element<value_type,Storage>;
+
     using space_element_type = element_type;
 #if 0
     typedef typename space_type::component_fespace_type component_fespace_type;
@@ -639,7 +643,8 @@ public:
      * @param __v element of Space 1 (test space)
      * @return f(v)
      */
-    value_type operator()( space_element_type const& __v ) const
+    template<typename S>
+    value_type operator()( space_element_s_type<S> const& __v ) const
     {
         return M_F->dot( __v );
     }

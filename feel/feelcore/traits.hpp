@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -105,7 +105,7 @@ template<typename T>
 using remove_shared_ptr_type = typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
 
 template<typename T>
-using decay_type = typename std::decay<remove_shared_ptr_type<T>>::type;
+using decay_type = typename std::decay<remove_shared_ptr_type<typename std::decay<T>::type>>::type;
 
 } // namespace Feel
 #endif

@@ -24,16 +24,33 @@
 #ifndef FEELPP_VF_MSI_HPP
 #define FEELPP_VF_MSI_HPP 1
 
+#include <feel/feelconfig.h>
 
+
+#if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/shape.hpp>
+#include <unsupported/Eigen/Splines>
 
+namespace Eigen {
+  
+// lets do some explicit instantiations and thus
+// force the compilation of all spline functions...
+template class Spline<double, 2, Dynamic>;
+template class Spline<double, 3, Dynamic>;
 
+template class Spline<double, 2, 2>;
+template class Spline<double, 2, 3>;
+}
 
 namespace Feel
 {
 namespace vf
 {
+
+
     /// \cond DETAIL
 namespace detail
 {
@@ -47,7 +64,7 @@ namespace detail
  * \endcode
  * @author Christophe Prud'homme
  */
-template<typename T>
+template<typename T, int _Options = 0>
 class MSI
 {
 public:
@@ -56,11 +73,18 @@ public:
     /** @name Typedefs
      */
     //@{
-    static const size_type context = 0;
+    static const size_type context = vm::POINT;
+
+    static const int Options = _Options;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
     static const bool is_terminal = true;
+
+    typedef Feel::MultiScaleImage<T,Options> msi_type;
+    using needs_gradient_t = typename msi_type::needs_gradient_t;
+    using do_compute_gradient_t = typename msi_type::do_compute_gradient_t;
+    using no_compute_gradient_t = typename msi_type::no_compute_gradient_t;
 
     template<typename Func>
     struct HasTestFunction
@@ -74,11 +98,11 @@ public:
         static const bool result = false;
     };
 
-    typedef MSI<T> this_type;
+    typedef MSI<T,Options> this_type;
     typedef T value_type;
     typedef value_type evaluate_type;
 
-    using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>;
+    using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     //@}
 
     /** @name Constructors, destructor
@@ -125,15 +149,20 @@ public:
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
 
-    value_type coarse2fine( ublas::vector<T> const& n  ) const
+    value_type coarse2fine( ublas::vector<T> const& real, ublas::vector<T> const& ref   ) const
     {
-        return M_coarse2fine( n );
+        return M_coarse2fine( real, ref );
     }
+    value_type coarse2fine( int c, ublas::vector<T> const& real, ublas::vector<T> const& ref   ) const
+        {
+            return M_coarse2fine( c, real, ref );
+        }
+
 
 private:
     
-    MultiscaleImage<T> M_coarse2fine;
-
+    msi_type M_coarse2fine;
+    
 public:
     //@}
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -147,8 +176,9 @@ public:
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-        typedef Shape<gmc_type::nDim, Scalar, false, false> > shape;
+        typedef typename mpl::if_<needs_gradient_t,
+                                  mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false>>,
+                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false>> >::type::type shape;
 
         template <class Args> struct sig
         {
@@ -195,7 +225,7 @@ public:
             update( geom );
             
         }
-        void update( Geo_t const& gmc)
+        void update( Geo_t const& geom)
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
         }
@@ -238,15 +268,37 @@ public:
             return eval( c1, c2, q );
         }
     private:
+        
         value_type
         eval( int c1, int c2, uint16_type q ) const
         {
+            return eval( c1, c2, q, needs_gradient_t() );
+        }
+        /**
+         * compute the gradient and return the component \c c at point \c q
+         */
+        value_type
+        eval( int c1, int c2, uint16_type q, do_compute_gradient_t ) const
+            {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_expr.coarse2fine( M_gmc->xReal(q) );
-        }
+            
+            return M_expr.coarse2fine( c2, M_gmc->xReal(q), M_gmc->xRef(q) );
+            }
+        /**
+         * compute the value of the image of point \c q
+         */
+        value_type
+        eval( int c1, int c2, uint16_type q, no_compute_gradient_t ) const
+            {
+                Feel::detail::ignore_unused_variable_warning( c1 );
+                Feel::detail::ignore_unused_variable_warning( c2 );
+            
+                return M_expr.coarse2fine( M_gmc->xReal(q), M_gmc->xRef(q) );
+            }
         this_type M_expr;
         gmc_ptrtype M_gmc;
+        
     };
 
 };
@@ -256,15 +308,19 @@ public:
 /**
  *
  */
-template<typename T>
+template<typename T, int Options = 0>
 inline
-Expr<vf::detail::MSI<T> >
-msi( typename vf::detail::MSI<T>::image_type const& f ))
+Expr<vf::detail::MSI<T, Options> >
+msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, int level )
 {
-    return Expr<vf::detail::MSI<T> >( vf::detail::MSI<T>(f) );
+    return Expr<vf::detail::MSI<T,Options> >( vf::detail::MSI<T,Options>(f,level ));
 }
+
 
 
 } // vf
 } // Feel
+
+#endif // FEELPP_HAS_FFTW
+
 #endif /* __MSI_H */

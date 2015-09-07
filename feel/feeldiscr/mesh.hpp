@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -753,7 +753,7 @@ public:
     bool
     hasFaceMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-1 );
+            return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
         }
 
     /**
@@ -763,7 +763,17 @@ public:
     bool
     hasEdgeMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-2 );
+            return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is 0, false otherwise
+     */
+    bool
+    hasPointMarker( std::string marker ) const
+        {
+            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
         }
 
     /**
@@ -997,6 +1007,20 @@ public:
      */
     void recv( int p, int tag );
 
+    void saveMD(std::ostream &out)
+    {
+      out << "| Shape              |" << Shape << "|\n";
+      out << "|---|---|\n";
+      out << "| DIM              |" << dimension() << "|\n";
+      out << "| Order              |" << nOrder << "|\n";
+      out << "| hMin              |" << hMin() << "|\n";
+      out << "| hMax              |" << hMax() << "|\n";
+      out << "| hAverage              |" << hAverage() << "|\n";
+      out << "| nPoints              |" << this->numPoints() << "|\n";
+      out << "| nEdges              |" << this->numEdges() << "|\n";
+      out << "| nFaces              |" << this->numFaces() << "|\n";
+      out << "| nVertices              |" << this->numVertices() << "|\n\n";
+    }
 #if defined(FEELPP_HAS_HDF5)
     /**
      * load mesh in hdf5
@@ -1695,8 +1719,8 @@ protected:
     /**
      * Update in ghost cells of entities of codimension 1
      */
-    void updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-    void updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
     /**
      * check mesh connectivity

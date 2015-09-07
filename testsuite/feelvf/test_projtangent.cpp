@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_SUITE( projtangent_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     BOOST_TEST_MESSAGE( "test_circle" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_circle/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_circle/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCircle();
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     BOOST_TEST_MESSAGE( "test_square" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_square/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_square/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitSquare();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
 BOOST_AUTO_TEST_CASE( test_2 )
 {
     BOOST_TEST_MESSAGE( "test_cube" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
@@ -137,7 +137,7 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
 
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize") );
     auto mesh = unitCube();

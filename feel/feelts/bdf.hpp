@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -152,8 +152,7 @@ public:
         M_space( b.M_space ),
         M_unknowns( b.M_unknowns ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta ),
-        M_prefix( b.M_prefix )
+        M_beta( b.M_beta )
     {}
 
     ~Bdf();
@@ -193,7 +192,7 @@ public:
     //!return the prefix
     std::string bdfPrefix() const
     {
-        return M_prefix;
+        return this->M_prefix;
     }
 
     //! return the number of iterations between order change
@@ -381,7 +380,6 @@ private:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
-    std::string M_prefix;
 };
 
 template <typename SpaceType>
@@ -397,8 +395,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
     M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( prefix )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -422,8 +419,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_iterations_between_order_change( 1 ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
-    M_beta( BDF_MAX_ORDER ),
-    M_prefix( "" )
+    M_beta( BDF_MAX_ORDER )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
 
@@ -492,10 +488,11 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
-    this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
-                        %this->bdfOrder()
-                        %this->timeStep()
-                        %this->bdfPrefix()  ).str() );
+    if ( this->path().empty() )
+        this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
+                            %this->bdfOrder()
+                            %this->timeStep()
+                            %this->bdfPrefix()  ).str() );
 
     super::init();
 
@@ -508,7 +505,7 @@ Bdf<SpaceType>::init()
             if ( fileFormat() == "hdf5")
             {
 #ifdef FEELPP_HAS_HDF5
-                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %M_iteration).str() ).string() );
+                M_unknowns[p]->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_name %(M_iteration-p)).str() ).string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -581,6 +578,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start()
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     double ti = super::start();
     M_last_iteration_since_order_change = 1;
@@ -597,6 +597,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( u0 );
     double ti = super::start();
@@ -614,6 +617,9 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
+    if ( this->isRestart() )
+        return this->restart();
+
     this->init();
     this->initialize( uv0 );
     double ti = super::start();
