@@ -1,5 +1,5 @@
 
-[![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=develop)](https://travis-ci.org/feelpp/feelpp)
 
 ## Introduction
 
@@ -7,15 +7,15 @@
 
   - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
   - the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
-  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
-  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
+  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE),
+  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic.
 
 
 Some basic installation procedure are available in the [INSTALL](INSTALL.md) file, the detailled process is available [here](http://www.feelpp.org/docs/develop/BuildingP.html)
 
 ## Releases
 
-Here are the latest releases of Feel++ 
+Here are the latest releases of Feel++
 
    - Feel++ [0.99.0](https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1) [![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
 
@@ -163,3 +163,5 @@ main( int argc, char** argv )
     e->save();
 }
 ```
+
+

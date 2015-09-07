@@ -30,7 +30,7 @@
 #define FEELPP_VF_RAND_HPP 1
 
 #include <random>
-
+#include <boost/math/special_functions/round.hpp>
 #include <feel/feelvf/expr.hpp>
 
 namespace Feel

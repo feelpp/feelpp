@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -451,7 +451,7 @@ ExporterVTK<MeshType,N>::save() const
         /* InitializeExternal is only supported from 5.10+, */
         /* but lets aim for the latest major version 6 to reduce the complexity */
         fname.str("");
-        fname << this->path() << "/" << __ts->name()  //<< this->prefix() //this->path()
+        fname << this->path() << "/" << this->prefix()  //<< this->prefix() //this->path()
             << "-" << (stepIndex - TS_INITIAL_INDEX);
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
         fname << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
@@ -507,7 +507,7 @@ ExporterVTK<MeshType,N>::save() const
                 /* check if we are on the initial timestep */
                 /* if so, we delete the previous pvd file */
                 /* otherwise we would append dataset to already existing data */
-                std::string pvdFilename = __ts->name() + ".pvd";
+                std::string pvdFilename = this->prefix() + ".pvd";
                 if( (stepIndex - TS_INITIAL_INDEX) == 0 && fs::exists(pvdFilename.c_str()))
                 {
                     fs::remove(pvdFilename.c_str()); 
@@ -520,7 +520,7 @@ ExporterVTK<MeshType,N>::save() const
                 for(int i = 0; i < this->worldComm().size(); i++)
                 {
                     oss.str("");
-                    oss << __ts->name() << "-" << (stepIndex - TS_INITIAL_INDEX)
+                    oss << this->prefix() << "-" << (stepIndex - TS_INITIAL_INDEX)
                         << "-" << this->worldComm().size() << "_" << i
                         << ".vtm";
                     this->writeTimePVD(pvdFilename, time, oss.str(), i);

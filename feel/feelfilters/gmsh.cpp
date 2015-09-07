@@ -354,7 +354,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         {
             // Check any regular expression `mykey=myvalue;` in the description (see
             // retrieveGeoParameters()).
-            boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+            boost::regex regex1( "^(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
             std::ostringstream _ostr;
             try{
                 _ostr << "(?1$1) = " << iGpm.second << ";";
@@ -375,7 +375,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         // Get the 'h' for hsize and modify its value in the geo file. (TODO could be included in the
         // geo-variables-list option (previous loop).
         // -----------
-        boost::regex regex2( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+        boost::regex regex2( "^(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
 

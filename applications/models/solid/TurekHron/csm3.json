@@ -1,0 +1,49 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Solid Mechanics ",
+    "ShortName":"Solid",
+    "Model":"hyperelastic",
+    "Parameters":
+    {
+        "gravity":
+        {
+            "value":"2"
+        }
+    },
+    "Materials":
+    {
+        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "Fixe":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "Neumann_scalar":
+            {
+                "ParoiFSI":
+                {
+                    "expr":"0" 
+                }
+            },
+            "VolumicForces":
+            {
+                "":
+                {
+                    "expr":"{0,-gravity*1e3}:gravity" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["displacement"]
+    }
+
+}

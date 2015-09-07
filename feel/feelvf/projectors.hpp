@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -159,6 +159,7 @@ private:
 
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
 private:
@@ -177,6 +178,18 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     element_type __v( M_functionspace );
     FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    __v.setZero();
+    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    return __v;
+}
+
+template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const
+{
+    boost::timer __timer;
+
+    element_type __v( M_functionspace );
     __v.setZero();
     __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
     return __v;

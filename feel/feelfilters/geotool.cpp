@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -2220,6 +2220,11 @@ param( data_geo_ptrtype __dg )
  *_________________________________________________*
  *_________________________________________________*/
 
+void
+writePoint( uint16_type _numLoc, data_geo_ptrtype _dg , node_type const& _node )
+{
+    writePoint( _numLoc,_dg,_node(0),_node(1),_node(2) );
+}
 
 void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3 )
 {

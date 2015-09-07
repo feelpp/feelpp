@@ -98,7 +98,7 @@ public:
     void initialize();
 
     template < typename ExprConvection, typename ExprBC >
-    void update( ExprConvection const& expr_b, ExprBC const& ebc );
+    void update( ExprConvection const& expr_b, ExprBC const& ebc, bool hasConvection=true );
 
     void setProblemType( std::string prob_type )
         {
@@ -205,13 +205,15 @@ template < typename space_type>
 template < typename ExprConvection, typename ExprBC >
 void
 OperatorPCD<space_type>::update( ExprConvection const& expr_b,
-                                 ExprBC const& ebc )
+                                 ExprBC const& ebc,
+                                 bool hasConvection )
 {
-
+    tic();
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
     G->zero();
 
-    conv = integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
+    if ( hasConvection )
+        conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
     conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
@@ -245,6 +247,7 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
         LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
         init_G = true;
     }
+    toc("Operator::PCD update",FLAGS_v>0);
 }
 
 
@@ -255,16 +258,19 @@ template < typename space_type>
 void
 OperatorPCD<space_type>::assembleMass()
 {
+    tic();
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
     M_mass->close();
     massOp = op( M_mass, "Mp" );
+    toc("OperatorPCD::mass assembly",FLAGS_v>0);
 }
 
 template < typename space_type>
 void
 OperatorPCD<space_type>::assembleDiffusion()
 {
+    tic();
     if ( soption("blockns.pcd.diffusion") == "Laplacian" )
     {
         auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
@@ -310,6 +316,7 @@ OperatorPCD<space_type>::assembleDiffusion()
     }
 
     diffOp = op( M_diff, "Ap" );
+    toc("OperatorPCD::diffusion assembly",FLAGS_v>0);
 }
 
 
@@ -317,6 +324,7 @@ template < typename space_type>
 void
 OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
 {
+    tic();
     auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
 
     if ( soption("blockns.pcd.inflow") != "Robin" )
@@ -336,6 +344,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         }
     rhs->close();
     A->close();
+    toc("OperatorPCD::BC apply",FLAGS_v>0);
 }
 
 template < typename space_type>

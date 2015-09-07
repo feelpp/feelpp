@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -184,6 +184,15 @@ public:
     bool isBoundaryEdge( size_type const & id ) const
     {
         return M_edges.find( edge_type( id ) )->isOnBoundary();
+    }
+
+    /**
+     * \return \c true if element with id \p i is found, \c false otherwise
+     */
+    bool hasEdge( size_type i ) const
+    {
+        return M_edges.template get<0>().find( edge_type( i ) ) !=
+               M_edges.template get<0>().end();
     }
 
     edge_type const& edge( size_type i ) const

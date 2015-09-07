@@ -1,0 +1,240 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel
+{
+/*! \page Notations Mathematical Concepts and Notations
+
+  <hr>
+
+  \tableofcontents
+
+  The mathematical concepts and the associated notations are defined on
+  this page and will be used throughout the Feel++ Online Documentation.
+
+  \section PolynomialNotations Polynomial Library
+
+  The polynomial library is composed of various bricks: \e (i) the
+  geometrical entities or convexes \e (ii) the prime basis in which we
+  express subsequently the polynomials, \e (iii) the definition and
+  construction of point sets in convexes (such as quadrature point sets)
+  and finally \e (iv) polynomials and finite elements.
+
+
+  \subsection Notations_Convexes Convexes
+
+  The supported convexes are simplices and hypercubes of topological dimension
+  \f$n\f$, \f$n=1,2,3\f$ lying in \f$\mathbb{R}^d\f$ such that \f$n \leq d
+  \leq 3\f$. The convexes are described geometrically in a standard way in
+  terms of their subentities (vertices, edges, faces, volumes), see for
+  example \cite MR1696933, and provide the ability to iterate over the entities
+  of a convex or of the same topological dimension inside a convex, e.g. iterate
+  over the edges of a tetrahedron.
+
+  \subsection Notations_PrimeBasis Prime basis: L^2 Orthonormal Polynomials
+
+  In order to express polynomials in the convexes defined previously, we
+  need to choose a \e prime \e basis, i.e., a basis in which all
+  polynomial families are expressed. Often, the choice falls on the
+  canonical basis (also known as the \e moment or \e monomial \e
+  basis). However, recent work by R.C. Kirby proposed to use the Dubiner
+  polynomials as a prime basis on the simplex. We extended these ideas
+  on the hypercubes using the Legendre polynomials. Other interesting
+  examples of prime basis being used are the Bernstein polynomials. Our
+  framework uses the Dubiner or Legendre basis as the default prime
+  basis. This choice simplifies the construction of finite elements due
+  to the hierarchical and \f$L^2\f$ orthogonality properties these basis
+  functions share. The choice of basis polynomials that are hierarchical
+  allows for an easy extraction of a basis spanning a subspace of the
+  polynomial space (which corresponds to extract a range of
+  coefficients), whereas \f$L^2\f$ orthogonality simplifies some
+  operations like numerical integration or the \f$L^2\f$ projection
+  (which is explicit in this case).  The use of these basis functions
+  proved to provide much better numerical stability, see \cite gpena.
+
+  Details on the construction of the Dubiner polynomials can be found
+  in \cite MR1696933 page 101. In practice, the prime basis is normalized.
+
+
+  \subsection Notations_psetconvex Point Sets on Convexes
+
+
+  Now we turn to the construction of point sets \f$\mathbb{P}\f$ defined on a convex \f$K\f$.
+  Point sets are represented algebraically by a matrix (rows are indexed by the
+  coordinates while columns are indexed by the points) and they are parametrized
+  by the associated convex and the numerical type. We recall that the convex is
+  decomposed in vertices, edges, faces, volumes. A similar decomposition is done
+  for the point sets: points are constructed and associated to their respective
+  entities on which they reside. This is crucial when considering continuous and
+  discontinuous Galerkin formulations.
+
+
+  The type of point sets supported are \e (i) the Equidistributed
+  point set, \e (ii) the Warpblend point sets on simplices see \cite warburton06,
+  \e (iii) Fekete points in simplices, see \cite MR1696933,
+  \e (iv) standard quadrature rules in simplices and finally
+  \e (v) Gauss, Gauss-Radau and Gauss-Lobatto and combinations in
+  simplices and hypercubes. It should be noted that the last family
+  is constructed from the computation of the zeros of the Legendre
+  polynomials on \f$[-1,1]\f$ including eventually the boundary vertices
+  \f$-1\f$, \f$1\f$ for the Radau and Lobatto flavors.
+
+
+  Warpblend and Fekete points are used with nodal basis on simplices which, when
+  constructed at these points, present much better interpolation properties (lower
+  Lebesgue constant, see \cite MR1696933). Note that the Gauss-Lobatto points are
+  the Fekete points in hypercubes.
+
+
+  \subsection Notatiopns_Pset Polynomial Set
+
+
+  After introducing in the previous sections the necessary bricks
+  to the construction of polynomials on simplices and hypercubes, we
+  now focus on the polynomial abstraction.
+
+  A polynomial set \f$\mathbb{P}\f$ is a template class parametrized by the prime
+  basis in which it is expressed and the field type in which it has its values:
+  scalar, vectorial or matricial. Its interface provides a number of operations
+  such as evaluation and derivation at a set of points, extraction of polynomials
+  or components (when the \c FieldType is \c Vectorial  or
+  \c Matricial) of a polynomial from a polynomial set .
+
+  One critical operation is the construction of the gradient of a polynomial (or a
+  polynomial set) expressed in the prime basis. This usually requires solving a
+  linear system where the matrix entries are given by the evaluation of the prime
+  basis and its derivatives at a set of points. Again the choice of set of points
+  is crucial here to avoid ill-conditioning and loss of accuracy. We choose
+  Gauss-Lobatto points for hypercubes and Warpblend or Fekete points for
+  simplicies as they provide a much better conditioning for the underlying system
+  matrix (a generalized Vandermonde matrix, see \cite gpena). % A trick that
+  % amounts for a appreciable gain in accuracy is to do these computations using
+  % higher precision types, e.g. \c dd_real, and then fall back in the end
+  % to the required numerical type, e.g. \c double.
+
+
+  \subsection Notations_fem Finite Elements and Other Polynomial Basis
+
+  \Feel supports modal basis, \eg Legendre or Dubiner, see
+  \cite MR1696933, \cite canuto_hussaini_quarteroni_zang_2, as well as finite elements
+  (FE) following the standard definition, set in \cite Ciarlet:2002:FEM:581834,
+  as a triplet \f$(K,\mathbb{P},\Sigma)\f$ where \f$K\f$ is a convex, \f$\mathbb{P}\f$ the polynomial space
+  and \f$\Sigma\f$ the dual space. We describe now some features of the finite element
+  framework. The description of \f$K\f$ and \f$\mathbb{P}\f$ has been presented
+  previously and it remains to describe \f$\Sigma\f$. \f$\Sigma\f$ is a set of functionals
+  (which can be identified as degrees of freedom) defined in \f$\mathbb{P}\f$ with
+  values in \f$\mathbb{R}\f$, \f$\mathbb{R}^d\f$ or \f$\mathbb{R}^{d\times d}\f$. Several types of functionals can
+  then be instantiated which merely require basic operations like evaluation at a
+  set of points, derivation at a set of points, exact integration or numerical
+  integration. Some examples of functionals satisfying such requirements are
+
+  - evaluation at a point \f$x \in K\f$, \f$\ell_x : p \rightarrow p(x)\f$,
+  - derivation at a point \f$x \in K\f$ in the direction \f$i\f$, \f$\ell_{x,i} : p \rightarrow \frac{\partial p}{\partial x_i}(x)\f$,
+  -  moment integration associated with a polynomial \f$q \in \mathbb{P}(K)\f$, \f$\ell_q : p \rightarrow \int_{K} p q\f$.
+
+  A functional is represented algebraically by a vector whose entries result from
+  the application of the functional to the prime basis in which we express the
+  polynomials thanks to the bijection between \f$\mathcal{L}(\mathbb{P},\mathbb{R})\f$ and
+  \f$\mathbb{R}^{\mathrm{dim}(\mathbb{P})}\f$. Then applying the functional to a polynomial is just a scalar
+  product between the coefficient of this polynomial in the prime basis by the
+  vector representing the functional. For example the \e Lagrange \e element is
+  the finite element \f$(K, \mathbb{P}, \Sigma=\{\ell_{x_i}, x_i \in X \subset K\})\f$
+  such that \f$\ell_{x_i}( p_j ) = \delta_{ij}\f$ where \f$p_j\f$ is a Lagrange polynomial
+  and \f$X = \{x_i\}\f$ is a set of points defined in the convex \f$K\f$, for example the
+  Equidistributed, Warpblend or Fekete point sets. Other FE such as
+  \f$\mathbb{P}_{1,2}\f$-bubble, \f$\mathbb{R}\mathbb{T}_k\f$ or \f$\mathbb{N}_k\f$
+  polynomials are constructed likewise though they require a more involved
+  description.
+
+
+  \subsection Notations_Geometry Geometry
+
+  To conclude this section, one important object that is constructed with the help
+  of the polynomial library is the \e geometric \e transformation. Indeed all
+  polynomial set constructions are done on a reference convex, denoted \f$\hat{K}\f$,
+  and the geometrical transformation maps it to a convex in the physical space
+  which we denote \f$K\f$. This map, denoted \f$\varphi_\mathrm{geo}^K\f$, is the \f$C^1-\f$diffeomorphism
+  defined on \f$\hat{K} \subset \mathbb{R}^p, p=1,2,3\f$ such that the image is \f$K
+  \subset \mathbb{R}^d\f$, \ie \f$\varphi_\mathrm{geo}^K: \hat{K} \longrightarrow K\f$ for \f$p\leq d
+  \leq 3\f$. This map is contructed and associated to each convex \f$K\f$ in a
+  computational mesh \f$\mathcal{T}_h\f$. Notice
+  that this last condition over \f$p\f$ and \f$d\f$ covers a large spectrum of geometrical
+  profiles. For instance, we handle lines or surfaces in \f$\mathbb{R}^3\f$.
+
+  The geometric transformation is constructed as a suitable linear combination of
+  Lagrange polynomials and therefore it can be a polynomial of arbitrary degree,
+  allowing thus meshes with elements that have curved edges/faces, see
+  \cite gpena_cprudhomme_acomen, \cite gpena_cprudhomme_aquarteroni. Another consequence
+  of \f$\varphi_\mathrm{geo}^K\f$ being a polynomial of a degree the user can choose, is the possibility
+  to define isoparametric (or subparametric or surparametric) finite elements, see
+  \cite gpena_cprudhomme_aquarteroni, \cite gpena. Lets denote \f$\kgeo\f$ the
+  polynomial order of the Lagrange basis in which \f$\varphi_\mathrm{geo}^K\f$ is expanded. If there
+  is no ambiguity, we keep the notation \f$\varphi_\mathrm{geo}^K\f$, otherwise we use the notation \f$\varphi_\mathrm{geo}^Kkgeo\f$.
+
+
+  The class that implements the definition and evaluation of the
+  geometrical transformation also provides a function to evaluate its
+  gradient, automatic consequence of \f$\varphi_\mathrm{geo}^K\f$ being an element
+  belonging to a polynomial set. Another important transformation
+  associated with \f$\varphi_\mathrm{geo}^K\f$ is its inverse, \f$(\varphi_\mathrm{geo}^K)^{-1}\f$. In
+  the case of an affine transformation, the inverse is calculated
+  explicitely. However, if \f$\varphi_\mathrm{geo}^K\f$ is nonlinear, the
+  evaluation/differentiation of \f$(\varphi_\mathrm{geo}^K)^{-1}\f$ at a set of points
+  is performed with the help of a nonlinear solver (we have used the
+  nonlinear solver available in \c PETSc for these calculations.  The
+  inverse transformation plays an essential role in providing an
+  interpolation tool, all the advanced numerical methods use this tool
+  and hence the inverse geometrical transformation.
+
+
+  \section MeshNotations Mesh Notations
+
+  Let \f$\Omega\subset\mathbb{R}^d\f$, \f$d\ge 1\f$, denote a bounded connected domain.  We first
+  need to introduce a suitable discretization of \f$\Omega\f$, \f$\Omega_h \subset
+  \Omega\f$. Note that if \f$\Omega\f$ is a polyhedral domain then \f$\Omega_h = \Omega\f$.
+  We denote by \f$\mathcal{T}_h\f$ a finite collection of nonempty, disjoint open simplices or
+  hypercubes \f$\mathcal{T}_h=\{K = \varphi_\mathrm{geo}^K(\hatK)\}\f$ forming a partition of \f$\Omega_h\f$ such
+  that \f$h=\max_{K\in\mathcal{T}_h} h_K\f$, with \f$h_K\f$ denoting the diameter of the element
+  \f$K\in\mathcal{T}_h\f$.  We say that a hyperplanar closed subset \f$F\f$ of \f$\closure{\Omega}\f$ is
+  a mesh face if it has positive \f$(d{-}1)\f$-dimensional measure and if either there
+  exist \f$K_1,\,K_2\in\mathcal{T}_h\f$ such that \f$F = \partial K_1\cap\partial K_2\f$ (and \f$F\f$ is
+  called an \emph{internal face}) or there exists \f$K\in\mathcal{T}_h\f$ such that \f$F
+  = \partial K\cap\partial\Omega_h\f$ (and \f$F\f$ is called a \emph{boundary face}).
+  Internal faces are collected in the set \f$\mathcal{F}_h^i\f$, boundary faces in \f$\mathcal{F}_h^b\f$ and we
+  let \f$\mathcal{F}_h\eqbydef\mathcal{F}_h^i\cup\mathcal{F}_h^b\f$.  For all \f$F\in\mathcal{F}_h\f$, we define
+  \f$\mathcal{T}_F\eqbydef\{K\in\mathcal{T}_h\; | \; F\subset\partial K\}.\f$ For every interface
+  \f$F\in\mathcal{F}_h^i\f$ we introduce two associated normals to the elements in \f$\mathcal{T}_F\f$ and
+  we have \f$\normal_{K_1,F}=-\normal_{K_2,F}\f$, where \f$\normal_{K_i,F}\f$,
+  \f$i\in\{1,2\}\f$, denotes the unit normal to \f$F\f$ pointing out of \f$K_i\in\mathcal{T}_F\f$.
+  On a boundary face \f$F\in\mathcal{F}_h^b\f$, \f$\normal_F=\normal_{K,F}\f$ denotes the unit normal
+  pointing out of \f$\Omega_h\f$.
+
+  We also introduce
+  - the set of boundary elements
+  \f[
+  \mathcal{T}^b_h=\{ K \in \mathcal{T}_h\, \; | \;\, \partial K  \cap \partial \Omega \neq \emptyset\}
+  \f],
+  - the set of internal elements
+  \f[
+  \mathcal{T}^i_h=\mathcal{T}_h \backslash \mathcal{T}^b_h
+  \f],
+  -  the set \f$\mathcal{N}_h\f$ which collects the nodes of the mesh,
+  -  when \f$d=3\f$, \f$\mathcal{E}_h\f$ which collects the edges of the mesh.
+
+  The collections \f$\mathcal{T}_h, \mathcal{F}_h, \mathcal{E}_h, \mathcal{N}_h\f$, as well as
+  the internal and boundary collections, are provided by our mesh data
+  structure and stored using the the Boost.Multi_index library
+  http://www.boost.org/libs/multi_index/doc/index.html.  The mesh
+  entities (elements, faces, edges, nodes) are indexed either by their
+  ids, the process id (i.e. the id given by MPI in a parallel context,
+  by default the current process id) to which they belong, their markers
+  (material properties, boundary ids...) or their location (whether the
+  entity is internal or lies on the boundary of the domain). Other
+  indices could certainly be defined, however those previous four
+  already allow a wide range of applications. Thanks to
+  Boost.Multi_index, it is trivial to retrieve pairs of iterators over
+  the entity's containers depending on the usage context. The pairs of
+  iterators are then turned into a range, see Boost.Range
+  http://www.boost.org/libs/range/index.html, to be manipulated by
+  integration, \ref Integrals, and projection, tools.
+
+*/
+}

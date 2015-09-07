@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 23 Feb 2015
@@ -23,9 +23,44 @@
 #
 SET( SRC
   modelproperties.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
+
+  #solid/solidmechanics.cpp
   )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp solid/*.hpp fluid/*.hpp )
 feel_append_src(feelmodels "${SRC};${HDR}")
 
+add_subdirectory(solid_oldversion)
+
+SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+
+option(FEELMODELS_ENABLE_MESHALE "Enable/Disable mesh ALE" ON)
+if ( FEELMODELS_ENABLE_MESHALE )
+  set( FEELPP_MODELS_HAS_MESHALE 1)
+endif()
+set(FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION 1)
+#set(FEELPP_MODELS_HAS_MESHALE_WINSLOW 1)
+
+
+add_subdirectory(modelcore)
+add_subdirectory(modelalg)
+add_subdirectory(modelmesh)
+
+
+# generate models lib
+add_subdirectory(thermodyn)
 add_subdirectory(solid)
+add_subdirectory(fluid)
+add_subdirectory(fsi)
+
+add_custom_target(feelpp_model_algebra)
+add_dependencies(feelpp_model_algebra feelpp_modelalg)
+
+add_custom_target(feelpp_model_mesh)
+add_dependencies(feelpp_model_mesh feelpp_model_algebra)
+
+add_custom_target(feelpp_models)
+#add_dependencies(feelpp_models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
+add_dependencies(feelpp_models feelpp_model_mesh)
+

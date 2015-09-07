@@ -18,9 +18,6 @@ using namespace Feel::vf;
 namespace test_meshmarker
 {
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
 /*_________________________________________________*
  * Options
  *_________________________________________________*/
@@ -56,11 +53,11 @@ makeAbout()
 }
 
 void
-test_meshmarker( Application_ptrtype test_app )
+test_meshmarker()
 {
     typedef Mesh<Simplex<3,1,3> > mesh_type;
 
-    auto meshSize = test_app->vm()["hsize"].as<double>();
+    auto meshSize = doption(_name="hsize");
 
     GeoTool::Node x1(-1,-1,-1);
     GeoTool::Node x2( 1,-1,-1);
@@ -84,9 +81,7 @@ test_meshmarker( Application_ptrtype test_app )
 
     auto submesh = createSubmesh(mesh,marked3elements(mesh,1));
 
-    auto myexporter = Exporter<mesh_type>::New( test_app->vm(), "test_meshmarker_export" );
-    //myexporter->step(0)->setMesh( mesh );
-    myexporter->step(0)->setMesh( submesh );
+    auto myexporter = exporter(_mesh=submesh,_name="test_meshmarker_export");
     //myexporter->step(0)->add( "test2dP1mesh_uP1", u );
     myexporter->save();
 }
@@ -106,16 +101,7 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
     using namespace Feel::vf;
     using namespace test_meshmarker;
 
-    Application_ptrtype test_app( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                  boost::unit_test::framework::master_test_suite().argv,
-                                  test_meshmarker::makeAbout(),
-                                  test_meshmarker::makeOptions()
-                                                      ) );
-
-    test_app->changeRepository( boost::format( "/testsuite/feelmesh/%1%/" )
-                                % test_app->about().appName() );
-
-    test_meshmarker::test_meshmarker( test_app);
+    test_meshmarker::test_meshmarker();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
