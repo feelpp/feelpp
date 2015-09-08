@@ -7,7 +7,7 @@
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
 if (NOT DEFINED FEELPP_STD_CPP ) 
-  set(FEELPP_STD_CPP "11") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+  set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
 endif()
 message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 # Check compiler

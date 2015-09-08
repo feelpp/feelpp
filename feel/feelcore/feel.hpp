@@ -155,6 +155,7 @@ using google::WARNING;
 using google::ERROR;
 using google::INFO;
 using google::FATAL;
+using boost::format;
 
 namespace detail
 {
