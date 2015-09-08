@@ -790,7 +790,7 @@ public:
 
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return boost::get<3>( M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc]);
+                return M_d.nLocalDof(true)*c + boost::get<3>( M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc]);
             }
 
         DofTable const& M_d;
