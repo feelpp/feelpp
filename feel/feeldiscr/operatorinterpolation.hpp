@@ -763,7 +763,7 @@ private :
 
         using shape = typename t_expr_type::shape;
         M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
-                                         image_fe_type::is_product?image_fe_type::nComponents*image_fe_type::nLocalDof:image_fe_type::nLocalDof );
+                                         new_basis_type::is_product?new_basis_type::nComponents*new_basis_type::nLocalDof:new_basis_type::nLocalDof );
         newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
     }
 
