@@ -770,7 +770,7 @@ public:
             }
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return __loc;
+                return M_d.nLocalDof(true) * c+__loc;
             }
         DofTable const& M_d;
     };

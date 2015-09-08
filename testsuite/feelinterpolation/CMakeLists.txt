@@ -21,6 +21,7 @@ feelpp_add_test( eval_at_point TIMEOUT 60)
 feelpp_add_test( operatorinterpolation )
 feelpp_add_test( hypercubeinterpolation )
 feelpp_add_test( interpolation_grad )
+feelpp_add_test( interpolation_id )
 
 feelpp_add_test( interpolation_RT CFG test_interpolation_RT.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG test_interpolation_Nedelec.cfg NO_MPI_TEST)

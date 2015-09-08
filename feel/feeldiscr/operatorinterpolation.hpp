@@ -656,6 +656,7 @@ struct PrecomputeDomainBasisFunction
     //typedef GeoElementType geoelement_type;
     typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
     typedef typename DomainSpaceType::basis_type fe_type;
+    typedef typename ImageSpaceType::basis_type image_fe_type;
     typedef ExprType expression_type;
 
     // geomap context
@@ -704,7 +705,6 @@ struct PrecomputeDomainBasisFunction
 
         t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
 
-        //IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
 
@@ -735,7 +735,8 @@ private :
         t_expr_type texpr( M_expr, mapgmc, mapfec );
         using shape = typename t_expr_type::shape;
         M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
-                                         texpr.geom()->nPoints() );
+                                         image_fe_type::is_product?image_fe_type::nComponents*image_fe_type::nLocalDof:image_fe_type::nLocalDof);
+        
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
     void init(mpl::false_ )
@@ -762,7 +763,7 @@ private :
 
         using shape = typename t_expr_type::shape;
         M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
-                                         texpr.geom()->nPoints() );
+                                         image_fe_type::is_product?image_fe_type::nComponents*image_fe_type::nLocalDof:image_fe_type::nLocalDof );
         newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
     }
 
@@ -1261,7 +1262,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     uint16_type nCompDomain = (domain_basis_type::is_product)?domain_basis_type::nComponents:1;
                                     for(int cdomain = 0;cdomain < nCompDomain;++cdomain )
                                     {
-
+                                        if ( domain_basis_type::is_product && 
+                                             image_basis_type::is_product && 
+                                             ( M_interptype.interpolationOperand() == interpolation_operand_type::ID ) 
+                                             && cdomain != comp) continue;
+                                            
                                         // get column
                                         const size_type j = domaindof->localToGlobal( domain_eid, jloc, cdomain ).index();
 
