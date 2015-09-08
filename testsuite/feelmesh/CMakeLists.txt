@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testmesh )
-foreach(TEST entity mesh regiontree mesh_codim1 kdtree P1mesh meshmarker mesh0d simplexordering )
+foreach(TEST entity mesh regiontree mesh_codim1 kdtree P1mesh meshmarker simplexordering )
 
   feelpp_add_test( ${TEST} )
 

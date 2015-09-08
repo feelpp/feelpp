@@ -1528,6 +1528,8 @@ public:
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
     static const bool is_mortar = mortar_0_type::is_mortar;
+    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
+    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
 
     //@}
 
@@ -1925,6 +1927,8 @@ public:
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
         static const int rank = functionspace_type::rank;
+        static const bool is_hcurl_conforming = functionspace_type::is_hcurl_conforming;
+        static const bool is_hdiv_conforming = functionspace_type::is_hdiv_conforming;
         
         /** @name Typedefs
          */
@@ -2000,8 +2004,22 @@ public:
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
 
+        
+        Element( functionspace_ptrtype const& __functionspace,
+                 std::string const& __name,
+                 std::string const& __desc,
+                 size_type __start = 0,
+                 ComponentType __ct = ComponentType::NO_COMPONENT);
+
         Element( functionspace_ptrtype const& __functionspace,
                  std::string const& __name = "unknown",
+                 size_type __start = 0,
+                 ComponentType __ct = ComponentType::NO_COMPONENT );
+
+        Element( functionspace_ptrtype const& __functionspace,
+                 container_type const& __c,
+                 std::string const& __name,
+                 std::string const& __desc,
                  size_type __start = 0,
                  ComponentType __ct = ComponentType::NO_COMPONENT );
 
@@ -2286,7 +2304,8 @@ public:
                 {
                     
                     size_type index= ldof.index();
-                    super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                    //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                    super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
                 }
             }
         
@@ -3282,6 +3301,14 @@ public:
             return M_name;
         }
 
+        /**
+         \return the description of the element
+         */
+        std::string const& description() const
+        {
+            return M_desc;
+        }
+
         size_type start() const
         {
             return M_start;
@@ -3345,6 +3372,15 @@ public:
         {
             M_name = __name;
         }
+
+        /**
+         * set the description of the field (e.g. a formula)
+         * @param __desc description of the field
+         */
+        void seDescription( std::string const & __desc )
+            {
+                M_desc = __desc;
+            }
 
         void setFunctionSpace( functionspace_ptrtype space )
         {
@@ -3513,6 +3549,8 @@ public:
             //ar & BOOST_SERIALIZATION_NVP( boost::serialization::base_object<super>(*this) );
             ar & boost::serialization::make_nvp( "name", M_name );
             DVLOG(2) << "got name " << M_name << "\n";
+            //ar & boost::serialization::make_nvp( "description", M_desc );
+            //DVLOG(2) << "got description " << M_desc << "\n";
 
             if ( Archive::is_saving::value )
             {
@@ -3635,6 +3673,7 @@ public:
         functionspace_ptrtype M_functionspace;
 
         std::string M_name;
+        std::string M_desc;
 
         size_type M_start;
 
@@ -4236,12 +4275,12 @@ public:
 
 
     /**
-     * \return an element of the function space
+     * \return the element 0 of the function space
      */
     element_type
-    element( std::string const& name = "u" )
+    element( std::string const& name = "u", std::string const& desc = "u" )
     {
-        element_type u( this->shared_from_this(), name );
+        element_type u( this->shared_from_this(), name, desc );
         u.zero();
         return u;
     }
@@ -4253,9 +4292,10 @@ public:
      */
     template<typename ExprT>
     element_type
-    element( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    element( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
+             typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
-        element_type u( this->shared_from_this(), name );
+        element_type u( this->shared_from_this(), name, desc );
         bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
         EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         u.on( _range=elements(M_mesh,entityProcess), _expr=e );
@@ -4263,14 +4303,12 @@ public:
     }
 
     /**
-     * \return an element of the function space
+     * \return the element 0 of the function space
      */
     element_ptrtype
-    elementPtr( std::string const& name = "u" )
+    elementPtr( std::string const& name = "u", std::string const& desc = "u" )
     {
-        element_ptrtype u( new element_type( this->shared_from_this(), name ) );
-        u->zero();
-        return u;
+        return boost::make_shared<element_type>( this->shared_from_this(), name, desc );
     }
 
     /**
@@ -4280,13 +4318,10 @@ public:
      */
     template<typename ExprT>
     element_ptrtype
-    elementPtr( ExprT e, std::string const& name = "u", typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
+    elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
+                typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
-        element_ptrtype u( new element_type( this->shared_from_this(), name ) );
-        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
-        return u;
+        return boost::make_shared<element_type>( e, name, desc );
     }
 
     typedef std::vector<element_ptrtype> elements_ptrtype;
@@ -4301,8 +4336,7 @@ public:
         elements_ptrtype u( r );
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = element_ptrtype(new element_type( this->shared_from_this(), name ));
-            u[i]->zero();
+            u[i] = boost::make_shared<element_type>( this->shared_from_this(), name );
         }
         return u;
     }
@@ -4318,9 +4352,7 @@ public:
         elements_ptrtype u( r );
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = element_ptrtype(new element_type( this->shared_from_this(), name ));
-            bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-            u[i]->on( _range=elements(M_mesh,addExtendedElt), _expr=e );
+            u[i] = boost::make_shared<element_type>( e, name );
         }
         return u;
     }
@@ -4635,9 +4667,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
     }
 
-    M_ref_fe = basis_ptrtype( new basis_type );
+    M_ref_fe = boost::make_shared<basis_type>();
 
-    M_dof = dof_ptrtype( new dof_type( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
+    M_dof = boost::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] );
 
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
 

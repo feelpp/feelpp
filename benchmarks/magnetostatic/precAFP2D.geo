@@ -23,4 +23,4 @@ Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 Physical Line("Border") = {1,2,3,4};
-Physical Surface(6) = {6};
+Physical Surface("firstMat") = {6};

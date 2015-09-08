@@ -726,6 +726,7 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
 #endif
+
     if( subvec == NULL ) //createSubVector
     {
         ierr = VecGetSubVector(this->vec(), isrow, &subvec);
@@ -733,6 +734,7 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     }
     else //updateSubVector
     {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 5)
         //ierr = VecRestoreSubVector(this->vec(), isrow, &subvec);
         if( init )
         {
@@ -741,6 +743,9 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
         }
         ierr = VecISAXPY(this->vec(), isrow, 1, subvec); //vec[isrow[i]] += alpha*subvec[i] with alpha=1
         CHKERRABORT( this->comm(),ierr );
+#else
+        std::cerr << "ERROR : update of subvectors requires petsc version >= 3.5" << std::endl;
+#endif
     }
 
     ierr = PETSc::ISDestroy( isrow );
@@ -792,6 +797,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 
     IS isGlob;
     IS isLoc;
+    ISLocalToGlobalMapping isLocToGlobMap;
 
     // create IS for vecScatter
     PetscInt *idx;
@@ -806,6 +812,12 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 #else
     ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
 #endif
+    CHKERRABORT( this->comm(),ierr );
+
+    // create LocalToGlobalMapping
+    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
 
     ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );

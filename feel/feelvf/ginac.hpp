@@ -41,6 +41,8 @@
 
 namespace GiNaC
 {
+std::string str( ex && f );
+std::string str( ex const& f );
 matrix grad( ex const& f, std::vector<symbol> const& l );
 matrix laplacian( ex const& f, std::vector<symbol> const& l );
 matrix grad( std::string const& s, std::vector<symbol> const& l );

@@ -206,7 +206,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
     M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
     M_L(M_backend->newMatrix(M_Qh,M_Qh)),
     M_er( M_Mh, "er" ),
-    M_k(0.),
+    M_k(doption("parameters.k")),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
     u(M_Vh, "u"),
@@ -224,7 +224,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
         std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
-        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true);
+        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
         map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
         map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
@@ -254,7 +254,9 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
         {
             M_pcAs = blockas(_space=M_Xh,
                              _space2=M_Mh,
-                             _bc = M_bcFlags);
+                             _matrix=M_11,
+                             _bc = M_bcFlags//,_type=soption("blockms.11.as-type")
+                             );
         }
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
@@ -317,13 +319,14 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         //auto f1B = form1(_test=M_Qh);
         //for(auto const & it : m_dirichlet_p)
         //    f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
-        M_22Op = op(M_L, "blockms.22");
 
         if(soption("blockms.11.pc-type") == "AS")
         {
-            M_pcAs->update(M_11, M_L, mu);
+            M_pcAs->update(M_11, mu);
             M_11Op->setPc( M_pcAs );
         }
+
+        M_22Op = op(M_L, "blockms.22");
     }
     toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
 }
