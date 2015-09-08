@@ -639,7 +639,8 @@ public:
         return M_expr.evaluate( parallel,worldcomm );
     }
     template<typename T, int M, int N=1>
-    decltype(auto)
+    //decltype(auto)
+std::vector<Eigen::Matrix<T,M,N> >
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
         {
             return M_expr.evaluate( v );
@@ -712,7 +713,7 @@ struct ExpressionOrder
 
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
     static const uint16_type nOrderGeo = the_element_type::nOrder;
