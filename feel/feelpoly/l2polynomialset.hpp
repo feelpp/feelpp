@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 16 Feb 2015
+ Date: 24 août 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,35 +21,28 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_PTR_HPP
-#define FEELPP_PTR_HPP 1
+#ifndef FEELPP_L2POLYNOMIALSET_HPP
+#define FEELPP_L2POLYNOMIALSET_HPP 1
 
-#include <memory>
-#include <boost/shared_ptr.hpp>
-#include <boost/detail/is_xxx.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
-namespace Feel
-{
-namespace detail
-{
-BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
-}
-}
+namespace Feel {
 
-namespace std
-{
-// make_unique is defined for c++14 and beyond
-#if __cplusplus <= 201200L
 /**
- * provide the c++14 implementation of std::make_unique
+ * L2 conforming polynomialset base class
  */
-template<typename T, typename... Ts>
-std::unique_ptr<T>
-make_unique(Ts&&... params)
+class L2PolynomialSet {};
+
+/**
+ * type traits for L2 conforming polynomialset
+ * @return true_type if L2 conforming polynomialset, false_type otherwise
+ */
+template<typename P>
+class is_l2_conforming : public boost::is_base_of<L2PolynomialSet,P>
 {
-    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
-}
-#endif
+};
 
 }
+
+
 #endif

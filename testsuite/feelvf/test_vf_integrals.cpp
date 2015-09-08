@@ -23,7 +23,6 @@
  */
 #define BOOST_TEST_MODULE test_integrals
 #include <testsuite/testsuite.hpp>
-#endif
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -99,7 +98,7 @@ public :
 
 
             tic();
-            auto v = integrate(_range=elements(mesh),_expr=_e1,_quad=_Q<1>()).template evaluate<double,3,1>( x );
+            auto v = integrate(_range=elements(mesh),_expr=_e1v,_quad=_Q<1>()).template evaluate<double,3,1>( x );
             if ( Environment::numberOfProcessors() == 1 )
                 std::for_each( v.begin(), v.end(), 
                                [&n]( Eigen::Matrix<double,3,1> const& nn ) 

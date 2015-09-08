@@ -308,6 +308,23 @@ public:
     }
 
     /**
+     * @return true if number of process is 1, hence the environment is
+     * sequential
+     */
+    static bool isSequential() 
+    {
+        return numberOfProcessors() == 1;
+    }
+
+    /**
+     * @return true if the environment is not sequential, that is if the number
+     * of process is greater than 1
+     */
+    static bool isParallel() 
+    {
+        return !isSequential();;
+    }
+    /**
      * rank 0 process is considered the master process
      *
      * the master process can then for example print information in the console

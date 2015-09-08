@@ -261,7 +261,8 @@ void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
                                Vector<value_type> const& vals,
                                Vector<value_type>& rhs,
-                               Context const& on_context )
+                               Context const& on_context,
+                               value_type value_on_diagonal )
 {
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
@@ -271,7 +272,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
-        value_type value = 1.0;
+        value_type value = value_on_diagonal;
 
         if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );

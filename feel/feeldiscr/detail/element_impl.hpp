@@ -202,17 +202,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
-        std::string const& __name,
-        size_type __start,
-        ComponentType __ct )
+                                                             std::string const& __name,
+                                                             std::string const& __desc,
+                                                             size_type __start,
+                                                             ComponentType __ct )
     :
     super( __functionspace->dof() ),
     M_functionspace( __functionspace ),
     M_name( __name ),
+    M_desc( __desc ),
     M_start( __start ),
     M_ct( __ct ),
     M_containersOffProcess( boost::none )
 {
+    LOG(INFO) << "creating element " << name() << " : " << description();
     DVLOG(2) << "Element::start = " << this->start() << "\n";
     DVLOG(2) << "Element::size = " << this->size() << "\n";
     DVLOG(2) << "Element::ndof = " << this->nDof() << "\n";
@@ -223,14 +226,28 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
-        container_type const& __c,
-        std::string const& __name,
-        size_type __start,
-        ComponentType __ct )
+                                                             std::string const& __name,
+                                                             size_type __start,
+                                                             ComponentType __ct )
+    :
+    Element( __functionspace, __name, __name, __start, __ct ) 
+{
+}
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+                                                             container_type const& __c,
+                                                             std::string const& __name,
+                                                             std::string const& __desc,
+                                                             size_type __start,
+                                                             ComponentType __ct )
     :
     super( __c ),
     M_functionspace( __functionspace ),
     M_name( __name ),
+    M_desc( __desc ),
     M_start( __start ),
     M_ct( __ct ),
     M_containersOffProcess( boost::none )
@@ -244,6 +261,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     M_start = __c.start();
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+                                                             container_type const& __c,
+                                                             std::string const& __name,
+                                                             size_type __start,
+                                                             ComponentType __ct )
+    :
+    Element( __functionspace, __c, __name, __name, __start, __ct ) 
+{}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -2322,7 +2350,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
 
     typedef typename element_type::functionspace_type::fe_type fe_type;
-    const size_type context = mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
                                         mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
 

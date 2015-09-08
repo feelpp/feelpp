@@ -26,8 +26,6 @@
    \date 2011-06-19
 */
 
-#define USE_BOOST_TEST 1
-
 // give a name to the testsuite
 #define BOOST_TEST_MODULE form_interpolation testsuite
 
@@ -78,8 +76,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "Test_Form_Interpolation" ,
-                     "Test_Form_Interpolation" ,
+    AboutData about( "test_form_interpolation" ,
+                     "test_form_interpolation" ,
                      "0.1",
                      "test linear and bilinear form with interpolation",
                      Feel::AboutData::License_GPL,
@@ -94,7 +92,7 @@ template <uint16_type OrderPoly>
 void run()
 {
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/P%2%/" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/P%2%/" )
                                    % Environment::about().appName()
                                    % OrderPoly );
 
@@ -267,8 +265,6 @@ void run()
 
 } // namespace test_form_interpolation
 
-#if USE_BOOST_TEST
-
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_interpolation::makeAbout(),
                                  test_form_interpolation::makeOptions() )
 
@@ -280,25 +276,3 @@ BOOST_AUTO_TEST_CASE( form_interpolation )
     test_form_interpolation::run<2>();
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-#else
-
-int
-main( int argc, char** argv )
-{
-
-    Feel::Environment env( argc, argv );
-
-    auto theApp = Application_ptrtype( new Application_type );
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    test_form_interpolation::run<2>( theApp );
-
-}
-
-#endif

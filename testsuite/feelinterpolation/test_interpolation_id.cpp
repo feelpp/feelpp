@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 16 Feb 2015
+ Date: 21 août 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,35 +21,20 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_PTR_HPP
-#define FEELPP_PTR_HPP 1
+#include <feel/feel.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 
-#include <memory>
-#include <boost/shared_ptr.hpp>
-#include <boost/detail/is_xxx.hpp>
+/** use Feel namespace */
+using namespace Feel;
 
-namespace Feel
-{
-namespace detail
-{
-BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
-}
-}
 
-namespace std
+int main(int argc, char** argv )
 {
-// make_unique is defined for c++14 and beyond
-#if __cplusplus <= 201200L
-/**
- * provide the c++14 implementation of std::make_unique
- */
-template<typename T, typename... Ts>
-std::unique_ptr<T>
-make_unique(Ts&&... params)
-{
-    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+    Environment env( argc, argv );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Xh = Pchv<1>( mesh );
+    auto Yh = Pchv<1>( mesh );
+    auto Ih = I( _domainSpace = Xh, _imageSpace = Yh );
+    Ih.matPtr()->printMatlab( "Ih.m");
 }
-#endif
-
-}
-#endif

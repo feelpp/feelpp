@@ -255,7 +255,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
             M_pcAs = blockas(_space=M_Xh,
                              _space2=M_Mh,
                              _matrix=M_11,
-                             _bc = M_bcFlags);
+                             _bc = M_bcFlags//,_type=soption("blockms.11.as-type")
+                             );
         }
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
@@ -318,13 +319,14 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         //auto f1B = form1(_test=M_Qh);
         //for(auto const & it : m_dirichlet_p)
         //    f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
-        M_22Op = op(M_L, "blockms.22");
 
         if(soption("blockms.11.pc-type") == "AS")
         {
-            M_pcAs->update(M_11, M_L, mu);
+            M_pcAs->update(M_11, mu);
             M_11Op->setPc( M_pcAs );
         }
+
+        M_22Op = op(M_L, "blockms.22");
     }
     toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
 }

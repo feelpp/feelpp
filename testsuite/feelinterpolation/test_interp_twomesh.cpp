@@ -521,7 +521,7 @@ int main(int argc, char**argv )
                      _desc=test_interp_twomesh::makeOptions(),
                      _about=test_interp_twomesh::makeAbout() );
 
-    Environment::changeRepository( _directory=boost::format( "/testsuite/feeldiscr/interp/%1%/" )
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/interp/%1%/" )
                                    % env.about().appName()
                                    );
 
