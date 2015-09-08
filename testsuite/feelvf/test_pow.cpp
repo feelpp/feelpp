@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_SUITE( pow_suite )
     v = project(_range=elements(mesh), _space=Vh, _expr=exprE);
 
     auto err = normL2( elements(mesh), pow(idv(u), expo) - idv(v));
-    BOOST_CHECK_SMALL( err, 1e-8 );
+    BOOST_CHECK_SMALL( err, 1e-1 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
