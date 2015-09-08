@@ -159,6 +159,7 @@ private:
 
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
 private:
@@ -177,6 +178,18 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     element_type __v( M_functionspace );
     FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    __v.setZero();
+    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    return __v;
+}
+
+template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const
+{
+    boost::timer __timer;
+
+    element_type __v( M_functionspace );
     __v.setZero();
     __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
     return __v;

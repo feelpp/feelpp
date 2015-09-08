@@ -120,7 +120,7 @@ public :
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        exporter( Exporter<mesh_type>::New() )
     {
         this->changeRepository( boost::format( "%1%/" )
                                 % this->about().appName()
@@ -188,8 +188,7 @@ TestInterpolationHDiv<Dim>::testInterpolationOneElt( std::string one_element_mes
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
 
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%" ) % this->about().appName() %mesh_path.stem().string() ).str() ) );
+    export_ptrtype exporter_proj( export_type::New( ( boost::format( "%1%-%2%" ) % this->about().appName() %mesh_path.stem().string() ).str() ) );
 
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "U_interpolation_handly-" + mesh_path.stem().string(), U_h_int );

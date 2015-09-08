@@ -58,14 +58,17 @@ do
     for mu in `perl -le'for my $i (0..7) { print 10**-$i }'`;
     do
       # LU
-      res $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir $poly
-      nbIter $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir $poly
+      res $NPROCS $D $mu $h cg lu cg lu cg lu $OUTFILE $appDir $poly
+      nbIter $NPROCS $D $mu $h cg lu cg lu cg lu $OUTFILE $appDir $poly
       # Block : LU LU
-      res $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir $poly
-      nbIter $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir $poly
+      res $NPROCS $D $mu $h cg blockms cg lu cg lu $OUTFILE $appDir $poly
+      nbIter $NPROCS $D $mu $h cg blockms cg lu cg lu $OUTFILE $appDir $poly
       # Block : Gamg Gamg
-      res $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir $poly
-      nbIter $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir $poly
+      res $NPROCS $D $mu $h cg blockms cg gamg cg gamg $OUTFILE $appDir $poly
+      nbIter $NPROCS $D $mu $h cg blockms cg gamg cg gamg $OUTFILE $appDir $poly
+      # Block : hypre hypre
+      res $NPROCS $D $mu $h cg blockms cg hypre cg hypre $OUTFILE $appDir $poly
+      nbIter $NPROCS $D $mu $h cg blockms cg hypre cg hypre $OUTFILE $appDir $poly
       # Generate Gnuplot Command
       # plot $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir $poly
     done

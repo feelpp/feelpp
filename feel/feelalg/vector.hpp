@@ -571,7 +571,8 @@ public:
     virtual
     void
     updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
-                     std::vector<size_type> const& rows )
+                     std::vector<size_type> const& rows,
+                     bool init=true )
         {
             CHECK( false ) << "invalid call : Not Implemented in base class";
         }

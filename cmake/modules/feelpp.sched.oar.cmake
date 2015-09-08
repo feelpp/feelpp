@@ -25,13 +25,20 @@
 if (FEELPP_ENABLE_SCHED_OAR )
     if (FEELPP_MACHINE_NAME MATCHES "rheticus")
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
-#OAR -n ${execname}                # Set Job name to app name
-#OAR -l core=64, walltime=20:00:00  # Number of tasks to use and Elapsed time limit of the job
-#OAR -O ${execname}_%jobid%.out     # Standard output.
-#OAR -E ${execname}_%jobid%.err     # Error output. 
-#OAR -p cluster     # Launch job on cluster queue by default
-##OAR -p smp='YES' AND nodetype='SMP2Tb'    # Uncomment to submit a job on the SMP machine
-#OAR -q medium      # Choose queue between development, short, medium & long
+## Set Job name to app name
+#OAR -n ${execname}
+## Number of tasks to use and Elapsed time limit of the job
+#OAR -l core=64, walltime=20:00:00
+## Standard output
+#OAR -O ${execname}_%jobid%.out
+## Error output
+#OAR -E ${execname}_%jobid%.err
+## Launch job on cluster queue by default
+#OAR -p cluster
+## Uncomment to submit a job on the SMP machine
+##OAR -p smp='YES' AND nodetype='SMP2Tb'
+## Choose queue between development, short, medium & long
+#OAR -q medium
 
 # Source modules for cemracs
 source /softs/cemracs_2015/cemracs.sh
@@ -55,14 +62,17 @@ source /softs/cemracs_2015/cemracs.sh
 # We ended up having problem with Ginac when not exporting those variables
 # (They were only set for for several processes)
 # sample exports
-#export FEELPP_WORKDIR=/home/user/logfiles/job.$OAR_JOBID
-#export FEELPP_SCRATCHDIR=/home/user/feel/job.$OAR_JOBID
+#export FEELPP_WORKDIR=/home/user/feel/job.$OAR_JOBID
+#export FEELPP_SCRATCHDIR=/home/user/logfiles/job.$OAR_JOBID
 
 # launch the application
 # For OpenMPI 1.6, use orte_rsh_agent instead of plm_rsh_agent
 # See https://www.grid5000.fr/mediawiki/index.php/Run_MPI_On_Grid%275000
 # See http://oar.imag.fr/docs/2.5/user/usecases.html
 # Note: In OpenMPI 1.6, pls_rsh_agent was replaced by orte_rsh_agent. Note: In OpenMPI 1.8, orte_rsh_agent was replaced by plm_rsh_agent.
+
+# Advice: Use absolute paths to ensure that the executables and config files are found. 
+# Options that modify the paths, like --nochdir, might also be the source of errors for failing submissions
         ")
 
         if ( FEELPP_APP_CFG )
@@ -72,7 +82,7 @@ source /softs/cemracs_2015/cemracs.sh
                     "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
     -mca plm_rsh_agent \"oarsh\" \\
     ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-    --config-file=${cfg}  
+    --config-file=${CMAKE_CURRENT_BINARY_DIR}/${cfg}  
 # "
                 )
             endforeach()

@@ -667,26 +667,30 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     else
         subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
 
-    // VecRestoreSubVector(this->vec(), isrow, &subVecPetsc);
-
     return subVec;
 }
 
 template <typename T>
 void
 VectorPetsc<T>::updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
-                                 std::vector<size_type> const& rows )
+                                 std::vector<size_type> const& rows,
+                                 bool init )
 {
     CHECK( subvector ) << "subvector is not init";
     boost::shared_ptr<VectorPetsc<T> > subvectorPetsc = boost::dynamic_pointer_cast<VectorPetsc<T> >( subvector );
-    this->getSubVectorPetsc( rows, subvectorPetsc->vec() );
+    this->getSubVectorPetsc( rows, subvectorPetsc->vec(), init );
 }
 
 template <typename T>
 void
 VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
-                                   Vec &subvec ) const
+                                   Vec &subvec,
+                                   bool init ) const
 {
+    int ierr=0;
+    IS isrow;
+    PetscInt *rowMap;
+
     std::set<size_type> rowMapOrdering;
     if ( this->comm().size()>1 )
     {
@@ -705,7 +709,6 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     }
 
     // copying into PetscInt vector
-    PetscInt *rowMap;
     int nrow = rowMapOrdering.size();
     rowMap = new PetscInt[nrow];
     size_type curId=0;
@@ -715,8 +718,6 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
         ++curId;
     }
 
-    int ierr=0;
-    IS isrow;
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
@@ -725,8 +726,27 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
 #endif
-    ierr = VecGetSubVector(this->vec(), isrow, &subvec);
-    CHKERRABORT( this->comm(),ierr );
+
+    if( subvec == NULL ) //createSubVector
+    {
+        ierr = VecGetSubVector(this->vec(), isrow, &subvec);
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else //updateSubVector
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 5)
+        //ierr = VecRestoreSubVector(this->vec(), isrow, &subvec);
+        if( init )
+        {
+            ierr = VecISSet(this->vec(), isrow, 0); //re-init isrow indices to zero
+            CHKERRABORT( this->comm(),ierr );
+        }
+        ierr = VecISAXPY(this->vec(), isrow, 1, subvec); //vec[isrow[i]] += alpha*subvec[i] with alpha=1
+        CHKERRABORT( this->comm(),ierr );
+#else
+        std::cerr << "ERROR : update of subvectors requires petsc version >= 3.5" << std::endl;
+#endif
+    }
 
     ierr = PETSc::ISDestroy( isrow );
     CHKERRABORT( this->comm(),ierr );
@@ -777,6 +797,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 
     IS isGlob;
     IS isLoc;
+    ISLocalToGlobalMapping isLocToGlobMap;
 
     // create IS for vecScatter
     PetscInt *idx;
@@ -791,6 +812,12 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 #else
     ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
 #endif
+    CHKERRABORT( this->comm(),ierr );
+
+    // create LocalToGlobalMapping
+    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
 
     ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
