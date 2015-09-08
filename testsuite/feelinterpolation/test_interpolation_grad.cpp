@@ -37,9 +37,9 @@ po::options_description makeOptions()
     options.add_options()
         ( "grad",po::value<std::vector<std::string>>()->default_value( {"1"} ),
          "list of functions to test the Grad interpolation operator (default : {\"1\"}" )
-        ( "curl",po::value<std::vector<std::string>>()->default_value( {"{1,1,1}"} ),
+        ( "curl",po::value<std::vector<std::string>>()->default_value( {"{1,1,1}:x:y:z"} ),
           "list of functions to test the Curl interpolation operator (default : {\"1,1,1\"}" )
-        ( "div",po::value<std::vector<std::string>>()->default_value( {"{1,1,1}"} ),
+        ( "div",po::value<std::vector<std::string>>()->default_value( {"{1,1,1}:x:y:z"} ),
           "list of functions to test the Div interpolation operator (default : {\"1,1,1\"}" )
 
         ;
