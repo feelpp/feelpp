@@ -491,8 +491,8 @@ public:
      * evaluate the integral for each entry of the vector \c v
      */
     template<typename T,int M, int N=1>
-    //decltype(auto)
-        std::vector<Eigen::Matrix<T,eval::shape::M,eval::shape::N> >
+    decltype(auto)
+        //std::vector<Eigen::Matrix<T,eval::shape::M,eval::shape::N> >
         evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
 
 #if 1
