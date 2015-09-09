@@ -103,13 +103,15 @@ public:
                       coef_space_ptrtype Mh,
                       BoundaryConditions bcFlags,
                       std::string const& s,
+                      sparse_matrix_ptrtype Pm,
                       double k
                       );
 
     Type type() const { return M_type; }
     void setType( std::string t );
 
-    void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
+    //void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
+    void update( sparse_matrix_ptrtype A, element_coef_type mu );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -132,7 +134,7 @@ private:
 
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
-    std::vector<size_type> M_Qh3_1_indices,M_Qh3_2_indices,M_Qh3_3_indices;
+    std::vector< std::vector<size_type> > M_Qh3_indices;
 
     sparse_matrix_ptrtype M_P;
     sparse_matrix_ptrtype M_Pt;
@@ -159,6 +161,10 @@ private:
     mutable vector_ptrtype M_z;
     mutable vector_ptrtype M_z_t;
 
+    mutable potential_element_type M_vh_elt;
+    mutable lag_v_element_type M_qh3_elt;
+    mutable lagrange_element_type M_qh_elt;
+
     mutable potential_element_type U;
     element_coef_type M_mu;
     element_coef_type M_er;  // permittivity
@@ -175,11 +181,12 @@ private:
 
 template < typename space_type, typename coef_space_type >
 PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
-                                                              space_ptrtype Xh,
-                                                              coef_space_ptrtype Mh,
-                                                              BoundaryConditions bcFlags,
-                                                              std::string const& p,
-                                                              double k)
+                                                                space_ptrtype Xh,
+                                                                coef_space_ptrtype Mh,
+                                                                BoundaryConditions bcFlags,
+                                                                std::string const& p,
+                                                                sparse_matrix_ptrtype Pm,
+                                                                double k )
     :
         M_type( AS ),
         M_Xh( Xh ),
@@ -188,9 +195,7 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
         M_Mh( Mh ),
         M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
         M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_1_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_2_indices( M_Qh->nLocalDofWithGhost() ),
-        M_Qh3_3_indices( M_Qh->nLocalDofWithGhost() ),
+        M_Qh3_indices( Dim ),
         A(backend()->newVector(M_Vh)),
         B(backend()->newVector(M_Vh)),
         C(backend()->newVector(M_Vh)),
@@ -209,37 +214,58 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
 {
     tic();
     LOG(INFO) << "[PreconditionerAS] setup starts";
+    this->setMatrix( Pm ); // Needed only if worldComm > 1
+
     // QH3 : Lagrange vectorial space type
     M_Qh3 = lag_v_space_type::New(Xh->mesh());
+
+    M_qh3_elt = M_Qh3->element();
+    M_qh_elt = M_Qh->element();
+    M_vh_elt = M_Vh->element();
 
     // Block 11.1
     M_s = backend()->newVector(M_Qh3);
     M_y = backend()->newVector(M_Qh3);
     // Block 11.2
-    M_z = backend()->newVector(M_Qh3);
-    M_t = backend()->newVector(M_Qh3);
-
+    M_z = backend()->newVector(M_Qh);
+    M_t = backend()->newVector(M_Qh);
+    
     // Create the interpolation and keep only the matrix
-    /// ** That is _really_ long !
-    auto pi_curl = opInterpolation(_domainSpace=M_Qh3, _imageSpace=M_Vh);
-    M_P = pi_curl->matPtr();
-    M_Pt= backend()->newMatrix(M_Qh3,M_Vh);
-    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
+    auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+    auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
-    // TODO: create M_C and M_Ct
-    M_C = backend()->newMatrix(M_Vh,M_Qh3);
+    M_P = pi_curl.matPtr();
+    M_C = Igrad.matPtr();
+    
+    M_Pt = backend()->newMatrix(M_Qh3,M_Vh);
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
-    M_C = M_P; //TEMP
-    M_Ct = M_Pt; //TEMP
-    //std::cout << "Size of M_Ct : " << M_Ct->size1() << "," << M_Ct->size1() << std::endl;
+
+    M_P->transpose(M_Pt,MATRIX_TRANSPOSE_UNASSEMBLED);
+    M_C->transpose(M_Ct,MATRIX_TRANSPOSE_UNASSEMBLED);
+
+    LOG(INFO) << "size of M_C = " << M_C->size1() << ", " << M_C->size2() << std::endl;
+    LOG(INFO) << "size of M_P = " << M_P->size1() << ", " << M_P->size2() << std::endl;
 
     // Create vector of indices to create subvectors/matrices
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 ); // Vh indices in Xh
     std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() ); // Qh indices in Xh
+
     // "Components" of Qh3
-    std::iota( M_Qh3_1_indices.begin(), M_Qh3_1_indices.end(), 0 );
-    std::iota( M_Qh3_2_indices.begin(), M_Qh3_2_indices.end(), M_Qh->nLocalDofWithGhost() );
-    std::iota( M_Qh3_3_indices.begin(), M_Qh3_3_indices.end(), 2*M_Qh->nLocalDofWithGhost() );
+    auto Qh3_dof_begin = M_Qh3->dof()->dofPointBegin();
+    auto Qh3_dof_end = M_Qh3->dof()->dofPointEnd();
+    int idx=0;
+    for(int i=0; i<M_Qh3_indices.size(); i++)
+        M_Qh3_indices[i].resize( M_Qh3->compSpace()->nLocalDofWithGhost() );
+
+    int dof_comp, dof_idx;
+    for( auto it = Qh3_dof_begin; it!= Qh3_dof_end; it++ )
+    {
+        dof_comp = it->template get<2>(); //Component
+        dof_idx = it->template get<1>(); //Global index
+        M_Qh3_indices[dof_comp][idx] = dof_idx;
+        if( dof_comp == Dim - 1 )
+            idx++;
+    }
 
     this->setType ( t );
     toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
@@ -255,19 +281,22 @@ PreconditionerAS<space_type,coef_space_type>::setType( std::string t )
 
 template < typename space_type, typename coef_space_type >
 //template< typename Expr_convection, typename Expr_bc >
-    void
-PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm, 
-                                                    sparse_matrix_ptrtype L,
-                                                    element_coef_type mu )
+void
+PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
+                                                      //sparse_matrix_ptrtype L,
+                                                      element_coef_type mu )
 {
     tic();
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));
+    
+    map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
 
     if(this->type() == AS)
     {
         // A = Pm
-        //M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
+        // M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
         backend()->diag(Pm,M_diagPm);
+        M_diagPm->close();
 
         /*
          * hat(L) = 1/mu L
@@ -281,36 +310,36 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
         auto u = M_Qh->element("u");
 
         auto f11_1 = form2(M_Qh, M_Qh);
+        auto rhs_11_1 = form1(M_Qh);
         f11_1 = integrate(_range=elements(M_Qh->mesh()),
                           _expr=1./idv(mu)*inner(grad(u),gradt(u))
                           + M_g*idv(M_er)*inner(id(u),idt(u)) );
+        // TODO : boundary conditions ?
+        for(auto const & it : m_dirichlet_u )
+        {
+            LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_1\n";
+            f11_1 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
+        }
         // Operator hat(L) + g Q
         M_lgqOp = op( f11_1.matrixPtr(), "blockms.11.1");
-        // TODO : boundary conditions ?
 
         auto f11_2 = form2(M_Qh, M_Qh); // hat(L)
+        // TODO: do not rebuild the matrix - use f11_1
         f11_2 = integrate(_range=elements(M_Qh->mesh()),
                           _expr=1./idv(mu)*inner(grad(u),gradt(u)) );
+        // TODO : boundary conditions ?
+        for(auto const & it : m_dirichlet_u )
+        {
+            LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_2\n";
+            f11_2 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
+        }
         // Operator hat(L)
         M_lOp = op( f11_2.matrixPtr(), "blockms.11.2" );
-        // TODO : boundary conditions ?
-
-#if 0
-        this->createMatrices();
-
-        if ( type() == AS )
-        {
-            tic();
-            afpOp->update( expr_b, g );
-            toc( "Preconditioner::update AS", FLAGS_v > 0 );
-
-        }
-#endif
     }
     else if(this->type() == SIMPLE)
     {
         auto uu = M_Vh->element("uu");
-        auto f22 = form2(M_Vh, M_Vh); 
+        auto f22 = form2(M_Vh, M_Vh);
         f22 = integrate(_range=elements(M_Vh->mesh()),
                         _expr=inner(id(uu),idt(uu)));
         SimpleOp = op( f22.matrixPtr(),"blockms.11.1");
@@ -330,36 +359,54 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
      *              + P (\bar L + g \bar Q) P^t (=B)
      *              + C (L^-1) C^T (=C)
      */
-#if 1
-    tic();
+
     U = X;
     U.close();
-    toc("Element created",FLAGS_v>0);
 
     // solve equ (12)
     if ( this->type() == AS )
     {
         tic();
         // RHS calculation
+#if 0
+#if FM_DIM == 3
+        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+#endif
+
         *M_r = U;
         M_r->close();
 
-        // A = diag(Pm)^-1*r
+        // étape A
+        // diag(Pm)^-1*r
         //M_diagPm->pointwiseDivide(*M_r,*A);
-        A->pointwiseMult(*M_diagPm,*M_r);
-
+        A->pointwiseDivide(*M_r,*M_diagPm);
+        A->close();
         // s = P^t r
         M_Pt->multVector(M_r,M_s);
 
-        auto y1 = M_y->createSubVector(M_Qh3_1_indices, true);
-        auto y2 = M_y->createSubVector(M_Qh3_2_indices, true);
+        // Impose boundary conditions on M_s
+        M_qh3_elt = *M_s;
+        M_qh3_elt.close();
 #if FM_DIM == 3
-        auto y3 = M_y->createSubVector(M_Qh3_3_indices, true);
+        M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
-        auto s1 = M_s->createSubVector(M_Qh3_1_indices, true);
-        auto s2 = M_s->createSubVector(M_Qh3_2_indices, true);
+        *M_s = M_qh3_elt;
+        M_s->close();
+
+        auto y1 = M_y->createSubVector(M_Qh3_indices[0], true);
+        auto y2 = M_y->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto s3 = M_s->createSubVector(M_Qh3_3_indices, true);
+        auto y3 = M_y->createSubVector(M_Qh3_indices[2], true);
+#endif
+        auto s1 = M_s->createSubVector(M_Qh3_indices[0], true);
+        auto s2 = M_s->createSubVector(M_Qh3_indices[1], true);
+#if FM_DIM == 3
+        auto s3 = M_s->createSubVector(M_Qh3_indices[2], true);
 #endif
         /*
          * hat(L) + g Q is a (Qh,Qh) matrix
@@ -374,59 +421,65 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #endif
 
         // y = [ y1, y2, y3 ]
-        M_y->updateSubVector(y1, M_Qh3_1_indices);
-        M_y->updateSubVector(y2, M_Qh3_2_indices);
+        M_y->updateSubVector(y1, M_Qh3_indices[0]);
+        M_y->updateSubVector(y2, M_Qh3_indices[1]);
 #if FM_DIM == 3
-        M_y->updateSubVector(y3, M_Qh3_3_indices);
+        M_y->updateSubVector(y3, M_Qh3_indices[2]);
 #endif
-        // B = P*y
+        M_y->close();
+        // étape B 
+        // P*y
         M_P->multVector(M_y,B);
 
-        // WARNING : C and Ct are not yet available
+        // Impose boundary conditions on B = Py
+        M_vh_elt = *B;
+        M_vh_elt.close();
+#if FM_DIM == 3
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+        *B = M_vh_elt;
+        B->close();
 
         // t = C^t r
         M_Ct->multVector(M_r,M_t);
 
-        // 14.b : bar(L) z = t
-        //M_lOp->applyInverse(M_t,M_z);
+        // Impose boundary conditions on M_t
+        M_qh_elt = *M_t;
+        M_qh_elt.close();
+        M_qh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=cst(0.) );
+        *M_t = M_qh_elt;
+        M_t->close();
 
-        auto z1 = M_z->createSubVector(M_Qh3_1_indices, true);
-        auto z2 = M_z->createSubVector(M_Qh3_2_indices, true);
-#if FM_DIM == 3
-        auto z3 = M_z->createSubVector(M_Qh3_3_indices, true);
-#endif
+        // 14.b : hat(L) z = t
+        M_lOp->applyInverse(M_t,M_z);
+        M_z->close();
 
-        auto t1 = M_t->createSubVector(M_Qh3_1_indices, true);
-        auto t2 = M_t->createSubVector(M_Qh3_2_indices, true);
-#if FM_DIM == 3
-        auto t3 = M_t->createSubVector(M_Qh3_3_indices, true);
-#endif
-        /*
-         * hat(L) is a (Qh,Qh) matrix
-         * [[ hat(L), 0  ,     0   ],    [ z1 ]    [ t1 ]
-         * [   0,   hat(L),    0   ], *  [ z2 ] =  [ t2 ]
-         * [   0,     0   , hat(L) ]]    [ z3 ]    [ t3 ]
-         */
-        M_lOp->applyInverse(t1,z1);
-        M_lOp->applyInverse(t2,z2);
-#if FM_DIM == 3
-        M_lOp->applyInverse(t3,z3);
-#endif
-        // z = [ z1, z2, z3 ]
-        M_z->updateSubVector(z1, M_Qh3_1_indices);
-        M_z->updateSubVector(z2, M_Qh3_2_indices);
-#if FM_DIM == 3
-        M_z->updateSubVector(z3, M_Qh3_3_indices);
-#endif
-
-        // C = C z
+        // étape C 
+        // M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
+
+        // Impose boundary conditions on C = Cz
+        M_vh_elt = *C;
+        M_vh_elt.close();
+#if FM_DIM == 3
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
+#else
+        M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
+#endif
+        *C = M_vh_elt;
+        C->close();
 
         A->add(*C);
         A->add(*B);
 
-        toc("15 assembled",FLAGS_v>0);
+        C->close();
+        B->close();
+        A->close();
+
+        toc("assemble preconditioner AS",FLAGS_v>0);
         *M_uout = *A; // 15 : w = A + B + C
     }
     else if( this->type() == SIMPLE )
@@ -439,12 +492,13 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         Y=U;
         *M_uout = Y;
     }
+    M_uout->close();
 
     tic();
     Y=*M_uout;
     Y.close();
-    toc("PreconditionerAS::applyInverse" );
-#endif
+    toc("PreconditionerAS::applyInverse", FLAGS_v>0 );
+
     return 0;
 }
 
@@ -466,12 +520,13 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
                                  ( required
                                    ( space, *)
                                    ( space2, *)
+                                   ( matrix, *)
                                  )
                                  ( optional
                                    ( type, *, "AS")
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( bc, *, (BoundaryConditions ()) )
-                                   ( h, (double), 0.0 ) // for k ...
+                                   ( h, (double), doption("parameters.k") ) // for k ...
                                  )
                                )
 {
@@ -485,7 +540,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockas<
         typename parameter::value_type<Args, tag::space>::type::element_type,
         typename parameter::value_type<Args, tag::space2>::type::element_type
                      >::type pas_type;
-    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, h ) );
+    pas_ptrtype p( new pas_type( type, space, space2, bc, prefix, matrix, h ) );
     return p;
 #endif
 } //

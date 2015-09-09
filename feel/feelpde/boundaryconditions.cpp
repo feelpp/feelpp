@@ -157,4 +157,51 @@ BoundaryConditions::saveMD(std::ostream &os)
   os << "\n";
 }
 
+
+std::pair<bool,int>
+BoundaryConditions::iparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<int>( field,bc,marker,param, int(0) );
+}
+std::pair<bool,double>
+BoundaryConditions::dparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<double>( field,bc,marker,param, double(0) );
+}
+std::pair<bool,std::string>
+BoundaryConditions::sparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<std::string>( field,bc,marker,param, std::string("") );
+}
+template <typename CastType>
+std::pair<bool,CastType>
+BoundaryConditions::param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const
+{
+    for( auto const& v : M_pt )
+    {
+        std::string t = v.first; // field name
+        if ( t != field ) continue;
+        for( auto const& f : v.second )
+        {
+            std::string k = t+"."+f.first; // condition type
+            if ( f.first != bc ) continue;
+            for( auto const& c : f.second ) // marker
+            {
+                if ( c.first != marker ) continue;
+                try
+                {
+                    CastType e= c.second.get<CastType>( param );
+                    return std::make_pair(true,e);
+                }
+                catch( ... )
+                {
+                    continue;
+                }
+            }
+        }
+    }
+    return std::make_pair(false,defaultValue);
+}
+
+
 }//Feel

@@ -63,7 +63,7 @@ function simuBatch() {
   echo "cp *md /data/`whoami`/prec_behavior/${title} ">>$out
 }
 
-NPROCS=6
+NPROCS=1
 OUTFILE=res.txt
 appDir=`pwd`
 for D in `seq 2 3`;
@@ -75,11 +75,13 @@ do
       for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
       do
         # LU
-        simuBatch $NPROCS $D $mu $h gmres lu gmres lu gmres lu $OUTFILE $appDir $poly
+        simuBatch $NPROCS $D $mu $h cg lu cg lu cg lu $OUTFILE $appDir $poly
         # Block : LU LU
-        simuBatch $NPROCS $D $mu $h gmres blockms gmres lu gmres lu $OUTFILE $appDir $poly
+        simuBatch $NPROCS $D $mu $h cg blockms cg lu cg lu $OUTFILE $appDir $poly
         # Block : Gamg Gamg
-        simuBatch $NPROCS $D $mu $h gmres blockms gmres gamg gmres gamg $OUTFILE $appDir $poly
+        simuBatch $NPROCS $D $mu $h cg blockms cg gamg cg gamg $OUTFILE $appDir $poly
+        # Block : Gamg Gamg
+        simuBatch $NPROCS $D $mu $h cg blockms cg hypre cg hypre $OUTFILE $appDir $poly
       done
     done
   done

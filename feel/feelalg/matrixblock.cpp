@@ -405,9 +405,9 @@ MatrixBlockBase<T>::operator = ( MatrixSparse<value_type> const& M )
 
 template <typename T>
 void
-MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal )
 {
-    M_mat->zeroRows( rows,values,rhs,on_context );
+    M_mat->zeroRows( rows,values,rhs,on_context, value_on_diagonal );
 }
 
 template <typename T>

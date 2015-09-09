@@ -543,17 +543,42 @@ public :
     space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
     //___________________________________________________________________________________//
     // fluid outlets bc
-    bool hasFluidOutlet() const { return M_hasFluidOutlet; }
-    std::string fluidOutletType() const { return M_fluidOutletType; }
-    int nFluidOutlet() const { return M_nFluidOutlet; }
-    std::vector<std::string> const& fluidOutletMarkerName() const { return M_fluidOutletMarkerName; }
-    std::string fluidOutletMarkerName(int k) const { return M_fluidOutletMarkerName[k]; }
-    // fluid outlets : windkessel specificity
-    std::string fluidOutletWindkesselCoupling() const { return M_fluidOutletWindkesselCoupling; }
-    std::vector<double> const& fluidOutletWindkesselCoeffRd() const { return M_fluidOutletWindkesselRd; }
-    std::vector<double> const& fluidOutletWindkesselCoeffRp() const { return M_fluidOutletWindkesselRp; }
-    std::vector<double> const& fluidOutletWindkesselCoeffCd() const { return M_fluidOutletWindkesselCd; }
-    std::vector<std::vector<double> > const& fluidOutletWindkesselPressureDistalOld() const { return M_fluidOutletWindkesselPressureDistal_old; }
+    bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
+
+    bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
+    bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
+    bool hasFluidOutlet(std::string const& type) const
+    {
+        for (auto const& outletbc : M_fluidOutletsBCType )
+            if ( std::get<1>( outletbc ) == type )
+                return true;
+        return false;
+    }
+    bool hasFluidOutletWindkesselImplicit() const
+    {
+        for (auto const& outletbc : M_fluidOutletsBCType )
+            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "implicit" )
+                return true;
+        return false;
+    }
+    bool hasFluidOutletWindkesselExplicit() const
+    {
+        for (auto const& outletbc : M_fluidOutletsBCType )
+            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "explicit" )
+                return true;
+        return false;
+    }
+    int nFluidOutlet() const { return M_fluidOutletsBCType.size(); }
+    int nFluidOutletWindkesselImplicit() const
+    {
+        int res=0;
+        for (auto const& outletbc : M_fluidOutletsBCType )
+            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "implicit" )
+                ++res;
+        return res;
+    }
+
+    std::map<int,std::vector<double> > const& fluidOutletWindkesselPressureDistalOld() const { return M_fluidOutletWindkesselPressureDistal_old; }
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
@@ -809,7 +834,7 @@ protected:
     std::string M_pdeType;
     std::string M_pdeSolver;
     // fluid outlets bc
-    std::map<std::string,std::list<std::string> > M_fluidOutletsBCType;
+    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
@@ -838,15 +863,8 @@ protected:
     double M_definePressureCstPenalisationBeta;
     //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
-    bool M_hasFluidOutlet;
-    std::string M_fluidOutletType;
-    std::vector<std::string> M_fluidOutletMarkerName;
-    int M_nFluidOutlet;
-    // model 0d Windkessel
-    std::string M_fluidOutletWindkesselCoupling;
-    mutable std::vector<double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
-    std::vector<std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
-    std::vector<double> M_fluidOutletWindkesselRd,M_fluidOutletWindkesselRp,M_fluidOutletWindkesselCd;
+    mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
+    std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
