@@ -528,12 +528,9 @@ public:
     };
 
     template<uint16_type TheNewTAG>
-    struct ChangeTag
-    {
-        typedef CrouzeixRaviart<Order,PolySetType,Pts,TheNewTAG> type;
-    };
+    using ChangeTag = CrouzeixRaviart<Order,PolySetType,Pts,TheNewTAG>;
 
-    typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
+    using  component_basis_type = CrouzeixRaviart<Order,Scalar,Pts>;
 
     static const uint16_type nOrder =  Order;
     static const uint16_type TAG = TheTAG;

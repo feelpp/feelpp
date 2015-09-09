@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2012 Universite Joseph Fourier Grenoble 1
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-07-26
  */
-#ifndef __Jacobi_H
-#define __Jacobi_H 1
+#ifndef FEELPP_JACOBI_HPP
+#define FEELPP_JACOBI_HPP 1
 
 #include <cmath>
 
@@ -66,7 +67,7 @@ namespace ublas=boost::numeric::ublas;
  * @author Christophe Prud'homme
  * @see Karniadakis and Sherwin "Spectral/hp element methods for CFD"
  */
-template<int N, typename T = double>
+template<typename T = double>
 class Jacobi
 {
 public:
@@ -75,43 +76,37 @@ public:
      */
     //@{
 
-    static const int order = N;
-    static const int nOrder = N;
-
     //@}
 
     /** @name Typedefs
      */
     //@{
 
-    typedef T value_type;
-    typedef Jacobi<N, T> self_type;
+    using value_type = T;
+    using self_type = Jacobi<value_type>;
 
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
-
-
+    
     /**
      * default values for a and b give the special case of Legendre
      * polynomials
      */
-    Jacobi( value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
+    constexpr Jacobi( uint16_type N = 1, value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
         :
+        M_order( N ),
         M_a( a ),
         M_b( b )
     {}
 
-    Jacobi( Jacobi const & p )
-        :
-        M_a( p.M_a ),
-        M_b( p.M_b )
-    {}
+    Jacobi( Jacobi const & p ) = default;
+    Jacobi( Jacobi && p ) = default;
 
-    ~Jacobi()
-    {}
+    ~Jacobi() = default;
+    
 
     //@}
 
@@ -119,16 +114,9 @@ public:
      */
     //@{
 
-    self_type& operator=( self_type const& p )
-    {
-        if ( this != &p )
-        {
-            M_a = p.M_a;
-            M_b = p.M_b;
-        }
+    self_type& operator=( self_type const& p ) = default;
+    self_type& operator=( self_type && p ) = default;
 
-        return *this;
-    }
 
     /**
      * Evaluates the nth jacobi polynomial with weight parameters a,b
@@ -149,17 +137,25 @@ public:
      */
     //@{
 
-    uint16_type degree() const
+    constexpr uint16_type degree() const
     {
-        return N;
+        return M_order;
     }
-
+    constexpr uint16_type order() const
+    {
+        return M_order;
+    }
+    
     //@}
 
     /** @name  Mutators
      */
     //@{
 
+    constexpr void setOrder( uint16_type o )
+    {
+        M_order = o;
+    }
 
     //@}
 
@@ -192,30 +188,31 @@ public:
 protected:
 
 private:
+    uint16_type M_order;
     value_type M_a;
     value_type M_b;
 };
-template<int N, typename T>
-typename Jacobi<N, T>::value_type
-Jacobi<N, T>::operator()( value_type const& x ) const
+template<typename T>
+typename Jacobi<T>::value_type
+Jacobi<T>::operator()( value_type const& x ) const
 {
     const value_type one = 1.0;
     const value_type two = 2.0;
 
-    if ( N == 0 )
+    if ( M_order == 0 )
         return one;
 
-    else if ( N == 1 )
+    else if ( M_order == 1 )
         return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
 
-    else  // N >= 2
+    else  // M_order >= 2
     {
         value_type apb = M_a + M_b;
         value_type pn2 = one;
         value_type pn1 = 0.5 * ( M_a - M_b + ( apb + two ) * x );
         value_type p = 0.0;
 
-        for ( int k = 2; k < N+1; ++k )
+        for ( int k = 2; k < M_order+1; ++k )
         {
             value_type kv = value_type( k );
             value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
@@ -234,15 +231,15 @@ Jacobi<N, T>::operator()( value_type const& x ) const
         return p;
     }
 }
-template<int N, typename T>
-typename Jacobi<N, T>::value_type
-Jacobi<N, T>::derivate( value_type const& x ) const
+template<typename T>
+typename Jacobi<T>::value_type
+Jacobi<T>::derivate( value_type const& x ) const
 {
-    if (  N == 0 )
+    if (  M_order == 0 )
         return 0.0;
 
-    Jacobi<N-1, T> dp( M_a + 1.0, M_b + 1.0 );
-    value_type Nv = value_type( N );
+    Jacobi<T> dp( M_order-1, M_a + 1.0, M_b + 1.0 );
+    value_type Nv = static_cast<value_type>( M_order );
     return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
 }
 namespace dyna
@@ -453,7 +450,7 @@ Jacobi<T>::derivate( value_type const& x ) const
     value_type Nv = value_type( N );
     return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
 }
-}
+} // dyna
 
 #if 0
 template<uint16_type N, typename T>
@@ -530,9 +527,9 @@ JacobiBatchEvaluation( T a, T b, Matrix<T,Np,1> const& __pts )
 }
 #endif // 0 - Eigen
 
-template<uint16_type N, typename T>
+template<typename T>
 ublas::matrix<T>
-JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
+JacobiBatchEvaluation( const uint16_type N, T a, T b, ublas::vector<T> const& __pts )
 {
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
@@ -563,33 +560,27 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
     return res;
 }
 
-template<uint16_type N, typename T>
+template<typename T>
 void
-JacobiBatchDerivation( ublas::matrix<T>& res, T a, T b, ublas::vector<T> const& __pts, mpl::bool_<true> )
+JacobiBatchDerivation( const uint16_type N, ublas::matrix<T>& res, T a, T b, ublas::vector<T> const& __pts )
 {
     typedef T value_type;
-    ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+    ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation( N-1, a+1.0, b+1.0, __pts );
 
     for ( uint16_type i = 1; i < N+1; ++i )
         ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
 }
 
-template<uint16_type N, typename T>
-void
-JacobiBatchDerivation( ublas::matrix<T>& /*res*/, T /*a*/, T /*b*/,
-                       ublas::vector<T> const& /*__pts*/, mpl::bool_<false> )
-{
-}
 
-template<uint16_type N, typename T>
+template<typename T>
 ublas::matrix<T>
-JacobiBatchDerivation( T a, T b, ublas::vector<T> const& __pts )
+JacobiBatchDerivation( const uint16_type N, T a, T b, ublas::vector<T> const& __pts )
 {
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-    static const bool cond = N>0;
-    JacobiBatchDerivation<N,T>( res, a, b, __pts, mpl::bool_<cond>() );
+    if ( N > 0 )
+        JacobiBatchDerivation( N, res, a, b, __pts );
     return res;
 }
 
@@ -785,13 +776,13 @@ T fact( T  n )
 
     return n*fact( n-1.0 );
 }
-template<int N, typename T, typename VectorW,  typename VectorN>
+template<typename T, typename VectorW,  typename VectorN>
 void
-gaussjacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
+gaussjacobi( const uint16_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 {
     typedef T value_type;
 
-    Jacobi<N, T> p( a, b );
+    Jacobi<T> p( N, a, b );
 
     roots( p, xr );
 
@@ -820,15 +811,15 @@ gaussjacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
  *
  * @see Karniadakis et Sherwin appendix B for theoretical details.
  **/
-template<int N, typename T, typename VectorW,  typename VectorN>
+template<typename T, typename VectorW,  typename VectorN>
 void
-gausslobattojacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
+gausslobattojacobi( const uint16_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 {
     typedef T value_type;
 
-    Jacobi<N-2, T> p( a+ 1.0, b+ 1.0 );
+    Jacobi<T> p( N-2, a+ 1.0, b+ 1.0 );
 
-    Jacobi<N-1, T> q( a, b );
+    Jacobi<T> q( N-1, a, b );
 
     VectorN prexr( N-2 );
 
@@ -934,15 +925,15 @@ gausslobattojacobi( size_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b =
  *  quadrature methods.
  **/
 
-template<int N, typename T, typename VectorW,  typename VectorN>
+template<typename T, typename VectorW,  typename VectorN>
 void
-left_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
+left_gaussradaujacobi( const uint16_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 {
     typedef T value_type;
 
-    Jacobi<N-1, T> p( a, b+1.0 );
+    Jacobi<T> p( N-1, a, b+1.0 );
 
-    Jacobi<N-1, T> q( a, b );
+    Jacobi<T> q( N-1, a, b );
 
     VectorN prexr( N-1 );
 
@@ -977,15 +968,15 @@ left_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) 
 }
 
 
-template<int N, typename T, typename VectorW,  typename VectorN>
+template<typename T, typename VectorW,  typename VectorN>
 void
-right_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
+right_gaussradaujacobi( const uint16_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 {
     typedef T value_type;
 
-    Jacobi<N-1, T> p( a+1.0, b );
+    Jacobi<T> p( N-1, a+1.0, b );
 
-    Jacobi<N-1, T> q( a, b );
+    Jacobi<T> q( N-1, a, b );
 
     VectorN prexr( N-1 );
 
@@ -1020,19 +1011,20 @@ right_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 )
 }
 
 
-template<int N, typename T>
-T integrate( boost::function<T( T const& )> const& f )
+template<typename T>
+T integrate( const uint16_type N, boost::function<T( T const& )> const& f )
 {
     typedef T value_type;
-    ublas::vector<T> xr( Jacobi<N, T>::nOrder );
-    ublas::vector<T> wr( Jacobi<N, T>::nOrder );
+    
+    ublas::vector<T> xr( N );
+    ublas::vector<T> wr( N );
 
     // get weights and nodes for Legendre polynomials
-    details::gaussjacobi<N, T, ublas::vector<T> >( wr, xr );
+    details::gaussjacobi<T, ublas::vector<T> >( N, wr, xr );
 
     value_type res = 0.0;
 
-    for ( int k = 0; k < Jacobi<N, T>::nOrder; ++k )
+    for ( int k = 0; k < N; ++k )
         res += wr[k]*f( xr[k] );
 
     return res;

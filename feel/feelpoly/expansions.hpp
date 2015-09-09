@@ -375,7 +375,7 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<uint16_type N, typename T = double>
+template<typename T = double>
 struct scalings
 {
     typedef T value_type;
@@ -387,7 +387,7 @@ struct scalings
      *
      * pts are coordinates in [-1;1]
      */
-    scalings( ublas::vector<value_type> const& pts )
+    scalings( uint16_type N, ublas::vector<value_type> const& pts )
         :
         M_s( N+1,  pts.size() )
     {

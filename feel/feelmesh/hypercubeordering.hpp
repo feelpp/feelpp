@@ -6,7 +6,8 @@
        Date: 2010-11-28
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
-
+  Copyright (C) 2010-2015 Feel++ Consortium
+ 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -51,94 +52,89 @@ namespace details
 \endcode
 */
 
-template<uint16_type Order >
 struct quad
 {
-    static uint16_type f2e( uint16_type /*f*/, uint16_type e )
+    static constexpr uint16_type f2e( uint16_type /*f*/, uint16_type e )
     {
         return __f2e[e];
     }
-    static const uint16_type __f2e[4];
 
-    static uint16_type f2p( uint16_type /*f*/, uint16_type p )
+    static constexpr uint16_type f2p( uint16_type /*f*/, uint16_type p )
     {
         return __f2p[p];
     }
-    static const uint16_type __f2p[4];
 
-    static uint16_type e2p( uint16_type e, uint16_type p )
+    static constexpr uint16_type e2p( uint16_type o, uint16_type e, uint16_type p )
     {
-        return e2p( e,p,boost::mpl::int_<( Order>3 )?1:Order>() );
+        return 
+            (o==1)?e2p( e,p,boost::mpl::int_<1>() ):
+            ((o==2)?e2p( e,p,boost::mpl::int_<2>() ):
+             ((o==3)?e2p( e,p,boost::mpl::int_<3>() ):e2p( e,p,boost::mpl::int_<1>() ) ));
+
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
     {
         return __e2p_order1[2*e+p];
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2> )
     {
         return __e2p_order2[3*e+p];
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3> )
     {
         return __e2p_order3[4*e+p];
     }
-    static const uint16_type __e2p_order1[8];
-    static const uint16_type __e2p_order2[12];
-    static const uint16_type __e2p_order3[16];
 
-    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type id ) const
+    std::vector<uint16_type> entity( uint16_type /*topo_dim*/, uint16_type id )
     {
         std::vector<uint16_type> __entity( 2 );
         __entity[0] = __e2p_order1[2*id];
         __entity[1] = __e2p_order1[2*id+1];
         return __entity;
     }
-};
 
-template<uint16_type Order >
-const uint16_type quad<Order>::__e2p_order1[8] =
-{
-    0, 1, // points in edge 0
-    1, 2, // points in edge 1
-    2, 3, // points in edge 2
-    3, 0  // points in edge 3
-};
+    static constexpr uint16_type __e2p_order1[8] =
+    {
+        0, 1, // points in edge 0
+        1, 2, // points in edge 1
+        2, 3, // points in edge 2
+        3, 0  // points in edge 3
+    };
 
-template<uint16_type Order >
-const uint16_type quad<Order>::__e2p_order2[12] =
-{
-    0, 1, 4, // points in edge 0
-    1, 2, 5, // points in edge 1
-    2, 3, 6, // points in edge 2
-    3, 0, 7  // points in edge 3
-};
+    static constexpr uint16_type __e2p_order2[12] =
+    {
+        0, 1, 4, // points in edge 0
+        1, 2, 5, // points in edge 1
+        2, 3, 6, // points in edge 2
+        3, 0, 7  // points in edge 3
+    };
 
-template<uint16_type Order >
-const uint16_type quad<Order>::__e2p_order3[16] =
-{
-    0, 1,  4,  5, // points in edge 0
-    1, 2,  6,  7, // points in edge 1
-    2, 3,  8,  9, // points in edge 2
-    3, 0, 10, 11  // points in edge 3
-};
+    static constexpr uint16_type __e2p_order3[16] =
+    {
+        0, 1,  4,  5, // points in edge 0
+        1, 2,  6,  7, // points in edge 1
+        2, 3,  8,  9, // points in edge 2
+        3, 0, 10, 11  // points in edge 3
+    };
 
 
-template<uint16_type Order >
-const uint16_type quad<Order>::__f2p[4] =
-{
-    0, // point 0
-    1, // point 1
-    2, // point 2
-    3  // point 3
+    static constexpr uint16_type __f2p[4] =
+    {
+        0, // point 0
+        1, // point 1
+        2, // point 2
+        3  // point 3
+    };
+    static constexpr uint16_type __f2e[4] =
+    {
+        0, // edge 0
+        1, // edge 1
+        2, // edge 2
+        3  // edge 3
+    };
+
 };
-template<uint16_type Order >
-const uint16_type quad<Order>::__f2e[4] =
-{
-    0, // edge 0
-    1, // edge 1
-    2, // edge 2
-    3  // edge 3
-};
+
 
 
 /**
@@ -156,68 +152,66 @@ const uint16_type quad<Order>::__f2e[4] =
      0_______1
 \endcode
 */
-
-template<uint16_type Order >
 struct hexa
 {
     // face to edge relations
-    static uint16_type f2e( uint16_type f, uint16_type e )
+    static constexpr uint16_type f2e( uint16_type f, uint16_type e )
     {
         return __f2e[4*f+e];
     }
-    static const uint16_type __f2e[24];
+
     static int16_type f2ePermutation( uint16_type f, uint16_type e )
     {
         return __f2e_permutation[4*f+e];
     }
-    static const int16_type __f2e_permutation[24];
 
     // face to point relations
-    static uint16_type f2p( uint16_type e, uint16_type p )
+    static constexpr uint16_type f2p( uint16_type o, uint16_type e, uint16_type p )
     {
-        return f2p( e,p,boost::mpl::int_<( Order>3 )?1:Order>() );
+        return 
+            (o==1)?f2p( e,p,boost::mpl::int_<1>() ):
+            ((o==2)?f2p( e,p,boost::mpl::int_<2>() ):
+             ((o==3)?f2p( e,p,boost::mpl::int_<3>() ):f2p( e,p,boost::mpl::int_<1>() )));
+        
     }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<1> )
+    static constexpr uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<1> )
     {
         return __f2p_order1[4*f+p];
     }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<2> )
+    static constexpr uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<2> )
     {
         return __f2p_order2[9*f+p];
     }
-    static uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<3> )
+    static constexpr uint16_type f2p( uint16_type f, uint16_type p, boost::mpl::int_<3> )
     {
         return __f2p_order3[16*f+p];
     }
 
-    static const uint16_type __f2p_order1[24];
-    static const uint16_type __f2p_order2[54];
-    static const uint16_type __f2p_order3[96];
-
     // edge to point relations
-    static uint16_type e2p( uint16_type e, uint16_type p )
+    static constexpr uint16_type e2p( uint16_type o, uint16_type e, uint16_type p )
     {
-        return e2p( e,p,boost::mpl::int_<( Order>3 )?1:Order>() );
+        return 
+            (o==1)?e2p( e,p,boost::mpl::int_<1>() ):
+            ((o==2)?e2p( e,p,boost::mpl::int_<2>() ):
+             ((o==3)?e2p( e,p,boost::mpl::int_<3>() ):
+              ((o==4)?e2p( e,p,boost::mpl::int_<4>() ):e2p( e,p,boost::mpl::int_<1>() ) )));
+
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<1> )
     {
         return __e2p_order1[2*e+p];
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2> )
     {
         return __e2p_order2[3*e+p];
     }
-    static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3> )
+    static constexpr uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3> ) 
     {
         return __e2p_order3[4*e+p];
     }
 
-    static const uint16_type __e2p_order1[24];
-    static const uint16_type __e2p_order2[36];
-    static const uint16_type __e2p_order3[48];
 
-
-    std::vector<uint16_type> entity( uint16_type topo_dim, uint16_type id ) const
+    std::vector<uint16_type> entity( uint16_type topo_dim, uint16_type id )
     {
         std::vector<uint16_type> __entity( 2*topo_dim );
 
@@ -238,11 +232,8 @@ struct hexa
 
         return __entity;
     }
-};
-
-// edge to point relation
-template<uint16_type Order >
-const uint16_type hexa<Order>::__e2p_order1[24] =
+    // edge to point relation
+static constexpr uint16_type __e2p_order1[24] =
 {
     0, 1,    // edge 0
     1, 2,    // edge 1
@@ -258,8 +249,7 @@ const uint16_type hexa<Order>::__e2p_order1[24] =
     4, 7     // edge 11
 };
 
-template<uint16_type Order >
-const uint16_type hexa<Order>::__e2p_order2[36] =
+static constexpr uint16_type __e2p_order2[36] =
 {
     0, 1, 8,    // edge 0
     1, 2, 9,    // edge 1
@@ -276,8 +266,7 @@ const uint16_type hexa<Order>::__e2p_order2[36] =
 };
 
 
-template<uint16_type Order >
-const uint16_type hexa<Order>::__e2p_order3[48] =
+static constexpr uint16_type __e2p_order3[48] =
 {
     0, 1, 8, 9,     // edge 0
     1, 2, 10, 11,   // edge 1
@@ -295,8 +284,7 @@ const uint16_type hexa<Order>::__e2p_order3[48] =
 
 
 // face to point relation
-template<uint16_type Order >
-const uint16_type hexa<Order>::__f2p_order1[24] =
+static constexpr uint16_type __f2p_order1[24] =
 {
     0, 1, 2, 3, // face 0
     0, 1, 5, 4, // face 1
@@ -306,8 +294,7 @@ const uint16_type hexa<Order>::__f2p_order1[24] =
     4, 5, 6, 7  // face 5
 };
 
-template<uint16_type Order >
-const uint16_type hexa<Order>::__f2p_order2[54] =
+static constexpr uint16_type __f2p_order2[54] =
 {
     0, 1, 2, 3,  8, 9,  10, 11, 20, // face 0
     0, 1, 5, 4,  8, 12, 13, 14, 21, // face 1
@@ -318,8 +305,7 @@ const uint16_type hexa<Order>::__f2p_order2[54] =
 };
 
 
-template<uint16_type Order >
-const uint16_type hexa<Order>::__f2p_order3[96] =
+static constexpr uint16_type __f2p_order3[96] =
 {
     0, 1, 2, 3,  8,  9, 10, 11, 12, 13, 14, 15, 32, 33, 34, 35, // face 0
     0, 1, 5, 4,  8,  9, 16, 17, 18, 19, 20, 21, 36, 37, 38, 39, // face 1
@@ -330,8 +316,7 @@ const uint16_type hexa<Order>::__f2p_order3[96] =
 };
 
 // face to edge relation
-template<uint16_type Order >
-const uint16_type hexa<Order>::__f2e[24] =
+static constexpr uint16_type __f2e[24] =
 {
     0,  1,  2,  3, // face 0
     0,  4,  5,  6, // face 1
@@ -342,8 +327,7 @@ const uint16_type hexa<Order>::__f2e[24] =
 };
 
 // edge permutation in face
-template<uint16_type Order >
-const int16_type hexa<Order>::__f2e_permutation[24] =
+static constexpr  int16_type __f2e_permutation[24] =
 {
     1,  1,  1,  1, // face 0
     1,  1,  1,  1, // face 1
@@ -352,6 +336,9 @@ const int16_type hexa<Order>::__f2e_permutation[24] =
     1, -1,  1, -1, // face 4
     -1, -1, -1, -1  // face 5
 };
+
+};
+
 
 } // details
 /// \endcond

@@ -319,12 +319,9 @@ public:
     };
 
     template<uint16_type TheNewTAG>
-    struct ChangeTag
-    {
-        typedef OrthonormalPolynomialSet<Order,PolySetType,TheNewTAG> type;
-    };
+    using ChangeTag= OrthonormalPolynomialSet<Order,PolySetType,TheNewTAG> ;
 
-    typedef OrthonormalPolynomialSet<Order,Scalar,TheTAG> component_basis_type;
+    using component_basis_type =  OrthonormalPolynomialSet<Order,Scalar,TheTAG> ;
 
     static const uint16_type nOrder =  Order;
     static const uint16_type TAG = TheTAG;

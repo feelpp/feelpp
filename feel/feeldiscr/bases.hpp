@@ -106,7 +106,7 @@ public:
 	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
 
 	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
-	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename rhs_noref_type::template ChangeTag<index::value>::type>::type type;
+	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename rhs_noref_type::template ChangeTag<index::value>>::type type;
     };
 
 };

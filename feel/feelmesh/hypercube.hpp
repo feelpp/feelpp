@@ -39,9 +39,13 @@
 namespace Feel
 {
 class HypercubeBase {};
-template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
-class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
+
+template<uint16_type Dim, uint16_type RDim = Dim>
+class Hypercube  : public Convex, HypercubeBase
 {
+    using super = Convex;
+    using super2 = HypercubeBase;
+    
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
 
@@ -52,22 +56,17 @@ class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
     typedef mpl::vector_c<uint16_type, 0, 2, 4, 6, 24> normals_t;
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1, 8> volumes_t;
 
-    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+1 ), ( Order+1 )*( Order+1 )*( Order+1 ) , ( Order+1 )*( Order+1 )*( Order+1 )*( Order+1 )> points_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) , ( Order+1-2 )*( Order+1-2 )*( Order+1-2 )*( Order+1-2 )> points_interior_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                   Order+1-2,                         ( Order+1-2 ), ( Order+1-2 )> points_edge_t;
-    typedef mpl::vector_c<size_type, 0,         0,     ( Order+1-2 )*( Order+1-2 ),             ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 ) > points_face_t;
-    typedef mpl::vector_c<size_type, 0,         0,                           0, ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) > points_volume_t;
 
     template<uint16_type rdim>
     struct faces_t
     {
         typedef mpl::vector<boost::none_t,
-                Hypercube<0, Order, rdim>,
-                Hypercube<1, Order, rdim>,
-                Hypercube<2, Order, rdim> > type;
+                Hypercube<0, rdim>,
+                Hypercube<1, rdim>,
+                Hypercube<2, rdim> > type;
     };
-    typedef mpl::vector<boost::none_t,Hypercube<1, Order,1>, Hypercube<1, Order, 2>, Hypercube<1, Order, 3>, boost::none_t > v_edges_t;
-    typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
+    typedef mpl::vector<boost::none_t,Hypercube<1,1>, Hypercube<1, 2>, Hypercube<1, 3>, boost::none_t > v_edges_t;
+    typedef mpl::vector<Hypercube<1>, Hypercube<2>, Hypercube<3>, Hypercube<4>, Hypercube<4>  > elements_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 8> permutations_t;
 
@@ -80,7 +79,7 @@ public:
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;
 
     static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
+    //static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RDim;
 
     static const uint16_type topological_dimension = nDim;
@@ -98,6 +97,7 @@ public:
     static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
     static const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
 
+#if 0
     static const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
     static const uint16_type nbPtsPerEdge = ( nOrder==0 )?( ( nDim==1 )?1:0 ):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
     static const uint16_type nbPtsPerFace = ( nOrder==0 )?( ( nDim==2 )?1:0 ):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
@@ -106,19 +106,50 @@ public:
                                            numEdges * nbPtsPerEdge +
                                            numFaces * nbPtsPerFace +
                                            numVolumes * nbPtsPerVolume );
+#else
+    static constexpr uint16_type numberOfVertices()  { return numVertices; }
+    static constexpr uint16_type numberOfEdges()  { return numEdges; }
+    static constexpr uint16_type numberOfFaces()  { return numGeometricFaces; }
+    static constexpr uint16_type numberOfTopologicalFaces()   { return numTopologicalFaces; }
+    static constexpr uint16_type numberOfVolumes()  { return numVolumes; }
+    
+    static constexpr uint16_type numberOfPointsPerVertex( uint16_type _Order ) 
+        {
+            return ( _Order==0 )?0:1;
+        }
+    static constexpr uint16_type numberOfPointsPerEdge( uint16_type _Order ) 
+        {
+            int pts[4] = { 0, _Order+1-2,                 _Order+1-2,                             _Order+1-2};
+            return (pts[Dim]>=0)?pts[Dim]:0;
+        }
+    static constexpr uint16_type numberOfPointsPerFace( uint16_type _Order ) 
+        {
+            int pts[4] = { 0,         0, ( _Order-1 )*( _Order-2 )/2,             ( _Order-1 )*( _Order-2 )/2 };
+            return (pts[Dim]>=0)?pts[Dim]:0;
+        }
+    static constexpr uint16_type numberOfPointsPerVolume( uint16_type _Order ) 
+        {
+            int pts[4] = { 0,         0,                         0, ( _Order-1 )*( _Order-2 )*( _Order-3 )/6 };
+            return (pts[Dim]>=0)?pts[Dim]:0;
+        }
+    static constexpr uint16_type numberOfPoints( uint16_type _Order )
+        { 
+            return ( numVertices * numberOfPointsPerVertex( _Order ) +
+                     numEdges * numberOfPointsPerEdge( _Order ) +
+                     numFaces * numberOfPointsPerFace( _Order ) + 
+                     numVolumes * numberOfPointsPerVolume( _Order ) ); 
+        }
+    
+    constexpr uint16_type numberOfPointsPerVertex() const { return numberOfPointsPerVertex( order() ); }
+    constexpr uint16_type numberOfPointsPerEdge() const { return numberOfPointsPerEdge( order() ); }
+    constexpr uint16_type numberOfPointsPerFace() const { return  numberOfPointsPerFace( order() ); }
+    constexpr uint16_type numberOfPointsPerVolume() const { return  numberOfPointsPerVolume( order() ); }
+    constexpr uint16_type numberOfPoints() const { return numberOfPoints( order() ); }
 
-    static const uint16_type orderSquare = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
-                             boost::mpl::int_<5> >,
-                             boost::mpl::int_<5>,
-                             typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
-                             boost::mpl::int_<1> >,
-                             boost::mpl::int_<1>,
-                             boost::mpl::int_<Order>
-                             >::type
-                             >::type::value;
+#endif
 
-
-    typedef mpl::vector<boost::none_t, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
+    typedef mpl::vector<boost::none_t, details::line, details::quad, details::hexa > map_entity_to_point_t;
+    
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;
@@ -141,13 +172,14 @@ public:
             mpl::identity<face_permutation_type>,
             mpl::identity<no_permutation> >::type>::type::type permutation_type;
 
-    template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
-    struct shape
-    {
-        typedef Hypercube<shape_dim, O, R> type;
-    };
+    template<uint16_type shape_dim, uint16_type R=nDim>
+    using shape =  Hypercube<shape_dim, R>;
 
+    constexpr Hypercube() : Convex( Dim, 1, RDim ) {}
+    constexpr Hypercube( uint16_type O ) : Convex( Dim, O, RDim ) {}
+ 
 
+#if 0
     /**
      * \return the topological dimension of the simplex
      */
@@ -195,7 +227,7 @@ public:
     {
         return nbPtsPerVolume;
     }
-
+#endif
     /**
      * \return the number of polynomials of total degree \c n on the
      * shape:
@@ -212,7 +244,7 @@ public:
                                  mpl::identity<mpl::int_<( N+1 )*( N+1 )> >,
                                  mpl::identity<mpl::int_<( N+1 )> > >::type>::type::value;
     };
-    static uint32_type polyDims( int n )
+    static constexpr uint32_type polyDims( int n )
     {
         return uint32_type( math::pow( double( n+1 ), double( nDim ) ) );
     }
@@ -222,9 +254,9 @@ public:
      * or 1) of a point in the edge \p e , \return the index in the
      * element of the point.
      */
-    static int e2p( int e,  int p )
+    constexpr int e2p( int e,  int p ) const
     {
-        return edge_to_point_t::e2p( e, p );
+        return edge_to_point_t::e2p( this->order(), e, p );
     }
 
     /**
@@ -232,7 +264,7 @@ public:
      * edge in the face \p f, \return the index in the element of the
      * edge.
      */
-    static int f2e( int f,  int e )
+    constexpr int f2e( int f,  int e ) const
     {
         return face_to_edge_t::f2e( f, e );
     }
@@ -242,9 +274,9 @@ public:
      * point in the face \p f , \return the index in the element of
      * the point.
      */
-    static int f2p( int f,  int p )
+    constexpr int f2p( int f,  int p ) const
     {
-        return face_to_point_t::f2p( f, p );
+        return face_to_point_t::f2p( this->order(), f, p );
     }
 
     /**
@@ -256,8 +288,6 @@ public:
         ostr << "Hypercube"
              << "_"
              << nDim
-             << "_"
-             << nOrder
              << "_"
              << nRealDim;
         return ostr.str();
