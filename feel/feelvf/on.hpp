@@ -725,7 +725,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
 
 }
@@ -877,7 +877,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
 }
 
