@@ -2164,6 +2164,8 @@ public:
                                                               mpl::bool_<false> >::type,
                                             mpl::bool_<false> >::type::value;
     };
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     SolidMecStressTensorImpl( element_displacement_type const & u,
                               Feel::FeelModels::MechanicalPropertiesDescription<element_mechprop_type> const& mechanicalPropertiesDesc )
