@@ -85,7 +85,7 @@ generateMarkerBCList(BoundaryConditions const bc,std::string const& field,std::s
         markerList.push_back( currentMarker );
     }
 
-    return std::move( markerList );
+    return markerList;
 }
 }
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
