@@ -38,13 +38,13 @@ namespace FeelModels
 {
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string __prefix,
-                                                    bool __buildMesh,
-                                                    WorldComm const& __worldComm,
-                                                    std::string __subPrefix,
-                                                    std::string __appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
+                                                    bool _buildMesh,
+                                                    WorldComm const& _worldComm,
+                                                    std::string _subPrefix,
+                                                    std::string _appliShortRepository )
     :
-    super_type(__prefix,__buildMesh,__worldComm,__subPrefix, __appliShortRepository)
+    super_type(_prefix,_buildMesh,_worldComm,_subPrefix, _appliShortRepository)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -61,11 +61,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string __prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (__buildMesh) this->build();
+    if (_buildMesh) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
+}
+
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix,
+                                         bool _buildMesh,
+                                         WorldComm const& _worldComm,
+                                         std::string _subPrefix,
+                                         std::string _appliShortRepository )
+{
+    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
 }
 
 
@@ -134,6 +146,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             if ( o == "acceleration" || o == "all" ) this->M_doExportAcceleration = true;
             if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
             if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
+            if ( o == "material-properties" || o == "all" ) this->M_doExportMaterialProperties = true;
             if ( o == "all" ) this->M_doExportVelocityInterfaceFromFluid = true;
         }
 }

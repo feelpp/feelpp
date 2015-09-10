@@ -25,7 +25,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
     M_mechanicalProperties( new mechanicalproperties_type( __prefix ) ),
     M_doExportDisplacement( false ), M_doExportVelocity( false ), M_doExportAcceleration( false ),
-    M_doExportNormalStress( false ), M_doExportPressure( false ) , M_doExportVelocityInterfaceFromFluid( false )
+    M_doExportNormalStress( false ), M_doExportPressure( false ) , M_doExportMaterialProperties( false ),
+    M_doExportVelocityInterfaceFromFluid( false )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsSolve.data";
@@ -204,6 +205,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
         M_doExportPressure = boption(_name="do_export_pressure",_prefix=this->prefix());
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_material_properties").c_str()) )
+        M_doExportMaterialProperties = boption(_name="do_export_material_properties",_prefix=this->prefix());
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocityinterfacefromfluid").c_str()) )
         M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
@@ -215,6 +218,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             M_doExportAcceleration = true;
             M_doExportNormalStress = true;
             M_doExportPressure = true;
+            M_doExportMaterialProperties = true;
             M_doExportVelocityInterfaceFromFluid = true;
         }
     }
@@ -796,6 +800,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 
     M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
     M_mechanicalProperties->initFromSpace( M_XhScalarP0 );
+    M_mechanicalProperties->updateFromModelMaterials( this->modelProperties().materials() );
 
     this->timerTool("Constructor").stop("createOthers");
     this->log("SolidMechanics","createOthers", "finish" );
