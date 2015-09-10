@@ -786,9 +786,9 @@ public:
         std::set<size_type> n;
         for ( uint16_type __p = 0; __p < numPoints; ++__p )
         {
-            std::copy( M_points[__p]->elements().begin(),
-                       M_points[__p]->elements().end(),
-                       std::inserter( n, n.begin() ) );
+            std::for_each( M_points[__p]->elements().begin(),
+                           M_points[__p]->elements().end(),
+                           [&n]( auto const& e ) { n.insert( e.first ); } );
         }
         return n;
     }
