@@ -11,8 +11,7 @@ runApplicationSolid()
 {
     typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,1>,
                                         Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> SM( new model_type("solid") );
-
+    auto SM = model_type::New("solid");
 
     if ( SM->isStationary() )
     {
