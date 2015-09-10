@@ -101,6 +101,17 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( mesh_name.extension() == ".geo" )
     {
+#if defined(FEELPP_HAS_HDF5)
+        auto json_fname = mesh_name.stem().string()+".json";
+        if ( boption(_name="gmsh.use-json") && fs::exists(json_fname) )
+        {
+            LOG(INFO) << " Loading mesh in JSON/HDF5 format";
+            CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
+            auto m = boost::make_shared<_mesh_type>();
+            m->loadHDF5( json_fname );
+            return m;
+        }
+#endif
 
         auto m = createGMSHMesh(
             _mesh=mesh,
