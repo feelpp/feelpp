@@ -46,15 +46,16 @@ int main( int argc, char** argv )
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
     tic();
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
-    toc("loading mesh done");
-    
+    //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>> );
+    toc("loading mesh done",FLAGS_v>0);
+#if 0
     //partition( "metis", mesh, numPartitions );
     PartitionerMetis<decltype(mesh)> metis;
     metis.partition( mesh, numPartition );
 //mesh->saveHDF5( fs::path(soption("gmsh.filename")).string()+".h5" );
        
-
+#endif
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
     if ( Environment::isMasterRank() )
@@ -77,7 +78,7 @@ int main( int argc, char** argv )
     }
 
     for( auto marker: mesh->markerNames() )
-    {
+    {   
        auto name = marker.first;
        auto data = marker.second;
        if ( data[1] == mesh->dimension() )
