@@ -186,9 +186,12 @@ public:
     };
 
 
-    Simplex()
-    {
-    }
+    Simplex() = default;
+    Simplex( Simplex const& ) = default;
+    Simplex( Simplex && ) = default;
+    Simplex& operator=( Simplex const& ) = default;
+    Simplex& operator=( Simplex && ) = default;
+
     /**
      * \return the topological dimension of the simplex
      */
