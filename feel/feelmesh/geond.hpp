@@ -148,7 +148,6 @@ public:
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -176,7 +175,6 @@ public:
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -566,7 +564,23 @@ public:
      */
     double hFace( uint16_type f ) const
     {
-        return M_h_face[f];
+        if ( nRealDim==1 )
+            return 1;
+        
+        constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
+        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        
+        double res = 0.;
+        for ( uint16_type e =  0;  e < nEdges; ++e )
+        {
+            // get edge id in face from local edge id
+            int edg = this->f2e( f, (nDim==2)?f:e );
+            int col1 = this->eToP( edg, 0 );
+            int col2 = this->eToP( edg, 1 );
+            double r = (G.col(col1)-G.col(col2)).norm();
+            res = ( res > r )?res:r;       
+        }
+        return res;
     }
 
     double hEdge( uint16_type f ) const
@@ -847,7 +861,6 @@ private:
     matrix_node_type M_G;
     matrix_node_type M_barycenterfaces;
 
-    std::vector<double> M_h_face;
 
     double M_measure;
     std::vector<double> M_measurefaces;
@@ -977,44 +990,6 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<true> )
 {
-    if ( nRealDim==1 )
-    {
-        M_h_face[0] = 1;
-        M_h_face[1] = 1;
-    }
-
-    else
-    {
-        int nEdges = GEOSHAPE::topological_face_type::numEdges;
-
-        for ( uint16_type __f = 0; __f < numTopologicalFaces; ++__f )
-        {
-            M_h_face[__f] = 0;
-
-            for ( uint16_type e =  0;  e < nEdges; ++e )
-            {
-                double __l = 0;
-
-                if ( Dim == 2 )
-                {
-                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, __f ), 0 ) ).node();
-                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, __f ), 1 ) ).node();
-                    __l = ublas::norm_2( __x1-__x2 );
-                }
-
-                else
-                {
-                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, e ), 0 ) ).node();
-                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, e ), 1 ) ).node();
-                    __l = ublas::norm_2( __x1-__x2 );
-                }
-
-                //std::cout << "face " << __f << " edge "  << e << "  edge " << this->f2e( __f, __f ) << " length "  << __l << std::endl;
-                M_h_face[__f] = ( M_h_face[__f] > __l )?M_h_face[__f]:__l;
-            }
-        }
-    }
-
     //auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
     auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::KB|vm::JACOBIAN>(
         *this,
