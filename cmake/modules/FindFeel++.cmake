@@ -14,9 +14,9 @@ message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
-  # require at least gcc 4.8
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-      message(ERROR "GCC version must be at least 4.8!")
+  # require at least gcc 4.9
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+      message(ERROR "GCC version must be at least 4.9!")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # require at least clang 3.4
