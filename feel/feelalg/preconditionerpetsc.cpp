@@ -299,6 +299,7 @@ static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
     //ierr = HYPRE_EuclidDestroy( jac->hsolver );
     PetscFunctionReturn(0);
 }
+
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
@@ -1200,6 +1201,7 @@ void
 ConfigurePC::run( PC& pc )
 {
     VLOG(2) << "configuring PC... (sub: " << this->sub() << ")";
+    PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
     google::FlushLogFiles(google::INFO);
     const char* pctype;
     this->check( PCGetType ( pc, &pctype ) );
