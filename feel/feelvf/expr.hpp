@@ -644,8 +644,7 @@ public:
         return M_expr.evaluate( parallel,worldcomm );
     }
     template<typename T, int M, int N=1>
-    //decltype(auto)
-std::vector<Eigen::Matrix<T,M,N> >
+    decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
         {
             return M_expr.evaluate( v );
