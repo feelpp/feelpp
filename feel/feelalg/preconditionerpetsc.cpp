@@ -299,9 +299,36 @@ static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
     //ierr = HYPRE_EuclidDestroy( jac->hsolver );
     PetscFunctionReturn(0);
 }
+static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, maxIter);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetTol( PC pc, double tol )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, tol);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetCycleType( PC pc, int cycleType ) 
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, cycleType);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, maxLevels);
+    PetscFunctionReturn(0);
+}
 
 } // namespace PetscImpl
-
 #endif // PETSC_HAVE_HYPRE
 
 
@@ -1261,9 +1288,9 @@ ConfigurePC::run( PC& pc )
 #if 0
         else if ( std::string( hypretype ) == "pilut" )
             ConfigurePCHYPRE_PILUT( pc, this->worldComm(), this->sub(), this->prefix() );
-        else if ( std::string( hypretype ) == "boomeramg" )
-            ConfigurePCHYPRE_BOOMERAMG( pc, this->worldComm(), this->sub(), this->prefix() );
 #endif
+        else if ( std::string( hypretype ) == "boomeramg" )
+            ConfigurePCHYPRE_BOOMERAMG( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
 #endif
     }
     else if ( std::string(pctype) == "redundant" )
@@ -1485,6 +1512,117 @@ getOptionsDescGASM( std::string const& prefix, std::vector<std::string> prefixOv
     updateOptionsDescGASM( _options,prefix,true);
     for ( std::string prefixOver : prefixOverwrite )
         updateOptionsDescGASM( _options,prefixOver,false);
+    return _options;
+}
+
+void
+updateOptionsDescBOOMERAMG( po::options_description & _options, std::string const& prefix, bool useDefaultValue=true )
+{
+    _options.add_options()
+        /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
+        ( prefixvm( prefix,"pc_hypre_boomeramg_max_iter" ).c_str(),Feel::po::value<int>()->default_value( 20 ),"sets the max number of iteration for boomeramg" )
+        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(), Feel::po::value<double>()->default_value( 1e-7 ), "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_cycle_type").c_str(), Feel::po::value<int>()->default_value( 0 ),"Cycle type (0=V / 11==W")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),Feel::po::value<bool>()->default_value( false ),"Print statistics")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),Feel::po::value<int>()->default_value( 25 ),"Number of levels (of grids) allowed")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
+#if 0 // Not interfaced options
+        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),
+        Feel::po::value<int>()->default_value( 2 ),
+        "Number of levels (of grids) allowed")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(),
+        Feel::po::value<double>()->default_value( 1e-7 ),
+        "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_truncfactor").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Truncation factor for interpolation (0=no truncation)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_P_max").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Max elements per row for interpolation operator (0=unlimited)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_agg_nl").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of levels of aggressive coarsening")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_agg_num_paths").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of paths for aggressive coarsening")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Threshold for being strongly connected")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Maximum row sum")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_all").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of sweeps for the up and down grid levels")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_down").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of sweeps for the down cycles")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_up").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of sweeps for the up cycles")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_coarse").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Number of sweeps for the coarse level")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_type_all").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Relax type for the up and down cycles")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_type_down").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Relax type for the down cycles")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_type_up").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Relax type for the up cycles")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_type_coarse").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Relax type on coarse grid")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_weight_all").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Relaxation weight for all levels (0 = hypre estimates, -k = determined with k CG steps)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_relax_weight_level").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Set the relaxation weight for a particular level (weight,level)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_outer_relax_weight_all").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Outer relaxation weight for all levels (-k = determined with k CG steps)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_outer_relax_weight_level").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Set the outer relaxation weight for a particular level (weight,level)")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_no_CF").c_str(), 
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Do not use CF-relaxation")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_measure_type").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Measure type")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Coarsen type"
+        ( prefixvm( prefix,"pc_hypre_boomeramg_interp_type").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Interpolation type")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Print statistics")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_print_debug").c_str(),
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Print debug information")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_nodal_coarsen").c_str(), 
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "HYPRE_BoomerAMGSetNodal()")
+        ( prefixvm( prefix,"pc_hypre_boomeramg_nodal_relaxation").c_str(), 
+        Feel::po::value<double>()->default_value( 1e-6 ),
+        "Nodal relaxation via Schwarz")
+#endif
+        ;
+}
+po::options_description
+getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+{
+    po::options_description _options( "options PC BOOMERAMG", 100);
+    updateOptionsDescBOOMERAMG(_options,prefix,true);
+    for ( std::string prefixOver : prefixOverwrite )
+        updateOptionsDescBOOMERAMG( _options,prefixOver,false);
     return _options;
 }
 
@@ -1909,6 +2047,39 @@ ConfigurePCHYPRE_EUCLID::run( PC& pc )
 {
 #if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     this->check( PetscImpl::PCHYPRE_EUCLIDSetLevels( pc, M_levels ) );
+#endif
+}
+
+/**
+ * ConfigurePCHYPRE_EUCLID
+ */
+ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPetsc<double> * precFeel,
+                                                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                                                  std::vector<std::string> const& prefixOverwrite )
+    :
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescBOOMERAMG(prefix,sub,prefixOverwrite) ),
+    M_max_iter( option(_name="pc_hypre_boomeramg_max_iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_tol( option(_name="pc_hypre_boomeramg_tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_cycle_type( option(_name="pc_hypre_boomeramg_cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
+    M_max_levels( option(_name="pc_hypre_boomeramg_max_levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+{
+    VLOG(2) << "ConfigurePC : HYPRE_BOOMERAMG\n"
+            << "  |->prefix     : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->max_iter   : " << M_max_iter << "\n"
+            << "  |->tol        : " << M_tol << "\n"
+            << "  |->cycle_type : " << M_cycle_type << "\n"
+            << "  |->max_levels : " << M_max_levels << "\n";
+    google::FlushLogFiles(google::INFO);
+    run( pc );
+}
+void
+ConfigurePCHYPRE_BOOMERAMG::run( PC& pc )
+{
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetMaxIter( pc, M_max_iter ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetTol( pc, M_tol ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetCycleType( pc, M_cycle_type ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetMaxLevels( pc, M_max_levels ) );
 #endif
 }
 
