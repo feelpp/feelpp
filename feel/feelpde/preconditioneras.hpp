@@ -110,8 +110,8 @@ public:
     Type type() const { return M_type; }
     void setType( std::string t );
 
-    //void update( sparse_matrix_ptrtype A, sparse_matrix_ptrtype L, element_coef_type mu );
-    void update( sparse_matrix_ptrtype A, element_coef_type mu );
+    void update( sparse_matrix_ptrtype Pm, sparse_matrix_ptrtype L, sparse_matrix_ptrtype M, element_coef_type mu );
+    //void update( sparse_matrix_ptrtype A, element_coef_type mu );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -282,8 +282,9 @@ PreconditionerAS<space_type,coef_space_type>::setType( std::string t )
 template < typename space_type, typename coef_space_type >
 //template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
-                                                      //sparse_matrix_ptrtype L,
+PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,   // A + g M
+                                                      sparse_matrix_ptrtype L,    // e_r * grad grad
+                                                      sparse_matrix_ptrtype Q,    // e_r * id id
                                                       element_coef_type mu )
 {
     tic();
@@ -294,35 +295,31 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
     if(this->type() == AS)
     {
         // A = Pm
-        // M_diagPm = compose(diag ( op (Pm, "blockms.11")),op(Pm,"blockms.11.diag")) ;
         backend()->diag(Pm,M_diagPm);
         M_diagPm->close();
-
+        
         /*
          * hat(L) = 1/mu L
          * bar(L) = diag( hat(L), hat(L), hat(L) )
          * bar(Q) = diag( er*Q, er*Q, er*Q ) with Q = mass matrix on Qh3
          * blockms.11.1 <=> bar(L) + g*bar(Q) y = s = Pt*r
-         * blockms.11.2 <=> bar(L) z = t = trans(C)*r
-         *
+         * blockms.11.2 <=> L z = t = trans(C)*r
          */
 
         auto u = M_Qh->element("u");
 
+        /// TODO : use the provided matrix, do not rebuild them 
         auto f11_1 = form2(M_Qh, M_Qh);
         auto rhs_11_1 = form1(M_Qh);
+        // M_g*Mass  + 1/mu * M_L
         f11_1 = integrate(_range=elements(M_Qh->mesh()),
                           _expr=1./idv(mu)*inner(grad(u),gradt(u))
                           + M_g*idv(M_er)*inner(id(u),idt(u)) );
-        // TODO : boundary conditions ?
         for(auto const & it : m_dirichlet_u )
-        {
-            LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_1\n";
-            f11_1 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
-        }
+            f11_1 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u, _type=soption("blockms.11.1.on.type"));
         // Operator hat(L) + g Q
         M_lgqOp = op( f11_1.matrixPtr(), "blockms.11.1");
-
+#if 0
         auto f11_2 = form2(M_Qh, M_Qh); // hat(L)
         // TODO: do not rebuild the matrix - use f11_1
         f11_2 = integrate(_range=elements(M_Qh->mesh()),
@@ -331,10 +328,12 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,
         for(auto const & it : m_dirichlet_u )
         {
             LOG(INFO) << "Applying 0 on " << it.first << " for blockms.11_2\n";
-            f11_2 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u);
+            f11_2 += on(_range=markedfaces(M_Qh->mesh(),it.first), _expr=cst(0.),_rhs=rhs_11_1, _element=u, _type=soption("blockms.11.2.on.type"));
         }
         // Operator hat(L)
         M_lOp = op( f11_2.matrixPtr(), "blockms.11.2" );
+#endif
+        M_lOp = op(L,"blockms.11.2");
     }
     else if(this->type() == SIMPLE)
     {
