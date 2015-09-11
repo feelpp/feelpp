@@ -12,6 +12,7 @@ add_library(
   ${FEELPP_MODELS_MESH_SRC}
 )
 target_link_libraries(feelpp_modelmesh
+  feelpp_modelcore
   ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
 
 #######################################################
