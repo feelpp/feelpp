@@ -2107,7 +2107,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setMarker3( old_elem.marker3().value() );
         // partitioning update
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
-        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
@@ -2173,7 +2172,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setMarker2( old_face.marker3().value() );
                 // partitioning update
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
-                new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
                 new_face.clearIdInOthersPartitions();
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
