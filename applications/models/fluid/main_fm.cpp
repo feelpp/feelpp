@@ -14,7 +14,7 @@ runApplicationFluid()
     typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
                                         Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> FM( new model_type("fluid") );
+    auto FM = model_type::New("fluid");
 
     FM->init();
     FM->printAndSaveInfo();
