@@ -223,8 +223,9 @@ MarkerManagementNeumannBC::getInfoNeumannBC() const
 
     for ( auto const& markNeumanBase : M_containerMarkers )
     {
-        std::string shapeStr = (markNeumanBase.first == NeumannBCShape::SCALAR )? "[scalar]":"[vectorial]";
-        for ( auto const& markNeuman : markNeumanBase.second/*this->markerNeumannBC()*/ )
+        std::string shapeStr = (markNeumanBase.first == NeumannBCShape::SCALAR )? "[scalar]":
+            (markNeumanBase.first == NeumannBCShape::VECTORIAL )? "[vectorial]":"[tensor2]";
+        for ( auto const& markNeuman : markNeumanBase.second )
         {
             _ostr << "\n       -- Neumann" << shapeStr << " : " << markNeuman.first;
             if ( markNeuman.second.size() == 1 && markNeuman.second.front() == markNeuman.first ) continue;
