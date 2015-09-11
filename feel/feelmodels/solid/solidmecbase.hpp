@@ -58,6 +58,7 @@ template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechPro
 class SolidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC,
+                           public MarkerManagementNeumannEulerianFrameBC,
                            public MarkerManagementRobinBC,
                            public MarkerManagementFluidStructureInterfaceBC
 {
@@ -352,6 +353,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
+    mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
 
     boost::shared_ptr<TSBase> timeStepBase()
     {
