@@ -29,8 +29,6 @@
 #ifndef __EXPORTERVTK_CPP
 #define __EXPORTERVTK_CPP 1
 
-#include <feel/feelfilters/exporterVTK.hpp>
-
 namespace Feel
 {
 template<typename MeshType, int N>
