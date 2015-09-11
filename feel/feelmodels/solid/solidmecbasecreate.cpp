@@ -2,11 +2,13 @@
 
 #include <feel/feelmodels/solid/solidmecbase.hpp>
 
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
-#include <feel/feelfilters/geotool.hpp>
+//#include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 
-#include <feel/feelmodels/modelmesh/reloadmesh.hpp>
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 
 namespace Feel
@@ -180,7 +182,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("SolidMechanics","loadParameterFromOptionsVm", "start" );
 
-    M_meshSize = doption(_name="hsize",_prefix=this->prefix());
     M_useDisplacementPressureFormulation = boption(_name="use-incompressibility-constraint",_prefix=this->prefix());
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
     this->pdeType( soption(_name="model",_prefix=this->prefix()) );
@@ -315,92 +316,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     this->log("SolidMechanics","createMesh", "start" );
     this->timerTool("Constructor").start();
 
-    std::string smpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
-    if (this->doRestart())
-    {
-        if ( !this->restartPath().empty() )
-        {
-            smpath = (fs::path( this->restartPath() ) / fs::path(this->fileNameMeshPath())).string();
-        }
-        M_mesh = reloadMesh<mesh_type>(smpath,this->worldComm());
-    }
-    else
-    {
-        if (this->hasMshfileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
-
-            M_mesh = loadGMSHMesh(_mesh=new mesh_type,
-                                  _filename=this->mshfileStr(),
-                                  _worldcomm=this->worldComm(),
-                                  _rebuild_partitions=this->rebuildMeshPartitions(),
-                                  _rebuild_partitions_filename=mshfileRebuildPartitions,
-                                  _partitions=this->worldComm().localSize(),
-                                  _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-
-            if (this->rebuildMeshPartitions()) this->setMshfileStr(mshfileRebuildPartitions);
-        }
-        else if (this->hasGeofileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfile = path + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
-
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(this->appliRepository()) )
-            {
-                this->log( "SolidMechanics","createMesh",
-                           "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
-                bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
-            }
-            M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),M_meshSize,1,
-                                                               this->worldComm().localSize(),this->worldComm());
-            // go back to previous repository
-            if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
-        }
-        else
-        {
-            std::string geotoolSavePath;
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("SolidMechanics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
-                Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
-
-                geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
-            }
-            else
-            {
-                geotoolSavePath = this->appliRepository();
-            }
-
-            std::string geotoolSaveName = this->geotoolSaveName();
-            std::string mshfile = geotoolSavePath + "/" + geotoolSaveName + ".msh";
-            std::string geofilename = geotoolSavePath + "/" + geotoolSaveName;// without .geo
-            //std::string path = this->appliRepository();
-            //std::string mshfile = path + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
-
-
-            this->loadConfigMeshFile( geofilename );
-
-
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("SolidMechanics","createMesh", "change rep -> " + this->appliRepository() );
-                Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
-            }
-
-        }
-        this->saveMSHfilePath(smpath);
-    }
+    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    CHECK( M_mesh ) << "mesh generation fail";
 
     this->timerTool("Constructor").stop("createMesh");
     this->log("SolidMechanics","createMesh", "finish" );
-} // createMesh()
+}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -409,14 +330,17 @@ void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 {
     this->log("SolidMechanics","createMesh1dReduced", "start" );
-    auto name = prefixvm(this->prefix(),"1dreduced");
+    std::string prefix1dreduced = prefixvm(this->prefix(),"1dreduced");
 
-    std::string smpath = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
+    std::string modelMeshRestartFile = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
+    std::string smpath = (fs::path( this->appliRepository() ) / fs::path( modelMeshRestartFile)).string();
+
     if (this->doRestart())
     {
         this->log("SolidMechanics","createMesh1dReduced", "reload mesh (because restart)" );
 
-        if ( !this->restartPath().empty() ) smpath = this->restartPath()+"/"+smpath;
+        if ( !this->restartPath().empty() )
+            smpath = (fs::path( this->restartPath() ) / fs::path( modelMeshRestartFile)).string();
 
 #if defined(SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH)
         auto meshSM2dClass = reloadMesh<mesh_type>(smpath,this->worldComm());
@@ -432,20 +356,37 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
         {
             this->log("SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile" );
             std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
-            auto mesh = GeoTool::createMeshFromGeoFile<mesh_1dreduced_type>(geofile,name,M_meshSize);
-            M_mesh_1dReduced = mesh;
+            std::string path = this->appliRepository();
+            std::string mshfile = path + "/" + prefix1dreduced + ".msh";
+            this->setMshfileStr(mshfile);
+
+            fs::path curPath=fs::current_path();
+            bool hasChangedRep=false;
+            if ( curPath != fs::path(this->appliRepository()) )
+            {
+                this->log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
+                bool hasChangedRep=true;
+                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
+            }
+
+            gmsh_ptrtype geodesc = geo( _filename=geofile,
+                                        _prefix=prefix1dreduced,
+                                        _worldcomm=this->worldComm() );
+            // allow to have a geo and msh file with a filename equal to prefix
+            geodesc->setPrefix(prefix1dreduced);
+            M_mesh_1dReduced = createGMSHMesh(_mesh=new mesh_1dreduced_type,_desc=geodesc,
+                                              _prefix=prefix1dreduced,_worldcomm=this->worldComm(),
+                                              _partitions=this->worldComm().localSize() );
+
+            // go back to previous repository
+            if ( hasChangedRep )
+                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
         }
         else
         {
-            this->loadConfigMeshFile1dReduced( name );
+            this->loadConfigMeshFile1dReduced( prefix1dreduced );
         }
-        // write msh file path
-        std::ofstream file(smpath.c_str(), std::ios::out);
-        std::string path = this->appliRepository();
-        std::string mshfile = path + "/" + name + ".msh";
-        file << mshfile;
-        file.close();
-
+        this->saveMSHfilePath( smpath );
     }
 
     this->log("SolidMechanics","createMesh1dReduced", "finish" );

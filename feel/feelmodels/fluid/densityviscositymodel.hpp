@@ -119,6 +119,20 @@ public :
             M_fieldCinematicViscosity->on(_range=elements(M_fieldCinematicViscosity->mesh()),_expr=idv(this->fieldMu())/idv(this->fieldRho()) );
     }
 
+    void updateFromModelMaterials( ModelMaterials const& mat )
+    {
+        if ( mat.empty() ) return;
+        CHECK( mat.size() == 1 ) << "TODO multi-mat";
+        super_type::updateFromModelMaterials( mat );
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            this->setCstDensity( mat.rho() );
+        }
+    }
+
+
 private :
 
     double M_cstDensity;// rho

@@ -208,7 +208,7 @@ macro( genLibThermoDynamics )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/thermodynbase_inst.cpp
       ${LIBBASE_DIR}/thermodynamics_inst.cpp )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
     genLibBase(
@@ -433,7 +433,7 @@ macro( genLibSolidMechanics )
       ${LIBBASE_DIR}/solidmecbaseupdateresidual_inst.cpp
       ${LIBBASE_DIR}/solidmechanics_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
     genLibBase(
@@ -728,9 +728,9 @@ macro(genLibFluidMechanics)
       ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
       ${LIBBASE_DIR}/fluidmechanics_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
     if (FEELMODELS_ENABLE_MESHALE )
-      set(LIB_DEPENDS feelpp_modelmesh ${LIB_DEPENDS})
+      set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
     endif()
 
     # generate libmodelbase

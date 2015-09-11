@@ -173,7 +173,7 @@ class ModelNumerical : public ModelAlgebraic
         bool hasGeofileStr() const { return M_geoFileStr!="FEELMODELS_WARNING_NODEFINE"; }
 
 
-        void saveMSHfilePath(std::string namePath) const;
+        void saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
 
         void setExporterPath(std::string s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
