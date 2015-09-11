@@ -117,6 +117,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
+           << this->getInfoNeumannEulerianFrameBC()
            << this->getInfoRobinBC()
            << this->getInfoFluidStructureInterfaceBC();
     *_ostr << "\n   Space Discretization"
