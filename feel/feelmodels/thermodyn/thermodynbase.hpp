@@ -104,7 +104,6 @@ class ThermoDynamicsBase : public ModelNumerical,
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
-        double meshSize() const { return M_meshSize; }
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperature() const { return M_fieldTemperature; }
         element_velocityconvection_ptrtype const& fieldVelocityConvection() const { return M_fieldVelocityConvection; }
@@ -191,7 +190,6 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-        double M_meshSize;
         mesh_ptrtype M_mesh;
 
         space_temperature_ptrtype M_Xh;

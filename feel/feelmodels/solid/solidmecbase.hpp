@@ -614,7 +614,6 @@ protected:
     //-------------------------------------------//
 
     // mesh
-    double M_meshSize;
     mesh_ptrtype M_mesh;
     MeshMover<mesh_type> M_mesh_mover;
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
