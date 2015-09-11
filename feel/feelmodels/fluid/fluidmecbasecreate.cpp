@@ -2,6 +2,8 @@
 
 #include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -127,8 +129,6 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("FluidMechanics","loadParameterFromOptionsVm", "start");
-
-    M_meshSize = doption(_name="hsize",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
     // exporters options
@@ -306,7 +306,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
             M_mesh = loadGMSHMesh(_mesh=new mesh_type,
                                   _filename=this->mshfileStr(),
                                   _worldcomm=this->worldComm(),
-                                  _rebuild_partitions=this->rebuildMeshPartitions(),
+                                  _prefix=this->prefix(),
+                                  //_rebuild_partitions=this->rebuildMeshPartitions(),
                                   _rebuild_partitions_filename=mshfileRebuildPartitions,
                                   _partitions=this->worldComm().localSize(),
                                   _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
@@ -328,8 +329,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
                 Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
             }
 
-            M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),M_meshSize,1,
-                                                               this->worldComm().localSize(),this->worldComm());
+            gmsh_ptrtype geodesc = geo( _filename=this->geofileStr(),
+                                        _prefix=this->prefix(),
+                                        _worldcomm=this->worldComm() );
+            // allow to have a geo and msh file with a filename equal to prefix
+            geodesc->setPrefix(this->prefix());
+            M_mesh = createGMSHMesh(_mesh=new mesh_type,_desc=geodesc,
+                                    _prefix=this->prefix(),_worldcomm=this->worldComm(),
+                                    _partitions=this->worldComm().localSize() );
+
             // go back to previous repository
             if ( hasChangedRep )
                 Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
@@ -732,23 +740,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     this->log("FluidMechanics","createOthers", "start" );
     this->timerTool("Constructor").start();
     //----------------------------------------------------------------------------//
-    // rho, mu, nu with scalar P0 space
-    //std::vector<bool> extendedDT(1,this->useExtendedDofTable() );
-    //M_XhScalarP0 = space_densityviscosity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-    //                                                 _extended_doftable=extendedDT );
-    //M_P0Rho.reset( new element_densityviscosity_type(M_XhScalarP0,"rho"));
-    //M_P0Mu.reset( new element_densityviscosity_type(M_XhScalarP0,"mu"));
-    //M_P0Nu.reset( new element_densityviscosity_type(M_XhScalarP0,"nu"));
-    //*M_P0Rho= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-    //                        _expr=vf::cst(M_CstRho),_geomap=this->geomap());
-    //*M_P0Mu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-    //                     _expr=vf::cst(M_CstMu),_geomap=this->geomap());
-    //*M_P0Nu= vf::project(_space=M_XhScalarP0, _range=elements( M_mesh),
-    //                       _expr=vf::cst(M_CstNu),_geomap=this->geomap());
-    // viscosity model
-    //M_viscosityModelDesc.reset( new viscosity_model_type( this->stressTensorLawType(), *M_P0Mu, this->prefix() ) );
-    //M_densityViscosityModel->initFromSpace(M_XhScalarP0);//,this->fieldVelocity(),this->fieldPressure());
+    // update rho, mu, nu,...
     M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+    M_densityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
+
     //----------------------------------------------------------------------------//
     // space usefull to tranfert sigma*N()
     if (this->isMoveDomain()) this->createFunctionSpacesNormalStress();
