@@ -428,7 +428,6 @@ public :
     //___________________________________________________________________________________//
 
     bool isMoveDomain() const { return M_isMoveDomain; }
-    double meshSize() const { return M_meshSize; }
 
     void pdeType(std::string __type);
     std::string pdeType() const;
@@ -784,7 +783,6 @@ protected:
     backend_ptrtype M_backend;
     //----------------------------------------------------
     // mesh
-    double M_meshSize;
     mesh_ptrtype M_mesh;
     MeshMover<mesh_type> M_mesh_mover;
     // fluid space and solution

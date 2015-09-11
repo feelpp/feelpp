@@ -1,12 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feelmodels/thermodyn/thermodynbase.hpp>
-#include <feel/feelfilters/loadgmshmesh.hpp>
-#include <feel/feelfilters/geotool.hpp>
+//#include <feel/feelfilters/loadgmshmesh.hpp>
+//#include <feel/feelfilters/geotool.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/modelmesh/reloadmesh.hpp>
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 namespace Feel
 {
@@ -75,7 +75,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_meshSize = doption(_name="hsize",_prefix=this->prefix());
     M_thermalConductivity = doption(_name="thermal-conductivity",_prefix=this->prefix()); // [ W/(m*K) ]
     M_rho = doption(_name="rho",_prefix=this->prefix()); // density [ kg/(m^3) ]
     M_heatCapacity = doption(_name="heat-capacity",_prefix=this->prefix()); // [ J/(kg*K) ]
@@ -95,91 +94,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     this->log("ThermoDynamics","createMesh", "start");
     this->timerTool("Constructor").start();
 
-    // save path of file mesh
-    std::string tdpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
-    if (this->doRestart())
-    {
-        this->log("ThermoDynamics","createMesh","restart with : "+tdpath );
-        if ( !this->restartPath().empty() )
-        {
-            tdpath = (fs::path( this->restartPath() ) / fs::path(this->fileNameMeshPath())).string();
-        }
-        M_mesh = reloadMesh<mesh_type>(tdpath,this->worldComm());
-    }
-    else
-    {
-        if (this->hasMshfileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
-
-            this->log("ThermoDynamics","createMesh", "load msh file : " + this->mshfileStr() );
-
-            M_mesh = loadGMSHMesh(_mesh=new mesh_type,
-                                  _filename=this->mshfileStr(),
-                                  _worldcomm=this->worldComm(),
-                                  _rebuild_partitions=this->rebuildMeshPartitions(),
-                                  _rebuild_partitions_filename=mshfileRebuildPartitions,
-                                  _partitions=this->worldComm().localSize(),
-                                  _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
-
-            if (this->rebuildMeshPartitions()) this->setMshfileStr(mshfileRebuildPartitions);
-        }
-        else if (this->hasGeofileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfile = path + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
-
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(this->appliRepository()) )
-            {
-                this->log("ThermoDynamics","createMesh", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
-                bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
-            }
-
-            M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),this->meshSize(),1,
-                                                               this->worldComm().localSize(),this->worldComm());
-
-            // go back to previous repository
-            if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
-        }
-        else
-        {
-            std::string geotoolSavePath;
-
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("ThermoDynamics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
-                Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
-
-                geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
-            }
-            else
-            {
-                geotoolSavePath = this->appliRepository();
-            }
-            std::string geotoolSaveName = this->geotoolSaveName();
-            std::string geofilename = geotoolSavePath + "/" + geotoolSaveName;// without .geo
-            std::string mshfilename = geotoolSavePath + "/" + geotoolSaveName + ".msh";
-            this->setMshfileStr(mshfilename);
-
-            this->log("ThermoDynamics","createMesh", "build mesh by using geotool desc" );
-
-            this->loadConfigMeshFile(geofilename);
-
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("ThermoDynamics","createMesh", "change rep -> " + this->appliRepository() );
-                Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
-            }
-
-        }
-        this->saveMSHfilePath(tdpath);
-    }
+    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("ThermoDynamics","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
