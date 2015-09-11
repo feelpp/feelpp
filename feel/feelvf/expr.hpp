@@ -426,7 +426,7 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-        using expression_type = typename this_type::expression_type;
+        //using expression_type = typename this_type::expression_type;
         using key_type = key_t<Geo_t>;
         using gmc_type = gmc_t<Geo_t>;
         using gmc_ptrtype = gmc_ptr_t<Geo_t>;
