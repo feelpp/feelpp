@@ -77,7 +77,7 @@ private :
 class MarkerManagementNeumannBC
 {
 public :
-    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1 };
+    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1, TENSOR2 = 2 };
 
     MarkerManagementNeumannBC();
     MarkerManagementNeumannBC( MarkerManagementNeumannBC const& op ) = default;

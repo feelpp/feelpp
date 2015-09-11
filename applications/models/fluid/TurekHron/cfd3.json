@@ -14,10 +14,10 @@
             "value":"t<2:t"
         }
     },
-    "Materials":
-    {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
     "BoundaryConditions":
     {
         "velocity":
