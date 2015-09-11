@@ -126,6 +126,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"ginac-expr-directory").c_str(), Feel::po::value< std::string >(), "ginac-expr-directory");
 
     return appliBaseOptions
+        .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) );
     //return appliBaseOptions.add( backend_options( prefix ) );
@@ -139,7 +140,6 @@ fluidMechanics_options(std::string const& prefix)
 {
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
-        (prefixvm(prefix,"hsize").c_str(), Feel::po::value<double>()->default_value( 0.06 ), "h fluid")
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()->default_value("Navier-Stokes"), "fluid model : Navier-Stokes,Oseen,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
         (prefixvm(prefix,"stress_tensor_law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
