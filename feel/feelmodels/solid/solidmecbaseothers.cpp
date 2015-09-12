@@ -396,7 +396,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced );
             hasFieldToExport = true;
         }
-        //M_exporter_1dReduced->step( time )->add( "structure-1d-reduced-stressvec",*M_stress_vect_1dReduced);
+        if ( false )
+        {
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stressvec"),*M_stress_vect_1dReduced);
+            M_exporter_1dReduced->step( time )->add( prefixvm(this->prefix(),"1d-reduced-stress"),*M_stress_1dReduced);
+            hasFieldToExport = true;
+        }
         if ( hasFieldToExport )
             M_exporter_1dReduced->save();
     }
@@ -833,9 +838,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 {
-    *M_disp_vect_1dReduced = vf::project( _space=M_Xh_vect_1dReduced,
-                                           _range=elements(M_mesh_1dReduced),
-                                           _expr=vf::idv(M_disp_1dReduced)*vf::oneY());
+    M_disp_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
+                               _expr=idv(M_disp_1dReduced)*oneY() );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -844,9 +848,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
 {
-    *M_stress_1dReduced = vf::project( _space=M_stress_1dReduced->functionSpace(),
-                                        _range=elements(M_mesh_1dReduced),
-                                        _expr=-vf::trans(vf::idv(M_stress_vect_1dReduced))*vf::oneY() );
+    M_stress_1dReduced->on( _range=elements(M_mesh_1dReduced),
+                            _expr=-inner(idv(M_stress_vect_1dReduced),oneY()) );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -855,9 +858,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 {
-    *M_velocity_vect_1dReduced = vf::project(_space=M_Xh_vect_1dReduced,
-                                              _range=elements(M_mesh_1dReduced),
-                                              _expr=vf::idv(M_newmark_displ_1dReduced->currentVelocity())*vf::oneY());
+    M_velocity_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
+                                   _expr=idv(M_newmark_displ_1dReduced->currentVelocity())*oneY() );
 }
 
 //---------------------------------------------------------------------------------------------------//
