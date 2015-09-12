@@ -921,45 +921,16 @@ template <typename DomainDofType,typename ImageDofType, typename ImageEltType, t
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & /*gmcDomain*/,
-                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/,
-                                mpl::bool_<true> /**/ )
+                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/, mpl::bool_<true> /**/ )
 {
     return imagedof->localDofInElement( imageElt, imageLocDof, comp );
 }
 
-#if 0
-template <typename DomainDofType,typename ImageDofType, typename ImageEltType>
-uint16_type
-domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
-                                ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                mpl::bool_<false> /**/ )
-{
-    auto const imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
-    bool find=false;
-    size_type thelocDofToFind = invalid_size_type_value;
-    for ( uint16_type jloc = 0; jloc < DomainDofType::fe_type::nLocalDof; ++jloc )
-    {
-        const size_type theglobdof =  boost::get<0>( domaindof->localToGlobal( domainEltId, jloc, comp ) );
-        auto const domainGlobDofPt =domaindof->dofPoint( theglobdof ).template get<0>();
-        bool find2=true;
-        for (uint16_type d=0;d< DomainDofType::nRealDim;++d)
-        {
-            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-9);
-        }
-        if (find2) { thelocDofToFind=jloc;find=true; }
-    }
-    CHECK( find ) << "not find a compatible dof\n ";
-    return thelocDofToFind;
-}
-#else
 template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain,
-                                boost::shared_ptr<DomainGmcType> & gmcDomain,
-                                mpl::bool_<false> /**/ )
+                                boost::shared_ptr<DomainGmcType> & gmcDomain,mpl::bool_<false> /**/ )
 {
     typedef typename ImageDofType::fe_type ImageBasisType;
     typedef typename DomainDofType::fe_type DomainBasisType;
@@ -981,16 +952,14 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
         if (find2) { thelocDofToFind=jloc;find=true;break; }
     }
     CHECK( find ) << "not find a compatible dof\n ";
-    return thelocDofToFind;
+    return new_basis_type::nLocalDof*comp + thelocDofToFind;
 }
-#endif
-    template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
+
+template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof( boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                  ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof,uint16_type comp, size_type domainEltId,
-                                 //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain
-                                 boost::shared_ptr<DomainGmcType> & gmcDomain
-                                 )
+                                 boost::shared_ptr<DomainGmcType> & gmcDomain )
 {
     return domainLocalDofFromImageLocalDof( domaindof,imagedof,imageElt,imageLocDof,imageGlobDof,comp,domainEltId,gmcDomain,
                                             mpl::bool_< DomainDofType::nDim == ImageDofType::nDim >() );
