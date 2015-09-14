@@ -164,6 +164,8 @@ private:
     sparse_matrix_ptrtype M_11;
     sparse_matrix_ptrtype M_mass;
     sparse_matrix_ptrtype M_L;
+    sparse_matrix_ptrtype M_hatL;
+    sparse_matrix_ptrtype M_Q;
 
     element_coef_type M_er; // permittivity
 
@@ -205,6 +207,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
     U( M_Xh, "U" ),
     M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
     M_L(M_backend->newMatrix(M_Qh,M_Qh)),
+    M_hatL(M_backend->newMatrix(M_Qh,M_Qh)),
+    M_Q(M_backend->newMatrix(M_Qh,M_Qh)),
     M_er( M_Mh, "er" ),
     M_k(doption("parameters.k")),
     M_bcFlags( bcFlags ),
@@ -240,14 +244,18 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
             f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
         }
 
-        /* Compute the L matrix */
-        auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
-        auto f1B = form1(_test=M_Qh);
-        f2B = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
+        /* Compute the L and Q matrices */
+        auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+        f2L = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
+        auto f2Q = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_Q);
+        f2Q = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(idt(phi), id(phi)));
+        auto f1LQ = form1(_test=M_Qh);
+
         for(auto const & it : m_dirichlet_p)
         {
             LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
-            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
+            f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption("blockms.22.on.type"));
+            f2Q += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption("blockms.22.on.type"));
         }
 
         /* Initialize the blockAS prec */
@@ -284,6 +292,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
         LOG(INFO) << "Create sub Matrix\n";
         map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+        map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
         /*
          * AA = [[ A - k^2 M, B^t],
@@ -291,6 +300,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
          * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
          */
         // Is the zero() necessary ?
+
         if(boption("blockms.rebuild_11"))
         {
              // calculer matrice A + g M
@@ -316,11 +326,21 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             }
         }
 
+        /* Compute the hat(L) matrix */
+        auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_hatL);
+        auto f1B = form1(_test=M_Qh);
+        f2B = integrate(_range=elements(M_Qh->mesh()), _expr=cst(1.)/idv(mu)*inner(gradt(phi), grad(phi)));
+        for(auto const & it : m_dirichlet_p)
+        {
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
+            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
+        }
+
         M_11Op = op(M_11, "blockms.11");
 
         if(soption("blockms.11.pc-type") == "AS")
         {
-            M_pcAs->update(M_11, M_L, M_mass, mu);
+            M_pcAs->update(M_11, M_L, M_hatL, M_Q);
             M_11Op->setPc( M_pcAs );
         }
 
