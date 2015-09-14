@@ -1269,7 +1269,7 @@ public:
     interpolateBasisFunction( ExprType&& expr, local_interpolant_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
-        using expr_basis_t = typename std::decay_t<ExprType>::expression_type::test_basis;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
         Ihloc.setZero();
         
         for( int e = 0; e < convex_type::numEdges; ++e )
