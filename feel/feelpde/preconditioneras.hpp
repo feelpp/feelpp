@@ -156,7 +156,13 @@ private:
     mutable vector_ptrtype M_diagPm;
     mutable vector_ptrtype M_t;
     mutable vector_ptrtype M_s;
+    mutable vector_ptrtype M_s1;
+    mutable vector_ptrtype M_s2;
+    mutable vector_ptrtype M_s3;
     mutable vector_ptrtype M_y;
+    mutable vector_ptrtype M_y1;
+    mutable vector_ptrtype M_y2;
+    mutable vector_ptrtype M_y3;
     mutable vector_ptrtype M_y_t;
     mutable vector_ptrtype M_z;
     mutable vector_ptrtype M_z_t;
@@ -226,17 +232,18 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // Block 11.1
     M_s = backend()->newVector(M_Qh3);
     M_y = backend()->newVector(M_Qh3);
+
     // Block 11.2
     M_z = backend()->newVector(M_Qh);
     M_t = backend()->newVector(M_Qh);
-    
+
     // Create the interpolation and keep only the matrix
     auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
     auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
     M_P = pi_curl.matPtr();
     M_C = Igrad.matPtr();
-    
+
     M_Pt = backend()->newMatrix(M_Qh3,M_Vh);
     M_Ct = backend()->newMatrix(M_Qh3,M_Vh);
 
@@ -266,6 +273,13 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
         if( dof_comp == Dim - 1 )
             idx++;
     }
+
+    // Subvectors for M_y (per component)
+    M_y1 = M_y->createSubVector(M_Qh3_indices[0], true);
+    M_y2 = M_y->createSubVector(M_Qh3_indices[1], true);
+#if FM_DIM == 3
+    M_y3 = M_y->createSubVector(M_Qh3_indices[2], true);
+#endif
 
     this->setType ( t );
     toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
@@ -366,21 +380,11 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
     if ( this->type() == AS )
     {
         tic();
-        // RHS calculation
-#if 0
-#if FM_DIM == 3
-        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
-#else
-        U.on( _range=boundaryfaces( M_Vh->mesh() ), _expr=vec(cst(0.), cst(0.)) );
-#endif
-#endif
 
         *M_r = U;
         M_r->close();
 
-        // étape A
-        // diag(Pm)^-1*r
-        //M_diagPm->pointwiseDivide(*M_r,*A);
+        // step A : diag(Pm)^-1*r
         A->pointwiseDivide(*M_r,*M_diagPm);
         A->close();
         // s = P^t r
@@ -397,15 +401,11 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         *M_s = M_qh3_elt;
         M_s->close();
 
-        auto y1 = M_y->createSubVector(M_Qh3_indices[0], true);
-        auto y2 = M_y->createSubVector(M_Qh3_indices[1], true);
+        // Subvectors for M_s (per component) need to be updated
+        M_s1 = M_s->createSubVector(M_Qh3_indices[0], true);
+        M_s2 = M_s->createSubVector(M_Qh3_indices[1], true);
 #if FM_DIM == 3
-        auto y3 = M_y->createSubVector(M_Qh3_indices[2], true);
-#endif
-        auto s1 = M_s->createSubVector(M_Qh3_indices[0], true);
-        auto s2 = M_s->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
-        auto s3 = M_s->createSubVector(M_Qh3_indices[2], true);
+        M_s3 = M_s->createSubVector(M_Qh3_indices[2], true);
 #endif
         /*
          * hat(L) + g Q is a (Qh,Qh) matrix
@@ -413,21 +413,20 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
          * [   0,   hat(L) + g Q,    0   ], *  [ y2 ] =  [ s2 ]
          * [   0,     0   , hat(L) + g Q ]]    [ y3 ]    [ s3 ]
          */
-        M_lgqOp->applyInverse(s1,y1);
-        M_lgqOp->applyInverse(s2,y2);
+        M_lgqOp->applyInverse(M_s1,M_y1);
+        M_lgqOp->applyInverse(M_s2,M_y2);
 #if FM_DIM == 3
-        M_lgqOp->applyInverse(s3,y3);
+        M_lgqOp->applyInverse(M_s3,M_y3);
 #endif
 
         // y = [ y1, y2, y3 ]
-        M_y->updateSubVector(y1, M_Qh3_indices[0]);
-        M_y->updateSubVector(y2, M_Qh3_indices[1]);
+        M_y->updateSubVector(M_y1, M_Qh3_indices[0]);
+        M_y->updateSubVector(M_y2, M_Qh3_indices[1]);
 #if FM_DIM == 3
-        M_y->updateSubVector(y3, M_Qh3_indices[2]);
+        M_y->updateSubVector(M_y3, M_Qh3_indices[2]);
 #endif
         M_y->close();
-        // étape B 
-        // P*y
+        // step B : P*y
         M_P->multVector(M_y,B);
 
         // Impose boundary conditions on B = Py
@@ -455,8 +454,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_lOp->applyInverse(M_t,M_z);
         M_z->close();
 
-        // étape C 
-        // M_C z
+        // step C : M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
 
