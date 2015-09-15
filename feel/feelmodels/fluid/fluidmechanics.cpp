@@ -39,13 +39,13 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
-                                                    bool __buildMesh,
-                                                    WorldComm const& __worldComm,
-                                                    std::string __subPrefix,
-                                                    std::string __appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
+                                                    bool _buildMesh,
+                                                    WorldComm const& _worldComm,
+                                                    std::string _subPrefix,
+                                                    std::string _appliShortRepository )
     :
-    super_type( __prefix, __buildMesh,__worldComm, __subPrefix,__appliShortRepository)
+    super_type( _prefix, _buildMesh,_worldComm, _subPrefix,_appliShortRepository)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -63,13 +63,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (__buildMesh) this->build();
+    if (_buildMesh) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix, bool _buildMesh,
+                                         WorldComm const& _worldComm, std::string _subPrefix,
+                                         std::string _appliShortRepository )
+{
+    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+
+}
+
+namespace detailbc
+{
+std::list<std::string>
+generateMarkerBCList(BoundaryConditions const bc,std::string const& field,std::string const& bcname, std::string const& marker, std::string const& param="number" )
+{
+    std::list<std::string> markerList;
+
+    std::pair<bool,int> numberOfMarkerRead = bc.iparam( field/*"velocity"*/, bcname/*"Dirichlet"*/, marker/*(d)*/, param/*"number"*/ );
+    int numberOfMarker = ( numberOfMarkerRead.first )? numberOfMarkerRead.second : 1;
+    for (int k=0 ; k<numberOfMarker ; ++k )
+    {
+        std::string currentMarker = ( numberOfMarker == 1 )? marker : (boost::format("%1%%2%")%marker %k).str();
+        markerList.push_back( currentMarker );
+    }
+
+    return markerList;
+}
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
@@ -94,31 +122,62 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     // boundary conditions
     this->M_isMoveDomain = false;
-    std::string dirichletbcType = soption(_name="dirichletbc.type",_prefix=this->prefix());
-    CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Dirichlet" );
     for( auto const& d : M_bcDirichlet )
     {
-        this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
+        std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "type" );
+        std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
+        CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
+
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Dirichlet", marker(d) );
+        this->setMarkerDirichletBCByNameId( dirichletbcType, marker(d), markerList,ComponentType::NO_COMPONENT );
+
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
-    M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "interface_fsi"/*"moving_boundary"*/ );
+    M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( { { "velocity", "interface_fsi" }, { "velocity","moving_boundary"} } );
     for( auto const& d : M_bcMovingBoundary )
     {
-        //this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT ); // ??
         this->addMarkerALEMeshBC("moving",marker(d));
         this->M_isMoveDomain=true;
     }
+
     M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "Neumann_scalar" );
     for( auto const& d : M_bcNeumannScalar )
     {
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_scalar", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d),markerList);
+
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_scalar", marker(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
+    M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Neumann_vectorial" );
+    for( auto const& d : M_bcNeumannVectorial )
+    {
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_vectorial", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_vectorial", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+    }
+    M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "velocity", "Neumann_tensor2" );
+    for( auto const& d : M_bcNeumannTensor2 )
+    {
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_tensor2", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_tensor2", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+    }
+
     M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
     for( auto const& d : M_bcPressure )
     {
@@ -162,16 +221,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         double WindkesselRp = ( WindkesselRpRead.first )? WindkesselRpRead.second : 1.;
         double WindkesselCd = ( WindkesselCdRead.first )? WindkesselCdRead.second : 1.;
 
-        std::pair<bool,int> nOutletRead = this->modelProperties().boundaryConditions().iparam( "fluid", "outlet", marker(d), "number" );
-        int nOutlet = ( nOutletRead.first )? nOutletRead.second : 1;
-        for (int k=0 ; k<nOutlet ; ++k )
-        {
-            std::string curOutletMarker = ( nOutlet == 1 )? marker(d) : (boost::format("%1%%2%")%marker(d) %k).str();
-            std::tuple<std::string,double,double,double> windkesselParam = std::make_tuple(typeCouplingWindkesselOutlet,WindkesselRd,WindkesselRp,WindkesselCd);
-            this->M_fluidOutletsBCType.push_back(std::make_tuple(curOutletMarker,typeOutlet, windkesselParam ));
-            this->addMarkerALEMeshBC(bcTypeMeshALE,curOutletMarker);
-        }
+        std::tuple<std::string,double,double,double> windkesselParam = std::make_tuple(typeCouplingWindkesselOutlet,WindkesselRd,WindkesselRp,WindkesselCd);
 
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "outlet", marker(d) );
+        for (std::string const& currentMarker : markerList )
+        {
+            this->M_fluidOutletsBCType.push_back(std::make_tuple(currentMarker,typeOutlet, windkesselParam ));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        }
     }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
@@ -232,6 +289,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindNeumannScalType->second )
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+            }
+            auto itFindNeumannVecType = itFindFieldVelocity->second.find("Neumann_vectorial");
+            if ( itFindNeumannVecType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannVecType->second )
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+            }
+            auto itFindNeumannTensor2Type = itFindFieldVelocity->second.find("Neumann_tensor2");
+            if ( itFindNeumannTensor2Type != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannTensor2Type->second )
                     bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
             }
         }
@@ -350,6 +419,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
     M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    M_bcNeumannTensor2.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
@@ -558,7 +629,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
-    if ( M_bcNeumannScalar.empty() ) return;
+    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                _rowstart=this->rowStartInVector() );
@@ -568,13 +639,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= expression(d)*inner( N(),id(v) ),
                        _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= inner( expression(d)*N(),id(v) ),
+                       _geomap=this->geomap() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R ) const
 {
-    if ( M_bcNeumannScalar.empty() ) return;
+    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
                                _rowstart=this->rowStartInVector() );
@@ -583,6 +664,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= -expression(d)*inner( N(),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= -inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= -inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 

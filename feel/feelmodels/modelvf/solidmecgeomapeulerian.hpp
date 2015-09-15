@@ -54,6 +54,8 @@ public:
                                                                      mpl::bool_<true>, mpl::bool_<false> >::type,
                                                    mpl::bool_<false> >::type::value;
     };
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     SolidMecGeomapEulerian( element_disp_type const& disp )
         :

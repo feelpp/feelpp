@@ -58,6 +58,7 @@ template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechPro
 class SolidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC,
+                           public MarkerManagementNeumannEulerianFrameBC,
                            public MarkerManagementRobinBC,
                            public MarkerManagementFluidStructureInterfaceBC
 {
@@ -137,7 +138,8 @@ public:
     // functionspace for rho,coefflame1,coefflame2
     typedef bases<Lagrange<0, Scalar,Continuous> > basis_scalar_P0_continuous_type;
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_discontinuous_type;
-    typedef typename mpl::if_< mpl::bool_<UseCstMechProp>,
+    static const bool use_continous_mechanical_properties = UseCstMechProp;
+    typedef typename mpl::if_< mpl::bool_<use_continous_mechanical_properties>,
                                basis_scalar_P0_continuous_type,
                                basis_scalar_P0_discontinuous_type >::type basis_scalar_P0_type;
 
@@ -351,6 +353,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
+    mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
 
     boost::shared_ptr<TSBase> timeStepBase()
     {
@@ -613,7 +616,6 @@ protected:
     //-------------------------------------------//
 
     // mesh
-    double M_meshSize;
     mesh_ptrtype M_mesh;
     MeshMover<mesh_type> M_mesh_mover;
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
@@ -649,7 +651,7 @@ protected:
 
     // exporter
     exporter_ptrtype M_exporter;
-    bool M_doExportDisplacement, M_doExportVelocity, M_doExportAcceleration, M_doExportNormalStress, M_doExportPressure;
+    bool M_doExportDisplacement, M_doExportVelocity, M_doExportAcceleration, M_doExportNormalStress, M_doExportPressure, M_doExportMaterialProperties;
     bool M_doExportVelocityInterfaceFromFluid;
     bool M_isHOVisu;
 #if defined(FEELPP_HAS_VTK)

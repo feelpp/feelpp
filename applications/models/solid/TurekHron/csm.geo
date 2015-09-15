@@ -23,6 +23,6 @@ Circle(4) = {2, 1, 3};
 Line Loop(5) = {3, -4, 1, 2};
 Plane Surface(1) = {5};
 
-Physical Line("Fixe") = {4};
-Physical Line("ParoiFSI") = {1,2,3};
-Physical Surface("OmegaStructure") = {1};
+Physical Line("fixed-wall") = {4};
+Physical Line("free-wall") = {1,2,3};
+Physical Surface("beam") = {1};

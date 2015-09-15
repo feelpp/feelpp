@@ -65,6 +65,15 @@ public:
         ExprR::template HasTrialFunction<Func>::result ;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+        ExprR::template HasTestFunction<Func>::result ;
+    template<typename Func>
+    static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result||
+        ExprR::template HasTrialFunction<Func>::result ;
+    using test_basis = typename ExprL::test_basis;
+    using trial_basis = typename ExprL::trial_basis;
+
     template<typename... TheExpr>
     struct Lambda
     {

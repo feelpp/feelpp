@@ -19,14 +19,14 @@ BOOST_AUTO_TEST_CASE( test_vf_chi_1 )
     auto myVec = vec( cst(1.),cst(1.) );
 
     double eval = integrate(_range=elements(mesh),
-                            _expr=chi( myVec(0,0) > cst(0.) ) ).evaluate()(0,0);
+                            _expr=chi( (myVec(0,0)) > cst(0.) ) ).evaluate()(0,0);
 
     form1(_test=Vh) =
         integrate(_range=elements(mesh),
-                  _expr=chi( myVec(0,0) > cst(0.) )*id(u) );
+                  _expr=chi( (myVec(0,0)) > cst(0.) )*id(u) );
     form2(_test=Vh,_trial=Vh) =
         integrate(_range=elements(mesh),
-                  _expr=chi( myVec(0,0) > cst(0.) )*id(u)*idt(u) );
+                  _expr=chi( (myVec(0,0)) > cst(0.) )*id(u)*idt(u) );
 
 }
 BOOST_AUTO_TEST_SUITE_END()
