@@ -48,7 +48,7 @@ if [ ! -z "$do_clang34" -a -x /usr/bin/clang++-3.4 ]; then
     export FEELPP_WORKDIR=/tmp/feel-clang-3.4
     rm -rf $FEELPP_WORKDIR 
     #clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
-    $COMMON,FEELPP_CXXNAME=clang-3.4,FEELPP_CXX=/usr/bin/clang++-3.4,FEELPP_C=/usr/bin/clang-3.4,FEELPP_STD_CXX=1y
+    $COMMON,FEELPP_CXXNAME=clang-3.4,FEELPP_CXX=/usr/bin/clang++-3.4,FEELPP_C=/usr/bin/clang-3.4,FEELPP_STD_CPP=1y
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang35" -a -x /usr/bin/clang++-3.5 ]; then
