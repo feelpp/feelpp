@@ -7,7 +7,8 @@
 COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
 #To make available specific compilation instead of "whatever is available"
-compiler_list=${3:-"gcc49,clang-3.4,clang-3.5,clang-3.6,clang-3.7"}
+#compiler_list=${3:-"gcc49,clang-3.4,clang-3.5,clang-3.6,clang-3.7"}
+compiler_list=${3:-"clang-3.4"}
 #do_gcc46=`echo $compiler_list | grep gcc46`
 do_gcc47=`echo $compiler_list | grep gcc47`
 do_gcc48=`echo $compiler_list | grep gcc48`
@@ -47,7 +48,7 @@ if [ ! -z "$do_clang34" -a -x /usr/bin/clang++-3.4 ]; then
     export FEELPP_WORKDIR=/tmp/feel-clang-3.4
     rm -rf $FEELPP_WORKDIR 
     #clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
-    $COMMON,FEELPP_CXXNAME=clang-3.4,FEELPP_CXX=/usr/bin/clang++-3.4,FEELPP_C=/usr/bin/clang-3.4
+    $COMMON,FEELPP_CXXNAME=clang-3.4,FEELPP_CXX=/usr/bin/clang++-3.4,FEELPP_C=/usr/bin/clang-3.4,FEELPP_STD_CXX=1y
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang35" -a -x /usr/bin/clang++-3.5 ]; then
