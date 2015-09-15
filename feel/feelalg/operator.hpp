@@ -245,13 +245,15 @@ public:
         auto yy = backend(_name=this->label())->newVector( Y.mapPtr() );
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
         bool cv;
-        if(!this->M_pc){
-          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
-          cv = this->M_return.isConverged();
+        if(!this->M_pc)
+        {
+            this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy );
+            cv = this->M_return.isConverged();
         }
-        else{
-          this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
-          cv = this->M_return.isConverged();
+        else
+        {
+            this->M_return = backend(_name=this->label())->solve( _matrix=M_F, _rhs=xx, _solution=yy, _prec=this->M_pc );
+            cv = this->M_return.isConverged();
         }
         Y=*yy;
         Y.close();

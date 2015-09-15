@@ -142,23 +142,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
         F->close();
     }
     //---------------------------------------------------------------------------------------//
-#if 1
+
     // dirichlet bc
     if (this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)
     {
         this->updateBCDirichletStrongLinearPDE( A,F );
-#if 0
-        //fixed at zero
-        auto const& bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
-        ForEachBC( bcDef,cl::dirichlet_vec,
-                   bilinearForm1dreduced +=
-                   /**/ on( _range=markedfaces(mesh,PhysicalName),
-                            _element=u, _rhs=F,
-                            _expr=cst(0.) ) );
-#endif
     }
 
-#endif
     //---------------------------------------------------------------------------------------//
 
     this->log( "SolidMechanics","updateLinearGeneralisedStringGeneralisedAlpha","finish");

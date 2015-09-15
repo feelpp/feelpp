@@ -55,6 +55,13 @@ public:
         static const bool result = PrintExprT::template HasTrialFunction<Func>::result;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = PrintExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = PrintExprT::template has_trial_basis<Func>;
+    using test_basis = typename PrintExprT::test_basis;
+    using trial_basis = typename PrintExprT::trial_basis;
+
     /** @name Typedefs
      */
     //@{

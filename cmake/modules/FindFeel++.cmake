@@ -7,21 +7,21 @@
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
 if (NOT DEFINED FEELPP_STD_CPP ) 
-  set(FEELPP_STD_CPP "11") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+  set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
 endif()
 message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
-  # require at least gcc 4.7
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
-    message(WARNING "GCC version must be at least 4.7!")
+  # require at least gcc 4.9
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+      message(ERROR "GCC version must be at least 4.9!")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  # require at least clang 3.3
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-    message(WARNING "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+  # require at least clang 3.4
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)
+      message(ERROR "Clang version must be at least 3.4! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     message(STATUS "[feelpp] Apple Clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
@@ -40,7 +40,9 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
+
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
+
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
   endif()

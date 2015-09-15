@@ -127,6 +127,12 @@ public:
     {
         static const bool result = Expr::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = Expr::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = Expr::template has_trial_basis<Func>;
+    using test_basis = typename Expr::test_basis;
+    using trial_basis = typename Expr::trial_basis;
 
     static const size_type iDim = boost::tuples::template element<0, Elements>::type::value;
     //@}
@@ -485,9 +491,8 @@ public:
      * evaluate the integral for each entry of the vector \c v
      */
     template<typename T,int M, int N=1>
-    //decltype(auto)
-        std::vector<Eigen::Matrix<T,eval::shape::M,eval::shape::N> >
-        evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
+    decltype(auto)
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const;
 
 #if 1
     matrix_type
@@ -4960,7 +4965,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
-std::vector<Eigen::Matrix<T, Integrator<Elements, Im, Expr, Im2>::eval::shape::M,Integrator<Elements, Im, Expr, Im2>::eval::shape::N>>
+decltype(auto)
 Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v ) const
 {
     DLOG(INFO)  << "integrating over "

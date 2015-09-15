@@ -591,22 +591,6 @@ public:
      */
     //@{
 
-    template<typename ExprType>
-    void
-    getFaceNormal( ExprType& expr, int faceId, ublas::vector<value_type>& n) const
-    {
-        auto g = expr.geom();
-
-        auto const& K = g->K(0);
-        auto const& B = g->B(0);
-
-        ublas::axpy_prod( B,
-                          g->geometricMapping()->referenceConvex().normal( faceId ),
-                          n,
-                          true );
-
-        n *= g->element().faceMeasure(faceId)/ublas::norm_2(n);
-    }
 
     typedef Eigen::MatrixXd local_interpolant_type;
     local_interpolant_type
@@ -621,14 +605,13 @@ public:
         {
             Ihloc.setZero();
             auto g=expr.geom();
-            ublas::vector<value_type> n( nDim ); //normal
 
             for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
             {
                 if( g->faceId() == invalid_uint16_type_value)
-                    getFaceNormal(expr, f, n);
+                    expr.geom()->faceNormal(  f, n, true );
                 else
-                    getFaceNormal(expr, g->faceId(), n);
+                    expr.geom()->faceNormal(  g->faceId(), n, true );
                 
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
@@ -651,15 +634,14 @@ public:
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             auto g = expr.geom();
-            ublas::vector<value_type> n( nDim ); //normal
             Ihloc.setZero();
-            //for( int f = 0; f < face_type::numFaces; ++f )
+
             int f=0;
             {
                 if( g->faceId() == invalid_uint16_type_value)
-                    getFaceNormal(expr, f, n);
+                    expr.geom()->faceNormal(  f, n, true );
                 else
-                    getFaceNormal(expr, g->faceId(), n);
+                    expr.geom()->faceNormal(  g->faceId(), n, true );
                 
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
@@ -673,33 +655,45 @@ public:
                 }
             }
         }
+
+    using apply_curl_t = mpl::bool_<true>;
+    using apply_id_t = mpl::bool_<false>;
+    
     template<typename ExprType>
     void
     interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
-        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        using shape = typename std::decay_t<ExprType>::shape;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+
         Ihloc.setZero();
         auto g=expr.geom();
-        ublas::vector<value_type> n( nDim ); //normal
 
         for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
         {
             if( g->faceId() == invalid_uint16_type_value)
-                getFaceNormal(expr, f, n);
+                expr.geom()->faceNormal( f, n, true );
             else
-                getFaceNormal(expr, g->faceId(), n);
+                expr.geom()->faceNormal( g->faceId(), n, true );
 
             auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
             for ( int l = 0; l < nLocalDof; ++l )
             {
                 int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
-                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+                {
+                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+                    
+                    for ( uint16_type c = 0; c < ncomp; ++c )
                     {
-                        int ldof = c1*fe_expr_type::nLocalDof + i;
-                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
-                        Ihloc(ldof,q) = expr.evaliq( ldof2, c1, 0, q )*n(c1);
+                        uint16_type I = expr_basis_t::nLocalDof*c + i;
+
+                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        {
+                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*n(c1);
+                        }
                     }
+                }
             }
         }
 
@@ -853,6 +847,8 @@ public:
 
 protected:
     reference_convex_type M_refconvex;
+    mutable ublas::vector<value_type> n{ nDim }; //normal
+
 private:
 
 };

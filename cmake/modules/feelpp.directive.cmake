@@ -86,7 +86,7 @@ if(cmake_generator_tolower MATCHES "makefile")
   MESSAGE(STATUS "===================|================================================================")
   message(STATUS "make feelpp        | Compile the Feel++ library")
   message(STATUS "make install-feelpp| Compile the Feel++ library and install it to ${CMAKE_INSTALL_PREFIX}")
-  message(STATUS "make feelpp_models | build feel++ models: fluid, solid, fsi, thermodynamics ")
+  message(STATUS "make feelpp-models | build feel++ models: fluid, solid, fsi, thermodynamics ")
   MESSAGE(STATUS "================================================================================")
 endif()
 
