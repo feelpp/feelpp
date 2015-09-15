@@ -3342,7 +3342,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     std::remove_const_t<decltype(type)> t( type );
     return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod );
 
@@ -3364,7 +3366,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
@@ -3387,7 +3391,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
@@ -3410,7 +3416,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
@@ -3433,7 +3441,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
