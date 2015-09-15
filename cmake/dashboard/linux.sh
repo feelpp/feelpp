@@ -40,7 +40,7 @@ fi
 if [ ! -z "$do_gcc49" -a -x /usr/bin/g++-4.9 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc49
     rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9,FEELPP_C=/usr/bin/gcc-4.9,FEELPP_STD_CPP=1y 
+    $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9,FEELPP_C=/usr/bin/gcc-4.9
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang34" -a -x /usr/bin/clang++-3.4 ]; then
