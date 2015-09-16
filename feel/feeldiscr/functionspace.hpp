@@ -3400,7 +3400,9 @@ public:
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
             if ( !fs::exists( fs::path( path ) ) )
             {
@@ -3444,7 +3446,9 @@ public:
             )
         )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
             std::ostringstream os1;
             os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
@@ -4321,7 +4325,12 @@ public:
     elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
                 typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
-        return boost::make_shared<element_type>( e, name, desc );
+        //return boost::make_shared<element_type>( e, name, desc );
+        element_ptrtype u = this->elementPtr(name,desc);
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
+        return u;
     }
 
     typedef std::vector<element_ptrtype> elements_ptrtype;

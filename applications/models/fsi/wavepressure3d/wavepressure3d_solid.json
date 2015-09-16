@@ -3,10 +3,10 @@
     "Name": "Arterial wall",
     "ShortName":"ArterialWall",
     "Model":"Elasticity",
-    "Materials":
-    {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
     "BoundaryConditions":
     {
         "displacement":

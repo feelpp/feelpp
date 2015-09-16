@@ -392,8 +392,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::type functionalcomposite_type;
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::ptrtype functionalcomposite_ptrtype;
     return functionalcomposite_ptrtype ( new functionalcomposite_type( space , backend ) );
