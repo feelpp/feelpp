@@ -980,7 +980,6 @@ void PartitionIO<MeshType>::readPoints()
             pt.setMarker( marker );
             pt.setProcessId( pid );
             pt.setProcessIdInPartition( M_meshPartIn->worldComm().localRank() );
-            pt.setNumberOfPartitions( nparts );
             M_meshPartIn->addPoint( pt );
             
         }
@@ -1053,7 +1052,6 @@ void PartitionIO<MeshType>::readEdges(typename std::enable_if<is_3d<T>::value>::
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
 
             // TODO: Ghost data
@@ -1147,7 +1145,6 @@ void PartitionIO<MeshType>::readFaces()
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
 
             // TODO: Ghost data
@@ -1241,7 +1238,6 @@ void PartitionIO<MeshType>::readElements()
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
             // TODO: Ghost data
             //e.setNeighborPartitionIds( __e.ghosts );
@@ -1260,8 +1256,6 @@ void PartitionIO<MeshType>::readElements()
             }
             toc("PartitionIO reading elements - prepare element", FLAGS_v > 0);
             tic();
-            //M_meshPartIn->addElement( std::move(e), false );
-            //M_meshPartIn->addElementR( std::move(e) );
             M_meshPartIn->addElement( e, false );
             toc("PartitionIO reading elements - store elements", FLAGS_v > 0);
         }
