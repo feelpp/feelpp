@@ -18,7 +18,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
                                                                          bool _buildCstPart, bool UseJacobianLinearTerms,
                                                                          bool _doClose, bool _doBCStrongDirichlet ) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
     std::string sc=(_buildCstPart)?" (cst part)":" (non cst part)";
@@ -273,7 +272,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X,
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("SolidMechanics","updateResidual",
               "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str() );
-#endif //FEELMODELS_SOLID_BUILD_RESIDUAL_CODE
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -284,7 +282,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
     boost::mpi::timer thetimer;
@@ -357,7 +354,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
     this->log("SolidMechanics","updateResidualIncompressibilityTerms",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
-#endif //FEELMODELS_SOLID_BUILD_RESIDUAL_CODE
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -369,7 +365,6 @@ void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_type const& u, vector_ptrtype& R) const
 {
 #if 0
-#if defined(FEELMODELS_SOLID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateResidualViscoElasticityTerms start\n";
@@ -401,7 +396,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( elem
                    _geomap=this->geomap() );
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateResidualViscoElasticityTerms finish\n";
-#endif //FEELMODELS_SOLID_BUILD_RESIDUAL_CODE
 #endif
 }
 

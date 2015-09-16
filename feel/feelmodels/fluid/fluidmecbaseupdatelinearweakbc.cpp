@@ -13,7 +13,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -445,7 +444,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     this->log("FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str() );
 
 
-#endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
 } // updateOseenWeakBC
 
 } // end namespace FeelModels

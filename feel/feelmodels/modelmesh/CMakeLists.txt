@@ -14,6 +14,7 @@ add_library(
 target_link_libraries(feelpp_modelmesh
   feelpp_modelcore
   ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
 
 #######################################################
 # meshale lib
@@ -51,6 +52,7 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}
     )
+  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
   
 endif( FEELPP_MODELS_HAS_MESHALE )
 
