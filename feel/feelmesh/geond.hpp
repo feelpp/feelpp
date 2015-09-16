@@ -147,8 +147,6 @@ public:
         M_points( numPoints ),
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -175,8 +173,6 @@ public:
         M_points( numPoints ),
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_h_face( numTopologicalFaces, 1 ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -330,15 +326,29 @@ public:
      */
     node_type faceBarycenter( uint16_type f ) const
     {
-        return ublas::column( M_barycenterfaces, f );
+        constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
+        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        
+        node_type n( nRealDim );
+        em_node_type en( n.data().begin(), n.size() );
+        en.setZero();
+        for ( uint16_type p =  0;  p < nPtsInFace; ++p )
+        {
+            // get pt id in element  from local pt id  in face
+            int ptid = this->fToP( f, p );
+            en += G.col(ptid);
+        }
+        return en / nPtsInFace;
     }
 
     /**
      * \return the barycenters at the faces of the element
      */
-    matrix_node_type faceBarycenters() const
+    FEELPP_DEPRECATED matrix_node_type faceBarycenters() const
     {
-        return M_barycenterfaces;
+        matrix_node_type n;
+        return n;
+            
     }
 
     /**
@@ -566,7 +576,23 @@ public:
      */
     double hFace( uint16_type f ) const
     {
-        return M_h_face[f];
+        if ( nRealDim==1 )
+            return 1;
+        
+        constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
+        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        
+        double res = 0.;
+        for ( uint16_type e =  0;  e < nEdges; ++e )
+        {
+            // get edge id in face from local edge id
+            int edg = this->f2e( f, (nDim==2)?f:e );
+            int col1 = this->eToP( edg, 0 );
+            int col2 = this->eToP( edg, 1 );
+            double r = (G.col(col1)-G.col(col2)).norm();
+            res = ( res > r )?res:r;       
+        }
+        return res;
     }
 
     double hEdge( uint16_type f ) const
@@ -718,7 +744,6 @@ public:
 
         if ( tags.size() > 2 )
         {
-            this->setNumberOfPartitions( tags[2] );
             this->setProcessId( tags[3] );
 
             if ( tags[2] > 1 )
@@ -786,9 +811,9 @@ public:
         std::set<size_type> n;
         for ( uint16_type __p = 0; __p < numPoints; ++__p )
         {
-            std::copy( M_points[__p]->elements().begin(),
-                       M_points[__p]->elements().end(),
-                       std::inserter( n, n.begin() ) );
+            std::for_each( M_points[__p]->elements().begin(),
+                           M_points[__p]->elements().end(),
+                           [&n]( auto const& e ) { n.insert( e.first ); } );
         }
         return n;
     }
@@ -845,9 +870,7 @@ private:
 
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;
-    matrix_node_type M_barycenterfaces;
 
-    std::vector<double> M_h_face;
 
     double M_measure;
     std::vector<double> M_measurefaces;
@@ -977,44 +1000,6 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<true> )
 {
-    if ( nRealDim==1 )
-    {
-        M_h_face[0] = 1;
-        M_h_face[1] = 1;
-    }
-
-    else
-    {
-        int nEdges = GEOSHAPE::topological_face_type::numEdges;
-
-        for ( uint16_type __f = 0; __f < numTopologicalFaces; ++__f )
-        {
-            M_h_face[__f] = 0;
-
-            for ( uint16_type e =  0;  e < nEdges; ++e )
-            {
-                double __l = 0;
-
-                if ( Dim == 2 )
-                {
-                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, __f ), 0 ) ).node();
-                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, __f ), 1 ) ).node();
-                    __l = ublas::norm_2( __x1-__x2 );
-                }
-
-                else
-                {
-                    node_type const& __x1 = this->point( this->eToP( this->f2e( __f, e ), 0 ) ).node();
-                    node_type const& __x2 = this->point( this->eToP( this->f2e( __f, e ), 1 ) ).node();
-                    __l = ublas::norm_2( __x1-__x2 );
-                }
-
-                //std::cout << "face " << __f << " edge "  << e << "  edge " << this->f2e( __f, __f ) << " length "  << __l << std::endl;
-                M_h_face[__f] = ( M_h_face[__f] > __l )?M_h_face[__f]:__l;
-            }
-        }
-    }
-
     //auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
     auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::KB|vm::JACOBIAN>(
         *this,
@@ -1035,11 +1020,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
     {
         ctx->update( *this, f );
         ublas::column( M_normals, f ) = ctx->unitNormal( 0 );
-#if 1 // doesn't work (vincent)
-        ublas::column( M_barycenterfaces, f ) = ctx->xReal( 0 );
-#else
-        ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( this->face( f ).G() ) );
-#endif
+
         double w = ( nDim == 3 )?f3[f]:( ( nDim==2 )?f2[f]:1 );
         M_measurefaces[f] = w*ctx->J( 0 )*ctx->normalNorm( 0 );
     }
