@@ -147,7 +147,9 @@ public:
     {}
 
     GeoEntity( GeoEntity const& __me ) = default;
+    GeoEntity( GeoEntity && __me ) = default;
     GeoEntity& operator=( GeoEntity const& __me ) = default;
+    GeoEntity& operator=( GeoEntity && __me ) = default;
 
     virtual ~GeoEntity()
     {}
@@ -177,7 +179,7 @@ public:
      */
     //@{
 
-    size_type id() const
+    size_type id() const noexcept
     {
         return M_id;
     }
@@ -393,7 +395,7 @@ public:
      * Tells if  item is on the boundary
      * @return true if on boundary, false otherwise
      */
-    bool isOnBoundary() const
+    bool isOnBoundary() const noexcept
     {
         return M_entity.test( MESH_ENTITY_BOUNDARY );
     }
@@ -401,14 +403,14 @@ public:
     /**
      * maximum dimension of the entity of the element touching the boundary
      */
-    uint16_type boundaryEntityDimension() const
+    uint16_type boundaryEntityDimension() const noexcept
     {
         return M_boundaryEntityDimension;
     }
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const
+    bool isGhostCell() const noexcept
     {
         //return (this->worldComm().localRank()!=M_pid);
         //mpi::communicator world;
@@ -419,7 +421,7 @@ public:
     /**
      * \return the processor id of the entity
      */
-    rank_type processId() const
+    rank_type processId() const noexcept
     {
         return M_pid;
     }
@@ -428,7 +430,7 @@ public:
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessId( rank_type pid )
+    void setProcessId( rank_type pid ) noexcept
     {
         M_pid = pid ;
     }
@@ -436,7 +438,7 @@ public:
     /**
      * \return the processor id of the entity
      */
-    rank_type pidInPartition() const
+    rank_type pidInPartition() const noexcept
     {
         return M_pidInPartition;
     }
@@ -444,7 +446,7 @@ public:
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessIdInPartition( rank_type pid )
+    void setProcessIdInPartition( rank_type pid ) noexcept
     {
         M_pidInPartition = pid ;
     }
@@ -452,7 +454,7 @@ public:
     /**
      * \return the partition id
      */
-    rank_type partitionId() const
+    rank_type partitionId() const noexcept
     {
         return M_pid;
     }
@@ -461,7 +463,7 @@ public:
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    rank_type numberOfPartitions() const
+    rank_type numberOfPartitions() const noexcept
     {
         return M_npids;
     }

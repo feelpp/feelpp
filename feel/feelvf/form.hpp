@@ -117,8 +117,10 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+#if BOOST_VERSION < 105900
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, vector, rowstart, init, do_threshold, threshold );
 } // form
@@ -187,7 +189,9 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                               ) // deduced
                         )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
