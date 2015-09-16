@@ -41,16 +41,7 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
 
-  # do version checking for gcc, before 5.0 use c++1y
-  if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
-      if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y" )
-      else()
-        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
-      endif()
-  else()
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
-  endif()
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
 
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
