@@ -28,6 +28,13 @@
  */
 #ifndef FEELPP_ELEMENT_IMPL_HPP
 #define FEELPP_ELEMENT_IMPL_HPP 1
+
+
+#if BOOST_VERSION >= 105900
+#include <boost/utility/in_place_factory.hpp>
+#endif
+
+
 namespace Feel{
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
