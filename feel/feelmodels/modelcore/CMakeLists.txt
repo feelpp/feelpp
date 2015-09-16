@@ -32,5 +32,6 @@ add_library(feelpp_modelcore
   markermanagement.cpp
   )
 target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
+INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
 
 include(feelpp.models.macros.cmake)
