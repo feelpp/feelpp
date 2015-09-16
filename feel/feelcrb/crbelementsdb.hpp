@@ -110,6 +110,7 @@ public :
      */
     bool loadDB();
 
+#ifdef FEELPP_HAS_HDF5
     /**
      * save the database in hdf5 format
      */
@@ -118,7 +119,8 @@ public :
     /**
      * load the database in hdf5 format
      */
-    bool loadHDF5DB();
+    void loadHDF5DB();
+#endif
 
 
     boost::tuple<wn_type, wn_type> wn()
@@ -167,9 +169,20 @@ template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveDB()
 {
-    /* save in boost format */
-    if(soption(_name="crb.db.format").compare("boost") == 0)
+#ifdef FEELPP_HAS_HDF5
+    if(soption(_name="crb.db.format").compare("hdf5") == 0)
     {
+        this->saveHDF5DB();
+    }
+    else
+#endif
+    /* save in boost format by default */
+    {
+        if(soption(_name="crb.db.format").compare("boost") != 0)
+        {
+            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
+        }
+
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
         if ( ofs )
@@ -179,10 +192,6 @@ CRBElementsDB<ModelType>::saveDB()
             oa << *this;
             // archive and stream closed when destructors are called
         }
-    }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        this->saveHDF5DB();
     }
 }
 
@@ -210,8 +219,23 @@ CRBElementsDB<ModelType>::loadDB()
         return false;
 
     std::cout << "test3 done...\n";
-    if(soption(_name="crb.db.format").compare("boost") == 0)
+
+#ifdef FEELPP_HAS_HDF5
+    if(soption(_name="crb.db.format").compare("hdf5") == 0)
     {
+        this->loadHDF5DB();    
+        std::cout << "Loading " << db << " done...\n";
+        this->setIsLoaded( true );
+        return true;
+    }
+    else
+#endif
+    {
+        if(soption(_name="crb.db.format").compare("boost") != 0)
+        {
+            LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
+        }
+
         //std::cout << "Loading " << db << "...\n";
         fs::ifstream ifs( db );
 
@@ -225,13 +249,6 @@ CRBElementsDB<ModelType>::loadDB()
             // archive and stream closed when destructors are called
             return true;
         }
-    }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
-    {
-        this->loadHDF5DB();    
-        std::cout << "Loading " << db << " done...\n";
-        this->setIsLoaded( true );
-        return true;
     }
 
     return false;
@@ -265,6 +282,7 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
     LOG( INFO ) << "Elements DB saved";
 }
 
+#ifdef FEELPP_HAS_HDF5
 template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveHDF5DB()
@@ -289,6 +307,7 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     }
     LOG( INFO ) << "Elements DB saved in hdf5";
 }
+#endif
 
 template<typename ModelType>
 template<class Archive>
@@ -338,8 +357,9 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
     LOG( INFO ) << "Elements DB loaded";
 }
 
+#ifdef FEELPP_HAS_HDF5
 template<typename ModelType>
-bool
+void
 CRBElementsDB<ModelType>::loadHDF5DB()
 {
     LOG( INFO ) << " loading HDF5 Elements DB ... ";
@@ -408,9 +428,9 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         M_WNdu[i] = temp;
     }
     LOG( INFO ) << "Elements DB loaded";
+
 }
-
-
+#endif
 
 }//Feel
 
