@@ -35,9 +35,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <feel/feelcore/debug.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
 #include <cstring>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -318,7 +315,7 @@ private:
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterVTK_impl.hpp>
+# include <feel/feelfilters/exportervtk_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif // defined(FEELPP_HAS_VTK)

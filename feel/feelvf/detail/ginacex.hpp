@@ -248,7 +248,7 @@ public:
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 // is it called for updates on faces? need to check that...
                 for ( auto const& comp : M_expr.indexSymbolN() )
-                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first];
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
 
@@ -265,7 +265,7 @@ public:
                 for ( auto const& comp : M_expr.indexSymbolXYZ() )
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                 for ( auto const& comp : M_expr.indexSymbolN() )
-                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first];
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
         }

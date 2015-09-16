@@ -1251,6 +1251,9 @@ public:
                                             mpl::bool_<false> >::type::value;
     };
 
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
 
     //@}
 
