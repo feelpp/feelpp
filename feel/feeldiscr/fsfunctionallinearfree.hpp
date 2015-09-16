@@ -151,8 +151,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::type functionalfree_type;
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype functionalfree_ptrtype;
     return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );
