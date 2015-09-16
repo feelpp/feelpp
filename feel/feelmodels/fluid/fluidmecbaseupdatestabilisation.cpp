@@ -14,7 +14,6 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
 {
-#if (defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE) )
 
     using namespace Feel::vf;
 
@@ -172,7 +171,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
 
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateOseenStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
-#endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
+
 } // updateOseenStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -184,7 +183,6 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
                                                                     bool BuildCstPart, bool UseJacobianLinearTerms) const
 {
-#if (defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateResidualStabilisation", "start" );
@@ -349,8 +347,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
     this->log("FluidMechanics","updateResidualStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
 
-#endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
-
 } // updateResidualStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -361,7 +357,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
                                                                     sparse_matrix_ptrtype& J , vector_ptrtype& R,
                                                                     bool BuildCstPart ) const
 {
-#if (defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE))
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
@@ -489,7 +484,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
     this->log("FluidMechanics","updateJacobianStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
 
-#endif //  defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE) && defined(FEELMODELS_FLUID_BUILD_STABILISATION_CODE)
 } // updateJacobianStabilisation
 
 //--------------------------------------------------------------------------------------------//

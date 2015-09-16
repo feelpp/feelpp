@@ -1201,7 +1201,7 @@ void
 ConfigurePC::run( PC& pc )
 {
     VLOG(2) << "configuring PC... (sub: " << this->sub() << ")";
-    PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
+    //PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
     google::FlushLogFiles(google::INFO);
     const char* pctype;
     this->check( PCGetType ( pc, &pctype ) );

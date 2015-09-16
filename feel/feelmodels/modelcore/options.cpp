@@ -106,15 +106,15 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
         ;
 
-    for (uint16_type nParam=1;nParam<=FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS;++nParam)
+    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_PARAMETERS;++nParam)
         appliBaseOptions.add_options()
             ((boost::format("%1%parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter");
 
-    for (uint16_type nParam=1;nParam<=FEELMODELS_FSIBASE_NUMBER_OF_GEOPARAMETERS;++nParam)
+    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GEOPARAMETERS;++nParam)
         appliBaseOptions.add_options()
             ((boost::format("%1%geo-parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a geo parameter");
 
-    for (uint16_type k=1;k<=FEELMODELS_FSIBASE_NUMBER_OF_GINACEXPR;++k)
+    for (uint16_type k=1;k<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GINACEXPR;++k)
         {
             appliBaseOptions.add_options()
                 ((boost::format("%1%ginac-expr%2%") %prefixvm(prefix,"") %k).str().c_str(), Feel::po::value<std::string>()->default_value( "" ), " a ginac expr");
