@@ -98,6 +98,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if (M_doExportAcceleration) doExport_str=(doExport_str.empty())?"acceleration":doExport_str+" - acceleration";
     if (M_doExportPressure) doExport_str=(doExport_str.empty())?"pressure":doExport_str+" - pressure";
     if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
+    if (M_doExportMaterialProperties) doExport_str=(doExport_str.empty())?"material properties":doExport_str+" - material properties";
     if (M_doExportVelocityInterfaceFromFluid) doExport_str=(doExport_str.empty())?"velocty interface from fluid":doExport_str+" - velocty interface from fluid";
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
@@ -111,16 +112,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- pde name : " << M_pdeType
            << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
            << "\n     -- use displacement-pressure formulation : " << std::boolalpha << M_useDisplacementPressureFormulation
-           << "\n     -- time mode : " << StateTemporal
-           << "\n   Physical Parameters"
-           << "\n     -- rho : " << this->mechanicalProperties()->cstRho()
-           << "\n     -- young modulus : " << this->mechanicalProperties()->cstYoungModulus()
-           << "\n     -- coeff poisson : " << this->mechanicalProperties()->cstCoeffPoisson()
-           << "\n     -- coeff Lame 1 : " << this->mechanicalProperties()->cstCoeffLame1()
-           << "\n     -- coeff Lame 2 : " << this->mechanicalProperties()->cstCoeffLame2()
-           << "\n   Boundary conditions";
-    *_ostr << this->getInfoDirichletBC()
+           << "\n     -- time mode : " << StateTemporal;
+    *_ostr << this->mechanicalProperties()->getInfoMaterialParameters()->str();
+    *_ostr << "\n   Boundary conditions"
+           << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
+           << this->getInfoNeumannEulerianFrameBC()
            << this->getInfoRobinBC()
            << this->getInfoFluidStructureInterfaceBC();
     *_ostr << "\n   Space Discretization"
@@ -130,6 +127,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- polynomial order : " << nOrder;
     if ( M_useDisplacementPressureFormulation )
         *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
+    *_ostr << "\n     -- mechanical properties : "
+           << (boost::format("P%1%%2%")%mechanicalproperties_type::space_type::basis_type::nOrder %std::string( (use_continous_mechanical_properties)? "c":"d")).str();
     *_ostr << "\n   Time Discretization"
            << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
            << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
@@ -353,6 +352,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
         {
             this->updateNormalStressFromStruct();
             M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"), *M_normalStressFromStruct/*M_normalStressFromFluid*/ );
+            hasFieldToExport = true;
+        }
+        if ( M_doExportMaterialProperties )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"YoungModulus"), this->mechanicalProperties()->fieldYoungModulus() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"PoissonCoefficient"), this->mechanicalProperties()->fieldCoeffPoisson() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"Lame1"), this->mechanicalProperties()->fieldCoeffLame1() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"Lame2"), this->mechanicalProperties()->fieldCoeffLame2() );
             hasFieldToExport = true;
         }
         if ( M_doExportVelocityInterfaceFromFluid && this->velocityInterfaceFromFluid() )

@@ -50,11 +50,17 @@ public:
 
     using element_displacement_type = typename super_type::element_displacement_type;
 
-    SolidMechanics( std::string prefix,
-                    bool __buildMesh=true,
+    SolidMechanics( std::string _prefix,
+                    bool _buildMesh=true,
                     WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+                    std::string _subPrefix="",
+                    std::string _appliShortRepository=soption(_name="exporter.directory") );
+
+    static self_ptrtype New( std::string _prefix,
+                             bool _buildMesh=true,
+                             WorldComm const& _worldComm=Environment::worldComm(),
+                             std::string _subPrefix="",
+                             std::string _appliShortRepository=soption(_name="exporter.directory") );
 
     //___________________________________________________________________________________//
     // load config files
@@ -91,7 +97,12 @@ private :
     map_scalar_field<2> M_bcDirichletX,M_bcDirichletY,M_bcDirichletZ;
     map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
     map_vector_fields<super_type::nDim,1,2> M_bcRobin;
+    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
+    map_vector_field<super_type::nDim,1,2> M_bcNeumannEulerianFrameVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannEulerianFrameTensor2;
+
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 };
 

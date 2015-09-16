@@ -51,13 +51,18 @@ public:
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( //bool __isStationary,
-                    std::string prefix,
-                    bool __buildMesh=true,
+    FluidMechanics( std::string _prefix,
+                    bool _buildMesh=true,
                     WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+                    std::string _subPrefix="",
+                    std::string _appliShortRepository=soption(_name="exporter.directory") );
     FluidMechanics( self_type const& FM ) = default;
+    //___________________________________________________________________________________//
+    static self_ptrtype New( std::string _prefix,
+                             bool _buildMesh=true,
+                             WorldComm const& _worldComm=Environment::worldComm(),
+                             std::string _subPrefix="",
+                             std::string _appliShortRepository=soption(_name="exporter.directory") );
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
@@ -90,6 +95,9 @@ public:
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
     map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;
+    map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
+
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
 }; // FluidMechanics

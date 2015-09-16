@@ -60,7 +60,7 @@ add_dependencies(feelpp_model_algebra feelpp_modelalg)
 add_custom_target(feelpp_model_mesh)
 add_dependencies(feelpp_model_mesh feelpp_model_algebra)
 
-add_custom_target(feelpp_models)
-#add_dependencies(feelpp_models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
-add_dependencies(feelpp_models feelpp_model_mesh)
+add_custom_target(feelpp-models)
+#add_dependencies(feelpp-models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
+add_dependencies(feelpp-models feelpp_model_mesh)
 

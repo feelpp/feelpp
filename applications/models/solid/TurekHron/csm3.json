@@ -12,7 +12,12 @@
     },
     "Materials":
     {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+        "beam":{
+            "name":"solid",
+            "E":"1.4e6",
+            "nu":"0.4",
+            "rho":"1e3"
+        }
     },
     "BoundaryConditions":
     {
@@ -20,14 +25,14 @@
         {
             "Dirichlet":
             {
-                "Fixe":
+                "fixed-wall":
                 {
                     "expr":"{0,0}"
                 }
             },
             "Neumann_scalar":
             {
-                "ParoiFSI":
+                "free-wall":
                 {
                     "expr":"0" 
                 }

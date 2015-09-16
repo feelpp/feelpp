@@ -4321,7 +4321,12 @@ public:
     elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
                 typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
-        return boost::make_shared<element_type>( e, name, desc );
+        //return boost::make_shared<element_type>( e, name, desc );
+        element_ptrtype u = this->elementPtr(name,desc);
+        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
+        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
+        return u;
     }
 
     typedef std::vector<element_ptrtype> elements_ptrtype;
