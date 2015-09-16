@@ -602,7 +602,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 

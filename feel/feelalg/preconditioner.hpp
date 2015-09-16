@@ -438,9 +438,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         observed = true;
     }
 
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
-
+#endif
     auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
     if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )

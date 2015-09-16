@@ -19,7 +19,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                                         bool _doClose, bool _doBCStrongDirichlet ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -467,7 +466,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
 } // updateJacobian
 
 } // namespace FeelModels
