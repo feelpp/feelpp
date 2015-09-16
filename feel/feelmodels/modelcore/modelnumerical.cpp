@@ -186,22 +186,21 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
     ModelNumerical::ginacExprCompilationDirectory() const { return M_ginacExprCompilationDirectory; }
 
     void
-    ModelNumerical::saveMSHfilePath(std::string namePath) const
+    ModelNumerical::saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath ) const
     {
+        std::string meshPathUsed = (meshPath.empty())? this->mshfileStr() : meshPath;
         if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMSHfilePath",
-                                             "namePath "+ namePath + "\nwrite :\n" + M_mshFileStr,
+                                             "fileSavePath :"+ fileSavePath + "\nwrite :\n" + meshPathUsed,
                                              this->worldComm(),this->verboseAllProc());
 
         if ( this->worldComm().isMasterRank() )
         {
-            fs::path thedir = fs::path( namePath ).parent_path();
+            fs::path thedir = fs::path( fileSavePath ).parent_path();
             if ( !fs::exists(thedir))
                 fs::create_directories(thedir);
 
-            //std::string nameFile = prefixvm(this->prefix(),namePath);
-            std::ofstream file(namePath.c_str(), std::ios::out);
-            //M_mshFileStr = this->application()->vm()[prefixvm(this->prefix(),"mshfile")].as< std::string >() ;
-            file << M_mshFileStr;
+            std::ofstream file(fileSavePath.c_str(), std::ios::out);
+            file << meshPathUsed;
             file.close();
         }
     }

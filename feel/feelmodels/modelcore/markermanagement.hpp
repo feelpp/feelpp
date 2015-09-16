@@ -77,7 +77,7 @@ private :
 class MarkerManagementNeumannBC
 {
 public :
-    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1 };
+    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1, TENSOR2 = 2 };
 
     MarkerManagementNeumannBC();
     MarkerManagementNeumannBC( MarkerManagementNeumannBC const& op ) = default;
@@ -94,6 +94,28 @@ public :
 
 private :
     std::map<NeumannBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
+};
+
+class MarkerManagementNeumannEulerianFrameBC
+{
+public :
+    enum NeumannEulerianFrameBCShape { SCALAR = 0, VECTORIAL = 1, TENSOR2 = 2 };
+
+    MarkerManagementNeumannEulerianFrameBC();
+    MarkerManagementNeumannEulerianFrameBC( MarkerManagementNeumannEulerianFrameBC const& op ) = default;
+
+    void clearMarkerNeumannEulerianFrameBC();
+
+    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId);
+
+    std::map<std::string,std::list<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
+    std::list<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
+
+    std::string getInfoNeumannEulerianFrameBC() const;
+private :
+    std::map<NeumannEulerianFrameBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
     std::list<std::string> M_listMarkerEmpty;
 };
 
