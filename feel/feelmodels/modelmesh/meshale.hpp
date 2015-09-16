@@ -368,8 +368,6 @@ BOOST_PARAMETER_FUNCTION(
       ) // optionnal
                          )
 {
-    Feel::detail::ignore_unused_variable_warning( args );
-
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
     return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,extended_doftable,directory) );

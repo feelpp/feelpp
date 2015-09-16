@@ -16,7 +16,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
                                                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                                      bool _doClose, bool _doBCStrongDirichlet ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -323,7 +322,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateOseen","finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
-#endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
 } // updateOseen
 
 } // end namespace FeelModels
