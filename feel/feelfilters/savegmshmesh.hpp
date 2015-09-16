@@ -30,6 +30,7 @@
 #define FEELPP_SAVEGMSHMESH_HPP 1
 
 #include <feel/feelfilters/exportergmsh.hpp>
+#include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelfilters/detail/meshfromgeoentity.hpp>
 
 namespace Feel {

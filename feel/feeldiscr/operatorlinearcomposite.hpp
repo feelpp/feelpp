@@ -644,7 +644,9 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
 
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_opLinearComposite_return<Args>::type oplincomposite_type;
     typedef typename Feel::detail::compute_opLinearComposite_return<Args>::ptrtype oplincomposite_ptrtype;
     return oplincomposite_ptrtype ( new oplincomposite_type( domainSpace,imageSpace,backend,pattern) );

@@ -161,6 +161,19 @@ public :
     void walburnSchneck_C4(double d) { M_walburnSchneck_C4=d; }
 
 
+    void updateFromModelMaterials( ModelMaterials const& mat )
+    {
+        if ( mat.empty() ) return;
+        CHECK( mat.size() == 1 ) << "TODO multi-mat";
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            this->setCstDynamicViscosity( mat.mu() );
+        }
+    }
+
+
     boost::shared_ptr<std::ostringstream>
     getInfo() const
     {

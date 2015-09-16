@@ -112,7 +112,7 @@ public:
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
         static constexpr size_type context = this_type::context; 
-        using expression_type = typename this_type::expression_type;
+        using expr_type = typename this_type::expression_type;
         typedef typename Transpose<typename tensor_expr_type::shape>::type shape;
 
         template <class Args> struct sig

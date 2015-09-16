@@ -29,8 +29,6 @@
 #ifndef __EXPORTERVTK_CPP
 #define __EXPORTERVTK_CPP 1
 
-#include <feel/feelfilters/exporterVTK.hpp>
-
 namespace Feel
 {
 template<typename MeshType, int N>
@@ -504,10 +502,20 @@ ExporterVTK<MeshType,N>::save() const
             /* only write on master rank */
             if(this->worldComm().isMasterRank())
             {
+                /* rebuild the filename for the pvd file */
+                /* This removes the path used for exporting */
+                std::ostringstream lfile;
+                lfile << this->prefix()  //<< this->prefix() //this->path()
+                    << "-" << (stepIndex - TS_INITIAL_INDEX);
+#if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
+                lfile << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
+#endif
+                lfile << ".vtm";
+                
                 /* check if we are on the initial timestep */
                 /* if so, we delete the previous pvd file */
                 /* otherwise we would append dataset to already existing data */
-                std::string pvdFilename = this->prefix() + ".pvd";
+                std::string pvdFilename = this->path() + "/" + this->prefix() + ".pvd";
                 if( (stepIndex - TS_INITIAL_INDEX) == 0 && fs::exists(pvdFilename.c_str()))
                 {
                     fs::remove(pvdFilename.c_str()); 
@@ -527,7 +535,7 @@ ExporterVTK<MeshType,N>::save() const
                 }
 #else
                 /* When writing in parallel, we only write one entry in the pvd file */
-                this->writeTimePVD(pvdFilename, time, fname.str());
+                this->writeTimePVD(pvdFilename, time, lfile.str());
 #endif
             }
 #if defined(FEELPP_VTK_INSITU_ENABLED)
