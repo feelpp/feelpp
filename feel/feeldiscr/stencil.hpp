@@ -773,8 +773,9 @@ BOOST_PARAMETER_FUNCTION(
         // cleanup memory before doing anything
         stencilManagerGarbageCollect();
     }
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
