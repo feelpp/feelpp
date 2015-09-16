@@ -1256,8 +1256,6 @@ void PartitionIO<MeshType>::readElements()
             }
             toc("PartitionIO reading elements - prepare element", FLAGS_v > 0);
             tic();
-            //M_meshPartIn->addElement( std::move(e), false );
-            //M_meshPartIn->addElementR( std::move(e) );
             M_meshPartIn->addElement( e, false );
             toc("PartitionIO reading elements - store elements", FLAGS_v > 0);
         }
