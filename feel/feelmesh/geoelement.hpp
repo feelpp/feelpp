@@ -529,13 +529,7 @@ public:
 
     static const uint16_type numLocalVertices = super::numVertices;
 
-    GeoElement0D()
-        :
-        super(),
-        super2()
-        //M_facept()
-    {}
-
+    GeoElement0D() = default;
 
     //! Declares item id and if it is on boundary
     GeoElement0D( size_type id, bool boundary = false )
@@ -561,6 +555,9 @@ public:
         //M_facept()
     {}
 
+    GeoElement0D( GeoElement0D const & g ) = default;
+    GeoElement0D( GeoElement0D && g ) = default;
+
     template<typename SF>
     GeoElement0D( GeoElement0D<Dim,SF,T> const & g )
         :
@@ -573,6 +570,9 @@ public:
     ~GeoElement0D()
     {}
 
+    GeoElement0D & operator = ( GeoElement0D const& g ) = default;
+    GeoElement0D & operator = ( GeoElement0D && g ) = default;
+    
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -834,13 +834,8 @@ public:
     /**
      * copy consttructor
      */
-    GeoElement1D( GeoElement1D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_vertices( g.M_vertices ),
-        M_vertex_permutation( g.M_vertex_permutation )
-    {}
+    GeoElement1D( GeoElement1D const& g ) = default;
+    GeoElement1D( GeoElement1D && g ) = default;
 
     /**
      * destructor
@@ -851,18 +846,8 @@ public:
     /**
      * copy operator
      */
-    GeoElement1D& operator=( GeoElement1D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            super2::operator=( g );
-            M_vertices = g.M_vertices;
-            M_vertex_permutation = g.M_vertex_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement1D& operator=( GeoElement1D const& g ) = default;
+    GeoElement1D& operator=( GeoElement1D && g ) = default;
 
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
@@ -1143,13 +1128,8 @@ public:
     /**
      * copy consttructor
      */
-    GeoElement2D( GeoElement2D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_edges( g.M_edges ),
-        M_edge_permutation( g.M_edge_permutation )
-    {}
+    GeoElement2D( GeoElement2D const& g ) = default;
+    GeoElement2D( GeoElement2D && g ) = default;
 
     /**
      * destructor
@@ -1160,18 +1140,8 @@ public:
     /**
      * copy operator
      */
-    GeoElement2D& operator=( GeoElement2D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            super2::operator=( g );
-            M_edges = g.M_edges;
-            M_edge_permutation = g.M_edge_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement2D& operator=( GeoElement2D const& g ) = default;
+    GeoElement2D& operator=( GeoElement2D && g ) = default;
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
     MeshBase const* mesh() const
@@ -1494,17 +1464,10 @@ public:
     }
 
     /**
-     * copy consttructor
+     * copy/move consttructors
      */
-    GeoElement3D( GeoElement3D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_edges( g.M_edges ),
-        M_faces( g.M_faces ),
-        M_edge_permutation( g.M_edge_permutation ),
-        M_face_permutation( g.M_face_permutation )
-    {}
+    GeoElement3D( GeoElement3D const& g ) = default;
+    GeoElement3D( GeoElement3D && g ) = default;
 
     /**
      * destructor
@@ -1515,46 +1478,36 @@ public:
     /**
      * copy operator
      */
-    GeoElement3D& operator=( GeoElement3D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            M_edges = g.M_edges;
-            M_faces = g.M_faces;
-            M_edge_permutation = g.M_edge_permutation;
-            M_face_permutation = g.M_face_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement3D& operator=( GeoElement3D const& g ) = default;
+    GeoElement3D& operator=( GeoElement3D && g ) = default;
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
     MeshBase const* mesh() const
     {
         return super::mesh();
     }
+
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    size_type id() const
+    size_type id() const noexcept
     {
         return super::id();
     }
 
-    Marker1 const& marker() const
+    Marker1 const& marker() const noexcept
     {
         return super::marker();
     }
-    Marker1& marker()
+    Marker1& marker() noexcept
     {
         return super::marker();
     }
-    Marker2 const& marker2() const
+    Marker2 const& marker2() const noexcept
     {
         return super::marker2();
     }
-    Marker3 const& marker3() const
+    Marker3 const& marker3() const noexcept
     {
         return super::marker3();
     }
@@ -1576,7 +1529,7 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const
+    bool isOnBoundary() const noexcept
     {
         return super::isOnBoundary();
     }
@@ -1584,7 +1537,7 @@ public:
     /**
      * \return maximum \c dimension of the sub-entity touching the boundary of the element
      */
-    uint16_type boundaryEntityDimension() const
+    uint16_type boundaryEntityDimension() const noexcept
     {
         return super::boundaryEntityDimension();
     }
@@ -1592,7 +1545,7 @@ public:
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const
+    bool isGhostCell() const noexcept
     {
         return super::isGhostCell();
     }
@@ -1600,7 +1553,7 @@ public:
     /**
      * \return process id
      */
-    rank_type processId() const
+    rank_type processId() const noexcept
     {
         return super::processId();
     }

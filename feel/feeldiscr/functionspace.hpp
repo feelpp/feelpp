@@ -3400,7 +3400,9 @@ public:
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
             if ( !fs::exists( fs::path( path ) ) )
             {
@@ -3456,7 +3458,9 @@ public:
             )
         )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
             fs::path partial_path = fs::path(path);
             fs::path full_path_dir_sol(fs::current_path());
             full_path_dir_sol = full_path_dir_sol/partial_path;

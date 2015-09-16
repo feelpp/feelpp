@@ -46,7 +46,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
                                                                                                 bool _buildCstPart,
                                                                                                 bool _doClose, bool _doBCStrongDirichlet ) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_LINEAR_CODE)
 
     using namespace Feel::vf;
 
@@ -271,7 +270,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha",
               (boost::format("finish in %1% s") % timeElapsed).str() );
 
-#endif // FEELMODELS_SOLID_BUILD_LINEAR_CODE
 } // updateLinearElasticityGeneralisedAlpha
 
 
