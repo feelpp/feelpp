@@ -104,7 +104,7 @@ script:
 - make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
-- make -j1 feelpp_model_algebra
+- make -j1 feelpp-models-algebra
 - make install-feelpp
 - ls $HOME/software/install/feelpp/include/feel
 

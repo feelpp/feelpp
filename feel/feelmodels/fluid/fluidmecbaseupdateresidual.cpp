@@ -18,7 +18,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                                                         bool UseJacobianLinearTerms,
                                                         bool _doClose, bool _doBCStrongDirichlet) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -654,7 +653,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
 
