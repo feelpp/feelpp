@@ -117,7 +117,6 @@ public:
         M_geometry( Geometry ),
         M_shape( Shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_npids( 1 ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
@@ -137,7 +136,6 @@ public:
         M_geometry( geometry ),
         M_shape( shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_npids( 1 ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
         M_neighor_pids(),
@@ -465,15 +463,15 @@ public:
      */
     rank_type numberOfPartitions() const noexcept
     {
-        return M_npids;
+        return static_cast<rank_type>(M_neighor_pids.size()+1);
     }
 
     /**
      * \return the number of partition the element is linked to
      */
-    size_type numberOfNeighborPartitions() const
+    rank_type numberOfNeighborPartitions() const
     {
-        return M_neighor_pids.size();
+        return static_cast<rank_type>(M_neighor_pids.size());
     }
 
     /**
@@ -516,7 +514,7 @@ public:
     }
     void setIdInOtherPartitions( rank_type pid, size_type id )
     {
-            M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
+        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
     }
 
     /**
@@ -610,9 +608,9 @@ public:
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    void setNumberOfPartitions( uint16_type np )
+    FEELPP_DEPRECATED void setNumberOfPartitions( uint16_type np )
     {
-        M_npids = np;
+        CHECK( 0 ) << "Invalid call to setNumberOfPartitions()";
     }
 
     /**
@@ -620,7 +618,6 @@ public:
      */
     void setNumberOfNeighborPartitions( uint16_type nep )
     {
-        FEELPP_ASSERT( M_npids -1 == M_neighor_pids.size() )( M_npids )( M_neighor_pids ).error( "invalid partitioning data" );
         M_neighor_pids.size();
     }
 
@@ -637,7 +634,6 @@ public:
         if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p) == M_neighor_pids.end() )
         {
             M_neighor_pids.push_back(p);
-            ++M_npids;
         }
     }
 
@@ -764,9 +760,6 @@ private:
             DVLOG(2) << "  - shape...\n";
             ar & M_shape;
             DVLOG(2) << "  - shape:" << M_shape.context() << "\n";
-            DVLOG(2) << "  - npids...\n";
-            ar & M_npids;
-            DVLOG(2) << "  - npids:" << M_npids << "\n";
             DVLOG(2) << "  - pid...\n";
             ar & M_pid;
             DVLOG(2) << "  - pid:" << M_pid << "\n";
@@ -787,7 +780,6 @@ private:
     //! maximum dimension of the entity touching the boundary within the element
     uint16_type M_boundaryEntityDimension;
 
-    rank_type M_npids;
     rank_type M_pid;
     rank_type M_pidInPartition;
     std::vector<rank_type> M_neighor_pids;
