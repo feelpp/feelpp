@@ -39,23 +39,23 @@ namespace details
 {
 struct SecondBasedTimer
 {
-    static void print( std::string const& msg, const double& val )
+    static void print( std::string const& msg, const std::pair<double,int>& val )
     {
         if ( Environment::isMasterRank() )
         {
             if ( !msg.empty() )
-                std::cout << "[" << msg << "] Time : " << val << "s\n";
+                std::cout << std::setw(1+val.second) << "[" << msg << "] Time : " << val.first << "s\n";
             else
-                std::cout << "Time : " << val << "s\n";
+                std::cout << std::setw(7+val.second) << "Time : " << val << "s\n";
         }
     }
-    static inline double  time()
+    static inline time_point  time()
     {
         return Feel::details::now();
     }
 };
 
-counter<double,SecondBasedTimer> const sec_timer = {};
+counter<time_point,SecondBasedTimer> const sec_timer = {};
 }  // details
 } // Feel
 
@@ -70,9 +70,9 @@ inline void tic()
 
 inline double  toc( std::string const& msg = "", bool display = true )
 {
-    double t = Feel::details::sec_timer.toc( msg, display );
+    auto t = Feel::details::sec_timer.toc( msg, display );
     Environment::addTimer( msg, t );
-    return t;
+    return t.first;
 }
 } // time
 } // Feel
