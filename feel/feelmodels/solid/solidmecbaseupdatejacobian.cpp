@@ -20,7 +20,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
                                                                          sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
                                                                          bool _doClose, bool _doBCStrongDirichlet ) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
 
     std::string sc=(BuildCstPart)?" (cst part)":" (non cst part)";
@@ -228,7 +227,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("SolidMechanics","updateJacobian","finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str() );
-#endif //FEELMODELS_SOLID_BUILD_JACOBIAN_CODE
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -239,7 +237,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
 
     boost::mpi::timer thetimer;
@@ -332,7 +329,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     double timeElapsed=thetimer.elapsed();
     this->log("SolidMechanics","updateJacobianIncompressibilityTerms",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
-#endif //FEELMODELS_SOLID_BUILD_JACOBIAN_CODE
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -344,7 +340,6 @@ void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_displacement_type const& u, sparse_matrix_ptrtype& J) const
 {
 #if 0
-#if defined(FEELMODELS_SOLID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateJacobianViscoElasticityTerms start\n";
@@ -365,7 +360,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( elem
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateJacobianViscoElasticityTerms finish\n";
 
-#endif //FEELMODELS_SOLID_BUILD_JACOBIAN_CODE
 #endif
 }
 

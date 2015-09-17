@@ -97,7 +97,12 @@ private :
     map_scalar_field<2> M_bcDirichletX,M_bcDirichletY,M_bcDirichletZ;
     map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
     map_vector_fields<super_type::nDim,1,2> M_bcRobin;
+    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
+    map_vector_field<super_type::nDim,1,2> M_bcNeumannEulerianFrameVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannEulerianFrameTensor2;
+
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 };
 
