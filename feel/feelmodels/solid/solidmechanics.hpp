@@ -92,9 +92,19 @@ public:
     void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
     void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
+    //___________________________________________________________________________________//
+
+    bool hasDirichletBC() const
+    {
+        return ( !M_bcDirichlet.empty() ||
+                 !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                 !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                 !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+    }
+
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
-    map_scalar_field<2> M_bcDirichletX,M_bcDirichletY,M_bcDirichletZ;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
     map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
