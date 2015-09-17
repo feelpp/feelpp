@@ -563,7 +563,7 @@ public:
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, double t );
+    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
 
     /**
      * display and save timers

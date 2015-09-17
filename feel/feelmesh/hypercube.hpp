@@ -147,7 +147,12 @@ public:
         typedef Hypercube<shape_dim, O, R> type;
     };
 
-
+    Hypercube() = default;
+    Hypercube( Hypercube const& ) = default;
+    Hypercube( Hypercube && ) = default;
+    Hypercube& operator=( Hypercube const& ) = default;
+    Hypercube& operator=( Hypercube && ) = default;
+    
     /**
      * \return the topological dimension of the simplex
      */
