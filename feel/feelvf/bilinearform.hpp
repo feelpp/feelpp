@@ -1120,9 +1120,10 @@ public:
         if ( this != &form )
         {
             M_pattern = form.M_pattern;
-            M_X1 = form.M_X1;
-            M_X2 = form.M_X2;
-            M_matrix = form.M_matrix;
+            CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
+            CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.0, form.M_matrix );
             M_row_startInMatrix = form.M_row_startInMatrix;
             M_col_startInMatrix = form.M_col_startInMatrix;
             M_lb = form.M_lb;

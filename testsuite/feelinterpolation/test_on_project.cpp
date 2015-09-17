@@ -81,13 +81,11 @@ public:
         size_type np = nelements( markedpoints( M_mesh,"P") );
         LOG_IF(WARNING, np == 0 ) << "no points marked P:"  << np ;
         //p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42) );
-        if ( Environment::isMasterRank() )
-            p.printMatlab("P.m");
+        p.printMatlab("P.m");
         size_type ne = nelements( markededges( M_mesh,"L") );
         LOG_IF(WARNING, ne  == 0 ) << "no edges marked L:"  << ne;
         l.on( _range=markededges( M_mesh,"L"), _expr=cst(42) );
-        if ( Environment::isMasterRank() )
-            l.printMatlab("L.m");
+        l.printMatlab("L.m");
         s.on( _range=markedfaces( M_mesh,"S"), _expr=cst(42) );
         v.on( _range=elements( M_mesh ), _expr=cst(42) );
 
