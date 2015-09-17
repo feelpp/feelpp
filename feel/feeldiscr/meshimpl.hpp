@@ -129,7 +129,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         //
         // compute the Adjacency graph
         //
-        ti.restart();
+        tic();
         VLOG(2) << "Compute adjacency graph\n";
         element_iterator iv,  en;
         boost::unordered_map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
@@ -190,7 +190,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             } // local face
         } // element loop
         f2e.clear();
-        VLOG(1) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
+        toc("Mesh::UpdateForUse Compute adjacency graph", FLAGS_v > 0 );
 #if 0
 
         // partition mesh
@@ -205,13 +205,14 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_UPDATE_FACES ) )
         {
-            ti.restart();
+            tic();
             // update connectivities of entities of co dimension 1
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
             this->check();
-            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update entities of codimension 1",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1";
 
         }
 
@@ -250,16 +251,17 @@ Mesh<Shape, T, Tag>::updateForUse()
              this->components().test( MESH_UPDATE_EDGES )
              )
         {
-            ti.restart();
+            tic();
             updateOnBoundary();
-            VLOG(1) << "[Mesh::updateForUse] update on boundary : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update on boundary", FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update on boundary ";
         }
 
 
 
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            ti.restart();
+            tic();
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
@@ -270,7 +272,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  e.point( i ).addElement( e.id(), i );
                                          });
             }
-            VLOG(1) << "[Mesh::updateForUse] update add element info : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
+            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
         }
 
         ti.restart();
@@ -324,9 +327,10 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {
-            ti.restart();
+            tic();
             propagateMarkers(mpl::int_<nDim>() );
-            VLOG(1) << "[Mesh::updateForUse] update propagate markers : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update propagate markers",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update propagate markers"; 
         }
 
         {
@@ -377,19 +381,21 @@ Mesh<Shape, T, Tag>::updateForUse()
 #endif
 
     {
-        ti.restart();
+        tic();
         // check mesh connectivity
         this->check();
-        VLOG(1) << "[Mesh::updateForUse] check : " << ti.elapsed() << "\n";
+        toc("Mesh::updateForUse check",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] check";
     }
 
     if ( M_is_gm_cached == false )
     {
-        ti.restart();
+        tic();
         M_gm->initCache( this );
         M_gm1->initCache( this );
         M_is_gm_cached = true;
-        VLOG(1) << "[Mesh::updateForUse] update geomap : " << ti.elapsed() << "\n"; 
+        toc("Mesh::updateForUse update geomap",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update geomap"; 
     }
 
     this->setUpdatedForUse( true );
