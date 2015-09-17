@@ -334,20 +334,22 @@ void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 
     tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), false);
+    tic();
     writeStats();
+    toc("PartitionIO writing stats",FLAGS_v>0);
     tic();
     writePoints();
-    toc("writing points",FLAGS_v>0);
+    toc("PartitionIO writing points",FLAGS_v>0);
     writeEdges<MeshType>();
     tic();
     writeFaces();
-    toc("writing faces",FLAGS_v>0);
+    toc("PartitionIO writing faces",FLAGS_v>0);
     tic();
     writeElements();
-    toc("writing elements",FLAGS_v>0);
+    toc("PartitionIO writing elements",FLAGS_v>0);
     
     M_HDF5IO.closeFile();
-    toc("writing hdf5 file",FLAGS_v>0);
+    toc("PartitionIO writing hdf5 file",FLAGS_v>0);
 
 }
 template<typename MeshType>
@@ -371,27 +373,29 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
     M_numParts = meshParts->worldComm().localSize();
     tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
+    tic();
     readStats();
+    toc("PartitionIO reading stats",FLAGS_v>0);
     tic();
     readPoints();
-    toc("reading points",FLAGS_v>0);
+    toc("PartitionIO reading points",FLAGS_v>0);
 
     readEdges<MeshType>();
     
     tic();
     readFaces();
-    toc("reading faces",FLAGS_v>0);
+    toc("PartitionIO reading faces",FLAGS_v>0);
     
     tic();
     readElements();
-    toc("reading elements",FLAGS_v>0);
+    toc("PartitionIO reading elements",FLAGS_v>0);
 
     M_HDF5IO.closeFile();
-    toc("reading hdf5 file",FLAGS_v>0);
+    toc("PartitionIO reading hdf5 file",FLAGS_v>0);
     tic();
     M_meshPartIn->components().set( MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_CHECK );
     M_meshPartIn->updateForUse();
-    toc("mesh update for use",FLAGS_v>0);
+    toc("PartitionIO mesh update for use",FLAGS_v>0);
 }
 template<typename MeshType>
 void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
@@ -976,7 +980,6 @@ void PartitionIO<MeshType>::readPoints()
             pt.setMarker( marker );
             pt.setProcessId( pid );
             pt.setProcessIdInPartition( M_meshPartIn->worldComm().localRank() );
-            pt.setNumberOfPartitions( nparts );
             M_meshPartIn->addPoint( pt );
             
         }
@@ -1049,7 +1052,6 @@ void PartitionIO<MeshType>::readEdges(typename std::enable_if<is_3d<T>::value>::
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
 
             // TODO: Ghost data
@@ -1121,6 +1123,8 @@ void PartitionIO<MeshType>::readFaces()
 
     M_HDF5IO.closeTable ("faces");
 
+    face_type e;
+
     size_type stride = currentCount[1];
     if (! M_transposeInFile)
     {
@@ -1135,14 +1139,12 @@ void PartitionIO<MeshType>::readFaces()
             int npart    = M_uintBuffer[6*stride+j];
 
 
-            face_type e;
             e.setId( id );
             e.setProcessIdInPartition( M_meshPartIn->worldComm().localRank() );
             e.setMarker( marker );
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
 
             // TODO: Ghost data
@@ -1181,6 +1183,7 @@ void PartitionIO<MeshType>::readFaces()
 template<typename MeshType>
 void PartitionIO<MeshType>::readElements()
 {
+    tic();
     // Read mesh elements (N = number of parts)
     // Read a ((3 + num_element_points) * N) x max_num_elements table of int
     M_elementNodes = mesh_type::element_type::numLocalVertices;
@@ -1211,12 +1214,16 @@ void PartitionIO<MeshType>::readElements()
                    &M_uintBuffer[0]);
 
     M_HDF5IO.closeTable ("elements");
-
+    toc("PartitionIO reading elements - loading HDF5 file", FLAGS_v > 0);
+    tic();
     size_type stride = currentCount[1];
+    element_type e;
+    rank_type local_rank = M_meshPartIn->worldComm().localRank();
     if (! M_transposeInFile)
     {
         for (size_type j = 0; j < M_numElements; ++j)
         {
+            tic();
             size_type id = M_uintBuffer[0*stride+j];
             int marker   = M_uintBuffer[1*stride+j];
             int marker2  = M_uintBuffer[2*stride+j];
@@ -1225,14 +1232,12 @@ void PartitionIO<MeshType>::readElements()
             int pid      = M_uintBuffer[5*stride+j];
             int npart    = M_uintBuffer[6*stride+j];
 
-            element_type e;
             e.setId( id );
-            e.setProcessIdInPartition( M_meshPartIn->worldComm().localRank() );
+            e.setProcessIdInPartition( local_rank );
             e.setMarker( marker );
             e.setMarker2( marker2 );
             e.setMarker3( marker3 );
             e.setOnBoundary( onbdy );
-            e.setNumberOfPartitions( npart );
             e.setProcessId( pid );
             // TODO: Ghost data
             //e.setNeighborPartitionIds( __e.ghosts );
@@ -1249,7 +1254,10 @@ void PartitionIO<MeshType>::readElements()
                 e.setPoint( k, M_meshPartIn->point( M_uintBuffer[ (nptinfo+k) * stride + j]) );
 
             }
+            toc("PartitionIO reading elements - prepare element", FLAGS_v > 0);
+            tic();
             M_meshPartIn->addElement( e, false );
+            toc("PartitionIO reading elements - store elements", FLAGS_v > 0);
         }
     }
     else
@@ -1258,7 +1266,10 @@ void PartitionIO<MeshType>::readElements()
         {
         }
     }
+    toc("PartitionIO reading elements - storing in Mesh", FLAGS_v > 0);
+    tic();
     readGhosts("elements_ghosts", M_meshPartIn->beginElement(), M_meshPartIn->endElement(), M_meshPartIn->elements());
+    toc("PartitionIO reading elements - ghosts", FLAGS_v > 0);
 
 }
 template<typename MeshType>
