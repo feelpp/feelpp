@@ -7,15 +7,15 @@ declare -a ksp_pc_map
 # $1 : kind of simu
 function setKspPc(){
 ksp_pc_map[0]=nan 
-  ksp_pc_map[1]=nan 
-  ksp_pc_map[2]=nan 
-  ksp_pc_map[3]=nan 
-  ksp_pc_map[4]=nan 
-  ksp_pc_map[5]=nan 
-  ksp_pc_map[6]=nan 
-  ksp_pc_map[7]=nan 
-  ksp_pc_map[8]=nan 
-  ksp_pc_map[9]=nan 
+ksp_pc_map[1]=nan 
+ksp_pc_map[2]=nan 
+ksp_pc_map[3]=nan 
+ksp_pc_map[4]=nan 
+ksp_pc_map[5]=nan 
+ksp_pc_map[6]=nan 
+ksp_pc_map[7]=nan 
+ksp_pc_map[8]=nan 
+ksp_pc_map[9]=nan 
 case $1 in 
   0)
   ksp_pc_map[0]=minres
@@ -73,6 +73,7 @@ function simu() {
 # $7 - test type : lin or sin
 # $8 - ksp/pc config
 function simuBatch() {
+  setKspPc $8
   ksp_pc=$(getConf $8)
   title=${2}D-h-${4}-mu-${3}-${ksp_pc}-${7}
   out=${title}.batch
@@ -115,15 +116,7 @@ function simuBatch() {
   echo "# mpirun of openmpi is natively interfaced with Slurm">>$out
   echo "# No need to precise the number of processors to use">>$out
   echo "cd ${12}">>$out
-  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFP${2}D_${13}.cfg backend.cfg \
-    --functions.m ${3} --gmsh.hsize ${4} \
-    --ms.ksp-type=${ksp_pc_map[0]} --ms.pc-type=${ksp_pc_map[1]} \
-    --ms.blockms.11.ksp-type=${ksp_pc_map[2]} --ms.blockms.11.pc-type=${ksp_pc_map[3]} \
-    --ms.blockms.11.1.ksp-type=${ksp_pc_map[4]} --ms.blockms.11.1.pc-type=${ksp_pc_map[5]} \
-    --ms.blockms.11.2.ksp-type=${ksp_pc_map[6]} --ms.blockms.11.2.pc-type=${ksp_pc_map[7]} \
-    --ms.blockms.22.ksp-type=${ksp_pc_map[8]} --ms.blockms.22.pc-type=${ksp_pc_map[9]} \
-    --title $title --generateMD true > ${title}_${11}">>$out
-
+  echo "mpirun --bind-to core -x LD_LIBRARY_PATH ./feelpp_test_precAFP${2}D --config-files precAFP${2}D_${7}.cfg backend.cfg --functions.m ${3} --gmsh.hsize ${4} --ms.ksp-type=${ksp_pc_map[0]} --ms.pc-type=${ksp_pc_map[1]} --ms.blockms.11.ksp-type=${ksp_pc_map[2]} --ms.blockms.11.pc-type=${ksp_pc_map[3]} --ms.blockms.11.1.ksp-type=${ksp_pc_map[4]} --ms.blockms.11.1.pc-type=${ksp_pc_map[5]} --ms.blockms.11.2.ksp-type=${ksp_pc_map[6]} --ms.blockms.11.2.pc-type=${ksp_pc_map[7]} --ms.blockms.22.ksp-type=${ksp_pc_map[8]} --ms.blockms.22.pc-type=${ksp_pc_map[9]} --title $title --generateMD true --saveTimers true > ${title}_${5}" >>$out
   echo "mkdir -p /data/`whoami`/prec_behavior/${title} ">>$out
   echo "cp -r /scratch/job.\${SLURM_JOB_ID}/* /data/`whoami`/prec_behavior/${title} ">>$out
   echo "cp ${title}_${11} /data/`whoami`/prec_behavior/${title} ">>$out
@@ -133,14 +126,19 @@ function simuBatch() {
 NPROCS=1
 OUTFILE=res.txt
 appDir=`pwd`
+# Dimension
 for D in `seq 2 3`;
 do
+  # test case 
   for poly in `echo poly sin`;
   do
+    # Permeability
     for mu in `perl -le'for my $i (0..7) { print 10**-$i }'`;
     do
+      # hsize
       for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
       do
+        # ksp/pc conf (see setKspPc)
         for kind in `seq 0 3`;
         do
           simuBatch $NPROCS $D $mu $h $OUTFILE $appDir $poly $kind
