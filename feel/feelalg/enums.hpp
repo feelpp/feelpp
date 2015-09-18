@@ -133,6 +133,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          ML_PRECOND,
                          GAMG_PRECOND,
                          BOOMERAMG_PRECOND,
+                         AMS_PRECOND,
                          REDUNDANT_PRECOND,
                          NONE_PRECOND,
                          INVALID_PRECONDITIONER
@@ -307,6 +308,7 @@ enum MatSolverPackageType
     MATSOLVER_PLAPACK,
     MATSOLVER_BAS,
     MATSOLVER_BOOMERAMG,
+    MATSOLVER_AMS,
     MATSOLVER_EUCLID,
     MATSOLVER_PILUT,
 
