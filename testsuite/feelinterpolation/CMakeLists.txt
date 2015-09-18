@@ -27,7 +27,7 @@ feelpp_add_test( interpolation_RT CFG test_interpolation_RT.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG test_interpolation_Nedelec.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO_MPI_TEST )
 
-feelpp_add_test( darcy_on_2d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=2 CLI "--gmsh.hsize=0.1" )
-feelpp_add_test( darcy_on_3d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=3  CLI "--gmsh.hsize=0.2" )
+feelpp_add_test( darcy_on_2d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=2 )
+feelpp_add_test( darcy_on_3d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=3 )
 
 feelpp_add_test( on_project SRCS test_on_project GEO square_mmarked.geo CFG test_on_project.cfg )
