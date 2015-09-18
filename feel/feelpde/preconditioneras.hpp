@@ -425,8 +425,6 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         *M_t = M_qh_elt;
         M_t->close();
 
-        //if(M_g != 1.0 || !(boption("blockms.remove-14b-if-g-1"))
-        {
         // 14.b : hat(L) z = t
         M_lOp->applyInverse(M_t,M_z);
         M_z->close();
@@ -434,7 +432,6 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // step C : M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
-        }
 
         // Impose boundary conditions on C = Cz
         M_vh_elt = *C;
