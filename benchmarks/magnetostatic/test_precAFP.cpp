@@ -57,6 +57,7 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "test-case", po::value<int>()->default_value( -1 ), "The test case number" )
     ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
@@ -251,20 +252,59 @@ class TestPrecAFP : public Application
 #endif
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
+        M_prec->iterMinMaxMean();
         if(Environment::worldComm().globalRank()==0)
-            std::cout << "RES\t"
-                << doption("gmsh.hsize") << "\t"
-                << Xh->nDof() << "\t"
-                << nnz << "\t"
-                << soption("functions.m") << "\t"
-                << e21 << "\t"
-                << e21/e22 
+            /*
+             * to print * -> ./myCode --options >> sameResFile.txt 
+             * + grep #TestCase > parseIt
+             * #TestCase
+             * #ksp-pc_ksp11-pc11_ksp11.1-pc11.1_ksp11.2-pc11.2_ksp22-pc22
+             * hSize
+             * nProc
+             * nDof
+             * nDof(space1)
+             * nDof(space2)
+             * iter total
+             * iter block11 : min max mean
+             * iter block22 : min max mean
+             * timer iter total
+             * timer iter block11 : min max mean
+             * timer iter block22 : min max mean
+             * mu : min max mean
+             */
+        std::cout 
+            << ioption("test-case") << "\t"
+            << soption("ms.ksp-type") << "-" << soption("ms.pc-type") << "_"
+            << soption("blockms.11.ksp-type") << "-" << soption("blockms.11.pc-type") << "_"
+            << soption("blockms.11.1.ksp-type") << "-" << soption("blockms.11.1.pc-type") << "_"
+            << soption("blockms.11.2.ksp-type") << "-" << soption("blockms.11.2.pc-type") << "_"
+            << soption("blockms.22.ksp-type") << "-" << soption("blockms.22.pc-type") << "\t"
+            << doption("gmsh.hsize") << "\t"
+            //<< nProc << "\t"
+            << Xh->nDof() << "\t"
+            << Xh->template functionSpace<0>()->nDof() << "\t"
+            << Xh->template functionSpace<1>()->nDof() << "\t"
+            << ret.nIterations() << "\t"
+            << M_prec->printMinMaxMean(0,0) << "\t" 
+            << M_prec->printMinMaxMean(0,1) << "\t" 
+            << M_prec->printMinMaxMean(0,2) << "\t" 
+            << M_prec->printMinMaxMean(1,0) << "\t" 
+            << M_prec->printMinMaxMean(1,1) << "\t" 
+            << M_prec->printMinMaxMean(1,2) << "\t"
+            << e21 << "\t"
+            << e21/e22 << "\n"; 
+            //std::cout << "RES\t"
+            //    << Xh->nDof() << "\t"
+            //    << nnz << "\t"
+            //    << soption("functions.m") << "\t"
+            //    << e21 << "\t"
+            //    << e21/e22 
 #if 0
-                << "\t"
-                << e21_curl << "\t"
-                << e21_curl/e22_curl 
+            //    << "\t"
+            //    << e21_curl << "\t"
+            //    << e21_curl/e22_curl 
 #endif
-                << std::endl;
+            //    << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
             time_t now = std::time(0);
