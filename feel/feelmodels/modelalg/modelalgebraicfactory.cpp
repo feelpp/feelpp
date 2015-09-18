@@ -434,6 +434,7 @@ namespace Feel {
         //---------------------------------------------------------------------//
         this->application()->timerTool("Solve").start();
         M_appli->updateNewtonInitialGuess(U);
+        U->close();
         this->application()->timerTool("Solve").elapsed("algebraic-newton-bc");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
