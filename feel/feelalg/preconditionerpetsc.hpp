@@ -633,6 +633,25 @@ private :
 };
 
 /**
+ * ConfigurePCHYPRE_BOOMERAMG
+ */
+class ConfigurePCHYPRE_BOOMERAMG : public ConfigurePCBase
+{
+public :
+    ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                             std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
+
+private :
+    void run( PC& pc );
+
+private :
+    int M_max_iter;
+    double M_tol;
+    int M_cycle_type;
+    int M_max_levels;
+};
+
+/**
  * ConfigurePCRedundant
  */
 class ConfigurePCRedundant : public ConfigurePCBase
