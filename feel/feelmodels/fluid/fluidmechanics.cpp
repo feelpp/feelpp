@@ -494,8 +494,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
         {
             mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
                 detail::distributeMarkerListOnSubEntity(mesh, {
-                        /**/this->markerDirichletBCByNameId( "elimination",marker(d) ),
-                            this->markerDirichletBCByNameId( "lm", marker(d) )  } );
+                        /**/this->markerDirichletBCByNameId( "elimination",marker(d), comp ),
+                            this->markerDirichletBCByNameId( "lm", marker(d), comp )  } );
         }
     }
 
@@ -605,7 +605,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
         for( auto const& d : bcDirComp.second )
         {
             mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
-                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
         }
     }
 
