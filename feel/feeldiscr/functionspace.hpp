@@ -1929,7 +1929,7 @@ public:
         static const int rank = functionspace_type::rank;
         static const bool is_hcurl_conforming = functionspace_type::is_hcurl_conforming;
         static const bool is_hdiv_conforming = functionspace_type::is_hdiv_conforming;
-        
+
         /** @name Typedefs
          */
         //@{
@@ -1976,7 +1976,7 @@ public:
         };
         template<int i> using sub_element_ptrtype = typename mpl::at_c<element_vector_type,i>::type::second_type;
         template<int i> using sub_element_type = typename mpl::at_c<element_vector_type,i>::type::second_type::element_type;
-        
+
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
         typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
@@ -2004,7 +2004,7 @@ public:
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
 
-        
+
         Element( functionspace_ptrtype const& __functionspace,
                  std::string const& __name,
                  std::string const& __desc,
@@ -2171,7 +2171,7 @@ public:
             auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
             std::string __name = this->name() + "_" + componentToString( i );
-            
+
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
@@ -2194,7 +2194,7 @@ public:
             return c;
         }
         component_type
-        operator[]( ComponentType i ) 
+        operator[]( ComponentType i )
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
                 return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
@@ -2206,7 +2206,7 @@ public:
                 return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
-        operator[]( size_type i ) 
+        operator[]( size_type i )
             {
                 return super::operator[]( i );
             }
@@ -2302,13 +2302,13 @@ public:
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
-                    
+
                     size_type index= ldof.index();
                     //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
                     super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
                 }
             }
-        
+
         void assign( geopoint_type const& p, local_interpolant_type const& Ihloc )
             {
                 // we assume here that we are in CG
@@ -3413,16 +3413,17 @@ public:
             os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             LOG(INFO) << "saving "  << p << "\n";
-            fs::ofstream ofs( p );
 
             if ( type == "binary" )
             {
+                fs::ofstream ofs( p );
                 boost::archive::binary_oarchive oa( ofs );
                 oa << *this;
             }
 
             else if ( type == "text" )
             {
+                fs::ofstream ofs( p );
                 boost::archive::text_oarchive oa( ofs );
                 oa << *this;
             }
@@ -3431,6 +3432,17 @@ public:
             {
                 //boost::archive::xml_oarchive oa(ofs);
                 //oa << *this;
+            }
+            else if ( type == "hdf5" )
+            {
+                std::ostringstream os2;
+                os2 << M_name << sep << suffix << ".h5";
+                fs::path filename = fs::path( path ) / os2.str();
+#ifdef FEELPP_HAS_HDF5
+                this->saveHDF5( filename.string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
             }
         }
         BOOST_PARAMETER_MEMBER_FUNCTION(
@@ -3449,31 +3461,47 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            std::ostringstream os1;
-            os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-            fs::path p = fs::path( path ) / os1.str();
             fs::path partial_path = fs::path(path);
-
             fs::path full_path_dir_sol(fs::current_path());
             full_path_dir_sol = full_path_dir_sol/partial_path;
-            //std::cout << " In load the first full path is " << p << std::endl;
-            if ( !fs::exists( p ) )
-            {
-                std::ostringstream os2;
-                os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
-                p = fs::path( path ) / os2.str();
 
+            std::ostringstream os1;
+            std::ostringstream os2;
+            std::ostringstream os3;
+            fs::path p;
+
+            if ( type == "hdf5" )
+            {
+                os3 << M_name << sep << suffix << ".h5";
+                p = fs::path( path ) / os3.str();
                 if ( !fs::exists( p ) )
                 {
-                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
+                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os3.str() << " DO NOT EXIST" << std::endl ;
                     //std::cerr << "ATTENTION :  p does not exist
                     return 0;
+                }
+            }
+            else
+            {
+                os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                p = fs::path( path ) / os1.str();
+                //std::cout << " In load the first full path is " << p << std::endl;
+                if ( !fs::exists( p ) )
+                {
+                    os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                    p = fs::path( path ) / os2.str();
+
+                    if ( !fs::exists( p ) )
+                    {
+                        LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
+                        //std::cerr << "ATTENTION :  p does not exist
+                        return 0;
+                    }
                 }
             }
             LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
             if ( !fs::is_regular_file( p ) )
             {
-
                 LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
                 return 0;
             }
@@ -3497,6 +3525,14 @@ public:
                 //boost::archive::xml_iarchive ia(ifs);
                 //ia >> *this;
                 return false;
+            }
+            else if ( type == "hdf5" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                this->loadHDF5( p.string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
             }
             return true;
         }
@@ -3659,7 +3695,7 @@ public:
 
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
-        
+
         template<typename IteratorType, typename ExprType>
         void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
 
@@ -3835,7 +3871,7 @@ public:
 
         this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
-#if !defined(__INTEL_COMPILER ) 
+#if !defined(__INTEL_COMPILER )
         if(boption( "connect"))
           mesh->addObserver( *this );
 #endif
@@ -4296,7 +4332,7 @@ public:
      */
     template<typename ExprT>
     element_type
-    element( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
+    element( ExprT e, std::string const& name = "u", std::string const& desc = "u",
              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
         element_type u( this->shared_from_this(), name, desc );
@@ -4322,7 +4358,7 @@ public:
      */
     template<typename ExprT>
     element_ptrtype
-    elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u", 
+    elementPtr( ExprT e, std::string const& name = "u", std::string const& desc = "u",
                 typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
         //return boost::make_shared<element_type>( e, name, desc );
@@ -4690,7 +4726,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_dofOnOff = M_dof;
 
-    
+
 
     DVLOG(2) << "nb dim : " << qDim() << "\n";
     DVLOG(2) << "nb dof : " << nDof() << "\n";
