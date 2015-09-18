@@ -388,6 +388,8 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
                                                                         \
         typedef BinaryFunctor<typename ExprT1::value_type,typename ExprT2::value_type> super;      \
         typedef typename super::functordomain_1_type functordomain_1_type;  \
