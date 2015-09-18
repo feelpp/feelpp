@@ -1649,19 +1649,19 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
 {
     _options.add_options()
         /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_iter" ).c_str(),Feel::po::value<int>()->default_value( 20 ),"sets the max number of iteration for boomeramg" )
-        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(), Feel::po::value<double>()->default_value( 1e-7 ), "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_cycle_type").c_str(), Feel::po::value<int>()->default_value( 0 ),"Cycle type (0=V / 11==W")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),Feel::po::value<bool>()->default_value( false ),"Print statistics")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),Feel::po::value<int>()->default_value( 25 ),"Number of levels (of grids) allowed")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-iter" ).c_str(),Feel::po::value<int>()->default_value( 20 ),"sets the max number of iteration for boomeramg" )
+        ( prefixvm( prefix,"pc-hypre-boomeramg-tol").c_str(), Feel::po::value<double>()->default_value( 1e-7 ), "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-cycle-type").c_str(), Feel::po::value<int>()->default_value( 0 ),"Cycle type (0=V / 11==W")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-print-statistics").c_str(),Feel::po::value<bool>()->default_value( false ),"Print statistics")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-levels").c_str(),Feel::po::value<int>()->default_value( 25 ),"Number of levels (of grids) allowed")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-strong-threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-row-sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-coarsen-type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
 #if 0 // Not interfaced options
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-levels").c_str(),
         Feel::po::value<int>()->default_value( 2 ),
         "Number of levels (of grids) allowed")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-tol").c_str(),
         Feel::po::value<double>()->default_value( 1e-7 ),
         "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
         ( prefixvm( prefix,"pc_hypre_boomeramg_truncfactor").c_str(),
@@ -1676,10 +1676,10 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ( prefixvm( prefix,"pc_hypre_boomeramg_agg_num_paths").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Number of paths for aggressive coarsening")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-strong-threshold").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Threshold for being strongly connected")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-row-sum").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Maximum row sum")
         ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_all").c_str(),
@@ -1724,13 +1724,13 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ( prefixvm( prefix,"pc_hypre_boomeramg_measure_type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Measure type")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-coarsen-type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Coarsen type"
         ( prefixvm( prefix,"pc_hypre_boomeramg_interp_type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Interpolation type")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-print-statistics").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Print statistics")
         ( prefixvm( prefix,"pc_hypre_boomeramg_print_debug").c_str(),
@@ -1760,19 +1760,19 @@ updateOptionsDescAMS( po::options_description & _options, std::string const& pre
 {
     _options.add_options()
         /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
-        ( prefixvm( prefix,"pc_hypre_ams_print_level").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Debugging output level for AMS" )
-        ( prefixvm( prefix,"pc_hypre_ams_max_iter").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Maximum number of AMS multigrid iterations within PCApply" )
-        ( prefixvm( prefix,"pc_hypre_ams_cycle_type").c_str(),Feel::po::value<int>()->default_value( 13 ),     "Cycle type for AMS multigrid" )
-        ( prefixvm( prefix,"pc_hypre_ams_tol").c_str(),Feel::po::value<double>()->default_value( 0. ),         "Error tolerance for AMS multigrid" )
-        ( prefixvm( prefix,"pc_hypre_ams_relax_type").c_str(),Feel::po::value<int>()->default_value( 2 ),     "Relaxation type for AMS smoother" )
-        ( prefixvm( prefix,"pc_hypre_ams_relax_times").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Number of relaxation steps for AMS smoother" )
-        ( prefixvm( prefix,"pc_hypre_ams_relax_weight").c_str(),Feel::po::value<double>()->default_value( 1 ),"Relaxation weight for AMS smoother" )
-        ( prefixvm( prefix,"pc_hypre_ams_omega").c_str(),Feel::po::value<double>()->default_value( 1 ),       "SSOR coefficient for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Debugging output level for AMS" )
+        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Maximum number of AMS multigrid iterations within PCApply" )
+        ( prefixvm( prefix,"pc-hypre-ams-cycle_type").c_str(),Feel::po::value<int>()->default_value( 13 ),     "Cycle type for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),Feel::po::value<double>()->default_value( 0. ),         "Error tolerance for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),Feel::po::value<int>()->default_value( 2 ),     "Relaxation type for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Number of relaxation steps for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-weight").c_str(),Feel::po::value<double>()->default_value( 1 ),"Relaxation weight for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-omega").c_str(),Feel::po::value<double>()->default_value( 1 ),       "SSOR coefficient for AMS smoother" )
 #if 0 // Not interfaced yet
-        ( prefixvm( prefix,"pc_hypre_ams_amg_alpha_theta").c_str(),Feel::po::value<double>()->default_value( 20 ),"Threshold for strong coupling of vector Poisson AMG solver" )
-        ( prefixvm( prefix,"pc_hypre_ams_amg_alpha_options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" )
-        ( prefixvm( prefix,"pc_hypre_ams_amg_beta_theta").c_str(),Feel::po::value<int>()->default_value( 20 ),    "Threshold for strong coupling of scalar Poisson AMG solver" )
-        ( prefixvm( prefix,"pc_hypre_ams_amg_beta_options").c_str(),Feel::po::value<XXX>()->default_value( 20 ),  "AMG options for scalar Poisson solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-theta").c_str(),Feel::po::value<double>()->default_value( 20 ),"Threshold for strong coupling of vector Poisson AMG solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-theta").c_str(),Feel::po::value<int>()->default_value( 20 ),    "Threshold for strong coupling of scalar Poisson AMG solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ),  "AMG options for scalar Poisson solver" )
 #endif
         ;
 }
@@ -2218,10 +2218,10 @@ ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPe
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescBOOMERAMG(prefix,sub,prefixOverwrite) ),
-    M_max_iter( option(_name="pc_hypre_boomeramg_max_iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_tol( option(_name="pc_hypre_boomeramg_tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_cycle_type( option(_name="pc_hypre_boomeramg_cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
-    M_max_levels( option(_name="pc_hypre_boomeramg_max_levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+    M_max_iter( option(_name="pc-hypre-boomeramg-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_tol( option(_name="pc-hypre-boomeramg-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_cycle_type( option(_name="pc-hypre-boomeramg-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
+    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_BOOMERAMG\n"
             << "  |->prefix     : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2251,14 +2251,14 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescAMS(prefix,sub,prefixOverwrite) ),
-    M_print_level(option(_name="pc_hypre_ams_print_level",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_max_iter(option(_name="pc_hypre_ams_max_iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_cycle_type(option(_name="pc_hypre_ams_cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_tol(option(_name="pc_hypre_ams_tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_relax_type(option(_name="pc_hypre_ams_relax_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_relax_times(option(_name="pc_hypre_ams_relax_times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_relax_weight(option(_name="pc_hypre_ams_relax_weight",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_omega(option(_name="pc_hypre_ams_omega",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() )
+    M_print_level(option(_name="pc-hypre-ams-print-level",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_max_iter(option(_name="pc-hypre-ams-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_cycle_type(option(_name="pc-hypre-ams-cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_tol(option(_name="pc-hypre-ams-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_relax_type(option(_name="pc-hypre-ams-relax-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_weight(option(_name="pc-hypre-ams-relax-weight",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_omega(option(_name="pc-hypre-ams-omega",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_AMS\n"
             << "  |-> prefix       : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
