@@ -213,40 +213,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 }
 
 //---------------------------------------------------------------------------------------------------//
-namespace detail
-{
-template <typename MeshType>
-boost::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
-{
-    boost::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
-    for ( std::string const& marker : listMarker )
-    {
-        if ( !mesh->hasMarker( marker ) ) continue;
-
-        if ( mesh->hasFaceMarker( marker ) )
-        {
-            res.template get<0>().push_back( marker );
-            //std::cout << "has face marker " << marker << "\n";
-        }
-        else if ( mesh->hasEdgeMarker( marker ) )
-        {
-            res.template get<1>().push_back( marker );
-            //std::cout << "has edge marker " << marker << "\n";
-        }
-        else if ( mesh->hasPointMarker( marker ) )
-        {
-            res.template get<2>().push_back( marker );
-            //std::cout << "has point marker " << marker << "\n";
-        }
-        else
-        {
-            //std::cout << "unknow marker " << marker << " with dim " << mesh->markerDim( marker ) << "\n";
-        }
-    }
-    return res;
-}
-}
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -268,9 +234,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
     for( auto const& d : M_bcDirichlet )
     {
         auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-        auto const& listMarkerFaces = ret.template get<0>();
-        auto const& listMarkerEdges = ret.template get<1>();
-        auto const& listMarkerPoints = ret.template get<2>();
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
         if ( !listMarkerFaces.empty() )
             modifVec(markedfaces(mesh,listMarkerFaces ),
                      u, U, expression(d), rowStartInVector );
@@ -287,9 +253,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
         for( auto const& d : bcDirComp.second )
         {
             auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
-            auto const& listMarkerFaces = ret.template get<0>();
-            auto const& listMarkerEdges = ret.template get<1>();
-            auto const& listMarkerPoints = ret.template get<2>();
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
             if ( !listMarkerFaces.empty() )
                 modifVec(markedfaces(mesh,listMarkerFaces),
                          u[comp], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
@@ -321,18 +287,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
     for( auto const& d : M_bcDirichlet )
     {
         auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-        auto const& listMarkerFaces = ret.template get<0>();
-        auto const& listMarkerEdges = ret.template get<1>();
-        auto const& listMarkerPoints = ret.template get<2>();
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
+
+        auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
         if ( !listMarkerFaces.empty() )
             modifVec( markedfaces(this->mesh(),listMarkerFaces),
-                      u, R, 0*vf::one(), rowStartInVector );
+                      u, R, exprUsed, rowStartInVector );
         if ( !listMarkerEdges.empty() )
             modifVec( markededges(this->mesh(),listMarkerEdges),
-                      u, R, 0*vf::one(), rowStartInVector );
+                      u, R, exprUsed, rowStartInVector );
         if ( !listMarkerPoints.empty() )
             modifVec( markedpoints(this->mesh(),listMarkerPoints),
-                      u, R, 0*vf::one(), rowStartInVector );
+                      u, R, exprUsed, rowStartInVector );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -340,18 +308,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
         for( auto const& d : bcDirComp.second )
         {
             auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
-            auto const& listMarkerFaces = ret.template get<0>();
-            auto const& listMarkerEdges = ret.template get<1>();
-            auto const& listMarkerPoints = ret.template get<2>();
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            auto exprUsed = vf::cst(0.);
             if ( !listMarkerFaces.empty() )
                 modifVec( markedfaces(this->mesh(),listMarkerFaces),
-                          u[comp], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
             if ( !listMarkerEdges.empty() )
                 modifVec( markededges(this->mesh(),listMarkerEdges),
-                          u[comp], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
             if ( !listMarkerPoints.empty() )
                 modifVec( markedpoints(this->mesh(),listMarkerPoints),
-                          u[comp], R, vf::cst(0.), rowStartInVector, element_displacement_type::nComponents );
+                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
         }
     }
 
@@ -371,9 +340,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
     for( auto const& d : M_bcDirichlet )
     {
         auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-        auto const& listMarkerFaces = ret.template get<0>();
-        auto const& listMarkerEdges = ret.template get<1>();
-        auto const& listMarkerPoints = ret.template get<2>();
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
         if ( !listMarkerFaces.empty() )
             bilinearForm_PatternCoupled +=
                 on( _range=markedfaces(this->mesh(), listMarkerFaces),
@@ -393,9 +362,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
         for( auto const& d : bcDirComp.second )
         {
             auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
-            auto const& listMarkerFaces = ret.template get<0>();
-            auto const& listMarkerEdges = ret.template get<1>();
-            auto const& listMarkerPoints = ret.template get<2>();
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
             if ( !listMarkerFaces.empty() )
                 bilinearForm_PatternCoupled +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
@@ -428,9 +397,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
         for( auto const& d : M_bcDirichlet )
         {
             auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-            auto const& listMarkerFaces = ret.template get<0>();
-            auto const& listMarkerEdges = ret.template get<1>();
-            auto const& listMarkerPoints = ret.template get<2>();
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
             if ( !listMarkerFaces.empty() )
                 bilinearForm +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
@@ -450,9 +419,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
             for( auto const& d : bcDirComp.second )
             {
                 auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
-                auto const& listMarkerFaces = ret.template get<0>();
-                auto const& listMarkerEdges = ret.template get<1>();
-                auto const& listMarkerPoints = ret.template get<2>();
+                auto const& listMarkerFaces = std::get<0>( ret );
+                auto const& listMarkerEdges = std::get<1>( ret );
+                auto const& listMarkerPoints = std::get<2>( ret );
                 if ( !listMarkerFaces.empty() )
                     bilinearForm +=
                         on( _range=markedfaces(this->mesh(), listMarkerFaces),
