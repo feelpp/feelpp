@@ -162,8 +162,6 @@ public:
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
-
-    typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
