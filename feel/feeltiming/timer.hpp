@@ -31,6 +31,7 @@
 
 
 #include <stack>
+#include <chrono>
 #include <boost/assert.hpp>
 
 namespace Feel
@@ -52,15 +53,15 @@ public :
         times().push( time() );
     }
 
-    type toc( std::string const& msg, bool display ) const
+    std::pair<double,int> toc( std::string const& msg, bool display ) const
     {
         BOOST_ASSERT_MSG( !empty(), "Unbalanced timing calls" );
-        type t = time()-times().top();
+        std::chrono::duration<double> t = std::chrono::duration_cast<std::chrono::duration<double>>(time()-times().top());
         times().pop();
+        auto r = std::make_pair( t.count(), times().size());
+        if ( display ) timer_type::print( msg, r );
 
-        if ( display ) timer_type::print( msg, t );
-
-        return t;
+        return r;
     }
 
     bool  empty() const
