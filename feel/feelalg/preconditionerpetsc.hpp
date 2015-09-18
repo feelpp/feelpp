@@ -652,6 +652,34 @@ private :
 };
 
 /**
+ * ConfigurePCHYPRE_AMS
+ */
+class ConfigurePCHYPRE_AMS : public ConfigurePCBase
+{
+public :
+    ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                             std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
+
+private :
+    void run( PC& pc );
+
+private :
+    int M_print_level;
+    int M_max_iter;
+    int M_cycle_type;
+    double M_tol;
+    int M_relax_type;
+    int M_relax_times;
+    double M_relax_weight;
+    double M_omega;
+    //Mat M_G;
+    //Vec M_vx;
+    //Vec M_vy;
+    //Vec M_vz;
+};
+
+
+/**
  * ConfigurePCRedundant
  */
 class ConfigurePCRedundant : public ConfigurePCBase

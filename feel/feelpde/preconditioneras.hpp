@@ -298,7 +298,7 @@ template < typename space_type, typename coef_space_type >
 void
 PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,   // A + g M
                                                       sparse_matrix_ptrtype L,    // e_r * grad grad
-                                                      sparse_matrix_ptrtype hatL, // e_r * grad grad
+                                                      sparse_matrix_ptrtype hatL, // 1/mu * grad grad
                                                       sparse_matrix_ptrtype Q     // e_r * id id
                                                       )
 {
@@ -316,8 +316,6 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm, 
          * blockms.11.1 <=> bar(L) + g*bar(Q) y = s = Pt*r
          * blockms.11.2 <=> L z = t = trans(C)*r
          */
-
-        auto u = M_Qh->element("u");
 
         // Operator hat(L) + g Q
         sparse_matrix_ptrtype Lgq = hatL;
@@ -427,6 +425,8 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         *M_t = M_qh_elt;
         M_t->close();
 
+        //if(M_g != 1.0 || !(boption("blockms.remove-14b-if-g-1"))
+        {
         // 14.b : hat(L) z = t
         M_lOp->applyInverse(M_t,M_z);
         M_z->close();
@@ -434,6 +434,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // step C : M_C z
         M_C->multVector(M_z,C);
         C->scale(1./M_g);
+        }
 
         // Impose boundary conditions on C = Cz
         M_vh_elt = *C;
@@ -446,6 +447,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         *C = M_vh_elt;
         C->close();
 
+        //if(M_g != 1.0)
         A->add(*C);
         A->add(*B);
 
