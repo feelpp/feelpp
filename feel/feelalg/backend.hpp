@@ -984,6 +984,7 @@ public:
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( transpose,( bool ), false )
+                                       ( close,( bool ), true )
                                        ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
@@ -1024,8 +1025,11 @@ public:
         }
 
         // make sure matrix and rhs are closed
-        matrix->close();
-        rhs->close();
+        if ( close )
+        {
+            matrix->close();
+            rhs->close();
+        }
 
         // print them in matlab format
         if ( !M_export.empty() )
