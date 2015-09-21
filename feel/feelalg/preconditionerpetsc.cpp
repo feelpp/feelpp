@@ -354,6 +354,7 @@ static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
     PetscFunctionReturn(0);
 }
 
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
 static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
@@ -443,6 +444,7 @@ static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, 
 #endif
     return(0);
 }
+#endif // PETSC_HAVE_HYPRE && PETSC >= 3.6
 } // namespace PetscImpl
 #endif // PETSC_HAVE_HYPRE
 
