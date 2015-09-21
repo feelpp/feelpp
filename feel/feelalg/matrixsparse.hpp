@@ -777,7 +777,7 @@ public:
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
      */
-    virtual void getMatInfo( std::vector<double>) 
+    virtual void getMatInfo( std::vector<double> &) 
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
