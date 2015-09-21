@@ -1820,7 +1820,22 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
 #endif
 }
 
-
+template <typename T>
+inline
+void MatrixPetsc<T>::getMatInfo(std::vector<double> &vec)
+{
+    MatGetInfo(this->M_mat,MAT_GLOBAL_SUM,&M_info);
+    vec.push_back(M_info.block_size);       
+    vec.push_back(M_info.nz_allocated);     
+    vec.push_back(M_info.nz_used);          
+    vec.push_back(M_info.nz_unneeded);      
+    vec.push_back(M_info.memory);           
+    vec.push_back(M_info.assemblies);       
+    vec.push_back(M_info.mallocs);          
+    vec.push_back(M_info.fill_ratio_given); 
+    vec.push_back(M_info.fill_ratio_needed);
+    vec.push_back(M_info.factor_mallocs);   
+}
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//

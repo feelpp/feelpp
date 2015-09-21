@@ -514,6 +514,8 @@ public:
      */
     void zeroEntriesDiagonal();
 
+    virtual void getMatInfo(std::vector<double> &);
+
 private:
 
     // disable
@@ -542,6 +544,8 @@ private:
      */
     const bool M_destroy_mat_on_exit;
     std::vector<PetscInt> M_ia,M_ja;
+
+    MatInfo M_info;
 };
 
 
