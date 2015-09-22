@@ -649,6 +649,11 @@ private :
     double M_tol;
     int M_cycle_type;
     int M_max_levels;
+    int M_coarsen_type;
+    double M_strong_threshold;
+    int M_agg_nl;
+    int M_relax_type_all;
+    int M_interp_type;
 };
 
 /**
