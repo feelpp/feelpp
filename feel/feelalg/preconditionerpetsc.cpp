@@ -223,6 +223,8 @@ static PetscErrorCode PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
 /*
    Private context (data structure) for the  preconditioner.
 */
+#if defined(PETSC_HAVE_HYPRE)
+#if PETSC_VERSION_LESS_THAN( 3,6,0 )
 typedef struct {
   HYPRE_Solver   hsolver;
   HYPRE_IJMatrix ij;
@@ -232,12 +234,6 @@ typedef struct {
   HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
   HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
 
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
-  HYPRE_Int (*setdgrad)(HYPRE_Solver,HYPRE_ParCSRMatrix);
-  HYPRE_Int (*setdcurl)(HYPRE_Solver,HYPRE_ParCSRMatrix);
-  HYPRE_Int (*setcoord)(HYPRE_Solver,HYPRE_ParVector,HYPRE_ParVector,HYPRE_ParVector);
-  HYPRE_Int (*setdim)(HYPRE_Solver,HYPRE_Int);
-#endif 
   MPI_Comm comm_hypre;
   char     *hypre_type;
 
@@ -258,11 +254,9 @@ typedef struct {
   PetscInt ruse;
   PetscInt symt;
 
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
   /* options for Euclid */
   PetscBool bjilu;
   PetscInt  levels;
-#endif
 
   /* options for Euclid and BoomerAMG */
   PetscBool printstatistics;
@@ -288,10 +282,67 @@ typedef struct {
   PetscInt  nodal_coarsen;
   PetscBool nodal_relax;
   PetscInt  nodal_relax_levels;
+} PC_HYPRE;
+#else //PETSC_VERSION_LESS_THAN(3,6,0)
+typedef struct {
+  HYPRE_Solver   hsolver;
+  HYPRE_IJMatrix ij;
+  HYPRE_IJVector b,x;
 
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+  HYPRE_Int (*destroy)(HYPRE_Solver);
+  HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setdgrad)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setdcurl)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setcoord)(HYPRE_Solver,HYPRE_ParVector,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setdim)(HYPRE_Solver,HYPRE_Int);
+
+  MPI_Comm comm_hypre;
+  char     *hypre_type;
+
+  /* options for Pilut and BoomerAMG*/
+  PetscInt maxiter;
+  double   tol;
+
+  /* options for Pilut */
+  PetscInt factorrowsize;
+
+  /* options for ParaSails */
+  PetscInt nlevels;
+  double   threshhold;
+  double   filter;
+  PetscInt sym;
+  double   loadbal;
+  PetscInt logging;
+  PetscInt ruse;
+  PetscInt symt;
+
+  /* options for BoomerAMG */
+  PetscBool printstatistics;
+
+  /* options for BoomerAMG */
+  PetscInt  cycletype;
+  PetscInt  maxlevels;
+  double    strongthreshold;
+  double    maxrowsum;
+  PetscInt  gridsweeps[3];
+  PetscInt  coarsentype;
+  PetscInt  measuretype;
+  PetscInt  relaxtype[3];
+  double    relaxweight;
+  double    outerrelaxweight;
+  PetscInt  relaxorder;
+  double    truncfactor;
+  PetscBool applyrichardson;
+  PetscInt  pmax;
+  PetscInt  interptype;
+  PetscInt  agg_nl;
+  PetscInt  agg_num_paths;
+  PetscInt  nodal_coarsen;
+  PetscBool nodal_relax;
+  PetscInt  nodal_relax_levels;
+
   /* options for AS (Auxiliary Space preconditioners) */
-  /* cc from http://www.mcs.anl.gov/petsc/petsc-current/src/ksp/pc/impls/hypre/hypre.c.html#PCHYPRE */
   PetscInt  as_print;
   PetscInt  as_max_iter;
   PetscReal as_tol;
@@ -305,7 +356,7 @@ typedef struct {
   PetscReal as_amg_beta_theta;    /* AMG strength for scalar Poisson (AMS) or vector Poisson (ADS)  */
   PetscInt  ams_cycle_type;
   PetscInt  ads_cycle_type;
-  
+
   /* additional data */
   HYPRE_IJVector coords[3];
   HYPRE_IJVector constants[3];
@@ -313,9 +364,11 @@ typedef struct {
   HYPRE_IJMatrix C;
   HYPRE_IJMatrix alpha_Poisson;
   HYPRE_IJMatrix beta_Poisson;
-  PetscBool      ams_beta_is_zero; // See hypre doc: if \beta == 0, we can ommit one linear system
-#endif
+  PetscBool      ams_beta_is_zero;
 } PC_HYPRE;
+#endif //PETSC_VERSION_LESS_THAN( 3,6,0 )
+#endif //defined(PETSC_HAVE_HYPRE)
+
 
 namespace PetscImpl
 {
@@ -340,62 +393,72 @@ static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->maxiter = maxIter;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, maxIter);
+    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, jac->maxiter);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetTol( PC pc, double tol )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->tol=tol;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, tol);
+    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, jac->tol);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetCycleType( PC pc, int cycleType ) 
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->cycletype = cycleType;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, cycleType);
+    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, jac->cycletype);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->maxlevels=maxLevels;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, maxLevels);
+    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, jac->maxlevels);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetCoarsenType( PC pc, int coarsenType )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->coarsentype=coarsenType;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetCoarsenType( jac->hsolver, coarsenType);
+    ierr = HYPRE_BoomerAMGSetCoarsenType( jac->hsolver, jac->coarsentype);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetStrongThreshold( PC pc, double strongT )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->strongthreshold = strongT;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetStrongThreshold( jac->hsolver, strongT);
+    ierr = HYPRE_BoomerAMGSetStrongThreshold( jac->hsolver, jac->strongthreshold);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetAggNumLevels( PC pc, int aggNl )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->agg_nl = aggNl;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetAggNumLevels( jac->hsolver, aggNl);
+    ierr = HYPRE_BoomerAMGSetAggNumLevels( jac->hsolver, jac->agg_nl);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetRelaxTypeAll( PC pc, int relaxTypeAll )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->relaxtype[0] = jac->relaxtype[1]  = relaxTypeAll;
     PetscErrorCode ierr;
     ierr = HYPRE_BoomerAMGSetRelaxType( jac->hsolver, relaxTypeAll);
+    jac->relaxtype[2] = 9;
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetInterpolationType( PC pc, int interpolationType )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->interptype = interpolationType;
     PetscErrorCode ierr;
     ierr = HYPRE_BoomerAMGSetInterpType( jac->hsolver, interpolationType);
     PetscFunctionReturn(0);
