@@ -232,6 +232,12 @@ typedef struct {
   HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
   HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
 
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+  HYPRE_Int (*setdgrad)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setdcurl)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setcoord)(HYPRE_Solver,HYPRE_ParVector,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setdim)(HYPRE_Solver,HYPRE_Int);
+#endif 
   MPI_Comm comm_hypre;
   char     *hypre_type;
 
@@ -252,9 +258,11 @@ typedef struct {
   PetscInt ruse;
   PetscInt symt;
 
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
   /* options for Euclid */
   PetscBool bjilu;
   PetscInt  levels;
+#endif
 
   /* options for Euclid and BoomerAMG */
   PetscBool printstatistics;
@@ -281,6 +289,7 @@ typedef struct {
   PetscBool nodal_relax;
   PetscInt  nodal_relax_levels;
 
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
   /* options for AS (Auxiliary Space preconditioners) */
   /* cc from http://www.mcs.anl.gov/petsc/petsc-current/src/ksp/pc/impls/hypre/hypre.c.html#PCHYPRE */
   PetscInt  as_print;
@@ -305,10 +314,12 @@ typedef struct {
   HYPRE_IJMatrix alpha_Poisson;
   HYPRE_IJMatrix beta_Poisson;
   PetscBool      ams_beta_is_zero; // See hypre doc: if \beta == 0, we can ommit one linear system
+#endif
 } PC_HYPRE;
 
 namespace PetscImpl
 {
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
@@ -324,6 +335,7 @@ static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
     //ierr = HYPRE_EuclidDestroy( jac->hsolver );
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
 {
@@ -353,6 +365,42 @@ static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
     ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, maxLevels);
     PetscFunctionReturn(0);
 }
+static PetscErrorCode PCHYPRE_BOOMERAMGSetCoarsenType( PC pc, int coarsenType )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetCoarsenType( jac->hsolver, coarsenType);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetStrongThreshold( PC pc, double strongT )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetStrongThreshold( jac->hsolver, strongT);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetAggNumLevels( PC pc, int aggNl )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetAggNumLevels( jac->hsolver, aggNl);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetRelaxTypeAll( PC pc, int relaxTypeAll )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetRelaxType( jac->hsolver, relaxTypeAll);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetInterpolationType( PC pc, int interpolationType )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetInterpType( jac->hsolver, interpolationType);
+    PetscFunctionReturn(0);
+}
+
 
 #if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
 static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
@@ -1327,7 +1375,7 @@ void
 ConfigurePC::run( PC& pc )
 {
     VLOG(2) << "configuring PC... (sub: " << this->sub() << ")";
-    //PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
+    PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
     google::FlushLogFiles(google::INFO);
     const char* pctype;
     this->check( PCGetType ( pc, &pctype ) );
@@ -1411,10 +1459,12 @@ ConfigurePC::run( PC& pc )
 #if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
         const char* hypretype;
         this->check( PCHYPREGetType( pc, &hypretype ) );
-        if ( std::string( hypretype ) == "euclid" )
-            ConfigurePCHYPRE_EUCLID( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
-        else if ( std::string( hypretype ) == "boomeramg" )
+        if ( std::string( hypretype ) == "boomeramg" )
             ConfigurePCHYPRE_BOOMERAMG( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
+        else if ( std::string( hypretype ) == "euclid" )
+            ConfigurePCHYPRE_EUCLID( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+#endif
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
         else if ( std::string( hypretype ) == "ams" )
             ConfigurePCHYPRE_AMS( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
@@ -1659,6 +1709,9 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ( prefixvm( prefix,"pc-hypre-boomeramg-strong-threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
         ( prefixvm( prefix,"pc-hypre-boomeramg-max-row-sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
         ( prefixvm( prefix,"pc-hypre-boomeramg-coarsen-type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-agg-nl").c_str(),Feel::po::value<int>()->default_value( 1 ),"Number of levels of aggressive coarsening")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-relax-type-all").c_str(),Feel::po::value<int>()->default_value( 6 ),"Relax type for the up and down cycles")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-interp-type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Interpolation type")
 #if 0 // Not interfaced options
         ( prefixvm( prefix,"pc-hypre-boomeramg-max-levels").c_str(),
         Feel::po::value<int>()->default_value( 2 ),
@@ -2187,10 +2240,11 @@ ConfigurePCILU::run( PC& pc )
     this->check( PCFactorSetLevels( pc, M_levels ) );
     this->check( PCFactorSetFill( pc, M_fill ) );
 }
-
+ 
 /**
  * ConfigurePCHYPRE_EUCLID
  */
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<double> * precFeel,
                                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                                                   std::vector<std::string> const& prefixOverwrite )
@@ -2211,7 +2265,7 @@ ConfigurePCHYPRE_EUCLID::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_EUCLIDSetLevels( pc, M_levels ) );
 #endif
 }
-
+#endif
 /**
  * ConfigurePCHYPRE_BOOMERAMG
  */
@@ -2223,14 +2277,24 @@ ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPe
     M_max_iter( option(_name="pc-hypre-boomeramg-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_tol( option(_name="pc-hypre-boomeramg-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_cycle_type( option(_name="pc-hypre-boomeramg-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
-    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_coarsen_type( option(_name="pc-hypre-boomeramg-coarsen-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_strong_threshold( option(_name="pc-hypre-boomeramg-strong-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_agg_nl( option(_name="pc-hypre-boomeramg-agg-nl",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_type_all( option(_name="pc-hypre-boomeramg-relax-type-all",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_interp_type( option(_name="pc-hypre-boomeramg-interp-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_BOOMERAMG\n"
             << "  |->prefix     : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->max_iter   : " << M_max_iter << "\n"
             << "  |->tol        : " << M_tol << "\n"
             << "  |->cycle_type : " << M_cycle_type << "\n"
-            << "  |->max_levels : " << M_max_levels << "\n";
+            << "  |->max_levels : " << M_max_levels << "\n"
+            << "  |->coarsen_type : " << M_coarsen_type << "\n"
+            << "  |->strong_threshold : " << M_strong_threshold << "\n"
+            << "  |->agg nl : " << M_agg_nl << "\n"
+            << "  |->relax_type_all : " << M_relax_type_all << "\n"
+            << "  |->interp_type : " << M_interp_type << "\n";
     google::FlushLogFiles(google::INFO);
     run( pc );
 }
@@ -2242,6 +2306,43 @@ ConfigurePCHYPRE_BOOMERAMG::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetTol( pc, M_tol ) );
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetCycleType( pc, M_cycle_type ) );
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetMaxLevels( pc, M_max_levels ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetCoarsenType( pc, M_coarsen_type ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetStrongThreshold( pc, M_strong_threshold ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetAggNumLevels( pc, M_agg_nl ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetRelaxTypeAll( pc, M_relax_type_all ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetInterpolationType( pc, M_interp_type ) );
+#if 0
+    const char     *petscPrefix;
+    this->check( PCGetOptionsPrefix(pc,&petscPrefix ) );
+
+    if( petscPrefix != NULL)
+    {
+      std::cout << petscPrefix << std::endl;
+      std::cout << (boost::format("-%1%pc_hypre_boomeramg_max_iter"        )%std::string(petscPrefix)).str().c_str() << std::endl;
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_max_iter"        )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_max_iter        ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_tol"             )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_tol             ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_cycle_type"      )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_cycle_type      ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_max_levels"      )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_max_levels      ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_coarsen_type"    )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_coarsen_type    ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_strong_threshold")%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_strong_threshold).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_agg_nl"          )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_agg_nl          ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_relax_type_all"  )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_relax_type_all  ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_interp_type"     )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_interp_type     ).c_str()) );
+    }
+    else
+    {
+      std::cout << "OCucou" << std::endl;
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_max_iter"        , boost::lexical_cast<std::string>(M_max_iter        ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_tol"             , boost::lexical_cast<std::string>(M_tol             ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_cycle_type"      , boost::lexical_cast<std::string>(M_cycle_type      ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_max_levels"      , boost::lexical_cast<std::string>(M_max_levels      ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_coarsen_type"    , boost::lexical_cast<std::string>(M_coarsen_type    ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_strong_threshold", boost::lexical_cast<std::string>(M_strong_threshold).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_agg_nl"          , boost::lexical_cast<std::string>(M_agg_nl          ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_relax_type_all"  , boost::lexical_cast<std::string>(M_relax_type_all  ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_interp_type"     , boost::lexical_cast<std::string>(M_interp_type     ).c_str()) );
+    }
+#endif
 #endif
 }
 
