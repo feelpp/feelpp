@@ -10,8 +10,7 @@
     {
       "type":"constant",
       "name":"Vacuum permeability",
-      //"value":12.5663706144e-7
-      "value":1
+      "value":12.5663706144e-7
     }
   },
   "Materials":
@@ -20,7 +19,7 @@
     {
       "name":"firstMat",
       "file":"false",
-      "B":"mu_0:H:x:y:H:mu_0:B"
+      "B":"mu_r*mu_0*H:x:y:z:H:mu_0:B:mu_r"
     }
   }, // materials
   "BoundaryConditions":
