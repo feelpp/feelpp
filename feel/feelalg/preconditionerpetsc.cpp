@@ -469,39 +469,47 @@ static PetscErrorCode PCHYPRE_BOOMERAMGSetInterpolationType( PC pc, int interpol
 static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_print=printLevel;
     PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetPrintLevel(jac->hsolver,printLevel);
+    ierr = HYPRE_AMSSetPrintLevel(jac->hsolver,jac->as_print);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetMaxIter(PC pc, PetscInt maxIter)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_max_iter=maxIter;
     PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetMaxIter(jac->hsolver,maxIter);
+    ierr = HYPRE_AMSSetMaxIter(jac->hsolver,jac->as_max_iter);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetCycleType(PC pc, PetscInt cycleType)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->ams_cycle_type=cycleType;
     PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetCycleType(jac->hsolver,cycleType);
+    ierr = HYPRE_AMSSetCycleType(jac->hsolver,jac->ams_cycle_type);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetTol(PC pc, double tol)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_tol=tol;
     PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetTol(jac->hsolver,tol);
+    ierr = HYPRE_AMSSetTol(jac->hsolver,jac->as_tol);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, PetscInt relaxTimes, double relaxWeight, double omega)
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
     PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetSmoothingOptions(jac->hsolver,relaxType,
-            relaxTimes,
-            relaxWeight,
-            omega);
+    jac->as_relax_type=relaxType;
+    jac->as_relax_times=relaxTimes;
+    jac->as_relax_weight=relaxWeight;
+    jac->as_omega=omega;
+    ierr = HYPRE_AMSSetSmoothingOptions(jac->hsolver,jac->as_relax_type,
+            jac->as_relax_times,
+            jac->as_relax_weight,
+            jac->as_omega);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetDiscreteGradient_HYPRE(PC pc, Mat G)
@@ -1878,14 +1886,14 @@ updateOptionsDescAMS( po::options_description & _options, std::string const& pre
 {
     _options.add_options()
         /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
-        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Debugging output level for AMS" )
-        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Maximum number of AMS multigrid iterations within PCApply" )
-        ( prefixvm( prefix,"pc-hypre-ams-cycle_type").c_str(),Feel::po::value<int>()->default_value( 13 ),     "Cycle type for AMS multigrid" )
-        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),Feel::po::value<double>()->default_value( 0. ),         "Error tolerance for AMS multigrid" )
-        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),Feel::po::value<int>()->default_value( 2 ),     "Relaxation type for AMS smoother" )
-        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),Feel::po::value<int>()->default_value( 1 ),    "Number of relaxation steps for AMS smoother" )
-        ( prefixvm( prefix,"pc-hypre-ams-relax-weight").c_str(),Feel::po::value<double>()->default_value( 1 ),"Relaxation weight for AMS smoother" )
-        ( prefixvm( prefix,"pc-hypre-ams-omega").c_str(),Feel::po::value<double>()->default_value( 1 ),       "SSOR coefficient for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Debugging output level for AMS" )
+        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Maximum number of AMS multigrid iterations within PCApply" )
+        ( prefixvm( prefix,"pc-hypre-ams-cycle-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 13 ):Feel::po::value<int>(),     "Cycle type for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 0. ):Feel::po::value<double>(),         "Error tolerance for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 2 ):Feel::po::value<int>(),     "Relaxation type for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Number of relaxation steps for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-weight").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),"Relaxation weight for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-omega").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),       "SSOR coefficient for AMS smoother" )
 #if 0 // Not interfaced yet
         ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-theta").c_str(),Feel::po::value<double>()->default_value( 20 ),"Threshold for strong coupling of vector Poisson AMG solver" )
         ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" )
@@ -2419,7 +2427,7 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescAMS(prefix,sub,prefixOverwrite) ),
     M_print_level(option(_name="pc-hypre-ams-print-level",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_max_iter(option(_name="pc-hypre-ams-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_cycle_type(option(_name="pc-hypre-ams-cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_cycle_type(option(_name="pc-hypre-ams-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_tol(option(_name="pc-hypre-ams-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
     M_relax_type(option(_name="pc-hypre-ams-relax-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
     M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
