@@ -387,7 +387,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
             f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
         }
-
+        
         M_11Op = op(M_11, "blockms.11");
 
         if(soption("blockms.11.pc-type") == "AS")
@@ -423,6 +423,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             prec->attachAuxiliaryVector("Px",M_ozz);
             prec->attachAuxiliaryVector("Py",M_zoz);
             prec->attachAuxiliaryVector("Pz",M_zzo);
+            
+            //M_11Op->setPc( prec );
            
         }
 #else
