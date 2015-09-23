@@ -164,7 +164,7 @@ class TestPrecAFP : public Application
             std::string key = "Materials.";
             key += marker(it);
             key += ".B";
-            auto curve = expr(model.getEntry(key),{"H","B"},{cst(1.),cst(1.)});
+            auto curve = expr(model.getEntry(key),{"H","B","mu_r"},{expr("1."),expr("1."),expr(soption("functions.m"))});
             curve.setParameterValues(model.parameters().toParameterValues());
             M_mu += vf::project(_space=Mh,
                                 _range=markedelements(M_mesh,marker(it)),
@@ -323,7 +323,7 @@ class TestPrecAFP : public Application
                 outputFile << "#Physique" << std::endl;
                 model.saveMD(outputFile);    
                 
-                outputFile << "##Physique spÃÂÃÂ©cifique" << std::endl;
+                outputFile << "##Physique specifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
                 outputFile << "| mu | "    << soption("functions.m") << "| " << std::endl;
