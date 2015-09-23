@@ -51,6 +51,16 @@ matrix:
         packages:
         - *1
         - clang-3.6
+  - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7
+      FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-precise-3.7
+        packages:
+        - *1
+        - clang-3.7
   - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
     addons:
@@ -94,7 +104,7 @@ script:
 - make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
-- make -j1 feelpp_model_algebra
+- make -j1 feelpp-models-algebra
 - make install-feelpp
 - ls $HOME/software/install/feelpp/include/feel
 
@@ -127,6 +137,7 @@ deploy:
   skip_cleanup: true
   acl: public_read
   on:
+    branch: develop
     repo: feelpp/feelpp
   secret_access_key:
     secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=

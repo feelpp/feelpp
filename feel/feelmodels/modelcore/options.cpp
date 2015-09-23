@@ -106,15 +106,15 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
         ;
 
-    for (uint16_type nParam=1;nParam<=FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS;++nParam)
+    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_PARAMETERS;++nParam)
         appliBaseOptions.add_options()
             ((boost::format("%1%parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter");
 
-    for (uint16_type nParam=1;nParam<=FEELMODELS_FSIBASE_NUMBER_OF_GEOPARAMETERS;++nParam)
+    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GEOPARAMETERS;++nParam)
         appliBaseOptions.add_options()
             ((boost::format("%1%geo-parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a geo parameter");
 
-    for (uint16_type k=1;k<=FEELMODELS_FSIBASE_NUMBER_OF_GINACEXPR;++k)
+    for (uint16_type k=1;k<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GINACEXPR;++k)
         {
             appliBaseOptions.add_options()
                 ((boost::format("%1%ginac-expr%2%") %prefixvm(prefix,"") %k).str().c_str(), Feel::po::value<std::string>()->default_value( "" ), " a ginac expr");
@@ -126,6 +126,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         (prefixvm(prefix,"ginac-expr-directory").c_str(), Feel::po::value< std::string >(), "ginac-expr-directory");
 
     return appliBaseOptions
+        .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) );
     //return appliBaseOptions.add( backend_options( prefix ) );
@@ -139,7 +140,6 @@ fluidMechanics_options(std::string const& prefix)
 {
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
-        (prefixvm(prefix,"hsize").c_str(), Feel::po::value<double>()->default_value( 0.06 ), "h fluid")
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()->default_value("Navier-Stokes"), "fluid model : Navier-Stokes,Oseen,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
         (prefixvm(prefix,"stress_tensor_law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
@@ -241,7 +241,6 @@ solidMechanics_options(std::string const& prefix)
 {
     Feel::po::options_description solidOptions("Solid Mechanics options");
     solidOptions.add_options()
-        (prefixvm(prefix,"hsize").c_str(), Feel::po::value<double>()->default_value( 0.02 ), "h struct")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "density")
         (prefixvm(prefix,"youngmodulus").c_str(), Feel::po::value<double>()->default_value( 3.e6 ), "young modulus")
         (prefixvm(prefix,"coeffpoisson").c_str(), Feel::po::value<double>()->default_value( 0.3 ), "poisson coefficient")
@@ -266,13 +265,14 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"do_export_acceleration").c_str(), Feel::po::value<bool>(), "doExportAcceleration")
         (prefixvm(prefix,"do_export_normalstress").c_str(), Feel::po::value<bool>(), "doExportNormalStress")
         (prefixvm(prefix,"do_export_pressure").c_str(), Feel::po::value<bool>(), "doExportPressure")
+        (prefixvm(prefix,"do_export_material_properties").c_str(), Feel::po::value<bool>(), "doExportMaterialsProp")
         (prefixvm(prefix,"do_export_velocityinterfacefromfluid").c_str(), Feel::po::value<bool>(), "doExportVelocityInterfaceFromFluid")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
 
         (prefixvm(prefix,"use-null-space").c_str(), Feel::po::value<bool>()->default_value( false ), "use-null-space")
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")
         ;
-
+    solidOptions.add( gmsh_options( prefixvm(prefix,"1dreduced") ) );
     return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 
@@ -328,7 +328,6 @@ thermoDynamics_options(std::string const& prefix)
 {
     Feel::po::options_description thermoDynamicsOptions("Thermo Dynamics options");
     thermoDynamicsOptions.add_options()
-        (prefixvm(prefix,"hsize").c_str(), Feel::po::value<double>()->default_value( 0.02 ), "h struct")
         (prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")

@@ -582,7 +582,7 @@ public:
                               (mpl::int_<nComponents2>,mpl::int_<shape::N>));
          */
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        using expr_basis_t = typename std::decay_t<ExprType>::expression_type::test_basis;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
 
         for( int q = 0; q < nLocalDof; ++q )
         {
