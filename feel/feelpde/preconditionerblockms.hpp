@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef FEELPP_PRECONDITIONERBlockMS_HPP
 #define FEELPP_PRECONDITIONERBlockMS_HPP 1
 
-#if FM_DIM == 2
+#if FEELPP_DIM == 2
 #define curl_op curlx
 #define curlt_op curlxt
 #define curlv_op curlxv
@@ -215,6 +215,8 @@ private:
 
     BoundaryConditions M_bcFlags;
     std::string M_prefix;
+    std::string M_prefix_11;
+    std::string M_prefix_22;
 
     potential_element_type u;
     potential_element_type ozz;
@@ -259,6 +261,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
     M_k(doption("parameters.k")),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
+    M_prefix_11( p+".11" ),
+    M_prefix_22( p+".22" ),
     u(M_Vh, "u"),
     ozz(M_Vh, "ozz"),
     zoz(M_Vh, "zoz"),
@@ -283,7 +287,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
 
         M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
-        map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+        map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
         map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
         /* Compute the mass matrix */
@@ -292,8 +296,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
         f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
         for(auto const & it : m_dirichlet_u )
         {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.11\n";
-            f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
+            f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
         }
 
         /* Compute the L and Q matrices */
@@ -305,13 +309,13 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::st
 
         for(auto const & it : m_dirichlet_p)
         {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
-            f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption("blockms.22.on.type"));
-            f2Q += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption("blockms.22.on.type"));
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+            f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption(M_prefix_22+".on.type"));
+            f2Q += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption(M_prefix_22+".on.type"));
         }
 
         /* Initialize the blockAS prec */
-        if(soption("blockms.11.pc-type") == "AS")
+        if(soption(M_prefix_11+".pc-type") == "AS")
         {
             M_pcAs = blockas(_space=M_Xh,
                              _space2=M_Mh,
@@ -343,7 +347,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     if(this->type() == AFP){
 
         LOG(INFO) << "Create sub Matrix\n";
-        map_vector_field<FM_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FM_DIM> ( "u", "Dirichlet" ) };
+        map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
         map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
         /*
@@ -353,7 +357,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
          */
         // Is the zero() necessary ?
 
-        if(boption("blockms.rebuild_11"))
+        if(boption(M_prefix+".rebuild_11"))
         {
              // calculer matrice A + g M
             auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
@@ -362,7 +366,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
                                                                 +cst(1.-M_k*M_k)*idv(M_er)*inner(idt(u),id(u))); // g M
             for(auto const & it : m_dirichlet_u )
             {
-                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
             }
         }
         else
@@ -374,7 +378,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             auto f1A = form1(_test=M_Vh);
             for(auto const & it : m_dirichlet_u )
             {
-                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption("blockms.11.on.type"));
+                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
             }
         }
 
@@ -384,19 +388,19 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         f2B = integrate(_range=elements(M_Qh->mesh()), _expr=cst(1.)/idv(mu)*inner(gradt(phi), grad(phi)));
         for(auto const & it : m_dirichlet_p)
         {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for blockms.22\n";
-            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption("blockms.22.on.type"));
+            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption(M_prefix_22+".on.type"));
         }
         
-        M_11Op = op(M_11, "blockms.11");
+        M_11Op = op(M_11, M_prefix_11);
 
-        if(soption("blockms.11.pc-type") == "AS")
+        if(soption(M_prefix_11+".pc-type") == "AS")
         {
             M_pcAs->update(M_11, M_L, M_hatL, M_Q);
             M_11Op->setPc( M_pcAs );
         }
-        else if(soption("blockms.11.pc-type") == "ams")
-#if FM_DIM == 3
+        else if(soption(M_prefix_11+".pc-type") == "ams")
+#if FEELPP_DIM == 3
         {
             M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
             // Create the interpolation and keep only the matrix
@@ -411,12 +415,12 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             *M_ozz = ozz; M_ozz->close();
             *M_zoz = zoz; M_zoz->close();
             *M_zzo = zzo; M_zzo->close();
-
-            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption("blockms.11.pc-type")),
-                                       _backend=backend(_name="blockms.11"),
-                                       _prefix="blockms.11",
+            auto _back = backend(_name=M_prefix_11);
+            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
+                                       _backend=_back,
+                                       _prefix=M_prefix_11,
                                        _matrix=M_11,
-                                       _pcfactormatsolverpackage=backend(_name="blockms.11")->matSolverPackageEnumType(),
+                                       _pcfactormatsolverpackage=_back->matSolverPackageEnumType(),
                                        _worldcomm=Environment::worldComm());
 
             prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
@@ -431,7 +435,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
 
-        M_22Op = op(M_L, "blockms.22");
+        M_22Op = op(M_L, M_prefix_22);
     }
     toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
 }
@@ -501,8 +505,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
                                    ( matrix, *)
                                  )
                                  ( optional
-                                   ( type, *, soption("blockms.type"))
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "blockms" )
+                                   ( type, *, soption(prefix+".type"))
                                    ( bc, *, (BoundaryConditions ()) )
                                  )
                                )
