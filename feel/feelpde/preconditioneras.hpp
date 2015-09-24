@@ -277,14 +277,14 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // Subvectors for M_y (per component)
     M_y1 = M_y->createSubVector(M_Qh3_indices[0], true);
     M_y2 = M_y->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
     M_y3 = M_y->createSubVector(M_Qh3_indices[2], true);
 #endif
     
     // Subvectors for M_s (per component)
     M_s1 = M_y->createSubVector(M_Qh3_indices[0], true);
     M_s2 = M_y->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
     M_s3 = M_y->createSubVector(M_Qh3_indices[2], true);
 #endif
 
@@ -376,7 +376,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #if 1
         M_qh3_elt = *M_s;
         M_qh3_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
@@ -388,14 +388,14 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         // Subvectors for M_s (per component) need to be updated
         M_s1 = M_s->createSubVector(M_Qh3_indices[0], true);
         M_s2 = M_s->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_s3 = M_s->createSubVector(M_Qh3_indices[2], true);
 #endif
 #else 
         // s = [ s1, s2, s3 ]
         M_s->updateSubVector(M_s1, M_Qh3_indices[0]);
         M_s->updateSubVector(M_s2, M_Qh3_indices[1]);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_s->updateSubVector(M_s3, M_Qh3_indices[2]);
 #endif
 #endif
@@ -408,14 +408,14 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
          */
         M_lgqOp->applyInverse(M_s1,M_y1);
         M_lgqOp->applyInverse(M_s2,M_y2);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_lgqOp->applyInverse(M_s3,M_y3);
 #endif
 
         // y = [ y1, y2, y3 ]
         M_y->updateSubVector(M_y1, M_Qh3_indices[0]);
         M_y->updateSubVector(M_y2, M_Qh3_indices[1]);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_y->updateSubVector(M_y3, M_Qh3_indices[2]);
 #endif
         M_y->close();
@@ -426,7 +426,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #if 1
         M_vh_elt = *B;
         M_vh_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
@@ -458,7 +458,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
 #if 1
         M_vh_elt = *C;
         M_vh_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
