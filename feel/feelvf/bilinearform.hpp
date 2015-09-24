@@ -1154,6 +1154,11 @@ public:
             return *this;
         }
 
+    BilinearForm& add( double alpha, BilinearForm&  a )
+        {
+            M_matrix->addMatrix( alpha, a.M_matrix );
+            return *this;
+        }
     /**
      * Computes the energy norm associated with the bilinear form
      *
