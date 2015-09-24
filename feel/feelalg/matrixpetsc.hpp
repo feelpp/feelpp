@@ -384,7 +384,7 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix ( const T a, MatrixSparse<T> &X );
+    void addMatrix ( const T a, MatrixSparse<T> const&X );
 
     /**
      * Multiply this by a Sparse matrix \p In,
@@ -612,7 +612,7 @@ public :
                     int* cols, int ncols,
                     value_type* data );
 
-    void addMatrix( const T a, MatrixSparse<T> &X );
+    void addMatrix( const T a, MatrixSparse<T> const&X );
 
 
     void zero();
