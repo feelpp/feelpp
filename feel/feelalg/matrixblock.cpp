@@ -348,7 +348,7 @@ MatrixBlockBase<T>::printMatlab ( const std::string name ) const
 template <typename T>
 inline
 void
-MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> &X_in )
+MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> const&X_in )
 {
     M_mat->addMatrix( a_in,X_in );
 }

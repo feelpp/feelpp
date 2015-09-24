@@ -358,7 +358,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const value_type, MatrixSparse<value_type> & );
+    void addMatrix ( const value_type, MatrixSparse<value_type> const& );
 
     void scale ( const value_type );
 
