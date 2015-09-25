@@ -248,21 +248,21 @@ variant no_single description {Disable building single-threaded libraries} {
     build.args-append   threading=multi
 }
 
-variant gcc47 description {Build with gcc47} conflicts gcc48 clang35 clang36 {
+variant gcc47 description {Build with gcc47} conflicts gcc48 clang35 clang36 clang37 {
     depends_lib-append      port:gcc47
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.7
 }
 
-variant gcc48 description {Build with gcc48} conflicts gcc47 clang35 clang36 {
+variant gcc48 description {Build with gcc48} conflicts gcc47 clang35 clang36 clang37 {
     depends_lib-append      port:gcc48
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.8
 }
 
-variant clang35 description {Build with clang 3.5} conflicts gcc48 gcc47 clang36 {
+variant clang35 description {Build with clang 3.5} conflicts gcc48 gcc47 clang36 clang37 {
     depends_lib-append  port:clang-3.5
     build.args-append   pch=off
     build.args-delete   architecture=x86
@@ -270,12 +270,20 @@ variant clang35 description {Build with clang 3.5} conflicts gcc48 gcc47 clang36
     configure.compiler  macports-clang-3.5
 }
 
-variant clang36 description {Build with clang 3.6} conflicts gcc48 gcc47 clang35 {
+variant clang36 description {Build with clang 3.6} conflicts gcc48 gcc47 clang35 clang37 {
     depends_lib-append  port:clang-3.6
     build.args-append   pch=off
     build.args-delete   architecture=x86
     #configure.cxx /opt/local/bin/clang++-mp-3.6
     configure.compiler  macports-clang-3.6
+}
+
+variant clang37 description {Build with clang 3.7} conflicts gcc48 gcc47 clang35 clang36 {
+    depends_lib-append  port:clang-3.7
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    #configure.cxx /opt/local/bin/clang++-mp-3.6
+    configure.compiler  macports-clang-3.7
 }
 
 
@@ -326,6 +334,9 @@ variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conf
         write_jam "using mpi : ${prefix}/bin/mpicxx-openmpi-clang35 : : ${prefix}/bin/mpirun-openmpi-clang35 ;"
     }
 
+}
+
+if {[variant_isset openmpi_clang35] || [variant_isset openmpi_clang37] || [variant_isset openmpi_gcc48] } {
     if {![catch python_dir]} {
 
         patchfiles-append patch-libs-mpi-build-Jamfile.v2.diff
@@ -340,10 +351,9 @@ variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conf
             move ${destroot}${prefix}/lib/mpi.so ${destroot}${l}
             system "install_name_tool -id ${l} ${destroot}${l}"
         }
-
     }
-
 }
+
 
 
 
