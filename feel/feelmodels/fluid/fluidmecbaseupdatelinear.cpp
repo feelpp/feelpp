@@ -102,7 +102,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     if (BuildCstPart)
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
 
     //--------------------------------------------------------------------------------------------------//
@@ -273,7 +273,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     {
         myLinearForm +=
             integrate( _range=elements(mesh),
-                       _expr= idv(this->velocityDiv())*id(q),
+                       _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
