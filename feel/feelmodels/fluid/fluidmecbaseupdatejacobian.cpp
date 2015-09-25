@@ -158,7 +158,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 

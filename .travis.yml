@@ -137,7 +137,7 @@ deploy:
   skip_cleanup: true
   acl: public_read
   on:
-    branch: develop
+    all_branches: true
     repo: feelpp/feelpp
   secret_access_key:
     secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=

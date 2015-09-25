@@ -195,9 +195,9 @@ MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenSparse<value_type>* m = dynamic_cast<MatrixEigenSparse<value_type>*>( &_m );
+    MatrixEigenSparse<value_type> const* m = dynamic_cast<MatrixEigenSparse<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenSparse" );
     FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
