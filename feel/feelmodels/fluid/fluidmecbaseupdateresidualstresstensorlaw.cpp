@@ -135,7 +135,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
     {
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -idv(this->velocityDiv())*id(q),
+                       _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
