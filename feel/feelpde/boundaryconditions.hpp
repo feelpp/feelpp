@@ -39,7 +39,7 @@ struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std:
 {
     typedef std::tuple<std::string,std::string,std::string> super;
 
-    ExpressionStringAtMarker( super && s ) : super( s ) {}
+    ExpressionStringAtMarker( super && s ) : super( s ) { M_meshMarkers.push_back( this->marker() ); }
     
     /**
      * @return the marker
@@ -63,7 +63,14 @@ struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std:
 
     bool hasExpression() const { return !std::get<1>( *this ).empty(); } 
     bool hasExpression1() const { return !std::get<1>( *this ).empty(); } 
-    bool hasExpression2() const { return !std::get<2>( *this ).empty(); } 
+    bool hasExpression2() const { return !std::get<2>( *this ).empty(); }
+
+    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+
+    void setMeshMarkers( std::list<std::string> const& s ) { M_meshMarkers=s; }
+
+private :
+    std::list<std::string> M_meshMarkers;
 };
 /**
  * Defines boundary conditions dictionary
