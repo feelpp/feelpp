@@ -983,7 +983,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if (buildMethodNum)
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend()) );
-
+#if 0
+        bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
+        if ( attachMassMatrix )
+        {
+            auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+            auto const& u = this->fieldVelocity();
+            double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+            massbf.matrixPtr()->close();
+            M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+        }
+#endif
     }
     M_isUpdatedForUse = true;
 
