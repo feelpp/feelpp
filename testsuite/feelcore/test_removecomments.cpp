@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 15 Mar 2015
+ Date: 27 sept. 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,15 +21,26 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+
+#define BOOST_TEST_MODULE test_removecomments
+#include <testsuite/testsuite.hpp>
+
+#include <feel/feelcore/removecomments.hpp>
 
 
-int main( int argc, char** argv )
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( removecomments )
+
+BOOST_AUTO_TEST_CASE( test1 )
 {
     using namespace Feel;
-    Environment env( _argc=argc, _argv=argv );
-    
-    ModelProperties model_props( "test.feelpp" );
-    
+    std::string s = "int main() /* toto */ { // a comment \n int i = 0; /* tutu */ }\n";
+    auto res = removeComments(s);
+    BOOST_TEST_MESSAGE( "remove comment of \n" << s << "\n gives\n" << res );
+    BOOST_CHECK_EQUAL( res, "int main()  { \n int i = 0;  }\n" );
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+
