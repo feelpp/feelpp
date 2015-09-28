@@ -48,12 +48,6 @@
 
 namespace Feel
 {
-
-    enum H5Gopen_flags{
-        CREATE
-    };
-
-
 /*!
   @brief Convenience wrapper for the C interface of the HDF5 library
   @author Radu Popescu <radu.popescu@epfl.ch>
@@ -234,7 +228,7 @@ public:
     /*
      * \param groupName A string containing the group name.
      */
-    void closeGroups( const std::string& groupName );a
+    void closeGroups( const std::string& groupName );
 
     //! Close open table.
     /*!
