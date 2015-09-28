@@ -1142,7 +1142,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 template <typename T>
 inline
 void
-MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
+MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -1152,16 +1152,16 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
     FEELPP_ASSERT( this->size2() == X_in.size2() )( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
 
     PetscScalar     a = static_cast<PetscScalar>      ( a_in );
-    MatrixPetsc<T>* X;
+    MatrixPetsc<T> const* X;
 
     if ( this->comm().size()>1 )
     {
-        X = dynamic_cast<MatrixPetscMPI<T>*> ( &X_in );
+        X = dynamic_cast<MatrixPetscMPI<T> const*> ( &X_in );
     }
 
     else
     {
-        X = dynamic_cast<MatrixPetsc<T>*> ( &X_in );
+        X = dynamic_cast<MatrixPetsc<T> const*> ( &X_in );
     }
 
     FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
@@ -2263,7 +2263,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
 template <typename T>
 inline
 void
-MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
+MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> const&X_in )
 {
 #if 0
     if (this->hasGraph() && X_in.hasGraph() &&

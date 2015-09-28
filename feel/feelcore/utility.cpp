@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 15 Mar 2015
+ Date: 27 sept. 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,15 +21,24 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+#include <iostream>
+#include <fstream>
+#include <string>
 
+namespace Feel {
 
-int main( int argc, char** argv )
+std::string 
+readFromFile(std::string const& infile)
 {
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv );
-    
-    ModelProperties model_props( "test.feelpp" );
-    
+    std::ifstream instream(infile.c_str());
+    if (!instream.is_open()) {
+        std::cerr << "Couldn't open file: " << infile << std::endl;
+        exit(-1);
+    }
+    instream.unsetf(std::ios::skipws);      // No white space skipping!
+    return std::string(std::istreambuf_iterator<char>(instream.rdbuf()),
+                       std::istreambuf_iterator<char>());
+}
+
+
 }
