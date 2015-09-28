@@ -2,7 +2,7 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST traits singleton factory debug context simget ${OTESTS} env )
+foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments )
 
   feelpp_add_test( ${TEST} )
 
