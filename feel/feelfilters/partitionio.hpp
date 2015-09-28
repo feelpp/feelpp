@@ -1241,6 +1241,7 @@ void PartitionIO<MeshType>::readElements()
             e.setProcessId( pid );
             // TODO: Ghost data
             //e.setNeighborPartitionIds( __e.ghosts );
+            e.setNeighborPartitionIds( std::vector<rank_type>((npart>0)?npart-1:0,invalid_rank_type_value) );
 
             for (size_type k = 0; k < M_elementNodes; ++k)
             {

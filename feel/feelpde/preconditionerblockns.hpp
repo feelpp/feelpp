@@ -174,7 +174,7 @@ private:
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
 
-    sparse_matrix_ptrtype M_helm, G, M_div, M_F, M_B, M_Bt, M_mass, M_massv_inv;
+    sparse_matrix_ptrtype M_helm, G, M_div, M_F, /*M_B,*/ M_Bt, M_mass, M_massv_inv;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -268,15 +268,16 @@ PreconditionerBlockNS<space_type>::createSubMatrices()
         M_F->mapRowPtr()->setIndexSplit( M_Vh->dof()->indexSplit() );
         if ( M_Vh->dof()->hasIndexSplitWithComponents() )
             M_F->mapRowPtr()->setIndexSplitWithComponents( M_Vh->dof()->indexSplitWithComponents() );
-        M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        //M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
         M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
         helmOp = op( M_F, "Fu" );
+        helmOp->setCloseMatrixRhs( false );
         divOp = op( M_Bt, "Bt");
     }
     else
     {
         this->matrix()->updateSubMatrix( M_F, M_Vh_indices, M_Vh_indices );
-        this->matrix()->updateSubMatrix( M_B, M_Qh_indices, M_Vh_indices );
+        //this->matrix()->updateSubMatrix( M_B, M_Qh_indices, M_Vh_indices );
         this->matrix()->updateSubMatrix( M_Bt, M_Vh_indices, M_Qh_indices );
     }
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );

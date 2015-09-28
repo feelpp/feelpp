@@ -1059,6 +1059,26 @@ VectorPetscMPI<T>::addVector( const Vector<value_type>& V_in,
 
 template <typename T>
 void
+VectorPetscMPI<T>::zero()
+{
+    super::zero();
+
+    int ierr=0;
+    PetscScalar z=0.;
+    // 2.2.x & earlier style
+#if PETSC_VERSION_LESS_THAN(2,2,0)
+    ierr = VecSet ( &z, M_vecLocal );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = VecSet ( M_vecLocal, z );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
 VectorPetscMPI<T>::clear()
 {
     if ( this->isInitialized() )
