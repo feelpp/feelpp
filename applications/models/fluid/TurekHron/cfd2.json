@@ -1,4 +1,3 @@
-// -*- mode: javascript -*-
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
@@ -7,17 +6,9 @@
     {
         "ubar":
         {
-            "value":"2"
-        },
-        "chi":
-        {
-            "value":"t<2:t"
+            "value":"1"
         }
     },
-    // "Materials":
-    // {
-    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    // },
     "BoundaryConditions":
     {
         "velocity":
@@ -26,9 +17,7 @@
             {
                 "inlet":
                 {
-                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"// devrait marcher mais t dans chi pas mis & jour
-                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*(t<2) + (1-(t<2)) ),0}:ubar:y:t"
-                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y),0}:ubar:y"
+                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y),0}:ubar:y"
                 },
                 "wall1":
                 {

@@ -700,10 +700,13 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
 #if BOOST_FILESYSTEM_VERSION == 3
-		std::string _name = fs::path( nameMshInput ).stem().string();
+		_name = fs::path( nameMshOutput ).stem().string();
 #elif BOOST_FILESYSTEM_VERSION == 2
-        std::string _name = fs::path( nameMshInput ).stem();
+        _name = fs::path( nameMshOutput ).stem();
 #endif
+        fs::path directory = fs::path(nameMshOutput).parent_path();
+        if ( !fs::exists(directory) )
+            fs::create_directories( directory );
 
         GModel* M_gmodel=new GModel();
         M_gmodel->readMSH( nameMshInput );

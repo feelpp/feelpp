@@ -260,18 +260,13 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // "Components" of Qh3
     auto Qh3_dof_begin = M_Qh3->dof()->dofPointBegin();
     auto Qh3_dof_end = M_Qh3->dof()->dofPointEnd();
-    int idx=0;
-    for(int i=0; i<M_Qh3_indices.size(); i++)
-        M_Qh3_indices[i].resize( M_Qh3->compSpace()->nLocalDofWithGhost() );
 
     int dof_comp, dof_idx;
     for( auto it = Qh3_dof_begin; it!= Qh3_dof_end; it++ )
     {
         dof_comp = it->template get<2>(); //Component
-        dof_idx = it->template get<1>();  //Global index
-        M_Qh3_indices[dof_comp][idx] = dof_idx;
-        if( dof_comp == Dim - 1 )
-            idx++;
+        dof_idx = it->template get<1>(); //Global index
+        M_Qh3_indices[dof_comp].push_back( dof_idx );
     }
 
     // Subvectors for M_y (per component)

@@ -791,6 +791,12 @@ public:
     void addVector ( const Vector<value_type>& V_in,
                      const MatrixSparse<value_type>& A_in );
 
+    void zero();
+    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    {
+        this->zero();
+    }
+
     void clear();
 
     void localize();

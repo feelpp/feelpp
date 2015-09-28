@@ -446,14 +446,14 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    virtual void addMatrix ( const T, MatrixSparse<T> & ) = 0;
+    virtual void addMatrix ( const T, MatrixSparse<T> const& ) = 0;
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > & m )
+    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > const& m )
     {
         this->addMatrix( s, *m );
     }
