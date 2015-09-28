@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 15 Mar 2015
+ Date: 27 sept. 2015
  
  Copyright (C) 2015 Feel++ Consortium
  
@@ -21,15 +21,19 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+#ifndef FEELPP_UTILITY_HPP
+#define FEELPP_UTILITY_HPP 1
+
+#include <string>
+
+namespace Feel {
+
+/**
+ * helper function that read a file \p filename and store its contents into a \c
+ * std::string
+ */
+std::string readFromFile( std::string const& filename );
 
 
-int main( int argc, char** argv )
-{
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv );
-    
-    ModelProperties model_props( "test.feelpp" );
-    
 }
+#endif
