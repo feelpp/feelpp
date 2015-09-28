@@ -7,11 +7,12 @@
 COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
 #To make available specific compilation instead of "whatever is available"
-compiler_list=${3:-"gcc49,clang-3.4,clang-3.5,clang-3.6,clang-3.7"}
+compiler_list=${3:-"gcc-5,clang-3.5,clang-3.6,clang-3.7"}
 #do_gcc46=`echo $compiler_list | grep gcc46`
 do_gcc47=`echo $compiler_list | grep gcc47`
 do_gcc48=`echo $compiler_list | grep gcc48`
 do_gcc49=`echo $compiler_list | grep gcc49`
+do_gcc5=`echo $compiler_list | grep gcc5`
 do_clang34=`echo $compiler_list | grep clang-3.4`
 do_clang35=`echo $compiler_list | grep clang-3.5`
 do_clang36=`echo $compiler_list | grep clang-3.6`
@@ -41,6 +42,12 @@ if [ ! -z "$do_gcc49" -a -x /usr/bin/g++-4.9 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc49
     rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9,FEELPP_C=/usr/bin/gcc-4.9
+    rm -rf $FEELPP_WORKDIR 
+fi
+if [ ! -z "$do_gcc5" -a -x /usr/bin/g++-5 ]; then
+    export FEELPP_WORKDIR=/tmp/feel-gcc5
+    rm -rf $FEELPP_WORKDIR 
+    $COMMON,FEELPP_CXXNAME=gcc-5,FEELPP_CXX=/usr/bin/g++-5,FEELPP_C=/usr/bin/gcc-5
     rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang34" -a -x /usr/bin/clang++-3.4 ]; then
