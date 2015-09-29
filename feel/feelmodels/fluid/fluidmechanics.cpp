@@ -305,27 +305,55 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             if ( itFindDirichletType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindDirichletType->second )
-                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc );
+                {
+                    auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",myBcDesc.marker() ) );
+                    auto const& listMarkerFaces = std::get<0>( ret );
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( listMarkerFaces );
+                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc2 );
+                }
             }
+            // For weak Dirichlet (Nitche,Magrange Multiplier ) ???
+            // TODO Dirchlet component
+
             auto itFindNeumannScalType = itFindFieldVelocity->second.find("Neumann_scalar");
             if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindNeumannScalType->second )
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::SCALAR,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
             }
             auto itFindNeumannVecType = itFindFieldVelocity->second.find("Neumann_vectorial");
             if ( itFindNeumannVecType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindNeumannVecType->second )
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::VECTORIAL,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
             }
             auto itFindNeumannTensor2Type = itFindFieldVelocity->second.find("Neumann_tensor2");
             if ( itFindNeumannTensor2Type != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindNeumannTensor2Type->second )
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::TENSOR2,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
             }
         }
+#if 0
         auto itFindFieldFluid = this->modelProperties().boundaryConditions().find("fluid");
         if ( itFindFieldFluid != this->modelProperties().boundaryConditions().end() )
         {
@@ -336,6 +364,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                     bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
             }
         }
+#else
+        if ( !this->M_fluidOutletsBCType.empty() )
+        {
+            std::list<std::string> markList;
+            for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
+                markList.push_back( std::get<0>(bcOutlet) );
+            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "wind","0","" ) );
+            myBcDesc2.setMeshMarkers( markList );
+            bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+        }
+#endif
+
         // TODO other bc (fsi,...)
 #if 1
         if ( Environment::isMasterRank() )
@@ -348,10 +388,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                     std::cout << " - type " << t.first << "\n";
                     for( auto const& c : t.second )
                     {
+                        std::ostringstream ostrMarkers;
+                        ostrMarkers << "(";
+                        for ( std::string const& mark : c.meshMarkers() )
+                            ostrMarkers << mark << " ";
+                        ostrMarkers << ")";
                         if ( c.hasExpression2() )
-                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
                         else
-                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression() << "\n";
                     }
                 }
             }
