@@ -241,8 +241,7 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                 }
                 else
                 {
-                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.marker()), 
-                                       _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
                 }
             }
         }
@@ -303,9 +302,9 @@ OperatorPCD<space_type>::assembleDiffusion()
         {
             LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
             if ( boption("blockns.weakdir" ) )
-                d+= integrate( markedfaces(M_Qh->mesh(),cond.marker()), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
             else
-                d += on( markedfaces(M_Qh->mesh(),cond.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+                d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
         //this->applyBC(M_diff);
     }
@@ -353,7 +352,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
     if ( soption("blockns.pcd.inflow") != "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
-            a += on( markedfaces(M_Qh->mesh(),dir.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+            a += on( markedfaces(M_Qh->mesh(),dir.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
 
     // on neumann boundary on velocity, apply Dirichlet condition on pressure
@@ -361,9 +360,9 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
             if ( boption("blockns.weakdir" ) )
-                a+= integrate( markedfaces(M_Qh->mesh(),cond.marker()), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                a+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
             else
-                a += on( markedfaces(M_Qh->mesh(),cond.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+                a += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
     rhs->close();
     A->close();

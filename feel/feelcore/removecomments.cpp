@@ -143,7 +143,7 @@ removeComments( std::string str )
     bool r = lex::tokenize_and_parse(first, str.end(), strip_comments, g);
 
     if (r) {
-        std::cout << "removecomments parsing succeeded\n";
+        //std::cout << "removecomments parsing succeeded\n";
     }
     else {
         std::string rest(first, str.end());
