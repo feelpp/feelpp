@@ -223,6 +223,8 @@ static PetscErrorCode PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
 /*
    Private context (data structure) for the  preconditioner.
 */
+#if defined(PETSC_HAVE_HYPRE)
+#if PETSC_VERSION_LESS_THAN( 3,6,0 )
 typedef struct {
   HYPRE_Solver   hsolver;
   HYPRE_IJMatrix ij;
@@ -281,9 +283,96 @@ typedef struct {
   PetscBool nodal_relax;
   PetscInt  nodal_relax_levels;
 } PC_HYPRE;
+#else //PETSC_VERSION_LESS_THAN(3,6,0)
+typedef struct {
+  HYPRE_Solver   hsolver;
+  HYPRE_IJMatrix ij;
+  HYPRE_IJVector b,x;
+
+  HYPRE_Int (*destroy)(HYPRE_Solver);
+  HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setdgrad)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setdcurl)(HYPRE_Solver,HYPRE_ParCSRMatrix);
+  HYPRE_Int (*setcoord)(HYPRE_Solver,HYPRE_ParVector,HYPRE_ParVector,HYPRE_ParVector);
+  HYPRE_Int (*setdim)(HYPRE_Solver,HYPRE_Int);
+
+  MPI_Comm comm_hypre;
+  char     *hypre_type;
+
+  /* options for Pilut and BoomerAMG*/
+  PetscInt maxiter;
+  double   tol;
+
+  /* options for Pilut */
+  PetscInt factorrowsize;
+
+  /* options for ParaSails */
+  PetscInt nlevels;
+  double   threshhold;
+  double   filter;
+  PetscInt sym;
+  double   loadbal;
+  PetscInt logging;
+  PetscInt ruse;
+  PetscInt symt;
+
+  /* options for BoomerAMG */
+  PetscBool printstatistics;
+
+  /* options for BoomerAMG */
+  PetscInt  cycletype;
+  PetscInt  maxlevels;
+  double    strongthreshold;
+  double    maxrowsum;
+  PetscInt  gridsweeps[3];
+  PetscInt  coarsentype;
+  PetscInt  measuretype;
+  PetscInt  relaxtype[3];
+  double    relaxweight;
+  double    outerrelaxweight;
+  PetscInt  relaxorder;
+  double    truncfactor;
+  PetscBool applyrichardson;
+  PetscInt  pmax;
+  PetscInt  interptype;
+  PetscInt  agg_nl;
+  PetscInt  agg_num_paths;
+  PetscInt  nodal_coarsen;
+  PetscBool nodal_relax;
+  PetscInt  nodal_relax_levels;
+
+  /* options for AS (Auxiliary Space preconditioners) */
+  PetscInt  as_print;
+  PetscInt  as_max_iter;
+  PetscReal as_tol;
+  PetscInt  as_relax_type;
+  PetscInt  as_relax_times;
+  PetscReal as_relax_weight;
+  PetscReal as_omega;
+  PetscInt  as_amg_alpha_opts[5]; /* AMG coarsen type, agg_levels, relax_type, interp_type, Pmax for vector Poisson (AMS) or Curl problem (ADS) */
+  PetscReal as_amg_alpha_theta;   /* AMG strength for vector Poisson (AMS) or Curl problem (ADS) */
+  PetscInt  as_amg_beta_opts[5];  /* AMG coarsen type, agg_levels, relax_type, interp_type, Pmax for scalar Poisson (AMS) or vector Poisson (ADS) */
+  PetscReal as_amg_beta_theta;    /* AMG strength for scalar Poisson (AMS) or vector Poisson (ADS)  */
+  PetscInt  ams_cycle_type;
+  PetscInt  ads_cycle_type;
+
+  /* additional data */
+  HYPRE_IJVector coords[3];
+  HYPRE_IJVector constants[3];
+  HYPRE_IJMatrix G;
+  HYPRE_IJMatrix C;
+  HYPRE_IJMatrix alpha_Poisson;
+  HYPRE_IJMatrix beta_Poisson;
+  PetscBool      ams_beta_is_zero;
+} PC_HYPRE;
+#endif //PETSC_VERSION_LESS_THAN( 3,6,0 )
+#endif //defined(PETSC_HAVE_HYPRE)
+
 
 namespace PetscImpl
 {
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
@@ -299,36 +388,182 @@ static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
     //ierr = HYPRE_EuclidDestroy( jac->hsolver );
     PetscFunctionReturn(0);
 }
+#endif
 
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->maxiter = maxIter;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, maxIter);
+    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, jac->maxiter);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetTol( PC pc, double tol )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->tol=tol;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, tol);
+    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, jac->tol);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetCycleType( PC pc, int cycleType ) 
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->cycletype = cycleType;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, cycleType);
+    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, jac->cycletype);
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
 {
     PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->maxlevels=maxLevels;
     PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, maxLevels);
+    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, jac->maxlevels);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetCoarsenType( PC pc, int coarsenType )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->coarsentype=coarsenType;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetCoarsenType( jac->hsolver, jac->coarsentype);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetStrongThreshold( PC pc, double strongT )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->strongthreshold = strongT;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetStrongThreshold( jac->hsolver, jac->strongthreshold);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetAggNumLevels( PC pc, int aggNl )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->agg_nl = aggNl;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetAggNumLevels( jac->hsolver, jac->agg_nl);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetRelaxTypeAll( PC pc, int relaxTypeAll )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->relaxtype[0] = jac->relaxtype[1]  = relaxTypeAll;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetRelaxType( jac->hsolver, relaxTypeAll);
+    jac->relaxtype[2] = 9;
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_BOOMERAMGSetInterpolationType( PC pc, int interpolationType )
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->interptype = interpolationType;
+    PetscErrorCode ierr;
+    ierr = HYPRE_BoomerAMGSetInterpType( jac->hsolver, interpolationType);
     PetscFunctionReturn(0);
 }
 
+
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_print=printLevel;
+    PetscErrorCode ierr;
+    ierr = HYPRE_AMSSetPrintLevel(jac->hsolver,jac->as_print);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetMaxIter(PC pc, PetscInt maxIter)
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_max_iter=maxIter;
+    PetscErrorCode ierr;
+    ierr = HYPRE_AMSSetMaxIter(jac->hsolver,jac->as_max_iter);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetCycleType(PC pc, PetscInt cycleType)
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->ams_cycle_type=cycleType;
+    PetscErrorCode ierr;
+    ierr = HYPRE_AMSSetCycleType(jac->hsolver,jac->ams_cycle_type);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetTol(PC pc, double tol)
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    jac->as_tol=tol;
+    PetscErrorCode ierr;
+    ierr = HYPRE_AMSSetTol(jac->hsolver,jac->as_tol);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, PetscInt relaxTimes, double relaxWeight, double omega)
+{
+    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
+    PetscErrorCode ierr;
+    jac->as_relax_type=relaxType;
+    jac->as_relax_times=relaxTimes;
+    jac->as_relax_weight=relaxWeight;
+    jac->as_omega=omega;
+    ierr = HYPRE_AMSSetSmoothingOptions(jac->hsolver,jac->as_relax_type,
+            jac->as_relax_times,
+            jac->as_relax_weight,
+            jac->as_omega);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetDiscreteGradient_HYPRE(PC pc, Mat G)
+{
+  PCHYPRESetDiscreteGradient(pc, G);
+#if 0
+    PC_HYPRE           *jac = (PC_HYPRE*)pc->data;
+    HYPRE_ParCSRMatrix parcsr_G;
+    PetscErrorCode     ierr;
+    
+    /* throw away any discrete gradient if already set */
+    if (jac->G) PetscStackCallStandard(HYPRE_IJMatrixDestroy,(jac->G));
+    MatHYPRE_IJMatrixCreate(G,&jac->G);
+    MatHYPRE_IJMatrixCopy(G,jac->G);
+    ierr = HYPRE_IJMatrixGetObject,(jac->G,(void**)(&parcsr_G));
+    PetscStackCall("Hypre set gradient",(*jac->setdgrad)(jac->hsolver,parcsr_G););
+#endif
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, Vec zzo)
+{
+    PCHYPRESetEdgeConstantVectors(pc, ozz, zoz, zzo);
+#if 0
+    PC_HYPRE           *jac = (PC_HYPRE*)pc->data;
+    HYPRE_ParVector    par_ozz,par_zoz,par_zzo;
+    PetscInt           dim;
+    PetscErrorCode     ierr;
+    
+    /* throw away any vector if already set */
+    if (jac->constants[0]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[0]));
+    if (jac->constants[1]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[1]));
+    if (jac->constants[2]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[2]));
+    jac->constants[0] = NULL;
+    jac->constants[1] = NULL;
+    jac->constants[2] = NULL;
+    VecHYPRE_IJVectorCreate(ozz,&jac->constants[0]);
+    VecHYPRE_IJVectorCopy(ozz,jac->constants[0]);
+    PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[0],(void**)(&par_ozz)));
+    VecHYPRE_IJVectorCreate(zoz,&jac->constants[1]);
+    VecHYPRE_IJVectorCopy(zoz,jac->constants[1]);
+    PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[1],(void**)(&par_zoz)));
+    dim = 2;
+    if (zzo) {
+      VecHYPRE_IJVectorCreate(zzo,&jac->constants[2]);
+      VecHYPRE_IJVectorCopy(zzo,jac->constants[2]);
+      PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[2],(void**)(&par_zzo)));
+      dim++;
+    }
+    PetscStackCallStandard(HYPRE_AMSSetEdgeConstantVectors,(jac->hsolver,par_ozz,par_zoz,par_zzo));
+    PetscStackCallStandard(HYPRE_AMSSetDimension,(jac->hsolver,dim));
+#endif
+    return(0);
+}
+#endif // PETSC_HAVE_HYPRE && PETSC >= 3.6
 } // namespace PetscImpl
 #endif // PETSC_HAVE_HYPRE
 
@@ -1107,7 +1342,17 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         ierr = PCHYPRESetType( pc, "boomeramg" );
         CHKERRABORT( worldComm.globalComm(),ierr );
 #else
-        LOG(ERROR) << "preconditioner boomeramg is available with HYPRE package";
+        LOG(ERROR) << "preconditioner boomeramg is available with HYPRE package (petsc >= 3.3.0)";
+#endif
+        break;
+    case AMS_PRECOND:
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+        ierr = PCSetType( pc,( char* ) PCHYPRE );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        ierr = PCHYPRESetType( pc, "ams" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+#else
+        LOG(ERROR) << "preconditioner ams is available with HYPRE package (petsc >= 3.6.0)";
 #endif
         break;
 
@@ -1285,15 +1530,20 @@ ConfigurePC::run( PC& pc )
 #if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
         const char* hypretype;
         this->check( PCHYPREGetType( pc, &hypretype ) );
-        if ( std::string( hypretype ) == "euclid" )
-            ConfigurePCHYPRE_EUCLID( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
-#if 0
-        else if ( std::string( hypretype ) == "pilut" )
-            ConfigurePCHYPRE_PILUT( pc, this->worldComm(), this->sub(), this->prefix() );
-#endif
-        else if ( std::string( hypretype ) == "boomeramg" )
+        if ( std::string( hypretype ) == "boomeramg" )
             ConfigurePCHYPRE_BOOMERAMG( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
+        else if ( std::string( hypretype ) == "euclid" )
+            ConfigurePCHYPRE_EUCLID( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
 #endif
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+        else if ( std::string( hypretype ) == "ams" )
+            ConfigurePCHYPRE_AMS( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+#endif
+#else
+        LOG(ERROR) << "hypre package (euclid, boomeramg, ams) is available from PETSc version >= 3.3  (3.6 for ams)";
+#endif
+
     }
     else if ( std::string(pctype) == "redundant" )
     {
@@ -1522,19 +1772,22 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
 {
     _options.add_options()
         /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_iter" ).c_str(),Feel::po::value<int>()->default_value( 20 ),"sets the max number of iteration for boomeramg" )
-        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(), Feel::po::value<double>()->default_value( 1e-7 ), "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_cycle_type").c_str(), Feel::po::value<int>()->default_value( 0 ),"Cycle type (0=V / 11==W")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),Feel::po::value<bool>()->default_value( false ),"Print statistics")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),Feel::po::value<int>()->default_value( 25 ),"Number of levels (of grids) allowed")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-iter" ).c_str(),Feel::po::value<int>()->default_value( 20 ),"sets the max number of iteration for boomeramg" )
+        ( prefixvm( prefix,"pc-hypre-boomeramg-tol").c_str(), Feel::po::value<double>()->default_value( 1e-7 ), "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-cycle-type").c_str(), Feel::po::value<int>()->default_value( 0 ),"Cycle type (0=V / 11==W")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-print-statistics").c_str(),Feel::po::value<bool>()->default_value( false ),"Print statistics")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-levels").c_str(),Feel::po::value<int>()->default_value( 25 ),"Number of levels (of grids) allowed")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-strong-threshold").c_str(),Feel::po::value<double>()->default_value( 0.25 ),"Threshold for being strongly connected")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-row-sum").c_str(),Feel::po::value<double>()->default_value( 0.9 ),"Maximum row sum")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-coarsen-type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Coarsen type")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-agg-nl").c_str(),Feel::po::value<int>()->default_value( 1 ),"Number of levels of aggressive coarsening")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-relax-type-all").c_str(),Feel::po::value<int>()->default_value( 6 ),"Relax type for the up and down cycles")
+        ( prefixvm( prefix,"pc-hypre-boomeramg-interp-type").c_str(),Feel::po::value<int>()->default_value( 6 ),"Interpolation type")
 #if 0 // Not interfaced options
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_levels").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-levels").c_str(),
         Feel::po::value<int>()->default_value( 2 ),
         "Number of levels (of grids) allowed")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_tol").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-tol").c_str(),
         Feel::po::value<double>()->default_value( 1e-7 ),
         "Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations)")
         ( prefixvm( prefix,"pc_hypre_boomeramg_truncfactor").c_str(),
@@ -1549,10 +1802,10 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ( prefixvm( prefix,"pc_hypre_boomeramg_agg_num_paths").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Number of paths for aggressive coarsening")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_strong_threshold").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-strong-threshold").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Threshold for being strongly connected")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_max_row_sum").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-max-row-sum").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Maximum row sum")
         ( prefixvm( prefix,"pc_hypre_boomeramg_grid_sweeps_all").c_str(),
@@ -1597,13 +1850,13 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ( prefixvm( prefix,"pc_hypre_boomeramg_measure_type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Measure type")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_coarsen_type").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-coarsen-type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Coarsen type"
         ( prefixvm( prefix,"pc_hypre_boomeramg_interp_type").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Interpolation type")
-        ( prefixvm( prefix,"pc_hypre_boomeramg_print_statistics").c_str(),
+        ( prefixvm( prefix,"pc-hypre-boomeramg-print-statistics").c_str(),
         Feel::po::value<double>()->default_value( 1e-6 ),
         "Print statistics")
         ( prefixvm( prefix,"pc_hypre_boomeramg_print_debug").c_str(),
@@ -1625,6 +1878,37 @@ getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std:
     updateOptionsDescBOOMERAMG(_options,prefix,true);
     for ( std::string prefixOver : prefixOverwrite )
         updateOptionsDescBOOMERAMG( _options,prefixOver,false);
+    return _options;
+}
+
+void
+updateOptionsDescAMS( po::options_description & _options, std::string const& prefix, bool useDefaultValue=true )
+{
+    _options.add_options()
+        /// Documentation here : http://computation.llnl.gov/project/linear_solvers/download/hypre-2.10.0b_ref_manual.pdf
+        ( prefixvm( prefix,"pc-hypre-ams-print-level").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Debugging output level for AMS" )
+        ( prefixvm( prefix,"pc-hypre-ams-max-iter").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Maximum number of AMS multigrid iterations within PCApply" )
+        ( prefixvm( prefix,"pc-hypre-ams-cycle-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 13 ):Feel::po::value<int>(),     "Cycle type for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-tol").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 0. ):Feel::po::value<double>(),         "Error tolerance for AMS multigrid" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-type").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 2 ):Feel::po::value<int>(),     "Relaxation type for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-times").c_str(),useDefaultValue?Feel::po::value<int>()->default_value( 1 ):Feel::po::value<int>(),    "Number of relaxation steps for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-relax-weight").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),"Relaxation weight for AMS smoother" )
+        ( prefixvm( prefix,"pc-hypre-ams-omega").c_str(),useDefaultValue?Feel::po::value<double>()->default_value( 1 ):Feel::po::value<double>(),       "SSOR coefficient for AMS smoother" )
+#if 0 // Not interfaced yet
+        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-theta").c_str(),Feel::po::value<double>()->default_value( 20 ),"Threshold for strong coupling of vector Poisson AMG solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-alpha-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ), "AMG options for vector Poisson" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-theta").c_str(),Feel::po::value<int>()->default_value( 20 ),    "Threshold for strong coupling of scalar Poisson AMG solver" )
+        ( prefixvm( prefix,"pc-hypre-ams-amg-beta-options").c_str(),Feel::po::value<XXX>()->default_value( 20 ),  "AMG options for scalar Poisson solver" )
+#endif
+        ;
+}
+po::options_description
+getOptionsDescAMS( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+{
+    po::options_description _options( "options PC AMS", 100);
+    updateOptionsDescAMS(_options,prefix,true);
+    for ( std::string prefixOver : prefixOverwrite )
+        updateOptionsDescAMS( _options,prefixOver,false);
     return _options;
 }
 
@@ -2027,10 +2311,11 @@ ConfigurePCILU::run( PC& pc )
     this->check( PCFactorSetLevels( pc, M_levels ) );
     this->check( PCFactorSetFill( pc, M_fill ) );
 }
-
+ 
 /**
  * ConfigurePCHYPRE_EUCLID
  */
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
 ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<double> * precFeel,
                                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                                                   std::vector<std::string> const& prefixOverwrite )
@@ -2051,26 +2336,36 @@ ConfigurePCHYPRE_EUCLID::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_EUCLIDSetLevels( pc, M_levels ) );
 #endif
 }
-
+#endif
 /**
- * ConfigurePCHYPRE_EUCLID
+ * ConfigurePCHYPRE_BOOMERAMG
  */
 ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPetsc<double> * precFeel,
                                                   WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescBOOMERAMG(prefix,sub,prefixOverwrite) ),
-    M_max_iter( option(_name="pc_hypre_boomeramg_max_iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_tol( option(_name="pc_hypre_boomeramg_tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_cycle_type( option(_name="pc_hypre_boomeramg_cycle_type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
-    M_max_levels( option(_name="pc_hypre_boomeramg_max_levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+    M_max_iter( option(_name="pc-hypre-boomeramg-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_tol( option(_name="pc-hypre-boomeramg-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_cycle_type( option(_name="pc-hypre-boomeramg-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
+    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_coarsen_type( option(_name="pc-hypre-boomeramg-coarsen-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_strong_threshold( option(_name="pc-hypre-boomeramg-strong-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_agg_nl( option(_name="pc-hypre-boomeramg-agg-nl",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_type_all( option(_name="pc-hypre-boomeramg-relax-type-all",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_interp_type( option(_name="pc-hypre-boomeramg-interp-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_BOOMERAMG\n"
             << "  |->prefix     : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->max_iter   : " << M_max_iter << "\n"
             << "  |->tol        : " << M_tol << "\n"
             << "  |->cycle_type : " << M_cycle_type << "\n"
-            << "  |->max_levels : " << M_max_levels << "\n";
+            << "  |->max_levels : " << M_max_levels << "\n"
+            << "  |->coarsen_type : " << M_coarsen_type << "\n"
+            << "  |->strong_threshold : " << M_strong_threshold << "\n"
+            << "  |->agg nl : " << M_agg_nl << "\n"
+            << "  |->relax_type_all : " << M_relax_type_all << "\n"
+            << "  |->interp_type : " << M_interp_type << "\n";
     google::FlushLogFiles(google::INFO);
     run( pc );
 }
@@ -2082,6 +2377,107 @@ ConfigurePCHYPRE_BOOMERAMG::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetTol( pc, M_tol ) );
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetCycleType( pc, M_cycle_type ) );
     this->check( PetscImpl::PCHYPRE_BOOMERAMGSetMaxLevels( pc, M_max_levels ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetCoarsenType( pc, M_coarsen_type ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetStrongThreshold( pc, M_strong_threshold ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetAggNumLevels( pc, M_agg_nl ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetRelaxTypeAll( pc, M_relax_type_all ) );
+    this->check( PetscImpl::PCHYPRE_BOOMERAMGSetInterpolationType( pc, M_interp_type ) );
+#if 0
+    const char     *petscPrefix;
+    this->check( PCGetOptionsPrefix(pc,&petscPrefix ) );
+
+    if( petscPrefix != NULL)
+    {
+      std::cout << petscPrefix << std::endl;
+      std::cout << (boost::format("-%1%pc_hypre_boomeramg_max_iter"        )%std::string(petscPrefix)).str().c_str() << std::endl;
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_max_iter"        )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_max_iter        ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_tol"             )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_tol             ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_cycle_type"      )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_cycle_type      ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_max_levels"      )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_max_levels      ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_coarsen_type"    )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_coarsen_type    ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_strong_threshold")%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_strong_threshold).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_agg_nl"          )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_agg_nl          ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_relax_type_all"  )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_relax_type_all  ).c_str()) );
+      this->check( PetscOptionsSetValue((boost::format("-%1%pc_hypre_boomeramg_interp_type"     )%std::string(petscPrefix)).str().c_str(), boost::lexical_cast<std::string>(M_interp_type     ).c_str()) );
+    }
+    else
+    {
+      std::cout << "OCucou" << std::endl;
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_max_iter"        , boost::lexical_cast<std::string>(M_max_iter        ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_tol"             , boost::lexical_cast<std::string>(M_tol             ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_cycle_type"      , boost::lexical_cast<std::string>(M_cycle_type      ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_max_levels"      , boost::lexical_cast<std::string>(M_max_levels      ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_coarsen_type"    , boost::lexical_cast<std::string>(M_coarsen_type    ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_strong_threshold", boost::lexical_cast<std::string>(M_strong_threshold).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_agg_nl"          , boost::lexical_cast<std::string>(M_agg_nl          ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_relax_type_all"  , boost::lexical_cast<std::string>(M_relax_type_all  ).c_str()) );
+      this->check( PetscOptionsSetValue("-pc_hypre_boomeramg_interp_type"     , boost::lexical_cast<std::string>(M_interp_type     ).c_str()) );
+    }
+#endif
+#endif
+}
+
+/**
+ * ConfigurePCHYPRE_AMS
+ */
+ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> * precFeel,
+                                                  WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
+                                                  std::vector<std::string> const& prefixOverwrite )
+    :
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescAMS(prefix,sub,prefixOverwrite) ),
+    M_print_level(option(_name="pc-hypre-ams-print-level",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_max_iter(option(_name="pc-hypre-ams-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_cycle_type(option(_name="pc-hypre-ams-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_tol(option(_name="pc-hypre-ams-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_relax_type(option(_name="pc-hypre-ams-relax-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
+    M_relax_weight(option(_name="pc-hypre-ams-relax-weight",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_omega(option(_name="pc-hypre-ams-omega",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() )
+{
+    VLOG(2) << "ConfigurePC : HYPRE_AMS\n"
+            << "  |-> prefix       : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |-> print_level  : " << M_print_level << "\n"
+            << "  |-> max_iter     : " << M_max_iter << "\n"
+            << "  |-> cycle_type   : " << M_cycle_type << "\n"
+            << "  |-> tolerance    : " << M_tol << "\n"
+            << "  |-> relax_type   : " << M_relax_type << "\n"
+            << "  |-> relax_times  : " << M_relax_times << "\n"
+            << "  |-> relax_weight : " << M_relax_weight << "\n"
+            << "  |-> omega        : " << M_omega;
+    google::FlushLogFiles(google::INFO);
+    run( pc );
+}
+void
+ConfigurePCHYPRE_AMS::run( PC& pc )
+{
+#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+    this->check( PetscImpl::PCHYPRE_AMSSetPrintLevel(pc, M_print_level));
+    this->check( PetscImpl::PCHYPRE_AMSSetMaxIter(pc, M_max_iter));
+    this->check( PetscImpl::PCHYPRE_AMSSetCycleType(pc, M_cycle_type));
+    this->check( PetscImpl::PCHYPRE_AMSSetTol(pc, M_tol));
+    this->check( PetscImpl::PCHYPRE_AMSSetSmoothingOptions(pc, M_relax_type, M_relax_times, M_relax_weight, M_omega));
+    
+    if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
+    {
+        auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
+        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+        this->check( PetscImpl::PCHYPRE_AMSSetDiscreteGradient_HYPRE(pc, gPetsc->mat()));
+    }
+    else
+      std::cerr << "G for hypre AMS has not been provided\n";
+    if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
+    {
+        auto pxVec = this->precFeel()->auxiliaryVector("Px");
+        auto pyVec = this->precFeel()->auxiliaryVector("Py");
+        auto pzVec = this->precFeel()->auxiliaryVector("Pz");
+        VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+        VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+        VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+      //TODO - correct that
+        this->check( PetscImpl::PCHYPRE_AMSSetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
+    }
+    else
+      std::cerr << "Px, Py or Pz has not been provided\n";
 #endif
 }
 
