@@ -236,12 +236,13 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                     en.setParameterValues( { { "t", tn } } );
                     auto en1 = ebc.find(dir.marker())->second;
                     en1.setParameterValues( { { "t", tn1 } } );
-                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.marker()), 
+                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
                                        _expr=-M_rho*trans((en1-en)/time_step)*N()*idt(p)*id(q));
                 }
                 else
                 {
-                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
+                                       _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
                 }
             }
         }
@@ -302,9 +303,11 @@ OperatorPCD<space_type>::assembleDiffusion()
         {
             LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
             if ( boption("blockns.weakdir" ) )
-                d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), 
+                               _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
             else
-                d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+                d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, 
+                         _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
         //this->applyBC(M_diff);
     }

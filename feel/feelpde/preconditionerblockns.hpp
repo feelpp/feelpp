@@ -382,7 +382,7 @@ template < typename SpaceType >
 void
 PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A )
 {
-    this->update( A, zero<Dim,1>(), 0., false );
+    this->update( A, zero<Dim,1>(), false, 0., 0. );
 }
 
 
