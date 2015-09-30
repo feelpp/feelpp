@@ -772,6 +772,17 @@ public:
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
     virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
+    
+    /**
+     * Get informations (filling, nnz, ...)
+     * Implemented in MatrixPetsc
+     */
+    virtual void getMatInfo( std::vector<double> &) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
+
 
 protected:
     /**
