@@ -52,3 +52,21 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
  make SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0 PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/ PETSC_ARCH="" test
  export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
  ```
+
+## To Export
+Be carreful, there is a conflict :
+```
+/usr/bin/ld: warning: libmpi.so.1, needed by /usr/lib/libvtkParallel.so.5.8.0, may conflict with libmpi.so.12
+```
+Do not compile Feel++ with VTK for that configuration, we need to build the module.
+
+```
+export PATH=/data/software/install/openmpi-1.10.0/bin:$PATH
+export LD_LIBRARY_PATH=/data/software/install/openmpi-1.10.0/lib:$LD_LIBRARY_PATH
+export BOOSTROOT=/data/software/install/boost-1.59.0
+export PATH=$BOOSTROOT/include:$PATH
+export LD_LIBRARY_PATH=$BOOSTROOT/lib:$LD_LIBRARY_PATH
+export GMSH_DIR=/data/software/install/gmsh-2.10.1
+export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
+export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
+```
