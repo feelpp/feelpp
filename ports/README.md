@@ -32,6 +32,7 @@ cmake -DCMAKE_INSTALL_PREFIX=/data/software/install/gmsh-2.10.1 -DENABLE_MPI=OFF
 make -j$64 lib
 make -j64 shared
 make -j64 install
+export GMSH_DIR=/data/software/install/gmsh-2.10.1 
 ```
 
 ## PETSc
