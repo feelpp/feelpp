@@ -1040,7 +1040,7 @@ public:
      */
     void countAffineDecompositionTerms()
     {
-        bool cobuild = (ioption(_name="crb.cobuild-frequency") != 0);
+        bool cobuild = (ioption(_name="ser.rb-frequency") != 0);
         if( M_alreadyCountAffineDecompositionTerms && !cobuild)
             return;
         else

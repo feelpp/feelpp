@@ -346,9 +346,6 @@ eimOptions( std::string const& prefix )
         ( "eim.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
         ( "eim.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
         ( "eim.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
-        ( "eim.cobuild-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of basis built per step of cobuild rb/eim process, 0 : no cobuild")
-        ( "eim.use-rb-in-mu-selection", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to select parameters during offline step")
-        ( "eim.use-rb-in-basis-build", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to build EIM basis")
         //( "eim.error-type"   , Feel::po::value<int>()->default_value( ( int )EIM_RESIDUAL ),       "EIM error type to be computed" )
         ( "eim.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
         ( "eim.norm-used-for-residual" , Feel::po::value<std::string>()->default_value( "Linfty" ), "name of the norm used : Linfty - L2 - LinftyVec" )
@@ -368,6 +365,24 @@ eimOptions( std::string const& prefix )
 
     return eimoptions;
 }
+
+Feel::po::options_description
+crbSEROptions( std::string const& prefix )
+{
+    Feel::po::options_description seroptions( "SER Options" );
+    seroptions.add_options()
+        ( "ser.rb-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of RB basis built per step of SER process, 0 : no SER" )
+        ( "ser.eim-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of EIM basis built per step of SER process, 0 : no SER")
+        ( "ser.use-rb-in-eim-mu-selection", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to select parameters during EIM offline step")
+        ( "ser.use-rb-in-eim-basis-build", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to build EIM basis")
+        ( "ser.rb-rebuild-freq", Feel::po::value<int>()->default_value( -1 ), "rebuild database with a given frequency" )
+        ( "ser.error-estimation", Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
+        ( "ser.use-greedy-in-rb", Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
+        ( "ser.eim-subtrainset-method", Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
+        ;
+    return seroptions;
+}
+
 po::options_description
 solvereigen_options( std::string const& prefix )
 {
@@ -448,7 +463,6 @@ crbOptions( std::string const& prefix )
     ( "crb.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
     ( "crb.absolute-error" , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
     ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
-    ( "crb.cobuild-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of basis built per step of cobuild rb/eim process, 0 : no cobuild")
     ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
     ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
     ( "crb.compute-apee-for-each-time-step",Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
@@ -456,7 +470,6 @@ crbOptions( std::string const& prefix )
     ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
     ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
     ( "crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
-        //( "crb.check.gs"   , Feel::po::value<int>()->default_value( 0 ),       "check Gram-Schmidt orthonormalisation" )
     ( "crb.orthonormality-tol" , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
     ( "crb.orthonormality-max-iter" , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
 
@@ -470,7 +483,6 @@ crbOptions( std::string const& prefix )
     ( "crb.seek-mu-in-complement" , Feel::po::value<bool>()->default_value( 1 ), "during the offline basis construction, see mu in M the complement of Wn" )
     ( "crb.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
     ( "crb.restart-from-N" , Feel::po::value<int>()->default_value( -1 ), "restart the database from specified N (note that when N=0 the complete approximation space is rebuilt and so it is equivalent to option crb.rebuild-database=true). In the case where N > Nmax we do nothing. By default it is set to a negative number in order to not interfer with option rebuild-database" )
-    ( "crb.rebuild-freq", Feel::po::value<int>()->default_value( -1 ), "rebuild database with a given frequency f" )
     ( "crb.show-mu-selection" , Feel::po::value<bool>()->default_value( 0 ), " show mu selection during offline step to build RB space" )
     ( "crb.show-residual" , Feel::po::value<bool>()->default_value( 0 ), " show mu residuals values (used for the error estimation)" )
     ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )

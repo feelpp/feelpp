@@ -135,6 +135,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
@@ -147,6 +148,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( mode )
         {
@@ -159,6 +161,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
@@ -170,6 +173,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( mode )
         {
@@ -404,7 +408,7 @@ public:
                     {
                         eim_sc->setRestart(false); //do not restart since co-build is not finished
 
-                        if( boption(_name="eim.use-rb-in-mu-selection") )
+                        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
                         {
                             eim_sc->setRB( crb ); //update rb model member to be used in eim offline
                         }
@@ -416,7 +420,7 @@ public:
                     {
                         eim_sd->setRestart(false); //do not restart since co-build is not finished
 
-                        if( boption(_name="eim.use-rb-in-mu-selection") )
+                        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
                         {
                             eim_sd->setRB( crb ); //update rb model member to be used in eim offline
                         }
@@ -425,48 +429,11 @@ public:
                         do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
                     }
 
-                    // Error Estimation in SER
-                    if( i > 0 )
-                        this->ErrorEstimationSER();
-
                     model->assemble(); //Affine decomposition has changed since eim has changed
                 }
                 ++i;
             }
             while( crb->getOfflineStep() || do_offline_eim );
-        }
-
-    void ErrorEstimationSER()
-        {
-            double errorEstimationSER = 0;
-            auto mu = crb->wnmu()->lastElement();
-            auto u_crb = crb->expansion( mu, crb->dimension() );
-
-            // Compute error from RB
-            auto ub_rb = crb->computeSquareDualNormOfPrimalResidual(mu, u_crb);
-            errorEstimationSER += ub_rb;
-
-            if( Environment::worldComm().isMasterRank() )
-                std::cout << "[SER] Error estimation (crb) : " << errorEstimationSER << std::endl;
-
-            // Compute error from EIM (if needed)
-            for( auto eim_sc : model->scalarContinuousEim() )
-            {
-                auto ub_eim_sc = eim_sc->ErrorEstimationSER( u_crb );
-                errorEstimationSER += ub_eim_sc;
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout << "[SER] Error estimation eim " << eim_sc->name() << " = " << ub_eim_sc << std::endl;
-            }
-            for( auto eim_sd : model->scalarDiscontinuousEim() )
-            {
-                auto ub_eim_sd = eim_sd->ErrorEstimationSER( u_crb );
-                errorEstimationSER += ub_eim_sd;
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout << "[SER] Error estimation eim " << eim_sd->name() << " = " << ub_eim_sd << std::endl;
-            }
-
-            if( Environment::worldComm().isMasterRank() )
-                std::cout << "[SER] Error estimation (crb+eim) : " << errorEstimationSER << std::endl;
         }
 
     FEELPP_DONT_INLINE
@@ -501,14 +468,13 @@ public:
                 }
             }
 
-            bool cobuild = ( (ioption(_name = "eim.cobuild-frequency") != 0) || (ioption(_name = "crb.cobuild-frequency") != 0) );
+            bool cobuild = ( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) );
             tic();
             if( model->hasEim() && cobuild)
             {
                 this->SER(); // Simultaneous EIM - RB
             }
             this->loadDB();
-            this->ErrorEstimationSER();
             toc("Offline", FLAGS_v>0);
 
             int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));

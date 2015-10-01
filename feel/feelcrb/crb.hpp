@@ -1009,6 +1009,9 @@ public:
         return ub( K, *mu, uN, uNdu );
     }
 
+    double computeRieszResidualNorm( parameter_type const& mu ) const;
+    double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
+
     /**
      * Offline computation
      *
@@ -1080,14 +1083,14 @@ public:
      */
     element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
-    void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
-    {
-        return M_model->l2solve( u, f );
-    }
-    double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
-    {
-        return M_model->scalarProduct( X, Y );
-    }
+    // void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+    // {
+    //     return M_model->l2solve( u, f );
+    // }
+    // double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
+    // {
+    //     return M_model->scalarProduct( X, Y );
+    // }
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
@@ -1413,14 +1416,15 @@ protected:
 
     // left hand side
     std::vector < std::vector<matrixN_type> > M_Aqm_pr;
+    std::vector < std::vector< std::vector<vector_ptrtype> > > M_hAqm;
     std::vector < std::vector<matrixN_type> > M_Aqm_du;
     std::vector < std::vector<matrixN_type> > M_Aqm_pr_du;
 
     //jacobian
     std::vector < std::vector<matrixN_type> > M_Jqm_pr;
-
     //residual
     std::vector < std::vector<vectorN_type> > M_Rqm_pr;
+    std::vector < std::vector<vector_ptrtype> > M_hRqm;
 
     //mass matrix
     std::vector < std::vector<matrixN_type> > M_Mqm_pr;
@@ -1429,6 +1433,7 @@ protected:
 
     // right hand side
     std::vector < std::vector<vectorN_type> > M_Fqm_pr;
+    std::vector < std::vector<vector_ptrtype> > M_hFqm;
     std::vector < std::vector<vectorN_type> > M_Fqm_du;
     // output
     std::vector < std::vector<vectorN_type> > M_Lqm_pr;
@@ -1467,6 +1472,7 @@ protected:
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
+po::options_description crbSEROptions( std::string const& prefix = "" );
 
 
 
@@ -1954,10 +1960,65 @@ CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrt
         for(int m=0; m<M_model->mMaxF(0,q); m++)
             R->add( betaRqm[0][q][m] , *M_Rqm[0][q][m] );
     }
-    //std::cout<<"norme de R : "<<R->l2Norm()<<std::endl;
 }
 
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu ) const
+{
+    std::vector<vectorN_type> uN;
+    std::vector<vectorN_type> uNdu;
+    std::vector<vectorN_type> uNold;
+    std::vector<vectorN_type> uNduold;
+    auto o = lb( M_N, mu, uN, uNdu, uNold, uNduold  );
+    return this->computeRieszResidualNorm( mu, uN );
+}
 
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
+{
+    element_type u_approx = M_model->functionSpace()->element();
+
+    auto all_beta = M_model->computeBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    auto beta_A = all_beta.template get<1>();
+    auto beta_F = all_beta.template get<2>();
+
+    vector_ptrtype YR( backend()->newVector(M_model->functionSpace()) );
+    YR->zero();
+    if( !M_use_newton )
+    {
+        for ( size_type q = 0; q < M_model->Qa(); ++q )
+        {
+            for(size_type m = 0; m < M_model->mMaxA(q); ++m )
+            {
+                for(size_type n=0; n<M_N; ++n)
+                {
+
+                    auto hAqm = M_hAqm[q][m][n];
+                    hAqm->scale(uN[0](n));
+                    YR->add( beta_A[q][m], hAqm );
+                }
+            }
+        }
+        YR->scale( -1.0 );
+    }
+
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        for ( size_type m = 0; m < M_model->mMaxF(0,q); ++m )
+        {
+            if( !M_use_newton )
+                YR->add( beta_F[0][q][m] , M_hFqm[q][m] );
+            else
+                YR->add( beta_F[0][q][m] , M_hRqm[q][m] );
+        }
+    }
+    YR->close();
+
+    double dual_norm = math::sqrt( M_model->scalarProduct( YR,YR ) );
+    return dual_norm;
+}
 
 template<typename TruthModelType>
 void
@@ -1994,7 +2055,7 @@ CRB<TruthModelType>::offline()
     orthonormalize_dual = boption(_name="crb.orthonormalize-dual") ;
     solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
 
-    bool cobuild = (ioption(_name="crb.cobuild-frequency") != 0);
+    bool cobuild = (ioption(_name="ser.rb-frequency") != 0);
 
 #if 0
     M_elements_database.setMN( M_N );
@@ -2038,7 +2099,7 @@ CRB<TruthModelType>::offline()
     size_type index;
 
     int Nrestart = ioption(_name="crb.restart-from-N");
-    int Frestart = ioption(_name="crb.rebuild-freq");
+    int Frestart = ioption(_name="ser.rb-rebuild-freq");
 
     //we do affine decomposition here to then have access to Qa, mMax ect...
     //and then resize data structure if necessary
@@ -2288,8 +2349,8 @@ CRB<TruthModelType>::offline()
     bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
     bool write_memory_evolution = all_procs || only_one_proc ;
 
-    int cobuild_freq_rb = ioption(_name="crb.cobuild-frequency");
-    int cobuild_freq_eim = ioption(_name="eim.cobuild-frequency");
+    int cobuild_freq_rb = ioption(_name="ser.rb-frequency");
+    int cobuild_freq_eim = ioption(_name="ser.eim-frequency");
     int user_max = ioption(_name="crb.dimension-max");
     if( cobuild_freq_rb != 0 && Nold + cobuild_freq_rb <= user_max)
         M_iter_max = Nold + cobuild_freq_rb;
@@ -2694,8 +2755,10 @@ CRB<TruthModelType>::offline()
         // we only compute the last line and last column of reduced matrices (last added elements)
         int number_of_elements_to_update = number_of_added_elements;
         // in the case of cobuild, we have to update all since affine decomposition has changed
-        if( ioption(_name="crb.cobuild-frequency") != 0 && !M_rebuild)
+        if( ioption(_name="ser.rb-frequency") != 0 && !M_rebuild)
             number_of_elements_to_update = M_N;
+        // In case of SER use + error estimation, we compute \hat{A}, \hat{F} (resp. \hat{R}) to compute norm of residual (Riesz)
+        int ser_error_estimation = boption(_name="ser.error-estimation");
 
         if( ! M_use_newton )
         {
@@ -2740,6 +2803,22 @@ CRB<TruthModelType>::offline()
                                                                      M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
+
+                    if( ser_error_estimation )
+                    {
+                        M_hAqm[q][m].resize( M_N );
+                        auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
+                        auto xi_n = backend()->newVector( M_model->functionSpace() );
+                        for( int n=0; n < M_N; n++ )
+                        {
+                            M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
+                            *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
+                            auto Aqm = M_model->Aqm(q,m);
+                            Aqm->multVector( xi_n, Aqm_xi_n );
+                            // Solve ( hat{a}, v ) = aqm( \xi_n, v )
+                            M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
+                        }
+                    }
                 }//loop over m
             }//loop over q
 
@@ -2779,6 +2858,13 @@ CRB<TruthModelType>::offline()
                             M_Fqm_du[q][m]( idx ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(idx) );
                         }
                     }
+                    if( ser_error_estimation )
+                    {
+                        M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
+                        auto fqm = M_model->Fqm(0, q, m);
+                        M_model->l2solve( M_hFqm[q][m], fqm );
+                    }
+
                 }//loop over m (>= mMaxF - cobuild_eim_freq)
             }//loop over q
 
@@ -2812,6 +2898,7 @@ CRB<TruthModelType>::offline()
                                                                           M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
+
                 }//loop over m
             }//loop over q
 
@@ -2827,7 +2914,15 @@ CRB<TruthModelType>::offline()
                     for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
                     {
                         int index = M_N-l;
+                        //M_Rqm_pr[q][m]( index ) = inner_product( *M_Rqm[0][q][m] , M_model->rBFunctionSpace()->primalBasisElement(index) );
                         M_Rqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
+                    }
+
+                    if( ser_error_estimation )
+                    {
+                        M_hRqm[q][m] = backend()->newVector( M_model->functionSpace() );
+                        auto Rqm = this->M_Rqm[0][q][m]; //Has been updated by previous newton() call
+                        M_model->l2solve( M_hRqm[q][m], Rqm );
                     }
                 }//loop over m
             }//loop over q
@@ -3044,8 +3139,8 @@ CRB<TruthModelType>::offline()
             timer2.restart();
         }
 
-
-        if ( M_error_type == CRB_NO_RESIDUAL && ! use_predefined_WNmu )
+        bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
+        if ( M_error_type == CRB_NO_RESIDUAL && ! use_predefined_WNmu && !ser_greedy )
         {
             //M_maxerror=M_iter_max-M_N;
 
@@ -3092,7 +3187,7 @@ CRB<TruthModelType>::offline()
             M_current_mu = mu;
 
             if( proc_number == master_proc )
-                std::cout << "  -- max error bounds computed in " << time << "s"<<std::endl;
+                std::cout << "  -- max error bound (" << M_maxerror << ") computed in " << time << "s" << std::endl;
         }
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
@@ -3436,20 +3531,26 @@ CRB<TruthModelType>::updateAffineDecompositionSize()
             
     LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
     M_Aqm_pr.resize( M_model->Qa() );
+    M_hAqm.resize( M_model->Qa() );
     M_Aqm_du.resize( M_model->Qa() );
     M_Aqm_pr_du.resize( M_model->Qa() );
 
     if( M_use_newton )
+    {
         M_Jqm_pr.resize( M_model->Qa() );
+    }
 
     for(int q=0; q<M_model->Qa(); q++)
     {
         M_Aqm_pr[q].resize( M_model->mMaxA(q) );
+        M_hAqm[q].resize( M_model->mMaxA(q) );
         M_Aqm_du[q].resize( M_model->mMaxA(q) );
         M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
 
         if(M_use_newton)
+        {
             M_Jqm_pr[q].resize( M_model->mMaxA(q) );
+        }
     }
 
     M_Mqm_pr.resize( M_model->Qm() );
@@ -3470,20 +3571,28 @@ CRB<TruthModelType>::updateAffineDecompositionSize()
     }
 
     M_Fqm_pr.resize( M_model->Ql( 0 ) );
+    M_hFqm.resize( M_model->Ql( 0 ) );
     M_Fqm_du.resize( M_model->Ql( 0 ) );
     M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
     M_Lqm_du.resize( M_model->Ql( M_output_index ) );
 
     if(M_use_newton)
+    {
         M_Rqm_pr.resize( M_model->Ql( 0 ) );
+        M_hRqm.resize( M_model->Ql( 0 ) );
+    }
 
     for(int q=0; q<M_model->Ql( 0 ); q++)
     {
         M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+        M_hFqm[q].resize( M_model->mMaxF( 0 , q) );
         M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
 
         if(M_use_newton)
+        {
             M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+            M_hRqm[q].resize( M_model->mMaxF( 0 , q) );
+        }
     }
     for(int q=0; q<M_model->Ql( M_output_index ); q++)
     {
@@ -5864,12 +5973,23 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
+    bool ser_error_estimation = boption(_name="ser.error-estimation");
+    bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
 
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
     double delta_pr=0;
     double delta_du=0;
+
+    if( ser_error_estimation && ser_greedy ) // If SER is used : use Riesz residual norm as error indicator
+    {
+        LOG(INFO) << "Use SER error estimation \n";
+        output_upper_bound.resize(1);
+        output_upper_bound[0] = computeRieszResidualNorm( mu, uN );
+        return boost::make_tuple( output_upper_bound , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
+    }
+
     if ( M_error_type == CRB_NO_RESIDUAL )
     {
         output_upper_bound.resize(1);
@@ -6113,6 +6233,8 @@ typename CRB<TruthModelType>::max_error_type
 CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
     bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
+    bool ser_error_estimation = boption(_name="ser.error-estimation");
+    bool ser_greedy = boption(_name="ser.use-greedy-in-rb");
 
     int proc = Environment::worldComm().globalRank();
     int master_proc = Environment::worldComm().masterRank();
@@ -6129,7 +6251,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     double delta_pr=0;
     double delta_du=0;
-    if ( M_error_type == CRB_EMPIRICAL )
+    if ( M_error_type == CRB_EMPIRICAL || ( ser_error_estimation && ser_greedy ) )
     {
         if ( M_WNmu->size()==1 )
         {
@@ -6138,8 +6260,6 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             boost::tie ( mu, id ) = M_Xi->max();
 
             return boost::make_tuple( 1e5, mu , delta_pr, delta_du);
-
-            //return boost::make_tuple( 1e5, M_Xi->at( id ), id , delta_pr, delta_du);
         }
 
         else
@@ -6150,7 +6270,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             for ( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
                 parameter_type const& mu = M_WNmu_complement->at( k );
-                //double _err = delta( N, mu, uN, uNdu, uNold, uNduold, k);
+                lb( N, mu, uN, uNdu , uNold ,uNduold );
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
                 auto vector_err = error_estimation.template get<0>();
                 int size=vector_err.size();
@@ -9802,7 +9922,6 @@ CRB<TruthModelType>::computeOnlineDualApee(  int N, parameter_type const& mu , v
     return result;
 }
 
-
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
@@ -9899,9 +10018,11 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_Xi );
     ar & BOOST_SERIALIZATION_NVP( M_WNmu );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
+//ar & BOOST_SERIALIZATION_NVP( M_hAqm );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
     ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+//ar & BOOST_SERIALIZATION_NVP( M_hFqm );
     ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
@@ -9946,6 +10067,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_use_newton );
     ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+//ar & BOOST_SERIALIZATION_NVP( M_hRqm );
 
     ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
     ar & BOOST_SERIALIZATION_NVP( M_dual_apee_basis );
@@ -10043,9 +10165,11 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_Xi );
     ar & BOOST_SERIALIZATION_NVP( M_WNmu );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
+    //ar & BOOST_SERIALIZATION_NVP( M_hAqm );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
     ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+    //ar & BOOST_SERIALIZATION_NVP( M_hFqm );
     ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
@@ -10087,6 +10211,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_use_newton );
     ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+    //ar & BOOST_SERIALIZATION_NVP( M_hRqm );
 
     if( boption(_name="crb.use-newton") != M_use_newton  )
         {

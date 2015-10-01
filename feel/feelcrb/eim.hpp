@@ -207,7 +207,7 @@ public:
             int user_max = ioption(_name="eim.dimension-max");
             int max_built = M_model->maxQ();
             bool enrich_database = boption(_name="eim.enrich-database");
-            bool cobuild = ( ioption(_name="eim.cobuild-frequency") != 0 );
+            bool cobuild = ( ioption(_name="ser.eim-frequency") != 0 );
 
             bool do_offline=false;
             M_restart=false;
@@ -518,14 +518,25 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
     model_solution_type solution;
     double time_solve = 0;
     double time_exp = 0;
-    for( auto mu : *trainset )
+
+    // Create the associated trainset (according to ser.error-estimation)
+    sampling_ptrtype subtrainset( new sampling_type( M_model->parameterSpace() ) );
+    bool ser_error_estimation = boption(_name="ser.error-estimation");
+    int subtrainset_method = ioption(_name="ser.eim-subtrainset-method");
+
+    if( ser_error_estimation && subtrainset_method != 0 )
+        subtrainset = M_model->createSubTrainset( trainset, subtrainset_method );
+    else
+        subtrainset = trainset;
+
+    for( auto mu : *subtrainset )
     {
         DVLOG(2) << "compute best fit check mu...\n";
         mu.check();
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
 
         timer.restart();
-        if( boption(_name="eim.use-rb-in-mu-selection") )
+        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
         {
             solution = M_model->computeRbExpansion( mu );
         }
@@ -540,13 +551,13 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         time_exp += timer.elapsed();
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
-        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+        LOG_ASSERT( index < subtrainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << subtrainset->size() << "\n";
         maxerr( index++ ) = resmax.template get<0>();
         //std::cout << "proc " << proc_number << " : err_max = " << resmax.template get<0>() << std::endl;
 
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
-        //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+        //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << subtrainset->at(index2) << "\n";
     }
     if( Environment::worldComm().isMasterRank() )
     {
@@ -554,12 +565,12 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         std::cout << "-- Mean time to compute resmax : " << time_exp/trainset->size() << std::endl;
     }
 
-    LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
+    LOG_ASSERT( index == subtrainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << subtrainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
-    //LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
+
     if( Environment::worldComm().isMasterRank() )
-        std::cout << "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
-    return boost::make_tuple( err, trainset->at(index) );
+        std::cout << "err=" << err << " reached at index " << index << " and mu=" << subtrainset->at(index) << "\n";
+    return boost::make_tuple( err, subtrainset->at(index) );
 }
 
 template<typename ModelType>
@@ -704,8 +715,8 @@ EIM<ModelType>::offline()
         max_z = M_model->maxZ();
         max_solution = M_model->maxSolution();
 
-        int cobuild_freq = ioption(_name="eim.cobuild-frequency");
-        int use_rb = boption(_name="eim.use-rb-in-mu-selection");
+        int cobuild_freq = ioption(_name="ser.eim-frequency");
+        int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection");
         if( cobuild_freq != 0 && use_rb )
         {
             // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
@@ -721,7 +732,7 @@ EIM<ModelType>::offline()
        \par build \f$W^g_M\f$
     */
     double err = 1;
-    int cobuild_freq = ioption(_name="eim.cobuild-frequency");
+    int cobuild_freq = ioption(_name="ser.eim-frequency");
     LOG(INFO) << "[eim] cobuild frequency = " << cobuild_freq << "\n";
     int user_max = ioption(_name="eim.dimension-max");
     int Mmax;
@@ -769,7 +780,7 @@ EIM<ModelType>::offline()
 
         timer2.restart();
         //solution = M_model->solve( mu );
-        if( boption(_name="eim.use-rb-in-basis-build") )
+        if( boption(_name="ser.use-rb-in-eim-basis-build") )
         {
             solution = M_model->computeRbExpansion( mu );
         }
@@ -1084,6 +1095,9 @@ public:
     typedef Eigen::Matrix<double, nDim, 1> node_type;
     //typedef Eigen::Matrix<double, SpaceType::basis_type::nLocalDof, Eigen::Dynamic> matrix_basis_pc_type;
 
+    typedef Eigen::VectorXd vectorN_type;
+    typedef Eigen::MatrixXd matrixN_type;
+
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
 
@@ -1235,7 +1249,9 @@ public:
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     virtual model_solution_type computeRbExpansion( parameter_type const& mu )=0;
-    virtual double ErrorEstimationSER( model_solution_type & solution )=0;
+    virtual double RieszResidualNorm( parameter_type const& mu )=0;
+    virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
+
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1501,7 +1517,7 @@ public:
 #if !defined(NDEBUG)
             M_mu.check();
 #endif
-            if( boption(_name="eim.use-rb-in-basis-build") )
+            if( boption(_name="ser.use-rb-in-eim-basis-build") )
                 *M_u = this->computeRbExpansion( mu );
             else
                 *M_u = M_model->solve( mu );
@@ -1525,7 +1541,7 @@ public:
         {
             M_mu=mu;
             //*M_u = M_model->solve( mu );
-            if( boption(_name="eim.use-rb-in-basis-build") )
+            if( boption(_name="ser.use-rb-in-eim-basis-build") )
                 *M_u = this->computeRbExpansion( mu );
             else
                 *M_u = M_model->solve( mu );
@@ -1929,23 +1945,67 @@ public:
     {
         return M_crb->expansion( mu, M_crb->dimension() );
     }
-
-    double ErrorEstimationSER( model_solution_type & solution )
+    double RieszResidualNorm( parameter_type const& mu )
     {
-        vector_ptrtype qun( backend()->newVector( M_model->functionSpace() ) );
-        auto v = M_model->functionSpace()->element();
+        if( this->RBbuilt() )
+            return RieszResidualNorm( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        else
+            return 0;
+    }
+    double RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<false>)
+    {
+        return 0;
+    }
+    double RieszResidualNorm( parameter_type const& mu, boost::mpl::bool_<true>)
+    {
+        return M_crb->computeRieszResidualNorm( mu );
+    }
 
-        // Compute \int_{\Omega} q_{m+1} (1-u(\mu)) v
-        auto last_q_idx = M_q_vector.size()-1;
-        form1( _test=M_model->functionSpace(), _vector=qun ) =
-            integrate( _range= elements( this->functionSpace()->mesh() ), _expr=( idv(this->q(last_q_idx))*(1-idv(solution))*id(v) ) );
-        qun->close();
+    sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )
+    {
+        sampling_ptrtype subtrainset( new sampling_type( M_model->parameterSpace() ) );
+        std::vector<parameter_type> subvector;
 
-        vector_ptrtype __e_eim(  backend()->newVector( M_model->functionSpace() ) );
-        M_crb->l2solve( __e_eim, qun );
-        double dual_norm = math::sqrt( M_crb->scalarProduct( __e_eim,__e_eim ) );
+        // Compute min/max of residual (Riesz) norm
+        std::vector<double> norm( trainset->size() );
+        int i=0;
+        for( auto mu : *trainset )
+        {
+            norm[i] = RieszResidualNorm( mu );
+            i++;
+        }
+        auto min = min_element(norm.begin(), norm.end());
+        auto max = max_element(norm.begin(), norm.end());
 
-        return dual_norm;
+        auto min_idx = std::distance(norm.begin(), min);
+        auto max_idx = std::distance(norm.begin(), max);
+
+        // Deduce the tolerance used to select inputs of the sub-trainset
+        // TODO : use other expr for tol(min,max) ?
+        double tol = ( *min + *max )/2.;
+
+        // Proc zero build the vector of the selected inputs
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        {
+            std::cout << "[eim::createSubTrainset] error indicator min = " << *min << " reached at mu = " << trainset->at(min_idx) << std::endl;
+            std::cout << "[eim::createSubTrainset] error indicator max = " << *max << " reached at mu = " << trainset->at(max_idx) << std::endl;
+            std::cout << "[eim::createSubTrainset] error indicator tol(mean) = " << tol << std::endl;
+
+            for(int i=0; i<trainset->size(); i++)
+            {
+                auto mu = trainset->at(i);
+                if ( method == 1 && norm[i] < tol )
+                    subvector.push_back( mu );
+                else if ( method == 2 && norm[i] > tol )
+                    subvector.push_back( mu );
+            }
+        }
+        // All procs have the same sub-trainset
+        boost::mpi::broadcast( Environment::worldComm() , subvector, Environment::worldComm().masterRank() );
+        subtrainset->setElements( subvector );
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "[createSubTrainset] Original trainset size = " << trainset->size() << ", sub-trainset size = " << subtrainset->size() << "\n";
+        return subtrainset;
     }
 
     //Let g the expression that we want to have an eim expasion
