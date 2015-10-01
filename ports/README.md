@@ -52,6 +52,12 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
  export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
  ```
  
+## hdf5
+```
+CC=`which mpicc` CXX=`which mpic++` ./configure --enable-parallel --prefix=/data/software/install/hdf5/1.8.15-patch1/gcc-4.9.0/openmpi-1.10 --enable-build-all --enable-production
+make install
+```
+ 
 ## VTK
 ```
 cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/install/VTK/5.10.1/gcc-4.9.0/openmpi-1.10 -DCMAKE_BUILT_TYPE=Release -DVTK_USE_PARALLEL=ON -DBUILD_SHARED_LIBS=ON -DVTK_WRAP_PYTHON=ON -DVTK_USE_MPI=ON
