@@ -3,8 +3,51 @@ L'ordre de compilation doit être respecté
 Gmsh ne dépend ni de Petsc ni d'openMPI !
 
 ## OpenMPI 
-````
-./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=/data/software/install/openmpi-1.10.0
+```
+openmpiDir=/data/software/install/openmpi-1.10.0
+./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=$openmpiDir
 make -j all install
+export PATH=$openmpiDir/bin:$PATH
+export LD_LIBRARY_PATH=$openmpiDir/lib:$LD_LIBRARY_PATH
 ```
 
+## Boost
+```
+boostDir=/data/software/install/boost-1.59.0
+rm user-config.jam
+touch user-config.jam
+echo "using mpi ;" >> user-config.jam
+echo "" >> user-config.jam
+./bootstrap.sh
+./bjam -j64 install --layout=tagged --prefix=$boostDir --user-config=user-config.jam variant=release threading=single,multi link=static,shared
+export BOOSTROOT=$boostDir
+export PATH=$BOOSTROOT/include:$PATH
+export LD_LIBRARY_PATH=$BOOSTROOT/lib:$LD_LIBRARY_PATH
+```
+
+## Gmsh
+
+```
+cmake -DCMAKE_INSTALL_PREFIX=/data/software/install/gmsh-2.10.1 -DENABLE_MPI=OFF -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DCMAKE_BUILD_TYPE=release -DENABLE_PETSC=OFF ..
+make -j$64 lib
+make -j64 shared
+make -j64 install
+```
+
+## PETSc
+```
+ ./configure --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS='-O3' --CXXOPTFLAGS='-O3' --FOPTFLAGS='-O3'  --prefix=/data/software/install/petsc-3.6.1/openmpi-1.10.0/  --with-cc=`which mpicc`  --with-cxx=`which mpic++` --with-fc=`which mpif90` --with-mpiexec=`which mpiexec`  --download-suitesparse=1  --download-ml  --download-metis  --download-parmetis  --download-blacs  --download-scalapack  --download-fblaslapack  --download-mumps  --download-hypre  --download-ptscotch
+ make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt all
+ make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt install
+ export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
+ ```
+ 
+ ## Slepc
+ ```
+ ./configure --prefix=/data/software/install/slepc-3.6.1/openmpi-1.10.0/
+ make SLEPC_DIR=$PWD PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
+ make SLEPC_DIR=/data/software/src/slepc-3.6.1 PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/ install
+ // Optionnal
+ make SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0 PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/ PETSC_ARCH="" test
+ export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
+ ```
