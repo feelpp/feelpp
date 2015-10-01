@@ -41,10 +41,9 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
  make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt all
  make PETSC_DIR=/data/software/src/petsc-3.6.1 PETSC_ARCH=arch-linux2-c-opt install
  export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
- ```
- 
- ## Slepc
- ```
+```
+## Slepc
+```
  ./configure --prefix=/data/software/install/slepc-3.6.1/openmpi-1.10.0/
  make SLEPC_DIR=$PWD PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
  make SLEPC_DIR=/data/software/src/slepc-3.6.1 PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/ install
