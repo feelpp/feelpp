@@ -2005,7 +2005,14 @@ public:
         subtrainset->setElements( subvector );
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             std::cout << "[createSubTrainset] Original trainset size = " << trainset->size() << ", sub-trainset size = " << subtrainset->size() << "\n";
-        return subtrainset;
+        if( subtrainset->size() != 0 )
+            return subtrainset;
+        else
+        {
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "[createSubTrainset] No elements added in subtrainset, consider full trainset \n";
+            return trainset;
+        }
     }
 
     //Let g the expression that we want to have an eim expasion
