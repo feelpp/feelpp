@@ -2015,8 +2015,6 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::ve
     YR->printMatlab( "YR.m" );
 
     double dual_norm = math::sqrt( M_model->scalarProduct( YR,YR ) );
-    if( this->worldComm().globalRank() == 0 )
-        std::cout << "mu = " << mu << ", dual norm (Riesz) = " << dual_norm << std::endl;
     return dual_norm;
 }
 
