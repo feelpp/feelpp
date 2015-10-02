@@ -1986,6 +1986,7 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::ve
 
     vector_ptrtype YR( backend()->newVector(M_model->functionSpace()) );
     YR->zero();
+
     if( !M_use_newton )
     {
         for ( size_type q = 0; q < M_model->Qa(); ++q )
@@ -1993,12 +1994,7 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::ve
             for(size_type m = 0; m < M_model->mMaxA(q); ++m )
             {
                 for(size_type n=0; n<M_N; ++n)
-                {
-
-                    auto hAqm = M_hAqm[q][m][n];
-                    hAqm->scale(uN[0](n));
-                    YR->add( beta_A[q][m], hAqm );
-                }
+                    YR->add( beta_A[q][m]*uN[0](n), M_hAqm[q][m][n] );
             }
         }
         YR->scale( -1.0 );
@@ -2014,9 +2010,13 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::ve
                 YR->add( beta_F[0][q][m] , M_hRqm[q][m] );
         }
     }
+
     YR->close();
+    YR->printMatlab( "YR.m" );
 
     double dual_norm = math::sqrt( M_model->scalarProduct( YR,YR ) );
+    if( this->worldComm().globalRank() == 0 )
+        std::cout << "mu = " << mu << ", dual norm (Riesz) = " << dual_norm << std::endl;
     return dual_norm;
 }
 
@@ -2815,7 +2815,6 @@ CRB<TruthModelType>::offline()
                             *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
                             auto Aqm = M_model->Aqm(q,m);
                             Aqm->multVector( xi_n, Aqm_xi_n );
-                            // Solve ( hat{a}, v ) = aqm( \xi_n, v )
                             M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
                         }
                     }
