@@ -259,7 +259,7 @@ struct initialize_expression_gij
     const Basis_i_t& M_fev;
     const Basis_j_t& M_feu;
 };
-template<typename Geo_t, typename Basis_i_t>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_gi
 {
     template<typename Sig>
@@ -268,7 +268,7 @@ struct initialize_expression_gi
     template<typename ExprT>
     struct result<initialize_expression_gi( ExprT )>
     {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t> type;
+        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
     };
     initialize_expression_gi( Geo_t const& geom , Basis_i_t const& fev )
         :
@@ -277,17 +277,17 @@ struct initialize_expression_gi
     {}
 
     template <typename ExprT>
-    typename ExprT::template tensor<Geo_t, Basis_i_t>
+    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
     operator()( ExprT& expr ) const
     {
-        return typename ExprT::template tensor<Geo_t, Basis_i_t>( expr, M_geom, M_fev );
+        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom, M_fev );
     }
 
     const Geo_t& M_geom;
     const Basis_i_t& M_fev;
 };
 
-template<typename Geo_t>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_g
 {
     template<typename Sig>
@@ -296,7 +296,7 @@ struct initialize_expression_g
     template<typename ExprT>
     struct result<initialize_expression_g( ExprT )>
     {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t> type;
+        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
     };
     initialize_expression_g( Geo_t const& geom )
         :
@@ -304,10 +304,10 @@ struct initialize_expression_g
     {}
 
     template <typename ExprT>
-    typename ExprT::template tensor<Geo_t>
+    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
     operator()( ExprT& expr ) const
     {
-        return typename ExprT::template tensor<Geo_t>( expr, M_geom );
+        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom );
         //return typename ExprT::template tensor<Geo_t>( expr, M_geom );
     }
 
@@ -746,14 +746,14 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
         {
             update( geom, fev );
         }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
         {
             update( geom );
         }
@@ -1023,14 +1023,14 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
         {
             update( geom, fev );
         }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
         {
             update( geom );
         }
