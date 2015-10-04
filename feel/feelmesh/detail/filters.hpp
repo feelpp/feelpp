@@ -422,7 +422,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 template<typename MeshType>
-declype(auto)
+decltype(auto)
 edges( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
 {
     auto r = mesh.edgesWithProcessId( __pid );
