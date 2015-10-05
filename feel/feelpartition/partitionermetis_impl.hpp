@@ -85,14 +85,14 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
         // Local scope for these
         {
+#ifndef NDEBUG
+            std::size_t graph_size=0;
+#endif
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
             // face neighbors
             for( auto& elt: elements(mesh) )
             {
-#ifndef NDEBUG
-                std::size_t graph_size=0;
-#endif
 
                 // (1) first pass - get the row sizes for each element by counting the number
                 // of face neighbors.  Also populate the vwght array if necessary
