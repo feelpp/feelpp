@@ -49,6 +49,18 @@ case $1 in
   ksp_pc_map[8]=cg
   ksp_pc_map[9]=boomeramg
   ;;
+  4)
+  ksp_pc_map[0]=minres
+  ksp_pc_map[1]=blockms
+  ksp_pc_map[2]=cg
+  ksp_pc_map[3]=ams
+  ksp_pc_map[4]=nan
+  ksp_pc_map[5]=nan
+  ksp_pc_map[6]=nan
+  ksp_pc_map[7]=nan
+  ksp_pc_map[8]=cg
+  ksp_pc_map[9]=boomeramg
+  ;;
 esac
 }
 
@@ -139,7 +151,7 @@ do
       for h in `perl -le'for my $i (1..7) { print 1/(2**$i) }'`; 
       do
         # ksp/pc conf (see setKspPc)
-        for kind in `seq 0 3`;
+        for kind in `seq 0 4`;
         do
           simuBatch $NPROCS $D $mu $h $OUTFILE $appDir $poly $kind
         done

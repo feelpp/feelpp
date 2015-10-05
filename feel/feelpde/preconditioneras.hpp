@@ -272,8 +272,15 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
     // Subvectors for M_y (per component)
     M_y1 = M_y->createSubVector(M_Qh3_indices[0], true);
     M_y2 = M_y->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
     M_y3 = M_y->createSubVector(M_Qh3_indices[2], true);
+#endif
+    
+    // Subvectors for M_s (per component)
+    M_s1 = M_y->createSubVector(M_Qh3_indices[0], true);
+    M_s2 = M_y->createSubVector(M_Qh3_indices[1], true);
+#if FEELPP_DIM == 3
+    M_s3 = M_y->createSubVector(M_Qh3_indices[2], true);
 #endif
 
     this->setType ( t );
@@ -293,7 +300,7 @@ template < typename space_type, typename coef_space_type >
 void
 PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm,   // A + g M
                                                       sparse_matrix_ptrtype L,    // e_r * grad grad
-                                                      sparse_matrix_ptrtype hatL, // e_r * grad grad
+                                                      sparse_matrix_ptrtype hatL, // 1/mu * grad grad
                                                       sparse_matrix_ptrtype Q     // e_r * id id
                                                       )
 {
@@ -311,8 +318,6 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm, 
          * blockms.11.1 <=> bar(L) + g*bar(Q) y = s = Pt*r
          * blockms.11.2 <=> L z = t = trans(C)*r
          */
-
-        auto u = M_Qh->element("u");
 
         // Operator hat(L) + g Q
         sparse_matrix_ptrtype Lgq = hatL;
@@ -363,22 +368,33 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_Pt->multVector(M_r,M_s);
 
         // Impose boundary conditions on M_s
+#if 1
         M_qh3_elt = *M_s;
         M_qh3_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_qh3_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *M_s = M_qh3_elt;
         M_s->close();
-
+#endif
+#if 1
         // Subvectors for M_s (per component) need to be updated
         M_s1 = M_s->createSubVector(M_Qh3_indices[0], true);
         M_s2 = M_s->createSubVector(M_Qh3_indices[1], true);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_s3 = M_s->createSubVector(M_Qh3_indices[2], true);
 #endif
+#else 
+        // s = [ s1, s2, s3 ]
+        M_s->updateSubVector(M_s1, M_Qh3_indices[0]);
+        M_s->updateSubVector(M_s2, M_Qh3_indices[1]);
+#if FEELPP_DIM == 3
+        M_s->updateSubVector(M_s3, M_Qh3_indices[2]);
+#endif
+#endif
+        M_s->close();
         /*
          * hat(L) + g Q is a (Qh,Qh) matrix
          * [[ hat(L) + g Q, 0  ,     0   ],    [ y1 ]    [ s1 ]
@@ -387,14 +403,14 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
          */
         M_lgqOp->applyInverse(M_s1,M_y1);
         M_lgqOp->applyInverse(M_s2,M_y2);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_lgqOp->applyInverse(M_s3,M_y3);
 #endif
 
         // y = [ y1, y2, y3 ]
         M_y->updateSubVector(M_y1, M_Qh3_indices[0]);
         M_y->updateSubVector(M_y2, M_Qh3_indices[1]);
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_y->updateSubVector(M_y3, M_Qh3_indices[2]);
 #endif
         M_y->close();
@@ -402,25 +418,28 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         M_P->multVector(M_y,B);
 
         // Impose boundary conditions on B = Py
+#if 1
         M_vh_elt = *B;
         M_vh_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *B = M_vh_elt;
         B->close();
-
+#endif
         // t = C^t r
         M_Ct->multVector(M_r,M_t);
 
         // Impose boundary conditions on M_t
+#if 1
         M_qh_elt = *M_t;
         M_qh_elt.close();
         M_qh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=cst(0.) );
         *M_t = M_qh_elt;
         M_t->close();
+#endif
 
         // 14.b : hat(L) z = t
         M_lOp->applyInverse(M_t,M_z);
@@ -431,16 +450,18 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         C->scale(1./M_g);
 
         // Impose boundary conditions on C = Cz
+#if 1
         M_vh_elt = *C;
         M_vh_elt.close();
-#if FM_DIM == 3
+#if FEELPP_DIM == 3
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.), cst(0.)) );
 #else
         M_vh_elt.on( _range=boundaryfaces( M_Qh3->mesh() ), _expr=vec(cst(0.), cst(0.)) );
 #endif
         *C = M_vh_elt;
         C->close();
-
+#endif
+        //if(M_g != 1.0)
         A->add(*C);
         A->add(*B);
 

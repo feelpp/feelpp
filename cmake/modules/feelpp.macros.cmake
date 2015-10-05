@@ -15,8 +15,29 @@ macro(feelpp_list_subdirs result curdir)
   SET(${result} ${dirlist})
 endmacro(feelpp_list_subdirs)
 
-macro(feelpp_add_testcase testcase)
-  file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+macro(feelpp_add_testcase )
+  PARSE_ARGUMENTS(FEELPP_CASE
+    "NAME;PREFIX"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_CASE_NAME ${FEELPP_CASE_DEFAULT_ARGS})
+  if ( FEELPP_CASE_PREFIX )
+    set( target ${FEELPP_CASE_PREFIX}_add_testcase_${FEELPP_CASE_NAME})
+  else()
+    set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
+  endif()
+  add_custom_target(${target})
+  ADD_CUSTOM_COMMAND(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND rsync
+    ARGS -av
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+  #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
+  #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endmacro(feelpp_add_testcase)
 
 

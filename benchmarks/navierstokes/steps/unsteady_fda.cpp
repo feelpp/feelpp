@@ -229,7 +229,7 @@ int main(int argc, char**argv )
 
         if ( soption("ns.preconditioner") != "petsc" )
         {
-            a_blockns->update( at.matrixPtr(), idv(extrapu), dirichlet_conditions );
+            a_blockns->update( at.matrixPtr(), rho*idv(extrapu), dirichlet_conditions );
             at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns",_rebuild=false),_prec=a_blockns);
         }
         else
