@@ -56,10 +56,11 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
+    double a = integrate( _range=range, _expr=inner(expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                           _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    return math::sqrt( a );
+    LOG_IF( WARNING, a < 0 ) << "normL2 squared negative " << a;
+    return math::sqrt( math::abs(a) );
 }
 
 }

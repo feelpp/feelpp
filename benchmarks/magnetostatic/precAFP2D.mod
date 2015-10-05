@@ -20,7 +20,7 @@
     {
       "name":"firstMat",
       "file":"false",
-      "B":"mu_0:H:x:y:H:mu_0:B"
+      "B":"mu_r*mu_0*H:x:y:H:mu_0"
     }
   }, // materials
   "BoundaryConditions":

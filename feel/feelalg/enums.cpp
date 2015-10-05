@@ -88,6 +88,7 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
+    else if ( type=="ams" )          return PreconditionerType::AMS_PRECOND;
     else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;
     else if ( type=="none" )         return PreconditionerType::NONE_PRECOND;
     else                             return PreconditionerType::LU_PRECOND;
@@ -175,6 +176,7 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="plapack" )      return MatSolverPackageType::MATSOLVER_PLAPACK;
     else if ( type=="bas" )          return MatSolverPackageType::MATSOLVER_BAS;
     else if ( type=="boomeramg" )    return MatSolverPackageType::MATSOLVER_BOOMERAMG;
+    else if ( type=="ams" )          return MatSolverPackageType::MATSOLVER_AMS;
     else if ( type=="euclid" )       return MatSolverPackageType::MATSOLVER_EUCLID;
     else if ( type=="pilut" )        return MatSolverPackageType::MATSOLVER_PILUT;
     else                             return MatSolverPackageType::MATSOLVER_PETSC;

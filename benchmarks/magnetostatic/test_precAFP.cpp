@@ -38,7 +38,7 @@
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 
-#if FM_DIM == 2
+#if FEELPP_DIM == 2
 #define curl_op curlx
 #define curlt_op curlxt
 #define curlv_op curlxv
@@ -57,6 +57,7 @@ makeOptions()
 {
     po::options_description opts( "test_precAFP" );
     opts.add_options()
+    ( "test-case", po::value<int>()->default_value( -1 ), "The test case number" )
     ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
     ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
@@ -70,7 +71,7 @@ inline
 AboutData
 makeAbout()
 {
-#if FM_DIM==2
+#if FEELPP_DIM==2
     AboutData about( "precAFP2D" ,
                      "precAFP2D" ,
                      "0.1",
@@ -156,18 +157,23 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
-        auto M_mu = Mh->element();
+        auto M_mu_r = Mh->element();
         auto model = ModelProperties(Environment::expand(soption("myModel")));
-        
+        /*
+         * we construct:
+         * B = mu_r mu_0 H = mu H
+         * we evaluate this relation for H=1
+         * thus : B(mu_r,mu_0,H) = mu
+         */
         for(auto it : model.materials() ){
             std::string key = "Materials.";
             key += marker(it);
             key += ".B";
-            auto curve = expr(model.getEntry(key),{"H","B"},{cst(1.),cst(1.)});
+            auto curve = expr(model.getEntry(key),{"H","mu_r"},{expr("1."),expr(soption("functions.m"))});
             curve.setParameterValues(model.parameters().toParameterValues());
-            M_mu += vf::project(_space=Mh,
+            M_mu_r += vf::project(_space=Mh,
                                 _range=markedelements(M_mesh,marker(it)),
-                                _expr=curve);
+                                _expr=curve/model.parameters().toParameterValues()["mu_0"]);
         }
         auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
         //auto c_M_a = expr(soption("functions.c"));
@@ -187,12 +193,12 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = (1./idv(M_mu))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
+                       _expr = (1./idv(M_mu_r))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
                        + inner(trans(idt(u)),grad(psi)) // div(u) = 0
-                       + (1./idv(M_mu))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
+                       + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
         for(auto const & it : m_dirichlet)
             f2 += on(_range=markedfaces(M_mesh,it.first),
@@ -217,10 +223,10 @@ class TestPrecAFP : public Application
                 soption("blockms.type"),
                 Xh, Mh,
                 model.boundaryConditions(),
-                "",
+                "blockms",
                 f2.matrixPtr());
 
-            M_prec->update(f2.matrixPtr(),M_mu);
+            M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
             ret = f2.solveb(_rhs=f1,
                       _solution=U,
@@ -251,20 +257,59 @@ class TestPrecAFP : public Application
 #endif
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
+        M_prec->iterMinMaxMean();
         if(Environment::worldComm().globalRank()==0)
-            std::cout << "RES\t"
-                << doption("gmsh.hsize") << "\t"
-                << Xh->nDof() << "\t"
-                << nnz << "\t"
-                << soption("functions.m") << "\t"
-                << e21 << "\t"
-                << e21/e22 
+            /*
+             * to print * -> ./myCode --options >> sameResFile.txt 
+             * + grep #TestCase > parseIt
+             * #TestCase
+             * #ksp-pc_ksp11-pc11_ksp11.1-pc11.1_ksp11.2-pc11.2_ksp22-pc22
+             * hSize
+             * nProc
+             * nDof
+             * nDof(space1)
+             * nDof(space2)
+             * iter total
+             * iter block11 : min max mean
+             * iter block22 : min max mean
+             * timer iter total
+             * timer iter block11 : min max mean
+             * timer iter block22 : min max mean
+             * mu : min max mean
+             */
+        std::cout 
+            << ioption("test-case") << "\t"
+            << soption("ms.ksp-type") << "-" << soption("ms.pc-type") << "_"
+            << soption("blockms.11.ksp-type") << "-" << soption("blockms.11.pc-type") << "_"
+            << soption("blockms.11.1.ksp-type") << "-" << soption("blockms.11.1.pc-type") << "_"
+            << soption("blockms.11.2.ksp-type") << "-" << soption("blockms.11.2.pc-type") << "_"
+            << soption("blockms.22.ksp-type") << "-" << soption("blockms.22.pc-type") << "\t"
+            << doption("gmsh.hsize") << "\t"
+            //<< nProc << "\t"
+            << Xh->nDof() << "\t"
+            << Xh->template functionSpace<0>()->nDof() << "\t"
+            << Xh->template functionSpace<1>()->nDof() << "\t"
+            << ret.nIterations() << "\t"
+            << M_prec->printMinMaxMean(0,0) << "\t" 
+            << M_prec->printMinMaxMean(0,1) << "\t" 
+            << M_prec->printMinMaxMean(0,2) << "\t" 
+            << M_prec->printMinMaxMean(1,0) << "\t" 
+            << M_prec->printMinMaxMean(1,1) << "\t" 
+            << M_prec->printMinMaxMean(1,2) << "\t"
+            << e21 << "\t"
+            << e21/e22 << "\n"; 
+            //std::cout << "RES\t"
+            //    << Xh->nDof() << "\t"
+            //    << nnz << "\t"
+            //    << soption("functions.m") << "\t"
+            //    << e21 << "\t"
+            //    << e21/e22 
 #if 0
-                << "\t"
-                << e21_curl << "\t"
-                << e21_curl/e22_curl 
+            //    << "\t"
+            //    << e21_curl << "\t"
+            //    << e21_curl/e22_curl 
 #endif
-                << std::endl;
+            //    << std::endl;
         /* report */
         if ( Environment::worldComm().isMasterRank() && boption("generateMD") ){
             time_t now = std::time(0);
@@ -283,7 +328,7 @@ class TestPrecAFP : public Application
                 outputFile << "#Physique" << std::endl;
                 model.saveMD(outputFile);    
                 
-                outputFile << "##Physique spÃÂÃÂ©cifique" << std::endl;
+                outputFile << "##Physique specifique" << std::endl;
                 outputFile << "| Variable | value | " << std::endl;
                 outputFile << "|---|---|" << std::endl;
                 outputFile << "| mu | "    << soption("functions.m") << "| " << std::endl;
@@ -331,7 +376,7 @@ class TestPrecAFP : public Application
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("perm"               ,M_mu  );
+            ex->add("relativPermeability",M_mu_r  );
             ex->add("potential"          ,u  );
             ex->add("lagrange_multiplier",phi);
             ex->save();
@@ -348,7 +393,7 @@ BOOST_AUTO_TEST_SUITE( precAFP )
 
 BOOST_AUTO_TEST_CASE( test )
 {
-    TestPrecAFP<FM_DIM> test;
+    TestPrecAFP<FEELPP_DIM> test;
 }
 
 //// Test 3D
@@ -366,7 +411,7 @@ int main(int argc, char** argv )
                            _about=makeAbout(),
                            _desc=makeOptions() );
     
-    TestPrecAFP<FM_DIM> t_afp;
+    TestPrecAFP<FEELPP_DIM> t_afp;
 
     return 0;
 }
