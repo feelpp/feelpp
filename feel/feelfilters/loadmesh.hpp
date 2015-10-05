@@ -92,6 +92,10 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
+    int proc_rank = worldcomm.globalRank();
+    //Environment::isMasterRank()
+    if ( proc_rank == 0 )
+        std::cout << "[loadMesh] Loading " << fs::system_complete(mesh_name) << "\n";
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
