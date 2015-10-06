@@ -402,9 +402,9 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     if (Environment::isMasterRank() && FLAGS_v >= 1)
     {
-        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
+        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "s\n";
         auto mem  = Environment::logMemoryUsage("memory usage after update for use");
-        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9 << "\n";
+        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9  << "GBytes\n";
     }
 }
 
