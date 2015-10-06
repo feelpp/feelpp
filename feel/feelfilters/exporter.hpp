@@ -99,7 +99,7 @@ public:
 
     typedef Exporter<MeshType,N> etype;
     typedef boost::shared_ptr<etype> ptrtype;
-    typedef TimeSet<MeshType,N> timeset_type;
+    typedef Feel::detail::TimeSet<MeshType,N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
     typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
@@ -108,7 +108,7 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
-    
+
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
@@ -183,7 +183,7 @@ public:
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
-     */    
+     */
     static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 

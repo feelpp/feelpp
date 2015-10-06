@@ -86,6 +86,8 @@ enum
     STEP_OVERWRITE = ( 1<<10 )
 };
 template<typename A0,typename A1,typename A2,typename A3,typename A4> class FunctionSpace;
+namespace detail
+{
 /**
  * \class TimeSet
  * \ingroup SpaceTime
@@ -2322,6 +2324,6 @@ TimeSet<MeshType, N>::Step::executeState( size_type __st )
         M_state.clear( STEP_ON_DISK );
     }
 }
-
+}
 }
 #endif /* __TimeSet_H */
