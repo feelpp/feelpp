@@ -14,25 +14,15 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,
-                                                                         sparse_matrix_ptrtype& A ,
-                                                                         vector_ptrtype& F,
-                                                                         bool _buildCstPart,
-                                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if (M_pdeType=="Elasticity")
+    if ( M_pdeType=="Elasticity" )
     {
-        //this->updateLinearElasticity(X,A,F);
-        this->updateLinearElasticityGeneralisedAlpha(X,A,F,
-                                                     _buildCstPart,
-                                                     _doClose, _doBCStrongDirichlet );
+        this->updateLinearElasticityGeneralisedAlpha( data );
     }
-    else if (M_pdeType=="Generalised-String")
+    else if ( M_pdeType=="Generalised-String" )
     {
-        this->updateLinearGeneralisedStringGeneralisedAlpha(X,A,F,
-                                                            _buildCstPart,
-                                                            _doClose, _doBCStrongDirichlet );
+        this->updateLinearGeneralisedStringGeneralisedAlpha( data );
     }
 }
 
@@ -40,14 +30,16 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(const vector_ptrtype& X,
-                                                                                                sparse_matrix_ptrtype& A,
-                                                                                                vector_ptrtype& F,
-                                                                                                bool _buildCstPart,
-                                                                                                bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const
 {
-
     using namespace Feel::vf;
+
+    //const vector_ptrtype& X = data.
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _buildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
 
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
     this->timerTool("Solve").start();
@@ -80,10 +72,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
     size_type rowStartInVector = this->rowStartInVector();
+#if 0
     auto u = Xh->element("u");//u = *X;
     auto v = Xh->element("v");
     for ( size_type k=0;k<M_Xh->nLocalDofWithGhost();++k )
         u(k) = X->operator()(rowStartInVector+k);
+#else
+    auto const& u = this->fieldDisplacement();
+    auto const& v = this->fieldDisplacement();
+#endif
 
     //auto buzz1 = M_newmark_displ_struct->previousUnknown();
     //---------------------------------------------------------------------------------------//

@@ -14,12 +14,15 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XVec, sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                        bool _BuildCstPart,
-                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                        bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     using namespace Feel::vf;
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& R = data.vectorUsedInStrongDirichlet();
+    bool _BuildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",

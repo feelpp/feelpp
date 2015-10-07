@@ -14,11 +14,16 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                                                                         bool _buildCstPart, bool UseJacobianLinearTerms,
-                                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     using namespace Feel::vf;
+
+    const vector_ptrtype& X = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool _buildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
 
     std::string sc=(_buildCstPart)?" (cst part)":" (non cst part)";
     this->log("SolidMechanics","updateResidual", "start"+sc );
