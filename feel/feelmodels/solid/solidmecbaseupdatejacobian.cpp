@@ -14,13 +14,15 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& X,
-                                                                         sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                                         bool BuildCstPart,
-                                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     using namespace Feel::vf;
+
+    const vector_ptrtype& X = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& R = data.vectorUsedInStrongDirichlet();
+    bool BuildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(BuildCstPart)?" (cst part)":" (non cst part)";
     this->log("SolidMechanics","updateJacobian", "start"+sc);
