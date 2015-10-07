@@ -565,7 +565,7 @@ public :
     virtual void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
 
-    virtual void updateBCDirichletStrongJacobian(sparse_matrix_ptrtype& J) const = 0;
+    virtual void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const = 0;
     virtual void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const = 0;
     virtual void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const = 0;
 

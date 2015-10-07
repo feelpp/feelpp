@@ -20,7 +20,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     const vector_ptrtype& X = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& R = data.vectorUsedInStrongDirichlet();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool BuildCstPart = data.buildCstPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
@@ -222,7 +222,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     // strong Dirichlet bc
     if ( this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)
     {
-        this->updateBCDirichletStrongJacobian( J );
+        this->updateBCDirichletStrongJacobian( J, RBis );
     }
 
     //--------------------------------------------------------------------------------------------------//
