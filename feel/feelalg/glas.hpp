@@ -63,6 +63,24 @@ namespace Feel
 const double Pi = 3.14159265358979323846264338328;
 const double TGV = 1e20;
 
+/**
+ * @return true is the matrix has no Inf, false otherwise
+ */
+template<typename Derived>
+inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+{
+    return ( (x - x).array() == (x - x).array()).all();
+}
+
+/**
+ * @return true is matrix has no NaN, false otherwise
+ */
+template<typename Derived>
+inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+{
+    return ((x.array() == x.array())).all();
+}
+
 template <class T>
 inline T Min ( const T &a, const T &b )
 {
