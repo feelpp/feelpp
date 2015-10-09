@@ -8,16 +8,18 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha(const vector_ptrtype& X,
-                                                                                      sparse_matrix_ptrtype& A ,
-                                                                                      vector_ptrtype& F,
-                                                                                      bool _buildCstPart,
-                                                                                      bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const
 {
 #if (SOLIDMECHANICS_DIM==2)
     using namespace Feel::vf;
 
     this->log( "SolidMechanics","updateLinearGeneralisedStringGeneralisedAlpha","start");
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _buildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
 
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
@@ -136,13 +138,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralised
                        _expr=idv(*M_stress_1dReduced)*id(v) );
     }
     //---------------------------------------------------------------------------------------//
-    if (_doClose)
-    {
-        A->close();
-        F->close();
-    }
-    //---------------------------------------------------------------------------------------//
-
     // dirichlet bc
     if (this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)
     {
