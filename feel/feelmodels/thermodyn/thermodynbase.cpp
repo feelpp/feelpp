@@ -424,10 +424,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
-                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("ThermoDynamics","updateLinearPDE", "start"+sc);
     boost::mpi::timer thetimer;

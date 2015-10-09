@@ -86,10 +86,7 @@ public :
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
-    void updateLinearPDE( const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                          bool _buildCstPart,
-                          sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                          bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const;
 
     void solve();
 
