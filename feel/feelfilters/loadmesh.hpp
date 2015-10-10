@@ -94,13 +94,24 @@ BOOST_PARAMETER_FUNCTION(
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
-            mesh_name.extension() != ".h5" &&
+            mesh_name.extension() != ".json" &&
             mesh_name.extension() != ".msh" )
-        << "Invalid filename " << filenameExpand << " it should have either the .geo. .h5 or .msh extension\n";
+        << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
 
 
     if ( mesh_name.extension() == ".geo" )
     {
+#if defined(FEELPP_HAS_HDF5)
+        auto json_fname = mesh_name.stem().string()+".json";
+        if ( boption(_name="gmsh.use-json") && fs::exists(json_fname) )
+        {
+            LOG(INFO) << " Loading mesh in JSON/HDF5 format";
+            CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
+            auto m = boost::make_shared<_mesh_type>();
+            m->loadHDF5( json_fname );
+            return m;
+        }
+#endif
 
         auto m = createGMSHMesh(
             _mesh=mesh,
@@ -125,7 +136,7 @@ BOOST_PARAMETER_FUNCTION(
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
-            m->saveHDF5( mesh_name.stem().string()+".h5" );
+            m->saveHDF5( mesh_name.stem().string()+".json" );
 #endif
         return m;
     }
@@ -148,12 +159,12 @@ BOOST_PARAMETER_FUNCTION(
             );
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
-            m->saveHDF5( mesh_name.stem().string()+".h5" );
+            m->saveHDF5( mesh_name.stem().string()+".json" );
 #endif
         return m;
     }
 #if defined(FEELPP_HAS_HDF5)
-    if ( mesh_name.extension() == ".h5"  )
+    if ( mesh_name.extension() == ".json"  )
     {
         LOG(INFO) << " Loading mesh in HDF5 format";
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
@@ -181,7 +192,7 @@ BOOST_PARAMETER_FUNCTION(
 
 #if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 )
-        m->saveHDF5( fs::path(filenameExpand).stem().string()+".h5" );
+        m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
 #endif
     return m;
 #if defined(__clang__)

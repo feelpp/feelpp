@@ -61,6 +61,9 @@ enum file_type
  * \brief export Feel generated data to some file formats
  * \ingroup Exporter
  *
+ * \tparam MeshType     mesh type
+ * \tparam N            mesh geometrical order
+ *
  * Use the visitor and factory pattern.
  *
  * Here is a snippet on how to use the Exporter class
@@ -319,6 +322,14 @@ public:
     }
 
     /**
+     * get the prefix to \p __prefix
+     */
+    std::string getPrefix()
+    {
+        return M_prefix;
+    }
+
+    /**
      * set the save frequency to \p __freq
      */
     Exporter<MeshType,N>* setFreq( int __freq )
@@ -383,13 +394,13 @@ public:
     void
     add( std::string const& name, F const& u )
         {
-            this->step( 0 )->add( this->prefix()+"."+name, u );
+            this->step( 0 )->add( name, u );
         }
 
     void
     addRegions()
         {
-            this->step( 0 )->addRegions( this->prefix() );
+            this->step( 0 )->addRegions( "" );
         }
     step_ptrtype step( double time )
     {
@@ -533,16 +544,16 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), soption("exporter.format")+"/"+name )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New( name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    if ( geo == "change_coords_only" )
+    if ( std::string(geo).compare("change_coords_only") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
-    else if ( geo == "change" )
+    else if ( std::string(geo).compare("change") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
     else // default
         e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );

@@ -26,7 +26,10 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     auto Vh = space_type::New( mesh );
 
+    auto e = expr(soption("functions.e")); // error with respect to h
+
     auto g = expr(soption("functions.g")); // p exact
+
     auto h = grad<FEELPP_DIM>(g);          // u exact
     auto lhs = laplacian(g);               // f
     if( Environment::isMasterRank() )
@@ -44,7 +47,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(elements(mesh),
                   -trans(idt(u))*id(v)
-                  -divt(u)*id(q)
+                  -divt(u)*id(q)   
                   -idt(p)*div(v)
                   // CGLS stabilization terms
                   -1./2*(trans(idt(u)) - gradt(p))*(-id(v)+trans(grad(q)))
@@ -61,18 +64,24 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     a.solve(_rhs=l, _solution=U);
 
-    auto err = normL2( boundaryfaces(mesh), trans(idv(u))*N() - h*N());
+    auto err1 = normL2( boundaryfaces(mesh), trans(idv(u))*N() );
+    auto err2 = normL2( boundaryfaces(mesh), h*N());
+    auto err = normL2( elements(mesh), _expr=idv(u)- trans(h) );
     if ( Environment::isMasterRank() )
-        BOOST_CHECK_SMALL( err, 1e-8 );
+    {
+        auto est = e.evaluate({{"x",doption("gmsh.hsize")}});
+        BOOST_CHECK_SMALL( err, est );
+        std::cout << "||u-h||_L2 =" << err << " I1=" << err1 << " I2=" << err2 << "\n";
+    }
 
     auto UU = Vh->element();
     auto uu =UU.template element<0>();
     uu.on(elements(mesh), trans(h));
-    auto e = exporter(mesh);
-    e->add("u", u);
-    e->add("p", p);
-    e->add("h", uu);
-    e->save();
+    auto ex = exporter(mesh);
+    ex->add("u", u);
+    ex->add("p", p);
+    ex->add("h", uu);
+    ex->save();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1120,9 +1120,10 @@ public:
         if ( this != &form )
         {
             M_pattern = form.M_pattern;
-            M_X1 = form.M_X1;
-            M_X2 = form.M_X2;
-            M_matrix = form.M_matrix;
+            CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
+            CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.0, form.M_matrix );
             M_row_startInMatrix = form.M_row_startInMatrix;
             M_col_startInMatrix = form.M_col_startInMatrix;
             M_lb = form.M_lb;
@@ -1153,6 +1154,11 @@ public:
             return *this;
         }
 
+    BilinearForm& add( double alpha, BilinearForm&  a )
+        {
+            M_matrix->addMatrix( alpha, a.M_matrix );
+            return *this;
+        }
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1388,7 +1394,8 @@ public:
     void zeroRows( std::vector<int> const& __dofs,
                    Vector<value_type> const& __values,
                    Vector<value_type>& rhs,
-                   Feel::Context const& on_context );
+                   Feel::Context const& on_context,
+                   double value_on_diagonal );
 
     /**
      * add value \p v at position (\p i, \p j) of the matrix
@@ -1701,9 +1708,10 @@ void
 BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
                                               Vector<value_type> const&__values,
                                               Vector<value_type>& rhs,
-                                              Feel::Context const& on_context )
+                                              Feel::Context const& on_context,
+                                              double value_on_diagonal )
 {
-    M_matrix->zeroRows( __dofs, __values, rhs, on_context );
+    M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 
 

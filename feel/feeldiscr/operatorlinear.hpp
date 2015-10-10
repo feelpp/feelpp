@@ -98,24 +98,9 @@ public:
         M_pattern( Pattern::COUPLED ),
         M_name("operatorlinear")
     {}
-    OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
-        :
-        super_type( ol ),
-        M_backend( ol.M_backend ),
-        M_matrix(),
-        M_pattern( ol.M_pattern ),
-        M_name(ol.M_name )
-    {
-        if ( deep_copy )
-        {
-            M_matrix = new matrix_type( *ol.M_matrix );
-        }
+    OperatorLinear( OperatorLinear const& ol ) = default;
+    OperatorLinear( OperatorLinear && ol ) = default;
 
-        else
-        {
-            M_matrix = ol.M_matrix;
-        }
-    }
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
@@ -482,15 +467,8 @@ public:
         return *this;
     }
 
-    this_type& operator=( this_type const& m )
-    {
-        M_backend = m.M_backend;
-        M_matrix->zero();
-        M_matrix->addMatrix( 1.0, m.M_matrix );
-        M_pattern = m.M_pattern;
-
-        return *this;
-    }
+    this_type& operator=( this_type const& m ) = default;
+    this_type& operator=( this_type && m ) = default;
 
     // add to underlying matrix
     template<class ExprT>
@@ -624,7 +602,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 

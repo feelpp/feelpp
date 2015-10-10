@@ -988,6 +988,14 @@ MatrixPetsc<T>::createSubMatrix( std::vector<size_type> const& _rows,
         subMat.reset( new MatrixPetscMPI<T>( subMatPetsc,subMapRow,subMapCol,true,true ) );
     else
         subMat.reset( new MatrixPetsc<T>( subMatPetsc,subMapRow,subMapCol,true ) );
+
+    bool computeSubGraph = true;
+    if ( computeSubGraph && this->hasGraph() )
+    {
+        auto subgraph = this->graph()->createSubGraph( rows, cols, subMapRow, subMapCol, useSameDataMap, false );
+        subMat->setGraph( subgraph );
+    }
+
     return subMat;
 }
 
@@ -1134,7 +1142,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 template <typename T>
 inline
 void
-MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
+MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -1144,16 +1152,16 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
     FEELPP_ASSERT( this->size2() == X_in.size2() )( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
 
     PetscScalar     a = static_cast<PetscScalar>      ( a_in );
-    MatrixPetsc<T>* X;
+    MatrixPetsc<T> const* X;
 
     if ( this->comm().size()>1 )
     {
-        X = dynamic_cast<MatrixPetscMPI<T>*> ( &X_in );
+        X = dynamic_cast<MatrixPetscMPI<T> const*> ( &X_in );
     }
 
     else
     {
-        X = dynamic_cast<MatrixPetsc<T>*> ( &X_in );
+        X = dynamic_cast<MatrixPetsc<T> const*> ( &X_in );
     }
 
     FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
@@ -1323,7 +1331,11 @@ MatrixPetsc<T>::operator () ( const size_type i,
 
 template<typename T>
 void
-MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, 
+                          Vector<value_type> const& values, 
+                          Vector<value_type>& rhs, 
+                          Context const& on_context,
+                          value_type value_on_diagonal )
 {
     // the matrix needs to be closed for this to work
     this->close();
@@ -1357,9 +1369,9 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq symmetric";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            MatZeroRowsColumns(M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
 #else
-            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
 #endif
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
@@ -1380,9 +1392,9 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq unsymmetric";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0,PETSC_NULL,PETSC_NULL );
+            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_NULL,PETSC_NULL );
 #else
-            MatZeroRows( M_mat, rows.size(), rows.data(), 1.0 );
+            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
 #endif
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
@@ -2236,7 +2248,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
 template <typename T>
 inline
 void
-MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
+MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> const&X_in )
 {
 #if 0
     if (this->hasGraph() && X_in.hasGraph() &&
@@ -2650,7 +2662,8 @@ void
 MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                              Vector<value_type> const& values,
                              Vector<value_type>& rhs,
-                             Context const& on_context )
+                             Context const& on_context,
+                             value_type value_on_diagonal )
 {
     bool withClose=true;
     // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
@@ -2688,11 +2701,11 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
         if ( on_context.test(ContextOn::SYMMETRIC ) )
         {
-            MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
         }
         else
         {
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
             //CHKERRABORT(this->comm(),ierr);
         }
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
@@ -2709,7 +2722,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         }
 
 #else
-        MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
+        MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), value_on_diagonal );
     
         for ( size_type i = 0; i < rows.size(); ++i )
         {

@@ -456,7 +456,9 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
 
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_opLinearFree_return<Args>::type oplinfree_type;
     typedef typename Feel::detail::compute_opLinearFree_return<Args>::ptrtype oplinfree_ptrtype;
     return oplinfree_ptrtype ( new oplinfree_type( domainSpace,imageSpace,backend,expr ) );

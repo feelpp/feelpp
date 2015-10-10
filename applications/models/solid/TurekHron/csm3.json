@@ -1,0 +1,54 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Solid Mechanics ",
+    "ShortName":"Solid",
+    "Model":"hyperelastic",
+    "Parameters":
+    {
+        "gravity":
+        {
+            "value":"2"
+        }
+    },
+    "Materials":
+    {
+        "beam":{
+            "name":"solid",
+            "E":"1.4e6",
+            "nu":"0.4",
+            "rho":"1e3"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "fixed-wall":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "Neumann_scalar":
+            {
+                "free-wall":
+                {
+                    "expr":"0" 
+                }
+            },
+            "VolumicForces":
+            {
+                "":
+                {
+                    "expr":"{0,-gravity*1e3}:gravity" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["displacement"]
+    }
+
+}

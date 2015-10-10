@@ -218,29 +218,29 @@ inline unsigned rank(const matrix & m)
 
 inline matrix operator-( matrix const& m )
 {
-    return std::move(m.mul_scalar(-1));
+    return m.mul_scalar(-1);
 }
 
 inline matrix operator+( matrix const& m1, matrix const& m2 )
 {
-    return std::move(m1.add(m2));
+    return m1.add(m2);
 }
 inline matrix operator-( matrix const& m1, matrix const& m2 )
 {
-    return std::move(m1.sub(m2));
+    return m1.sub(m2);
 }
 
 inline matrix operator*( matrix const& m1, matrix const& m2 )
 {
-    return std::move(m1.mul(m2));
+    return m1.mul(m2);
 }
 inline matrix operator*( matrix const& m1, ex const& m2 )
 {
-    return std::move(m1.mul_scalar(m2));
+    return m1.mul_scalar(m2);
 }
 inline matrix operator*( ex const& m1, matrix const& m2 )
 {
-    return std::move(m2.mul_scalar(m1));
+    return m2.mul_scalar(m1);
 }
 
 // utility functions

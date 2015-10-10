@@ -358,7 +358,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const value_type, MatrixSparse<value_type> & );
+    void addMatrix ( const value_type, MatrixSparse<value_type> const& );
 
     void scale ( const value_type );
 
@@ -500,7 +500,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 

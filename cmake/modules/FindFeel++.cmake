@@ -4,17 +4,24 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+# define the feel++ c++ standard level, it used to be hardcoded, this way we can
+# have builds to test the different standard flavors
+if (NOT DEFINED FEELPP_STD_CPP ) 
+  set(FEELPP_STD_CPP "14") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 1z")
+endif()
+message(STATUS "[feelpp] using c++${FEELPP_STD_CPP} standard." )
 # Check compiler
 message(STATUS "[feelpp] Compiler version : ${CMAKE_CXX_COMPILER_ID}  ${CMAKE_CXX_COMPILER_VERSION}")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # require at least gcc 4.7
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
-    message(WARNING "GCC version must be at least 4.7!")
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
+  # require at least gcc 4.9
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+      message(ERROR "GCC version must be at least 4.9!")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  # require at least clang 3.3
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-    message(WARNING "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+  # require at least clang 3.4
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)
+      message(ERROR "Clang version must be at least 3.4! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     message(STATUS "[feelpp] Apple Clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
@@ -33,7 +40,9 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
+
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
+
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
   endif()
@@ -475,15 +484,23 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   #
   # cln and ginac
   #
+  find_package(CLN)
+  add_subdirectory(contrib/ginac)
+
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   include_directories( ${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
-  add_subdirectory(contrib/ginac)
-
+  
 endif()
 
-
+find_package(FFTW)
+if( FFTW_FOUND )
+  set(FEELPP_HAS_FFTW 1)
+  include_directories( ${FFTW_INCLUDES} )
+  set(FEELPP_LIBRARIES ${FFTW_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} fftw" )
+endif()
 
 #
 # submodules
@@ -493,6 +510,7 @@ include(feelpp.module.nlopt)
 include(feelpp.module.ipopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
+include(feelpp.module.jsonlab)
 
 #
 # HARTS
@@ -540,9 +558,15 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
+else()
+  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+    PATHS
+    $ENV{FEELPP_DIR}/include/feel
+    NO_DEFAULT_PATH
+    )
 endif()
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
-message(STATUS "[feelpp] Eigen3: ${EIGEN3_INCLUDE_DIR}" )
+message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -1022,6 +1046,12 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  find_package(CLN)
+  if ( CLN_FOUND )
+    include_directories( ${CLN_INCLUDE_DIR} )
+    SET(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif( CLN_FOUND )
+
   if ( FEELPP_ENABLE_NLOPT )
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()

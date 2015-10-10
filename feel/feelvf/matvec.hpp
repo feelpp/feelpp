@@ -633,6 +633,14 @@ public:
         static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+    template<typename Func>
+    static const bool has_trial_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
+
     typedef VectorExpr expression_vector_type;
     typedef Vec<expression_vector_type> this_type;
 
@@ -888,6 +896,12 @@ public:
     {
         static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
+    template<typename Func>
+    static const bool has_test_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+    template<typename Func>
+    static const bool has_trial_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef MatrixExpr expression_matrix_type;
     typedef Mat<M, N, expression_matrix_type> this_type;

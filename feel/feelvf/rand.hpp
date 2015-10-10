@@ -30,7 +30,7 @@
 #define FEELPP_VF_RAND_HPP 1
 
 #include <random>
-
+#include <boost/math/special_functions/round.hpp>
 #include <feel/feelvf/expr.hpp>
 
 namespace Feel
@@ -86,6 +86,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,

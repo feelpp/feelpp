@@ -384,7 +384,7 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix ( const T a, MatrixSparse<T> &X );
+    void addMatrix ( const T a, MatrixSparse<T> const&X );
 
     /**
      * Multiply this by a Sparse matrix \p In,
@@ -486,7 +486,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     /**
      * update a block matrix
@@ -612,7 +612,7 @@ public :
                     int* cols, int ncols,
                     value_type* data );
 
-    void addMatrix( const T a, MatrixSparse<T> &X );
+    void addMatrix( const T a, MatrixSparse<T> const&X );
 
 
     void zero();
@@ -621,7 +621,8 @@ public :
     void zeroRows( std::vector<int> const& rows,
                    Vector<value_type> const& values,
                    Vector<value_type>& rhs,
-                   Context const& on_context );
+                   Context const& on_context,
+                   value_type value_on_diagonal );
 
     real_type energy( Vector<value_type> const& __v,
                       Vector<value_type> const& __u,

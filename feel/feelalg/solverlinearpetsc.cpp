@@ -446,10 +446,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     PetscReal final_resid=0.;
 
     // Close the matrices and vectors in case this wasn't already done.
-    matrix->close ();
-    precond->close ();
+    if ( false ) // close already done in backend::solve()
+    {
+        matrix->close ();
+        precond->close ();
+        rhs->close ();
+    }
     solution->close ();
-    rhs->close ();
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
@@ -627,6 +630,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
+    LOG(INFO) << "[solverlinearpetsc] reason = " << reason ;
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";

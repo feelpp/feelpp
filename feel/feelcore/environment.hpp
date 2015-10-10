@@ -48,6 +48,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+#include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -307,6 +308,23 @@ public:
     }
 
     /**
+     * @return true if number of process is 1, hence the environment is
+     * sequential
+     */
+    static bool isSequential() 
+    {
+        return numberOfProcessors() == 1;
+    }
+
+    /**
+     * @return true if the environment is not sequential, that is if the number
+     * of process is greater than 1
+     */
+    static bool isParallel() 
+    {
+        return !isSequential();;
+    }
+    /**
      * rank 0 process is considered the master process
      *
      * the master process can then for example print information in the console
@@ -545,12 +563,13 @@ public:
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, double t );
+    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
 
     /**
      * display and save timers
      */
     static void saveTimers( bool save );
+    static void saveTimersMD( std::ostream & os );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );

@@ -162,8 +162,6 @@ public:
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
-
-    typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
@@ -499,6 +497,21 @@ public:
         }
 
     /**
+     * @return the dof points data structure
+     * it allows for example to do:
+     * \code
+     * for( auto const& pt: dofPoints())
+     * {
+     *   // do something on pt
+     * }
+     * \endcode
+     */
+    dof_points_type const& dofPoints() const
+        {
+            if (!hasDofPoints()) this->generateDofPoints(*M_mesh);
+            return M_dof_points;
+        }
+    /**
      * @return an iterator at the beginning of dof points
      */
     dof_points_const_iterator dofPointBegin() const
@@ -755,7 +768,7 @@ public:
             }
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return __loc;
+                return M_d.nLocalDof(true) * c+__loc;
             }
         DofTable const& M_d;
     };
@@ -775,7 +788,7 @@ public:
 
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return boost::get<3>( M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc]);
+                return M_d.nLocalDof(true)*c + boost::get<3>( M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc]);
             }
 
         DofTable const& M_d;
