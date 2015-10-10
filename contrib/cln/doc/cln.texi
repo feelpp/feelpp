@@ -3282,7 +3282,7 @@ There is a cache table of rings, indexed by @code{R} and @code{varname}.
 This ensures that two calls of this function with the same arguments will
 return the same polynomial ring.
 
-@itemx cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R)
+@item cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R)
 @cindex @code{find_univpoly_ring ()}
 @itemx cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R, const cl_symbol& varname)
 @itemx cl_univpoly_real_ring find_univpoly_ring (const cl_real_ring& R)

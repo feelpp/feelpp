@@ -70,9 +70,22 @@ int main(int argc, char**argv )
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
 
+    size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
     {
         std::cout<<"\n\n\nMesh name: "<<soption("gmsh.filename")<<"\n\n";
+        std::cout << " - mesh entities" << std::endl;
+        std::cout << "      number of elements : " << mesh->numGlobalElements() << std::endl;
+        std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
+        std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
+        std::cout << "    number of vertices : " << mesh->numGlobalVertices() << std::endl;
+        std::cout << " - mesh sizes" << std::endl;
+        std::cout << "                h max : " << mesh->hMax() << std::endl;
+        std::cout << "                h min : " << mesh->hMin() << std::endl;
+        std::cout << "                h avg : " << mesh->hAverage() << std::endl;
+        std::cout << "              measure : " << mesh->measure() << std::endl;
+ 
         std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;

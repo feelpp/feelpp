@@ -24,3 +24,6 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application( doc_advection SRCS advection.cpp CFG advection.cfg LABELS doc )
 feelpp_add_application( dar_gals SRCS dar_gals.cpp CFG dar_gals.cfg LABELS doc )
+
+feelpp_add_application(feelpp_advection SRCS feelpp_advection.cpp )
+feelpp_add_application(feelpp_GaLS SRCS feelpp_GaLS.cpp )

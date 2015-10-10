@@ -46,8 +46,9 @@ class TimerData : public std::vector<double>
     TimerData() = default;
     TimerData(TimerData const& ) = default;
     TimerData( std::string const& n ) : name(n) {}
-    void add( double t ) { this->push_back( t ); }
+    void add( std::pair<double,int> const& t ) { this->push_back( t.first ); level=t.second; }
     std::string name;
+    int level;
 };
 class TimerTable : std::map<std::string, TimerData>
 {
@@ -55,7 +56,7 @@ public:
     TimerTable() = default;
     ~TimerTable() = default;
     
-    void add( std::string const& msg, double t )
+    void add( std::string const& msg, std::pair<double,int> const&  t )
         {
             if ( msg.empty() ) return;
             auto it = this->find( msg );
@@ -68,14 +69,15 @@ public:
                 TimerData T( msg );
                 T.add( t );
                 this->insert( std::make_pair( msg, T ) );
-                M_max_len = (msg.size()>M_max_len)?msg.size():M_max_len;
+                auto m = msg.size()+2*t.second;
+                M_max_len = (m>M_max_len)?m:M_max_len;
             }
         }
     void save( bool display ) 
         {
             std::ostringstream os;
             using namespace boost::accumulators;
-            
+           
             os << std::setw( M_max_len ) <<std::left << "Timer" << " " 
                << std::setw(7) << std::right << "Count" << " "
                << std::setw(9+2) << std::right << "Total(s)" << " "
@@ -95,7 +97,8 @@ public:
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
                 double tot = sum(acc);
                 sortTotal[tot] = T.second;
-                os << std::setw( M_max_len ) <<std::left << T.first << " " 
+                os << std::setw( 2*T.second.level ) << " "
+                   << std::setw( M_max_len -  2*T.second.level ) <<std::left << T.first << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " "
@@ -120,7 +123,8 @@ public:
                                               boost::accumulators::tag::max> > acc;
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
-                os << std::setw( M_max_len ) <<std::left << T.second.name << " " 
+                os << std::setw( 2*T.second.level ) << " "
+                   << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.name << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " "
@@ -132,6 +136,67 @@ public:
             if ( display )
                 if ( Environment::isMasterRank() )
                     std::cout << os.str() << std::endl;
+        }
+    void saveMD( std::ostream & os ) 
+        {
+            using namespace boost::accumulators;
+           
+            os << std::setw( M_max_len ) << std::left  << "|Timer" << " " 
+               << std::setw(7)           << std::right << "|Count" << " "
+               << std::setw(9+2)         << std::right << "|Total(s)" << " "
+               << std::setw(9+2)         << std::right << "|Max(s)" << " "
+               << std::setw(9+2)         << std::right << "|Min(s)" << " "
+               << std::setw(9+2)         << std::right << "|Mean(s)" << " "
+               << std::setw(9+2)         << std::right << "|StdDev(s)|" << "\n";
+           
+            os << "|---|---|---|---|---|---|---|" << std::endl; 
+            std::map<double,TimerData, std::greater<double>> sortTotal;
+            for( auto const& T: *this )
+            {
+                accumulator_set<double, stats<boost::accumulators::tag::count,
+                                              boost::accumulators::tag::mean,
+                                              boost::accumulators::tag::variance,
+                                              boost::accumulators::tag::min,
+                                              boost::accumulators::tag::max> > acc;
+                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                double tot = sum(acc);
+                sortTotal[tot] = T.second;
+                os << std::setw( M_max_len ) << std::left       << "|" << T.first << " | " 
+                   << std::setw(7)           << std::right      << boost::accumulators::count(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "|\n";
+            }
+            os << "\n";
+            os << std::setw( M_max_len ) << std::left  << "|Timer" << " " 
+               << std::setw(7)           << std::right << "|Count" << " "
+               << std::setw(9+2)         << std::right << "|Total(s)" << " "
+               << std::setw(9+2)         << std::right << "|Max(s)" << " "
+               << std::setw(9+2)         << std::right << "|Min(s)" << " "
+               << std::setw(9+2)         << std::right << "|Mean(s)" << " "
+               << std::setw(9+2)         << std::right << "|StdDev(s)|" << "\n";
+            os << "|---|---|---|---|---|---|---|" << std::endl; 
+            for( auto const& T: sortTotal )
+            {
+                accumulator_set<double, stats<boost::accumulators::tag::count,
+                                              boost::accumulators::tag::mean,
+                                              boost::accumulators::tag::variance,
+                                              boost::accumulators::tag::min,
+                                              boost::accumulators::tag::max> > acc;
+                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+
+                os << std::setw( M_max_len ) <<std::left << "|" << T.second.name << " | " 
+                   << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "|\n";
+            }
+            os << "\n";
+            os << std::resetiosflags(os.flags());
         }
 
 private:

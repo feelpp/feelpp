@@ -335,7 +335,6 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         pf->setMarker( 0 );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
@@ -490,7 +489,6 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         pf->setMarker( 0  );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );

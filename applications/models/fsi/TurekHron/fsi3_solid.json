@@ -1,0 +1,42 @@
+// -*- mode: javascript -*-
+{
+    "Name": "2D beam ",
+    "ShortName":"beam2d",
+    "Model":"hyperelastic",
+    "Parameters":
+    {
+        "gravity":
+        {
+            "value":"-2"
+        }
+    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "solid-fixed":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsi-wall":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["displacement"]
+    }
+
+}

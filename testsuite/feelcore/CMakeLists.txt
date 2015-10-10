@@ -8,6 +8,7 @@ foreach(TEST traits singleton factory debug context simget ${OTESTS} env )
 
 endforeach()
 
+feelpp_add_test( range NO_FEELPP_LIBRARY )
 
 add_executable(test_boostmpi test_boostmpi.cpp)
 target_link_libraries(test_boostmpi feelpp ${FEELPP_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )

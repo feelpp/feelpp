@@ -141,7 +141,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
             for ( uint16_type j=0; j<nCol; ++j )
             {
-                blockSet(i,j)->close();
+                //blockSet(i,j)->close(); // close done in updateBlockMat
                 this->updateBlockMat( blockSet(i,j),start_i,start_j );
 
                 for ( int proc=0 ;proc < worldsize;++proc )
@@ -348,7 +348,7 @@ MatrixBlockBase<T>::printMatlab ( const std::string name ) const
 template <typename T>
 inline
 void
-MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> &X_in )
+MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> const&X_in )
 {
     M_mat->addMatrix( a_in,X_in );
 }
@@ -405,9 +405,9 @@ MatrixBlockBase<T>::operator = ( MatrixSparse<value_type> const& M )
 
 template <typename T>
 void
-MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal )
 {
-    M_mat->zeroRows( rows,values,rhs,on_context );
+    M_mat->zeroRows( rows,values,rhs,on_context, value_on_diagonal );
 }
 
 template <typename T>

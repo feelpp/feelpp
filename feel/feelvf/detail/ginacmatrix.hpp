@@ -42,7 +42,7 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
 
-    static const size_type context = vm::POINT;
+    static const size_type context = vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL;
     static const bool is_terminal = false;
     static const uint16_type imorder = Order;
     static const bool imIsPoly = false;
@@ -57,6 +57,13 @@ public:
     {
         static const bool result = false;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef GiNaC::ex expression_type;
     typedef GinacMatrix<M,N,Order> this_type;
@@ -134,6 +141,7 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
+    GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun )
     :
         super(fun),
@@ -171,6 +179,8 @@ public:
      */
     //@{
 
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -238,9 +248,7 @@ public:
         //typedef typename expression_type::value_type value_type;
         typedef double value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -316,6 +324,9 @@ public:
                 {
                     for ( auto const& comp : M_expr.indexSymbolXYZ() )
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                    // is it called for updates on faces? need to check that...
+                    for ( auto const& comp : M_expr.indexSymbolN() )
+                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
 
@@ -331,6 +342,8 @@ public:
                 {
                     for ( auto const& comp : M_expr.indexSymbolXYZ() )
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                    for ( auto const& comp : M_expr.indexSymbolN() )
+                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
             }
@@ -387,6 +400,20 @@ operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 {
     os << e.expression();
     return os;
+}
+
+template<int M, int N, int Order>
+std::string
+str( GinacMatrix<M,N,Order> && e )
+{
+    return str( std::forward<GinacMatrix<M,N,Order>>(e).expression() );
+}
+
+template<int M, int N, int Order>
+std::string
+str( GinacMatrix<M,N,Order> const& e )
+{
+    return str( e.expression() );
 }
 
 /// \endcond

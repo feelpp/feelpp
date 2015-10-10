@@ -753,7 +753,7 @@ public:
     bool
     hasFaceMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-1 );
+            return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
         }
 
     /**
@@ -763,7 +763,17 @@ public:
     bool
     hasEdgeMarker( std::string marker ) const
         {
-            return ( markerName( marker ) != invalid_size_type_value ) && ( markerDim( marker ) != nDim-2 );
+            return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is 0, false otherwise
+     */
+    bool
+    hasPointMarker( std::string marker ) const
+        {
+            return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
         }
 
     /**
@@ -997,6 +1007,20 @@ public:
      */
     void recv( int p, int tag );
 
+    void saveMD(std::ostream &out)
+    {
+      out << "| Shape              |" << Shape << "|\n";
+      out << "|---|---|\n";
+      out << "| DIM              |" << dimension() << "|\n";
+      out << "| Order              |" << nOrder << "|\n";
+      out << "| hMin              |" << hMin() << "|\n";
+      out << "| hMax              |" << hMax() << "|\n";
+      out << "| hAverage              |" << hAverage() << "|\n";
+      out << "| nPoints              |" << this->numPoints() << "|\n";
+      out << "| nEdges              |" << this->numEdges() << "|\n";
+      out << "| nFaces              |" << this->numFaces() << "|\n";
+      out << "| nVertices              |" << this->numVertices() << "|\n\n";
+    }
 #if defined(FEELPP_HAS_HDF5)
     /**
      * load mesh in hdf5
@@ -1044,7 +1068,9 @@ public:
                                        ( sep,( std::string ),std::string( "" ) )
                                          ) )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
             if ( !fs::exists( fs::path( path ) ) )
             {
@@ -1089,7 +1115,9 @@ public:
             )
         )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
             std::ostringstream os1;
             os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
@@ -1695,8 +1723,8 @@ protected:
     /**
      * Update in ghost cells of entities of codimension 1
      */
-    void updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-    void updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
+    void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
     /**
      * check mesh connectivity
@@ -2083,7 +2111,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setMarker3( old_elem.marker3().value() );
         // partitioning update
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
-        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
@@ -2149,7 +2176,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setMarker2( old_face.marker3().value() );
                 // partitioning update
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
-                new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
                 new_face.clearIdInOthersPartitions();
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());

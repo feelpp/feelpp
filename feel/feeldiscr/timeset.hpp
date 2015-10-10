@@ -68,6 +68,8 @@
 #include <feel/feeldiscr/subelements.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/elementdiv.hpp>
 
 #define TS_INITIAL_INDEX 1
 
@@ -88,6 +90,9 @@ template<typename A0,typename A1,typename A2,typename A3,typename A4> class Func
  * \class TimeSet
  * \ingroup SpaceTime
  * \brief data TimeSet
+ *
+ * \tparam MeshType     Mesh type
+ * \tparam N            Mesh geometrical order
  *
  * \author Christophe Prud'homme
  */
@@ -590,12 +595,14 @@ public:
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
-            add( __n, __n, func, mpl::bool_<false>(), mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+            constexpr bool nodal = (FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionType::is_hcurl_conforming) && (!FunctionType::is_hdiv_conforming);
+            add( __n, __n, func, mpl::bool_<false>(), mpl::bool_<nodal>() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false> )
         {
-            add( __n, __fname, func, mpl::bool_<false>(), mpl::bool_<FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally>() );
+            constexpr bool nodal = (FunctionType::is_continuous || FunctionType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionType::is_hcurl_conforming) && (!FunctionType::is_hdiv_conforming);
+            add( __n, __fname, func, mpl::bool_<false>(), mpl::bool_<nodal>() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
@@ -606,11 +613,11 @@ public:
 
                 if ( !M_ts->M_scalar_p1 )
                 {
-                    M_ts->M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( M_mesh.get(),
-                                                                                            MESH_RENUMBER | MESH_CHECK,
-                                                                                            typename scalar_p1_space_type::periodicity_type(),
-                                                                                            func.worldsComm(),
-                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                   MESH_RENUMBER | MESH_CHECK,
+                                                                                   typename scalar_p1_space_type::periodicity_type(),
+                                                                                   func.worldsComm(),
+                                                                                   std::vector<bool>(1,extendeddof) );
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -622,15 +629,15 @@ public:
 
                 if ( M_mesh.get() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
                 {
-                    M_scalar_p1 = scalar_p1_space_ptrtype( new scalar_p1_space_type ( M_mesh.get(),
-                                                                                      MESH_RENUMBER | MESH_CHECK,
-                                                                                      typename scalar_p1_space_type::periodicity_type(),
-                                                                                      func.worldsComm(),
-                                                                                      std::vector<bool>(1,extendeddof)) );
+                    M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename scalar_p1_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof));
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
 
-                M_nodal_scalar.insert( std::make_pair( __fname, M_scalar_p1->element( __n ) ) );
+                M_nodal_scalar.insert( std::make_pair( __fname, M_scalar_p1->element( __n, func.description() ) ) );
 
                 //M_nodal_scalar[__fname].setName( __n );
                 //M_nodal_scalar[__fname].setFunctionSpace( M_scalar_p1 );
@@ -664,11 +671,11 @@ public:
 
                 if ( !M_ts->M_vector_p1 )
                 {
-                    M_ts->M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( M_mesh.get(),
-                                                                                            MESH_RENUMBER | MESH_CHECK,
-                                                                                            typename vector_p1_space_type::periodicity_type(),
-                                                                                            func.worldsComm(),
-                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_ts->M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                                    MESH_RENUMBER | MESH_CHECK,
+                                                                                    typename vector_p1_space_type::periodicity_type(),
+                                                                                    func.worldsComm(),
+                                                                                    std::vector<bool>(1,extendeddof) );
                     M_vector_p1 = M_ts->M_vector_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -680,17 +687,17 @@ public:
 
                 if ( M_mesh.get() != M_ts->M_vector_p1->mesh() && !M_vector_p1 )
                 {
-                    M_vector_p1 = vector_p1_space_ptrtype( new vector_p1_space_type ( M_mesh.get(),
-                                                                                      MESH_RENUMBER | MESH_CHECK,
-                                                                                      typename vector_p1_space_type::periodicity_type(),
-                                                                                      func.worldsComm(),
-                                                                                      std::vector<bool>(1,extendeddof) ) );
+                    M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename vector_p1_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof) );
                     DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
                 }
 
                 t.restart();
-                M_nodal_vector.insert( std::make_pair( __fname,M_vector_p1->element( __n ) ) );
+                M_nodal_vector.insert( std::make_pair( __fname,M_vector_p1->element( __n, func.description() ) ) );
                 //M_nodal_vector[__fname].setName( __n );
                 //M_nodal_vector[__fname].setFunctionSpace( M_vector_p1 );
                 DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
@@ -750,11 +757,11 @@ public:
 
                 if ( !M_ts->M_tensor2_p1 )
                 {
-                    M_ts->M_tensor2_p1 = tensor2_p1_space_ptrtype( new tensor2_p1_space_type ( M_mesh.get(),
-                                                                                            MESH_RENUMBER | MESH_CHECK,
-                                                                                            typename tensor2_p1_space_type::periodicity_type(),
-                                                                                            func.worldsComm(),
-                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_ts->M_tensor2_p1 = boost::make_shared<tensor2_p1_space_type> ( M_mesh.get(),
+                                                                                     MESH_RENUMBER | MESH_CHECK,
+                                                                                     typename tensor2_p1_space_type::periodicity_type(),
+                                                                                     func.worldsComm(),
+                                                                                     std::vector<bool>(1,extendeddof) );
                     M_tensor2_p1 = M_ts->M_tensor2_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -766,17 +773,17 @@ public:
 
             if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
                 {
-                    M_tensor2_p1 = tensor2_p1_space_ptrtype( new tensor2_p1_space_type ( M_mesh.get(),
-                                                                                      MESH_RENUMBER | MESH_CHECK,
-                                                                                      typename tensor2_p1_space_type::periodicity_type(),
-                                                                                      func.worldsComm(),
-                                                                                      std::vector<bool>(1,extendeddof) ) );
+                    M_tensor2_p1 = boost::make_shared<tensor2_p1_space_type> ( M_mesh.get(),
+                                                                               MESH_RENUMBER | MESH_CHECK,
+                                                                               typename tensor2_p1_space_type::periodicity_type(),
+                                                                               func.worldsComm(),
+                                                                               std::vector<bool>(1,extendeddof) );
                     DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space tensor2 p1 created\n";
                 }
 
                 t.restart();
-                M_nodal_tensor2.insert( std::make_pair( __fname,M_tensor2_p1->element( __n ) ) );
+                M_nodal_tensor2.insert( std::make_pair( __fname,M_tensor2_p1->element( __n, func.description() ) ) );
                 //M_nodal_tensor2[__fname].setName( __n );
                 //M_nodal_tensor2[__fname].setFunctionSpace( M_tensor2_p1 );
                 DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
@@ -827,22 +834,21 @@ public:
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
             }
-        
-        template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false> )
-        {
-            bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
-            if ( !func.worldComm().isActive() ) return;
 
-            if ( FunctionType::is_scalar )
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                  typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                if ( !func.worldComm().isActive() ) return;
+
                 if ( !M_ts->M_scalar_p0 )
                 {
-                    M_ts->M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( M_mesh.get(),
-                                                                                            MESH_RENUMBER | MESH_CHECK,
-                                                                                            typename scalar_p0_space_type::periodicity_type(),
-                                                                                            func.worldsComm(),
-                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                                   MESH_RENUMBER | MESH_CHECK,
+                                                                                   typename scalar_p0_space_type::periodicity_type(),
+                                                                                   func.worldsComm(),
+                                                                                   std::vector<bool>(1,extendeddof) );
                     M_scalar_p0 = M_ts->M_scalar_p0;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
                 }
@@ -854,34 +860,62 @@ public:
 
                 if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
                 {
-                    M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( M_mesh.get(),
-                                                                                      MESH_RENUMBER | MESH_CHECK,
-                                                                                      typename scalar_p0_space_type::periodicity_type(),
-                                                                                      func.worldsComm(),
-                                                                                      std::vector<bool>(1,extendeddof) ) );
+                    M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename scalar_p0_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof) );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
                 }
 
-                M_element_scalar.insert( std::make_pair( __fname,M_scalar_p0->element( __n ) ) );
-                //M_element_scalar[__fname].setName( __n );
-                //M_element_scalar[__fname].setFunctionSpace( M_scalar_p0 );
-
                 // interpolate field on visualisation space
-                interpolate( M_scalar_p0, func, M_element_scalar[__fname] );
+                // If user asks for P0 visu [exporter.element-spaces options contains P0]
+                if( soption(_name="exporter.element-spaces").find( "P0" ) != std::string::npos )
+                {
+                    M_element_scalar.insert( std::make_pair( __fname,M_scalar_p0->element( __n, func.description() ) ) );
+                    interpolate( M_scalar_p0, func, M_element_scalar[__fname] );
+                    DVLOG(2) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
+                }
 
-                //std::copy( func.begin(), func.end(), M_element_scalar[__fname].begin() );
-                DVLOG(2) << "[TimeSet::add] scalar p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
+                // If user asks for smoothed P0 (P1) visu [exporter.element-spaces options contains P1]
+                if ( soption(_name="exporter.element-spaces").find( "P1" ) != std::string::npos )
+                {
+                    if ( !M_ts->M_scalar_p1 )
+                    {
+                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                       MESH_RENUMBER | MESH_CHECK,
+                                                                                       typename scalar_p1_space_type::periodicity_type(),
+                                                                                       func.worldsComm(),
+                                                                                       std::vector<bool>(1,extendeddof) );
+                        M_scalar_p1 = M_ts->M_scalar_p1;
+                        DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                    }
+
+                    auto scalar_P0toP1 = M_scalar_p1->element();
+                    scalar_P0toP1 = div( sum( M_scalar_p1, idv(func)*meas() ), sum( M_scalar_p1, meas() ) );
+                    this->add( __n+"_P1", __fname+"_P1", scalar_P0toP1, mpl::bool_<false>(), mpl::bool_<true>());
+                }
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+                showMe( "Step::addElement" );
+                DVLOG(2) << "[TimeSet::add] p0 function done\n";
             }
 
-            else if ( FunctionType::is_vectorial )
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                  typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
             {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                if ( !func.worldComm().isActive() ) return;
+
                 if ( !M_ts->M_vector_p0 )
                 {
-                    M_ts->M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( M_mesh.get(),
-                                                                                            MESH_RENUMBER | MESH_CHECK,
-                                                                                            typename vector_p0_space_type::periodicity_type(),
-                                                                                            func.worldsComm(),
-                                                                                            std::vector<bool>(1,extendeddof) ) );
+                    M_ts->M_vector_p0 = boost::make_shared<vector_p0_space_type> ( M_mesh.get(),
+                                                                                   MESH_RENUMBER | MESH_CHECK,
+                                                                                   typename vector_p0_space_type::periodicity_type(),
+                                                                                   func.worldsComm(),
+                                                                                   std::vector<bool>(1,extendeddof) );
                     M_vector_p0 = M_ts->M_vector_p0;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
                 }
@@ -893,41 +927,67 @@ public:
 
                 if (  M_mesh.get() != M_ts->M_vector_p0->mesh() && !M_vector_p0 )
                 {
-                    M_vector_p0 = vector_p0_space_ptrtype( new vector_p0_space_type ( M_mesh.get(),
-                                                                                      MESH_RENUMBER | MESH_CHECK,
-                                                                                      typename vector_p0_space_type::periodicity_type(),
-                                                                                      func.worldsComm(),
-                                                                                      std::vector<bool>(1,extendeddof) ) );
+                    M_vector_p0 = boost::make_shared<vector_p0_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename vector_p0_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof) );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
-                    //M_tensor2_p0 = tensor2_p0_space_ptrtype( new tensor2_p0_space_type ( M_mesh.get() ) );
                 }
 
-                M_element_vector.insert( std::make_pair( __fname,M_vector_p0->element( __n ) ) );
-                //M_element_vector[__fname].setName( __n );
-                //M_element_vector[__fname].setFunctionSpace( M_vector_p0 );
-
                 // interpolate field on visualisation space
-                interpolate( M_vector_p0, func, M_element_vector[__fname] );
+                // If user asks for P0 visu [exporter.element-spaces options contains P0]
+                if( soption(_name="exporter.element-spaces").find( "P0" ) != std::string::npos )
+                {
+                    M_element_vector.insert( std::make_pair( __fname,M_vector_p0->element( __n, func.description() ) ) );
+                    interpolate( M_vector_p0, func, M_element_vector[__fname] );
+                    DVLOG(2) << "[TimeSet::add] vector p0 function " << __n << " added to exporter with filename " << __fname <<  "\n";
+                }
 
-                //std::copy( func.begin(), func.end(), M_element_vector[__fname].begin() );
+                // If user asks for smoothed P0 (P1) visu [exporter.element-spaces options contains P1]
+                if ( soption(_name="exporter.element-spaces").find( "P1" ) != std::string::npos )
+                {
+                    if ( !M_ts->M_vector_p1 )
+                    {
+                        M_ts->M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                                       MESH_RENUMBER | MESH_CHECK,
+                                                                                       typename vector_p1_space_type::periodicity_type(),
+                                                                                       func.worldsComm(),
+                                                                                       std::vector<bool>(1,extendeddof) );
+                        M_vector_p1 = M_ts->M_vector_p1;
+                        DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
+                    }
+
+                    auto vector_P0toP1 = M_vector_p1->element();
+                    //vector_P0toP1 = div( sum( M_vector_p1, trans(idv(func))*meas() ), sum( M_vector_p1, meas()*one() ) );
+                    vector_P0toP1 = div( sum( M_vector_p1, idv(func)*meas() ), sum( M_vector_p1, meas()*one() ) );
+                    this->add( __n+"_P1", __fname+"_P1", vector_P0toP1, mpl::bool_<false>(), mpl::bool_<true>());
+                }
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+                showMe( "Step::addElement" );
+                DVLOG(2) << "[TimeSet::add] p0 function done\n";
             }
 
-            else if ( FunctionType::is_tensor2 )
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                  typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
             {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                if ( !func.worldComm().isActive() ) return;
+
                 M_element_tensor2[__fname].setName( __n );
                 M_element_tensor2[__fname].setFunctionSpace( M_tensor2_p0 );
 
                 // interpolate field on visualisation space
                 interpolate( M_tensor2_p0, func, M_element_tensor2[__fname] );
 
-                //std::copy( func.begin(), func.end(), M_element_tensor2[__fname].begin() );
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+                showMe( "Step::addElement" );
+                DVLOG(2) << "[TimeSet::add] p0 function done\n";
             }
-
-            M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
-            M_state.clear( STEP_ON_DISK );
-            showMe( "Step::addElement" );
-            DVLOG(2) << "[TimeSet::add] p0 function done\n";
-        }
 
         //@}
 

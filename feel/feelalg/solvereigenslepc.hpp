@@ -246,6 +246,11 @@ private:
     void setSlepcSpectralTransform();
 
     /**
+     * set the eigenvalues to compute
+     */
+    void setSlepcDimensions();
+
+    /**
      * Eigenproblem solver context
      */
     EPS M_eps;

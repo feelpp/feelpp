@@ -119,6 +119,7 @@
 #include <feel/feelcore/feelassert.hpp>
 
 #include <feel/feelcore/flags.hpp>
+
 #include <feel/feelcore/serialization.hpp>
 
 #if defined( FEELPP_HAS_TBB )
@@ -154,6 +155,7 @@ using google::WARNING;
 using google::ERROR;
 using google::INFO;
 using google::FATAL;
+using boost::format;
 
 namespace detail
 {
@@ -617,5 +619,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 
 #include <feel/feelcore/ptr.hpp>
+#include <feel/feelcore/range.hpp>
 
 #endif

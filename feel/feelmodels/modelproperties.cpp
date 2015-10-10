@@ -30,6 +30,8 @@ namespace Feel {
 
 ModelProperties::ModelProperties( std::string const& filename )
 {
+    if ( !fs::exists( filename ) ) return;
+
     pt::read_json(filename, M_p);
     try {
         M_name  = M_p.get<std::string>( "Name"  );
@@ -114,4 +116,26 @@ std::string ModelProperties::getEntry(std::string &s)
   return res;
 }
 
+void ModelProperties::saveMD(std::ostream &os)
+{
+  os << "## Model \n";
+  os << " - Name **" << name()<< "**\n";
+  os << " - shortName **" << shortName()<< "**\n";
+  os << " - description **" << description()<< "**\n";
+  os << " - model **" << model()<< "**\n\n";
+  M_params.saveMD(os);
+  M_mat.saveMD(os);
+  M_bc.saveMD(os);
+  M_postproc.saveMD(os);
+}
+
+void ModelProperties::put(std::string const &key, std::string const &entry)
+{
+  M_p.put(key,entry);
+}
+
+void ModelProperties::write(std::string const &f)
+{
+    pt::write_json(f,M_p);
+}
 }

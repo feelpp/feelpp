@@ -1701,6 +1701,37 @@ void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > co
 {
     M_pc_faces = __pcfaces;
 }
+    
+    void
+    edgeTangent(int edgeId, ublas::vector<value_type>& t, bool scaled = false) const
+        {
+            auto const& K = this->K(0);
+
+            ublas::axpy_prod( K,
+                              this->geometricMapping()->referenceConvex().tangent( edgeId ),
+                              t,
+                              true );
+            if( scaled )
+                t *= this->element().hEdge( edgeId )/ublas::norm_2(t);
+            else
+                t /= ublas::norm_2(t);
+        }
+
+    void
+    faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
+        {
+            auto const& K = this->K(0);
+            auto const& B = this->B(0);
+
+            ublas::axpy_prod( B,
+                              this->geometricMapping()->referenceConvex().normal( faceId ),
+                              n,
+                              true );
+            if ( scaled )
+                n *= this->element().faceMeasure(faceId)/ublas::norm_2(n);
+            else
+                n /= ublas::norm_2(n);
+        }
 
 //@}
 private:

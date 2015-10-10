@@ -25,7 +25,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -60,7 +60,11 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_DEFS )
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
-  target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  if ( FEELPP_APP_NO_FEELPP_LIBRARY )
+    target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  else()
+    target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif()
 
   if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
@@ -91,10 +95,10 @@ macro(feelpp_add_application)
   else()
     if ( NOT FEELPP_APP_NO_TEST )
       IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
       IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT 30)
+        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
   endif()
@@ -197,7 +201,7 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT;CLI"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
   
@@ -209,10 +213,18 @@ macro(feelpp_add_test)
 
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
-    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+    if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+    else()
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+    endif()
     #add_executable(${targetname} ${filename})
   else()
-    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+     else()
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+     endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()
     #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
@@ -231,30 +243,32 @@ macro(feelpp_add_test)
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
       add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
-      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} PROPERTY TIMEOUT 30)
+      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
     endif()
 
 
     # add TIMEOUT to test
-    if ( FEELPP_TEST_TIMEOUT )
-      if ( NOT FEELPP_TEST_NO_TEST )
+    if ( NOT FEELPP_TEST_NO_TEST )
+      if ( FEELPP_TEST_TIMEOUT )
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
           set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
         endif()
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
-      endif()
-    else()
-      if ( NOT FEELPP_TEST_NO_TEST )
+      else()
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_DEFAULT_TEST_TIMEOUT})
         endif()
-        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT 30)
+        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
+
+    # cfg
     set(cfgname test_${FEELPP_TEST_NAME}.cfg)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
       configure_file(  ${cfgname} ${cfgname} )
     endif()
+
+    # test_geo
     if ( FEELPP_TEST_GEO )
       foreach(  geo ${FEELPP_TEST_GEO} )
         # extract geo filename  to be copied in binary dir
@@ -353,4 +367,14 @@ MACRO(feelpp_list_subdir result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
+
+#
+# compute the max of two variables
+macro(feelpp_max max var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${max} ${var1})
+  else()
+    set(${max} ${var2})
+  endif()
+endmacro(feelpp_max)
 

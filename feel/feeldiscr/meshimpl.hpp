@@ -129,7 +129,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         //
         // compute the Adjacency graph
         //
-        ti.restart();
+        tic();
         VLOG(2) << "Compute adjacency graph\n";
         element_iterator iv,  en;
         boost::unordered_map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
@@ -190,7 +190,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             } // local face
         } // element loop
         f2e.clear();
-        VLOG(1) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
+        toc("Mesh::UpdateForUse Compute adjacency graph", FLAGS_v > 0 );
 #if 0
 
         // partition mesh
@@ -205,13 +205,14 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_UPDATE_FACES ) )
         {
-            ti.restart();
+            tic();
             // update connectivities of entities of co dimension 1
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
             this->check();
-            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update entities of codimension 1",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1";
 
         }
 
@@ -231,9 +232,9 @@ Mesh<Shape, T, Tag>::updateForUse()
                 // warning : this function change the isOnBoundary for ghost faces
                 // so need call before updateOnBoundary()
                 if ( false )
-                    this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
+                    this->updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
                 else
-                    this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+                    this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
                 auto ipfRange = this->interProcessFaces();
                 for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
@@ -250,16 +251,17 @@ Mesh<Shape, T, Tag>::updateForUse()
              this->components().test( MESH_UPDATE_EDGES )
              )
         {
-            ti.restart();
+            tic();
             updateOnBoundary();
-            VLOG(1) << "[Mesh::updateForUse] update on boundary : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update on boundary", FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update on boundary ";
         }
 
 
 
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            ti.restart();
+            tic();
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
@@ -270,7 +272,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  e.point( i ).addElement( e.id(), i );
                                          });
             }
-            VLOG(1) << "[Mesh::updateForUse] update add element info : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
+            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
         }
 
         ti.restart();
@@ -324,9 +327,10 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {
-            ti.restart();
+            tic();
             propagateMarkers(mpl::int_<nDim>() );
-            VLOG(1) << "[Mesh::updateForUse] update propagate markers : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update propagate markers",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update propagate markers"; 
         }
 
         {
@@ -377,19 +381,21 @@ Mesh<Shape, T, Tag>::updateForUse()
 #endif
 
     {
-        ti.restart();
+        tic();
         // check mesh connectivity
         this->check();
-        VLOG(1) << "[Mesh::updateForUse] check : " << ti.elapsed() << "\n";
+        toc("Mesh::updateForUse check",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] check";
     }
 
     if ( M_is_gm_cached == false )
     {
-        ti.restart();
+        tic();
         M_gm->initCache( this );
         M_gm1->initCache( this );
         M_is_gm_cached = true;
-        VLOG(1) << "[Mesh::updateForUse] update geomap : " << ti.elapsed() << "\n"; 
+        toc("Mesh::updateForUse update geomap",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update geomap"; 
     }
 
     this->setUpdatedForUse( true );
@@ -1533,11 +1539,11 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
 
-    VLOG(2) << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
+    VLOG(2) << "[Mesh::updateEntitiesCoDimensionGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
 
     std::vector<int> nbMsgToSend( this->worldComm().localSize(), 0 );
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
@@ -1739,7 +1745,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
                 } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
@@ -1768,7 +1774,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
                     if (find2) { hasFind=true;jBis=j2; }
                 }
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
@@ -1784,18 +1790,119 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
 
-    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] finish" << std::endl;
+    //std::cout << "[Mesh::updateEntitiesCoDimensionGhostCell] finish" << std::endl;
 
-} // updateEntitiesCoDimensionOneGhostCell
+} // updateEntitiesCoDimensionGhostCell
+
+namespace detail
+{
+typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
+
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::false_ /**/ )
+{}
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::true_ /**/ )
+{
+    typedef typename ElementType::value_type value_type;
+    // get edges id and bary
+    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(0, false, std::vector<double>(ElementType::nRealDim) ));
+    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+    {
+        auto const& theedge = theelt.edge( j );
+        idEdgesWithBary[j].template get<0>() = theedge.id();
+        idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
+
+        //compute edge barycenter
+        auto const& theGj = theedge.vertices();
+        typename ElementType::matrix_node_type v( theGj.size1(), 1 );
+        ublas::scalar_vector<value_type> avg( theGj.size2(), value_type( 1 ) );
+        value_type n_val = int( theGj.size2() );
+        for ( size_type i = 0; i < theGj.size1(); ++i )
+            v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg )/n_val;
+        auto baryEdge = ublas::column( v,0 );
+
+        // save edgebarycenter by components
+        for ( uint16_type comp = 0; comp<ElementType::nRealDim; ++comp )
+        {
+            idEdgesWithBary[j].template get<2>()[comp]=baryEdge[comp];
+        }
+    }
+}
+
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+{}
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+{
+    typedef typename MeshType::element_type ElementType;
+    typedef typename MeshType::edge_type edge_type;
+    typedef typename ElementType::value_type value_type;
+    const rank_type idProc = theelt.processId();
+
+    //update edges data
+    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+    {
+        auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
+        const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
+        auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
+
+        // find edge relation by comparing barycenters
+        uint16_type jBis = invalid_uint16_type_value;
+        bool hasFind=false;
+        for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
+        {
+            auto const& theedgej2 = theelt.edge( j2 );
+            auto const& theGj2 = theedgej2.vertices();
+            //compute edge barycenter
+            typename ElementType::matrix_node_type v( theGj2.size1(), 1 );
+            ublas::scalar_vector<value_type> avg( theGj2.size2(), value_type( 1 ) );
+            value_type n_val = int( theGj2.size2() );
+            for ( size_type i = 0; i < theGj2.size1(); ++i )
+                v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg )/n_val;
+            auto baryEdge = ublas::column( v,0 );
+            // compare barycenter
+            bool find2=true;
+            for (uint16_type d=0;d<MeshType::nRealDim;++d)
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
+            if (find2) { hasFind=true;jBis=j2; }
+        }
+        CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
+
+        // get the good edge
+        auto edge_it = mesh.edgeIterator( theelt.edge( jBis ).id() );
+        // update id edge in other partition
+        mesh.edges().modify( edge_it, [&idProc,&idEdgeRecv]( edge_type& e )
+                             {
+                                 e.addNeighborPartitionId( idProc );
+                                 e.setIdInOtherPartitions( idProc, idEdgeRecv );
+                             } );
+
+        // maybe the edge is not really on boundary
+        if ( edge_it->isOnBoundary() && !edgeOnBoundaryRecv )
+            mesh.edges().modify( edge_it, []( edge_type& e ){ e.setOnBoundary( false ); } );
+
+    } // for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+
+
+}
+
+} // namespace detail
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
+    typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
     typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_face_type;
 
-    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
     const rank_type nProc = this->worldComm().localSize();
 
@@ -1901,7 +2008,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1943,6 +2050,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 }
             }
             //---------------------------//
+            // get edges id and bary
+            resultghost_edge_type idEdgesWithBary;
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1( theelt, idEdgesWithBary, mpl::bool_<element_type::nDim == 3>() );
+            //---------------------------//
             // get points id and nodes
             resultghost_point_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
@@ -1956,7 +2067,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
             }
             //---------------------------//
             // update container to ReSend
-            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idFacesWithBary);
+            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idEdgesWithBary,idFacesWithBary);
 
         } // for ( int k=0; k<nDataRecv; ++k )
     }
@@ -1972,7 +2083,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
 
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
@@ -1997,7 +2108,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         for ( int k=0; k<nDataRecv; ++k )
         {
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
-            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
+            auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
+            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
             auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
 
             //update faces data
@@ -2040,7 +2152,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
                 } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
@@ -2050,14 +2162,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                                           f.addNeighborPartitionId( idProc );
                                           f.setIdInOtherPartitions( idProc, idFaceRecv );
                                       } );
-                                      
+
                 // maybe the face is not really on boundary
                 if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
                     this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
+            // edges
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
 
+            // vertices
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
             {
                 auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
@@ -2077,7 +2192,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                     if (find2) { hasFind=true;jBis=j2; }
                 }
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
@@ -2086,14 +2201,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                                            p.addNeighborPartitionId( idProc );
                                            p.setIdInOtherPartitions( idProc, idPointRecv );
                                        } );
-                                       
 
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
     } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     //------------------------------------------------------------------------------------------------//
 
-    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
 
 }
 

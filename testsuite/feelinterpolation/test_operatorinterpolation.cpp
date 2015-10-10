@@ -23,8 +23,6 @@ using namespace Feel;
 namespace test_operatorinterpolation
 {
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -543,7 +541,7 @@ test2dOpLagrangeP1()
  * main code
  */
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(),
-                                 test_operatorinterpolation::makeOptions() )
+                                 test_operatorinterpolation::makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
 
@@ -552,7 +550,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d2dgeo1" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo1" )
                                    % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo2d<1>();
@@ -564,7 +562,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d2dgeo2" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo2" )
                                    % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo2d<2>();
@@ -576,7 +574,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d1dgeo1" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo1" )
                                    % Environment::about().appName() );
 
     //test_operatorinterpolation::test2dTo2d<3>(test_app);
@@ -589,7 +587,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d1dgeo2" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo2" )
                                    % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo1d<2>();
@@ -601,7 +599,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/3d3dgeo1smd" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" )
                                    % Environment::about().appName() );
 
     //test_operatorinterpolation::testSMD<2,1>();
@@ -615,7 +613,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/oplagp1geo1" )
+    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/oplagp1geo1" )
                                    % Environment::about().appName() );
 
 

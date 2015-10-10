@@ -50,19 +50,28 @@ struct Odh
 
 } // meta
 
+template<typename MeshType,
+         int Order,
+         int Tag = 0>
+using Odh_type = typename meta::Odh<MeshType,Order,Tag>::type;
+template<typename MeshType,
+         int Order,
+         int Tag = 0>
+using Odh_ptrtype = typename meta::Odh<MeshType,Order,Tag>::ptrtype;
+
 /**
    Given a \p mesh, build a function space of discontinuous function which are
   piecewise polynomial of degree and \f$L_2\f$ Orthonormal
  */
 template<int Order,typename MeshType, int Tag = 0>
 inline
-typename meta::Odh<MeshType,Order,Tag>::ptrtype
+Odh_ptrtype<MeshType,Order,Tag>
 Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    typedef typename meta::Odh<MeshType,Order,Tag>::type space_type;
-    return space_type::New( _mesh=mesh,
-                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    
+    return Odh_type<MeshType,Order,Tag>::New( _mesh=mesh,
+                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }
