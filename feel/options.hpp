@@ -105,6 +105,7 @@ po::options_description on_options( std::string const& prefix = "" );
 
 po::options_description ts_options( std::string const& prefix = "" );
 po::options_description bdf_options( std::string const& prefix = "" );
+po::options_description cnab2_options( std::string const& prefix = "" );
 
 /**
  * command line options for exporter

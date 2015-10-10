@@ -166,9 +166,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         // apply assembly and solver
         virtual void solve();
 
-        virtual void updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
-                                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                      bool _doClose, bool _doBCStrongDirichlet ) const;
+        void updateLinearPDE( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
         virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
         virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;

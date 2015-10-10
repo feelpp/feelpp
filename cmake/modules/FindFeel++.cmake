@@ -334,6 +334,8 @@ if ( FEELPP_ENABLE_HDF5 )
     else()
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
     endif()
+  else()
+    MESSAGE(STATUS "[feelpp] no HDF5 found")
   endif()
 endif(FEELPP_ENABLE_HDF5)
 
@@ -953,7 +955,39 @@ if ( FEELPP_ENABLE_VTK )
             endif()
             INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
             MARK_AS_ADVANCED( VTK_DIR )
-            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+
+            # # On debian for vtk6 (actually not working since vtk6 is built with hdf5 serial)
+            # if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            #   message (STATUS "Trying to find Linux distro")
+            #   execute_process(
+		    #     COMMAND lsb_release -i -s
+		    #     RESULT_VARIABLE RC
+		    #     OUTPUT_VARIABLE DIST_NAME
+            #     OUTPUT_STRIP_TRAILING_WHITESPACE
+            #     ERROR_STRIP_TRAILING_WHITESPACE
+		    #     )
+	        #   if (RC EQUAL 0)
+		    #     execute_process(
+		    #       COMMAND lsb_release -c -s
+		    #       RESULT_VARIABLE RC
+		    #       OUTPUT_VARIABLE DIST_CODENAME
+            #       OUTPUT_STRIP_TRAILING_WHITESPACE
+            #       ERROR_STRIP_TRAILING_WHITESPACE
+		    #       )
+		    #     message (STATUS "Distribution: ${DIST_NAME} ${DIST_CODENAME}")
+	        #   endif ()
+              
+            #   set(DebianDistros  jessie stretch sid)
+            #   if (DIST_NAME STREQUAL "Debian")
+            #     list (FIND DebianDistros  ${DIST_CODENAME} _index)
+            #     if (${_index} GREATER -1)
+            #       find_package(Qt5Widgets REQUIRED)
+            #       MESSAGE(STATUS "add ${Qt5Widgets_LIBRARIES} to FEELPP_LIBRARIES")
+            #     endif()
+            #   endif()  
+            # endif()
+            
+            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
 
         endif()

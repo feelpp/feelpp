@@ -12,11 +12,18 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                     bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( DataUpdateLinear & data ) const
 {
     using namespace Feel::vf;
+
+    //const vector_ptrtype& X = data.initialSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _BuildCstPart = data.buildCstPart();
+    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
+    bool _BuildExtendedPart = data.buildExtendedPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("FluidMechanics","updateOseen", "start"+sc );
@@ -102,7 +109,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     if (BuildCstPart)
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
 
     //--------------------------------------------------------------------------------------------------//
@@ -273,7 +280,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     {
         myLinearForm +=
             integrate( _range=elements(mesh),
-                       _expr= idv(this->velocityDiv())*id(q),
+                       _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)

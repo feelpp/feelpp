@@ -327,11 +327,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
 }
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const
 {
     if ( !this->hasDirichletBC() ) return;
 
-    auto RBis = this->backend()->newVector( J->mapRowPtr() );
+    //auto RBis = this->backend()->newVector( J->mapRowPtr() );
     auto bilinearForm_PatternCoupled = form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),

@@ -141,6 +141,10 @@ template<typename MeshType>
 using edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
                                typename MeshTraits<MeshType>::edge_const_iterator,
                                typename MeshTraits<MeshType>::edge_const_iterator>;
+template<typename MeshType>
+using pid_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
+                                typename MeshTraits<MeshType>::pid_edge_const_iterator,
+                                typename MeshTraits<MeshType>::pid_edge_const_iterator>;
 
 template<typename MeshType>
 using ext_edges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
@@ -180,7 +184,7 @@ template<typename MeshType>
 using internalpoints_t = boundarypoints_t<MeshType>;
 
 /**
- * namespace for meta mesh computation data structure 
+ * namespace for meta mesh computation data structure
  */
 namespace meta
 {
@@ -742,7 +746,7 @@ interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
  * @return a pair of edge iterators (begin,end)
  */
 template<typename MeshType>
-edges_t<MeshType>
+pid_edges_t<MeshType>
 edges( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
@@ -1322,7 +1326,7 @@ concatenate( IteratorType it1, IteratorType it2 )
     auto append = [&myelts]( typename boost::tuples::element<1,IteratorType>::type::value_type  const& e ) { myelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it1 ), end( it1 ), append );
     std::for_each( begin( it2 ), end( it2 ), append );
-    
+
     return boost::make_tuple( mpl::size_t<boost::tuples::element<0,IteratorType>::type::value>(),
                               myelts->begin(),
                               myelts->end(),

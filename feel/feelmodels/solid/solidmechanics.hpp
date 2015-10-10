@@ -83,7 +83,7 @@ public:
     void updateBCRobinResidual( element_displacement_type const& u, vector_ptrtype& R ) const;
     void updateSourceTermResidual( vector_ptrtype& R ) const;
 
-    void updateBCDirichletStrongJacobian(sparse_matrix_ptrtype& J) const;
+    void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const;
     void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const;
     void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
 
