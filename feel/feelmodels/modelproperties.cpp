@@ -21,18 +21,27 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/utility.hpp>
+
 #include <feel/feelmodels/modelproperties.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 namespace Feel {
 
 
+
 ModelProperties::ModelProperties( std::string const& filename )
 {
     if ( !fs::exists( filename ) ) return;
 
-    pt::read_json(filename, M_p);
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }

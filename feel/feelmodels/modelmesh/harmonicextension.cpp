@@ -170,11 +170,13 @@ HarmonicExtension<MeshType,Order>::getInfo() const
 
 template< typename MeshType, int Order >
 void
-HarmonicExtension<MeshType,Order>::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                   bool buildCstPart,
-                                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                   bool _doClose, bool _doBCStrongDirichlet ) const
+HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
+    //const vector_ptrtype& X = data.initialSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+
     auto u = this->displacement();
     auto v = this->displacement();
 

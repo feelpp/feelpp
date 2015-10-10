@@ -220,6 +220,13 @@ public:
         return M_nearNullSpace.find(splitIds)->second;
     }
 
+    bool hasAuxiliaryVector( std::string const& key ) const { return M_auxiliaryVector.find( key ) != M_auxiliaryVector.end(); }
+    vector_ptrtype const& auxiliaryVector( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliaryVector( key ) ) << " auxiliary vector not given for this key : " << key ;
+        return M_auxiliaryVector.find( key )->second;
+    }
+
     bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
     sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
     {
@@ -280,6 +287,11 @@ public:
     void attachNearNullSpace( std::set<int> const& splitIds, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
     {
         M_nearNullSpace[splitIds] = nearNullSpace;
+    }
+
+    void attachAuxiliaryVector( std::string const& key,vector_ptrtype const& vec )
+    {
+        M_auxiliaryVector[key] = vec;
     }
 
     void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
@@ -351,6 +363,7 @@ protected:
     std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
 
     std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+    std::map<std::string,vector_ptrtype> M_auxiliaryVector;
 
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 };
