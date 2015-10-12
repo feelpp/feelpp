@@ -428,10 +428,10 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
  */
 template<typename ExprL>
 inline
-Expr< Product<ExprL, ExprL,1,NONE> >
+Expr< Product<ExprL, ExprL,1,InnerProperties::IS_SAME> >
 inner( ExprL l )
 {
-    typedef Product<ExprL, ExprL,1,NONE> product_t;
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME> product_t;
     return Expr< product_t >(  product_t( l, l ) );
 }
 
@@ -440,7 +440,7 @@ inline
 Expr< Product<ExprL, ExprL,1,Props> >
 inner( ExprL l, mpl::int_<Props> )
 {
-    typedef Product<ExprL, ExprL,1,Props> product_t;
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> product_t;
     return Expr< product_t >(  product_t( l, l ) );
 }
 

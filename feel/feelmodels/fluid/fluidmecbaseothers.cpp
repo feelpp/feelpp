@@ -779,14 +779,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,bool _buildCstPart,
-                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                        bool _doClose, bool _doBCStrongDirichlet) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
     if ( M_pdeType == "Stokes" || M_pdeType == "Oseen" )
-        updateOseen(A,F,_buildCstPart,A_extended,_BuildExtendedPart,_doClose,_doBCStrongDirichlet);
+        updateOseen( data );
+#if 0
     else if ( M_pdeType == "Navier-Stokes")
         updatePtFixe(X,A,F,_buildCstPart,_doClose,_doBCStrongDirichlet);
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//

@@ -1912,6 +1912,8 @@ public:
 
 
         typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
+        using mesh_type = typename functionspace_type::mesh_type;
+        using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
         typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
         static const uint16_type nDim = mesh_type::nDim;

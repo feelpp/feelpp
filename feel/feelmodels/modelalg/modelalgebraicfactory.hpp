@@ -33,8 +33,10 @@
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 
 
-namespace Feel {
-
+namespace Feel
+{
+namespace FeelModels
+{
 
     class ModelAlgebraicFactory
     {
@@ -208,7 +210,8 @@ namespace Feel {
     };
 
 
-} // end namespace Feel
+} // namespace FeelModels
+} // namespace Feel
 
 
 #endif //FEELPP_MODELSALGEBRAICFACTORY_HPP

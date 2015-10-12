@@ -651,12 +651,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     << "time values: 1.0";
             }
 
-            uint16_type __l = 0;
+            uint16_type __l = 1;
 
             while ( __its != __ens )
             {
 
-                __out << ( *__its )->time() << " ";
+                __out << std::scientific << std::setprecision( 6 ) << ( *__its )->time() << " ";
 
                 if ( __l++ % 10 == 0 )
                     __out << "\n";

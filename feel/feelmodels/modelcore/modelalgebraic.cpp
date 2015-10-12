@@ -180,23 +180,17 @@ ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
 {}
 
 void
-ModelAlgebraic::updateNewtonInitialGuess(vector_ptrtype& U) const {} // const = 0;
+ModelAlgebraic::updateNewtonInitialGuess( vector_ptrtype& U ) const
+{}
 void
-ModelAlgebraic::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                     bool BuildCstPart,
-                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                     bool _doClose, bool _doBCStrongDirichlet) const {}// = 0;
+ModelAlgebraic::updateJacobian( DataUpdateJacobian & data ) const
+{}
 void
-ModelAlgebraic::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                                     bool BuildCstPart, bool UseJacobianLinearTerms,
-                                     bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
-
+ModelAlgebraic::updateResidual( DataUpdateResidual & data ) const
+{}
 void
-ModelAlgebraic::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                     bool _buildCstPart,
-                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                     bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
-
+ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
+{}
 
 
 

@@ -900,7 +900,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     if (!findEltForInit) return;
 
     // run assemble process according to isRelated meshes
-    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isRelatedTo( it->mesh() ) || __v->mesh()->isRelatedTo( it->mesh() ) );
+    const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) &&
+        ( __u->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() ) || __v->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() ) );
     LOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value
               << " test_related_to_trial: " << test_related_to_trial << ")\n";
     if ( test_related_to_trial )
@@ -945,7 +946,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     if (!findEltForInit) return;
 
 
-    const bool test_related_to_range = __v->mesh()->isRelatedTo( it->mesh() );
+    const bool test_related_to_range = __v->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() );
 
     //if ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
     if ( test_related_to_range )
@@ -1867,27 +1868,29 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             if ( elt_it == elt_en )
                 continue;
 
-            const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-            const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
-            const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
-            const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+            auto const& eltInit = boost::unwrap_ref( *elt_it );
 
-            const size_type idEltRangeInit = elt_it->id();
+            const bool rangeIsSubMeshFromTest = eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+            const bool rangeIsSubMeshFromTrial = eltInit.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+            const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() );
+            const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( eltInit.mesh() );
+
+            const size_type idEltRangeInit = eltInit.id();
             size_type idEltTestInit  = idEltRangeInit;
             if ( rangeIsSubMeshFromTest )
-                idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+                idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltRangeInit );
             else if ( testIsSubMeshFromRange )
                 idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
             size_type idEltTrialInit = idEltRangeInit;
             if ( rangeIsSubMeshFromTrial )
-                idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+                idEltTrialInit = eltInit.mesh()->subMeshToMesh( idEltRangeInit );
             else if ( trialIsSubMeshFromRange )
                 idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
             //-----------------------------------------------//
-            pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
-            pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( elt_it->gm1(), im1Range.points() ) );
-            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
-            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( elt_it->gm1(),*elt_it, geopc1Expr ) );
+            pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
+            pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( eltInit.gm1(), im1Range.points() ) );
+            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
+            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( eltInit.gm1(),eltInit, geopc1Expr ) );
             //-----------------------------------------------//
             auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_1_type,im_formtest_type,
                                                                               gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -1911,15 +1914,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             for ( ; elt_it != elt_en; ++elt_it )
                 {
-                    const size_type idEltRange = elt_it->id();
+                    auto const& eltCur = boost::unwrap_ref( *elt_it );
+
+                    const size_type idEltRange = eltCur.id();
                     size_type idEltTest = idEltRange;
                     if ( rangeIsSubMeshFromTest )
-                        idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                        idEltTest = eltCur.mesh()->subMeshToMesh( idEltRange );
                     else if ( testIsSubMeshFromRange )
                         idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
                     size_type idEltTrial = idEltRange;
                     if ( rangeIsSubMeshFromTrial )
-                        idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+                        idEltTrial = eltCur.mesh()->subMeshToMesh( idEltRange );
                     else if ( trialIsSubMeshFromRange )
                         idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
 
@@ -1933,7 +1938,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
                     {
-                        gmcExpr->update(*elt_it);
+                        gmcExpr->update(eltCur);
                         detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
                                                                        gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                         idEltTest, mpl::int_<gmTestRangeRelation>() );
@@ -1958,7 +1963,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                         if ( ( rangeIsSubMeshFromTest && __form.testSpace()->mesh()->face( idEltTest ).isOnBoundary() ) ||
                              ( rangeIsSubMeshFromTrial && __form.trialSpace()->mesh()->face( idEltTrial ).isOnBoundary() ) )
                         {
-                            gmcExpr->update(*elt_it);
+                            gmcExpr->update(eltCur);
                             detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                             idEltTest, mpl::int_<gmTestRangeRelation>() );
@@ -2110,27 +2115,29 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             if ( elt_it == elt_en )
                 continue;
 
-            const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-            const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
-            const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
-            const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+            auto const& eltInit = boost::unwrap_ref( *elt_it );
 
-            const size_type idEltRangeInit = elt_it->id();
+            const bool rangeIsSubMeshFromTest = eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+            const bool rangeIsSubMeshFromTrial = eltInit.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+            const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() );
+            const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( eltInit.mesh() );
+
+            const size_type idEltRangeInit = eltInit.id();
             size_type idEltTestInit  = idEltRangeInit;
             if ( rangeIsSubMeshFromTest )
-                idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+                idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltRangeInit );
             else if ( testIsSubMeshFromRange )
                 idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
             size_type idEltTrialInit = idEltRangeInit;
             if ( rangeIsSubMeshFromTrial )
-                idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+                idEltTrialInit = eltInit.mesh()->subMeshToMesh( idEltRangeInit );
             else if ( trialIsSubMeshFromRange )
                 idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
             //-----------------------------------------------//
-            pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
-            pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( elt_it->gm1(), im1Range.points() ) );
-            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
-            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( elt_it->gm1(),*elt_it, geopc1Expr ) );
+            pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
+            pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( eltInit.gm1(), im1Range.points() ) );
+            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
+            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( eltInit.gm1(),eltInit, geopc1Expr ) );
             //-----------------------------------------------//
             auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_1_type,im_formtest_type,
                                                                               gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -2160,15 +2167,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             for ( ; elt_it != elt_en; ++elt_it )
                 {
-                    const size_type idEltRange = elt_it->id();
+                    auto const& eltCur = boost::unwrap_ref( *elt_it );
+                    const size_type idEltRange = eltCur.id();
                     size_type idEltTest = idEltRange;
                     if ( rangeIsSubMeshFromTest )
-                        idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                        idEltTest = eltCur.mesh()->subMeshToMesh( idEltRange );
                     else if ( testIsSubMeshFromRange )
                         idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
                     size_type idEltTrial = idEltRange;
                     if ( rangeIsSubMeshFromTrial )
-                        idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+                        idEltTrial = eltCur.mesh()->subMeshToMesh( idEltRange );
                     else if ( trialIsSubMeshFromRange )
                         idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
 
@@ -2176,13 +2184,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     if ( formc->isZero( eltTest.element0() /*idElt*/ ) )
                         continue;
 #endif
-                    LOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                    LOG(INFO) << "elt "  << eltCur.id() << " bdy = " << eltCur.isOnBoundary();
                     switch ( M_gt )
                     {
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
                     {
-                        gmcExpr->update(*elt_it);
+                        gmcExpr->update(eltCur);
                         detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
                                                                        gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                         idEltTest, mpl::int_<gmTestRangeRelation>() );
@@ -2216,7 +2224,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                         if ( ( rangeIsSubMeshFromTest && __form.testSpace()->mesh()->face( idEltTest ).isOnBoundary() ) ||
                              ( rangeIsSubMeshFromTrial && __form.trialSpace()->mesh()->face( idEltTrial ).isOnBoundary() ) )
                         {
-                            gmcExpr->update(*elt_it);
+                            gmcExpr->update(eltCur);
                             detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                             idEltTest, mpl::int_<gmTestRangeRelation>() );
@@ -2322,11 +2330,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     }
     if (!findEltForInit) return;
 
+    auto const& eltInit = boost::unwrap_ref( *elt_it );
 
     //-----------------------------------------------//
     im_range_type imRange;
-    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points() ) );
@@ -2504,11 +2513,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     }
     if (!findEltForInit) return;
 
+    auto const& eltInit = boost::unwrap_ref( *elt_it );
 
     //-----------------------------------------------//
     im_range_type imRange;
-    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
@@ -2715,11 +2725,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     }
     if (!findEltForInit) return;
 
+    auto const& eltInit = boost::unwrap_ref( *elt_it );
+
     //-----------------------------------------------//
 
     im_range_type imRange;
-    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(), eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
     //-----------------------------------------------//
@@ -3059,34 +3071,38 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                    << std::distance( it, en )  << " faces\n";
 
         // check that we have elements to iterate over
-        if ( (it == en) || (it->isConnectedTo0() == false) )
+        if ( it == en )
+            continue;
+        auto const& faceInit = boost::unwrap_ref( *it );
+
+        if ( faceInit.isConnectedTo0() == false )
             continue;
 
         // true if range/test/trial are same mesh
-        bool useSameMesh = this->useSameMesh( __form,*it );
+        bool useSameMesh = this->useSameMesh( __form,faceInit );
 
-        uint16_type __face_id_in_elt_0 = it->pos_first();
-        rank_type procIdElt0 = it->proc_first();
-        size_type idEltTestInit = it->element( 0 ).id();
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
+        rank_type procIdElt0 = faceInit.proc_first();
+        size_type idEltTestInit = faceInit.element( 0 ).id();
         if ( !useSameMesh )
         {
             bool hasFindEltToInit = false;
             while( !hasFindEltToInit)
             {
-                if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                if ( faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
                 {
-                    idEltTestInit = it->mesh()->subMeshToMesh( idEltTestInit );
+                    idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltTestInit );
                 }
-                else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() ) )
                 {
                     idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
                     if ( idEltTestInit == invalid_size_type_value )
                     {
-                        if ( it->isConnectedTo1() )
+                        if ( faceInit.isConnectedTo1() )
                         {
-                            __face_id_in_elt_0 = it->pos_second();
-                            procIdElt0 = it->proc_second();
-                            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( it->element( 1 ).id() );
+                            __face_id_in_elt_0 = faceInit.pos_second();
+                            procIdElt0 = faceInit.proc_second();
+                            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( faceInit.element( 1 ).id() );
                         }
                     }
                 }
@@ -3109,7 +3125,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         //auto const& faceTestInit = elt0TestInit.face( __face_id_in_elt_0 );
 
         // get the geometric mapping associated with element 0
-        //DLOG(INFO) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
+        //DLOG(INFO) << "element " << faceInit.element(0)  << "face " << __face_id_in_elt_0 << " permutation " << faceInit.element(0).permutation( __face_id_in_elt_0 ) << "\n";
         gm_ptrtype __gm = elt0TestInit.gm();
         gm1_ptrtype __gm1 = elt0TestInit.gm1();
         //DLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
@@ -3151,12 +3167,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         bool isInitConnectionTo1=false;
 
         // true if connected to another element, false otherwise
-        //if ( it->isConnectedTo1() )
-        if ( this->faceIntegratorUseTwoConnections(__form,*it,elt0TestInit,__face_id_in_elt_0) )
+        //if ( faceInit.isConnectedTo1() )
+        if ( this->faceIntegratorUseTwoConnections(__form,faceInit,elt0TestInit,__face_id_in_elt_0) )
         {
-            uint16_type __face_id_in_elt_1 = it->pos_second();
-            rank_type procIdElt1 = it->proc_second();
-            size_type idElt1TestInit = it->element( 1 ).id();
+            uint16_type __face_id_in_elt_1 = faceInit.pos_second();
+            rank_type procIdElt1 = faceInit.proc_second();
+            size_type idElt1TestInit = faceInit.element( 1 ).id();
             if ( !useSameMesh )
             {
                 // search other connection
@@ -3212,22 +3228,24 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         //
         for ( ; it != en; ++it )
         {
+            auto const& faceCur = boost::unwrap_ref( *it );
+
             // get some info about test mesh element0 connected to the current face
-            uint16_type __face_id_in_elt_0 = it->pos_first();
-            rank_type procIdElt0 = it->proc_first();
-            size_type idEltTest = it->element( 0 ).id();
+            uint16_type __face_id_in_elt_0 = faceCur.pos_first();
+            rank_type procIdElt0 = faceCur.proc_first();
+            size_type idEltTest = faceCur.element( 0 ).id();
             bool swapElt0Elt1WithSameMesh = false;
             if ( !useSameMesh)
             {
-                boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,*it);
+                boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,faceCur);
                 if ( idEltTest == invalid_size_type_value )
                     continue;
             }
-            else if ( it->element0().isGhostCell() && it->isConnectedTo1() )
+            else if ( faceCur.element0().isGhostCell() && faceCur.isConnectedTo1() )
             {
-                __face_id_in_elt_0 = it->pos_second();
-                procIdElt0 = it->proc_second();
-                idEltTest = it->element( 1 ).id();
+                __face_id_in_elt_0 = faceCur.pos_second();
+                procIdElt0 = faceCur.proc_second();
+                idEltTest = faceCur.element( 1 ).id();
                 swapElt0Elt1WithSameMesh = true;
             }
 
@@ -3237,24 +3255,24 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             //auto const& faceTest = elt0Test.face( __face_id_in_elt_0 );
 
 
-            //if ( it->isConnectedTo1() )
-            if ( this->faceIntegratorUseTwoConnections(__form,*it,elt0Test,__face_id_in_elt_0) )
+            //if ( faceCur.isConnectedTo1() )
+            if ( this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
             {
 
-                if ( it->isGhostFace() )
+                if ( faceCur.isGhostFace() )
                 {
-                    LOG(WARNING) << "face id : " << it->id() << " is a ghost face" << it->G();
+                    LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
                     continue;
                 }
                 // if is a interprocess faces, only integrate in one process
-                if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
+                if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
                     continue;
 
 
                 // get some info about test mesh element1 connected to the current face
-                uint16_type __face_id_in_elt_1 = it->pos_second();
-                rank_type procIdElt1 = it->proc_second();
-                size_type idElt1Test = it->element( 1 ).id();
+                uint16_type __face_id_in_elt_1 = faceCur.pos_second();
+                rank_type procIdElt1 = faceCur.proc_second();
+                size_type idElt1Test = faceCur.element( 1 ).id();
                 if ( !useSameMesh )
                 {
                     // search other connection
@@ -3273,9 +3291,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 }
                 else if ( swapElt0Elt1WithSameMesh )
                 {
-                    uint16_type __face_id_in_elt_1 = it->pos_first();
-                    rank_type procIdElt1 = it->proc_first();
-                    size_type idElt1Test = it->element( 0 ).id();
+                    uint16_type __face_id_in_elt_1 = faceCur.pos_first();
+                    rank_type procIdElt1 = faceCur.proc_first();
+                    size_type idElt1Test = faceCur.element( 0 ).id();
                 }
                 CHECK( idElt1Test != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
 
@@ -3302,8 +3320,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 default:
                 case GeomapStrategyType::GEOMAP_HO:
                 {
-                    FEELPP_ASSERT( it->isOnBoundary() == false  )
-                        ( it->id() ).error( "face on boundary but connected on both sides" );
+                    FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
+                        ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c0->update( elt0Test, __face_id_in_elt_0 );
 #if 0
@@ -3355,8 +3373,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 case GeomapStrategyType::GEOMAP_O1:
                 case GeomapStrategyType::GEOMAP_OPT:
                 {
-                    FEELPP_ASSERT( it->isOnBoundary() == false  )
-                        ( it->id() ).error( "face on boundary but connected on both sides" );
+                    FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
+                        ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c01->update( elt0Test, __face_id_in_elt_0 );
 #if 0
@@ -3594,7 +3612,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         // check that we have elements to iterate over
-        if ( (elt_it == elt_en) || (elt_it->isConnectedTo0() == false) )
+        if ( elt_it == elt_en )
+            continue;
+        auto const& faceInit = boost::unwrap_ref( *elt_it );
+        if ( faceInit.isConnectedTo0() == false )
             continue;
 
         //-----------------------------------------------//
@@ -3610,8 +3631,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
-                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( elt_it->element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
+                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
             }
             hasInitGeoPc=true;
@@ -3619,28 +3640,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         //-----------------------------------------------//
 
-        const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-        const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
-        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
-        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+        const bool rangeIsSubMeshFromTest = faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+        const bool rangeIsSubMeshFromTrial = faceInit.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
+        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
 
-        const size_type idEltRangeInit = elt_it->id();
+        const size_type idEltRangeInit = faceInit.id();
         size_type idEltTestInit  = idEltRangeInit;
         if ( rangeIsSubMeshFromTest )
-            idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
         size_type idEltTrialInit = idEltRangeInit;
         if ( rangeIsSubMeshFromTrial )
-            idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            idEltTrialInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( trialIsSubMeshFromRange )
             idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
 
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
-        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
-        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( elt_it->element( 0 ).gm(), elt_it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
-        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( elt_it->element( 0 ).gm1(), elt_it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
+        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
         auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -3663,7 +3684,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         bool isInitConnectionTo1=false;
 
         // true if connected to another element, false otherwise
-        if ( elt_it->isConnectedTo1() )
+        if ( faceInit.isConnectedTo1() )
         {
             CHECK( false ) << "TODO!!!!\n";
 #if 0
@@ -3693,35 +3714,37 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
-            if ( elt_it->isGhostFace() )
+            auto const& faceCur = boost::unwrap_ref( *elt_it );
+
+            if ( faceCur.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
+                LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
             // if is a interprocess faces, only integrate in one process
-            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+            if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
                 continue;
 
-            const size_type idEltRange = elt_it->id();
+            const size_type idEltRange = faceCur.id();
             size_type idEltTest = idEltRange;
             if ( rangeIsSubMeshFromTest )
-                idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                idEltTest = faceCur.mesh()->subMeshToMesh( idEltRange );
             else if ( testIsSubMeshFromRange )
                 idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
             size_type idEltTrial = idEltRange;
             if ( rangeIsSubMeshFromTrial )
-                idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+                idEltTrial = faceCur.mesh()->subMeshToMesh( idEltRange );
             else if ( trialIsSubMeshFromRange )
                 idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
 
 
-            if ( elt_it->isConnectedTo1() )
+            if ( faceCur.isConnectedTo1() )
             {
                 CHECK ( false ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
             }
             else
             {
-                __face_id_in_elt_0 = elt_it->pos_first();
+                __face_id_in_elt_0 = faceCur.pos_first();
 
                 if ( !isInitConnectionTo0 )
                 {
@@ -3732,17 +3755,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 }
 
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference, typename FormType::space_1_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>(*elt_it,__form.trialSpace(), gmcFormTrial, gmcExpr0,
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
                 form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                 form->integrate();
-                form->assemble( /*elt_it->element( 0 ).id()*/ );
+                form->assemble( /*faceCur.element( 0 ).id()*/ );
             }
 
         }
@@ -3887,7 +3910,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         // check that we have elements to iterate over
-        if ( (elt_it == elt_en) || (elt_it->isConnectedTo0() == false) )
+        if ( elt_it == elt_en )
+            continue;
+
+        auto const& faceInit = boost::unwrap_ref( *elt_it );
+
+        if ( faceInit.isConnectedTo0() == false )
             continue;
 
         //-----------------------------------------------//
@@ -3903,8 +3931,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
-                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( elt_it->element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
+                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
             }
             hasInitGeoPc=true;
@@ -3912,28 +3940,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         //-----------------------------------------------//
 
-        const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-        const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
-        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
-        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+        const bool rangeIsSubMeshFromTest = faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+        const bool rangeIsSubMeshFromTrial = faceInit.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
+        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
 
-        const size_type idEltRangeInit = elt_it->id();
+        const size_type idEltRangeInit = faceInit.id();
         size_type idEltTestInit  = idEltRangeInit;
         if ( rangeIsSubMeshFromTest )
-            idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
         size_type idEltTrialInit = idEltRangeInit;
         if ( rangeIsSubMeshFromTrial )
-            idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            idEltTrialInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( trialIsSubMeshFromRange )
             idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
 
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
-        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
-        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( elt_it->element( 0 ).gm(), elt_it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
-        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( elt_it->element( 0 ).gm1(), elt_it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
+        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
         auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -3958,7 +3986,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         bool isInitConnectionTo1=false;
 
         // true if connected to another element, false otherwise
-        if ( elt_it->isConnectedTo1() )
+        if ( faceInit.isConnectedTo1() )
         {
             CHECK( false ) << "TODO!!!!\n";
 #if 0
@@ -3991,39 +4019,41 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
-            if ( elt_it->isGhostFace() )
+            auto const& faceCur = boost::unwrap_ref( *elt_it );
+
+            if ( faceCur.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
+                LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
             // if is a interprocess faces, only integrate in one process
-            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+            if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
                 continue;
 
-            const size_type idEltRange = elt_it->id();
+            const size_type idEltRange = faceCur.id();
             size_type idEltTest = idEltRange;
             if ( rangeIsSubMeshFromTest )
-                idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                idEltTest = faceCur.mesh()->subMeshToMesh( idEltRange );
             else if ( testIsSubMeshFromRange )
                 idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
             size_type idEltTrial = idEltRange;
             if ( rangeIsSubMeshFromTrial )
-                idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+                idEltTrial = faceCur.mesh()->subMeshToMesh( idEltRange );
             else if ( trialIsSubMeshFromRange )
                 idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
 
 
-            if ( elt_it->isConnectedTo1() )
+            if ( faceCur.isConnectedTo1() )
             {
                 CHECK ( false ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
             }
             else
             {
-                __face_id_in_elt_0 = elt_it->pos_first();
+                __face_id_in_elt_0 = faceCur.pos_first();
 
                 if ( !isInitConnectionTo0 )
                 {
-                    if ( !elt_it->isOnBoundary() )
+                    if ( !faceCur.isOnBoundary() )
                         form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
                                                                             this->expression(), face_ims[__face_id_in_elt_0],
                                                                             imRange,imTest,imTrial ) );
@@ -4036,28 +4066,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 }
 
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference, typename FormType::space_1_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>(*elt_it,__form.trialSpace(), gmcFormTrial, gmcExpr0,
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                DLOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                DLOG(INFO) << "elt "  << faceCur.id() << " bdy = " << faceCur.isOnBoundary();
                 if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
                      ( has_mortar_trial && __form.trialSpace()->mesh()->element( gmcFormTrial->id() ).isOnBoundary() ) )
                 {
                     DLOG(INFO) << "mortar element";
                     mortar_form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     mortar_form->integrate();
-                    mortar_form->assemble( /*elt_it->element( 0 ).id()*/ );
+                    mortar_form->assemble( /*faceCur.element( 0 ).id()*/ );
                 }
                 else
                 {
                     DLOG(INFO) << "internal element";
                     form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                     form->integrate();
-                    form->assemble( /*elt_it->element( 0 ).id()*/ );
+                    form->assemble( /*faceCur.element( 0 ).id()*/ );
                 }
             }
 
@@ -4166,7 +4196,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         // check that we have elements to iterate over
-        if ( (elt_it == elt_en) || (elt_it->isConnectedTo0() == false) )
+        if ( elt_it == elt_en )
+            continue;
+        auto const& faceInit = boost::unwrap_ref( *elt_it );
+        if ( faceInit.isConnectedTo0() == false )
             continue;
 
         //-----------------------------------------------//
@@ -4182,8 +4215,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
                     //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
-                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( elt_it->element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
+                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
             }
             hasInitGeoPc=true;
@@ -4191,21 +4224,21 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         //-----------------------------------------------//
 
-        const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+        const bool rangeIsSubMeshFromTest = faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
 
-        const size_type idEltRangeInit = elt_it->id();
+        const size_type idEltRangeInit = faceInit.id();
         size_type idEltTestInit  = idEltRangeInit;
         if ( rangeIsSubMeshFromTest )
-            idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
 
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
-        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
-        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( elt_it->element( 0 ).gm(), elt_it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
-        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( elt_it->element( 0 ).gm1(), elt_it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
+        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
         auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -4224,7 +4257,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         bool isInitConnectionTo1=false;
 
         // true if connected to another element, false otherwise
-        if ( elt_it->isConnectedTo1() )
+        if ( faceInit.isConnectedTo1() )
         {
             CHECK( false ) << "TODO!!!!\n";
         }
@@ -4239,29 +4272,30 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
-            if ( elt_it->isGhostFace() )
+            auto const& faceCur = boost::unwrap_ref( *elt_it );
+            if ( faceCur.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
+                LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
             // if is a interprocess faces, only integrate in one process
-            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+            if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
                 continue;
 
-            const size_type idEltRange = elt_it->id();
+            const size_type idEltRange = faceCur.id();
             size_type idEltTest = idEltRange;
             if ( rangeIsSubMeshFromTest )
-                idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                idEltTest = faceCur.mesh()->subMeshToMesh( idEltRange );
             else if ( testIsSubMeshFromRange )
                 idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
 
-            if ( elt_it->isConnectedTo1() )
+            if ( faceCur.isConnectedTo1() )
             {
                 CHECK ( false ) << "[assembleWithRelationDifferentMeshType<LinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
             }
             else
             {
-                __face_id_in_elt_0 = elt_it->pos_first();
+                __face_id_in_elt_0 = faceCur.pos_first();
 
                 if ( !isInitConnectionTo0 )
                 {
@@ -4272,8 +4306,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 }
 
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference, typename FormType::space_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
 
@@ -4373,6 +4407,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     }
     if (!findEltForInit) return;
 
+    auto const& faceInit = boost::unwrap_ref( *elt_it );
+
 
     //QuadMapped<im_type> qm;
     typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
@@ -4390,16 +4426,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
     }
 
 
-    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+    uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element( 0 ).gm(),
-                                                 elt_it->element( 0 ),
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( faceInit.element( 0 ).gm(),
+                                                 faceInit.element( 0 ),
                                                  __geopcExpr,
                                                  __face_id_in_elt_0 ) );
 
@@ -4596,6 +4632,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     }
     if (!findEltForInit) return;
 
+    auto const& faceInit = boost::unwrap_ref( *elt_it );
+
 
     //QuadMapped<im_type> qm;
     typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
@@ -4613,16 +4651,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
     }
 
 
-    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+    uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element( 0 ).gm(),
-                                                 elt_it->element( 0 ),
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( faceInit.element( 0 ).gm(),
+                                                 faceInit.element( 0 ),
                                                  __geopcExpr,
                                                  __face_id_in_elt_0 ) );
 
@@ -4844,6 +4882,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     }
     if (!findEltForInit) return;
 
+    auto const& faceInit = boost::unwrap_ref( *elt_it );
+
     //-----------------------------------------------//
 
     //QuadMapped<im_type> qm;
@@ -4862,15 +4902,15 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
         }
     }
 
 
-    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+    uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element( 0 ).gm(),
-                                                 elt_it->element( 0 ),
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( faceInit.element( 0 ).gm(),
+                                                 faceInit.element( 0 ),
                                                  __geopcExpr,
                                                  __face_id_in_elt_0 ) );
 
