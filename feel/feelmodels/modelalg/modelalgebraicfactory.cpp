@@ -29,8 +29,10 @@
 
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-namespace Feel {
-
+namespace Feel
+{
+namespace FeelModels
+{
 
     ModelAlgebraicFactory::ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend)
         :
@@ -271,7 +273,9 @@ namespace Feel {
         {
             M_CstJ->zero();
             M_CstR->zero();
-            this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            //this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            this->application()->updateLinearPDE( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->application()->rebuildCstPartInLinearSystem() || this->application()->needToRebuildCstPart() ||
@@ -279,7 +283,9 @@ namespace Feel {
         {
             M_CstJ->zero();
             M_CstR->zero();
-            this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            //this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            this->application()->updateLinearPDE( dataLinearCst );
         }
         this->application()->setNeedToRebuildCstPart(false);
 
@@ -304,7 +310,9 @@ namespace Feel {
             this->addFunctionLinearPreAssemblyNonCst( M_J,M_R );
 
         // assembling non cst part
-        this->application()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
+        //this->application()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
+        ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        this->application()->updateLinearPDE( dataLinearNonCst );
 
         // post-assembly (optional)
         if ( this->addFunctionLinearPostAssembly != NULL )
@@ -382,9 +390,13 @@ namespace Feel {
             }
         else
             {
-                this->application()->updateJacobian( X, J, R, true, M_Extended,false );
+                //this->application()->updateJacobian( X, J, R, true, M_Extended,false );
+                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
+                this->application()->updateJacobian( dataJacobianCst );
             }
-        M_appli->updateJacobian(X,J,R,false, M_Extended,false);
+        //M_appli->updateJacobian(X,J,R,false, M_Extended,false);
+        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        M_appli->updateJacobian( dataJacobianNonCst );
 
         this->application()->updateInHousePreconditioner( J, X );
 
@@ -405,7 +417,9 @@ namespace Feel {
             }
         else
             {
-                M_appli->updateResidual( X, R, true, true );
+                //M_appli->updateResidual( X, R, true, true );
+                ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
+                M_appli->updateResidual( dataResidualCst );
             }
 
         bool doOptimization = this->application()->useLinearJacobianInResidual() && this->application()->useCstMatrix();
@@ -413,7 +427,9 @@ namespace Feel {
         if (doOptimization)
             R->addVector(*X, *M_CstJ );
 
-        M_appli->updateResidual(X,R,false,doOptimization);
+        //M_appli->updateResidual(X,R,false,doOptimization);
+        ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        M_appli->updateResidual( dataResidualNonCst );
 
         double tElapsed = this->application()->timerTool("Solve").stop();
         this->application()->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
@@ -443,14 +459,18 @@ namespace Feel {
                 if (!M_hasBuildLinearJacobian)
                     {
                         M_CstJ->zero();
-                        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                        M_appli->updateJacobian( dataJacobianCst );
                         M_CstJ->close();
                         M_hasBuildLinearJacobian = true;
                     }
                 else if (this->application()->rebuildLinearPartInJacobian() || this->application()->needToRebuildCstPart())
                     {
                         M_CstJ->zero();
-                        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                        M_appli->updateJacobian( dataJacobianCst );
                         M_CstJ->close();
                     }
             }
@@ -465,7 +485,9 @@ namespace Feel {
                     {
                         M_CstR->zero();
                         // Warning : the second true is very important in order to build M_CstR!!!!!!
-                        M_appli->updateResidual( U, M_CstR, true, true );
+                        //M_appli->updateResidual( U, M_CstR, true, true );
+                        ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                        M_appli->updateResidual( dataResidualCst );
                         M_CstR->close();
                         M_hasBuildResidualCst = true;
                     }
@@ -473,7 +495,9 @@ namespace Feel {
                     {
                         M_CstR->zero();
                         // Warning : the second true is very important in order to build M_CstR!!!!!!
-                        M_appli->updateResidual( U, M_CstR, true, true );
+                        //M_appli->updateResidual( U, M_CstR, true, true );
+                        ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                        M_appli->updateResidual( dataResidualCst );
                         M_CstR->close();
                     }
             }
@@ -521,7 +545,9 @@ namespace Feel {
     ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
     {
         M_CstJ->zero();
-        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+        M_appli->updateJacobian( dataJacobianCst );
         M_CstJ->close();
     }
 
@@ -531,7 +557,8 @@ namespace Feel {
     {
         M_CstJ->zero();
         M_CstR->zero();
-        M_appli->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+        ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+        M_appli->updateLinearPDE(dataLinearCst);
         M_CstJ->close();
         M_CstR->close();
     }
@@ -687,4 +714,5 @@ namespace Feel {
 
 
 
+} // namespace FeelModels
 } // namespace Feel

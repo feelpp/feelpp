@@ -544,35 +544,13 @@ public :
 
     // assembly methods
     virtual void updateNewtonInitialGuess(vector_ptrtype& U) const = 0;
+    void updateJacobian( DataUpdateJacobian & data ) const;
+    void updateResidual( DataUpdateResidual & data ) const;
 
-    void updateLinearPDE(const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F,
-                         bool _buildCstPart,
-                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                         bool _doClose=true,
-                         bool _doBCStrongDirichlet=true ) const;
-
-    void updateLinearGeneralisedString(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F) const;
-    void updateLinearGeneralisedStringGeneralisedAlpha(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                       bool _buildCstPart,
-                                                       bool _doClose=true,
-                                                       bool _doBCStrongDirichlet=true) const;
-
-    //void updateLinearElasticity(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F);
-    void updateLinearElasticityGeneralisedAlpha(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                bool _buildCstPart,
-                                                bool _doClose=true,
-                                                bool _doBCStrongDirichlet=true) const;
-    void updateLinearElasticityAxiSymGeneralisedAlpha(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                      bool _buildCstPart,
-                                                      bool _doClose=true,
-                                                      bool _doBCStrongDirichlet=true) const;
-
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                         bool BuildCstPart, sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                         bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                         bool BuildCstPart, bool UseJacobianLinearTerms,
-                         bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const;
+    void updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const;
+    void updateLinearElasticityAxiSymGeneralisedAlpha( DataUpdateLinear & data ) const {};
 
     void updateJacobianIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, sparse_matrix_ptrtype& J) const;
     void updateResidualIncompressibilityTerms( element_displacement_type const& u, element_pressure_type const& p, vector_ptrtype& R) const;
@@ -587,7 +565,7 @@ public :
     virtual void updateBCFollowerPressureResidual(element_displacement_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
 
-    virtual void updateBCDirichletStrongJacobian(sparse_matrix_ptrtype& J) const = 0;
+    virtual void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const = 0;
     virtual void updateBCFollowerPressureJacobian(element_displacement_type const& u, sparse_matrix_ptrtype& J) const = 0;
     virtual void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const = 0;
 
