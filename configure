@@ -16,6 +16,7 @@ Options:
      --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
      --max-order=x                   maximum polynomial order to instantiate(default: 5)
      --cxxflags                      override cxxflags 
+     --cmakeflags                    add extra cmake flags 
      --prefix=PATH                   define install path
  -v, --verbose                       enable verbose output
  -h, --help                          help page
@@ -56,6 +57,7 @@ _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
 CXXFLAGS=
+CMAKEFLAGS=
 ENABLE_NUMA=TRUE
 ENABLE_CUDA=TRUE
 
@@ -148,6 +150,9 @@ while [ -n "$1" ]; do
        ;;  
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
+       ;;
+   --cmakeflags=*)
+       CMAKEFLAGS=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
        ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
@@ -249,4 +254,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}
