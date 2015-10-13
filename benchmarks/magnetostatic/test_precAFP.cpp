@@ -219,12 +219,11 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
-                soption("blockms.type"),
-                Xh, Mh,
-                model.boundaryConditions(),
-                "blockms",
-                f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
+                                                                                                 Mh,
+                                                                                                 model,
+                                                                                                 "blockms",
+                                                                                                 f2.matrixPtr());
 
             M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
