@@ -19,3 +19,6 @@ set(FEELPP_INCLUDE_DIRS "@FEELPP_INCLUDE_DIR@")
    
 # These are IMPORTED targets created by FooBarTargets.cmake
 set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
+
+# Add info about with what Feel++ has been built
+set(FEELPP_HAS_ANN "@FEELPP_HAS_ANN_H@")
