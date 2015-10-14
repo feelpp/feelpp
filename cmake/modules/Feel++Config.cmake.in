@@ -1,0 +1,21 @@
+# - Config file for the Feel++ package
+# This module looks for Feel (Library for the Finite Element Method) support
+# It defines the following variables
+#  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
+#  FEELPP_LIBRARY    = the library to link in
+
+# Can be used starting from version 3.x
+#include(CMakeFindDependencyMacro)
+#find_dependency(Feel++ 2.6.4)
+ 
+## Compute paths
+get_filename_component(FEELPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(FEELPP_INCLUDE_DIRS "@FEELPP_INCLUDE_DIR@")
+ 
+## Our library dependencies (contains definitions for IMPORTED targets)
+##if(NOT TARGET foo AND NOT FooBar_BINARY_DIR)
+  ##include("${FOOBAR_CMAKE_DIR}/FooBarTargets.cmake")
+##endif()
+   
+# These are IMPORTED targets created by FooBarTargets.cmake
+set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
