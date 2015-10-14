@@ -94,6 +94,18 @@ pcTypeConvertStrToEnum( std::string const& type )
     else                             return PreconditionerType::LU_PRECOND;
 }
 
+KSPNormType
+kspNormTypeConvertStrToEnum( std::string const& type )
+{
+    /**/ if ( type=="default" )          return KSP_NORM_DEFAULT;
+    else if ( type=="none" )             return KSP_NORM_NONE;
+    else if ( type=="preconditioned" )   return KSP_NORM_PRECONDITIONED;
+    else if ( type=="unpreconditioned" ) return KSP_NORM_UNPRECONDITIONED;
+    else if ( type=="natural" )          return KSP_NORM_NATURAL;
+    else                                 return KSP_NORM_DEFAULT;
+}
+
+
 SolverType
 kspTypeConvertStrToEnum( std::string const& type )
 {
