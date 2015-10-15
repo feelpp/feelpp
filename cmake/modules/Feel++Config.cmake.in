@@ -15,9 +15,9 @@ set(FEELPP_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
 set(FEELPP_DEFINITIONS "@FEELPP_DEFINITIONS@")
  
 ## Compute paths
-get_filename_component(FEELPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(FEELPP_INCLUDE_DIR "@FEELPP_INCLUDE_DIR@")
 set(FEELPP_DEPS_INCLUDE_DIR "@FEELPP_DEPS_INCLUDE_DIR@")
+set(FEELPP_DEPS_LINK_DIR "@FEELPP_DEPS_LINK_DIR@")
  
 ## Our library dependencies (contains definitions for IMPORTED targets)
 ##if(NOT TARGET foo AND NOT FooBar_BINARY_DIR)
@@ -25,6 +25,7 @@ set(FEELPP_DEPS_INCLUDE_DIR "@FEELPP_DEPS_INCLUDE_DIR@")
 ##endif()
    
 # These are IMPORTED targets created by FooBarTargets.cmake
+set(FEELPP_LIBRARY "feelpp")
 set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
 
 # Add info about with what Feel++ has been built
