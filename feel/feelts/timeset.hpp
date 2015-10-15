@@ -56,7 +56,15 @@ struct TimeStepInfo : public std::tuple<double, double, optional_double_t>
     double& t()  { return std::get<1>( *this ); }
     double& time()  { return t(); }
 
-    double e() const { return std::get<2>( *this ).value_or( 0. ); }
+    double e() const
+        {
+#if BOOST_VERSION > 105500
+            return std::get<2>( *this ).value_or( 0. );
+#else
+            auto const& a = std::get<2>( *this );
+            return a?*a:0;
+#endif
+        }
     double error() const { return e(); }
 };
 

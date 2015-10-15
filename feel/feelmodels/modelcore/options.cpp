@@ -233,7 +233,8 @@ fluidMechanics_options(std::string const& prefix)
                 ((boost::format("%1%fluid-outlet.windkessel.Cd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
                 ;
 #endif
-    return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( alemesh_options( prefix ) );
+    return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
+        add( alemesh_options( prefix ) ).add( backend_options( prefixvm(prefix,"fluidinlet") ) );
 }
 
 Feel::po::options_description
