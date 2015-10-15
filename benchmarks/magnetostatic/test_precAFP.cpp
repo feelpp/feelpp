@@ -219,12 +219,11 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
-                soption("blockms.type"),
-                Xh, Mh,
-                model.boundaryConditions(),
-                "blockms",
-                f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
+                                                                                                 Mh,
+                                                                                                 model,
+                                                                                                 "blockms",
+                                                                                                 f2.matrixPtr());
 
             M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
@@ -354,7 +353,6 @@ class TestPrecAFP : public Application
                 outputFile << "|---|---|---|---| " << std::endl;
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
-                outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
 
                 if(soption("ms.pc-type") == "blockms" ){
                     outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
