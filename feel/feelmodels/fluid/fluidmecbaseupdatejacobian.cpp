@@ -20,7 +20,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& R = data.vectorUsedInStrongDirichlet();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool _BuildCstPart = data.buildCstPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
@@ -153,7 +153,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    this->updateJacobianModel(U, J, R, _BuildCstPart);
+    this->updateJacobianModel(U, J, RBis, _BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
@@ -167,7 +167,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateJacobianStabilisation(U, J, R, _BuildCstPart);
+    this->updateJacobianStabilisation(U, J, RBis, _BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -435,30 +435,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    //if (_doClose ) J->close();
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( BuildNonCstPart && _doBCStrongDirichlet && hasStrongDirichletBC )
+    if ( BuildNonCstPart && _doBCStrongDirichlet )
     {
-        auto RBis = this->backend()->newVector( J->mapRowPtr() );
-
         if ( this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletJacobian(J,RBis);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateJacobian","update moving boundary with strong Dirichlet");
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(mesh, this->markersNameMovingBoundary()),
-                    _element=u,
-                    _rhs=RBis,
-                    _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
+
+        if ( !markerDirichletEliminationOthers.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
+                    _element=u,_rhs=RBis,
+                    _expr= vf::zero<nDim,1>() );
     }
 
     //--------------------------------------------------------------------------------------------------//
