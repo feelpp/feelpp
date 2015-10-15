@@ -113,6 +113,7 @@ public:
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
+    typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
@@ -212,6 +213,19 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
+    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    //___________________________________________________________________________________//
+    // fluid inlet
+    typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_fluidinlet_type> > space_fluidinlet_type;
+    typedef boost::shared_ptr<space_fluidinlet_type> space_fluidinlet_ptrtype;
+    typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
+    typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
+    typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
+                                  range_marked_face_type> op_interpolation_fluidinlet_type;
+    typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
     typedef bases<Lagrange<0, Scalar,Continuous>,Lagrange<0, Scalar,Continuous> > basis_fluidoutlet_windkessel_type;
@@ -334,6 +348,7 @@ public:
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
+    void createBCFluidInlet();
 
     void restartExporters();
 
@@ -540,6 +555,19 @@ public :
     //___________________________________________________________________________________//
     // impose mean pressure with P0 Lagrange multiplier
     space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
+    //___________________________________________________________________________________//
+    // fluid inlet bc
+    bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
+    //bool hasFluidInletConstant() const { return this->hasFluidOutlet("constant"); }
+    //bool hasFluidInletParabolic() const { return this->hasFluidOutlet("parabolic"); }
+    bool hasFluidInlet( std::string const& type ) const
+    {
+        for (auto const& inletbc : M_fluidInletDesc )
+            if ( std::get<1>( inletbc ) == type )
+                return true;
+        return false;
+    }
+    void updateFluidInletVelocity();
     //___________________________________________________________________________________//
     // fluid outlets bc
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
@@ -820,8 +848,6 @@ protected:
     //----------------------------------------------------
     std::string M_pdeType;
     std::string M_pdeSolver;
-    // fluid outlets bc
-    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
@@ -849,7 +875,17 @@ protected:
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
     //----------------------------------------------------
+    // fluid inlet bc
+    std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
+    std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
+    std::map<std::string,space_fluidinlet_ptrtype> M_fluidInletSpace;
+    std::map<std::string,element_fluidinlet_ptrtype > M_fluidInletVelocity;
+    std::map<std::string,std::tuple<boost::shared_ptr<typename component_space_fluid_velocity_type::element_type>,
+                                    op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
+    std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
+    //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
+    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
     mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;

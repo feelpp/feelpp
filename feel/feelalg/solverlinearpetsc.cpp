@@ -406,6 +406,10 @@ void SolverLinearPetsc<T>::init ()
             KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
 
+        // The value can be checked with --(prefix.)ksp-view=1
+        this->check( KSPSetNormType(M_ksp,
+                   kspNormTypeConvertStrToEnum(Environment::vm(_name="ksp-norm-type",_prefix=this->prefix()).template as<std::string>())) );
+
     }
 }
 
@@ -471,6 +475,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     //       this->set_petsc_preconditioner_type ();
     //     }
 
+    
     // 2.1.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
