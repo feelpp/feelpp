@@ -436,5 +436,5 @@ include(feelpp.directive)
 # The add_subdirectory is way too soon to get those values
 set(config_file "cmake/modules/Feel++Config.cmake")
 configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake COMPONENT Devel)
 
