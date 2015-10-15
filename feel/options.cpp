@@ -622,26 +622,7 @@ blockns_options( std::string const& prefix )
 po::options_description
 blockms_options( std::string const& prefix )
 {
-    po::options_description _options( "BLOCKNS options (" + prefix + ")" );
-    _options.add_options()
-        // error options
-        ( prefixvm( prefix, "blockms.type" ).c_str(), Feel::po::value<std::string>()->default_value("AFP"), "type of PC: AFP = Augmented Free Preconditioner" )
-        ( prefixvm( prefix, "blockms.rebuild_11" ).c_str(), Feel::po::value<bool>()->default_value(false), "rebuild M_11" )
-        ( prefixvm( prefix, "blockms.11.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination_symmetric" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        ( prefixvm( prefix, "blockms.11.1.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination_symmetric" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        ( prefixvm( prefix, "blockms.11.2.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination_symmetric" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        ( prefixvm( prefix, "blockms.22.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination_symmetric" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        //( prefixvm( prefix, "blockms.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Velocity CD preconditioner" )
-        //( prefixvm( prefix, "blockms.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Pressure CD preconditioner" )
-        //( prefixvm( prefix, "blockms.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
-        //( prefixvm( prefix, "blockms.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
-        //( prefixvm( prefix, "blockms.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
-        //( prefixvm( prefix, "blockms.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
-        //( prefixvm( prefix, "blockms.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
-        //// options for pmm
-        //( prefixvm( prefix, "blockms.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
-        ;
-
+    po::options_description _options( "BLOCKMS options (" + prefix + ")" );
     return _options
         .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
         .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block

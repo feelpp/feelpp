@@ -786,6 +786,11 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
+        
+        // Default value : "" let the default behavior
+        ( prefixvm( prefix,kspctx+"ksp-norm-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "default" ),
+          "Sets the norm that is used for convergence testing. Leaving this empty will use default petsc behavior. default, none, preconditioned, unpreconditioned, natural" )
 
         ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
           (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
