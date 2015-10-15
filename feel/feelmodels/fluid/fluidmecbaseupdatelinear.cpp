@@ -319,11 +319,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( DataUpdateLinear & data ) c
         {
             bilinearForm_PatternCoupled +=
                 on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                    _element=u,
-                    _rhs=F,
+                    _element=u, _rhs=F,
                     _expr=idv(this->meshVelocity2()) );
         }
 #endif
+
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
+            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(),marker),
+                    _element=u, _rhs=F,
+                    _expr=-idv(inletVel)*N() );
+        }
+
+
+
     }
 
     double timeElapsed = thetimer.elapsed();

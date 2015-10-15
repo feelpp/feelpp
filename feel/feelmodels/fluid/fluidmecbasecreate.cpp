@@ -654,6 +654,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     // space usefull to tranfert sigma*N()
     if (this->isMoveDomain()) this->createFunctionSpacesNormalStress();
     //----------------------------------------------------------------------------//
+    // fluid inlet
+    this->createBCFluidInlet();
+    //----------------------------------------------------------------------------//
     // fluid outlet
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
@@ -723,6 +726,121 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createBCFluidInlet()
+{
+    if ( !this->hasFluidInlet() ) return;
+
+    M_fluidInletMesh.clear();
+    M_fluidInletSpace.clear();
+    M_fluidInletVelocity.clear();
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        std::string const& type = std::get<1>( inletbc );
+        auto const& valMaxExpr = std::get<2>( inletbc );
+        auto meshinlet = createSubmesh( this->mesh(),markedfaces(this->mesh(),marker) );
+        auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet,_worldscomm=this->localNonCompositeWorldsComm() );
+        auto velinlet = spaceinlet->elementPtr();
+        auto velinletInterpolated = functionSpaceVelocity()->compSpace()->elementPtr();
+        auto opIfluidinlet = opInterpolation(_domainSpace=spaceinlet,
+                                             _imageSpace=this->functionSpaceVelocity()->compSpace(),
+                                             _range=markedfaces(this->mesh(),marker),
+                                             _backend=this->backend() );
+        M_fluidInletMesh[marker] = meshinlet;
+        M_fluidInletSpace[marker] = spaceinlet;
+        M_fluidInletVelocity[marker] = velinlet;
+        M_fluidInletVelocityInterpolated[marker] = std::make_tuple(velinletInterpolated,opIfluidinlet);
+
+        double areainlet = integrate(_range=elements(meshinlet),
+                                     _expr=cst(1.)).evaluate()(0,0);
+        auto velinletRef = spaceinlet->elementPtr();
+        double maxVelRef = 0.;
+        if ( type == "velocity_max_constant" || type == "flow_rate_constant" )
+        {
+            maxVelRef = areainlet;
+            velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
+            velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
+        }
+        else if ( type == "velocity_max_parabolic" || type == "flow_rate_parabolic" )
+        {
+            auto l = form1( _test=spaceinlet );
+            l = integrate(_range=elements(meshinlet),
+                          _expr=cst(areainlet)*id(velinlet));
+            auto a = form2( _trial=spaceinlet, _test=spaceinlet);
+            a = integrate(_range=elements(meshinlet),
+                          _expr=gradt(velinlet)*trans(grad(velinlet)) );
+            a+=on(_range=boundaryfaces(meshinlet), _rhs=l, _element=*velinlet, _expr=cst(0.) );
+
+            auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), M_Xh->worldComm() );
+            backendinlet->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=*velinletRef );
+            maxVelRef = velinletRef->max();
+        }
+        double flowRateRef = integrate(_range=markedfaces(this->mesh(),marker),
+                                       _expr=inner( idv(velinletRef)*N(),N() ) ).evaluate()(0,0);
+        M_fluidInletVelocityRef[marker] = std::make_tuple(velinletRef,maxVelRef,flowRateRef);
+
+    }
+
+    this->updateFluidInletVelocity();
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
+{
+   for ( auto & inletbc : M_fluidInletDesc )
+   {
+        std::string const& marker = std::get<0>( inletbc );
+        std::string const& type = std::get<1>( inletbc );
+        auto & exprFluidInlet = std::get<2>( inletbc );
+        exprFluidInlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        double evalExprFluidInlet = exprFluidInlet.evaluate();
+
+        auto itMesh = M_fluidInletMesh.find( marker );
+        CHECK( itMesh != M_fluidInletMesh.end() ) << "fluid inlet not init for this marker" << marker;
+        auto meshinlet = itMesh->second;
+
+        auto itVelRef = M_fluidInletVelocityRef.find(marker);
+        CHECK( itVelRef != M_fluidInletVelocityRef.end() ) << "fluid inlet not init for this marker" << marker;
+        auto const& velRef = std::get<0>(itVelRef->second);
+        double maxVelRef = std::get<1>(itVelRef->second);
+        double flowRateRef = std::get<2>(itVelRef->second);
+
+        if ( type == "velocity_max_constant" || type == "velocity_max_parabolic" )
+        {
+            M_fluidInletVelocity[marker]->zero();
+            M_fluidInletVelocity[marker]->add( evalExprFluidInlet/maxVelRef, *velRef );
+            //M_fluidInletVelocity[marker]->on(_range=elements(meshinlet),_expr=cst(evalExprFluidInlet) );
+            //M_fluidInletVelocity[marker]->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
+
+        }
+        else if ( type == "flow_rate_constant" || type == "flow_rate_parabolic" )
+        {
+            M_fluidInletVelocity[marker]->zero();
+            M_fluidInletVelocity[marker]->add( evalExprFluidInlet/flowRateRef, *velRef );
+        }
+
+        auto const& velSubmesh = M_fluidInletVelocity.find(marker)->second;
+        auto opI = std::get<1>( M_fluidInletVelocityInterpolated[marker] );
+        auto & velInterp = std::get<0>( M_fluidInletVelocityInterpolated[marker] );
+        opI->apply( *velSubmesh , *velInterp );
+
+#if 0
+        double flowRateComputed = integrate(_range=markedfaces(this->mesh(),marker),
+                                            _expr=-idv(velInterp)*N() ).evaluate()(0,0);
+        double maxVelComputed = velInterp->max();
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "flowRateComputed : " << flowRateComputed << "\n"
+                      << "maxVelComputed : " << maxVelComputed << "\n";
+#endif
+   }
+}
+
+
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
