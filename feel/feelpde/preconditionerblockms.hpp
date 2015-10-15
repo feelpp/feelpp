@@ -302,7 +302,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
     }
 
     /* Initialize the blockAS prec */
-    if(soption(M_prefix_11+".pc-type") == "AS")
+    if(soption(_name="pc-type",_prefix=M_prefix_11) == "AS")
     {
         M_pcAs = blockas(_space=M_Xh,
                          _space2=M_Mh,
@@ -354,7 +354,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
     M_11Op = op(M_11, M_prefix_11);
 
-    if(soption(M_prefix_11+".pc-type") == "AS")
+    if(soption(_name="pc-type",_prefix=M_prefix_11) == "AS")
     {
         M_pcAs->update(M_11, M_L, M_hatL, M_Q);
         M_11Op->setPc( M_pcAs );
@@ -412,15 +412,15 @@ PreconditionerBlockMS<space_type,coef_space_type>::applyInverse ( const vector_t
     M_pin->close();
 
     // Solve eq (12)
-        // solve here eq 15 : Pm v = c
-        M_11Op->applyInverse(*M_uin,*M_uout);
-        M_uout->close();
-        NbIter1.push_back(M_11Op->solveReturn());
+    // solve here eq 15 : Pm v = c
+    M_11Op->applyInverse(*M_uin,*M_uout);
+    M_uout->close();
+    NbIter1.push_back(M_11Op->solveReturn());
 
-        // solve here eq 16
-        M_22Op->applyInverse(*M_pin,*M_pout);
-        M_pout->close();
-        NbIter2.push_back(M_22Op->solveReturn());
+    // solve here eq 16
+    M_22Op->applyInverse(*M_pin,*M_pout);
+    M_pout->close();
+    NbIter2.push_back(M_22Op->solveReturn());
 
     U.template element<0>() = *M_uout;
     U.template element<1>() = *M_pout;
