@@ -8,16 +8,46 @@
 #include(CMakeFindDependencyMacro)
 #find_dependency(Feel++ 2.6.4)
 
+# this variable allows the users to autoload the library
+# meaning that this file will will automatically use
+# include_directories( ... ), add_definitions( ... ), 
+# set the compiler flags, link_directories( ... )
+set(FEELPP_AUTOLOAD "1")
+
+if(FEELPP_AUTOLOAD)
+    message(STATUS "[Feel++] Information: FEELPP_AUTOLOAD variable is set. This means that the Feel++Config.cmake file will automatically set your environment to use Feel++.")
+    message(STATUS "[Feel++] Information: If you want to configure your environment manually, please set it to 0 and refer to the Feel++Config.cmake file.") 
+endif()
+
 set(FEELPP_FOUND "1")
 
 set(FEELPP_C_FLAGS "@CMAKE_C_FLAGS@")
+if(FEELPP_AUTOLOAD)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FEELPP_C_FLAGS}")
+endif()  
 set(FEELPP_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+if(FEELPP_AUTOLOAD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEELPP_CXX_FLAGS}")
+endif()  
 set(FEELPP_DEFINITIONS "@FEELPP_DEFINITIONS@")
+if(FEELPP_AUTOLOAD)
+    # Get the already loaded definitions
+    get_directory_property( _CURRENT_DEFINITIONS DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
+    set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS ${FEELPP_DEFINITIONS} ${_CURRENT_DEFINITIONS})
+    unset(_CURRENT_DEFINITIONS)
+endif()  
  
 ## Compute paths
 set(FEELPP_INCLUDE_DIR "@FEELPP_INCLUDE_DIR@")
 set(FEELPP_DEPS_INCLUDE_DIR "@FEELPP_DEPS_INCLUDE_DIR@")
+if(FEELPP_AUTOLOAD)
+    include_directories(${FEELPP_INCLUDE_DIR})
+    include_directories(${FEELPP_DEPS_INCLUDE_DIR})
+endif()  
 set(FEELPP_DEPS_LINK_DIR "@FEELPP_DEPS_LINK_DIR@")
+if(FEELPP_AUTOLOAD)
+    link_directories(${FEELPP_DEPS_LINK_DIR})
+endif()  
  
 ## Our library dependencies (contains definitions for IMPORTED targets)
 ##if(NOT TARGET foo AND NOT FooBar_BINARY_DIR)
