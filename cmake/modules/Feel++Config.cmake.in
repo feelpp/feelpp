@@ -14,6 +14,9 @@
 # set the compiler flags, link_directories( ... )
 set(FEELPP_AUTOLOAD "1")
 
+set(FEELPP_CONFIG_FILE ${CMAKE_CURRENT_LIST_FILE})
+message(STATUS "[Feel++] Using config file: ${FEELPP_CONFIG_FILE}")
+
 if(FEELPP_AUTOLOAD)
     message(STATUS "[Feel++] Information: FEELPP_AUTOLOAD variable is set. This means that the Feel++Config.cmake file will automatically set your environment to use Feel++.")
     message(STATUS "[Feel++] Information: If you want to configure your environment manually, please set it to 0 and refer to the Feel++Config.cmake file.") 
