@@ -1,7 +1,8 @@
 #! /bin/bash
 
-. ~/.bash_profile
-module load c++/gnu/4.5.1   
-prefix=$WORKDIR/local-gcc45
-export SLEPC_DIR=`pwd`
-./configure --prefix=$prefix 
+unset SLEPC_DIR
+
+configure \
+    --prefix=$WORKDIR/packages-install/slepc-3.6.1 --with-clean=1 \
+    --with-arpack=1 --with-arpack-dir=/usr/local/slepc-3.5.3/lib --with-arpack-flags="-lparpack -larpack"
+
