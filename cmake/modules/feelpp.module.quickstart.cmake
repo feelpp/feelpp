@@ -34,8 +34,14 @@ if ( FEELPP_ENABLE_QUICKSTART )
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_FILE git.quickstart.log
         ERROR_FILE git.quickstart.log
+        RESULT_VARIABLE ERROR_CODE
         )
-      MESSAGE(STATUS "Git submodule quickstart updated.")
+
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "Git submodule quickstart updated.")
+      else()
+        MESSAGE(FATAL_ERROR "Git submodule quickstart failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/quickstart/ )
         message( FATAL_ERROR "Please make sure that git submodule quickstart is available")
@@ -50,5 +56,7 @@ if ( FEELPP_ENABLE_QUICKSTART )
     SET(FEELPP_HAS_QUICKSTART 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Quickstart" )
     ADD_DEFINITIONS( -DFEELPP_HAS_QUICKSTART )
+  else()
+      MESSAGE(FATAL_ERROR "Quickstart was not found on your system. Either install it or set FEELPP_ENABLE_QUICKSTART to OFF.")
   endif() 
 endif()
