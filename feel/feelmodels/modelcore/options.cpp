@@ -140,7 +140,7 @@ fluidMechanics_options(std::string const& prefix)
 {
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
-        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()->default_value("Navier-Stokes"), "fluid model : Navier-Stokes,Oseen,Stokes")
+        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()/*->default_value("Navier-Stokes")*/, "fluid model : Navier-Stokes,Oseen,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
         (prefixvm(prefix,"stress_tensor_law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
