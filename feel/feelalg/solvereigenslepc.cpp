@@ -760,7 +760,8 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Spectrum slicing with MUMPS is not available for complex scalars");
 #endif
             // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
-            PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+            ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
             /*
              Add several MUMPS options (currently there is no better way of setting this in program):
              '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia

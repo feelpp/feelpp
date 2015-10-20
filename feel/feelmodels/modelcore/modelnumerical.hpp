@@ -47,6 +47,30 @@ namespace Feel
 namespace FeelModels
 {
 
+class ModelPostProcessMeasures
+{
+public :
+    ModelPostProcessMeasures( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
+    ModelPostProcessMeasures( ModelPostProcessMeasures const& app ) = default;
+    void clear();
+    void start();
+    void restart( std::string const& paramKey, double val );
+    void exportMeasures();
+    void setParameter(std::string const& key,double val);
+    void setMeasure(std::string const& key,double val);
+    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
+    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
+
+    std::string const& pathFile() const { return M_pathFile; }
+    void setPathFile( std::string const& s ) { M_pathFile = s; }
+
+private :
+    WorldComm M_worldComm;
+    std::string M_pathFile;
+    std::map<std::string,double> M_mapParameterData;
+    std::map<std::string,double> M_mapMeasureData;
+};
+
 class ModelNumerical : public ModelAlgebraic
     {
     public:
@@ -178,6 +202,9 @@ class ModelNumerical : public ModelAlgebraic
         void setExporterPath(std::string s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
+        ModelPostProcessMeasures const& postProcessMeasures() const { return M_postProcessMeasures; }
+        ModelPostProcessMeasures & postProcessMeasures() { return M_postProcessMeasures; }
+
     private :
 
 
@@ -207,6 +234,7 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_geoFileStr;
 
         std::string M_exporterPath;
+        ModelPostProcessMeasures M_postProcessMeasures;
 
         boost::shared_ptr<PsLogger> M_PsLogger;
 
