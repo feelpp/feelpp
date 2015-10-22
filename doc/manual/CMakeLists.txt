@@ -196,7 +196,7 @@ ENDIF( OCTAVE_FOUND )
 add_subdirectory(python)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  foreach(DIR laplacian stokes advection accoustic dd heat solid ns heatns nonlinear adapt nirb fd maxwell opt eikonal eigen magnetostatic test )
+  foreach(DIR laplacian stokes advection accoustic dd heat solid ns heatns nonlinear adapt nirb fd maxwell opt eikonal eigen magnetostatic )
     add_subdirectory(${DIR})
   endforeach()
 endif()
