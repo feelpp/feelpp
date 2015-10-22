@@ -38,35 +38,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
-{
-    if (this->doRestart() && this->restartPath().empty() )
-    {
-        if (!M_isHOVisu)
-        {
-            // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
-            if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
-            {
-                if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-            }
-            else
-            {
-                //if ( M_exporter_gmsh->doExport() ) M_exporter_gmsh->restart(this->timeInitial());
-            }
-        }
-        else
-        {
-#if defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
-#endif
-        }
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
@@ -224,32 +195,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-#if 0
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::printInfo() const
-{
-    if ( this->verboseAllProc() ) std::cout << this->getInfo()->str();
-    else if (this->worldComm().isMasterRank() )
-        std::cout << this->getInfo()->str();
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveInfo() const
-{
-    std::string nameFile = prefixvm(this->prefix(),"FluidMechanics.info");
-    this->saveInfo( nameFile );
-    /*if (this->worldComm().isMasterRank() )
-     {
-     std::string nameFile = prefixvm(this->prefix(),"FluidMechanics.info");
-     std::ofstream file(nameFile.c_str(), std::ios::out);
-     file << this->getInfo()->str();
-     file.close();
-     }*/
-}
-#endif
-//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -328,15 +273,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType(std::string __type)
 }
 
 //---------------------------------------------------------------------------------------------------------//
-#if 0
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType() const
-{
-    return M_stressTensorLaw;
-}
-#endif
-//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -401,6 +337,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->exportResultsImplHO( time );
     }
 
+
+    this->exportMeasures( time );
+
+
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
@@ -448,10 +388,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     if ( M_doExportVorticity )
     {
-        this->updateVorticity(mpl::int_<nDim>());
+        this->updateVorticity();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"vorticity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"vorticity")),
-                                       *M_vorticity );
+                                       this->fieldVorticity() );
         hasFieldToExport = true;
     }
     if ( M_doExportNormalStress )
@@ -649,6 +589,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 }
 
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+    std::set<std::string> markers;
+    if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
+        for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
+            markers.insert( o );
+    this->postProcessMeasures().setParameter( "time", time );
+    for ( std::string marker : markers )
+    {
+        auto measuredForce = this->computeForce( marker );
+        this->postProcessMeasures().setMeasure( marker+"_drag", measuredForce(0,0) );
+        this->postProcessMeasures().setMeasure( marker+"_lift", measuredForce(1,0) );
+    }
+    this->postProcessMeasures().exportMeasures();
+}
+
+
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -791,37 +750,38 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity(mpl::int_<2> /***/)
+
+namespace detail
 {
 
-    if (!M_Xh_vorticity) this->createFunctionSpacesVorticity();
-
-    //BOOST_PP_IF(BOOST_PP_EQUAL(FLUIDMECHANICS_DIM,2),
-    *M_vorticity = vf::project(_space=M_vorticity->functionSpace(),
-                               _range=elements(M_vorticity->mesh()),
-                               _expr=vf::abs(vf::dxv(M_Solution->template element<0>().template comp<ComponentType::Y>())
-                                             -vf::dyv(M_Solution->template element<0>().template comp<ComponentType::X>())),
-                               _geomap=this->geomap() );
-    //std::cout << "\nWARNING UPDATE VORTICITY\n"
-    //);
+template <typename VorticityFieldType, typename VelocityFieldType >
+void
+updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, GeomapStrategyType geomapUsed, mpl::int_<2> /**/ )
+{
+    fieldVorticity.on(_range=elements(fieldVorticity.mesh()),
+                      _expr=/*vf::abs*/(vf::dxv( fieldVelocity.template comp<ComponentType::Y>())
+                                    -vf::dyv(fieldVelocity.template comp<ComponentType::X>())),
+                      _geomap=geomapUsed );
 }
+template <typename VorticityFieldType, typename VelocityFieldType >
+void
+updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, GeomapStrategyType geomapUsed, mpl::int_<3> /**/ )
+{
+    fieldVorticity.on(_range=elements(fieldVorticity.mesh()),
+                      _expr=vf::curlv(fieldVelocity),
+                      _geomap=geomapUsed );
+}
+
+} //  namesapce detail
+
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity(mpl::int_<3> /***/)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity()
 {
-#if 0
-    if (!M_Xh_vorticity) this->createFunctionSpacesVorticity();
 
-    BOOST_PP_IF(BOOST_PP_EQUAL(FLUIDMECHANICS_DIM,3),
-                *M_vorticity = vf::project(_space=M_vorticity->functionSpace(),
-                                           _range=elements(M_vorticity->mesh()),
-                                           _expr=vf::curlv(M_Solution->element<0>()),
-                                           _geomap=this->geomap() ),
-                std::cout << "\nWARNING UPDATE VORTICITY\n"
-                );
-#endif
+    if (!M_XhVorticity) this->createFunctionSpacesVorticity();
+
+    detail::updateVorticityImpl( this->fieldVelocity(),*M_fieldVorticity, this->geomap(), mpl::int_<nDim>() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1360,19 +1320,22 @@ FluidMechanicsBase< ConvexType,BasisVelocityType,
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 Eigen::Matrix<typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::value_type,
               FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nDim,1>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string markerName)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName)
 {
     using namespace Feel::vf;
 
     auto solFluid = this->fieldVelocityPressurePtr();
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
-    //Tenseur des deformations
+#if 0
+    //deformation tensor
     auto defv = sym(gradv(u));
     // Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes
     auto Sigmav = val(-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
+#endif
+    auto Sigmav/*ViscousStressTensorExpr*/ = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= Sigmav*N(),
@@ -1384,7 +1347,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string markerName)
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string marker)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string const& marker)
 {
     using namespace Feel::vf;
 
@@ -1392,7 +1355,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string marker)
     auto u = solFluid->template element<0>();
 
     double res = integrate(_range=markedfaces(this->mesh(),marker),
-                           _expr= -trans(idv(u))*N(),
+                           _expr= inner(idv(u),N()),
                            _geomap=this->geomap() ).evaluate()(0,0);
 
     return res;

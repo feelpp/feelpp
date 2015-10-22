@@ -43,7 +43,8 @@ SolverEigen<T>::SolverEigen()
     M_spectral_transform   ( SHIFT ),
     M_is_initialized       ( false ),
     M_nev( 1 ),
-    M_ncv( 3 )
+    M_ncv( 3 ),
+    M_mpd( -2 )
 {
 }
 
@@ -56,8 +57,9 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
     M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen.position"].template as<int>() ),
     M_spectral_transform   ( SHIFT ),
     M_is_initialized       ( false ),
-    M_nev( vm[M_prefix+"solvereigen.nev"].template as<int>() ),
-    M_ncv( vm[M_prefix+"solvereigen.ncv"].template as<int>() )
+    M_nev( ioption(_prefix=M_prefix,_name="solvereigen.nev") ),
+    M_ncv( ioption(_prefix=M_prefix,_name="solvereigen.ncv") ),
+    M_mpd( ioption(_prefix=M_prefix,_name="solvereigen.mpd") )
 {
 }
 
