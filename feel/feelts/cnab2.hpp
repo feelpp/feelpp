@@ -62,7 +62,18 @@ public:
     /**
      * @return the l2 error of the increment relative to the latest solution
      */
-    double l2Error() const { return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )/normL2(_range=elements(mesh), _expr=idv(u)); }
+    double l2Error() const
+        {
+            /*double acc_norm = normL2(_range=elements(mesh), _expr=idv(acc) );
+            double accD_norm = normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
+                /normL2(_range=elements(mesh), _expr=idv(u))/k();
+            if (Environment::isMasterRank())
+                std::cout << "current acc = "<< acc_norm
+                          <<", current discret acc = "<<accD_norm <<std::endl;
+             return normL2(_range=elements(mesh), _expr=idv(acc) );*/
+            return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
+                /normL2(_range=elements(mesh), _expr=idv(u));
+        }
 
     /**
      * @return true if the adaptive algorithm is finished, false otherwise
@@ -94,7 +105,7 @@ public:
     void start( FT const& d );
 
     template<typename FT>
-    bool next( FT const& d );
+    bool next( FT const& d, bool is_converged=true );
 
 
     field_t const& extrapolateVelocity();
@@ -145,65 +156,77 @@ CNAB2<FieldType>::start( FT const& f_d )
 template<typename FieldType>
 template<typename FT>
 bool
-CNAB2<FieldType>::next( FT const& fd )
+CNAB2<FieldType>::next( FT const& fd, bool is_converged )
 {
-    if ( Environment::isMasterRank() )
-        std::cout << "trying next step (index:" << index() << ")with kn1" << k() << " kn=" << kprev(1) << " at t=" << t() << std::endl;
-    // every nstar iteration do averaging to avoid ringing (and time step stagnation)
-    if ( (index() > 0) && (index() % nstar == 0) )
+    if ( is_converged )
     {
-        double tstar = tprev(1);
-        ustar.on(_range=elements(mesh), _expr=idv(u));
-        accstar.on(_range=elements(mesh), _expr=idv(acc));
-        tprev(1) = tprev(2) + kprev(1)/2;
-        u.on(_range=elements(mesh), _expr=0.5*(idv(up)+idv(ustar)));
-        acc.on(_range=elements(mesh), _expr=0.5*(idv(accp)+idv(accstar)));
-
-        // t_{n+1}
-        t() = tstar + k()/2;
-        u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()*idv(fd)/2);
-        acc_try.on(_range=elements(mesh), _expr=idv(fd));
         if ( Environment::isMasterRank() )
-            std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
+            std::cout << "trying next step (index:" << index() << ")with kn1" << k() << " kn=" << kprev(1) << " at t=" << t() << std::endl;
+        // every nstar iteration do averaging to avoid ringing (and time step stagnation)
+        if ( (index() > 0) && (index() % nstar == 0) )
+        {
+            double tstar = tprev(1);
+            ustar.on(_range=elements(mesh), _expr=idv(u));
+            accstar.on(_range=elements(mesh), _expr=idv(acc));
+            tprev(1) = tprev(2) + kprev(1)/2;
+            u.on(_range=elements(mesh), _expr=0.5*(idv(up)+idv(ustar)));
+            acc.on(_range=elements(mesh), _expr=0.5*(idv(accp)+idv(accstar)));
+
+            // t_{n+1}
+            t() = tstar + k()/2;
+            u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()*idv(fd)/2);
+            acc_try.on(_range=elements(mesh), _expr=idv(fd));
+            if ( Environment::isMasterRank() )
+                std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
+        }
+        else
+        {
+            // d^n is obtained, now updated u^n+1 and acc^n+1
+            u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
+            acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
+        }
+        // compute AB2 velocity
+        uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
+        // compute error
+        double err = normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k()));
+        double l2_u = normL2( _range=elements(mesh), _expr=idv(u_try));
+        double l2_uab2 = normL2( _range=elements(mesh), _expr=idv(uab2));
+
+
+        auto ktry = this->computeStep( k(), err );
+        if ( Environment::isMasterRank() )
+            std::cout << " --> k_n="<< kprev(1) << " k_{n+1}=" << k()
+                      << " err=" << err << "(" << l2_u << "," << l2_uab2 << "," << (3.*(1+kprev(1)/k()))
+                      << ")"  << " keps=" << keps
+                      << " accepted= " << ktry.first << " proposed kn2=" << ktry.second
+                      << std::endl;
+
+        if ( ktry.first )
+        {
+            // accept the tried step and move forward
+            this->addStep( ktry.second, u_try, acc_try );
+        }
+        else
+        {
+            // do not accept current kn1, overwrite it with a smaller step
+            // adjust time to new smaller time step
+            this->k() = ktry.second;
+            this->t() = tprev(1)+this->k();
+        }
+
+        is_converged = is_converged && ktry.first;
     }
     else
     {
-        // d^n is obtained, now updated u^n+1 and acc^n+1
-        u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
-        acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
-    }
-    // compute AB2 velocity
-    uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
-    // compute error
-    double err = normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k()));
-    double l2_u = normL2( _range=elements(mesh), _expr=idv(u_try));
-    double l2_uab2 = normL2( _range=elements(mesh), _expr=idv(uab2));
-
-
-    auto ktry = this->computeStep( k(), err );
-    if ( Environment::isMasterRank() )
-        std::cout << " --> k_n="<< kprev(1) << " k_{n+1}=" << k()
-                  << " err=" << err << "(" << l2_u << "," << l2_uab2 << "," << (3.*(1+kprev(1)/k()))
-                  << ")"  << " keps=" << keps
-                  << " accepted= " << ktry.first << " proposed kn2=" << ktry.second
-                  << std::endl;
-    if ( ktry.first )
-    {
-        // accept the tried step and move forward
-        this->addStep( ktry.second, u_try, acc_try );
-
-#if 0
-#endif
-    }
-    else
-    {
-        // do not accept current kn1, overwrite it with a smaller step
-        // adjust time to new smaller time step
-        this->k() = ktry.second;
+        // in this case solver did not converged and so we reduce the time step
+        double new_k = this->k()/2. ;
+        this->k() = new_k;
         this->t() = tprev(1)+this->k();
     }
-    return ktry.first;
 
+
+
+    return is_converged;
 }
 
 template<typename FieldType>
