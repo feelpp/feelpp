@@ -339,4 +339,306 @@ template class Vector<double>;
 template class Vector<std::complex<double>>;
 //template class Vector<long double>;
 
+
+namespace detail
+{
+template <typename T>
+struct syncOperatorEqual : syncOperator<T>
+{
+    typedef syncOperator<T> super_type;
+    typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
+    syncOperatorEqual( bool hasOperator )
+        :
+        super_type(),
+        M_hasOperator( hasOperator )
+        {}
+    syncOperatorEqual( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        super_type( m ),
+        M_hasOperator( true )
+        {}
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+        {
+            auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
+            if ( itFindGCDof != this->activeDofClusterUsedByProc().end()  )
+            {
+                if ( itFindGCDof->second.find( activeProcId ) != itFindGCDof->second.end() )
+                    return activeDofValue;
+
+                for ( auto const& ghostDof : ghostDofs )
+                {
+                    rank_type ghostProcId = ghostDof.first;
+                    if ( itFindGCDof->second.find( ghostProcId ) != itFindGCDof->second.end() )
+                    {
+                        T dofValue = ghostDof.second;
+                        return dofValue;
+                    }
+                }
+            }
+            return activeDofValue;
+        }
+    virtual bool hasOperator() const { return M_hasOperator; }
+private :
+    bool M_hasOperator;
+};
+
+template <typename T>
+struct syncOperatorPlus : syncOperator<T>
+{
+    typedef syncOperator<T> super_type;
+    typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
+    syncOperatorPlus()
+        :
+        super_type()
+        {}
+    syncOperatorPlus( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        super_type( m )
+        {}
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+        {
+            T res = 0;
+            auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
+            if ( itFindGCDof == this->activeDofClusterUsedByProc().end() )
+            {
+                res += activeDofValue;
+                for ( auto const& ghostDof : ghostDofs )
+                {
+                    T dofValue = ghostDof.second;
+                    res += dofValue;
+                }
+                return res;
+            }
+            else
+            {
+                if ( itFindGCDof->second.find( activeProcId ) != itFindGCDof->second.end() )
+                    res += activeDofValue;
+                for ( auto const& ghostDof : ghostDofs )
+                {
+                    rank_type ghostProcId = ghostDof.first;
+                    if ( itFindGCDof->second.find( ghostProcId ) != itFindGCDof->second.end() )
+                    {
+                        T dofValue = ghostDof.second;
+                        res += dofValue;
+                    }
+                }
+                return res;
+            }
+        }
+    virtual bool hasOperator() const { return true; }
+};
+// BinaryFuncType = 0 -> min, BinaryFuncType=1 -> max
+template <typename T, int BinaryFuncType>
+struct syncOperatorBinaryFunc : syncOperator<T>
+{
+    typedef syncOperator<T> super_type;
+    typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
+    syncOperatorBinaryFunc()
+        :
+        super_type()
+        {}
+    syncOperatorBinaryFunc( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        super_type( m )
+        {}
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+        {
+            auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
+            if ( itFindGCDof == this->activeDofClusterUsedByProc().end() )
+            {
+                T res = activeDofValue;
+                for ( auto const& ghostDof : ghostDofs )
+                {
+                    T dofValue = ghostDof.second;
+                    res = this->applyBinaryFunc( res, dofValue, mpl::int_<BinaryFuncType>() );
+                }
+                return res;
+            }
+            else
+            {
+                T res = 0;
+                bool init=false;
+                if ( itFindGCDof->second.find( activeProcId ) != itFindGCDof->second.end() )
+                {
+                    res = activeDofValue;
+                    init=true;
+                }
+                for ( auto const& ghostDof : ghostDofs )
+                {
+                    rank_type ghostProcId = ghostDof.first;
+                    if ( itFindGCDof->second.find( ghostProcId ) != itFindGCDof->second.end() )
+                    {
+                        T dofValue = ghostDof.second;
+                        if ( !init )
+                        {
+                            res = dofValue;
+                            init = true;
+                        }
+                        else
+                            res = this->applyBinaryFunc( res, dofValue, mpl::int_<BinaryFuncType>() );
+                    }
+                }
+                return res;
+            }
+        }
+
+    static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<0> /**/ ) { return std::min( val1,val2 ); }
+    static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<1> /**/ ) { return std::max( val1,val2 ); }
+
+    virtual bool hasOperator() const { return true; }
+};
+
+}
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr )
+{
+    if ( opSyncStr == "=" )
+        sync( v, detail::syncOperatorEqual<T>(false) );
+    else if ( opSyncStr == "+" )
+        sync( v, detail::syncOperatorPlus<T>() );
+    else if ( opSyncStr == "min" )
+        sync( v, detail::syncOperatorBinaryFunc<T,0>() );
+    else if ( opSyncStr == "max" )
+        sync( v, detail::syncOperatorBinaryFunc<T,1>() );
+}
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent )
+{
+    auto activeDofData = v.mapPtr()->activeDofClusterUsedByProc( dofGlobalProcessPresent );
+    if ( opSyncStr == "=" )
+        sync( v, detail::syncOperatorEqual<T>(activeDofData) );
+    else if ( opSyncStr == "+" )
+        sync( v, detail::syncOperatorPlus<T>(activeDofData) );
+    else if ( opSyncStr == "min" )
+        sync( v, detail::syncOperatorBinaryFunc<T,0>(activeDofData) );
+    else if ( opSyncStr == "max" )
+        sync( v, detail::syncOperatorBinaryFunc<T,1>(activeDofData) );
+}
+
+template <typename T>
+void
+sync( Vector<T> & v, detail::syncOperator<T> const& opSync )
+{
+    auto dataMap = v.mapPtr();
+
+    // if sequential return
+    if ( !dataMap || dataMap->worldComm().localSize() == 1 )
+        return ;
+
+    // prepare mpi com
+    rank_type currentProcId = dataMap->worldComm().localRank();
+    int nbRequest = 2*dataMap->neighborSubdomains().size();
+    mpi::request * reqs = new mpi::request[nbRequest];
+    // apply isend/irecv
+    int cptRequest=0;
+
+    if ( opSync.hasOperator() )
+    {
+        // init data to send : values of ghost dof is send to the unique active dof
+        std::map< rank_type, std::vector< boost::tuple<size_type,T> > > dataToSend, dataToRecv;
+        for ( rank_type p : dataMap->neighborSubdomains() )
+            dataToSend[p].clear();
+        for ( size_type id=0 ; id<dataMap->nLocalDofWithGhost() ; ++id )
+        {
+            if ( dataMap->dofGlobalProcessIsGhost(id) )
+            {
+                size_type gcdof = dataMap->mapGlobalProcessToGlobalCluster( id );
+                T val = v(id);
+                rank_type procIdFinded = dataMap->procOnGlobalCluster( gcdof );
+                CHECK( procIdFinded != invalid_rank_type_value ) << " proc not find for gcdof : " << gcdof;
+                dataToSend[procIdFinded].push_back( boost::make_tuple(gcdof,val) );
+            }
+        }
+        // apply isend/irecv
+        cptRequest=0;
+        for ( rank_type p : dataMap->neighborSubdomains() )
+        {
+            CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + nbRequest);
+        // update value of active dofs (repect to the sync operator)
+        std::map<size_type, std::set<std::pair< rank_type, T > > > ghostDofValues;
+        for ( auto const& dataR : dataToRecv )
+        {
+            rank_type theproc = dataR.first;
+            for ( auto const& dataRfromproc : dataR.second )
+            {
+                size_type gcdof = boost::get<0>( dataRfromproc );
+                T valRecv = boost::get<1>( dataRfromproc );
+                ghostDofValues[gcdof].insert( std::make_pair(theproc,valRecv) );
+            }
+        }
+        for ( auto const& ghostDofVal : ghostDofValues )
+        {
+            size_type gcdof = ghostDofVal.first;
+            size_type gpdof = dataMap->mapGlobalClusterToGlobalProcess( gcdof - dataMap->firstDofGlobalCluster() );
+#if !defined(NDEBUG)
+            auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
+            CHECK( boost::get<0>( resSearchDof ) ) << "dof not found";
+            size_type gpdof2 = boost::get<1>( resSearchDof );
+            CHECK( gpdof == gpdof2 ) << "dof id must be the same : " << gpdof << " vs " << gpdof2;
+            CHECK( dataMap->activeDofSharedOnCluster().find( gpdof ) != dataMap->activeDofSharedOnCluster().end() ) << "not an active dof shared";
+#endif
+            T valCurrent = v( gpdof );
+            v.set( gpdof, opSync( gcdof, currentProcId, valCurrent, ghostDofVal.second ) );
+        }
+    }
+
+    // init data to re-send : update values of active dof in ghost dof associated
+    std::map< rank_type, std::vector< boost::tuple<size_type,T> > > dataToReSend, dataToReRecv;
+    for ( rank_type p : dataMap->neighborSubdomains() )
+        dataToReSend[p].clear();
+    for ( auto const& dofActive : dataMap->activeDofSharedOnCluster() )
+    {
+        size_type gpdof = dofActive.first;
+        CHECK( !dataMap->dofGlobalProcessIsGhost(gpdof) ) << "must be active";
+
+        T val = v( gpdof );
+        size_type gcdof = dataMap->mapGlobalProcessToGlobalCluster( gpdof );
+        for ( rank_type pNeighborId : dofActive.second )
+        {
+            if( pNeighborId != dataMap->worldComm().localRank() ) // normaly this check is useless
+                dataToReSend[pNeighborId].push_back( boost::make_tuple(gcdof,val) );
+        }
+    }
+    // prepare mpi com
+    cptRequest=0;
+    for ( rank_type p : dataMap->neighborSubdomains() )
+    {
+        CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
+        reqs[cptRequest++] = dataMap->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
+        reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
+    // update values of ghost dofs
+    for ( auto const& dataR : dataToReRecv )
+    {
+        rank_type theproc = dataR.first;
+        for ( auto const& dataRfromproc : dataR.second )
+        {
+            size_type gcdof = boost::get<0>( dataRfromproc );
+            T valRecv = boost::get<1>( dataRfromproc );
+            auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
+            DCHECK( boost::get<0>( resSearchDof ) ) << "dof not found";
+            size_type gpdof = boost::get<1>( resSearchDof );
+            DCHECK( dataMap->dofGlobalProcessIsGhost(gpdof) ) << "dof is not ghost : " << gcdof << " and " << gpdof;
+            v.set( gpdof, valRecv );
+        }
+    }
+
+}
+
+template void sync<double>( Vector<double> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+template void sync<double>( Vector<double> & v, std::string const& opSyncStr );
+template void sync<double>( Vector<double> & v, detail::syncOperator<double> const& opSync );
+
 }

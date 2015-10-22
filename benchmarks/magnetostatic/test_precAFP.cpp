@@ -353,7 +353,6 @@ class TestPrecAFP : public Application
                 outputFile << "|---|---|---|---| " << std::endl;
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
-                outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
 
                 if(soption("ms.pc-type") == "blockms" ){
                     outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;
