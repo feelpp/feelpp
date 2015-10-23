@@ -1,7 +1,7 @@
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
-    "Model":"myfluidmodel",
+    "Model":"Navier-Stokes",
     "Parameters":
     {
         "ubar":
@@ -42,7 +42,8 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure"]
+        "Fields":["velocity","pressure"],
+        "Force":["wall2"]
     }
 
 }

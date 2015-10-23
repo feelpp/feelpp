@@ -40,7 +40,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/preconditioneras.hpp>
-#include <feel/feelpde/boundaryconditions.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
 namespace Feel
@@ -51,11 +51,6 @@ template< typename space_type, typename coef_space_type >
     typedef Preconditioner<typename space_type::value_type> super;
 public:
 
-    enum Type
-    {
-        AFP    = 0, // augmentation free preconditioner
-        SIMPLE = 2 // 
-    };
     typedef typename backend_type::solve_return_type solve_return_type;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -73,7 +68,7 @@ public:
     typedef typename space_type::template sub_functionspace<1>::type lagrange_space_type;
     typedef typename boost::shared_ptr<potential_space_type> potential_space_ptrtype;
     typedef typename boost::shared_ptr<lagrange_space_type> lagrange_space_ptrtype;
-    
+
     // Qh3
     typedef Lagrange<1,Vectorial> lag_v_type;
     typedef FunctionSpace<mesh_type, bases< lag_v_type >> lag_v_space_type;
@@ -104,16 +99,11 @@ public:
      * \param s name of backend
      * \param A the full matrix
      */
-    PreconditionerBlockMS( std::string t,
-                           space_ptrtype Xh,
+    PreconditionerBlockMS( space_ptrtype Xh,
                            coef_space_ptrtype Mh,
-                           BoundaryConditions bcFlags,
+                           ModelProperties model,
                            std::string const& s,
                            sparse_matrix_ptrtype A);
-
-    Type type() const { return M_type; }
-
-    void setType( std::string t );
 
     void update( sparse_matrix_ptrtype A, element_coef_type mu );
 
@@ -129,9 +119,9 @@ public:
     void printMatSize(int i, std::ostream &os)
     {
         if(i == 1)
-        os << M_11->graph()->size();
+            os << M_11->graph()->size();
         else if(i==2)
-        os << M_L->graph()->size();
+            os << M_L->graph()->size();
     }
     void printIter(int i, std::ostream & os){
         os << "<ul>";
@@ -154,7 +144,7 @@ public:
         double mean1 = sum1 / NbIter1.size();
         double sum2 = std::accumulate(NbIter2.begin(), NbIter2.end(), 0.0, [] (double d, solve_return_type rhs) { return d+rhs.nIterations();});
         double mean2 = sum2 / NbIter2.size();
-        
+
         tmp.push_back(minmax_1.first->nIterations());
         tmp.push_back(minmax_1.second->nIterations());
         tmp.push_back(mean1);
@@ -171,8 +161,6 @@ public:
     }
 
 private:
-    Type M_type;
-
     backend_ptrtype M_backend;
     mutable std::vector<solve_return_type> NbIter1, NbIter2;
     space_ptrtype M_Xh;
@@ -191,7 +179,7 @@ private:
     mutable vector_ptrtype M_uout;
     mutable vector_ptrtype M_pin;
     mutable vector_ptrtype M_pout;
-    
+
     mutable vector_ptrtype M_gx;
     mutable vector_ptrtype M_gy;
     mutable vector_ptrtype M_gz;
@@ -213,7 +201,7 @@ private:
 
     value_type M_k; // wave number
 
-    BoundaryConditions M_bcFlags;
+    ModelProperties M_model;
     std::string M_prefix;
     std::string M_prefix_11;
     std::string M_prefix_22;
@@ -231,109 +219,98 @@ private:
 
 };
 
-template < typename space_type, typename coef_space_type >
-PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(std::string t,                // Type
-                                                                         space_ptrtype Xh,             // (u)x(p)
+    template < typename space_type, typename coef_space_type >
+PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
                                                                          coef_space_ptrtype Mh,        // mu
-                                                                         BoundaryConditions bcFlags,   // bc
+                                                                         ModelProperties model,   // model
                                                                          std::string const& p,         // prefix
                                                                          sparse_matrix_ptrtype AA )     // The matrix
-:
-    M_type( AFP ),
-    M_backend(backend()),           // the backend associated to the PC
-    M_Xh( Xh ),
-    M_Mh( Mh ),
-    M_Vh( Xh->template functionSpace<0>() ),
-    M_Qh( Xh->template functionSpace<1>() ),
-    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
-    //M_Qh3_indices( M_Qh3->nLocalDofWithGhost()),
-    M_uin( M_backend->newVector( M_Vh )  ),
-    M_uout( M_backend->newVector( M_Vh )  ),
-    M_pin( M_backend->newVector( M_Qh )  ),
-    M_pout( M_backend->newVector( M_Qh )  ),
-    U( M_Xh, "U" ),
-    M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
-    M_L(M_backend->newMatrix(M_Qh,M_Qh)),
-    M_hatL(M_backend->newMatrix(M_Qh,M_Qh)),
-    M_Q(M_backend->newMatrix(M_Qh,M_Qh)),
-    M_er( M_Mh, "er" ),
-    M_k(doption("parameters.k")),
-    M_bcFlags( bcFlags ),
-    M_prefix( p ),
-    M_prefix_11( p+".11" ),
-    M_prefix_22( p+".22" ),
-    u(M_Vh, "u"),
-    ozz(M_Vh, "ozz"),
-    zoz(M_Vh, "zoz"),
-    zzo(M_Vh, "zzo"),
-    M_ozz(M_backend->newVector( M_Vh )),
-    M_zoz(M_backend->newVector( M_Vh )),
-    M_zzo(M_backend->newVector( M_Vh )),
-    phi(M_Qh, "phi")
+    :
+        M_backend(backend()),           // the backend associated to the PC
+        M_Xh( Xh ),
+        M_Mh( Mh ),
+        M_Vh( Xh->template functionSpace<0>() ),
+        M_Qh( Xh->template functionSpace<1>() ),
+        M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
+        M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+        //M_Qh3_indices( M_Qh3->nLocalDofWithGhost()),
+        M_uin( M_backend->newVector( M_Vh )  ),
+        M_uout( M_backend->newVector( M_Vh )  ),
+        M_pin( M_backend->newVector( M_Qh )  ),
+        M_pout( M_backend->newVector( M_Qh )  ),
+        U( M_Xh, "U" ),
+        M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
+        M_L(M_backend->newMatrix(M_Qh,M_Qh)),
+        M_hatL(M_backend->newMatrix(M_Qh,M_Qh)),
+        M_Q(M_backend->newMatrix(M_Qh,M_Qh)),
+        M_er( M_Mh, "er" ),
+        M_k(doption("parameters.k")),
+        M_model( model ),
+        M_prefix( p ),
+        M_prefix_11( p+".11" ),
+        M_prefix_22( p+".22" ),
+        u(M_Vh, "u"),
+        ozz(M_Vh, "ozz"),
+        zoz(M_Vh, "zoz"),
+        zzo(M_Vh, "zzo"),
+        M_ozz(M_backend->newVector( M_Vh )),
+        M_zoz(M_backend->newVector( M_Vh )),
+        M_zzo(M_backend->newVector( M_Vh )),
+        phi(M_Qh, "phi")
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
     this->setMatrix( AA ); // Needed only if worldComm > 1
 
-    this->setType ( t );
+    LOG(INFO) << "Permittivity is given as a constant = 1 on the domain";
     M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));
 
-    if(this->type() == AFP){
-        //this->setMatrix( AA );
-        /* Indices are need to extract sub matrix */
-        std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-        std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
+    /* Indices are need to extract sub matrix */
+    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
+    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
-        M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
+    M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
+    BoundaryConditions M_bc = M_model.boundaryConditions();
 
-        map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-        map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
-        /* Compute the mass matrix */
-        auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
-        auto f1A = form1(_test=M_Vh);
-        f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-        for(auto const & it : m_dirichlet_u )
-        {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-            f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
-        }
+    /* Compute the mass matrix */
+    auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
+    auto f1A = form1(_test=M_Vh);
+    f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
+    for(auto const & it : m_dirichlet_u )
+    {
+        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+    }
 
-        /* Compute the L and Q matrices */
-        auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
-        f2L = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
-        auto f2Q = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_Q);
-        f2Q = integrate(_range=elements(M_Qh->mesh()), _expr=idv(M_er)*inner(idt(phi), id(phi)));
-        auto f1LQ = form1(_test=M_Qh);
+    /* Compute the L and Q matrices */
+    auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+    auto f2Q = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_Q);
+    for(auto it : M_model.materials() ){ 
+        f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=idv(M_er)*inner(gradt(phi), grad(phi)));
+        f2Q += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=idv(M_er)*inner(idt(phi), id(phi)));
+    }
+    auto f1LQ = form1(_test=M_Qh);
 
-        for(auto const & it : m_dirichlet_p)
-        {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
-            f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption(M_prefix_22+".on.type"));
-            f2Q += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type=soption(M_prefix_22+".on.type"));
-        }
+    for(auto const & it : m_dirichlet_p)
+    {
+        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
+        f2Q += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
+    }
 
-        /* Initialize the blockAS prec */
-        if(soption(M_prefix_11+".pc-type") == "AS")
-        {
-            M_pcAs = blockas(_space=M_Xh,
-                             _space2=M_Mh,
-                             _matrix=M_11,
-                             _bc = M_bcFlags//,_type=soption("blockms.11.as-type")
-                             );
-        }
+    /* Initialize the blockAS prec */
+    if(soption(_name="pc-type",_prefix=M_prefix_11) == "AS")
+    {
+        M_pcAs = blockas(_space=M_Xh,
+                         _space2=M_Mh,
+                         _matrix=M_11,
+                         _bc = M_model.boundaryConditions()//,_type=soption("blockms.11.as-type")
+                        );
     }
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
-}
-
-template < typename space_type, typename coef_space_type >
-    void
-PreconditionerBlockMS<space_type,coef_space_type>::setType( std::string t )
-{
-    if ( t == "AFP") M_type = AFP;
-    else if ( t == "SIMPLE") M_type = SIMPLE;
-    LOG(INFO) << "setting preconditioner " << t << " type: " << M_type;
 }
 
 template < typename space_type, typename coef_space_type >
@@ -343,100 +320,82 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 {
     tic();
     this->setMatrix( A );
-    M_er.on(_range=elements(M_Mh->mesh()), _expr=cst(1.));
-    if(this->type() == AFP){
+    BoundaryConditions M_bc = M_model.boundaryConditions();
 
-        LOG(INFO) << "Create sub Matrix\n";
-        map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bcFlags.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-        map_scalar_field<2> m_dirichlet_p { M_bcFlags.getScalarFields<2> ( "phi", "Dirichlet" ) };
+    LOG(INFO) << "Create sub Matrix\n";
+    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
-        /*
-         * AA = [[ A - k^2 M, B^t],
-         *      [ B        , 0  ]]
-         * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
-         */
-        // Is the zero() necessary ?
+    /*
+     * AA = [[ A - k^2 M, B^t],
+     *      [ B        , 0  ]]
+     * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
+     */
+    // Is the zero() necessary ?
 
-        if(boption(M_prefix+".rebuild_11"))
-        {
-             // calculer matrice A + g M
-            auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
-            auto f1A = form1(_test=M_Vh);
-            f2A = integrate(_range=elements(M_Vh->mesh()), _expr=cst(1.)/idv(mu)*trans(curlt_op(u))*curl_op(u) // mu^-1 A
-                                                                +cst(1.-M_k*M_k)*idv(M_er)*inner(idt(u),id(u))); // g M
-            for(auto const & it : m_dirichlet_u )
-            {
-                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
-            }
-        }
-        else
-        {
-            M_11->zero();
-            A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
-            M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
-            auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
-            auto f1A = form1(_test=M_Vh);
-            for(auto const & it : m_dirichlet_u )
-            {
-                f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type=soption(M_prefix_11+".on.type"));
-            }
-        }
+    M_11->zero();
+    A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
+    M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+    auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
+    auto f1A = form1(_test=M_Vh);
+    for(auto const & it : m_dirichlet_u )
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
 
-        /* Compute the hat(L) matrix */
-        auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_hatL);
-        auto f1B = form1(_test=M_Qh);
-        f2B = integrate(_range=elements(M_Qh->mesh()), _expr=cst(1.)/idv(mu)*inner(gradt(phi), grad(phi)));
-        for(auto const & it : m_dirichlet_p)
-        {
-            LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
-            f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type=soption(M_prefix_22+".on.type"));
-        }
-        
-        M_11Op = op(M_11, M_prefix_11);
+    /* Compute the hat(L) matrix */
+    auto f2B = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_hatL);
+    auto f1B = form1(_test=M_Qh);
+    for(auto it : M_model.materials() )
+        f2B += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=cst(1.)/idv(mu)*inner(gradt(phi), grad(phi)));
+    for(auto const & it : m_dirichlet_p)
+    {
+        LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        f2B += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1B, _type="elimination_symmetric");
+    }
 
-        if(soption(M_prefix_11+".pc-type") == "AS")
-        {
-            M_pcAs->update(M_11, M_L, M_hatL, M_Q);
-            M_11Op->setPc( M_pcAs );
-        }
-        else if(soption(M_prefix_11+".pc-type") == "ams")
+    M_11Op = op(M_11, M_prefix_11);
+
+    if(soption(_name="pc-type",_prefix=M_prefix_11) == "AS")
+    {
+        M_pcAs->update(M_11, M_L, M_hatL, M_Q);
+        M_11Op->setPc( M_pcAs );
+    }
+    else if(soption(M_prefix_11+".pc-type") == "ams")
 #if FEELPP_DIM == 3
-        {
-            M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
-            // Create the interpolation and keep only the matrix
-            auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
-            auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+    {
+        M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
+        // Create the interpolation and keep only the matrix
+        auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+        auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
-            //M_P = pi_curl.matPtr();
-            //M_C = Igrad.matPtr();
-            ozz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
-            zoz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
-            zzo.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-            *M_ozz = ozz; M_ozz->close();
-            *M_zoz = zoz; M_zoz->close();
-            *M_zzo = zzo; M_zzo->close();
-            auto _back = backend(_name=M_prefix_11);
-            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                       _backend=_back,
-                                       _prefix=M_prefix_11,
-                                       _matrix=M_11,
-                                       _pcfactormatsolverpackage=_back->matSolverPackageEnumType(),
-                                       _worldcomm=Environment::worldComm());
+        //M_P = pi_curl.matPtr();
+        //M_C = Igrad.matPtr();
+        ozz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
+        zoz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
+        zzo.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        *M_ozz = ozz; M_ozz->close();
+        *M_zoz = zoz; M_zoz->close();
+        *M_zzo = zzo; M_zzo->close();
+        auto _back = backend(_name=M_prefix_11);
+        auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
+                                   _backend=_back,
+                                   _prefix=M_prefix_11,
+                                   _matrix=M_11,
+                                   _pcfactormatsolverpackage=_back->matSolverPackageEnumType(),
+                                   _worldcomm=Environment::worldComm());
 
-            prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
-            prec->attachAuxiliaryVector("Px",M_ozz);
-            prec->attachAuxiliaryVector("Py",M_zoz);
-            prec->attachAuxiliaryVector("Pz",M_zzo);
-            
-            //M_11Op->setPc( prec );
-           
-        }
+        prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
+        prec->attachAuxiliaryVector("Px",M_ozz);
+        prec->attachAuxiliaryVector("Py",M_zoz);
+        prec->attachAuxiliaryVector("Pz",M_zzo);
+
+        //M_11Op->setPc( prec );
+
+    }
 #else
-            std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
+    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
 
-        M_22Op = op(M_L, M_prefix_22);
-    }
+    M_22Op = op(M_L, M_prefix_22);
     toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
 }
 
@@ -453,27 +412,15 @@ PreconditionerBlockMS<space_type,coef_space_type>::applyInverse ( const vector_t
     M_pin->close();
 
     // Solve eq (12)
-    if ( this->type() == AFP )
-    {
-        // solve here eq 15 : Pm v = c
-        M_11Op->applyInverse(*M_uin,*M_uout);
-        M_uout->close();
-        NbIter1.push_back(M_11Op->solveReturn());
+    // solve here eq 15 : Pm v = c
+    M_11Op->applyInverse(*M_uin,*M_uout);
+    M_uout->close();
+    NbIter1.push_back(M_11Op->solveReturn());
 
-        // solve here eq 16
-        M_22Op->applyInverse(*M_pin,*M_pout);
-        M_pout->close();
-        NbIter2.push_back(M_22Op->solveReturn());
-    }
-    else if( this->type() == SIMPLE )
-    {
-        // Nothing is done here
-        *M_uout = *M_uin;
-        M_uout->close();
-        *M_pout = *M_pin;
-        M_pout->close();
-    }
-
+    // solve here eq 16
+    M_22Op->applyInverse(*M_pin,*M_pout);
+    M_pout->close();
+    NbIter2.push_back(M_22Op->solveReturn());
 
     U.template element<0>() = *M_uout;
     U.template element<1>() = *M_pout;
@@ -503,25 +450,24 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
                                    ( space, *)
                                    ( space2, *)
                                    ( matrix, *)
+                                   ( model, *)
                                  )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "blockms" )
-                                   ( type, *, soption(prefix+".type"))
-                                   ( bc, *, (BoundaryConditions ()) )
+                                   )
                                  )
-                               )
 {
-    typedef typename meta::blockms<
+typedef typename meta::blockms<
         typename parameter::value_type<Args, tag::space>::type::element_type,
         typename parameter::value_type<Args, tag::space2>::type::element_type
-                     >::ptrtype pblockms_t;
+        >::ptrtype pblockms_t;
 
-    typedef typename meta::blockms<
-        typename parameter::value_type<Args, tag::space>::type::element_type,
-        typename parameter::value_type<Args, tag::space2>::type::element_type
-                     >::type blockms_t;
-    pblockms_t p( new blockms_t( type, space, space2, bc, prefix, matrix ) );
-    return p;
+typedef typename meta::blockms<
+    typename parameter::value_type<Args, tag::space>::type::element_type,
+             typename parameter::value_type<Args, tag::space2>::type::element_type
+                 >::type blockms_t;
+pblockms_t p( new blockms_t( space, space2, model, prefix, matrix ) );
+return p;
 } // blockms
 } // Feel
 #endif
