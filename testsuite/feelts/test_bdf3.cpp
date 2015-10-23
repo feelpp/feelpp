@@ -115,7 +115,7 @@ public :
                            _expr=(i+1)*cst(100.)  );
 
             // Create timeset for each rhs.
-            if( i > 0)
+            if( e->doExport() and ( i > 0 ) )
             {
                 std::string prefix = ( boost::format( "rhs_%1%" ) % i ).str();
                 auto timeset = boost::make_shared<timeset_type>( timeset_type( prefix ) );
@@ -145,12 +145,18 @@ public :
                 LOG(INFO) << "test bdf export: " << i;
                 //auto time = mybdf->time();
                 auto time = mybdf->time();
-                e->step(time,i)->add( (boost::format("u%1%") % i ).str(), U[i] );
+                if( e->doExport() )
+                {
+                    e->step(time)->add( (boost::format("u%1%") % i ).str(), U[i] );
+                }
 
                 mybdf->shiftRight( U[i] );
 
             }
-            e->save();
+            if( e->doExport() )
+            {
+               e->save();
+            }
         }
 
    }
