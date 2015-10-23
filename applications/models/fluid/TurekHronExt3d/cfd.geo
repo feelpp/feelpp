@@ -1,7 +1,6 @@
-h=0.1;//0.03;
+h=0.03;//0.1;//0.03;
 myhext=h;
-//myhprecis=0.003;
-myhprecis=myhext/5.;
+myhprecis=myhext/3.;
 Long=2.5;
 Haut=0.41;
 Circle_xc=0.2;

@@ -624,9 +624,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     //------------------------------------------------------------------------------------//
 
 
-    //if ( _doClose ) R->close();
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
+    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
@@ -637,16 +635,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletResidual(R);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateResidual","update moving boundary with strong Dirichlet");
-            modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
-    }
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
 
-    //if ( _doClose ) R->close();
+        if ( !markerDirichletEliminationOthers.empty() )
+            modifVec(markedfaces(mesh,markerDirichletEliminationOthers), u, R, vf::zero<nDim,1>(),rowStartInVector );
+
+    }
 
     //------------------------------------------------------------------------------------//
 
@@ -677,6 +683,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     }
 #endif
     this->updateInitialNewtonSolutionBCDirichlet(U);
+
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+        modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
+    }
+
 
     U->close();
 
