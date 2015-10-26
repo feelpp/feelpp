@@ -364,29 +364,42 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     {
         M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
         // Create the interpolation and keep only the matrix
-        auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+        //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
         auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
         //M_P = pi_curl.matPtr();
         //M_C = Igrad.matPtr();
-        ozz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
-        zoz.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
-        zzo.on(_range=elements(M_Qh3->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
+        zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
+        zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
         *M_ozz = ozz; M_ozz->close();
         *M_zoz = zoz; M_zoz->close();
         *M_zzo = zzo; M_zzo->close();
-        auto _back = backend(_name=M_prefix_11);
         auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                   _backend=_back,
+                                   _backend=backend(_name=M_prefix_11),
                                    _prefix=M_prefix_11,
-                                   _matrix=M_11,
-                                   _pcfactormatsolverpackage=_back->matSolverPackageEnumType(),
-                                   _worldcomm=Environment::worldComm());
+                                   _matrix=M_11
+                                   );
 
         prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
         prec->attachAuxiliaryVector("Px",M_ozz);
         prec->attachAuxiliaryVector("Py",M_zoz);
         prec->attachAuxiliaryVector("Pz",M_zzo);
+        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11)){
+            auto _u = M_Qh3->element("_u");
+            auto a_alpha = form2(_test=M_Qh3, _trial=M_Qh3);
+            auto b_alpha = form1(_test=M_Qh3);
+            for(auto it : M_model.materials() )
+            {
+                a_alpha += integrate(_range=markedelements(M_Qh3->mesh(),marker(it)), _expr=cst(1.)/idv(mu)*inner(gradt(_u), grad(_u)) + inner(idt(_u),id(_u)));
+            }
+            for(auto const & it : m_dirichlet_u)
+            {
+                a_alpha += on(_range=markedfaces(M_Qh3->mesh(),it.first),_element=_u, _expr=it.second, _rhs=b_alpha, _type="elimination_symmetric");
+            }
+            prec->attachAuxiliarySparseMatrix("a_beta",M_L);
+            prec->attachAuxiliarySparseMatrix("a_alpha",a_alpha.matrixPtr());
+        }
 
         //M_11Op->setPc( prec );
 
