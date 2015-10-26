@@ -201,7 +201,14 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            CHECK(false) << "not implemented";
+            //CHECK(false) << "not implemented";
+            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+            {
+                M_pcVelocity->update( this->gmc()->pc()->nodes() );
+                if ( this->expr().withPressureTerm() )
+                    M_pcPressure->update( this->gmc()->pc()->nodes() );
+            }
+            this->update( geom );
         }
 
 
@@ -1429,7 +1436,7 @@ public:
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            CHECK( false ) << "not implement\n";
+            M_tensorbase->update( geom, face );
         }
 
         Eigen::Matrix<value_type, shape::M, shape::N> const&
