@@ -1,12 +1,20 @@
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
-    "Model":"myfluidmodel",
+    "Model":"Navier-Stokes",
     "Parameters":
     {
         "ubar":
         {
             "value":"0.2"
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1.0e3",
+            "mu":"1.0"
         }
     },
     "BoundaryConditions":
@@ -42,7 +50,8 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure"]
+        "Fields":["velocity","pressure"],
+        "Force":["wall2"]
     }
 
 }

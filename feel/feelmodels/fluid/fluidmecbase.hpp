@@ -113,6 +113,7 @@ public:
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
+    typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
@@ -162,8 +163,8 @@ public:
     //___________________________________________________________________________________//
     // function space stress
     //typedef bases<Lagrange<nOrderVelocity-1+space_alemapdisc_type::basis_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
-    typedef bases<Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
-    typedef FunctionSpace<mesh_type, basis_stress_type> space_stress_type;
+    typedef Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
+    typedef FunctionSpace<mesh_type, bases<basis_stress_type> > space_stress_type;
     typedef boost::shared_ptr<space_stress_type> space_stress_ptrtype;
     typedef typename space_stress_type::element_type element_stress_type;
     typedef boost::shared_ptr<element_stress_type> element_stress_ptrtype;
@@ -172,9 +173,9 @@ public:
     //___________________________________________________________________________________//
     // function space vorticity
     typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                               Lagrange<nOrderVelocity, Scalar,Continuous,PointSetFekete>,
-                               Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> >::type basis_vorticity_type;
-    typedef FunctionSpace<mesh_type, basis_vorticity_type> space_vorticity_type;
+                               Lagrange<nOrderVelocity-1, Scalar,Discontinuous,PointSetFekete>,
+                               Lagrange<nOrderVelocity-1, Vectorial,Discontinuous,PointSetFekete> >::type basis_vorticity_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vorticity_type> > space_vorticity_type;
     typedef boost::shared_ptr<space_vorticity_type> space_vorticity_ptrtype;
     typedef typename space_vorticity_type::element_type element_vorticity_type;
     typedef boost::shared_ptr<element_vorticity_type> element_vorticity_ptrtype;
@@ -182,9 +183,9 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // functionspace for rho, mu, nu
-    typedef bases<BasisDVType> basis_densityviscosity_type;
+    typedef BasisDVType basis_densityviscosity_type;
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
-    typedef FunctionSpace<mesh_type, basis_densityviscosity_type> space_densityviscosity_type;
+    typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
     typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
     typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
@@ -212,6 +213,19 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
+    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    //___________________________________________________________________________________//
+    // fluid inlet
+    typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_fluidinlet_type> > space_fluidinlet_type;
+    typedef boost::shared_ptr<space_fluidinlet_type> space_fluidinlet_ptrtype;
+    typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
+    typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
+    typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
+                                  range_marked_face_type> op_interpolation_fluidinlet_type;
+    typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
     typedef bases<Lagrange<0, Scalar,Continuous>,Lagrange<0, Scalar,Continuous> > basis_fluidoutlet_windkessel_type;
@@ -329,13 +343,13 @@ public:
     void createMesh();
     void createFunctionSpaces();
     void createTimeDiscretisation();
-    void createExporters();
+    void createPostProcess();
+    void createPostProcessExporters();
     void createOthers();
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
-
-    void restartExporters();
+    void createBCFluidInlet();
 
     void loadMesh(mesh_ptrtype __mesh );
 
@@ -366,6 +380,11 @@ public:
     element_stress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
     element_stress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
     element_stress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
+
+    element_vorticity_ptrtype const& fieldVorticityPtr() const { return M_fieldVorticity; }
+    element_vorticity_ptrtype & fieldVorticityPtr() { return M_fieldVorticity; }
+    element_vorticity_type const& fieldVorticity() const {  CHECK( M_fieldVorticity ) << "fieldVorticity not init"; return *M_fieldVorticity; }
+    element_vorticity_type & fieldVorticity() {  CHECK( M_fieldVorticity ) << "fieldVorticity not init";return *M_fieldVorticity; }
 
     bool useExtendedDofTable() const;
 
@@ -398,10 +417,14 @@ public:
 
 
     //___________________________________________________________________________________//
-    // export results
+    // export post process results
+    void initPostProcess();
+    //void restartPostProcess();
+
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void setDoExport(bool b);
+    void exportMeasures( double time );
 private :
     void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
@@ -541,9 +564,20 @@ public :
     // impose mean pressure with P0 Lagrange multiplier
     space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
     //___________________________________________________________________________________//
+    // fluid inlet bc
+    bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
+    bool hasFluidInlet( std::string const& type ) const
+    {
+        for (auto const& inletbc : M_fluidInletDesc )
+            if ( std::get<1>( inletbc ) == type )
+                return true;
+        return false;
+    }
+    void updateFluidInletVelocity();
+    //___________________________________________________________________________________//
     // fluid outlets bc
+    void initFluidOutlet();
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
-
     bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
     bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
     bool hasFluidOutlet(std::string const& type) const
@@ -576,7 +610,6 @@ public :
                 ++res;
         return res;
     }
-
     std::map<int,std::vector<double> > const& fluidOutletWindkesselPressureDistalOld() const { return M_fluidOutletWindkesselPressureDistal_old; }
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
@@ -599,8 +632,7 @@ public :
     void updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers );
 
     void updateWallShearStress();
-    void updateVorticity(mpl::int_<2> /***/);
-    void updateVorticity(mpl::int_<3> /***/);
+    void updateVorticity();
 
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
@@ -647,9 +679,9 @@ public :
     void savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
 
     // compute drag and lift on a markedfaces called markerName
-    Eigen::Matrix<value_type,nDim,1> computeForce(std::string markerName);
+    Eigen::Matrix<value_type,nDim,1> computeForce(std::string const& markerName);
 
-    double computeFlowRate(std::string marker);
+    double computeFlowRate(std::string const& marker);
     double computeMeanPressure();
     double computeMeanDivergence();
     double computeNormL2Divergence();
@@ -790,8 +822,8 @@ protected:
     element_stress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
     element_stress_ptrtype M_fieldWallShearStress;
     // vorticity space
-    space_vorticity_ptrtype M_Xh_vorticity;
-    element_vorticity_ptrtype M_vorticity;
+    space_vorticity_ptrtype M_XhVorticity;
+    element_vorticity_ptrtype M_fieldVorticity;
     //----------------------------------------------------
     // mesh ale tool and space
     bool M_isMoveDomain;
@@ -803,8 +835,8 @@ protected:
     element_stress_ptrtype M_normalStressFromStruct;
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
-    //----------------------------------------------------
 #endif
+    //----------------------------------------------------
     // tool solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_algebraicFactory;
     //----------------------------------------------------
@@ -820,8 +852,6 @@ protected:
     //----------------------------------------------------
     std::string M_pdeType;
     std::string M_pdeSolver;
-    // fluid outlets bc
-    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
@@ -849,7 +879,17 @@ protected:
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
     //----------------------------------------------------
+    // fluid inlet bc
+    std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
+    std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
+    std::map<std::string,space_fluidinlet_ptrtype> M_fluidInletSpace;
+    std::map<std::string,element_fluidinlet_ptrtype > M_fluidInletVelocity;
+    std::map<std::string,std::tuple<boost::shared_ptr<typename component_space_fluid_velocity_type::element_type>,
+                                    op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
+    std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
+    //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
+    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
     mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
@@ -891,7 +931,6 @@ protected:
     MeshMover<mesh_visu_ho_type> M_meshmover_visu_ho;
 #endif
     op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
-
 #endif
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)

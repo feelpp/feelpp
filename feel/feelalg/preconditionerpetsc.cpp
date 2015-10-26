@@ -1618,7 +1618,8 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
         ( prefixvm( prefix,pcctx+"pc-view" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "display preconditioner information" )
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+//#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "mumps" ):Feel::po::value<std::string>(),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
@@ -1652,7 +1653,8 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
 
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+//#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(PETSC_HAVE_MUMPS)
     for ( int icntl=1 ; icntl<= 33 ; ++icntl )
     {
         std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
@@ -2225,6 +2227,7 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, Wo
 
     if ( M_matSolverPackage == "mumps" )
     {
+#if defined(PETSC_HAVE_MUMPS)
         for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
         {
             std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
@@ -2232,6 +2235,7 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, Wo
             if ( mumpsOptionAsked.first )
                 M_mumpsParameters[icntl-1] = mumpsOptionAsked;
         }
+#endif
     }
     VLOG(2) << "ConfigurePC : LU\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2252,6 +2256,7 @@ ConfigurePCLU::run( PC& pc )
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
     {
+#if defined(PETSC_HAVE_MUMPS)
         Mat F;
         this->check( PCFactorGetMatrix(pc,&F) );
         for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
@@ -2262,6 +2267,9 @@ ConfigurePCLU::run( PC& pc )
                 this->check( MatMumpsSetIcntl(F,icntl,ival) );
             }
         }
+#else
+        CHECK( false ) << "mumps not installed with PETSc";
+#endif
     }
 #endif
 
