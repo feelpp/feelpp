@@ -623,6 +623,8 @@ po::options_description
 blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "blockms.11.setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" );
     return _options
         .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
         .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block
