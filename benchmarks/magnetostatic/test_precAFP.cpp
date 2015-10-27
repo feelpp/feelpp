@@ -176,6 +176,12 @@ class TestPrecAFP : public Application
                                 _expr=curve/model.parameters().toParameterValues()["mu_0"]);
         }
         auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
+        auto rhs = expr<DIM,1,6>(soption("functions.j"));
+        std::pair<std::string, double> p;
+        p.first = "m";
+        p.second = std::stod(soption("functions.m"));
+        rhs.setParameterValues(p);
+
         //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
         auto V = Xh->element();
@@ -193,7 +199,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = (1./idv(M_mu_r))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
+                       _expr = inner(rhs,id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
