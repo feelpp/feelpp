@@ -73,8 +73,6 @@
 
 # This module is maintained by Will Dicharry <wdicharry@stellarscience.com>.
 
-MESSAGE(STATUS "WARNING LOADING MY FINDHDF5 cmake module")
-
 include(SelectLibraryConfigurations)
 include(FindPackageHandleStandardArgs)
 
