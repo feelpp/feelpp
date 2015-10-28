@@ -35,8 +35,14 @@ if ( FEELPP_ENABLE_JSONLAB )
         WORKING_DIRECTORY ${FEELPP_SOURCE_DIR}
         OUTPUT_FILE git.jsonlab.log
         ERROR_FILE git.jsonlab.log
+        RESULT_VARIABLE ERROR_CODE
         )
-      MESSAGE(STATUS "[feelpp] Git submodule contrib/jsonlab updated.")
+
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "[feelpp] Git submodule contrib/jsonlab updated.")
+      else()
+        MESSAGE(FATAL_ERROR "Git submodule contrib/jsonlab failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/jsonlab/ )
         message( FATAL_ERROR "Please make sure that git submodule contrib/jsonlab is available")
