@@ -380,6 +380,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
                                    _prefix=M_prefix_11,
                                    _matrix=M_11
                                    );
+        prec->setMatrix(M_11);
 
         prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
         prec->attachAuxiliaryVector("Px",M_ozz);
