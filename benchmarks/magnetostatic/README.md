@@ -42,7 +42,7 @@ We do not have an analytical solution for the following configuration even if CT
 ##### Compilation/Execution
 In the configuration - to check what pc/ksp is used - I have set `pc-view=1`.
 
-**The meshes are available in DropBox: TheseDaversin/FerroMagnetism/Preconditioner/meshToRemove `
+The meshes are available in DropBox: TheseDaversin/FerroMagnetism/Preconditioner/meshToRemove `
 
 ```sh
 make feelpp_test_regul3D
@@ -53,7 +53,7 @@ make feelpp_test_regul3D
 
 ##### Observed behavior
 With the `torus_quart_Working.msh` mesh, the simulation goes well (PETSc does not warn the matrix or the PC is indefinite OR negative definite).
-It is not the case with `torus_quart_Working.msh` which produce, for various norm evaluation :
+It is not the case with `torus_quart_NotWorking.msh` which produce, for various norm evaluation :
 - unpreconditioned norm -> diverging due to indefinite preconditioner
 - preconditioned norm -> diverging due to indefinite or negative definite matrix 
 - natural -> diverging due to indefinite preconditioner
