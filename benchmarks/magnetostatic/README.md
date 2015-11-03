@@ -21,8 +21,8 @@ a (curl, curl) + b (id, id) = c (f, id)
 ```
 To reproduce the configuration that is problematic, I have to set (see config file `regul.cfg`)
 - a = 1
-- b = 1e-7
-- c = 1e-7
+- b = 5e-3
+- c = 5e-3 (or whatever actually)
 
 ##### Solver
 We use `CG/LU` to solve the problem.
