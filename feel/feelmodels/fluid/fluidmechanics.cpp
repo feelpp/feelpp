@@ -252,6 +252,48 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
         }
     }
+    auto bcFluidInlet = this->modelProperties().boundaryConditions().getScalarFields( "fluid", "inlet" );
+    for( auto const& d : bcFluidInlet )
+    {
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+
+        std::string shapeInlet;
+        std::pair<bool,std::string> shapeInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", marker(d), "shape" );
+        if ( shapeInletRead.first )
+        {
+            shapeInlet = shapeInletRead.second;
+            CHECK( shapeInlet == "constant" || shapeInlet == "parabolic" ) << "invalid inlet shape " << shapeInlet;
+        }
+        else
+            CHECK( false ) << "inlet shape not given";
+
+        std::string constraintInlet;
+        std::pair<bool,std::string> constraintInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", marker(d), "constraint" );
+        if ( constraintInletRead.first )
+        {
+            constraintInlet = constraintInletRead.second;
+            CHECK( constraintInlet == "velocity_max" || constraintInlet == "flow_rate" ) << "invalid inlet constraint " << constraintInlet;
+        }
+        else
+            CHECK( false ) << "inlet constraint not given";
+
+        std::string fullTypeInlet = (boost::format("%1%_%2%")%constraintInlet %shapeInlet).str();
+
+        std::string exprFluidInlet;
+        std::pair<bool,std::string> exprFluidInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", marker(d), "expr" );
+        if ( exprFluidInletRead.first )
+            exprFluidInlet = exprFluidInletRead.second;
+        else
+            CHECK( false ) << "inlet expr not given";
+
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", marker(d) );
+        for (std::string const& currentMarker : markerList )
+        {
+            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet )) );
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        }
+    }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
 
@@ -491,6 +533,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_bcNeumannTensor2.setParameterValues( this->modelProperties().parameters().toParameterValues() );
     M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    this->updateFluidInletVelocity();
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {

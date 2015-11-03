@@ -176,6 +176,12 @@ class TestPrecAFP : public Application
                                 _expr=curve/model.parameters().toParameterValues()["mu_0"]);
         }
         auto f_M_a = expr<DIM,1,6>(soption("functions.a"));
+        auto rhs = expr<DIM,1,6>(soption("functions.j"));
+        std::pair<std::string, double> p;
+        p.first = "m";
+        p.second = std::stod(soption("functions.m"));
+        rhs.setParameterValues(p);
+
         //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
         auto V = Xh->element();
@@ -193,7 +199,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = (1./idv(M_mu_r))*inner(expr<DIM,1,6>(soption("functions.j")),id(v)));    // rhs
+                       _expr = inner(rhs,id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -219,12 +225,11 @@ class TestPrecAFP : public Application
             //    _matrix = f2.matrixPtr(),
             //    _bc = model.boundaryConditions());
 
-            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(
-                soption("blockms.type"),
-                Xh, Mh,
-                model.boundaryConditions(),
-                "blockms",
-                f2.matrixPtr());
+            M_prec = boost::make_shared<PreconditionerBlockMS<comp_space_type,lag_0_space_type>>(Xh, 
+                                                                                                 Mh,
+                                                                                                 model,
+                                                                                                 "blockms",
+                                                                                                 f2.matrixPtr());
 
             M_prec->update(f2.matrixPtr(),M_mu_r);
             tic();
@@ -354,7 +359,6 @@ class TestPrecAFP : public Application
                 outputFile << "|---|---|---|---| " << std::endl;
                 outputFile << "|**ksp-type** |  " << soption("ms.ksp-type") << "| " << soption("blockms.11.ksp-type") << "| " << soption("blockms.22.ksp-type") << "|" << std::endl;
                 outputFile << "|**pc-type**  |  " << soption("ms.pc-type")  << "| " << soption("blockms.11.pc-type")  << "| " << soption("blockms.22.pc-type")  << "|" << std::endl;
-                outputFile << "|**on-type**  |  " << soption("on.type")  << "| " << soption("blockms.11.on.type")  << "| " << soption("blockms.22.on.type")  << "|" << std::endl;
 
                 if(soption("ms.pc-type") == "blockms" ){
                     outputFile << "|**Matrix**  |  " << nnz << "| "; M_prec->printMatSize(1,outputFile); outputFile << "| "; M_prec->printMatSize(2,outputFile);outputFile  << "|" << std::endl;

@@ -139,7 +139,15 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          INVALID_PRECONDITIONER
                         };
 
-
+///**
+// * Defines an \p enum for norm type
+// */
+//enum  KSPNormType {KSP_NORM_DEFAULT = -1,
+//                   KSP_NORM_NONE = 0,
+//                   KSP_NORM_PRECONDITIONED = 1,
+//                   KSP_NORM_UNPRECONDITIONED = 2,
+//                   KSP_NORM_NATURAL = 3
+//};
 /**
  * Defines an \p enum for field split types
  */
@@ -321,6 +329,9 @@ const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
 
 PreconditionerType
 pcTypeConvertStrToEnum( std::string const& type );
+
+KSPNormType
+kspNormTypeConvertStrToEnum( std::string const& type );
 
 SolverType
 kspTypeConvertStrToEnum( std::string const& type );

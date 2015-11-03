@@ -472,6 +472,7 @@ static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
     jac->as_print=printLevel;
     PetscErrorCode ierr;
     ierr = HYPRE_AMSSetPrintLevel(jac->hsolver,jac->as_print);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetMaxIter(PC pc, PetscInt maxIter)
@@ -480,6 +481,7 @@ static PetscErrorCode PCHYPRE_AMSSetMaxIter(PC pc, PetscInt maxIter)
     jac->as_max_iter=maxIter;
     PetscErrorCode ierr;
     ierr = HYPRE_AMSSetMaxIter(jac->hsolver,jac->as_max_iter);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetCycleType(PC pc, PetscInt cycleType)
@@ -488,6 +490,7 @@ static PetscErrorCode PCHYPRE_AMSSetCycleType(PC pc, PetscInt cycleType)
     jac->ams_cycle_type=cycleType;
     PetscErrorCode ierr;
     ierr = HYPRE_AMSSetCycleType(jac->hsolver,jac->ams_cycle_type);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetTol(PC pc, double tol)
@@ -496,6 +499,7 @@ static PetscErrorCode PCHYPRE_AMSSetTol(PC pc, double tol)
     jac->as_tol=tol;
     PetscErrorCode ierr;
     ierr = HYPRE_AMSSetTol(jac->hsolver,jac->as_tol);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, PetscInt relaxTimes, double relaxWeight, double omega)
@@ -510,58 +514,36 @@ static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, 
             jac->as_relax_times,
             jac->as_relax_weight,
             jac->as_omega);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetDiscreteGradient_HYPRE(PC pc, Mat G)
 {
-  PCHYPRESetDiscreteGradient(pc, G);
-#if 0
-    PC_HYPRE           *jac = (PC_HYPRE*)pc->data;
-    HYPRE_ParCSRMatrix parcsr_G;
-    PetscErrorCode     ierr;
-    
-    /* throw away any discrete gradient if already set */
-    if (jac->G) PetscStackCallStandard(HYPRE_IJMatrixDestroy,(jac->G));
-    MatHYPRE_IJMatrixCreate(G,&jac->G);
-    MatHYPRE_IJMatrixCopy(G,jac->G);
-    ierr = HYPRE_IJMatrixGetObject,(jac->G,(void**)(&parcsr_G));
-    PetscStackCall("Hypre set gradient",(*jac->setdgrad)(jac->hsolver,parcsr_G););
-#endif
+    PetscErrorCode ierr;
+    ierr = PCHYPRESetDiscreteGradient(pc, G);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
 static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, Vec zzo)
 {
-    PCHYPRESetEdgeConstantVectors(pc, ozz, zoz, zzo);
-#if 0
-    PC_HYPRE           *jac = (PC_HYPRE*)pc->data;
-    HYPRE_ParVector    par_ozz,par_zoz,par_zzo;
-    PetscInt           dim;
-    PetscErrorCode     ierr;
-    
-    /* throw away any vector if already set */
-    if (jac->constants[0]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[0]));
-    if (jac->constants[1]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[1]));
-    if (jac->constants[2]) PetscStackCallStandard(HYPRE_IJVectorDestroy,(jac->constants[2]));
-    jac->constants[0] = NULL;
-    jac->constants[1] = NULL;
-    jac->constants[2] = NULL;
-    VecHYPRE_IJVectorCreate(ozz,&jac->constants[0]);
-    VecHYPRE_IJVectorCopy(ozz,jac->constants[0]);
-    PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[0],(void**)(&par_ozz)));
-    VecHYPRE_IJVectorCreate(zoz,&jac->constants[1]);
-    VecHYPRE_IJVectorCopy(zoz,jac->constants[1]);
-    PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[1],(void**)(&par_zoz)));
-    dim = 2;
-    if (zzo) {
-      VecHYPRE_IJVectorCreate(zzo,&jac->constants[2]);
-      VecHYPRE_IJVectorCopy(zzo,jac->constants[2]);
-      PetscStackCallStandard(HYPRE_IJVectorGetObject,(jac->constants[2],(void**)(&par_zzo)));
-      dim++;
-    }
-    PetscStackCallStandard(HYPRE_AMSSetEdgeConstantVectors,(jac->hsolver,par_ozz,par_zoz,par_zzo));
-    PetscStackCallStandard(HYPRE_AMSSetDimension,(jac->hsolver,dim));
-#endif
-    return(0);
+    PetscErrorCode ierr;
+    ierr = PCHYPRESetEdgeConstantVectors(pc, ozz, zoz, zzo);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+static PetscErrorCode PCHYPRE_AMSSetAlphaPoissonMatrix_HYPRE(PC pc, Mat G)
+{
+    PetscErrorCode ierr;
+    ierr = PCHYPRESetAlphaPoissonMatrix(pc, G);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0.);
+}
+static PetscErrorCode PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(PC pc, Mat G)
+{
+    PetscErrorCode ierr;
+    ierr =  PCHYPRESetBetaPoissonMatrix(pc, G);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0.);
 }
 #endif // PETSC_HAVE_HYPRE && PETSC >= 3.6
 } // namespace PetscImpl
@@ -1636,7 +1618,8 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
         ( prefixvm( prefix,pcctx+"pc-view" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "display preconditioner information" )
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+//#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "mumps" ):Feel::po::value<std::string>(),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
@@ -1670,7 +1653,8 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
 
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+//#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(PETSC_HAVE_MUMPS)
     for ( int icntl=1 ; icntl<= 33 ; ++icntl )
     {
         std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
@@ -2243,6 +2227,7 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, Wo
 
     if ( M_matSolverPackage == "mumps" )
     {
+#if defined(PETSC_HAVE_MUMPS)
         for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
         {
             std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
@@ -2250,6 +2235,7 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, Wo
             if ( mumpsOptionAsked.first )
                 M_mumpsParameters[icntl-1] = mumpsOptionAsked;
         }
+#endif
     }
     VLOG(2) << "ConfigurePC : LU\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -2270,6 +2256,7 @@ ConfigurePCLU::run( PC& pc )
     // configure mumps
     if ( M_matSolverPackage == "mumps" )
     {
+#if defined(PETSC_HAVE_MUMPS)
         Mat F;
         this->check( PCFactorGetMatrix(pc,&F) );
         for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
@@ -2280,6 +2267,9 @@ ConfigurePCLU::run( PC& pc )
                 this->check( MatMumpsSetIcntl(F,icntl,ival) );
             }
         }
+#else
+        CHECK( false ) << "mumps not installed with PETSc";
+#endif
     }
 #endif
 
@@ -2478,6 +2468,18 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     }
     else
       std::cerr << "Px, Py or Pz has not been provided\n";
+    if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
+    {
+        auto gMat = this->precFeel()->auxiliarySparseMatrix("a_alpha");
+        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+        this->check( PetscImpl::PCHYPRE_AMSSetAlphaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+    }
+    if ( this->precFeel()->hasAuxiliarySparseMatrix("a_beta") )
+    {
+        auto gMat = this->precFeel()->auxiliarySparseMatrix("a_beta");
+        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+        this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+    }
 #endif
 }
 

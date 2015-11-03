@@ -297,8 +297,8 @@ MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
-# Find Feel++ or at least it dependencies
-FIND_PACKAGE(Feel++ REQUIRED)
+# Find feel++ dependencies 
+include( feelpp.dependencies )
 
 include( feelpp.macros )
 
@@ -431,3 +431,10 @@ include(feelpp.package)
 # Post-config message
 ################################################################################
 include(feelpp.directive)
+
+# The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
+# The add_subdirectory is way too soon to get those values
+set(config_file "cmake/modules/Feel++Config.cmake")
+configure_file( ${config_file}.in ${config_file} @ONLY)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake COMPONENT Devel)
+
