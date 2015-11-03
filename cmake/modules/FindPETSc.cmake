@@ -211,9 +211,18 @@ show :
   else ()
     set (PETSC_LIBRARY_VEC "NOTFOUND" CACHE INTERNAL "Cleared" FORCE) # There is no libpetscvec
     petsc_find_library (SINGLE petsc)
-    foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
-      set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
-    endforeach ()
+    # If we didn't found a library name libpetsc, we try with
+    # libpetsc_real, as it is used in latest Debian version
+    if(NOT PETSC_LIBRARY_SINGLE)
+      petsc_find_library (SINGLE petsc_real)
+    endif()
+    if(NOT PETSC_LIBRARY_SINGLE)
+      message(WARNING "CMake couldn't find PETSC_SINGLE_LIBRARY.")
+    else()
+      foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
+        set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
+      endforeach ()
+    endif()
   endif ()
   if (PETSC_LIBRARY_TS)
     message (STATUS "Recognized PETSc install with separate libraries for each package")
@@ -233,7 +242,7 @@ int main(int argc,char *argv[]) {
   ierr = PetscInitialize(&argc,&argv,0,help);CHKERRQ(ierr);
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
-  ierr = TSDestroy(ts);CHKERRQ(ierr);
+  ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }
@@ -249,12 +258,12 @@ int main(int argc,char *argv[]) {
   mark_as_advanced (PETSC_INCLUDE_DIR PETSC_INCLUDE_CONF)
   set (petsc_includes_minimal ${PETSC_INCLUDE_CONF} ${PETSC_INCLUDE_DIR})
 
-  petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_minimal)
+  petsc_test_runs ("${petsc_includes_minimal};${MPI_INCLUDE_PATH}" "${PETSC_LIBRARIES_TS};${MPI_LIBRARIES}" petsc_works_minimal)
   if (petsc_works_minimal)
     message (STATUS "Minimal PETSc includes and libraries work.  This probably means we are building with shared libs.")
     set (petsc_includes_needed "${petsc_includes_minimal}")
   else (petsc_works_minimal)	# Minimal includes fail, see if just adding full includes fixes it
-    petsc_test_runs ("${petsc_includes_all}" "${PETSC_LIBRARIES_TS}" petsc_works_allincludes)
+    petsc_test_runs ("${petsc_includes_all};${MPI_INCLUDE_PATH}" "${PETSC_LIBRARIES_TS};${MPI_LIBRARIES}" petsc_works_allincludes)
     if (petsc_works_allincludes) # It does, we just need all the includes (
       message (STATUS "PETSc requires extra include paths, but links correctly with only interface libraries.  This is an unexpected configuration (but it seems to work fine).")
       set (petsc_includes_needed ${petsc_includes_all})
@@ -274,7 +283,11 @@ int main(int argc,char *argv[]) {
 	if (petsc_works_all) # We fail anyways
 	  message (STATUS "PETSc requires extra include paths and explicit linking to all dependencies.  This probably means you have static libraries and something unexpected in PETSc headers.")
 	else (petsc_works_all) # We fail anyways
-	  message (STATUS "PETSc could not be used, maybe the install is broken.")
+        #if(PETSc_FIND_REQUIRED)
+        #message (FATAL_ERROR "PETSc could not be used, maybe the install is broken.")
+        #else()
+	    message (STATUS "PETSc could not be used, maybe the install is broken.")
+        #endif()
 	endif (petsc_works_all)
       endif (petsc_works_alllibraries)
     endif (petsc_works_allincludes)

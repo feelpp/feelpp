@@ -293,11 +293,15 @@ typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
      Expr<ExprT> const& __expr,
-     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
+     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
+     bool parallelSync = true )
 {
     typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
-    return p( true );
+    auto res = p( true );
+    if ( parallelSync )
+        sync(res,"+");
+    return res;
 }
 
 /**
@@ -306,9 +310,11 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
+sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
+     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
+     bool parallelSync = true )
 {
-    return sum( __functionspace, elements( __functionspace->mesh() ), __expr );
+    return sum( __functionspace, elements( __functionspace->mesh() ), __expr, geomap, parallelSync );
 }
 
 /**
