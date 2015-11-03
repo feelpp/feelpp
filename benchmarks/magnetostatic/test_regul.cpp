@@ -57,11 +57,8 @@ makeOptions()
 {
     po::options_description opts( "test_Regul" );
     opts.add_options()
-    ( "test-case", po::value<int>()->default_value( -1 ), "The test case number" )
-    ( "title", po::value<std::string>()->default_value( "noTitle" ), "The title for jekyll" )
-    ( "generateMD", po::value<bool>()->default_value( false ), "Save MD file" )
+    ( "penaldir", po::value<double>()->default_value( 0 ), "Use penaldir > 0 for weak BC" )
     ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
-    ( "myModel", po::value<std::string>()->default_value( "model.mod" ), "name of the model" )
     ;
     return opts.add( Feel::feel_options() )
         .add(Feel::backend_options("ms"));
@@ -164,6 +161,8 @@ class TestRegul : public Application
         auto f2 = form2(_test=Xh,_trial=Xh);
         auto f1 = form1(_test=Xh);
 
+        std::cout << "[a;b;c] = [ " << doption("parameters.a") << ";" <<  doption("parameters.b") << ";" <<  doption("parameters.c") << "]" <<  std::endl;
+
         f1 = integrate(_range=markedelements(M_mesh,"COIL"),
                        _expr = doption("parameters.c")*inner(rhs,id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
@@ -172,6 +171,26 @@ class TestRegul : public Application
                        + doption("parameters.b")*inner(idt(u),id(v))             // regul
                        );
 
+        if(doption("penaldir")>0.)
+        {
+            std::cout << "Using weak BC\n";
+#if DIM==2
+          f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
+              - doption("parameters.a")*trans(curl_op(v))*cross(N(),vec(cst(0),cst(0))) 
+              + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(vec(cst(0),cst(0)),N()),cross(id(v),N())) );
+#else
+          f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
+              - doption("parameters.a")*trans(curl_op(v))*cross(N(),vec(cst(0),cst(0),cst(0))) 
+              + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(vec(cst(0),cst(0),cst(0)),N()),cross(id(v),N())) );
+#endif
+          f2 += integrate(_range=boundaryfaces(M_mesh), 
+              _expr=- doption("parameters.a")*trans(curlt_op(u))*(cross(N(),id(v)) )
+                    - doption("parameters.a")*trans(curl_op(v))*(cross(N(),idt(u)) )
+                    + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
+        }
+        else
+        {
+            std::cout << "Using strong BC\n";
         f2 += on(_range=boundaryfaces(M_mesh),
                  _rhs=f1,
                  _element=u,
@@ -181,6 +200,7 @@ class TestRegul : public Application
                  _expr=vec(cst(0),cst(0),cst(0))
 #endif
                 );
+        }
         tic();
         f2.solveb(_rhs=f1,
                   _solution=u,
