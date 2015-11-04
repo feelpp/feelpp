@@ -51,11 +51,16 @@ extern std::map<std::string, size_type> ContextOnMap;
 
 enum   MatrixProperties
 {
-    HERMITIAN          = 0x1,   /**< hermitian : \f$A^* = A\f$ */
-    NON_HERMITIAN      = 0x2,   /**< non hermitian : \f$A^* != A\f$ */
-    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
-    SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
-    DENSE              = 0x10    /**< dense matrix */
+    SYMMETRIC          = 1 << 1, /**< symmetric : \f$A^T = A */
+    STRUCTURALLY_SYMMETRIC = 1 << 2, 
+    HERMITIAN          = 1 << 3, /**< hermitian : \f$A^* = A\f$ */
+    NON_HERMITIAN      = 1 << 4, /**< non hermitian : \f$A^* != A\f$ */
+    POSITIVE_DEFINITE  = 1 << 5, /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
+    NEGATIVE_DEFINITE  = 1 << 6, /**< negative definite matrix : \f$v^* A v < 0 \f$ for all non-zero v */
+    INDEFINITE         = 1 << 7, /**< negative and positive eigenvalues */
+    SPD                = SYMMETRIC | POSITIVE_DEFINITE,
+    SINGULAR           = 1 << 11,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
+    DENSE              = 1 << 20,    /**< dense matrix */
 };
 
 enum MatrixTranspose
