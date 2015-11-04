@@ -285,11 +285,11 @@ int main(int argc,char *argv[]) {
 	    if (petsc_works_all) # We fail anyways
 	      message (STATUS "PETSc requires extra include paths and explicit linking to all dependencies.  This probably means you have static libraries and something unexpected in PETSc headers.")
 	    else (petsc_works_all) # We fail anyways
-          if(PETSc_FIND_REQUIRED)
-            message (FATAL_ERROR "PETSc is required and could not be used, maybe the install is broken.")
-          else()
+          #if(PETSc_FIND_REQUIRED)
+          #message (FATAL_ERROR "PETSc is required and could not be used, maybe the install is broken.")
+          #else()
 	        message (STATUS "PETSc could not be used, maybe the install is broken.")
-          endif()
+          #endif()
 	    endif (petsc_works_all)
       endif (petsc_works_alllibraries)
     endif (petsc_works_allincludes)
