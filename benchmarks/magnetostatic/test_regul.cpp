@@ -37,6 +37,7 @@
 #include <feel/feelpde/preconditionerblockms.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/dh.hpp>
 
 #if FEELPP_DIM == 2
 #define curl_op curlx
@@ -148,7 +149,8 @@ class TestRegul : public Application
     TestRegul( ) 
     {
         auto M_mesh = loadMesh(_mesh=new mesh_type);
-        auto Xh = curl_space_type::New(M_mesh); 
+        auto Xh = curl_space_type::New(M_mesh);
+        auto Bh = Dh( M_mesh );
        
         // Exact Solution 
         auto f_M_a = expr<DIM,1>(soption("functions.a"));
@@ -157,8 +159,9 @@ class TestRegul : public Application
 
         auto u = Xh->element();
         auto v = Xh->element();
+        auto w = Bh->element();
         
-        auto f2 = form2(_test=Xh,_trial=Xh);
+        auto f2 = form2(_test=Xh,_trial=Xh,_properties=MatrixProperties::SPD);
         auto f1 = form1(_test=Xh);
 
         std::cout << "[a;b;c] = [ " << doption("parameters.a") << ";" <<  doption("parameters.b") << ";" <<  doption("parameters.c") << "]" <<  std::endl;
@@ -174,33 +177,23 @@ class TestRegul : public Application
         if(doption("penaldir")>0.)
         {
             std::cout << "Using weak BC\n";
-#if DIM==2
-          f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
-              - doption("parameters.a")*trans(curl_op(v))*cross(N(),vec(cst(0),cst(0))) 
-              + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(vec(cst(0),cst(0)),N()),cross(id(v),N())) );
-#else
-          f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
-              - doption("parameters.a")*trans(curl_op(v))*cross(N(),vec(cst(0),cst(0),cst(0))) 
-              + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(vec(cst(0),cst(0),cst(0)),N()),cross(id(v),N())) );
-#endif
-          f2 += integrate(_range=boundaryfaces(M_mesh), 
-              _expr=- doption("parameters.a")*trans(curlt_op(u))*(cross(N(),id(v)) )
-                    - doption("parameters.a")*trans(curl_op(v))*(cross(N(),idt(u)) )
-                    + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
+            f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
+                            - doption("parameters.a")*trans(curl_op(v))*cross(N(),zero<FEELPP_DIM,1>()) 
+                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(zero<FEELPP_DIM,1>(),N()),cross(id(v),N())) );
+            f2 += integrate(_range=boundaryfaces(M_mesh), 
+                            _expr=- doption("parameters.a")*trans(curlt_op(u))*(cross(N(),id(v)) )
+                            - doption("parameters.a")*trans(curl_op(v))*(cross(N(),idt(u)) )
+                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
         }
         else
         {
             std::cout << "Using strong BC\n";
-        f2 += on(_range=boundaryfaces(M_mesh),
-                 _rhs=f1,
-                 _element=u,
-#if DIM==2
-                 _expr=vec(cst(0),cst(0))
-#else
-                 _expr=vec(cst(0),cst(0),cst(0))
-#endif
-                );
+            f2 += on(_range=boundaryfaces(M_mesh),
+                     _rhs=f1,
+                     _element=u,
+                     _expr=zero<FEELPP_DIM,1>());
         }
+        CHECK( f1->matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
         tic();
         f2.solveb(_rhs=f1,
                   _solution=u,
@@ -211,9 +204,15 @@ class TestRegul : public Application
         auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
         
         // export
-        if(boption("exporter.export")){
+        if(boption("exporter.export"))
+        {
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("potential"          ,u  );
+            ex->add("potential", u);
+            v.zero();
+            v.on( _range=markedelements(M_mesh, "COIL"), _expr=rhs );
+            ex->add("j", v);
+            w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
+            ex->add("B", w);
             ex->save();
         }
     }
