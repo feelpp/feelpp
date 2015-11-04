@@ -150,7 +150,7 @@ class TestRegul : public Application
     {
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = curl_space_type::New(M_mesh);
-        auto Bh = Dh( M_mesh );
+        auto Bh = Dh<0>( M_mesh );
        
         // Exact Solution 
         auto f_M_a = expr<DIM,1>(soption("functions.a"));
@@ -193,7 +193,7 @@ class TestRegul : public Application
                      _element=u,
                      _expr=zero<FEELPP_DIM,1>());
         }
-        CHECK( f1->matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
+        CHECK( f1.matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
         tic();
         f2.solveb(_rhs=f1,
                   _solution=u,
