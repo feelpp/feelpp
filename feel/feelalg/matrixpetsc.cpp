@@ -450,6 +450,11 @@ void MatrixPetsc<T>::init ( const size_type m,
         ierr = MatSetOption ( M_mat, MAT_HERMITIAN, PETSC_TRUE );
         CHKERRABORT( this->comm(),ierr );
     }
+    else if ( this->isStructurallySymmetric() )
+    {
+        ierr = MatSetOption ( M_mat, MAT_STRUCTURALLY_SYMMETRIC, PETSC_TRUE );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
     //MatShift( M_mat, 1 );
     //printMatlab( "shift.m" );
