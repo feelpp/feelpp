@@ -1139,6 +1139,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
     case CHOLESKY_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCCHOLESKY );
         CHKERRABORT( worldComm.globalComm(),ierr );
+        PetscPCFactorSetMatSolverPackage( pc, matSolverPackage_type );
         break;
 
     case ICC_PRECOND:
@@ -1465,7 +1466,8 @@ ConfigurePC::run( PC& pc )
     {
         ConfigureSubPC( pc, this->precFeel(), this->worldComm().subWorldCommSeq(), this->prefix(), this->prefixOverwrite() );
     }
-    else if ( std::string(pctype) == "lu" )
+    else if ( ( std::string(pctype) == "lu" ) ||
+              ( std::string(pctype) == "cholesky" ) )
     {
         ConfigurePCLU( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
@@ -1614,7 +1616,7 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
     _options.add_options()
         ( prefixvm( prefix,pcctx+"pc-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( pcType ):Feel::po::value<std::string>(),
-          "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+          "type of preconditioners (lu, cholesky, icc, ilut, ilutp, diag, id,...)" )
         ( prefixvm( prefix,pcctx+"pc-view" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "display preconditioner information" )
@@ -3555,7 +3557,7 @@ configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string p
         ierr = PetscOptionsClearValue( option_sub_pc_type.c_str() );
         ierr = PetscOptionsInsertString( (option_sub_pc_type+" "+subpctype).c_str() );
 
-        if (subpctype=="lu")
+        if ((subpctype=="lu") || (subpctype=="cholesky"))
         {
             std::string option_sub_pc_factor_mat_solver_package = "-"+prefixPetscBase+"_sub_pc_factor_mat_solver_package";
             std::string t = option(_name="pc-factor-mat-solver-package-type",_sub="sub",_prefix=prefixFeelBase).as<std::string>();
