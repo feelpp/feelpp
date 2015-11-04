@@ -1509,6 +1509,14 @@ public:
     }
 
     /**
+       \return the name of the time set
+    */
+    void setName( std::string name ) const
+    {
+        M_name = name;
+    }
+
+    /**
        \return the index of the time set
     */
     uint32_type index() const
