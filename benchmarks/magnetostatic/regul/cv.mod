@@ -32,16 +32,16 @@
       "name":"COIL", // Name of material
       "B": "mu_r*mu_0*H:x:y:H:mu_0:mu_r:B",
       "file" : "false",
-      "j":"{-48.e+6*(0.5/(2*Pi))*y/(x^2+y^2),48.e+6*(0.5/(2*Pi))*x/(x^2+y^2),0}:x:y:z",
-      "ex":"1"
+      "j":"{3*pi*pi*pi* cos(pi*x) *sin(pi *y)* sin(pi* z),-6*pi*pi*pi* sin(pi*x) *cos(pi *y)* sin(pi* z),3*pi*pi*pi* sin(pi*x) *sin(pi *y)* cos(pi* z)}:x:y:z
+      "ex":"{pi* cos(pi* x)* sin(pi* y)* sin(pi*z),-2*pi* sin(pi* x)* cos(pi* y)* sin(pi*z),pi* sin(pi* x)* sin(pi* y)* cos(pi*z)}:x:y:z
     },
     "Omega":
     {
       "name":"Omega",
       "B": "mu_r*mu_0*H:x:y:H:mu_0:mu_r:B",
       "file":"false",
-      "j":"0",
-      "ex":"1"
+      "j":"{3*pi*pi*pi* cos(pi*x) *sin(pi *y)* sin(pi* z),-6*pi*pi*pi* sin(pi*x) *cos(pi *y)* sin(pi* z),3*pi*pi*pi* sin(pi*x) *sin(pi *y)* cos(pi* z)}:x:y:z
+      "ex":"{pi* cos(pi* x)* sin(pi* y)* sin(pi*z),-2*pi* sin(pi* x)* cos(pi* y)* sin(pi*z),pi* sin(pi* x)* sin(pi* y)* cos(pi*z)}:x:y:z
     }
   }, // materials
   "BoundaryConditions":
@@ -52,7 +52,7 @@
       {
         "Border":
         {
-          "expr":"{0,0,0}:x:y:z"
+          "expr":"{pi* cos(pi* x)* sin(pi* y)* sin(pi*z),-2*pi* sin(pi* x)* cos(pi* y)* sin(pi*z),pi* sin(pi* x)* sin(pi* y)* cos(pi*z)}:x:y:z
         }
       }
     }
