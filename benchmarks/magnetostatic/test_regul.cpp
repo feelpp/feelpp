@@ -120,8 +120,8 @@ class TestRegul : public Application
         ModelProperties model;
 
         double a = model.parameters()["a"].value();
-        double b = model.parameters()["a"].value();
-        double c = model.parameters()["a"].value();
+        double b = model.parameters()["b"].value();
+        double c = model.parameters()["c"].value();
 
         std::cout << "[a;b;c] = [ " << a << ";" <<  b << ";" <<  c << "]" <<  std::endl;
 
