@@ -11,7 +11,7 @@ Provided
 # Regularized problem
 
 The AMS preconditioner internally solve a regularized problem (block 11).
-This it the one that *crash* in some configuration.
+This it the one that *crash* in some configuration: CG said or the matrix, or the prec is not definite
 I reproduce here a simulation where the regularized simulation **can** *crash*
 
 ##### Equation
@@ -59,8 +59,10 @@ It is not the case with `torus_quart_NotWorking.msh` which produce, for various 
 - natural -> diverging due to indefinite preconditioner
 
 ##### Remarks and ongoing work
-- The use of LU as preconditionner + CG as solver is a bad choice. Indeed, the application of LU preconditioner on our symmetric matrix doens't give any guarantee on the symmetry of the resulting preconditioned matrix. As the CG solver is designed for symmetric matrices, the use of the combination LU + CG can fail.
-- Proposed preconditioner/solver : LU + Pre-only, Cholesky + CG or eventually use LU with BiCGStab instead of CG to deal with non symmetric matrices.
+- The use of LU as preconditionner + CG as solver is a bad choice. Indeed, the application of LU preconditioner on our symmetric matrix doesn't give any guarantee on the symmetry of the resulting preconditioned matrix. As the CG solver is designed for symmetric matrices, the use of the combination LU + CG can fail. **Proposed preconditioner/solver** : 
+ - LU + Pre-only, 
+ - Cholesky + CG 
+ - eventually use LU with BiCGStab instead of CG to deal with non symmetric matrices.
 - Proposed work/tests : 
   - Check that the problem is coercive for all `b > 0` (see Bebendorf paper for example)
   - Check that the product `op( curl curl )[Hcurl] x op ( grad )[H1]` is zero to ensure the operators are not buggy
