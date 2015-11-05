@@ -113,6 +113,7 @@ class TestRegul : public Application
         auto e = Xh->element(); // exact
         auto v = Xh->element(); // test 
         auto w = Bh->element(); // curl(potentential)
+        auto ec= Bh->element(); // curl(exact)
         
         auto f2 = form2(_test=Xh,_trial=Xh,_properties=MatrixProperties::SPD);
         auto f1 = form1(_test=Xh);
@@ -181,9 +182,14 @@ class TestRegul : public Application
                   _solution=u,
                   _backend=backend(_name="ms"));
         toc("Inverse",FLAGS_v>0);
+                
+        w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
+        ec.on( _range=elements(M_mesh), _expr=curlv_op(e) );
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(e)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=idv(e));
-        std::cout << "Erreur " << e21 << "\t" << e21/e22  << std::endl;
+        auto ec21 = normL2(_range=elements(M_mesh), _expr=(curlv_op(e)-curlv_op(u)));
+        auto ec22 = normL2(_range=elements(M_mesh), _expr=curlv_op(e));
+        std::cout << "Erreur " << e21 << "\t" << e21/e22  << "\t" << ec21 << "\t" << ec21/ec22 << std::endl;
         
         // export
         if(boption("exporter.export"))
@@ -193,11 +199,11 @@ class TestRegul : public Application
             {
                 v.zero();
                 v = f1.vector();
-                w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
                 ex->step(i)->add("exactP", e);
                 ex->step(i)->add("potential", u);
                 ex->step(i)->add("j", v);
                 ex->step(i)->add("B", w);
+                ex->step(i)->add("Be", ec);
                 ex->save();
             }
         }
