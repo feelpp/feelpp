@@ -777,7 +777,6 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             /* only write the geometry in the first timestep */
             if( __it == __ts->beginStep() ) 
             {
-                std::cout << Environment::worldComm().localRank() << " " << __ts->name() << " " << this->prefix() << std::endl;
                 /* generate geo filename */
                 std::ostringstream __geofname;
                 __geofname << this->path() << "/" << __ts->name();
