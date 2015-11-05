@@ -58,8 +58,8 @@ makeOptions()
 {
     po::options_description opts( "test_Regul" );
     opts.add_options()
+    ( "model", po::value<std::string>()->default_value( "torus_quart.mod" ), "Name of the model to use" )
     ( "penaldir", po::value<double>()->default_value( 0 ), "Use penaldir > 0 for weak BC" )
-    ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
     ;
     return opts.add( Feel::feel_options() )
         .add(Feel::backend_options("ms"));
@@ -96,50 +96,6 @@ class TestRegul : public Application
 {
     private:
     typedef Application super;
-    //! Numerical type is double
-    typedef double value_type;
-
-    //! Simplexes of order ORDER
-    typedef Simplex<DIM> convex_type;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! Hcurl space
-    typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
-    typedef FunctionSpace<mesh_type, bases<curl_basis_type>> curl_space_type;
-    typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
-    typedef typename curl_space_type::element_type curl_element_type;
-
-    //! Pch space
-    typedef Lagrange<1, Scalar> lag_basis_type; 
-    typedef FunctionSpace<mesh_type, bases<lag_basis_type>> lag_space_type;
-    typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
-    typedef typename lag_space_type::element_type lag_element_type;
-
-    //! Pch 0 space
-    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
-    typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
-    typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
-    typedef typename lag_0_space_type::element_type lag_0_element_type;
-
-    //! Pchv space
-    typedef Lagrange<1, Vectorial> lag_v_basis_type;
-    typedef FunctionSpace<mesh_type, bases<lag_v_basis_type>> lag_v_space_type;
-    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
-    typedef typename lag_v_space_type::element_type lag_v_element_type;
-
-    typedef FunctionSpace<mesh_type, bases<curl_basis_type,lag_basis_type>> comp_space_type;
-    typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
-    typedef typename comp_space_type::element_type comp_element_type;
-
-    //! The exporter factory
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
-    //! Backends factory
-    typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef backend_type::solve_return_type solve_ret_type;
 
     public:
 
@@ -148,77 +104,103 @@ class TestRegul : public Application
     ///     \param h        Mesh size.
     TestRegul( ) 
     {
-        auto M_mesh = loadMesh(_mesh=new mesh_type);
-        auto Xh = curl_space_type::New(M_mesh);
-        auto Bh = Dh<0>( M_mesh );
+        LOG(INFO) << "DIM = " << DIM << std::endl;
+        auto M_mesh = loadMesh(_mesh=new Mesh<Simplex<DIM>>);
+        auto Xh = Ned1h<0>(M_mesh);  // Hcurl
+        auto Bh = Dh<0>(M_mesh);     // HDiv - RT
        
-        // Exact Solution 
-        auto f_M_a = expr<DIM,1>(soption("functions.a"));
-        // Rhs - projected on marker COIL
-        auto rhs = expr<DIM,1>(soption("functions.j"));
-
-        auto u = Xh->element();
-        auto v = Xh->element();
-        auto w = Bh->element();
+        auto u = Xh->element(); // Potenial - unknown
+        auto e = Xh->element(); // exact
+        auto v = Xh->element(); // test 
+        auto w = Bh->element(); // curl(potentential)
         
         auto f2 = form2(_test=Xh,_trial=Xh,_properties=MatrixProperties::SPD);
         auto f1 = form1(_test=Xh);
 
-        std::cout << "[a;b;c] = [ " << doption("parameters.a") << ";" <<  doption("parameters.b") << ";" <<  doption("parameters.c") << "]" <<  std::endl;
+        ModelProperties model;
 
-        f1 = integrate(_range=markedelements(M_mesh,"COIL"),
-                       _expr = doption("parameters.c")*inner(rhs,id(v)));    // rhs
+        double a = model.parameters()["a"].value();
+        double b = model.parameters()["a"].value();
+        double c = model.parameters()["a"].value();
+
+        std::cout << "[a;b;c] = [ " << a << ";" <<  b << ";" <<  c << "]" <<  std::endl;
+
+        for(auto it:model.materials())
+        {
+
+            std::string entry = "Materials.";
+            entry += marker(it)+".ex";
+            LOG(INFO) << "reading " << entry << "...\n";
+            // Exact 
+            e.on(_range=markedelements(M_mesh,marker(it)),
+                 _expr=expr<DIM,1>(model.getEntry(entry)));
+            // Rhs
+            entry = "Materials.";
+            entry += marker(it)+".j";
+            LOG(INFO) << "reading " << entry << "...\n";
+            f1 += integrate(_range=markedelements(M_mesh,marker(it)),
+                           _expr = c*inner(expr<DIM,1>(model.getEntry(entry)),id(v)));    // rhs
+        }
+        // Lhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
-                         doption("parameters.a")*(trans(curlt_op(u))*curl_op(v)) // (curl, curl)
-                       + doption("parameters.b")*inner(idt(u),id(v))             // regul
+                         a*(trans(curlt_op(u))*curl_op(v)) // (curl, curl)
+                       + b*inner(idt(u),id(v))             // regul
                        );
 
         if(doption("penaldir")>0.)
         {
             std::cout << "Using weak BC\n";
-            f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
-                            - doption("parameters.a")*trans(curl_op(v))*cross(N(),zero<FEELPP_DIM,1>()) 
-                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(zero<FEELPP_DIM,1>(),N()),cross(id(v),N())) );
-            f2 += integrate(_range=boundaryfaces(M_mesh), 
-                            _expr=- doption("parameters.a")*trans(curlt_op(u))*(cross(N(),id(v)) )
-                            - doption("parameters.a")*trans(curl_op(v))*(cross(N(),idt(u)) )
-                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
+            for(auto it: model.boundaryConditions().getVectorFields<DIM> ( "u", "Dirichlet" ) )
+            {
+                f1 += integrate(_range=markedfaces(M_mesh,it.first), 
+                                _expr=
+                                - a*trans(curl_op(v))*cross(N(),it.second) 
+                                + a*doption("penaldir")/(hFace())*inner(cross(it.second,N()),cross(id(v),N())) );
+                f2 += integrate(_range=boundaryfaces(M_mesh), 
+                                _expr=
+                                - a*trans(curlt_op(u))*(cross(N(),id(v)) )
+                                - a*trans(curl_op(v))*(cross(N(),idt(u)) )
+                                + a*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
+            }
         }
         else
         {
             std::cout << "Using strong BC\n";
-            f2 += on(_range=boundaryfaces(M_mesh),
-                     _rhs=f1,
-                     _element=u,
-                     _expr=zero<FEELPP_DIM,1>());
+            for(auto it: model.boundaryConditions().getVectorFields<DIM> ( "u", "Dirichlet" ) )
+            {
+                f2 += on(_range=markedfaces(M_mesh,it.first),
+                         _rhs=f1,
+                         _element=u,
+                         _expr=it.second);
+            }
         }
-        CHECK( f1.matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
+        CHECK( f2.matrixPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
         tic();
         f2.solveb(_rhs=f1,
                   _solution=u,
                   _backend=backend(_name="ms"));
         toc("Inverse",FLAGS_v>0);
-        Environment::saveTimers(boption("saveTimers")); 
-        auto e21 = normL2(_range=elements(M_mesh), _expr=(f_M_a-idv(u)));
-        auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
+        auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(e)-idv(u)));
+        auto e22 = normL2(_range=elements(M_mesh), _expr=idv(e));
         
         // export
         if(boption("exporter.export"))
         {
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("potential", u);
-            v.zero();
-            v.on( _range=markedelements(M_mesh, "COIL"), _expr=rhs );
-            ex->add("j", v);
-            w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
-            ex->add("B", w);
-            ex->save();
+            for(int i = 0; i < 2; i++)
+            {
+                v.zero();
+                v = f1.vector();
+                w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
+                ex->step(i)->add("exactP", e);
+                ex->step(i)->add("potential", u);
+                ex->step(i)->add("j", v);
+                ex->step(i)->add("B", w);
+                ex->save();
+            }
         }
     }
-
-private:
-    mesh_ptrtype M_mesh;
 };
 
 #if defined(USE_BOOST_TEST)
