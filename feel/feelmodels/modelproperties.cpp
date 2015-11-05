@@ -35,7 +35,11 @@ namespace Feel {
 
 ModelProperties::ModelProperties( std::string const& filename )
 {
-    if ( !fs::exists( filename ) ) return;
+    if ( !fs::exists( filename ) ) 
+    {
+      LOG(INFO) << "Could not find " << filename << std::endl;
+      return;
+    }
 
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     LOG(INFO) << "json file without comment:" << json_str_wo_comments;
