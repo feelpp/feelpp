@@ -1511,7 +1511,7 @@ public:
     /**
        \return the name of the time set
     */
-    void setName( std::string name ) const
+    void setName( std::string const& name ) const
     {
         M_name = name;
     }
@@ -1742,7 +1742,7 @@ protected:
     /**
        name of the time set
     */
-    std::string M_name;
+    mutable std::string M_name;
 
     /**
        index of the time set
