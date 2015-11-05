@@ -1471,6 +1471,10 @@ ConfigurePC::run( PC& pc )
     {
         ConfigurePCLU( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
+    else if ( std::string(pctype) == "cholesky" )
+    {
+        ConfigurePCCHOLESKY( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
+    }
     else if ( std::string(pctype) == "ilu" )
     {
         ConfigurePCILU( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
@@ -1534,6 +1538,10 @@ ConfigurePC::run( PC& pc )
         ConfigurePCRedundant mypc( this->precFeel(), /*pc,*/ this->worldComm(), this->prefix(), this->prefixOverwrite() );
         mypc.setFactorShiftType( M_factorShiftType );
         mypc.run(pc);
+    }
+    else
+    {
+      std::cout << pctype << " not interfaced in Feel++, please report to feelpp-devel@feelpp.org\n";
     }
 
     VLOG(2) << "configuring PC " << pctype << " done\n";
@@ -1649,6 +1657,54 @@ getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool 
     //    updateOptionsDescPrecBase( _options,prefixOver,sub );
     return _options;
 
+}
+void
+updateOptionsDescCHOLESKY( po::options_description & _options, std::string const& prefix, std::string const& sub )
+{
+    std::string pcctx = (sub.empty())? "" : sub+"-";
+
+//#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(PETSC_HAVE_MUMPS)
+    for ( int icntl=1 ; icntl<= 33 ; ++icntl )
+    {
+        std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
+        if( icntl == 7 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation (see mumps ICNTL documentation)" );
+        else
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>(),"configure mumps factorisation (see mumps ICNTL documentation)" );
+    }
+#endif
+
+    _options.add_options()
+      ( prefixvm( prefix,pcctx+"pc-reuse-ordering".c_str(),
+        (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
+        "Activate PCFactorSetReuseOrdering()" )
+      ( prefixvm( prefix,pcctx+"pc-reuse-fill"    .c_str(),
+        (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
+        "Activates PCFactorSetReuseFill()" )
+      ( prefixvm( prefix,pcctx+"pc-fill"          .c_str(),
+        (useDefaultValue)?Feel::po::value<double>()->default_value( 1. ):Feel::po::value<double>(),
+        "Sets fill amount" )
+      ( prefixvm( prefix,pcctx+"pc-in-place"      .c_str(),
+        (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
+        "Activates in-place factorization" )
+      ( prefixvm( prefix,pcctx+"pc-mat-ordering"  .c_str(),
+        (useDefaultValue)?Feel::po::value<std::string>()->default_value( "nd" ):Feel::po::value<std::string>(),
+         "Sets ordering routine - natural,nd,1wd,rcm,qmd,rowlength,wbm,spectral or amd" )
+
+}                                                                                                                                                              
+po::options_description
+getOptionsDescCHOLESKY( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+{
+    po::options_description _options( "options PC CHOLESKY", 200);
+    updateOptionsDescCHOLESKY( _options,prefix,sub );
+    for ( std::string prefixOver : prefixOverwrite )
+        updateOptionsDescCHOLESKY( _options,prefixOver,sub );
+    return _options;
 }
 void
 updateOptionsDescLU( po::options_description & _options, std::string const& prefix, std::string const& sub )
@@ -2210,6 +2266,99 @@ ConfigureKSP::run( KSP& ksp ) const
 
 }
 
+
+/**
+ * ConfigurePCCHOLESKY
+ */
+ConfigurePCCHOLESKY::ConfigurePCCHOLESKY( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                              std::string const& sub, std::string const& prefix,
+                              std::vector<std::string> const& prefixOverwrite )
+    :
+    ConfigurePCBase( precFeel,worldComm,sub,prefix,prefixOverwrite, getOptionsDescLU(prefix,sub,prefixOverwrite) ),
+    M_matSolverPackage( ""),
+    M_mumpsParameters( 33, std::make_pair(false,-1) ),
+    M_reuseOrdering(option(_name="pc-reuse-ordering",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_reuseFill(option(_name="pc-reuse-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_fill(option(_name="pc-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
+    M_inPlace(option(_name="pc-in-place",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_matOrderingType(option(_name="pc-mat-ordering",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() )
+{
+    const MatSolverPackage ptype;
+    this->check( PCFactorGetMatSolverPackage(pc, &ptype ) );
+    M_matSolverPackage = std::string( ( char* ) ptype );
+
+    if ( M_matSolverPackage == "mumps" )
+    {
+#if defined(PETSC_HAVE_MUMPS)
+        for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
+        {
+            std::string mumpsOption = (boost::format("pc-factor-mumps.icntl-%1%")%icntl ).str();
+            auto mumpsOptionAsked = getOptionIfAvalaible<int>(mumpsOption,prefix,sub,prefixOverwrite,this->vm());
+            if ( mumpsOptionAsked.first )
+                M_mumpsParameters[icntl-1] = mumpsOptionAsked;
+        }
+#endif
+    }
+    VLOG(2) << "ConfigurePC : Cholesky\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->matSolverPackage : " << M_matSolverPackage << "\n";
+    google::FlushLogFiles(google::INFO);
+    run( pc );
+}
+void
+ConfigurePCCHOLESKY::run( PC& pc )
+{
+    // set factor package
+    this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
+    
+    this->check( PCFactorSetReuseOrdering( pc, M_reuseOrdering) );
+    this->check( PCFactorSetReuseFill( pc, M_reuseFill) );
+    this->check( PCFactorSetFill( pc, M_fill ) );
+    this->check( PCFactorSetUseInPlace( pc, M_inPlace));
+    if(M_matOrderingType == "natural")
+    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGNATURAL ));
+        else if(M_matOrderingType == "nd")
+    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGND ));
+        else if(M_matOrderingType == "1wd")
+    this->check( PCFactorSetMatOrderingType((pc, MATORDERING1WD ));
+        else if(M_matOrderingType == "rcm")
+    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGRCM ));
+        else if(M_matOrderingType == "qmd")
+    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGQMD ));
+        else if(M_matOrderingType == "rowlength")
+    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGROWLENGTH ));
+        else if(M_matOrderingType == "wbms")
+    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGWBM ));
+        else if(M_matOrderingType == "spectral")
+    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGSPECTRAL ));
+        else if(M_matOrderingType == "amd")
+    this->check( PCFactorSetMatOrderingTyp e((pc, MATORDERINGAMD));
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+    // allow to tune the factorisation package
+    this->check( PCFactorSetUpMatSolverPackage(pc) );
+
+    // configure mumps
+    if ( M_matSolverPackage == "mumps" )
+    {
+#if defined(PETSC_HAVE_MUMPS)
+        Mat F;
+        this->check( PCFactorGetMatrix(pc,&F) );
+        for ( int icntl=1 ; icntl<= M_mumpsParameters.size() ; ++icntl )
+        {
+            if ( M_mumpsParameters[icntl-1].first )
+            {
+                PetscInt ival = M_mumpsParameters[icntl-1].second;
+                this->check( MatMumpsSetIcntl(F,icntl,ival) );
+            }
+        }
+#else
+        CHECK( false ) << "mumps not installed with PETSc";
+#endif
+    }
+#endif
+
+}
 
 
 /**
