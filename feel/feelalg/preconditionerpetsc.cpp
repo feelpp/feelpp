@@ -1659,7 +1659,7 @@ getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool 
 
 }
 void
-updateOptionsDescCHOLESKY( po::options_description & _options, std::string const& prefix, std::string const& sub )
+updateOptionsDescCHOLESKY( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true  )
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
 
@@ -1680,21 +1680,21 @@ updateOptionsDescCHOLESKY( po::options_description & _options, std::string const
 #endif
 
     _options.add_options()
-      ( prefixvm( prefix,pcctx+"pc-reuse-ordering".c_str(),
+      ( prefixvm( prefix,pcctx+"pc-reuse-ordering").c_str(),
         (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
         "Activate PCFactorSetReuseOrdering()" )
-      ( prefixvm( prefix,pcctx+"pc-reuse-fill"    .c_str(),
+      ( prefixvm( prefix,pcctx+"pc-reuse-fill"    ).c_str(),
         (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
         "Activates PCFactorSetReuseFill()" )
-      ( prefixvm( prefix,pcctx+"pc-fill"          .c_str(),
+      ( prefixvm( prefix,pcctx+"pc-fill"          ).c_str(),
         (useDefaultValue)?Feel::po::value<double>()->default_value( 1. ):Feel::po::value<double>(),
         "Sets fill amount" )
-      ( prefixvm( prefix,pcctx+"pc-in-place"      .c_str(),
+      ( prefixvm( prefix,pcctx+"pc-in-place"      ).c_str(),
         (useDefaultValue)?Feel::po::value<bool>()->default_value( true ):Feel::po::value<bool>(),
         "Activates in-place factorization" )
-      ( prefixvm( prefix,pcctx+"pc-mat-ordering"  .c_str(),
+      ( prefixvm( prefix,pcctx+"pc-mat-ordering"  ).c_str(),
         (useDefaultValue)?Feel::po::value<std::string>()->default_value( "nd" ):Feel::po::value<std::string>(),
-         "Sets ordering routine - natural,nd,1wd,rcm,qmd,rowlength,wbm,spectral or amd" )
+         "Sets ordering routine - natural,nd,1wd,rcm,qmd,rowlength,wbm,spectral or amd" );
 
 }                                                                                                                                                              
 po::options_description
@@ -2275,7 +2275,6 @@ ConfigurePCCHOLESKY::ConfigurePCCHOLESKY( PC& pc, PreconditionerPetsc<double> * 
                               std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel,worldComm,sub,prefix,prefixOverwrite, getOptionsDescLU(prefix,sub,prefixOverwrite) ),
-    M_matSolverPackage( ""),
     M_mumpsParameters( 33, std::make_pair(false,-1) ),
     M_reuseOrdering(option(_name="pc-reuse-ordering",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
     M_reuseFill(option(_name="pc-reuse-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
@@ -2311,28 +2310,28 @@ ConfigurePCCHOLESKY::run( PC& pc )
     // set factor package
     this->check( PCFactorSetMatSolverPackage( pc, M_matSolverPackage.c_str() ) );
     
-    this->check( PCFactorSetReuseOrdering( pc, M_reuseOrdering) );
-    this->check( PCFactorSetReuseFill( pc, M_reuseFill) );
+    this->check( PCFactorSetReuseOrdering( pc, (M_reuseOrdering) ? PETSC_TRUE:PETSC_FALSE) );
+    this->check( PCFactorSetReuseFill( pc, (M_reuseFill) ? PETSC_TRUE:PETSC_FALSE) );
     this->check( PCFactorSetFill( pc, M_fill ) );
-    this->check( PCFactorSetUseInPlace( pc, M_inPlace));
+    this->check( PCFactorSetUseInPlace( pc, (M_inPlace) ? PETSC_TRUE:PETSC_FALSE));
     if(M_matOrderingType == "natural")
-    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGNATURAL ));
-        else if(M_matOrderingType == "nd")
-    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGND ));
-        else if(M_matOrderingType == "1wd")
-    this->check( PCFactorSetMatOrderingType((pc, MATORDERING1WD ));
-        else if(M_matOrderingType == "rcm")
-    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGRCM ));
-        else if(M_matOrderingType == "qmd")
-    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGQMD ));
-        else if(M_matOrderingType == "rowlength")
-    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGROWLENGTH ));
-        else if(M_matOrderingType == "wbms")
-    this->check( PCFactorSetMatOrderingType((pc, MATORDERINGWBM ));
-        else if(M_matOrderingType == "spectral")
-    this->check( PCFactorSetMatOrderingType((pc,MATORDERINGSPECTRAL ));
-        else if(M_matOrderingType == "amd")
-    this->check( PCFactorSetMatOrderingTyp e((pc, MATORDERINGAMD));
+      this->check( PCFactorSetMatOrderingType(pc,MATORDERINGNATURAL ));
+    else if(M_matOrderingType == "nd")
+      this->check( PCFactorSetMatOrderingType(pc,MATORDERINGND ));
+    else if(M_matOrderingType == "1wd")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERING1WD ));
+    else if(M_matOrderingType == "rcm")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERINGRCM ));
+    else if(M_matOrderingType == "qmd")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERINGQMD ));
+    else if(M_matOrderingType == "rowlength")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERINGROWLENGTH ));
+    else if(M_matOrderingType == "wbms")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERINGWBM ));
+    else if(M_matOrderingType == "spectral")
+      this->check( PCFactorSetMatOrderingType(pc,MATORDERINGSPECTRAL ));
+    else if(M_matOrderingType == "amd")
+      this->check( PCFactorSetMatOrderingType(pc, MATORDERINGAMD));
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
     // allow to tune the factorisation package
