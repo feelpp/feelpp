@@ -58,3 +58,13 @@ It is not the case with `torus_quart_NotWorking.msh` which produce, for various 
 - preconditioned norm -> diverging due to indefinite or negative definite matrix 
 - natural -> diverging due to indefinite preconditioner
 
+##### Remarks and ongoing work
+- The use of LU as preconditionner + CG as solver is a bad choice. Indeed, the application of LU preconditioner on our symmetric matrix doens't give any guarantee on the symmetry of the resulting preconditioned matrix. As the CG solver is designed for symmetric matrices, the use of the combination LU + CG can fail.
+- Proposed preconditioner/solver : LU + Pre-only, Cholesky + CG or eventually use LU with BiCGStab instead of CG to deal with non symmetric matrices.
+- Proposed work/tests : 
+  - Check that the problem is coercive for all `b > 0` (see Bebendorf paper for example)
+  - Check that the product `op( curl curl )[Hcurl] x op ( grad )[H1]` is zero to ensure the operators are not buggy
+  - Compute the coercivity constant from the solve of the eigenproblem, and check that this constant doesn't depend of the mesh size `h`(should converge to a constant with mesh sufficiently fine)
+
+
+
