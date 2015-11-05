@@ -394,28 +394,6 @@ private :
 };
 
 /**
- * ConfigurePCCHOLESKY
- */
-class ConfigurePCCHOLESKY : public ConfigurePCBase
-{
-public :
-    ConfigurePCCHOLESKY( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
-                   std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
-private :
-    std::vector<std::pair<bool,int> > M_mumpsParameters;
-
-    // Options Database Keys from http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCCHOLESKY.html
-    bool M_reuseOrdering; // - Activate PCFactorSetReuseOrdering()
-    std::string M_matSolverPackage;// - Actives PCFactorSetMatSolverPackage() to choose the direct solver, like superlu
-    bool M_reuseFill;// - Activates PCFactorSetReuseFill()
-    double M_fill;// <fill>  - Sets fill amount
-    bool M_inPlace;// - Activates in-place factorization
-    std::string M_matOrderingType;// <nd,rcm,...> - Sets ordering routine
-private :
-    void run( PC& pc );
-};
-
-/**
  * ConfigurePCLU
  */
 class ConfigurePCLU : public ConfigurePCBase
