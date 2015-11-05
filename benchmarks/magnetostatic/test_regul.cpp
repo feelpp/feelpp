@@ -183,6 +183,7 @@ class TestRegul : public Application
         toc("Inverse",FLAGS_v>0);
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(e)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=idv(e));
+        std::cout << "Erreur " << e21 << "\t" << e21/e22  << std::endl;
         
         // export
         if(boption("exporter.export"))
