@@ -193,7 +193,7 @@ class TestRegul : public Application
                      _element=u,
                      _expr=zero<FEELPP_DIM,1>());
         }
-        CHECK( f1.matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
+        CHECK( f2.matrixPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
         tic();
         f2.solveb(_rhs=f1,
                   _solution=u,
