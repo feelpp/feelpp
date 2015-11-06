@@ -182,9 +182,14 @@ class TestRegul : public Application
                   _solution=u,
                   _backend=backend(_name="ms"));
         toc("Inverse",FLAGS_v>0);
-                
+               
+#if DIM==2 
+        w.on( _range=elements(M_mesh),  _expr=vec(curlv_op(u),cst(0.)) );
+        ec.on( _range=elements(M_mesh), _expr=vec(curlv_op(e),cst(0.)) );
+#else
         w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
         ec.on( _range=elements(M_mesh), _expr=curlv_op(e) );
+#endif
         auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(e)-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=idv(e));
         auto ec21 = normL2(_range=elements(M_mesh), _expr=(curlv_op(e)-curlv_op(u)));
