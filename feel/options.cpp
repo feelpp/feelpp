@@ -402,6 +402,7 @@ crbSEROptions( std::string const& prefix )
         ( "ser.error-estimation", Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
         ( "ser.use-greedy-in-rb", Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
         ( "ser.eim-subtrainset-method", Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
+        ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy") 
         ;
     return seroptions;
 }
@@ -514,6 +515,7 @@ crbOptions( std::string const& prefix )
     ( "crb.show-mu-selection" , Feel::po::value<bool>()->default_value( 0 ), " show mu selection during offline step to build RB space" )
     ( "crb.show-residual" , Feel::po::value<bool>()->default_value( 0 ), " show mu residuals values (used for the error estimation)" )
     ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
+    ( "crb.print-iterations-info", Feel::po::value<bool>()->default_value( 0 ), "Write offline Picard iterations summary" )
     ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
     ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 

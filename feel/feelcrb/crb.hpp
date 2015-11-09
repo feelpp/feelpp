@@ -788,8 +788,13 @@ public:
      */
 
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
-    virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
+    virtual boost::tuple<std::vector<double>,matrix_info_tuple > lb( size_type N, parameter_type const& mu,
+                                                                     std::vector< vectorN_type >& uN,
+                                                                     std::vector< vectorN_type >& uNdu ,
+                                                                     std::vector<vectorN_type> & uNold,
+                                                                     std::vector<vectorN_type> & uNduold,
+                                                                     bool print_rb_matrix=false,
+                                                                     int K=0 ) const;
 
 
     /*
@@ -872,7 +877,7 @@ public:
      * \param K : number of time step ( default value, must be >0 if used )
      */
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
-                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+                                                                              std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
     /*
      * Dump data array into a file
@@ -921,8 +926,8 @@ public:
      * \param K : number of time step ( default value, must be >0 if used )
      */
     matrix_info_tuple fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
-                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-                                   std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+                                                                         std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
+                                                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
     /**
      * computation of the conditioning number of a given matrix
@@ -1083,14 +1088,9 @@ public:
      */
     element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
-    // void l2solve( vector_ptrtype& u, vector_ptrtype const& f )
-    // {
-    //     return M_model->l2solve( u, f );
-    // }
-    // double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
-    // {
-    //     return M_model->scalarProduct( X, Y );
-    // }
+    // Summary of number of iterations (at the current step)
+    std::pair<int,double> online_iterations(){return online_iterations_summary;}
+    std::pair<int,double> offline_iterations(){return offline_iterations_summary;}
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
@@ -1198,6 +1198,11 @@ public:
      * print parameters set mu selected during the offline stage
      */
     void printMuSelection( void );
+
+    /**
+     * print informations on offline Picard iterations
+     */
+    void printRbPicardIterations();
 
     /**
      * print max errors (total error and also primal and dual contributions)
@@ -1469,6 +1474,9 @@ protected:
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+
+    mutable std::pair<int,double> offline_iterations_summary;
+    mutable std::pair<int,double> online_iterations_summary;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1625,9 +1633,14 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             else
                 increment_norm = M_model->computeNormL2( u , uold );
 
+            LOG(INFO) << "iteration " << iteration << ", increment_norm = " <<  increment_norm << "\n";
+            //std::cout << "[OFFLINE] iteration " << iteration << ", increment_norm = " <<  increment_norm << "\n";
+            this->offline_iterations_summary.first = iteration;
+            this->offline_iterations_summary.second = increment_norm;
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
+        
 
         M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
@@ -2396,6 +2409,9 @@ CRB<TruthModelType>::offline()
                     udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
                     tdu=timer2.elapsed();
                 }
+
+                if( boption( _name="crb.print-iterations-info") )
+                    this->printRbPicardIterations();
             }
             else
             {
@@ -5231,15 +5247,17 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                previous_uN=uN[time_index];
 
             increment = (uN[time_index]-previous_uN).norm();
+            auto increment_abs = (uN[time_index]-previous_uN).array().abs();
+            //auto increment_abs2 = increment_abs1.array();
+            //auto increment_abs = increment_abs2.norm();
 
-            //output_vector.push_back( output );
             output_vector[time_index] = output;
-            DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
+            this->online_iterations_summary.first = fi;
+            this->online_iterations_summary.second = increment;
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
-                std::cout <<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
-                //VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
+                VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
 
             double residual_norm = (A * uN[time_index] - F).norm() ;
             VLOG(2) << " residual_norm :  "<<residual_norm;
@@ -5777,6 +5795,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     }
 
     matrix_info_tuple matrix_info;
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(boption(_name="parallel.opencl.enable"))
     {
@@ -5790,7 +5809,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     else
     {
 #endif
-    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
         if(ioption(_name="parallel.debug"))
         {
@@ -5825,7 +5845,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 }
 
 template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_info_tuple >
+typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_info_tuple>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
@@ -5895,6 +5915,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double conditioning=0;
     double determinant=0;
     uN[0].setOnes(N);
+
     if( M_use_newton )
         boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
     else
@@ -5956,7 +5977,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         file_output.close();
     }
 
-    return boost::make_tuple( output_vector, matrix_info);
+    return boost::make_tuple( output_vector, matrix_info );
 
 }
 
@@ -8937,6 +8958,29 @@ CRB<TruthModelType>::printMuSelection( void )
     }
 }
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::printRbPicardIterations()
+{
+    if ( Environment::worldComm().isMasterRank() )
+    {
+        std::ofstream file;
+        std::string filename = "RB-offline_picard_summary.dat";
+        file.open(filename, std::ios::out | std::ios::app);
+
+        double rb_online_mean_iterations = 0;
+        int rb_online_min_terations = 0;
+        int rb_online_max_terations = 0;
+        double rb_online_max_increments = 0;
+
+        std::string name = fs::current_path().string() + "/" + filename;
+        fs::path pathfile( name.c_str() );
+        if( fs::is_empty(pathfile) )
+            file << "NbBasis" << "\t " << "Nb_iter" << "\t" << "Increment \n";
+        file << M_N << "\t" << offline_iterations_summary.first << "\t" << offline_iterations_summary.second << "\n";
+        file.close();
+    }
+}
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type

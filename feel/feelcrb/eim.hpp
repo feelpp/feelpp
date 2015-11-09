@@ -590,6 +590,7 @@ EIM<ModelType>::offline()
     double time=0;
     double time_=0;
     boost::mpi::timer timer,timer2,timer3;
+    double rb_online_mean_iterations, rb_online_max_increments;
 
     if( M_restart )
     {
@@ -769,6 +770,11 @@ EIM<ModelType>::offline()
         timer2.restart();
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
+
+        // Print summary of EIM iterations
+        if( boption(_name="ser.use-rb-in-eim-mu-selection") && boption(_name="ser.print-rb-iterations_info") )
+            M_model->printRbIterationsSER( M_M-1 );
+
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
@@ -1241,6 +1247,7 @@ public:
     virtual void printInterpolationPointsSelection() const=0;
     virtual void printMuSelection() const=0;
     virtual void printOfflineError() const=0;
+    virtual void printRbIterationsSER( int M ) const=0;
     virtual void addOfflineError(double error) =0;
     virtual void clearOfflineError() =0;
 
@@ -1943,7 +1950,11 @@ public:
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
-        return M_crb->expansion( mu, M_crb->dimension() );
+        //return M_crb->expansion( mu, M_crb->dimension() );
+        auto sol = M_crb->expansion( mu, M_crb->dimension() );
+        this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
+        this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
+        return sol;
     }
     double RieszResidualNorm( parameter_type const& mu )
     {
@@ -2270,6 +2281,7 @@ public:
                 file<< mu(sizemu-1) << "\n" ;
                 number++;
             }
+            file.close();
         }
     }
 
@@ -2287,6 +2299,41 @@ public:
                 file << i+1 <<"\t ";
                 file<< M_offline_error[i]<<"\n ";
             }
+            file.close();
+        }
+    }
+
+    void printRbIterationsSER( int M ) const
+    {
+        if ( Environment::worldComm().isMasterRank() )
+        {
+            std::ofstream file;
+            std::string filename = "EIM-" + super::name() + "-rb_online_greedy_summary.dat";
+            file.open(filename, std::ios::out | std::ios::app);
+
+            double rb_online_mean_iterations = 0;
+            int rb_online_min_terations = 0;
+            int rb_online_max_terations = 0;
+            double rb_online_max_increments = 0;
+            if( M_rb_online_iterations.size() != 0 )
+            {
+                rb_online_min_terations = *std::min_element( M_rb_online_iterations.begin(), M_rb_online_iterations.end() );
+                rb_online_max_terations = *std::max_element( M_rb_online_iterations.begin(), M_rb_online_iterations.end() );
+                rb_online_mean_iterations = std::accumulate( M_rb_online_iterations.begin(), M_rb_online_iterations.end(), 0.0 );
+                rb_online_mean_iterations /= M_rb_online_iterations.size();
+                rb_online_max_increments = *std::max_element( M_rb_online_increments.begin(), M_rb_online_increments.end() );
+            }
+
+            std::string name = fs::current_path().string() + "/" + filename;
+            fs::path pathfile( name.c_str() );
+            if( fs::is_empty(pathfile) )
+                file << "NbBasis" << "\t " << "Min_iter" << "\t" << "Mean_iter_sup" << "\t" << "Max_iter" << "\t" << "Max_increment \n";
+            file << M << "\t"
+                 << rb_online_min_terations << "\t"
+                 << std::ceil(rb_online_mean_iterations) << "\t"
+                 << rb_online_max_terations << "\t"
+                 << rb_online_max_increments << "\n";
+            file.close();
         }
     }
 
@@ -2515,6 +2562,9 @@ private:
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
+
+    std::vector<int> M_rb_online_iterations;
+    std::vector<double> M_rb_online_increments;
 };
 
 namespace detail
