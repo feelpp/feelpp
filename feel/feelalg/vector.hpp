@@ -738,7 +738,7 @@ sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& do
 
 template <typename T>
 void
-sync( Vector<T> & v, detail::syncOperator<T> const& opSync );
+sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
 
