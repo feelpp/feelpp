@@ -473,7 +473,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         {
             p->setMatrix( matrix );
         }
-        VLOG(2) << "storing preconditioner in singleton" << "\n";
+        VLOG(2) << "storing preconditioner in singleton (name = " << prefix << ")\n";
         Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;

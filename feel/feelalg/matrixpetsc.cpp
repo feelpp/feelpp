@@ -435,6 +435,27 @@ void MatrixPetsc<T>::init ( const size_type m,
     CHKERRABORT( this->comm(),ierr );
 #endif
 
+    if ( this->isSPD() )
+    {
+        ierr = MatSetOption ( M_mat, MAT_SPD, PETSC_TRUE );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else if ( this->isSymmetric() )
+    {
+        ierr = MatSetOption ( M_mat, MAT_SYMMETRIC, PETSC_TRUE );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else if ( this->isHermitian() )
+    {
+        ierr = MatSetOption ( M_mat, MAT_HERMITIAN, PETSC_TRUE );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else if ( this->isStructurallySymmetric() )
+    {
+        ierr = MatSetOption ( M_mat, MAT_STRUCTURALLY_SYMMETRIC, PETSC_TRUE );
+        CHKERRABORT( this->comm(),ierr );
+    }
+
     //MatShift( M_mat, 1 );
     //printMatlab( "shift.m" );
     //this->close();
@@ -1734,10 +1755,11 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vect
 
 template<typename T>
 bool
-MatrixPetsc<T>::isSymmetric() const
+MatrixPetsc<T>::isSymmetric( bool check ) const
 {
-    PetscBool b;
-    MatIsSymmetric( M_mat, 1e-13, &b );
+    PetscBool b = super::isSymmetric()?PETSC_TRUE:PETSC_FALSE;
+    if ( check )
+        MatIsSymmetric( M_mat, 1e-13, &b );
     return b;
 }
 

@@ -55,6 +55,7 @@ file_options( std::string const& appname )
         ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
         ( "config-files", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
         ( "bc-file", po::value<std::string>()->default_value(appname+".bc"), "specify boundary condition (.bc) file" )
+        ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
@@ -623,6 +624,8 @@ po::options_description
 blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "blockms.11.setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" );
     return _options
         .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
         .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block

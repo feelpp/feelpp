@@ -30,8 +30,13 @@ if ( FEELPP_ENABLE_IPOPT )
     execute_process(
       COMMAND git submodule update --init --recursive contrib/ipopt
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      RESULT_VARIABLE ERROR_CODE
       )
-    MESSAGE(STATUS "Git submodule contrib/ipopt updated.")
+    if(ERROR_CODE EQUAL "0")
+      MESSAGE(STATUS "Git submodule contrib/ipopt updated.")
+    else()
+      MESSAGE(FATAL_ERROR "Git submodule contrib/ipopt failed to be updated. Possible cause: No internet access, firewalls ...")
+    endif()
   else()
     if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/ )
       message( FATAL_ERROR "Please make sure that git submodule contrib/ipopt is available")
