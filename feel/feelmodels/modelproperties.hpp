@@ -40,7 +40,7 @@ namespace pt =  boost::property_tree;
 class ModelProperties
 {
 public:
-    ModelProperties( std::string const& filename );
+    ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")));
     virtual ~ModelProperties();
 
     std::string const& name() const {  return M_name; }

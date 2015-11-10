@@ -27,9 +27,20 @@ option(FEELPP_ENABLE_ML_LIBRARY "Enables ML library in Feel++" ON )
 if ( FEELPP_ENABLE_ML_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
-  FIND_LIBRARY(ML_LIBRARY
-    NAMES
-    ml
+  FIND_PATH(ML_INCLUDE_DIR ml_include.h
+    PATHS
+    $ENV{PETSC_DIR}/include
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include
+    ${PETSC_DIR}/include
+    NO_DEFAULT_PATH
+    )
+
+  FIND_PATH(ML_INCLUDE_DIR ml_include.h
+    PATHS
+    /opt/local/lib/petsc/lib
+    )
+
+  FIND_LIBRARY(ML_LIBRARY NAMES ml
     PATHS
     $ENV{PETSC_DIR}/lib
     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
@@ -37,18 +48,13 @@ if ( FEELPP_ENABLE_ML_LIBRARY )
     NO_DEFAULT_PATH
     )
 
-  FIND_LIBRARY(ML_LIBRARY
-    NAMES
-    ml
+  FIND_LIBRARY(ML_LIBRARY NAMES ml
     PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    ${PETSC_DIR}/lib
     /opt/local/lib/petsc/lib
     )
 endif()
 
-FIND_PACKAGE_HANDLE_STANDARD_ARGS (ML DEFAULT_MSG  ML_INCLUDE_DIR ML_LIBRARIES )
+FIND_PACKAGE_HANDLE_STANDARD_ARGS (ML DEFAULT_MSG  ML_INCLUDE_DIR ML_LIBRARY )
 
 mark_as_advanced( ML_INCLUDE_DIR )
 mark_as_advanced( ML_LIBRARY )
