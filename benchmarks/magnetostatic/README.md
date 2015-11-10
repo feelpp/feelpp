@@ -66,6 +66,26 @@ It is not the case with `torus_quart_NotWorking.msh` which produce, for various 
 - Proposed work/tests : 
   - Check that the problem is coercive for all `b > 0` (see Bebendorf paper for example)
   - Check that the product `op( curl curl )[Hcurl] x op ( grad )[H1]` is zero to ensure the operators are not buggy
+  **Working Mesh: **
+  ```sh
+  >> icurl; igrad; should_be_null=var_icurl*var_igrad;
+  >> max(max(should_be_null))
+  ans =
+   (1,1)      2.7951e-11
+  >> min(min(should_be_null))
+   ans =
+   (1,1)     -2.8096e-11
+  ```
+  **NOT Working Mesh: **
+  ```sh
+   >> icurl_nw; igrad_nw; should_be_null=var_icurl*var_igrad;
+   >> max(max(should_be_null))
+  ans =
+   (1,1)       0.0684
+  >> min(min(should_be_null))
+  ans =
+   (1,1)      -0.0684
+  ```
   - Compute the coercivity constant from the solve of the eigenproblem, and check that this constant doesn't depend of the mesh size `h`(should converge to a constant with mesh sufficiently fine)
 
 
