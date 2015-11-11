@@ -42,7 +42,8 @@ ModelProperties::ModelProperties( std::string const& filename )
     }
     else
     {
-      std::cout << "[ModelProperties] Loading " << filename << std::endl;
+      if( Environment::isMasterRank() )
+        std::cout << "[ModelProperties] Loading " << filename << std::endl;
     }
 
 

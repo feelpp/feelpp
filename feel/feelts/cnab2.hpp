@@ -64,15 +64,8 @@ public:
      */
     double l2Error() const
         {
-            /*double acc_norm = normL2(_range=elements(mesh), _expr=idv(acc) );
-            double accD_norm = normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
-                /normL2(_range=elements(mesh), _expr=idv(u))/k();
-            if (Environment::isMasterRank())
-                std::cout << "current acc = "<< acc_norm
-                          <<", current discret acc = "<<accD_norm <<std::endl;
-             return normL2(_range=elements(mesh), _expr=idv(acc) );*/
             return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
-                /normL2(_range=elements(mesh), _expr=idv(u));
+                /normL2(_range=elements(mesh), _expr=idv(u)) /k();
         }
 
     /**
@@ -89,7 +82,7 @@ public:
                 std::cout << "checking for steady state ||u-up||_2 = "
                           << e << " tolerance: " << steady_tol << std::endl;
         }
-        return steady?(e<steady_tol):!(t()<T);
+        return steady ? (e<steady_tol && index()>10) : !(t()<T);
     }
     /**
      * compute new time step using time \p step and error \p err
@@ -176,6 +169,8 @@ CNAB2<FieldType>::next( FT const& fd, bool is_converged )
             t() = tstar + k()/2;
             u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()*idv(fd)/2);
             acc_try.on(_range=elements(mesh), _expr=idv(fd));
+            k() = t()-tprev(1);
+            kprev(1) = tprev(1)-tprev(2);
             if ( Environment::isMasterRank() )
                 std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
         }
