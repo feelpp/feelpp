@@ -4,9 +4,14 @@
     "Model":"Navier-Stokes",
     "Parameters":
     {
-        "ubar":
-        {
-            "value":"1"
+        "ubar":"1.0"
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1.0e3",
+            "mu":"1.0"
         }
     },
     "BoundaryConditions":
