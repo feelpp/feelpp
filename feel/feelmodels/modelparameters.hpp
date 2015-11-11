@@ -49,13 +49,13 @@ struct ModelParameter
         M_max( max )
         {}
     ModelParameter( std::string const& name, std::string const& expression,
-                    std::string const& pathExpr = "", WorldComm const& world = Environment::worldComm() )
+                    std::string const& dirLibExpr = "", WorldComm const& world = Environment::worldComm() )
         :
         M_name( name ),
         M_value( 0. ),
         M_min( 0. ),
         M_max( 0. ),
-        M_expr( expr<2>( expression,pathExpr,world ) )
+        M_expr( expr<2>( expression,"",world,dirLibExpr ) )
         {
             M_value = M_expr->evaluate();
         }
@@ -88,10 +88,13 @@ private:
 class ModelParameters: public std::map<std::string,ModelParameter>
 {
 public:
-    ModelParameters();
-    ModelParameters( pt::ptree const& p );
+    ModelParameters( WorldComm const& world = Environment::worldComm() );
+    ModelParameters( pt::ptree const& p, WorldComm const& world = Environment::worldComm() );
+    ModelParameters( ModelParameters const& ) = default;
     virtual ~ModelParameters();
     void setPTree( pt::ptree const& _p );
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& mp );
     std::map<std::string,double> toParameterValues() const;
@@ -100,7 +103,9 @@ public:
 private:
     void setup();
 private:
+    WorldComm const& M_worldComm;
     pt::ptree M_p;
+    std::string M_directoryLibExpr;
 };
 
 
