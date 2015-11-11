@@ -29,10 +29,14 @@
 
 namespace Feel {
 
-ModelParameters::ModelParameters()
+ModelParameters::ModelParameters( WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
-ModelParameters::ModelParameters(pt::ptree const& p)
+ModelParameters::ModelParameters( pt::ptree const& p, WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
 ModelParameters::~ModelParameters()
@@ -67,7 +71,7 @@ ModelParameters::setup()
                 {
                     auto val= M_p.get<std::string>(v.first);
                     LOG(INFO) << "adding parameter " << t << " with value " << val;
-                    this->operator[](t) = ModelParameter( t, val );
+                    this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
                 }
                 catch( ... )
                 {
@@ -83,7 +87,7 @@ ModelParameters::setup()
                         {
                             auto val= f.get<std::string>("value");
                             LOG(INFO) << "adding parameter " << t << " with value " << val;
-                            this->operator[](t) = ModelParameter( t, val );
+                            this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
                         }
                         catch( ... )
                         {
