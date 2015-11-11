@@ -129,6 +129,7 @@ class ModelNumerical : public ModelAlgebraic
 
 
         ModelProperties const& modelProperties() const { return M_modelProps; }
+        ModelProperties & modelProperties() { return M_modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value);
 
         // cst parameter
