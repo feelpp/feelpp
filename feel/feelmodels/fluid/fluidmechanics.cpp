@@ -110,16 +110,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerPressureBC();
     this->M_fluidOutletsBCType.clear();
 
-    // change path
-    fs::path curPath=fs::current_path();
-    bool hasChangedRep=false;
-    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
-    {
-        this->log("FluidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
-        bool hasChangedRep=true;
-        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
-    }
-
     // boundary conditions
     this->M_isMoveDomain = false;
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Dirichlet" );
@@ -290,16 +280,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", marker(d) );
         for (std::string const& currentMarker : markerList )
         {
-            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet )) );
+            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->directoryLibSymbExpr() )) );
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
         }
     }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
-
-    // go back to previous repository
-    if ( hasChangedRep )
-        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
 }
 
