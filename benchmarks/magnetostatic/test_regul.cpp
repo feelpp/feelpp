@@ -129,22 +129,19 @@ public:
 
         // Generating elements to graphically find out 
         // where on the mesh bug can be
-        auto curl_cst = div_h->element();
         auto curl_cst_exp = curl_h->element();
         curl_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
-        Icurl.matPtr()->multVector(curl_cst_exp, curl_cst);
+        auto curl_cst = Icurl(curl_cst_exp);
         std::cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_cst.min() << " ; " << curl_cst.max() << " ]" << std::endl;
 
-        auto grad_cst = curl_h->element();
         auto grad_cst_exp = h1_h->element();
         grad_cst_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
-        Igrad.matPtr()->multVector(grad_cst_exp, grad_cst);
+        auto grad_cst = Igrad(grad_cst_exp);
         std::cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_cst.min() << " ; " << grad_cst.max() << " ]" << std::endl;
 
-        auto div_cst = l2_h->element();
         auto div_cst_exp = div_h->element();
         div_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
-        Idiv.matPtr()->multVector(div_cst_exp, div_cst);
+        auto div_cst = Idiv(div_cst_exp); 
         std::cout << "Div ( " << soption("vec_div") << " ) : [" << div_cst.min() << " ; " << div_cst.max() << " ]" << std::endl;
 
         std::cout << " ** Matrix Sizes ** " << std::endl;

@@ -4,10 +4,7 @@
     "Model":"Navier-Stokes",
     "Parameters":
     {
-        "ubar":
-        {
-            "value":"0.2"
-        }
+        "ubar":"0.2"
     },
     "Materials":
     {
