@@ -380,7 +380,10 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
         auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
         if(boption(M_prefix_11+".threshold"))
+        {
+            std::cout << "Threshold ...\n";
             Igrad.matPtr()->threshold();
+        }
 
         //M_P = pi_curl.matPtr();
         //M_C = Igrad.matPtr();
