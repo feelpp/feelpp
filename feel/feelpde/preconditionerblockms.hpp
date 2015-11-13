@@ -366,7 +366,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         // Create the interpolation and keep only the matrix
         //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
         auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
-        Igrad.matPtr()->threshold();
+        if(boption(M_prefix_11+".threshold"))
+            Igrad.matPtr()->threshold();
 
         //M_P = pi_curl.matPtr();
         //M_C = Igrad.matPtr();
