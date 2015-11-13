@@ -39,6 +39,8 @@ public:
     ModelPostprocess();
     ModelPostprocess( pt::ptree const& p );
     virtual ~ModelPostprocess();
+    pt::ptree const& pTree() const { return M_p; }
+    pt::ptree & pTree() { return M_p; }
     void setPTree( pt::ptree const& _p );
     std::map<std::string,double> toPostprocessValues() const
         {
