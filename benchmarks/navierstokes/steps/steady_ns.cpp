@@ -188,10 +188,11 @@ int main(int argc, char**argv )
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
+    auto b = backend(_prefix="picard",_name="picard");
 
-    auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
-                                     _pcfactormatsolverpackage=backend()->matSolverPackageEnumType(), _backend=backend()->shared_from_this(),
-                                     _worldcomm=backend()->comm() );
+    auto precPetsc = preconditioner( _prefix="picard",_matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                     _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+                                     _worldcomm=b->comm() );
 
     bool attachMassMatrix = boption(_name="attach-mass-matrix");
     if ( attachMassMatrix )
@@ -212,7 +213,7 @@ int main(int argc, char**argv )
     }
     else
     {
-        backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
+        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
     }
     toc(" - Solving Stokes...");
 
@@ -278,17 +279,25 @@ int main(int argc, char**argv )
             else
             {
                 //at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
-                backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
+                backend(_name="picard")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
             toc("Picard::Solve");
             tic();
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-            
+
+            size_type nnz = 0 ;
+            auto nNz = at.matrixPtr()->graph()->nNz() ;
+            for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+                nnz += ( *iter ) ;
+            size_type gnnz=0;
+            LOG(INFO) << "[nnz]       number of nnz: " << nnz << "\n";
+
             fixedpt_iter++;
 
             if ( Environment::isMasterRank() )
             {
+                std::cout << "[nnz]       number of nnz: " << nnz << "\n";
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
@@ -366,7 +375,7 @@ int main(int argc, char**argv )
             else
             {
                 //at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
-                backend()->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
+                backend(_name="newton",_rebuild=true)->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
 
             U.add(1.,deltaU);

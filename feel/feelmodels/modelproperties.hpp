@@ -40,26 +40,28 @@ namespace pt =  boost::property_tree;
 class ModelProperties
 {
 public:
-    ModelProperties( std::string const& filename );
+    ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
+                     std::string const& directoryLibExpr = "",
+                     WorldComm const& world = Environment::worldComm() );
     virtual ~ModelProperties();
+
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
     std::string shortName() const {  return M_shortname; }
     void setShortName( std::string const& t) { M_shortname = t; }
-    
 
     std::string const& description() const {  return M_description; }
     void setDescription( std::string const& t) { M_description = t; }
 
     std::string const& model() const {  return M_model; }
     void setModel( std::string const& t) { M_model = t; }
-    
 
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
-    
+
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
     BoundaryConditions & boundaryConditions()  { return M_bc; }
@@ -83,8 +85,9 @@ public:
      * @param[in] filename The file to save the current tree
      **/
     void write(std::string const &filename);
-    
+
 private:
+    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_name, M_shortname, M_description, M_model;
     ModelParameters M_params;
