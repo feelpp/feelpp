@@ -2515,8 +2515,15 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_beta") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_beta");
-        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
-        this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+        if(!gMat)
+        {
+          this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, NULL));
+        }
+        else
+        {
+          MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+          this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+        }
     }
 #endif
 }
