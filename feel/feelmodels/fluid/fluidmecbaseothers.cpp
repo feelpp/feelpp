@@ -86,6 +86,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
     if (M_doExportWallShearStress) doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
     if (M_doExportViscosity) doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
+    if (M_doExportPid) doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -371,13 +372,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 #endif
     //M_exporter->step( time )->setMesh( M_mesh );
     bool hasFieldToExport = false;
+    if ( M_doExportPid )
+    {
+        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
     if ( M_doExportVelocity )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
                                        M_Solution->template element<0>() );
         hasFieldToExport = true;
-        this->log("FluidMechanics","exportResults", "velocity done" );
     }
     if ( M_doExportPressure )
     {
@@ -474,6 +479,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     //    this->meshALE()->revertReferenceMesh();
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
     bool hasFieldToExport = false;
+    if ( M_doExportPid )
+    {
+        M_exporter_ho->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
     if ( M_doExportVelocity )
     {
         M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
@@ -660,34 +670,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         this->stressTensorLawType( saveStressTensorLawType );
     }
 
-
-    //--------------------------------------------------
-    // solution vector
-    //auto Uvec = this->backend()->newBlockVector(_block=M_blockVectorSolution/*M_blockMonolitic*/);
     //--------------------------------------------------
     // run solver
-    if (M_pdeSolver=="LinearSystem")
-    {
-        M_algebraicFactory->linearSolver(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-    else if ( M_pdeSolver == "PtFixe")
-    {
-        M_algebraicFactory->AlgoPtFixe(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-    else if ( M_pdeSolver == "Newton")
-    {
-        //Uvec->close(); //????????
-        M_algebraicFactory->AlgoNewton2(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-
-    //Uvec->close();
-
-    //--------------------------------------------------
-    //get solution compute with the numerical method
-    //*M_Solution = *Uvec;
-    //M_blockVectorSolution.localize(Uvec);
+    M_algebraicFactory->solve( M_pdeSolver, this->blockVectorSolution().vector() );
+    // update sub vector
     M_blockVectorSolution.localize();
 
+    //--------------------------------------------------
     // update windkessel solution ( todo put fluidOutletWindkesselPressureDistal and Proximal in blockVectorSolution )
     int cptBlock=1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
