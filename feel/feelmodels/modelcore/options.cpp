@@ -98,38 +98,16 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         // mesh
         (prefixvm(prefix,"geofile").c_str(), Feel::po::value< std::string >(), "input geo file")
         (prefixvm(prefix,"mshfile").c_str(), Feel::po::value< std::string >(), "input msh file")
-        (prefixvm(prefix,"geotool-mesh-index").c_str(), Feel::po::value< int >()->default_value( 0 ), "choice mesh")
-        (prefixvm(prefix,"geotool-save-directory").c_str(), Feel::po::value< std::string >()->default_value(""), "path for save geo and msh file") // work only with mesh in .mesh file
-        (prefixvm(prefix,"geotool-save-name").c_str(), Feel::po::value< std::string >()->default_value(""), "name for save geo and msh file") // work only with mesh in .mesh file
         // other
         (prefixvm(prefix,"rebuild_mesh_partitions").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to rebuild mesh partitions ")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
+        (prefixvm(prefix,"directory-lib-expr").c_str(), Feel::po::value< std::string >(), "directory-lib-expr");
         ;
-
-    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_PARAMETERS;++nParam)
-        appliBaseOptions.add_options()
-            ((boost::format("%1%parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter");
-
-    for (uint16_type nParam=1;nParam<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GEOPARAMETERS;++nParam)
-        appliBaseOptions.add_options()
-            ((boost::format("%1%geo-parameter%2%") %prefixvm(prefix,"") %nParam).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a geo parameter");
-
-    for (uint16_type k=1;k<=FEELPP_MODELS_OPTIONS_NUMBER_OF_GINACEXPR;++k)
-        {
-            appliBaseOptions.add_options()
-                ((boost::format("%1%ginac-expr%2%") %prefixvm(prefix,"") %k).str().c_str(), Feel::po::value<std::string>()->default_value( "" ), " a ginac expr");
-            appliBaseOptions.add_options()
-                ((boost::format("%1%ginac-name%2%") %prefixvm(prefix,"") %k).str().c_str(),
-                 Feel::po::value<std::string>()->default_value( (boost::format("defaultNameGinacExpr%1%")%k).str() ), " name of ginac expr");
-        }
-    appliBaseOptions.add_options()
-        (prefixvm(prefix,"ginac-expr-directory").c_str(), Feel::po::value< std::string >(), "ginac-expr-directory");
 
     return appliBaseOptions
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) );
-    //return appliBaseOptions.add( backend_options( prefix ) );
 }
 
 /**

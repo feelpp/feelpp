@@ -1,31 +1,31 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t
    -*- vim: set ft=cpp fenc=utf-8 sw=4 ts=4 sts=4 tw=80 et cin cino=N-s,c0,(0,W4,g0:
 
-  This file is part of the Feel library
+This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-02-07
+Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Date: 2008-02-07
 
-  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
+Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file dist2wallsoptimized.cpp
-   \author Guillaume Dolle <gdolle at unistra.fr>
-   \date 2014-01-21
- */
+  \file dist2wallsoptimized.cpp
+  \author Guillaume Dolle <gdolle at unistra.fr>
+  \date 2014-01-21
+  */
 
 //#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
@@ -36,6 +36,7 @@
 #include <feel/feel.hpp>
 #include <feel/feelpde/preconditionerblockms.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelalg/matrixeigensparse.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feeldiscr/dh.hpp>
 
@@ -53,20 +54,24 @@ using namespace Feel;
 
 
 inline
-po::options_description
+    po::options_description
 makeOptions()
 {
     po::options_description opts( "test_Regul" );
     opts.add_options()
-    ( "penaldir", po::value<double>()->default_value( 0 ), "Use penaldir > 0 for weak BC" )
-    ( "saveTimers", po::value<bool>()->default_value( true ), "print timers" )
-    ;
+        ( "solveIt", po::value<bool>()->default_value( true ), "Solve the pb ?" )
+        ( "model", po::value<std::string>()->default_value( "torus_quart.mod" ), "Name of the model to use" )
+        ( "penaldir", po::value<double>()->default_value( 0 ), "Use penaldir > 0 for weak BC" )
+        ("vec_curl" , po::value<std::string>()->default_value( "{1,1,1}:x:y:z" ), "function st curl(vec_curl) is exported" )
+        ("scal_grad", po::value<std::string>()->default_value( "1:x:y:z" ), "function st grad(scal_grad) is exported" )
+        ("vec_div"  , po::value<std::string>()->default_value( "{1,1,1}:x:y:z" ), "function st div(vec_div) is exported" )
+        ;
     return opts.add( Feel::feel_options() )
         .add(Feel::backend_options("ms"));
 }
 
 inline
-AboutData
+    AboutData
 makeAbout()
 {
 #if FEELPP_DIM==2
@@ -94,131 +99,196 @@ makeAbout()
 template<int DIM>
 class TestRegul : public Application
 {
-    private:
+private:
     typedef Application super;
-    //! Numerical type is double
-    typedef double value_type;
 
-    //! Simplexes of order ORDER
-    typedef Simplex<DIM> convex_type;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! Hcurl space
-    typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
-    typedef FunctionSpace<mesh_type, bases<curl_basis_type>> curl_space_type;
-    typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
-    typedef typename curl_space_type::element_type curl_element_type;
-
-    //! Pch space
-    typedef Lagrange<1, Scalar> lag_basis_type; 
-    typedef FunctionSpace<mesh_type, bases<lag_basis_type>> lag_space_type;
-    typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
-    typedef typename lag_space_type::element_type lag_element_type;
-
-    //! Pch 0 space
-    typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
-    typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
-    typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
-    typedef typename lag_0_space_type::element_type lag_0_element_type;
-
-    //! Pchv space
-    typedef Lagrange<1, Vectorial> lag_v_basis_type;
-    typedef FunctionSpace<mesh_type, bases<lag_v_basis_type>> lag_v_space_type;
-    typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
-    typedef typename lag_v_space_type::element_type lag_v_element_type;
-
-    typedef FunctionSpace<mesh_type, bases<curl_basis_type,lag_basis_type>> comp_space_type;
-    typedef boost::shared_ptr<comp_space_type> comp_space_ptrtype;
-    typedef typename comp_space_type::element_type comp_element_type;
-
-    //! The exporter factory
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
-    //! Backends factory
-    typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef backend_type::solve_return_type solve_ret_type;
-
-    public:
+public:
 
     /// Init the geometry with a circle/sphere from radius and characteristic length
     ///     \param radius   Circle or sphere radius.
     ///     \param h        Mesh size.
     TestRegul( ) 
     {
-        auto M_mesh = loadMesh(_mesh=new mesh_type);
-        auto Xh = curl_space_type::New(M_mesh);
-        auto Bh = Dh<0>( M_mesh );
-       
-        // Exact Solution 
-        auto f_M_a = expr<DIM,1>(soption("functions.a"));
-        // Rhs - projected on marker COIL
-        auto rhs = expr<DIM,1>(soption("functions.j"));
+        LOG(INFO) << "DIM = " << DIM << std::endl;
+        auto M_mesh = loadMesh(_mesh=new Mesh<Simplex<DIM>>);
+        /*
+         * P1 - grad -> Hcurl - curl -> Hdiv - div -> L2
+         */
+        auto curl_h = Ned1h<0>(M_mesh);    // Hcurl
+        auto div_h  = Dh<0>(M_mesh);       // HDiv - RT
+        auto h1_h   = Pch<1>(M_mesh);      // Lagrange P_1
+        auto l2_h   = Pdh<0>(M_mesh);      // Lagrange P_0 disc
 
-        auto u = Xh->element();
-        auto v = Xh->element();
-        auto w = Bh->element();
+        // Interpolation operators
+        auto Idiv  = Div( _domainSpace=div_h, _imageSpace=l2_h);
+        auto Icurl = Curl( _domainSpace=curl_h, _imageSpace=div_h);
+        auto Igrad = Grad( _domainSpace=h1_h, _imageSpace=curl_h);
+
+        auto curl_grad = backend()->newMatrix(_trial = div_h, _test = h1_h);
+        auto div_curl = backend()->newMatrix(_trial = l2_h, _test = curl_h);
+
+        // Generating elements to graphically find out 
+        // where on the mesh bug can be
+        auto curl_cst_exp = curl_h->element();
+        curl_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
+        auto curl_cst = Icurl(curl_cst_exp);
+        std::cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_cst.min() << " ; " << curl_cst.max() << " ]" << std::endl;
+
+        auto grad_cst_exp = h1_h->element();
+        grad_cst_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
+        auto grad_cst = Igrad(grad_cst_exp);
+        std::cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_cst.min() << " ; " << grad_cst.max() << " ]" << std::endl;
+
+        auto div_cst_exp = div_h->element();
+        div_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
+        auto div_cst = Idiv(div_cst_exp); 
+        std::cout << "Div ( " << soption("vec_div") << " ) : [" << div_cst.min() << " ; " << div_cst.max() << " ]" << std::endl;
+
+        std::cout << " ** Matrix Sizes ** " << std::endl;
         
-        auto f2 = form2(_test=Xh,_trial=Xh,_properties=MatrixProperties::SPD);
-        auto f1 = form1(_test=Xh);
+        std::cout << "Idiv : " << Idiv.matPtr()->size1() << " : " << Idiv.matPtr()->size2() << std::endl;
+        std::cout << "Icurl : " << Icurl.matPtr()->size1() << " : " << Icurl.matPtr()->size2() << std::endl;
+        std::cout << "Igrad : " << Igrad.matPtr()->size1() << " : " << Igrad.matPtr()->size2() << std::endl;
+        std::cout << "curl_grad : " << curl_grad->size1() << " : " << curl_grad->size2() << std::endl;
+        std::cout << "div_curl : " << div_curl->size1() << " : " << div_curl->size2() << std::endl;
 
-        std::cout << "[a;b;c] = [ " << doption("parameters.a") << ";" <<  doption("parameters.b") << ";" <<  doption("parameters.c") << "]" <<  std::endl;
+        Icurl.matPtr()->matMatMult(Igrad.mat(),(*curl_grad));
+        Idiv.matPtr()->matMatMult(Icurl.mat(),(*div_curl));
 
-        f1 = integrate(_range=markedelements(M_mesh,"COIL"),
-                       _expr = doption("parameters.c")*inner(rhs,id(v)));    // rhs
-        f2 = integrate(_range=elements(M_mesh),
-                       _expr = 
-                         doption("parameters.a")*(trans(curlt_op(u))*curl_op(v)) // (curl, curl)
-                       + doption("parameters.b")*inner(idt(u),id(v))             // regul
-                       );
+        // Save operators 
+        Idiv.matPtr()->printMatlab("idiv.m");
+        Icurl.matPtr()->printMatlab("icurl.m");
+        Igrad.matPtr()->printMatlab("igrad.m");
+        // Save constants in Hcurl and Hdiv
+        curl_cst_exp.printMatlab("cst_curl_exp.m");
+        grad_cst_exp.printMatlab("cst_grad_exp.m");
+         div_cst_exp.printMatlab("cst_div_exp.m");
+        // Save curl(cst), grad(cst), div(cst)
+        curl_cst.printMatlab("cst_curl.m");
+        grad_cst.printMatlab("cst_grad.m");
+         div_cst.printMatlab("cst_div.m");
+        // Save curl_grad && div curl
+        div_curl->printMatlab("div_curl.m");
+        curl_grad->printMatlab("curl_grad.m");
 
-        if(doption("penaldir")>0.)
-        {
-            std::cout << "Using weak BC\n";
-            f1 += integrate(_range=boundaryfaces(M_mesh), _expr=
-                            - doption("parameters.a")*trans(curl_op(v))*cross(N(),zero<FEELPP_DIM,1>()) 
-                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(zero<FEELPP_DIM,1>(),N()),cross(id(v),N())) );
-            f2 += integrate(_range=boundaryfaces(M_mesh), 
-                            _expr=- doption("parameters.a")*trans(curlt_op(u))*(cross(N(),id(v)) )
-                            - doption("parameters.a")*trans(curl_op(v))*(cross(N(),idt(u)) )
-                            + doption("parameters.a")*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
-        }
-        else
-        {
-            std::cout << "Using strong BC\n";
-            f2 += on(_range=boundaryfaces(M_mesh),
-                     _rhs=f1,
-                     _element=u,
-                     _expr=zero<FEELPP_DIM,1>());
-        }
-        CHECK( f1.matPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
-        tic();
-        f2.solveb(_rhs=f1,
-                  _solution=u,
-                  _backend=backend(_name="ms"));
-        toc("Inverse",FLAGS_v>0);
-        Environment::saveTimers(boption("saveTimers")); 
-        auto e21 = normL2(_range=elements(M_mesh), _expr=(f_M_a-idv(u)));
-        auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
-        
+        // Now, we solve the pb
+        auto u = curl_h->element(); // Potenial - unknown
+        auto e = curl_h->element(); // exact
+        auto v = curl_h->element(); // test 
+        auto w = div_h->element();  // curl(potentential)
+        auto ec= div_h->element();  // curl(exact)
+
+        auto f2 = form2(_test=curl_h,_trial=curl_h,_properties=MatrixProperties::SPD);
+        auto f1 = form1(_test=curl_h);
+        if(boption("solveIt"))
+        { 
+
+            ModelProperties model;
+
+            double a = model.parameters()["a"].value();
+            double b = model.parameters()["b"].value();
+            double c = model.parameters()["c"].value();
+
+            std::cout << "[a;b;c] = [ " << a << ";" <<  b << ";" <<  c << "]" <<  std::endl;
+
+            for(auto it:model.materials())
+            {
+
+                std::string entry = "Materials.";
+                entry += marker(it)+".ex";
+                LOG(INFO) << "reading " << entry << "...\n";
+                // Exact 
+                e.on(_range=markedelements(M_mesh,marker(it)),
+                     _expr=expr<DIM,1>(model.getEntry(entry)));
+                // Rhs
+                entry = "Materials.";
+                entry += marker(it)+".j";
+                LOG(INFO) << "reading " << entry << "...\n";
+                f1 += integrate(_range=markedelements(M_mesh,marker(it)),
+                                _expr = c*inner(expr<DIM,1>(model.getEntry(entry)),id(v)));    // rhs
+            }
+            // Lhs
+            f2 = integrate(_range=elements(M_mesh),
+                           _expr = 
+                           a*(trans(curlt_op(u))*curl_op(v)) // (curl, curl)
+                           + b*inner(idt(u),id(v))             // regul
+                          );
+
+            if(doption("penaldir")>0.)
+            {
+                std::cout << "Using weak BC\n";
+                for(auto it: model.boundaryConditions().getVectorFields<DIM> ( "u", "Dirichlet" ) )
+                {
+                    f1 += integrate(_range=markedfaces(M_mesh,it.first), 
+                                    _expr=
+                                    - a*trans(curl_op(v))*cross(N(),it.second) 
+                                    + a*doption("penaldir")/(hFace())*inner(cross(it.second,N()),cross(id(v),N())) );
+                    f2 += integrate(_range=boundaryfaces(M_mesh), 
+                                    _expr=
+                                    - a*trans(curlt_op(u))*(cross(N(),id(v)) )
+                                    - a*trans(curl_op(v))*(cross(N(),idt(u)) )
+                                    + a*doption("penaldir")/(hFace())*inner(cross(idt(u),N()),cross(id(v),N())) );
+                }
+            }
+            else
+            {
+                std::cout << "Using strong BC\n";
+                for(auto it: model.boundaryConditions().getVectorFields<DIM> ( "u", "Dirichlet" ) )
+                {
+                    f2 += on(_range=markedfaces(M_mesh,it.first),
+                             _rhs=f1,
+                             _element=u,
+                             _expr=it.second);
+                }
+            }
+            CHECK( f2.matrixPtr()->isSymmetric(true) ) << "Matrix is not symmetric!";
+            CHECK( f2.matrixPtr()->isPositiveDefinite() ) << "Matrix is not Definite Positive!";
+            CHECK( f2.matrixPtr()->isSPD() ) << "Matrix is not Symmetric Definite Positive!";
+            tic();
+            f2.solveb(_rhs=f1,
+                      _solution=u,
+                      _backend=backend(_name="ms"));
+            toc("Inverse",FLAGS_v>0);
+
+#if DIM==2 
+            w.on( _range=elements(M_mesh),  _expr=vec(curlv_op(u),cst(0.)) );
+            ec.on( _range=elements(M_mesh), _expr=vec(curlv_op(e),cst(0.)) );
+#else
+            w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
+            ec.on( _range=elements(M_mesh), _expr=curlv_op(e) );
+#endif
+            auto e21 = normL2(_range=elements(M_mesh), _expr=(idv(e)-idv(u)));
+            auto e22 = normL2(_range=elements(M_mesh), _expr=idv(e));
+            auto ec21 = normL2(_range=elements(M_mesh), _expr=(curlv_op(e)-curlv_op(u)));
+            auto ec22 = normL2(_range=elements(M_mesh), _expr=curlv_op(e));
+            std::cout << "Erreur " << e21 << "\t" << e21/e22  << "\t" << ec21 << "\t" << ec21/ec22 << std::endl;
+        } 
         // export
         if(boption("exporter.export"))
         {
             auto ex = exporter(_mesh=M_mesh);
-            ex->add("potential", u);
-            v.zero();
-            v.on( _range=markedelements(M_mesh, "COIL"), _expr=rhs );
-            ex->add("j", v);
-            w.on( _range=elements(M_mesh), _expr=curlv_op(u) );
-            ex->add("B", w);
-            ex->save();
+            for(int i = 0; i < 2; i++)
+            {
+                v.zero();
+                v = f1.vector();
+                ex->step(i)->add("curl_cst_exp",curl_cst_exp);
+                ex->step(i)->add("grad_cst_exp",grad_cst_exp);
+                ex->step(i)->add("div_cst_exp",div_cst_exp);
+                ex->step(i)->add("curl_cst",curl_cst);
+                ex->step(i)->add("grad_cst",grad_cst);
+                ex->step(i)->add("div_cst",div_cst);
+                if(boption("solveIt"))
+                {
+                    ex->step(i)->add("exactP", e);
+                    ex->step(i)->add("potential", u);
+                    ex->step(i)->add("j", v);
+                    ex->step(i)->add("B", w);
+                    ex->step(i)->add("Be", ec);
+                }
+                ex->save();
+            }
         }
     }
-
-private:
-    mesh_ptrtype M_mesh;
 };
 
 #if defined(USE_BOOST_TEST)
@@ -244,7 +314,7 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _about=makeAbout(),
                            _desc=makeOptions() );
-    
+
     TestRegul<FEELPP_DIM> t_regul;
 
     return 0;

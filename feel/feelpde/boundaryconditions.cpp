@@ -31,14 +31,15 @@
 namespace Feel
 {
 
-BoundaryConditions::BoundaryConditions()
+BoundaryConditions::BoundaryConditions( WorldComm const& world )
     :
     BoundaryConditions( "" )
 {}
 
-BoundaryConditions::BoundaryConditions( std::string const& p )
+BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
     :
     super(),
+    M_worldComm( world ),
     M_prefix( p )
 {
     fs::path bc( Environment::expand( soption("bc-file") ) );

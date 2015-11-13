@@ -55,6 +55,7 @@ file_options( std::string const& appname )
         ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
         ( "config-files", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
         ( "bc-file", po::value<std::string>()->default_value(appname+".bc"), "specify boundary condition (.bc) file" )
+        ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
