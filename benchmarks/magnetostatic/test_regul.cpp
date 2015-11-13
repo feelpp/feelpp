@@ -119,6 +119,12 @@ public:
         auto h1_h   = Pch<1>(M_mesh);      // Lagrange P_1
         auto l2_h   = Pdh<0>(M_mesh);      // Lagrange P_0 disc
 
+        // mesh size
+        auto xxx = l2_h->element();
+        xxx.on(_range=elements(M_mesh), _expr=vf::h());
+        std::cout << "h()\t" << xxx.min() << " : " << xxx.max() << std::endl;
+        xxx.on(_range=elements(M_mesh), _expr=vf::meas());
+        std::cout << "meas()\t" << xxx.min() << " : " << xxx.max() << std::endl;
         // Interpolation operators
         auto Idiv  = Div( _domainSpace=div_h, _imageSpace=l2_h);
         auto Icurl = Curl( _domainSpace=curl_h, _imageSpace=div_h);
@@ -159,15 +165,15 @@ public:
         Idiv.matPtr()->printMatlab("idiv.m");
         Icurl.matPtr()->printMatlab("icurl.m");
         Igrad.matPtr()->printMatlab("igrad.m");
-        // Save constants in Hcurl and Hdiv
+        // Save constants in Hcurl and Hdiv for matlab purposes
         curl_cst_exp.printMatlab("cst_curl_exp.m");
         grad_cst_exp.printMatlab("cst_grad_exp.m");
          div_cst_exp.printMatlab("cst_div_exp.m");
-        // Save curl(cst), grad(cst), div(cst)
+        // Save curl(cst), grad(cst), div(cst) to check values
         curl_cst.printMatlab("cst_curl.m");
         grad_cst.printMatlab("cst_grad.m");
          div_cst.printMatlab("cst_div.m");
-        // Save curl_grad && div curl
+        // Save curl_grad && div curl to see min/max values
         div_curl->printMatlab("div_curl.m");
         curl_grad->printMatlab("curl_grad.m");
 
@@ -277,6 +283,7 @@ public:
                 ex->step(i)->add("curl_cst",curl_cst);
                 ex->step(i)->add("grad_cst",grad_cst);
                 ex->step(i)->add("div_cst",div_cst);
+                ex->step(i)->add("h",xxx);
                 if(boption("solveIt"))
                 {
                     ex->step(i)->add("exactP", e);

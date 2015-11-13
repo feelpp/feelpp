@@ -2505,6 +2505,7 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
         VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
         this->check( PetscImpl::PCHYPRE_AMSSetCoordinateVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
     }
+    else
       std::cerr << "Nor (Px, Py, Pz), nor (X, Y, Z) has been provided\n";
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
     {
