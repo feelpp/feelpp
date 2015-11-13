@@ -101,9 +101,12 @@ THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICS_CLASS_TEMPLATE_TYPE::solve()
 {
-    M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumann.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_bcDirichlet.setParameterValues( paramValues );
+    M_bcNeumann.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
     super_type::solve();
 }
 

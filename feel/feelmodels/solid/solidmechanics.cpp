@@ -90,16 +90,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerFluidStructureInterfaceBC();
     this->clearMarkerRobinBC();
 
-
-    fs::path curPath=fs::current_path();
-    bool hasChangedRep=false;
-    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
-    {
-        this->log("SolidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
-        bool hasChangedRep=true;
-        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
-    }
-
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
     for( auto const& d : M_bcDirichlet )
@@ -141,10 +131,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::TENSOR2,marker(d));
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
-
-    // go back to previous repository
-    if ( hasChangedRep )
-        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
 }
 
@@ -197,17 +183,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
-    M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannTensor2.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannEulerianFrameScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannEulerianFrameVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannEulerianFrameTensor2.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcRobin.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        bcDirComp.second.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
+    M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
+    M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
+    M_bcRobin.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
 
     super_type::solve( upVelAcc );
 }

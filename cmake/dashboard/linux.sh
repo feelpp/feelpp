@@ -16,7 +16,7 @@ do_gcc5=`echo $compiler_list | grep gcc5`
 do_clang34=`echo $compiler_list | grep clang-3.4`
 do_clang35=`echo $compiler_list | grep clang-3.5`
 do_clang36=`echo $compiler_list | grep clang-3.6`
-do_clang36=`echo $compiler_list | grep clang-3.7`
+do_clang37=`echo $compiler_list | grep clang-3.7`
 
 export FEELPP_SCRATCHDIR=/tmp/feel-logs/
 rm -rf $FEELPP_SCRATCHDIR

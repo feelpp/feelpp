@@ -188,10 +188,11 @@ int main(int argc, char**argv )
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
+    auto b = backend(_prefix="picard",_name="picard");
 
-    auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
-                                     _pcfactormatsolverpackage=backend()->matSolverPackageEnumType(), _backend=backend()->shared_from_this(),
-                                     _worldcomm=backend()->comm() );
+    auto precPetsc = preconditioner( _prefix="picard",_matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                     _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+                                     _worldcomm=b->comm() );
 
     bool attachMassMatrix = boption(_name="attach-mass-matrix");
     if ( attachMassMatrix )
@@ -212,7 +213,7 @@ int main(int argc, char**argv )
     }
     else
     {
-        backend(_name="picard")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
+        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
     }
     toc(" - Solving Stokes...");
 
