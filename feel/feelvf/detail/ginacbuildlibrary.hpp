@@ -51,7 +51,7 @@ ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string 
  * @brief get a filename for ginac lib define by use a singleton counter
  */
 std::string
-ginacGetDefaultFileName( std::string const& exprDesc );
+ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = "" );
 
 
 } // namespace detail

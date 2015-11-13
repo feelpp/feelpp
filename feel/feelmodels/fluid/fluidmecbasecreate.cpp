@@ -1265,18 +1265,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     //-----------------------------------------------------//
-    // Forces evaluation
-    std::set<std::string> markers;
+    // Forces (lift,drag) evaluation
+    std::set<std::string> markersForces;
     if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
         for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markers.insert( o );
+            markersForces.insert( o );
 
     this->postProcessMeasures().setParameter( "time", this->timeInitial() );
-    for ( std::string marker : markers )
+    for ( std::string marker : markersForces )
     {
         this->postProcessMeasures().setMeasure(marker+"_drag",0.);
         this->postProcessMeasures().setMeasure(marker+"_lift",0.);
     }
+
     if (!this->doRestart())
         this->postProcessMeasures().start();
     else if ( !this->isStationary() )
