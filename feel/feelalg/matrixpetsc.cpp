@@ -1918,7 +1918,6 @@ void MatrixPetsc<T>::threshold(void)
             i--;
         }
     }
-    std::cout << Environment::worldComm().globalRank() << "\t LIIIIIIIBRE" << std::endl;
     Environment::worldComm().barrier();
 
     this->close();
