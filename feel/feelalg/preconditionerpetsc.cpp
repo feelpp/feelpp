@@ -531,6 +531,33 @@ static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, 
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+static PetscErrorCode PCHYPRE_AMSSetCoordinateVectors(PC pc,Vec x, Vec y, Vec z)
+{
+    PetscErrorCode ierr;
+    PetscScalar *x_v;
+    PetscScalar *y_v;
+    PetscScalar *z_v;
+    ierr = VecGetArray(x, &x_v); CHKERRQ(ierr);
+    ierr = VecGetArray(y, &y_v); CHKERRQ(ierr);
+    ierr = VecGetArray(z, &z_v); CHKERRQ(ierr);
+    PetscReal *coord;
+    PetscInt nloc;
+    ierr = VecGetLocalSize(x, &nloc);
+    CHKERRQ(ierr);
+    coord = new PetscReal[3*nloc];
+    for(int i = 0; i < 3*nloc; i++)
+    {
+      coord[i+0] = x_v[i];
+      coord[i+1] = y_v[i];
+      coord[i+2] = z_v[i];
+    }
+    ierr = PCSetCoordinates(pc,3, nloc, coord); CHKERRQ(ierr);
+    ierr = VecRestoreArray(x, &x_v); CHKERRQ(ierr);
+    ierr = VecRestoreArray(y, &y_v); CHKERRQ(ierr);
+    ierr = VecRestoreArray(z, &z_v); CHKERRQ(ierr);
+    delete [] coord;
+    PetscFunctionReturn(0);
+}
 static PetscErrorCode PCHYPRE_AMSSetAlphaPoissonMatrix_HYPRE(PC pc, Mat G)
 {
     PetscErrorCode ierr;
@@ -2468,8 +2495,17 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
       //TODO - correct that
         this->check( PetscImpl::PCHYPRE_AMSSetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
     }
-    else
-      std::cerr << "Px, Py or Pz has not been provided\n";
+    else if ( this->precFeel()->hasAuxiliaryVector("X") && this->precFeel()->hasAuxiliaryVector("Y") && this->precFeel()->hasAuxiliaryVector("Z")  )
+    {
+        auto pxVec = this->precFeel()->auxiliaryVector("X");
+        auto pyVec = this->precFeel()->auxiliaryVector("Y");
+        auto pzVec = this->precFeel()->auxiliaryVector("Z");
+        VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+        VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+        VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+        this->check( PetscImpl::PCHYPRE_AMSSetCoordinateVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
+    }
+      std::cerr << "Nor (Px, Py, Pz), nor (X, Y, Z) has been provided\n";
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_alpha");
