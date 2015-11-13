@@ -335,7 +335,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
     M_11->zero();
     A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
-    M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+    M_11->addMatrix(doption("parameters.e"),M_mass);                           // A-k^2 M + M = A+(1-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_dirichlet_u )
@@ -366,6 +366,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         // Create the interpolation and keep only the matrix
         //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
         auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+        Igrad.matPtr()->threshold();
 
         //M_P = pi_curl.matPtr();
         //M_C = Igrad.matPtr();

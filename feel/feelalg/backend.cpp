@@ -973,6 +973,9 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
           "configure pc with defult petsc options" )
+        ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "none" ),
+          "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots (none, nonzero, positive_definite, inblocks)" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "mumps" ),
