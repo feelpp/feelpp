@@ -116,51 +116,66 @@ public:
          */
         auto curl_h = Ned1h<0>(M_mesh);    // Hcurl
         auto div_h  = Dh<0>(M_mesh);       // HDiv - RT
-        auto h1_h   = Pch<1>(M_mesh);      // Lagrange
+        auto h1_h   = Pch<1>(M_mesh);      // Lagrange P_1
         auto l2_h   = Pdh<0>(M_mesh);      // Lagrange P_0 disc
 
+        // mesh size
+        auto xxx = l2_h->element();
+        xxx.on(_range=elements(M_mesh), _expr=vf::h());
+        std::cout << "h()\t" << xxx.min() << " : " << xxx.max() << std::endl;
+        xxx.on(_range=elements(M_mesh), _expr=vf::meas());
+        std::cout << "meas()\t" << xxx.min() << " : " << xxx.max() << std::endl;
+        // Interpolation operators
         auto Idiv  = Div( _domainSpace=div_h, _imageSpace=l2_h);
         auto Icurl = Curl( _domainSpace=curl_h, _imageSpace=div_h);
         auto Igrad = Grad( _domainSpace=h1_h, _imageSpace=curl_h);
 
-        auto ozz = curl_h->element("ozz");
-        auto zoz = curl_h->element("zoz");
-        auto zzo = curl_h->element("zzo");
-        ozz.on(_range=elements(M_mesh), _expr=vec(cst(1.),cst(0.),cst(0.)));
-        zoz.on(_range=elements(M_mesh), _expr=vec(cst(0.),cst(1.),cst(0.)));
-        zzo.on(_range=elements(M_mesh), _expr=vec(cst(0.),cst(0.),cst(1.)));
+        auto curl_grad = backend()->newMatrix(_trial = div_h, _test = h1_h);
+        auto div_curl = backend()->newMatrix(_trial = l2_h, _test = curl_h);
 
-        auto ozzl = h1_h->element("ozz");
-        ozzl.on(_range=elements(M_mesh), _expr=cst(1.));
+        // Generating elements to graphically find out 
+        // where on the mesh bug can be
+        auto curl_cst_exp = curl_h->element();
+        curl_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
+        auto curl_cst = Icurl(curl_cst_exp);
+        std::cout << "Curl ( " << soption("vec_curl") << " ) :  [" << curl_cst.min() << " ; " << curl_cst.max() << " ]" << std::endl;
 
+        auto grad_cst_exp = h1_h->element();
+        grad_cst_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
+        auto grad_cst = Igrad(grad_cst_exp);
+        std::cout << "Grad ( " << soption("scal_grad") << " ) : [" << grad_cst.min() << " ; " << grad_cst.max() << " ]" << std::endl;
+
+        auto div_cst_exp = div_h->element();
+        div_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
+        auto div_cst = Idiv(div_cst_exp); 
+        std::cout << "Div ( " << soption("vec_div") << " ) : [" << div_cst.min() << " ; " << div_cst.max() << " ]" << std::endl;
+
+        std::cout << " ** Matrix Sizes ** " << std::endl;
+        
         std::cout << "Idiv : " << Idiv.matPtr()->size1() << " : " << Idiv.matPtr()->size2() << std::endl;
         std::cout << "Icurl : " << Icurl.matPtr()->size1() << " : " << Icurl.matPtr()->size2() << std::endl;
         std::cout << "Igrad : " << Igrad.matPtr()->size1() << " : " << Igrad.matPtr()->size2() << std::endl;
+        std::cout << "curl_grad : " << curl_grad->size1() << " : " << curl_grad->size2() << std::endl;
+        std::cout << "div_curl : " << div_curl->size1() << " : " << div_curl->size2() << std::endl;
 
+        Icurl.matPtr()->matMatMult(Igrad.mat(),(*curl_grad));
+        Idiv.matPtr()->matMatMult(Icurl.mat(),(*div_curl));
+
+        // Save operators 
         Idiv.matPtr()->printMatlab("idiv.m");
         Icurl.matPtr()->printMatlab("icurl.m");
         Igrad.matPtr()->printMatlab("igrad.m");
-        ozz.printMatlab("cstNed1.m");
-        zoz.printMatlab("cstNed2.m");
-        zzo.printMatlab("cstNed3.m");
-        ozzl.printMatlab("cstLag1.m");
-
-        // Exporting element to graphically find out where on the mesh bug can
-        // be
-        auto curl_cst = div_h->element();
-        auto curl_cst_exp = curl_h->element();
-        curl_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_curl")));
-        Icurl.matPtr()->multVector(curl_cst_exp, curl_cst);
-
-        auto grad_cst = curl_h->element();
-        auto grad_cst_exp = h1_h->element();
-        grad_cst_exp.on(_range=elements(M_mesh), _expr=expr(soption("scal_grad")));
-        Igrad.matPtr()->multVector(grad_cst_exp, grad_cst);
-
-        auto div_cst = l2_h->element();
-        auto div_cst_exp = div_h->element();
-        div_cst_exp.on(_range=elements(M_mesh), _expr=expr<DIM,1>(soption("vec_div")));
-        Idiv.matPtr()->multVector(div_cst_exp, div_cst);
+        // Save constants in Hcurl and Hdiv for matlab purposes
+        curl_cst_exp.printMatlab("cst_curl_exp.m");
+        grad_cst_exp.printMatlab("cst_grad_exp.m");
+         div_cst_exp.printMatlab("cst_div_exp.m");
+        // Save curl(cst), grad(cst), div(cst) to check values
+        curl_cst.printMatlab("cst_curl.m");
+        grad_cst.printMatlab("cst_grad.m");
+         div_cst.printMatlab("cst_div.m");
+        // Save curl_grad && div curl to see min/max values
+        div_curl->printMatlab("div_curl.m");
+        curl_grad->printMatlab("curl_grad.m");
 
         // Now, we solve the pb
         auto u = curl_h->element(); // Potenial - unknown
@@ -268,6 +283,7 @@ public:
                 ex->step(i)->add("curl_cst",curl_cst);
                 ex->step(i)->add("grad_cst",grad_cst);
                 ex->step(i)->add("div_cst",div_cst);
+                ex->step(i)->add("h",xxx);
                 if(boption("solveIt"))
                 {
                     ex->step(i)->add("exactP", e);

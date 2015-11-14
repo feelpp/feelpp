@@ -619,17 +619,32 @@ blockns_options( std::string const& prefix )
     return _options;
 }
 
-// preconditioner for Magneto Static
+// preconditioner for Magneto Static - regularized
+po::options_description
+ams_options( std::string const& prefix )
+{
+    po::options_description _options( "AMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "useEdge" ).c_str(), Feel::po::value<bool>()->default_value(true), "true: SetConstantEdgeVector, false: SetCoordinates" )
+        ( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
+        ( prefixvm( prefix, "setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" )
+        ( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "zero relaxation parameter ?" )
+        ;
+    return _options
+        .add( backend_options( prefix.c_str() ))  // for AMS
+        /* if ams.pc-type == AS */
+        .add( backend_options( prefixvm(prefix, "block1").c_str() )) // the (1,1).1 block
+        .add( backend_options( prefixvm(prefix, "block2").c_str() )) // the (1,1).2 block
+        ;
+}
+
+// preconditioner for Magneto Static - saddle point
 po::options_description
 blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
-    _options.add_options()
-        ( prefixvm( prefix, "blockms.11.setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" );
     return _options
-        .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
-        .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block
-        .add( backend_options( prefixvm(prefix, "blockms.11.2").c_str() )) // the (1,1).2 block
+        .add(     ams_options( prefixvm(prefix, "blockms.11").c_str() ))  // the (1,1) block
         .add( backend_options( prefixvm(prefix, "blockms.22").c_str() )); // the (2,2) block
 }
 

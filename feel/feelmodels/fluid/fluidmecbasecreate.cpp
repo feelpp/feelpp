@@ -26,7 +26,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationar
     M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) ),
     M_doExportVelocity( false), M_doExportPressure( false ), M_doExportVorticity( false ),
     M_doExportNormalStress( false), M_doExportWallShearStress( false ), M_doExportViscosity( false ),
-    M_doExportMeshDisplacement( false )
+    M_doExportMeshDisplacement( false ), M_doExportPid( false )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -165,6 +165,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             M_doExportVelocity = true; M_doExportPressure = true; M_doExportVorticity = true;
             M_doExportNormalStress = true; M_doExportWallShearStress = true; M_doExportViscosity = true;
             M_doExportMeshDisplacement = true; M_doExportMeshALE = true; M_doExportMeshDisplacementOnInterface=true;
+            M_doExportPid = true;
         }
     }
 
@@ -1265,18 +1266,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     //-----------------------------------------------------//
-    // Forces evaluation
-    std::set<std::string> markers;
+    // Forces (lift,drag) evaluation
+    std::set<std::string> markersForces;
     if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
         for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markers.insert( o );
+            markersForces.insert( o );
 
     this->postProcessMeasures().setParameter( "time", this->timeInitial() );
-    for ( std::string marker : markers )
+    for ( std::string marker : markersForces )
     {
         this->postProcessMeasures().setMeasure(marker+"_drag",0.);
         this->postProcessMeasures().setMeasure(marker+"_lift",0.);
     }
+
     if (!this->doRestart())
         this->postProcessMeasures().start();
     else if ( !this->isStationary() )

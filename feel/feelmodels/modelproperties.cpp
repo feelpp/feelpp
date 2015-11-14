@@ -33,7 +33,11 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world )
+    :
+    M_worldComm( world ),
+    M_params( world ),
+    M_bc( world )
 {
     if ( !fs::exists( filename ) ) 
     {
@@ -42,7 +46,7 @@ ModelProperties::ModelProperties( std::string const& filename )
     }
     else
     {
-      std::cout << "[ModelProperties] Loading " << filename << std::endl;
+        LOG(INFO) << "Loading " << filename << std::endl;
     }
 
 
@@ -79,6 +83,8 @@ ModelProperties::ModelProperties( std::string const& filename )
     if ( par )
     {
         LOG(INFO) << "Model with parameters\n";
+        if ( !directoryLibExpr.empty() )
+            M_params.setDirectoryLibExpr( directoryLibExpr );
         M_params.setPTree( *par );
         
     }
@@ -86,6 +92,8 @@ ModelProperties::ModelProperties( std::string const& filename )
     if ( bc )
     {
         LOG(INFO) << "Model with boundary conditions\n";
+        if ( !directoryLibExpr.empty() )
+            M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
         
     }
