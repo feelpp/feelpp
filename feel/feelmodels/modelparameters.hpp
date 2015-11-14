@@ -69,7 +69,7 @@ struct ModelParameter
     double max() const { return M_max; }
     void setMax( double v ) { M_max = v; }
 
-    bool hasExpression() const { return M_expr != boost::none; }
+    bool hasExpression() const { return M_expr.get_ptr() != 0; } //M_expr != boost::none; }
     void setParameterValues( std::map<std::string,double> const& mp )
         {
             if ( !this->hasExpression() )
