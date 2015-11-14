@@ -363,7 +363,23 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     file_out << "spy("<<varName<<");" << std::endl;
 }
 
-
+#if 0
+template <typename T>
+inline
+void MatrixEigenSparse<T>::getMatInfo(std::vector<double> &vec)
+{
+    /* block size        */ vec.push_back(-1);
+    /* nz allocated      */ vec.push_back(M_mat->nonZeros()); 
+    /* nz uzed           */ vec.push_back(M_mat->nonZeros());
+    /* nz unneeded       */ vec.push_back(-1);
+    /* memory            */ vec.push_back(-1);
+    /* assemblies        */ vec.push_back(-1);
+    /* mallocs           */ vec.push_back(-1);
+    /* fill ratio given  */ vec.push_back(-1);
+    /* fill ratio needed */ vec.push_back(-1);
+    /* factor mallocs    */ vec.push_back(-1);
+}
+#endif 
 //
 // Explicit instantiations
 //
