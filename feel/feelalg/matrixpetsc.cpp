@@ -1863,7 +1863,6 @@ void MatrixPetsc<T>::getMatInfo(std::vector<double> &vec)
     vec.push_back(M_info.factor_mallocs);   
 }
 template <typename T>
-inline
 void MatrixPetsc<T>::threshold(void)
 {
     int ierr=0;
