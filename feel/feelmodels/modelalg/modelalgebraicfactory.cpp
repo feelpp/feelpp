@@ -256,6 +256,23 @@ namespace FeelModels
     }
 
 
+    void
+    ModelAlgebraicFactory::solve( std::string const& type,vector_ptrtype& sol )
+    {
+        if ( type == "LinearSystem" )
+        {
+            this->linearSolver( sol );
+        }
+        else if ( type == "PtFixe" )
+        {
+            this->AlgoPtFixe( sol );
+        }
+        else if ( type == "Newton" )
+        {
+            this->AlgoNewton2( sol );
+        }
+    }
+
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
