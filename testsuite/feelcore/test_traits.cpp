@@ -32,10 +32,12 @@
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
-
 #include <feel/feelcore/constants.hpp>
 #include <feel/feelcore/traits.hpp>
 
+#if BOOST_VERSION >= 105900
+#define BOOST_MESSAGE(ARG) BOOST_TEST_MESSAGE(ARG)
+#endif
 
 template<typename value_type>
 void check( value_type x )

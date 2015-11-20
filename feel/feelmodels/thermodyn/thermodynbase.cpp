@@ -136,7 +136,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvec
         // load the field velocity convection from a math expr
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
-            std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/velocity-convection";
+            std::string pathGinacExpr = this->directoryLibSymbExpr() + "/velocity-convection";
             auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
                                         this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
             M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -222,7 +222,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     // load an initial solution from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
     {
-        std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/initial-solution.temperature";
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                             this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         this->fieldTemperature()->on(_range=elements(this->mesh()),_expr=myexpr);
