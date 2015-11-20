@@ -3255,6 +3255,19 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationNonConforming >
+using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType =InterpolationNonConforming>
+using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
+    
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
          typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
 using Grad_t = 

@@ -73,6 +73,8 @@ public :
             auto Gh = Ned1h<0>(mesh);
             auto Ch = Dh<0>(mesh);
             auto P0h = Pdh<0>(mesh);
+            I_t<functionspace_type<decltype(Xh)>,
+                functionspace_type<decltype(Xh)>> Ih = I( _domainSpace = Xh, _imageSpace=Xh );
             Grad_t<functionspace_type<decltype(Xh)>,
                    functionspace_type<decltype(Gh)>> Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
             Curl_t<functionspace_type<decltype(Gh)>,
