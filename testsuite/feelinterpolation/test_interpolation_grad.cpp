@@ -73,9 +73,12 @@ public :
             auto Gh = Ned1h<0>(mesh);
             auto Ch = Dh<0>(mesh);
             auto P0h = Pdh<0>(mesh);
-            auto Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
-            auto Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
-            auto Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
+            Grad_t<functionspace_type<decltype(Xh)>,
+                   functionspace_type<decltype(Gh)>> Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
+            Curl_t<functionspace_type<decltype(Gh)>,
+                   functionspace_type<decltype(Ch)>> Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
+            Div_t<functionspace_type<decltype(Ch)>,
+                  functionspace_type<decltype(P0h)>> Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
             auto e = exporter(_mesh=mesh);
             
             int i = 0;
