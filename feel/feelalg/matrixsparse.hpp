@@ -829,6 +829,11 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
+    virtual void threshold( void ) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
 
 
 protected:

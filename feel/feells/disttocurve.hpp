@@ -89,7 +89,7 @@ public :
     typedef typename FunctionSpaceP1Type::value_type value_type;
     typedef typename FunctionSpaceP1Type::mesh_type mesh_type;
     typedef typename mesh_type::node_type node_type;
-    
+
     // Used to store a node and its distance to a point
     typedef std::pair< node_type, double > nodeDist_type;
 
@@ -122,6 +122,17 @@ public :
                 ids.assign( it.id(), 0, 0, it.id() );
 
             eltHavingPoints = M_spaceP0->element();
+
+            auto px = vf::project(_space=M_spaceP1, _range=elements(M_mesh), _expr=vf::Px());
+            auto py = vf::project(_space=M_spaceP1, _range=elements(M_mesh), _expr=vf::Py());
+            auto pz = vf::project(_space=M_spaceP1, _range=elements(M_mesh), _expr=vf::Pz());
+
+            minX = px.min();
+            maxX = px.max();
+            minY = py.min();
+            maxY = py.max();
+            minZ = pz.min();
+            maxZ = pz.max();
 
         } //DistToCurve
 
@@ -258,7 +269,7 @@ public :
                                            )
         {
             clear();
-
+            CHECK( dim==2 ), "need 2d here";
             generatePointsFromParametrization(xexpr, yexpr,
                                               t1Start, t1End, dt1,
                                               exportPoints, exportName);
@@ -331,6 +342,9 @@ private :
     const int dim;
     int periodT2;
 
+    // extreme size of the domain
+    double minX, maxX, minY, maxY, minZ, maxZ;
+
     // function spaces
     spaceP0_ptrtype M_spaceP0;
     spaceP1_ptrtype M_spaceP1;
@@ -401,7 +415,7 @@ private :
                                             bool exportPoints = false, std::string exportName="" )
         {
             std::ofstream nodeFile;
-
+            CHECK( dim==2 ), "need 2d here";
             if (exportPoints && (Environment::worldComm().rank() == 0) )
             {
                 std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
@@ -439,6 +453,7 @@ private :
         {
             std::ofstream nodeFile;
 
+            CHECK( dim==3 ), "need 3d here";
             if (exportPoints && (Environment::worldComm().rank() == 0) )
             {
                 std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
@@ -483,8 +498,17 @@ private :
 
             auto ctx = M_spaceP0->context();
 
-            std::default_random_engine re( (unsigned int)::time(0) );
+            std::default_random_engine re;
             std::uniform_real_distribution<double> smallRd( -randomnessAmplitude, randomnessAmplitude );
+
+            // check if a node is out of the mesh (for rectangular mesh)
+            auto nodeIsInBox = [this](node_type nd) -> bool {
+                if ((nd[0]<minX) || (nd[0]>maxX)
+                    || (nd[1]<minY) || (nd[1]>maxY)
+                    || (nd[2]<minZ) || (nd[2]>maxZ) )
+                    return false;
+                return true;
+            };
 
             for (auto const& tnode : tNodeMap)
             {
@@ -494,9 +518,21 @@ private :
                     for (int i=0; i<dim; ++i)
                         nodeToAdd[i] += smallRd(re);
 
+                // if a node is not in the domain (i.e. not found on any proc), the context will stop the program due to a CHECK
+                // this check if a node is out of the domain. It works properly only for rectangular meshes. Will do the trick for now, but for more generality, one should modify context to raise an exception instead of CHECK and handle it here
+                if (!nodeIsInBox(nodeToAdd))
+                {
+                    std::cout<<"warning: node "<<tnode.first
+                             << "is out of box "<<tnode.second
+                             << " it will be ignored and is deleted of the list\n";
+                    tNodeMap.erase( tnode.first );
+                    continue;
+                }
+
                 // the following line takes 99% of the total time of the whole disttocurve algorithm !!!
                 // (locates all the points in the mesh)
                 ctx.add( nodeToAdd );
+
             }
 
             auto allIndexes = ids.evaluate( ctx );
@@ -525,7 +561,6 @@ private :
                 }
 
                 tnodeit++;
-
             }
 
             M_mesh->updateMarker2( eltHavingPoints );

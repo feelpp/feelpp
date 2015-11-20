@@ -515,6 +515,7 @@ public:
     void zeroEntriesDiagonal();
 
     virtual void getMatInfo(std::vector<double> &);
+    virtual void threshold( void );
 
 private:
 

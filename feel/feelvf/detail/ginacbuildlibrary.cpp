@@ -109,7 +109,7 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
 }
 
 std::string
-ginacGetDefaultFileName( std::string const& exprDesc )
+ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr )
 {
     std::string res;
     if ( GinacExprManagerDefaultFileName::instance().find( exprDesc ) != GinacExprManagerDefaultFileName::instance().end() )
@@ -117,7 +117,16 @@ ginacGetDefaultFileName( std::string const& exprDesc )
     else
     {
         std::string defaultFileNameUsed = (boost::format("ginacExprDefaultFileName%1%")%GinacExprManagerDefaultFileName::instance().size()).str();
-        res = (fs::current_path()/defaultFileNameUsed).string();
+        if ( dirLibExpr.empty() )
+            res = (fs::current_path()/defaultFileNameUsed).string();
+        else
+        {
+            fs::path fsdir = fs::path(dirLibExpr);
+            if ( fsdir.is_absolute() )
+                res = (fsdir/defaultFileNameUsed).string();
+            else
+                res = (fs::current_path()/fsdir/defaultFileNameUsed).string();
+        }
         GinacExprManagerDefaultFileName::instance().operator[]( exprDesc ) = res;
     }
     return res;

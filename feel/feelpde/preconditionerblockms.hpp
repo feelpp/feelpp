@@ -213,6 +213,13 @@ private:
     mutable vector_ptrtype M_ozz;
     mutable vector_ptrtype M_zoz;
     mutable vector_ptrtype M_zzo;
+    
+    lagrange_element_type X;
+    lagrange_element_type Y;
+    lagrange_element_type Z;
+    mutable vector_ptrtype M_X;
+    mutable vector_ptrtype M_Y;
+    mutable vector_ptrtype M_Z;
     lagrange_element_type phi;
 
     pc_as_ptrtype M_pcAs;
@@ -256,6 +263,12 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
         M_ozz(M_backend->newVector( M_Vh )),
         M_zoz(M_backend->newVector( M_Vh )),
         M_zzo(M_backend->newVector( M_Vh )),
+        X(M_Qh, "X"),
+        Y(M_Qh, "Y"),
+        Z(M_Qh, "Z"),
+        M_X(M_backend->newVector( M_Qh )),
+        M_Y(M_backend->newVector( M_Qh )),
+        M_Z(M_backend->newVector( M_Qh )),
         phi(M_Qh, "phi")
 {
     tic();
@@ -335,7 +348,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
     M_11->zero();
     A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
-    M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+    M_11->addMatrix(doption("parameters.e"),M_mass);                           // A-k^2 M + M = A+(1-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_dirichlet_u )
@@ -366,27 +379,50 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         // Create the interpolation and keep only the matrix
         //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
         auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+        if(boption(M_prefix_11+".threshold"))
+        {
+            std::cout << "Threshold ...\n";
+            Igrad.matPtr()->threshold();
+        }
 
         //M_P = pi_curl.matPtr();
         //M_C = Igrad.matPtr();
-        ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
-        zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
-        zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-        *M_ozz = ozz; M_ozz->close();
-        *M_zoz = zoz; M_zoz->close();
-        *M_zzo = zzo; M_zzo->close();
         auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
                                    _backend=backend(_name=M_prefix_11),
                                    _prefix=M_prefix_11,
                                    _matrix=M_11
                                    );
         prec->setMatrix(M_11);
-
         prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
-        prec->attachAuxiliaryVector("Px",M_ozz);
-        prec->attachAuxiliaryVector("Py",M_zoz);
-        prec->attachAuxiliaryVector("Pz",M_zzo);
-        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11)){
+        if(boption(M_prefix_11+".useEdge"))
+        {
+            LOG(INFO) << "[ AMS ] : using SetConstantEdgeVector \n";
+        	ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
+        	zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
+        	zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        	*M_ozz = ozz; M_ozz->close();
+        	*M_zoz = zoz; M_zoz->close();
+        	*M_zzo = zzo; M_zzo->close();
+
+        	prec->attachAuxiliaryVector("Px",M_ozz);
+        	prec->attachAuxiliaryVector("Py",M_zoz);
+        	prec->attachAuxiliaryVector("Pz",M_zzo);
+        }
+        else
+        {
+            LOG(INFO) << "[ AMS ] : using SetCoordinates \n";
+            X.on(_range=elements(M_Vh->mesh()),_expr=Px());
+            Y.on(_range=elements(M_Vh->mesh()),_expr=Py());
+            Z.on(_range=elements(M_Vh->mesh()),_expr=Pz());
+            *M_X = X; M_X->close();
+            *M_Y = Y; M_Y->close();
+            *M_Z = Z; M_Z->close();
+            prec->attachAuxiliaryVector("X",M_X);
+            prec->attachAuxiliaryVector("Y",M_Y);
+            prec->attachAuxiliaryVector("Z",M_Z);
+        }
+        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
+        {
             auto _u = M_Qh3->element("_u");
             auto a_alpha = form2(_test=M_Qh3, _trial=M_Qh3);
             auto b_alpha = form1(_test=M_Qh3);
@@ -398,6 +434,11 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             {
                 a_alpha += on(_range=markedfaces(M_Qh3->mesh(),it.first),_element=_u, _expr=it.second, _rhs=b_alpha, _type="elimination_symmetric");
             }
+            double min = M_er.min();
+            double max = M_er.max();
+            if( min == 0. && max == 0.)
+            prec->attachAuxiliarySparseMatrix("a_beta",NULL);
+            else
             prec->attachAuxiliarySparseMatrix("a_beta",M_L);
             prec->attachAuxiliarySparseMatrix("a_alpha",a_alpha.matrixPtr());
         }
