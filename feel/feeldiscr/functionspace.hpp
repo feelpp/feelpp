@@ -4979,7 +4979,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
 {
-    if ( is_vectorial && !M_comp_space )
+    if ( ( is_vectorial || is_tensor2 ) && !M_comp_space )
     {
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
