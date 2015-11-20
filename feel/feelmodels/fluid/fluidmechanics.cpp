@@ -303,6 +303,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
             if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
             if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
+            if ( o == "pid" || o == "all" ) this->M_doExportPid = true;
         }
 }
 
