@@ -58,17 +58,27 @@ public :
     void exportMeasures();
     void setParameter(std::string const& key,double val);
     void setMeasure(std::string const& key,double val);
+    void setMeasureComp( std::string const& key,std::vector<double> const& values );
     bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
     bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
 
     std::string const& pathFile() const { return M_pathFile; }
     void setPathFile( std::string const& s ) { M_pathFile = s; }
 
+    std::map<std::string, std::map<int,std::string> > const& evalPointMapFieldToMapCtxIdToName() const { return M_evalPointMapFieldToMapCtxIdToName; }
+    void addEvalPoint( std::string const& field, int ctxId, std::string const& name );
+    bool hasEvalPoint( std::string const& field ) const;
+    bool hasEvalPoint( std::string const& field, int ctxId ) const;
+    std::string const& evalPointName( std::string const& field, int ctxId ) const;
+    int evalPointCtxId( std::string const& field, std::string const& name ) const;
 private :
     WorldComm M_worldComm;
     std::string M_pathFile;
     std::map<std::string,double> M_mapParameterData;
     std::map<std::string,double> M_mapMeasureData;
+    // for each field, store point names evaluted : field -> ( (ctxId1->ptName1), (ctxId2->ptName2),...)
+    std::map<std::string, std::map<int,std::string> > M_evalPointMapFieldToMapCtxIdToName;
+    std::string M_emptyString;
 };
 
 class ModelNumerical : public ModelAlgebraic
