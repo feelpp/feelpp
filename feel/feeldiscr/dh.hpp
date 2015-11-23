@@ -40,6 +40,13 @@ using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <
 template<int Order,typename MeshType>
 using dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
 
+
+template<typename MeshType, int Order>
+using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+
+template<typename MeshType, int Order>
+using Dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+
 /**
  * \fn Dh<k,MeshType>
  *
