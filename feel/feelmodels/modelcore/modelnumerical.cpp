@@ -208,6 +208,76 @@ ModelPostProcessMeasures::setMeasure(std::string const& key,double val)
     M_mapMeasureData[key] = val;
 
 }
+void
+ModelPostProcessMeasures::setMeasureComp( std::string const& key,std::vector<double> const& values )
+{
+    if ( values.empty() )
+        return;
+    int nValue = values.size();
+    if ( nValue == 1 )
+    {
+        this->setMeasure( key,values[0]);
+        return;
+    }
+    if ( nValue > 3 )
+        return;
+
+    this->setMeasure( key+"_x",values[0] );
+    if ( nValue > 1 )
+        this->setMeasure( key+"_y",values[1] );
+    if ( nValue > 2 )
+        this->setMeasure( key+"_z",values[2] );
+}
+
+void
+ModelPostProcessMeasures::addEvalPoint( std::string const& field, int ctxId, std::string const& name )
+{
+    M_evalPointMapFieldToMapCtxIdToName[field][ctxId] = name;
+}
+bool
+ModelPostProcessMeasures::hasEvalPoint( std::string const& field ) const
+{
+    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+        return false;
+    return true;
+}
+bool
+ModelPostProcessMeasures::hasEvalPoint( std::string const& field, int ctxId ) const
+{
+    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+        return false;
+    auto itFindCtxId = itFindField->second.find(ctxId);
+    if ( itFindCtxId == itFindField->second.end() )
+        return false;
+    return true;
+}
+std::string const&
+ModelPostProcessMeasures::evalPointName( std::string const& field, int ctxId ) const
+{
+    if ( !this->hasEvalPoint( field,ctxId ) )
+         return M_emptyString;
+    else
+        return M_evalPointMapFieldToMapCtxIdToName.find(field)->second.find(ctxId)->second;
+}
+int
+ModelPostProcessMeasures::evalPointCtxId( std::string const& field, std::string const& name ) const
+{
+    int ctxIdNull = -1;
+    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+        return ctxIdNull;
+
+    for ( auto const& ctxIdAndName : itFindField->second )
+    {
+        int curCtxId = ctxIdAndName.first;
+        std::string const& curName = ctxIdAndName.second;
+        if ( name == curName )
+            return curCtxId;
+    }
+    return ctxIdNull;
+}
 
 
 ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
