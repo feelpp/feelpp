@@ -3248,11 +3248,81 @@ struct opinterprangetype
  */
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 using operator_interpolation_t = 
-    OperatorInterpolation<DomainSpaceType, 
-                          ImageSpaceType,
-                          range_t<IteratorRange>,
-                          InterpType>;
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationNonConforming >
+using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType =InterpolationNonConforming>
+using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
     
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_ptr_t = boost::shared_ptr<Div_t<DomainSpaceType,
+                                          ImageSpaceType,
+                                          IteratorRange,
+                                          InterpType>>;
+
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
