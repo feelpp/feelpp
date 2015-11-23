@@ -64,18 +64,82 @@ template<int Dim>
 class Test:
     public Simget
 {
+  typedef Mesh<Simplex<Dim>> mesh_type;
+  typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+  
+  //! Hcurl space
+  typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
+  typedef FunctionSpace<mesh_type, bases<curl_basis_type>> curl_space_type;
+  typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
+  typedef typename curl_space_type::element_type curl_element_type;
+
+  //! DT space
+  typedef RaviartThomas<0> rt_basis_type;
+  typedef FunctionSpace<mesh_type, bases<rt_basis_type>> rt_space_type;
+  typedef boost::shared_ptr<rt_space_type> rt_space_ptrtype;
+  typedef typename rt_space_type::element_type rt_element_type;
+
+  //! Pch space
+  typedef Lagrange<1, Scalar> lag_basis_type; 
+  typedef FunctionSpace<mesh_type, bases<lag_basis_type>> lag_space_type;
+  typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
+  typedef typename lag_space_type::element_type lag_element_type;
+
+  //! Pch 0 space
+  typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
+  typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
+  typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
+  typedef typename lag_0_space_type::element_type lag_0_element_type;
+
+  //! Pchv space
+  typedef Lagrange<1, Vectorial> lag_v_basis_type;
+  typedef FunctionSpace<mesh_type, bases<lag_v_basis_type>> lag_v_space_type;
+  typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
+  typedef typename lag_v_space_type::element_type lag_v_element_type;
+  
+  //! Projection 
+  //Id 
+  typedef I_t<lag_space_type, lag_space_type> i_type;
+  typedef I_ptr_t<lag_space_type, lag_space_type> i_ptrtype;
+  //Grad 
+  typedef Grad_t<lag_space_type, curl_space_type> grad_type;
+  typedef Grad_ptr_t<lag_space_type, curl_space_type> grad_ptrtype;
+  //Curl
+  typedef Curl_t<curl_space_type, rt_space_type> curl_type;
+  typedef Curl_ptr_t<curl_space_type, rt_space_type> curl_ptrtype;
+  //Div 
+  typedef Div_t<rt_space_type, lag_0_space_type> div_type;
+  typedef Div_ptr_t<rt_space_type, lag_0_space_type> div_ptrtype;
+private:
+  
+  /// Mesh
+  mesh_type mesh;
+  
+  /// Spaces
+  lag_space_ptrtype Xh;
+  curl_space_ptrtype Gh;
+  rt_space_ptrtype Ch;
+  lag_0_space_ptrtype P0h;
+
+  /// Projections
+  i_type Ih;
+  grad_type Igrad;
+  curl_type Icurl;
+  div_type Idiv;
+
 public :
     
     void run()
         {
-            auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>>() );
-            auto Xh = Pch<1>(mesh);
-            auto Gh = Ned1h<0>(mesh);
-            auto Ch = Dh<0>(mesh);
-            auto P0h = Pdh<0>(mesh);
-            auto Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
-            auto Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
-            auto Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
+            mesh = loadMesh( _mesh=new mesh_type );
+            Xh = Pch<1>(mesh);
+            Gh = Ned1h<0>(mesh);
+            Ch = Dh<0>(mesh);
+            P0h = Pdh<0>(mesh);
+            Ih = I( _domainSpace = Xh, _imageSpace=Xh );
+            Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
+            Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
+            Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
             auto e = exporter(_mesh=mesh);
             
             int i = 0;
