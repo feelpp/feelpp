@@ -64,56 +64,47 @@ template<int Dim>
 class Test:
     public Simget
 {
-  typedef Mesh<Simplex<Dim>> mesh_type;
-  typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef Mesh<Simplex<Dim>> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
   
-  //! Hcurl space
-  typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
-  typedef FunctionSpace<mesh_type, bases<curl_basis_type>> curl_space_type;
-  typedef boost::shared_ptr<curl_space_type> curl_space_ptrtype;
-  typedef typename curl_space_type::element_type curl_element_type;
+    //! Hcurl space
+    using curl_space_type = Ned1h_type<mesh_type,0>;
+    using curl_space_ptrtype = Ned1h_ptrtype<mesh_type,0>;
 
-  //! DT space
-  typedef RaviartThomas<0> rt_basis_type;
-  typedef FunctionSpace<mesh_type, bases<rt_basis_type>> rt_space_type;
-  typedef boost::shared_ptr<rt_space_type> rt_space_ptrtype;
-  typedef typename rt_space_type::element_type rt_element_type;
+    //! DT space
+    using rt_space_type = Dh_type<mesh_type,0>;
+    using rt_space_ptrtype = Dh_ptrtype<mesh_type,0>;
 
-  //! Pch space
-  typedef Lagrange<1, Scalar> lag_basis_type; 
-  typedef FunctionSpace<mesh_type, bases<lag_basis_type>> lag_space_type;
-  typedef boost::shared_ptr<lag_space_type> lag_space_ptrtype;
-  typedef typename lag_space_type::element_type lag_element_type;
+    //! Pch space
+    using lag_space_type = Pch_type<mesh_type,1>;
+    using lag_space_ptrtype = Pch_ptrtype<mesh_type,1>;
 
   //! Pch 0 space
-  typedef Lagrange<0, Scalar, Discontinuous> lag_0_basis_type; 
-  typedef FunctionSpace<mesh_type, bases<lag_0_basis_type>> lag_0_space_type;
-  typedef boost::shared_ptr<lag_0_space_type> lag_0_space_ptrtype;
-  typedef typename lag_0_space_type::element_type lag_0_element_type;
+    using lag_0_space_type = Pdh_type<mesh_type,0>;
+    using lag_0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
+    
 
-  //! Pchv space
-  typedef Lagrange<1, Vectorial> lag_v_basis_type;
-  typedef FunctionSpace<mesh_type, bases<lag_v_basis_type>> lag_v_space_type;
-  typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
-  typedef typename lag_v_space_type::element_type lag_v_element_type;
+    //! Pchv space
+    using lag_v_space_type = Pchv_type<mesh_type,1>;
+    using lag_v_space_ptrtype = Pchv_ptrtype<mesh_type,1>;
   
-  //! Projection 
-  //Id 
-  typedef I_t<lag_space_type, lag_space_type> i_type;
-  typedef I_ptr_t<lag_space_type, lag_space_type> i_ptrtype;
-  //Grad 
-  typedef Grad_t<lag_space_type, curl_space_type> grad_type;
-  typedef Grad_ptr_t<lag_space_type, curl_space_type> grad_ptrtype;
-  //Curl
-  typedef Curl_t<curl_space_type, rt_space_type> curl_type;
-  typedef Curl_ptr_t<curl_space_type, rt_space_type> curl_ptrtype;
-  //Div 
-  typedef Div_t<rt_space_type, lag_0_space_type> div_type;
-  typedef Div_ptr_t<rt_space_type, lag_0_space_type> div_ptrtype;
+    //! Projection 
+    //Id 
+    typedef I_t<lag_space_type, lag_space_type> i_type;
+    typedef I_ptr_t<lag_space_type, lag_space_type> i_ptrtype;
+    //Grad 
+    typedef Grad_t<lag_space_type, curl_space_type> grad_type;
+    typedef Grad_ptr_t<lag_space_type, curl_space_type> grad_ptrtype;
+    //Curl
+    typedef Curl_t<curl_space_type, rt_space_type> curl_type;
+    typedef Curl_ptr_t<curl_space_type, rt_space_type> curl_ptrtype;
+    //Div 
+    typedef Div_t<rt_space_type, lag_0_space_type> div_type;
+    typedef Div_ptr_t<rt_space_type, lag_0_space_type> div_ptrtype;
 private:
   
   /// Mesh
-  mesh_type mesh;
+  mesh_ptrtype mesh;
   
   /// Spaces
   lag_space_ptrtype Xh;
