@@ -56,16 +56,18 @@ ModelMeasuresIO::start()
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
         for ( auto const& data : M_mapParameterData )
         {
+            int spacing = std::max(20, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw( /*7*/20 ) << std::left << data.first;//"time";
+            fileWrited << std::setw( spacing ) << std::left << data.first;
             hasAlreadyWrited = true;
         }
         for ( auto const& data : M_mapMeasureData )
         {
+            int spacing = std::max(28, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << data.first;
+            fileWrited << std::setw( spacing ) << std::right << data.first;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
@@ -94,9 +96,10 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
                     fileI >> measureTag; // e.g. load time
                 measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
 
+                int spacing = std::max(20, int(data.first.size()+2) );
                 if ( hasAlreadyWrited )
                     buffer << ",";
-                buffer << std::setw(20) << std::left << measureTag;
+                buffer << std::setw(spacing) << std::left << measureTag;
                 hasAlreadyWrited=true;
             }
             for ( auto const& data : M_mapMeasureData )
@@ -106,9 +109,10 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
                     fileI >> measureTag; // e.g. load time
                 measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
 
+                int spacing = std::max(28, int(data.first.size()+2) );
                 if ( hasAlreadyWrited )
                     buffer << ",";
-                buffer << std::setw(28) << std::right << measureTag;
+                buffer << std::setw(spacing) << std::right << measureTag;
                 hasAlreadyWrited=true;
             }
             buffer << std::endl;
@@ -135,9 +139,10 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
                     fileI >> valueLoaded;
 #endif
                     //std::cout << "timeLoaded " << timeLoaded << " ti " << ti << "\n";
+                    int spacing = std::max(20, int(data.first.size()+2) );
                     if ( hasAlreadyWrited )
                         buffer << ",";
-                    buffer << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
+                    buffer << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
                     hasAlreadyWrited = true;
                     // check if last writing (e.g. time equality)
                     if ( paramKey == data.first && !find )
@@ -156,9 +161,10 @@ ModelMeasuresIO::restart( std::string const& paramKey, double val )
                     fileI >> valueLoaded;
 #endif
 
+                    int spacing = std::max(28, int(data.first.size()+2) );
                     if ( hasAlreadyWrited )
                         buffer << ",";
-                    buffer << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
+                    buffer << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
                     hasAlreadyWrited = true;
 
                 }
@@ -181,16 +187,18 @@ ModelMeasuresIO::exportMeasures()
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);
         for ( auto const& data : M_mapParameterData )
         {
+            int spacing = std::max(20, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
+            fileWrited << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
             hasAlreadyWrited = true;
         }
         for ( auto const& data : M_mapMeasureData )
         {
+            int spacing = std::max(28, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
+            fileWrited << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
