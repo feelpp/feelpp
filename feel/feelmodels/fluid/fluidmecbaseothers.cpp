@@ -603,18 +603,88 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
+    bool hasMeasure = false;
+
+    // Forces (lift,drag) evaluation
     std::set<std::string> markers;
     if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
         for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
             markers.insert( o );
-    this->postProcessMeasures().setParameter( "time", time );
     for ( std::string marker : markers )
     {
         auto measuredForce = this->computeForce( marker );
-        this->postProcessMeasures().setMeasure( marker+"_drag", measuredForce(0,0) );
-        this->postProcessMeasures().setMeasure( marker+"_lift", measuredForce(1,0) );
+        this->postProcessMeasuresIO().setMeasure( marker+"_drag", measuredForce(0,0) );
+        this->postProcessMeasuresIO().setMeasure( marker+"_lift", measuredForce(1,0) );
+        hasMeasure = true;
     }
-    this->postProcessMeasures().exportMeasures();
+
+    // points evaluation
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        if ( !ptPos.hasExpression() )
+            continue;
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "velocity" )
+            {
+                std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("velocity",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextVelocity->replace( ptIdInCtx, ptCoord );
+            }
+            else if ( field == "pressure" )
+            {
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("pressure",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextPressure->replace( ptIdInCtx, ptCoord );
+            }
+        }
+    }
+    if ( M_postProcessMeasuresContextVelocity && this->postProcessMeasuresEvaluatorContext().has("velocity") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextVelocity,
+                                                _expr=idv(this->fieldVelocity()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextVelocity->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "velocity", ctxId ) ) continue;
+            std::string const& ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "velocity",ctxId );
+            std::vector<double> vecValues = { evalAtNodes( ctxId*nDim ) };
+            if ( nDim > 1 ) vecValues.push_back( evalAtNodes( ctxId*nDim+1 ) );
+            if ( nDim > 2 ) vecValues.push_back( evalAtNodes( ctxId*nDim+2 ) );
+            this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextVelocity->node( ctxId ) << "\n";
+            hasMeasure = true;
+        }
+    }
+    if ( M_postProcessMeasuresContextPressure && this->postProcessMeasuresEvaluatorContext().has("pressure") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextPressure,
+                                                _expr=idv(this->fieldPressure()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextPressure->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "pressure", ctxId ) ) continue;
+            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "pressure",ctxId );
+            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
+            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextPressure->node( ctxId ) << "\n";
+            hasMeasure = true;
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
 }
 
 
