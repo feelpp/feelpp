@@ -203,7 +203,8 @@ public:
         M_closeMatrixRhs( true )
     {
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
-        auto b = backend(_name=this->label(),_rebuild=true);
+        //auto b = backend(_name=this->label());
+        auto b = backend(_name=this->label(),_rebuild=boption(_name="backend.rebuild_op",_prefix=this->label()));
     }
 
     OperatorMatrix( const OperatorMatrix& tc )
@@ -250,7 +251,15 @@ public:
         tic();
         *M_xx = X;
         M_xx->close();
-        M_yy->zero();
+        if(!boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->label()))
+        {
+          LOG(INFO) << "zero rhs\n";
+          M_yy->zero();
+        }
+        else
+        {
+          LOG(INFO) << "Do not zero rhs\n";
+        }
 
         //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
         bool cv;
