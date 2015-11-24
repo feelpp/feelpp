@@ -251,17 +251,8 @@ public:
         tic();
         *M_xx = X;
         M_xx->close();
-        if(!boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->label()))
-        {
-          LOG(INFO) << "zero rhs\n";
-          M_yy->zero();
-        }
-        else
-        {
-          LOG(INFO) << "Do not zero rhs\n";
-        }
-
-        //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
+        // Petsc sets M_yy to zero when boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->label()) is false
+        
         bool cv;
         if(!this->M_pc)
         {
