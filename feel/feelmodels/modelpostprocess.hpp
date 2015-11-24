@@ -35,8 +35,9 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelPointPosition
+class ModelPointPosition
 {
+public :
     typedef Eigen::MatrixXd coord_value_type;
     typedef vector_field_expression<3> coord_expr_type;
 
@@ -125,6 +126,62 @@ private:
     std::string M_directoryLibExpr;
 };
 
+class ModelExtremum
+{
+public :
+    ModelExtremum() = default;
+    ModelExtremum( ModelExtremum const& ) = default;
+    ModelExtremum( ModelExtremum&& ) = default;
+    ModelExtremum& operator=( ModelExtremum const& ) = default;
+    ModelExtremum& operator=( ModelExtremum && ) = default;
+
+    std::string const& name() const { return M_name; }
+    std::string const& type() const { return M_type; }
+    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+
+    void setName( std::string const& s ) { M_name = s; }
+    void setType( std::string const& s ) { CHECK(s == "max" || s=="min" ) << "invalid type " << s; M_type = s; }
+    void addMarker( std::string const& mark )
+        {
+            if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) != M_meshMarkers.end() )
+                M_meshMarkers.push_back( mark );
+        }
+private :
+    std::string M_name;
+    std::string M_type;
+    std::list<std::string> M_meshMarkers;
+};
+class ModelPostprocessExtremum : public std::pair< ModelExtremum, std::set<std::string> >
+{
+public :
+    ModelPostprocessExtremum( WorldComm const& world = Environment::worldComm() )
+        :
+        M_worldComm( world )
+        {}
+    ModelPostprocessExtremum( ModelPostprocessExtremum const& ) = default;
+    ModelPostprocessExtremum( ModelPostprocessExtremum&& ) = default;
+    ModelPostprocessExtremum& operator=( ModelPostprocessExtremum const& ) = default;
+    ModelPostprocessExtremum& operator=( ModelPostprocessExtremum && ) = default;
+
+    ModelExtremum const& extremum() const { return this->first; }
+    ModelExtremum & extremum() { return this->first; }
+    std::set<std::string> const& fields() const { return this->second; }
+    std::set<std::string> & fields() { return this->second; }
+
+    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setFields( std::set<std::string> const& fields ) { this->second = fields; }
+    void addFields( std::string const& field ) { this->second.insert( field ); }
+    //void setParameterValues( std::map<std::string,double> const& mp ) { this->extremum().setParameterValues( mp ); }
+
+private:
+    void setup( std::string const& name );
+private:
+    WorldComm const& M_worldComm;
+    pt::ptree M_p;
+    std::string M_directoryLibExpr;
+};
+
 class ModelPostprocess: public std::map<std::string,std::vector<std::string>>
 {
 public:
@@ -134,7 +191,8 @@ public:
     virtual ~ModelPostprocess();
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
-    std::vector<ModelPostprocessPointPosition> const& evalPoints() const { return M_evalPoints; }
+    std::vector<ModelPostprocessPointPosition> const& measuresPoint() const { return M_measuresPoint; }
+    std::vector<ModelPostprocessExtremum> const& measuresExtremum() const { return M_measuresExtremum; }
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -156,7 +214,8 @@ private:
 private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
-    std::vector< ModelPostprocessPointPosition > M_evalPoints;
+    std::vector< ModelPostprocessPointPosition > M_measuresPoint;
+    std::vector< ModelPostprocessExtremum > M_measuresExtremum;
     std::string M_directoryLibExpr;
 };
 
