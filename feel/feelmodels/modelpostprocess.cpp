@@ -114,6 +114,49 @@ ModelPostprocessPointPosition::setup( std::string const& name )
 
 }
 
+void
+ModelPostprocessExtremum::setup( std::string const& name )
+{
+    // fields is necessary
+    if ( !M_p.get_child_optional("fields") )
+        return;
+    // markers is necessary
+    if ( !M_p.get_child_optional("markers") )
+        return;
+
+    this->extremum().setName( name );
+
+    // store fields name
+    std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
+    if ( fieldList.empty() )
+    {
+        std::string fieldUnique = M_p.get<std::string>( "fields" );
+        if ( !fieldUnique.empty() )
+            fieldList = { fieldUnique };
+    }
+    for( std::string const& field : fieldList )
+    {
+        //std::cout << "add extremum field = " << field << " (with name " << name << ")\n";
+        this->addFields( field );
+    }
+
+    // store markers
+    std::vector<std::string> markerList = as_vector<std::string>( M_p, "markers" );
+    if ( markerList.empty() )
+    {
+        std::string markerUnique = M_p.get<std::string>( "markers" );
+        if ( !markerUnique.empty() )
+            markerList = { markerUnique };
+    }
+    for( std::string const& marker : markerList )
+    {
+        //std::cout << "add extremum marker = " << marker << " (with name " << name << ")\n";
+        this->extremum().addMarker( marker );
+    }
+
+
+}
+
 
 ModelPostprocess::ModelPostprocess( WorldComm const& world )
     :
@@ -174,10 +217,10 @@ ModelPostprocess::setup()
         
     }
 
-    auto eval = M_p.get_child_optional("Eval");
-    if ( eval )
+    auto measures = M_p.get_child_optional("Measures");
+    if ( measures )
     {
-        auto evalPoints = eval->get_child_optional("Points");
+        auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
         {
             for( auto const& evalPoint : *evalPoints )
@@ -186,11 +229,32 @@ ModelPostprocess::setup()
                 myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
                 myPpPtPos.setPTree( evalPoint.second, evalPoint.first );
                 if ( !myPpPtPos.fields().empty() )
-                    M_evalPoints.push_back( myPpPtPos );
+                    M_measuresPoint.push_back( myPpPtPos );
             }
+            if ( !M_measuresPoint.empty() )
+                this->operator[]("Measures").push_back( "Points" );
+        }
 
-            if ( !M_evalPoints.empty() )
-                this->operator[]("Eval").push_back( "Points" );
+        for ( std::string const& extremumType : std::vector<std::string>( { "Maximum","Minimum" } ) )
+        {
+            auto measuresExtremum = measures->get_child_optional( extremumType );
+            if ( measuresExtremum )
+            {
+                for( auto const& measureExtremum : *measuresExtremum )
+                {
+                    ModelPostprocessExtremum myPpExtremum( M_worldComm );
+                    if ( extremumType == "Maximum" )
+                        myPpExtremum.extremum().setType( "max" );
+                    else
+                        myPpExtremum.extremum().setType( "min" );
+                    myPpExtremum.setDirectoryLibExpr( M_directoryLibExpr );
+                    myPpExtremum.setPTree( measureExtremum.second, measureExtremum.first );
+                    if ( !myPpExtremum.fields().empty() )
+                        M_measuresExtremum.push_back( myPpExtremum );
+                }
+                if ( !M_measuresPoint.empty() )
+                    this->operator[]("Measures").push_back( "Maximum" );
+            }
         }
     }
 
@@ -216,7 +280,7 @@ ModelPostprocess::saveMD(std::ostream &os)
 void
 ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
 {
-    for( auto & p : M_evalPoints )
+    for( auto & p : M_measuresPoint )
         p.setParameterValues( mp );
 }
 
