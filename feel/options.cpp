@@ -633,8 +633,8 @@ ams_options( std::string const& prefix )
     return _options
         .add( backend_options( prefix.c_str() ))  // for AMS
         /* if ams.pc-type == AS */
-        .add( backend_options( prefixvm(prefix, "block1").c_str() )) // the (1,1).1 block
-        .add( backend_options( prefixvm(prefix, "block2").c_str() )) // the (1,1).2 block
+        .add( backend_options( prefixvm(prefix, "1").c_str() )) // the (1,1).1 block
+        .add( backend_options( prefixvm(prefix, "2").c_str() )) // the (1,1).2 block
         ;
 }
 
