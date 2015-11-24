@@ -34,21 +34,21 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelPostProcessMeasures::ModelPostProcessMeasures( std::string const& pathFile, WorldComm const& worldComm )
+ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
     M_pathFile( pathFile )
 {}
 
 void
-ModelPostProcessMeasures::clear()
+ModelMeasuresIO::clear()
 {
     M_mapParameterData.clear();
     M_mapMeasureData.clear();
 }
 
 void
-ModelPostProcessMeasures::start()
+ModelMeasuresIO::start()
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -73,7 +73,7 @@ ModelPostProcessMeasures::start()
     }
 }
 void
-ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
+ModelMeasuresIO::restart( std::string const& paramKey, double val )
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -173,7 +173,7 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
 }
 
 void
-ModelPostProcessMeasures::exportMeasures()
+ModelMeasuresIO::exportMeasures()
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -198,18 +198,18 @@ ModelPostProcessMeasures::exportMeasures()
     }
 }
 void
-ModelPostProcessMeasures::setParameter(std::string const& key,double val)
+ModelMeasuresIO::setParameter(std::string const& key,double val)
 {
     M_mapParameterData[key] = val;
 }
 void
-ModelPostProcessMeasures::setMeasure(std::string const& key,double val)
+ModelMeasuresIO::setMeasure(std::string const& key,double val)
 {
     M_mapMeasureData[key] = val;
 
 }
 void
-ModelPostProcessMeasures::setMeasureComp( std::string const& key,std::vector<double> const& values )
+ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> const& values )
 {
     if ( values.empty() )
         return;
@@ -229,24 +229,25 @@ ModelPostProcessMeasures::setMeasureComp( std::string const& key,std::vector<dou
         this->setMeasure( key+"_z",values[2] );
 }
 
+
 void
-ModelPostProcessMeasures::addEvalPoint( std::string const& field, int ctxId, std::string const& name )
+ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
 {
-    M_evalPointMapFieldToMapCtxIdToName[field][ctxId] = name;
+    M_mapFieldToMapCtxIdToName[field][ctxId] = name;
 }
 bool
-ModelPostProcessMeasures::hasEvalPoint( std::string const& field ) const
+ModelMeasuresEvaluatorContext::has( std::string const& field ) const
 {
-    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
         return false;
     return true;
 }
 bool
-ModelPostProcessMeasures::hasEvalPoint( std::string const& field, int ctxId ) const
+ModelMeasuresEvaluatorContext::has( std::string const& field, int ctxId ) const
 {
-    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
         return false;
     auto itFindCtxId = itFindField->second.find(ctxId);
     if ( itFindCtxId == itFindField->second.end() )
@@ -254,19 +255,19 @@ ModelPostProcessMeasures::hasEvalPoint( std::string const& field, int ctxId ) co
     return true;
 }
 std::string const&
-ModelPostProcessMeasures::evalPointName( std::string const& field, int ctxId ) const
+ModelMeasuresEvaluatorContext::name( std::string const& field, int ctxId ) const
 {
-    if ( !this->hasEvalPoint( field,ctxId ) )
+    if ( !this->has( field,ctxId ) )
          return M_emptyString;
     else
-        return M_evalPointMapFieldToMapCtxIdToName.find(field)->second.find(ctxId)->second;
+        return M_mapFieldToMapCtxIdToName.find(field)->second.find(ctxId)->second;
 }
 int
-ModelPostProcessMeasures::evalPointCtxId( std::string const& field, std::string const& name ) const
+ModelMeasuresEvaluatorContext::ctxId( std::string const& field, std::string const& name ) const
 {
     int ctxIdNull = -1;
-    auto itFindField = M_evalPointMapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_evalPointMapFieldToMapCtxIdToName.end() )
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
         return ctxIdNull;
 
     for ( auto const& ctxIdAndName : itFindField->second )
@@ -302,7 +303,7 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasures( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
+        M_postProcessMeasuresIO( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
         //-----------------------------------------------------------------------//
