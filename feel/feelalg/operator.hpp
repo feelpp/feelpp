@@ -203,7 +203,8 @@ public:
         M_closeMatrixRhs( true )
     {
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
-        auto b = backend(_name=this->label(),_rebuild=true);
+        //auto b = backend(_name=this->label());
+        auto b = backend(_name=this->label(),_rebuild=boption(_name="backend.rebuild_op",_prefix=this->label()));
     }
 
     OperatorMatrix( const OperatorMatrix& tc )

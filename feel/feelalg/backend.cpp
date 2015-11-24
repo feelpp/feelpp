@@ -170,7 +170,7 @@ Backend<T>::clear()
 {
     if ( M_preconditioner )
         M_preconditioner->clear();
-    LOG(INFO) << "Sending delete signal to all observers...\n";
+    LOG(INFO) << "Sending delete signal to all observers... " << M_prefix << "\n";
     this->sendDeleteSignal();
     //this->clear ();
 }
@@ -923,6 +923,7 @@ po::options_description backend_options( std::string const& prefix )
         // solver options
         ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
         ( prefixvm( prefix,"backend.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild the backend each time it is called" )
+        ( prefixvm( prefix,"backend.rebuild_op" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild the backend associated to operators" )
         ( prefixvm( prefix,"backend.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "set the backend to be verbose" )
 
         ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
