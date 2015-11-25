@@ -105,7 +105,7 @@ script:
 - make -j16 feelpp_ginac
 - make -j1 feelpp
 - make -j1 feelpp-models-algebra
-- make install-feelpp
+- make install-feelpp-lib
 - ls $HOME/software/install/feelpp/include/feel
 
 branches:
