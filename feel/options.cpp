@@ -360,6 +360,25 @@ po::options_description ts_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description stabilization_options( std::string const& prefix )
+{
+    po::options_description _options("Options for stabilization");
+    _options.add_options()
+        ( prefixvm( prefix, "stab.use" ).c_str(), po::value<bool>()->default_value( false ), "use or not stabilization method" )
+        ( prefixvm( prefix, "stab.div" ).c_str(), po::value<bool>()->default_value( true ), "add stabilization on divergence" )
+        ( prefixvm( prefix, "stab.compute-lambdaK" ).c_str(), po::value<bool>()->default_value( true ), "true : compute obtimized stabilization coefficient (highly recommended) / false use arbitrary constant" )
+        ( prefixvm( prefix, "stab.type" ).c_str(), po::value<std::string>()->default_value( "douglas-wang"), "douglas-wang, gls or supg" )
+        ( prefixvm( prefix, "stab.force" ).c_str(), po::value<bool>()->default_value( true ), "force the computation of stabilization terms at first iteration" )
+        ( "stab.starting-Re", po::value<double>()->default_value( 0.9 ), "maximal value of local Reynolds number before the stabilization starts" )
+
+        ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
+
+        ;
+
+    return _options.add( backend_options( prefixvm(prefix,"stab") ) );
+}
+
+
 
 Feel::po::options_description
 eimOptions( std::string const& prefix )
