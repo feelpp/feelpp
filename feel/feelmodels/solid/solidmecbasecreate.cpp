@@ -904,6 +904,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     if ( !this->fieldVelocityInterfaceFromFluidPtr() )
         M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
 #endif
+
+    this->initPostProcess();
+
+
     // update block vector (index + data struct)
     if (this->isStandardModel())
     {
@@ -972,6 +976,91 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
 
 //---------------------------------------------------------------------------------------------------//
 
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    // update post-process expression
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    bool hasMeasure = false;
+
+    // points evaluation
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        if (!this->isStandardModel()) break;// TODO
+
+        auto const& ptPos = evalPoints.pointPosition();
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
+            {
+                if ( !M_postProcessMeasuresContextDisplacement )
+                    M_postProcessMeasuresContextDisplacement.reset( new context_displacement_type( this->functionSpaceDisplacement()->context() ) );
+                int ctxId = M_postProcessMeasuresContextDisplacement->nPoints();
+                M_postProcessMeasuresContextDisplacement->add( ptCoord );
+                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
+
+                std::vector<double> vecValues = { 0. };
+                if ( nDim > 1 ) vecValues.push_back( 0. );
+                if ( nDim > 2 ) vecValues.push_back( 0. );
+                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+                hasMeasure = true;
+            }
+            else if ( field == "pressure" )
+            {
+                if ( !M_useDisplacementPressureFormulation )
+                    continue;
+                if ( !M_postProcessMeasuresContextPressure )
+                    M_postProcessMeasuresContextPressure.reset( new context_pressure_type( this->functionSpacePressure()->context() ) );
+                int ctxId = M_postProcessMeasuresContextPressure->nPoints();
+                M_postProcessMeasuresContextPressure->add( ptCoord );
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
+
+                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
+                hasMeasure = true;
+            }
+        }
+    }
+
+    // extremum evaluation
+    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum() )
+    {
+        auto const& fields = measureExtremum.fields();
+        std::string const& name = measureExtremum.extremum().name();
+        std::string const& type = measureExtremum.extremum().type();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
+            {
+                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
+                this->postProcessMeasuresIO().setMeasure( nameExport,0. );
+                hasMeasure = true;
+            }
+        }
+    }
+
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
+
+}
 
 } //FeelModels
 

@@ -69,6 +69,9 @@ public:
     Operator( Operator<domain_space_type,DualImageSpace> const& ) = default;
     Operator( Operator<domain_space_type,DualImageSpace> && ) = default;
 
+    Operator& operator=( Operator const& ) = default;
+    Operator& operator=( Operator && ) = default;
+    
     virtual ~Operator() {}
 
     void setDomainSpace( domain_space_ptrtype const& domainspace )

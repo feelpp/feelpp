@@ -48,6 +48,12 @@ struct Ned1h
 
 } // meta
 
+template<typename MeshType,int Order>
+using Ned1h_type = typename meta::Ned1h<MeshType,Order>::type;
+
+template<typename MeshType,int Order>
+using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order>::ptrtype;
+
 /**
  * \fn Ned1h<k,MeshType>
  *
