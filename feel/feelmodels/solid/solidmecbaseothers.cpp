@@ -315,13 +315,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->timerTool("PostProcessing").start();
 
     if (!M_isHOVisu)
-    {
-        this->exportResultsImpl( time );
-    }
+        this->exportFieldsImpl( time );
     else
-    {
-        this->exportResultsImplHO( time );
-    }
+        this->exportFieldsImplHO( time );
+
+    this->exportMeasures( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -336,7 +334,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 } // SolidMechanics::export
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
 {
     if (this->isStandardModel())
     {
@@ -449,7 +447,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
 {
     if (this->isStandardModel())
     {
@@ -503,6 +501,122 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     }
 
 }
+
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+    if (!this->isStandardModel())
+        return;
+    bool hasMeasure = false;
+
+    // points evaluation
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        if ( !ptPos.hasExpression() )
+            continue;
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
+            {
+                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId(field,ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextDisplacement->replace( ptIdInCtx, ptCoord );
+            }
+            else if ( field == "pressure" )
+            {
+                if ( !M_useDisplacementPressureFormulation )
+                    continue;
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("pressure",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextPressure->replace( ptIdInCtx, ptCoord );
+            }
+        }
+    }
+
+    if ( M_postProcessMeasuresContextDisplacement )
+    {
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> evalAtNodes;
+        for ( std::string const& field : std::vector<std::string>( { "displacement","velocity","acceleration" } ) )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has(field) ) continue;
+
+            if ( field == "displacement")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextDisplacement,
+                                                   _expr=idv(this->fieldDisplacement()) );
+            else if ( field == "velocity")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextDisplacement,
+                                                   _expr=idv(this->fieldVelocity()) );
+            else if ( field == "acceleration")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextDisplacement,
+                                                   _expr=idv(this->fieldAcceleration()) );
+            for ( int ctxId=0;ctxId<M_postProcessMeasuresContextDisplacement->nPoints();++ctxId )
+            {
+                if ( !this->postProcessMeasuresEvaluatorContext().has( field, ctxId ) ) continue;
+                std::string const& ptNameExport = this->postProcessMeasuresEvaluatorContext().name( field,ctxId );
+                std::vector<double> vecValues = { evalAtNodes( ctxId*nDim ) };
+                if ( nDim > 1 ) vecValues.push_back( evalAtNodes( ctxId*nDim+1 ) );
+                if ( nDim > 2 ) vecValues.push_back( evalAtNodes( ctxId*nDim+2 ) );
+                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+                //std::cout << "export point " << ptNameExport << " with node " << M_postProcessEvalPointDisplacement->node( ctxId ) << "\n";
+                hasMeasure = true;
+            }
+        }
+    }
+    if ( M_useDisplacementPressureFormulation && M_postProcessMeasuresContextPressure && this->postProcessMeasuresEvaluatorContext().has("pressure") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextPressure,
+                                                _expr=idv(this->fieldPressure()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextPressure->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "pressure", ctxId ) ) continue;
+            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "pressure",ctxId );
+            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
+            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessEvalPointPressure->node( ctxId ) << "\n";
+            hasMeasure = true;
+        }
+    }
+
+    // extremum evaluation
+    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum() )
+    {
+        auto const& fields = measureExtremum.fields();
+        std::string const& name = measureExtremum.extremum().name();
+        std::string const& type = measureExtremum.extremum().type();
+        auto const& meshMarkers = measureExtremum.extremum().meshMarkers();
+        for ( std::string const& field : fields )
+        {
+            double val = this->computeExtremumValue( field, meshMarkers, type );
+            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
+            {
+                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
+                this->postProcessMeasuresIO().setMeasure( nameExport,val );
+                hasMeasure = true;
+            }
+        }
+    }
+
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
+
+}
+
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -920,7 +1034,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_pt
 }
 #endif
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
@@ -962,6 +1076,56 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __m
     //else if(this->is1dReducedModel()) res = this->fieldDisplacementScal1dReduced().max();
 
     return res;
+}
+#endif
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const
+{
+    if(!this->isStandardModel()) return 0.;
+    CHECK( type == "max" || type == "min" ) << "invalid type " << type;
+
+    if ( field == "displacement" || field == "velocity" || field == "acceleration" )
+    {
+        auto fieldMagnitude = functionSpaceDisplacement()->compSpace()->elementPtr();
+        if ( markers.empty() )
+        {
+            if ( field == "displacement" )
+                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldDisplacement()) ) );
+            else if ( field == "velocity" )
+                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldVelocity()) ) );
+            else if ( field == "acceleration" )
+                fieldMagnitude->on(_range=elements(this->mesh()), _expr=norm2( idv(this->fieldAcceleration()) ) );
+        }
+        else
+        {
+            if ( this->mesh()->hasFaceMarker( markers.front() ) )
+            {
+                for ( std::string const& marker : markers )
+                    CHECK( this->mesh()->hasFaceMarker( marker ) ) << "marker list must be same type (here marker : " << marker << " must be a face marker)";
+                if ( field == "displacement" )
+                    fieldMagnitude->on(_range=markedfaces(this->mesh(),markers), _expr=norm2( idv(this->fieldDisplacement()) ) );
+                else if ( field == "velocity" )
+                    fieldMagnitude->on(_range=markedfaces(this->mesh(),markers), _expr=norm2( idv(this->fieldVelocity()) ) );
+                else if ( field == "acceleration" )
+                    fieldMagnitude->on(_range=markedfaces(this->mesh(),markers), _expr=norm2( idv(this->fieldAcceleration()) ) );
+            }
+        }
+        if ( type == "max" )
+            return fieldMagnitude->max();
+        else
+            return fieldMagnitude->min();
+    }
+    else if ( field == "pressure" )
+    {
+        CHECK( M_useDisplacementPressureFormulation ) << "model does not take into account the pressure";
+        CHECK( false ) << "TODO pressure max/min";
+    }
+
+    //if(this->isStandardModel()) res = this->fieldDisplacement().max();
+    //else if(this->is1dReducedModel()) res = this->fieldDisplacementScal1dReduced().max();
+
+    return 0.;
 }
 
 //---------------------------------------------------------------------------------------------------//

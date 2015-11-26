@@ -1235,6 +1235,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    // update post-process expression
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    bool hasMeasure = false;
+
     // clean doExport with fields not available
     if ( !this->isMoveDomain() )
     {
@@ -1265,24 +1272,69 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    //-----------------------------------------------------//
     // Forces (lift,drag) evaluation
     std::set<std::string> markersForces;
     if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
         for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
             markersForces.insert( o );
 
-    this->postProcessMeasures().setParameter( "time", this->timeInitial() );
     for ( std::string marker : markersForces )
     {
-        this->postProcessMeasures().setMeasure(marker+"_drag",0.);
-        this->postProcessMeasures().setMeasure(marker+"_lift",0.);
+        this->postProcessMeasuresIO().setMeasure(marker+"_drag",0.);
+        this->postProcessMeasuresIO().setMeasure(marker+"_lift",0.);
+        hasMeasure = true;
     }
 
-    if (!this->doRestart())
-        this->postProcessMeasures().start();
-    else if ( !this->isStationary() )
-        this->postProcessMeasures().restart( "time", this->timeInitial() );
+    // points evaluation
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "velocity" )
+            {
+                if ( !M_postProcessMeasuresContextVelocity )
+                    M_postProcessMeasuresContextVelocity.reset( new context_velocity_type( functionSpaceVelocity()->context() ) );
+                int ctxId = M_postProcessMeasuresContextVelocity->nPoints();
+                M_postProcessMeasuresContextVelocity->add( ptCoord );
+                std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("velocity", ctxId, ptNameExport );
+
+                std::vector<double> vecValues = { 0. };
+                if ( nDim > 1 ) vecValues.push_back( 0. );
+                if ( nDim > 2 ) vecValues.push_back( 0. );
+                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+                hasMeasure = true;
+            }
+            else if ( field == "pressure" )
+            {
+                if ( !M_postProcessMeasuresContextPressure )
+                    M_postProcessMeasuresContextPressure.reset( new context_pressure_type( functionSpacePressure()->context() ) );
+                int ctxId = M_postProcessMeasuresContextPressure->nPoints();
+                M_postProcessMeasuresContextPressure->add( ptCoord );
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
+
+                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
+                hasMeasure = true;
+            }
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
 }
 
 

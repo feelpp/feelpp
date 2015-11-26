@@ -313,6 +313,13 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
+
+    // context for evaluation
+    typedef typename space_fluid_velocity_type::Context context_velocity_type;
+    typedef boost::shared_ptr<context_velocity_type> context_velocity_ptrtype;
+    typedef typename space_fluid_pressure_type::Context context_pressure_type;
+    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -931,6 +938,9 @@ protected:
 #endif
     op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
 #endif
+    // post-process point evaluation
+    context_velocity_ptrtype M_postProcessMeasuresContextVelocity;
+    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)
     std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
