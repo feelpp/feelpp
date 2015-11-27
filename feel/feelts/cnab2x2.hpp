@@ -85,7 +85,9 @@ public :
 
     bool isFinished() const
         {
-            return CN(0).isFinished() && CN(1).isFinished();
+            bool b1 = CN(0).isFinished();
+            bool b2 =  CN(1).isFinished();
+            return b1 && b2;
         }
 
     std::pair<bool,double> computeStep( double step, double err1, double err2 )
