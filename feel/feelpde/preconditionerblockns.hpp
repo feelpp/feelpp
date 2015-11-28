@@ -22,11 +22,9 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_PRECONDITIONERBlockNS_HPP
-#define FEELPP_PRECONDITIONERBlockNS_HPP 1
+#ifndef FEELPP_PRECONDITIONERBLOCKNS_HPP
+#define FEELPP_PRECONDITIONERBLOCKNS_HPP 1
 
-
-#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
@@ -35,7 +33,7 @@
 
 namespace Feel
 {
-template< typename SpaceType >
+template< typename SpaceType, typename PropertiesSpaceType = Pdh_type<typename SpaceType::mesh_type,0> >
 class PreconditionerBlockNS : public Preconditioner<typename SpaceType::value_type>
 {
     typedef Preconditioner<typename SpaceType::value_type> super;
@@ -57,6 +55,9 @@ public:
     using space_type = SpaceType;
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
+    using properties_space_type = PropertiesSpaceType;
+    using properties_space_ptrtype = boost::shared_ptr<properties_space_type>;
+    
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -101,8 +102,8 @@ public:
                            double alpha = 0 );
 
     Type type() const { return M_type; }
-    std::string typeStr() const 
-        { 
+    std::string typeStr() const
+        {
             switch ( M_type )
             {
             default:
@@ -131,10 +132,66 @@ public:
 
     void assembleSchurApp( double mu, double rho, double alpha = 0 );
 
+#if 0
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
+                                     update,
+                                     tag,
+                                     ( required
+                                       ( matrix,*( boost::is_convertible<mpl::_,boost::shared_ptr<MatrixSparse> > ) )
+                                       ( bc, *) )
+                                     ( optional
+                                       ( diffusion,*( boost::is_convertible<mpl::_,ExprBase> ), cst(M_mu) )
+                                       ( density,*( boost::is_convertible<mpl::_,ExprBase> ), cst(M_rho) )
+                                       ( convection,*( boost::is_convertible<mpl::_,ExprBase> ), zero<Dim>() )
+                                       ( tn,  *( std::is_arithmetic<mpl::_> ), 0. )
+                                       ( tn1,  *( std::is_arithmetic<mpl::_> ), 0. )
+                                     ) )
+    {
+        this->setDiffusion( diffusion );
+        this->setDensity( diffusion );
+        this->setConvection( convection);
+        this->setBC( bc );
+        this->setTimes( std::pair<double,double>( tn1, tn) )
+        this->update( matrix );
+    }
+#endif
+
+#if 0
+    template<typename E>
+    void setDiffusion( E && e )
+        {
+            M_muh.on( _range=elements(mesh), _expr=e );
+        }
+    template<typename E>
+    void setDensity( E && e )
+        {
+            M_rhoh.on( _range=elements(mesh), _expr=e );
+        }
+    template<typename E>
+    void setConvection( E && e )
+        {
+            M_convh.on( _range=elements(mesh), _expr=e );
+        }
+#endif
+    template< typename Expr_convection, typename Expr_diffusion, typename Expr_bc >
+    void updateImpl( sparse_matrix_ptrtype A,
+                     Expr_diffusion const& expr_d,
+                     Expr_convection const& expr_b,
+                     Expr_bc const& g,
+                     double tn=0, double tn1 = 0 )
+     {
+         CHECK(0) << "Invalid call";
+     }
+
     template< typename Expr_convection, typename Expr_bc >
-    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, Expr_bc const& g, bool hasConvection=true, double tn=0, double tn1 = 0 );
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
+                 Expr_bc const& g, bool hasConvection=true,
+                 double tn=0, double tn1 = 0 );
+
     template< typename Expr_convection >
-    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b, bool hasConvection=true, double tn=0, double tn1 = 0  );
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
+                 bool hasConvection=true, double tn=0, double tn1 = 0  );
+
     void update( sparse_matrix_ptrtype A );
 
     void apply( const vector_type & X, vector_type & Y ) const
@@ -215,8 +272,8 @@ private:
 
 
 
-template < typename SpaceType >
-PreconditionerBlockNS<SpaceType>::PreconditionerBlockNS( std::string t,
+template < typename SpaceType, typename PropertiesSpaceType >
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std::string t,
                                                           space_ptrtype Xh,
                                                           BoundaryConditions bcFlags,
                                                           std::string const& p,
@@ -267,17 +324,17 @@ PreconditionerBlockNS<SpaceType>::PreconditionerBlockNS( std::string t,
     toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
 }
 
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 void
-PreconditionerBlockNS<SpaceType>::initialize()
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::initialize()
 {
     M_rhs->zero();
     M_rhs->close();
 }
 
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 void
-PreconditionerBlockNS<SpaceType>::createSubMatrices()
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::createSubMatrices()
 {
     tic();
     if ( !M_F )
@@ -300,9 +357,9 @@ PreconditionerBlockNS<SpaceType>::createSubMatrices()
     }
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
 }
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 void
-PreconditionerBlockNS<SpaceType>::setType( std::string t )
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
 {
     if ( t == "PCD") M_type = PCD;
     if ( t == "PCD_ACCELERATION") M_type = PCD_ACCELERATION;
@@ -325,7 +382,7 @@ PreconditionerBlockNS<SpaceType>::setType( std::string t )
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q)/M_mu );     /////////////////////////////////////////////////////
+        m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q)/M_mu ); 
         M_mass->close();
         if ( boption( "blockns.pmm.diag" ) )
         {
@@ -344,10 +401,10 @@ PreconditionerBlockNS<SpaceType>::setType( std::string t )
     }
 }
 
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 template< typename Expr_convection, typename Expr_bc >
 void
-PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A,
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrtype A,
                                            Expr_convection const& expr_b,
                                            Expr_bc const& g,
                                            bool hasConvection,
@@ -364,10 +421,10 @@ PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A,
     }
     toc( "Preconditioner::update", FLAGS_v > 0 );
 }
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 template< typename Expr_convection >
 void
-PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A,
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrtype A,
                                            Expr_convection const& expr_b,
                                            bool hasConvection,
                                            double tn, double tn1 )
@@ -378,17 +435,17 @@ PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A,
         m_dirichlet.setParameterValues( M_bcExprParameterValues );
     this->update( A, expr_b, m_dirichlet, hasConvection, tn, tn1 );
 }
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 void
-PreconditionerBlockNS<SpaceType>::update( sparse_matrix_ptrtype A )
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrtype A )
 {
     this->update( A, zero<Dim,1>(), false, 0., 0. );
 }
 
 
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 int
-PreconditionerBlockNS<SpaceType>::applyInverse ( const vector_type& X, vector_type& Y ) const
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
     tic();
     U = X;
@@ -469,9 +526,9 @@ PreconditionerBlockNS<SpaceType>::applyInverse ( const vector_type& X, vector_ty
     return 0;
 }
 
-template < typename SpaceType >
+template < typename SpaceType, typename PropertiesSpaceType >
 int
-PreconditionerBlockNS<SpaceType>::guess ( vector_type& Y ) const
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::guess ( vector_type& Y ) const
 {
     U = Y;
     U.close();
@@ -503,14 +560,15 @@ PreconditionerBlockNS<SpaceType>::guess ( vector_type& Y ) const
 }
 namespace meta
 {
-template< typename SpaceType >
+template< typename SpaceType, typename PropertiesSpaceType >
 struct blockns
 {
-    typedef PreconditionerBlockNS<SpaceType> type;
+    typedef PreconditionerBlockNS<SpaceType,PropertiesSpaceType> type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
-BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype ),
+BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type,
+                                                          typename parameter::value_type<Args, tag::properties_space>::type::element_type>::ptrtype ),
                                  blockns,
                                  tag,
                                  ( required
@@ -519,16 +577,19 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                    ( type, *)
                                    )
                                  ( optional
+                                   ( properties_space, *, (Pdh<0>( space->mesh() )))
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( bc, *, (BoundaryConditions ()) )
-                                   ( mu,  *, doption("mu") )       ////////////////////////
+                                   ( mu,  *, doption("mu") ) 
                                    ( rho,  *, doption("rho") )
                                    ( alpha, *, 0. )
                                    )
                                  )
 {
-    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockns_t;
-    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockns_t;
+    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type,
+                                   typename parameter::value_type<Args, tag::properties_space>::type::element_type>::ptrtype pblockns_t;
+    typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type,
+                                   typename parameter::value_type<Args, tag::properties_space>::type::element_type>::type blockns_t;
     pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, mu, rho, alpha ) );
     return p;
 } // btcpd
