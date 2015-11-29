@@ -34,21 +34,21 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelPostProcessMeasures::ModelPostProcessMeasures( std::string const& pathFile, WorldComm const& worldComm )
+ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
     M_pathFile( pathFile )
 {}
 
 void
-ModelPostProcessMeasures::clear()
+ModelMeasuresIO::clear()
 {
     M_mapParameterData.clear();
     M_mapMeasureData.clear();
 }
 
 void
-ModelPostProcessMeasures::start()
+ModelMeasuresIO::start()
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -56,16 +56,18 @@ ModelPostProcessMeasures::start()
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
         for ( auto const& data : M_mapParameterData )
         {
+            int spacing = std::max(20, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw( /*7*/20 ) << std::left << data.first;//"time";
+            fileWrited << std::setw( spacing ) << std::left << data.first;
             hasAlreadyWrited = true;
         }
         for ( auto const& data : M_mapMeasureData )
         {
+            int spacing = std::max(28, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << data.first;
+            fileWrited << std::setw( spacing ) << std::right << data.first;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
@@ -73,7 +75,7 @@ ModelPostProcessMeasures::start()
     }
 }
 void
-ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
+ModelMeasuresIO::restart( std::string const& paramKey, double val )
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -94,9 +96,10 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
                     fileI >> measureTag; // e.g. load time
                 measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
 
+                int spacing = std::max(20, int(data.first.size()+2) );
                 if ( hasAlreadyWrited )
                     buffer << ",";
-                buffer << std::setw(20) << std::left << measureTag;
+                buffer << std::setw(spacing) << std::left << measureTag;
                 hasAlreadyWrited=true;
             }
             for ( auto const& data : M_mapMeasureData )
@@ -106,9 +109,10 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
                     fileI >> measureTag; // e.g. load time
                 measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
 
+                int spacing = std::max(28, int(data.first.size()+2) );
                 if ( hasAlreadyWrited )
                     buffer << ",";
-                buffer << std::setw(28) << std::right << measureTag;
+                buffer << std::setw(spacing) << std::right << measureTag;
                 hasAlreadyWrited=true;
             }
             buffer << std::endl;
@@ -135,9 +139,10 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
                     fileI >> valueLoaded;
 #endif
                     //std::cout << "timeLoaded " << timeLoaded << " ti " << ti << "\n";
+                    int spacing = std::max(20, int(data.first.size()+2) );
                     if ( hasAlreadyWrited )
                         buffer << ",";
-                    buffer << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
+                    buffer << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
                     hasAlreadyWrited = true;
                     // check if last writing (e.g. time equality)
                     if ( paramKey == data.first && !find )
@@ -156,9 +161,10 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
                     fileI >> valueLoaded;
 #endif
 
+                    int spacing = std::max(28, int(data.first.size()+2) );
                     if ( hasAlreadyWrited )
                         buffer << ",";
-                    buffer << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
+                    buffer << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
                     hasAlreadyWrited = true;
 
                 }
@@ -173,7 +179,7 @@ ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
 }
 
 void
-ModelPostProcessMeasures::exportMeasures()
+ModelMeasuresIO::exportMeasures()
 {
     if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
     {
@@ -181,16 +187,18 @@ ModelPostProcessMeasures::exportMeasures()
         std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);
         for ( auto const& data : M_mapParameterData )
         {
+            int spacing = std::max(20, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
+            fileWrited << std::setw(spacing) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
             hasAlreadyWrited = true;
         }
         for ( auto const& data : M_mapMeasureData )
         {
+            int spacing = std::max(28, int(data.first.size()+2) );
             if ( hasAlreadyWrited )
                 fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
+            fileWrited << std::setw(spacing) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
             hasAlreadyWrited = true;
         }
         fileWrited << std::endl;
@@ -198,15 +206,86 @@ ModelPostProcessMeasures::exportMeasures()
     }
 }
 void
-ModelPostProcessMeasures::setParameter(std::string const& key,double val)
+ModelMeasuresIO::setParameter(std::string const& key,double val)
 {
     M_mapParameterData[key] = val;
 }
 void
-ModelPostProcessMeasures::setMeasure(std::string const& key,double val)
+ModelMeasuresIO::setMeasure(std::string const& key,double val)
 {
     M_mapMeasureData[key] = val;
 
+}
+void
+ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> const& values )
+{
+    if ( values.empty() )
+        return;
+    int nValue = values.size();
+    if ( nValue == 1 )
+    {
+        this->setMeasure( key,values[0]);
+        return;
+    }
+    if ( nValue > 3 )
+        return;
+
+    this->setMeasure( key+"_x",values[0] );
+    if ( nValue > 1 )
+        this->setMeasure( key+"_y",values[1] );
+    if ( nValue > 2 )
+        this->setMeasure( key+"_z",values[2] );
+}
+
+
+void
+ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
+{
+    M_mapFieldToMapCtxIdToName[field][ctxId] = name;
+}
+bool
+ModelMeasuresEvaluatorContext::has( std::string const& field ) const
+{
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
+        return false;
+    return true;
+}
+bool
+ModelMeasuresEvaluatorContext::has( std::string const& field, int ctxId ) const
+{
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
+        return false;
+    auto itFindCtxId = itFindField->second.find(ctxId);
+    if ( itFindCtxId == itFindField->second.end() )
+        return false;
+    return true;
+}
+std::string const&
+ModelMeasuresEvaluatorContext::name( std::string const& field, int ctxId ) const
+{
+    if ( !this->has( field,ctxId ) )
+         return M_emptyString;
+    else
+        return M_mapFieldToMapCtxIdToName.find(field)->second.find(ctxId)->second;
+}
+int
+ModelMeasuresEvaluatorContext::ctxId( std::string const& field, std::string const& name ) const
+{
+    int ctxIdNull = -1;
+    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
+    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
+        return ctxIdNull;
+
+    for ( auto const& ctxIdAndName : itFindField->second )
+    {
+        int curCtxId = ctxIdAndName.first;
+        std::string const& curName = ctxIdAndName.second;
+        if ( name == curName )
+            return curCtxId;
+    }
+    return ctxIdNull;
 }
 
 
@@ -232,7 +311,7 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasures( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
+        M_postProcessMeasuresIO( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
         //-----------------------------------------------------------------------//

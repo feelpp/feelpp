@@ -1698,32 +1698,55 @@ public:
         std::pair<iterator, bool>
         add( node_type const& t )
         {
-            return add( t, mpl::bool_<is_composite>() );
+            return update( t, -1, mpl::bool_<is_composite>() );
         }
         std::pair<iterator, bool>
-        add( node_type const& t, mpl::bool_<true> )
+        replace( int ptIdInCtx, node_type const& t )
+        {
+            return update( t, ptIdInCtx, mpl::bool_<is_composite>() );
+        }
+    private :
+        std::pair<iterator, bool>
+        update( node_type const& t, int ptIdInCtx, mpl::bool_<true> )
         {
             return std::make_pair( this->end(), false );
         }
         std::pair<iterator, bool>
-        add( node_type const& t, mpl::bool_<false> )
+        update( node_type const& t, int ptIdInCtx, mpl::bool_<false> )
         {
             std::pair<iterator, bool> ret = std::make_pair(this->end(),false);
             //LOG(INFO)<<"add point\n";
 
             //rank of the current processor
-            int proc_number = Environment::worldComm().globalRank();
-
+            rank_type proc_number = this->functionSpace()->worldComm().globalRank();
             //total number of processors
-            int nprocs = Environment::worldComm().globalSize();
+            rank_type nprocs = this->functionSpace()->worldComm().globalSize();
 
             // add point t to list of points
-            M_t.push_back( t );
+            if ( ptIdInCtx < 0 )
+                M_t.push_back( t );
+            else
+            {
+                CHECK( ptIdInCtx <= (M_t.size()-1) ) << "ptIdInCtx invalid " << ptIdInCtx << " and " << M_t.size();
+                auto const& ptRegister = M_t[ptIdInCtx];
+                bool ptsAreIdentical = true;
+                for (uint16_type d=0;d<mesh_type::nRealDim;++d)
+                    ptsAreIdentical = ptsAreIdentical && (std::abs( ptRegister[d]-t[d] )<1e-9);
+                // if pt are identical, do nothing and keep the context
+                auto itFindCtx = this->find( ptIdInCtx );
+                if ( ptsAreIdentical )
+                    return std::make_pair( itFindCtx, true );
+                else
+                    M_t[ptIdInCtx] = t;
+                // erase previous context stored
+                if ( itFindCtx != this->end() )
+                    this->erase( ptIdInCtx );
+            }
 
             // localise t in space, find geometrical element in which t
             // belongs
-            matrix_node_type m( mesh_type::nDim, 1 );
-            for(int i = 0; i < mesh_type::nDim; ++i )
+            matrix_node_type m( mesh_type::nRealDim, 1 );
+            for(int i = 0; i < mesh_type::nRealDim; ++i )
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
@@ -1768,9 +1791,7 @@ public:
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
                 DVLOG(2) << "build basis function context\n";
 
-                //this->push_back( ctx );
-
-                int number = M_t.size()-1;
+                int number = (ptIdInCtx < 0)? M_t.size()-1 : ptIdInCtx;
                 ret = this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
@@ -1789,14 +1810,16 @@ public:
 
             //verify that the point is on a proc
             bool found_on_a_proc = false;
-            int i;
-            for (i = 0 ; i < global_found_pt.size(); ++i )
+            for (int i = 0 ; i < global_found_pt.size(); ++i )
             {
                 if ( global_found_pt[i] != 0 )
                 {
                     DVLOG(2) << "processor " << i << " has the point " << t << "\n";
                     found_on_a_proc = true;
-                    M_t_proc.push_back(i);
+                    if ( ptIdInCtx < 0 )
+                        M_t_proc.push_back(i);
+                    else
+                        M_t_proc[ptIdInCtx] = i;
                     break;
                 }
             }
@@ -1805,7 +1828,7 @@ public:
 
         }//add ( non composite case )
 
-
+    public :
         void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
         {
             int position = M_t.size();
