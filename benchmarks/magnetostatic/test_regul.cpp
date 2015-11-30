@@ -256,7 +256,7 @@ public:
                       _backend=backend(_name="ms"));
             toc("Inverse",FLAGS_v>0);
 
-#if DIM==2 
+#if FEELPP_DIM==2
             w.on( _range=elements(M_mesh),  _expr=vec(curlv_op(u),cst(0.)) );
             ec.on( _range=elements(M_mesh), _expr=vec(curlv_op(e),cst(0.)) );
 #else
