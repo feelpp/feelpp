@@ -64,8 +64,12 @@ public:
      */
     double l2Error() const
         {
-            return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
-                /normL2(_range=elements(mesh), _expr=idv(u)) /k();
+            double norm_u = normL2(_range=elements(mesh), _expr=idv(u) );
+            if ( norm_u<1e-12 )
+                return 0;
+            else
+                return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
+                    /norm_u /k();
         }
 
     /**
@@ -169,7 +173,7 @@ CNAB2<FieldType>::computeError( FT const& fd )
     bool averaging=false;
     if ( (index() > 0) && (index() % nstar == 0) )
     {
-        double tstar = tprev(1);
+        /*double tstar = tprev(1);
         ustar.on(_range=elements(mesh), _expr=idv(u));
         accstar.on(_range=elements(mesh), _expr=idv(acc));
         tprev(1) = tprev(2) + kprev(1)/2;
@@ -181,7 +185,24 @@ CNAB2<FieldType>::computeError( FT const& fd )
         u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()*idv(fd)/2);
         acc_try.on(_range=elements(mesh), _expr=idv(fd));
         k() = t()-tprev(1);
-        kprev(1) = tprev(1)-tprev(2);
+         kprev(1) = tprev(1)-tprev(2);*/
+        double tstar = tprev(1);
+        double kstar = kprev(1);
+        ustar.on(_range=elements(mesh), _expr=idv(u));
+        accstar.on(_range=elements(mesh), _expr=idv(acc));
+
+        u.on( _range=elements(mesh), _expr=0.5*(idv(ustar)+idv(up)) );
+        acc.on( _range=elements(mesh), _expr=0.5*(idv(accstar)+idv(acc)) );
+
+        tprev(1) = tstar + 0.5*kprev(1);
+        //kprev(1) = 0.5*kstar;
+
+        //k() = 0.5*kstar + 0.5*k();
+        t() = tstar + k();
+
+        u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()/2*idv(fd));
+        acc_try.on(_range=elements(mesh), _expr=idv(fd) );
+
         if ( Environment::isMasterRank() )
             std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
         averaging = true;
