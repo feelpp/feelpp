@@ -2628,6 +2628,13 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 
 }
 
+
+template<typename MeshType>
+using mesh_t = typename mpl::if_<Feel::is_shared_ptr<MeshType>,
+                                 mpl::identity<typename MeshType::element_type>,
+                                 mpl::identity<MeshType>>::type::type;
+
+
 } // Feel
 
 
@@ -2635,5 +2642,6 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 # include <feel/feeldiscr/meshimpl.hpp>
 # include <feel/feeldiscr/meshio.hpp>
 //#endif //
+
 
 #endif /* FEELPP_MESH_HPP */
