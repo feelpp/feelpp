@@ -116,7 +116,6 @@ public:
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
-
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -389,13 +388,12 @@ public:
             auto muref = this->refParameter();
             auto betaqm = computeBetaLinearDecompositionA( muref );
 
+
             M_inner_product_matrix->zero();
             for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
             {
                 for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
-                {
                     M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
-                }
             }
 
             //check that the matrix is filled, else we take energy matrix
@@ -1777,7 +1775,9 @@ public:
     {
         initial_guess_type initial_guess_v;
         initial_guess_v = M_model->computeInitialGuessAffineDecomposition();
-        this->assembleInitialGuessV( initial_guess_v);
+
+        this->assembleInitialGuessV( initial_guess_v); //Compute \int (q_initialguess) v
+
         for(int q=0; q<M_InitialGuessVector.size(); q++)
         {
             for(int m=0; m<M_InitialGuessVector[q].size(); m++)
@@ -2035,6 +2035,7 @@ public:
         if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
+            //M_Mqm[q][m]->printMatlab("mass_matrix.m");
             return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
         }
         else
@@ -2111,7 +2112,7 @@ public:
         }
     }
 
-    element_ptrtype  InitialGuessQm( uint16_type q, int m ) const
+    element_ptrtype InitialGuessQm( uint16_type q, int m ) const
     {
         return M_InitialGuessV[q][m];
     }
@@ -2209,6 +2210,20 @@ public:
             }
         }
 
+        return result;
+    }
+
+    value_type InitialGuessVqm( uint16_type q, uint16_type m, element_type const& xi)
+    {
+        value_type result=0;
+        if( Environment::worldComm().globalRank() == 0 )
+        {
+            std::cout << "[InitialGuessVqm] M_InitialGuessV[" << q << "][" << m << "] = " << *M_InitialGuessV[q][m] << std::endl;
+            std::cout << "[InitialGuessVqm] xi = " << xi << std::endl;
+        }
+        result = inner_product( *M_InitialGuessV[q][m] , xi );
+        if( Environment::worldComm().globalRank() == 0 )
+            std::cout << "Inner product = " << result << std::endl;
         return result;
     }
 
@@ -2707,8 +2722,8 @@ struct AssembleInitialGuessVInCompositeCase
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleInitialGuessVInCompositeCase( element_type  const v ,
-                                          initial_guess_type  const initial_guess ,
+    AssembleInitialGuessVInCompositeCase( element_type const v ,
+                                          initial_guess_type const initial_guess ,
                                           boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
@@ -2720,6 +2735,8 @@ struct AssembleInitialGuessVInCompositeCase
     void
     operator()( const T& t ) const
     {
+        using namespace Feel::vf;
+
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
@@ -2729,13 +2746,11 @@ struct AssembleInitialGuessVInCompositeCase
             int m_max = M_crb_model->mMaxInitialGuess(q);
             for( int m = 0; m < m_max ; m++)
             {
-                auto initial_guess_qm = M_crb_model->InitialGuessVector(q,m);
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
-                form1( _test=Xh, _vector=initial_guess_qm ) +=
-                    integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( view ) )*Feel::vf::id( v ) );
+                form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
+                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*id( v ) );
             }
         }
-
     }
 
     element_type  M_composite_v;
@@ -2838,6 +2853,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
+    //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
     AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 

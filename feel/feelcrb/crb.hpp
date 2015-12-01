@@ -32,7 +32,6 @@
 #ifndef __CRB_H
 #define __CRB_H 1
 
-
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
@@ -1203,6 +1202,10 @@ public:
      * print informations on offline Picard iterations
      */
     void printRbPicardIterations();
+    /**
+     * print informations on online Picard iterations
+     */
+    void printOnlineRbPicardIterations(parameter_type mu) const;
 
     /**
      * print max errors (total error and also primal and dual contributions)
@@ -1623,6 +1626,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
             //solve
             M_preconditioner_primal->setMatrix( Apr );
+
             auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs,  _prec=M_preconditioner_primal, _reuse_prec=( bdf_iter >= 2 ) );
             if  ( !ret.template get<0>() )
                 LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
@@ -2738,6 +2742,7 @@ CRB<TruthModelType>::offline()
                         norm=0;
                     old=norm;
                 }
+
                 tpr=timer2.elapsed();
             }
             if ( orthonormalize_dual && solve_dual_problem )
@@ -2840,24 +2845,6 @@ CRB<TruthModelType>::offline()
             LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
             for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
             {
-#if 0
-                auto mMax_old = M_model->mMaxF( 0, q );
-                if( cobuild_freq_eim != 0 && M_model->mMaxF( 0, q ) > 1 )
-                    mMax_old = M_model->mMaxF( 0, q ) - cobuild_freq_eim; //Mmax before build of last eim basis (cobuild)
-
-                for( size_type m = 0; m < mMax_old; ++m )
-                {
-                    M_Fqm_pr[q][m].conservativeResize( M_N );
-                    M_Fqm_du[q][m].conservativeResize( M_N );
-                    for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
-                    {
-                        int index = M_N-l;
-                        M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
-                        M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->dualBasisElement(index) );
-                    }
-                }//loop over m (< mMaxF - cobuild_eim_freq)
-#endif
-                //for( size_type m = mMax_old; m < M_model->mMaxF( 0, q ); ++m )
                 for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
                 {
                     M_Fqm_pr[q][m].conservativeResize( M_N );
@@ -2945,7 +2932,6 @@ CRB<TruthModelType>::offline()
 
         if( ! model_is_linear )
         {
-            LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
             int q_max = M_model->QInitialGuess();
             for ( size_type q = 0; q < q_max; ++q )
             {
@@ -2953,8 +2939,12 @@ CRB<TruthModelType>::offline()
                 for( size_type m = 0; m < m_max; ++m )
                 {
                     M_InitialGuessV_pr[q][m].conservativeResize( M_N );
-                    for ( size_type j = 0; j < M_N; ++j )
-                        M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_model->rBFunctionSpace()->primalBasisElement(j) );
+                    for ( size_type l = 1; l <= number_of_elements_to_update; ++l )
+                    {
+                        int index = M_N-l;
+                        for( int idx = 0; idx<=index; idx++ )
+                            M_InitialGuessV_pr[q][m]( idx ) = M_model->InitialGuessVqm( q, m, M_model->rBFunctionSpace()->primalBasisElement(idx) );
+                    }
                 }
             }
         }
@@ -4465,10 +4455,29 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
     {
         int m_max = M_InitialGuessV_pr[q].size();
         for(int m=0; m<m_max; m++)
+        {
             F += beta_initial_guess[q][m]*M_InitialGuessV_pr[q][m].head( N );
+        }
     }
 
     initial_guess = Mass.lu().solve( F );
+
+#if 0
+    export_ptrtype exporter;
+    exporter = export_ptrtype( Exporter<mesh_type>::New( "FE_initial_guess" ) );
+
+    auto FE_initial_guess_after = this->expansion( initial_guess , N , M_model->rBFunctionSpace()->primalRB() );
+    //auto min = FE_initial_guess_after.min();
+    auto max = FE_initial_guess_after.max();
+
+    if( Environment::worldComm().globalRank() == 0 )
+        std::cout << "FE initial guess maxT = " << max << std::endl;
+
+    exporter->step( 0 )->setMesh( FE_initial_guess_after.functionSpace()->mesh() );
+    exporter->step( 0 )->add( "InitialGuess",  FE_initial_guess_after );
+    exporter->save();
+#endif
+
 }
 
 
@@ -5014,18 +5023,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         int fi=0;
 
         double old_output;
-#if 0
-        //in the case were we want to control output error for fixed point
-        L.setZero( N );
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-        {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-            {
-                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
-            }
-        }
-        old_output = L.dot( uN[time_index] );
-#endif
+
         do
         {
             if( is_linear )
@@ -5223,12 +5221,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
 
-            //vectorN_type full_lu; full_lu.resize(2);
-            //full_lu=A.fullPivLu().solve( F );
-            //LOG( INFO ) << " oooooooooooooooooooooooooo mu = \n"<<mu;
-            //LOG( INFO )<<std::setprecision(14)<<" norm of full LU : "<<full_lu.norm();
-            //LOG( INFO )<<std::setprecision(14)<<" norm of  LU     : "<<uN[time_index].norm();
-
             if ( time_index<number_of_time_step-1 )
                 uNold[time_index+1] = uN[time_index];
 
@@ -5255,6 +5247,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             this->online_iterations_summary.first = fi;
             this->online_iterations_summary.second = increment;
             fi++;
+
+            if( boption( _name="crb.print-iterations-info") )
+                printOnlineRbPicardIterations( mu );
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
                 VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
@@ -6408,28 +6403,25 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
 
 }
+
 template<typename TruthModelType>
 double
 CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
-    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
-             << wn.size() << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N = " << N << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN = " << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
-    for ( size_type i = 0; i < N; ++i )
+    for( size_type i=N-Nm; i<N; ++i )
     {
-        for ( size_type j = std::max( i+1,N-Nm ); j < N; ++j )
+        for( size_type j=0; j<i; ++j )
         {
-            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
-            wn[j].add( -__rij_pr, wn[i] );
+            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[j] );
+            wn[i].add( -__rij_pr, wn[j] );
         }
-    }
-    // normalize
-    for ( size_type i =N-Nm; i < N; ++i )
-    {
+
         value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i] ) );
         wn[i].scale( 1./__rii_pr );
     }
@@ -6437,8 +6429,6 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    //if ( ioption(_name="crb.check.gs") )
-    //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
     return checkOrthonormality( N , wn );
 }
 
@@ -8968,6 +8958,25 @@ CRB<TruthModelType>::printRbPicardIterations()
         std::string filename = "RB-offline_picard_summary.dat";
         file.open(filename, std::ios::out | std::ios::app);
 
+        std::string name = fs::current_path().string() + "/" + filename;
+        fs::path pathfile( name.c_str() );
+        if( fs::is_empty(pathfile) )
+            file << "NbBasis" << "\t " << "Nb_iter" << "\t" << "Increment \n";
+        file << M_N << "\t" << offline_iterations_summary.first << "\t" << offline_iterations_summary.second << "\n";
+        file.close();
+    }
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::printOnlineRbPicardIterations(parameter_type mu) const
+{
+    if ( Environment::worldComm().isMasterRank() )
+    {
+        std::ofstream file;
+        std::string filename = "RB-online_picard_summary.dat";
+        file.open(filename, std::ios::out | std::ios::app);
+
         double rb_online_mean_iterations = 0;
         int rb_online_min_terations = 0;
         int rb_online_max_terations = 0;
@@ -8975,9 +8984,18 @@ CRB<TruthModelType>::printRbPicardIterations()
 
         std::string name = fs::current_path().string() + "/" + filename;
         fs::path pathfile( name.c_str() );
+        auto size = mu.size();
         if( fs::is_empty(pathfile) )
-            file << "NbBasis" << "\t " << "Nb_iter" << "\t" << "Increment \n";
-        file << M_N << "\t" << offline_iterations_summary.first << "\t" << offline_iterations_summary.second << "\n";
+        {
+            file << "mu" << "\t " << "Nb_iter" << "\t" << "Increment \n";
+        }
+        // file << M_N << "\t" << offline_iterations_summary.first << "\t" << offline_iterations_summary.second << "\n";
+
+        file << "[ ";
+        for ( int i=0; i<size-1; i++ )
+            file << mu[i] <<" , ";
+        file << mu[size-1]<<" ]" << "\t ";
+        file << online_iterations_summary.first << "\t" << online_iterations_summary.second << "\n";
         file.close();
     }
 }
