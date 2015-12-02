@@ -899,7 +899,7 @@ if ( FEELPP_ENABLE_VTK )
 
     # If we enable in-situ visualization
     # We need to look for the Paraview package for the corresponding headers
-    # As Paravie integrates vtk headers we don't need them
+    # As Paraview integrates vtk headers we don't need them
     if ( FEELPP_ENABLE_VTK_INSITU )
         FIND_PACKAGE(ParaView REQUIRED 
             COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
