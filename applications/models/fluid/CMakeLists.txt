@@ -15,3 +15,7 @@ feelpp_add_application( application_fluid_3d SRCS main_fm.cpp
 )
 
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
+
+install(TARGETS feelpp_application_fluid_2d feelpp_application_fluid_3d 
+        RUNTIME DESTINATION bin/ 
+        COMPONENT ModelApplications)
