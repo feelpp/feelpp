@@ -1225,7 +1225,7 @@ public:
     bool isPatternSymmetric() const
     {
         Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::SYMMETRIC );
+        return ctx.test( Pattern::PATTERN_SYMMETRIC );
     }
 
     /**

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set ft=cpp fenc=utf-8 sw=4 ts=4 sts=4 tw=80 et cin cino=N-s,c0,(0,W4,g0:
 
   This file is part of the Feel library
 
@@ -66,25 +66,30 @@ makeOptions()
 }
 
 template<int Dim>
-class Test:
-    public Simget
+class Test
 {
 public :
+    using mesh_type = Mesh<Simplex<Dim,1>>;
+    using element_type = typename Pch_type<mesh_type,1>::element_type;
+    using timeset_type = typename Exporter<mesh_type>::timeset_type;
+    using timeset_ptrtype = boost::shared_ptr<timeset_type>;
+    using space_type = Pch_type<mesh_type,1>;
+    using bdf_type = Bdf<space_type>;
+    using bdf_ptrtype = boost::shared_ptr<bdf_type>;
 
-    // Test timeSet creation and exporter.
-    // It solves successively three laplacian problem \Delta u = \{f1,f2,f3\}
-    // (f1 = 100, f2 = 200, f3 = 300)
+    // Test creation of new timeSet and exporter with bdf.
+    // It solves successively three laplacian problem
+    // $$ -\Delta u = \{f1,f2,f3\} $$
+    // (f1 = 100, f2 = 200, f3 = 300, ... , fN = N*100)
+    //
     // Remark: Loop first on sources, then on time!
-    void run()
+    //
+    // \param resetTimeSet clear timeset and reuse the default one (default: false).
+    // \param withPrefix change the first timeset (default) prefix (default:
+    // false).
+    void runtest( bool resetTimeSet=false,
+                  bool withPrefix = false)
     {
-        using mesh_type = Mesh<Simplex<Dim,1>>;
-        using element_type = typename Pch_type<mesh_type,1>::element_type;
-        using timeset_type = typename Exporter<mesh_type>::timeset_type;
-        using timeset_ptrtype = boost::shared_ptr<timeset_type>;
-        using space_type = Pch_type<mesh_type,1>;
-        using bdf_type = Bdf<space_type>;
-        using bdf_ptrtype = boost::shared_ptr<bdf_type>;
-
         auto mesh = loadMesh( _mesh=new mesh_type );
         const int N = ioption("N");
         const double c = -0.2;
@@ -140,11 +145,20 @@ public :
                 // Create a new timeset for each rhs.
                 if( i > 0 )
                 {
-                    auto timeset = boost::make_shared<timeset_type>( timeset_type( prefix ) );
-                    e->addTimeSet( timeset );
+                    if( resetTimeSet==true )
+                    {
+                        e->timeSet(0)->clear();
+                    }
+                    else
+                    {
+                        auto timeset = boost::make_shared<timeset_type>(
+                            timeset_type( prefix ) );
+                        e->addTimeSet( timeset );
+                    }
                 }
                 // Set all these for the last timeset.
-                e->setPrefix( prefix );
+                if( withPrefix )
+                    e->setPrefix( prefix );
                 e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );
                 e->step(0)->add( ui_name, U[i] );
                 e->save();
@@ -184,7 +198,7 @@ public :
                 }
             } // Bdf loop.
         } // Source loop.
-   } // Run.
+    } // test2.
 };
 
 
@@ -192,10 +206,25 @@ public :
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
 BOOST_AUTO_TEST_SUITE( bdf3 )
 
+// Test creation of different timeset (N timesets), keep default prefix.
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     Test<2> test;
-    test.run();
+    test.runtest();
+}
+
+// Test reset default timeset (only 1 timeset), keep default prefix.
+BOOST_AUTO_TEST_CASE( test_2 )
+{
+    Test<2> test;
+    test.runtest(true);
+}
+
+// Test reset default timeset, rename default prefix.
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    Test<2> test;
+    test.runtest(true, true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -205,7 +234,16 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=makeOptions(),
                            _about=makeAbout() );
-    Test<2>  test;
-    test.run();
+    Test<2> test;
+
+    // Test creation of different timeset (N timesets), keep default prefix.
+    test.runtest();
+
+    // Test reset default timeset (only 1 timeset), keep default prefix.
+    //test.runtest(true);
+
+    // Test reset default timeset, rename default prefix.
+    //test.runtest(true, true);
 }
 #endif
+

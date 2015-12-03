@@ -503,7 +503,7 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
-    bool isSymmetric () const;
+    bool isSymmetric ( bool check = false ) const;
 
     bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
@@ -515,6 +515,7 @@ public:
     void zeroEntriesDiagonal();
 
     virtual void getMatInfo(std::vector<double> &);
+    virtual void threshold( void );
 
 private:
 

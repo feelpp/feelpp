@@ -121,5 +121,16 @@ po::options_description functionspace_options( std::string const& prefix = "" );
 
 po::options_description aitken_options( std::string const& prefix = "" );
 
+/**
+ * command line options for specific preconditionner
+ */
+
+po::options_description blockns_options( std::string const& prefix = "" );
+po::options_description blockms_options( std::string const& prefix = "" );
+po::options_description ams_options( std::string const& prefix = "" );
+
+
+po::options_description stabilization_options( std::string const& prefix="" );
+
 }
 #endif // FEELPP_OPTIONS_HPP
