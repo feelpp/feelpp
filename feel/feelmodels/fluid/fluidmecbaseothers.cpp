@@ -605,20 +605,54 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
 
-    // Forces (lift,drag) evaluation
-    std::set<std::string> markers;
-    if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
-        for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markers.insert( o );
-    for ( std::string marker : markers )
+    // forces (lift,drag) measures
+    for ( auto const& ppForces : M_postProcessMeasuresForces )
     {
-        auto measuredForce = this->computeForce( marker );
-        this->postProcessMeasuresIO().setMeasure( marker+"_drag", measuredForce(0,0) );
-        this->postProcessMeasuresIO().setMeasure( marker+"_lift", measuredForce(1,0) );
+        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
+        auto measuredForce = this->computeForce( ppForces.meshMarkers().front() );
+        std::string name = ppForces.name();
+        this->postProcessMeasuresIO().setMeasure( "drag_"+name, measuredForce(0,0) );
+        this->postProcessMeasuresIO().setMeasure( "lift_"+name, measuredForce(1,0) );
+        hasMeasure = true;
+    }
+    // flow rate measures
+    for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
+    {
+        double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
+        this->postProcessMeasuresIO().setMeasure("flowrate_"+ppFlowRate.name(),valFlowRate);
         hasMeasure = true;
     }
 
-    // points evaluation
+    auto itFindMeasures = this->modelProperties().postProcess().find("Measures");
+    if ( itFindMeasures != this->modelProperties().postProcess().end() )
+    {
+        bool hasMeasuresPressure = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "Pressure" ) != itFindMeasures->second.end();
+        bool hasMeasuresVelocityDivergence = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "VelocityDivergence" ) != itFindMeasures->second.end();
+        double area = 0;
+        if ( hasMeasuresPressure || hasMeasuresVelocityDivergence )
+            area = this->computeMeshArea();
+        if ( hasMeasuresPressure )
+        {
+            double pressureSum = this->computePressureSum();
+            double pressureMean = pressureSum/area;
+            this->postProcessMeasuresIO().setMeasure("pressure_sum",pressureSum);
+            this->postProcessMeasuresIO().setMeasure("pressure_mean",pressureMean);
+            hasMeasure = true;
+        }
+        if ( hasMeasuresVelocityDivergence )
+        {
+            double velocityDivergenceSum = this->computeVelocityDivergenceSum();
+            double velocityDivergenceMean = velocityDivergenceSum/area;
+            double velocityDivergenceNormL2 = this->computeVelocityDivergenceNormL2();
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",velocityDivergenceNormL2);
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",velocityDivergenceMean);
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",velocityDivergenceNormL2);
+            hasMeasure = true;
+        }
+    }
+
+
+    // point measures
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
@@ -1337,49 +1371,33 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FluidMechanicsBase< ConvexType,BasisVelocityType,
-                    BasisPressureType,BasisDVType,UsePeriodicity >::savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt,
-                                                                                         bool extrapolate)
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
 {
-    auto it = __listPt.begin();
-    auto en = __listPt.end();
-
-    for ( ; it!=en ; ++it)
-    {
-        auto nameFile = prefixvm(this->prefix(),"eval-pressure-")+boost::get<0>(*it)+".data";
-        if (M_nameFilesPressureAtPoints.find(nameFile)==M_nameFilesPressureAtPoints.end())
-        {
-            if (!this->doRestart() && this->worldComm().globalRank()==this->worldComm().masterRank())
-            {
-                //ATTENTION EFFACER LES DONNEES REDONTANTE EN CAS DE RESTART
-                std::ofstream newfilePres(nameFile.c_str(), std::ios::out | std::ios::trunc);
-                newfilePres.close();
-                M_nameFilesPressureAtPoints.insert(nameFile);
-            }
-        }
-        auto const pressureOnPt = this->fieldVelocityPressurePtr()->template element<1>()(boost::get<1>(*it),extrapolate);
-
-        if (this->worldComm().globalRank()==this->worldComm().masterRank())
-        {
-            std::ofstream filePres(nameFile.c_str(), std::ios::out | std::ios::app);
-            filePres << this->time();
-            //for (uint16_type i = 0; i<mesh_type::nRealDim;++i)
-            uint16_type c = 0; //comp
-            filePres << " " << pressureOnPt(c,0,0);
-            filePres << "\n";
-            filePres.close();
-        }
-    }
-
+    return this->computeMeshArea( std::list<std::string>( { marker } ) );
 }
 
-//---------------------------------------------------------------------------------------------------------//
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
+{
+    double area = 0;
+    if ( markers.empty() || markers.front().empty() )
+        area = integrate(_range=elements(this->mesh()),
+                         _expr=cst(1.),
+                         _geomap=this->geomap() ).evaluate()(0,0);
+    else
+        area = integrate(_range=markedelements(this->mesh(),markers),
+                         _expr=cst(1.),
+                         _geomap=this->geomap() ).evaluate()(0,0);
+    return area;
+}
+
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 Eigen::Matrix<typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::value_type,
               FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nDim,1>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
     using namespace Feel::vf;
 
@@ -1406,17 +1424,46 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerNa
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string const& marker)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
+{
+    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
+    auto const& u = this->fieldVelocity();
+    double res = integrate(_range=markedfaces(this->mesh(),markers),
+                                 _expr= inner(idv(u),N()),
+                                 _geomap=this->geomap() ).evaluate()(0,0);
+    if ( !useExteriorNormal )
+        res = -res;
 
-    double res = integrate(_range=markedfaces(this->mesh(),marker),
-                           _expr= inner(idv(u),N()),
+    return res;
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureSum() const
+{
+    auto const& p = this->fieldPressure();
+    double res = integrate(_range=elements(this->mesh()),
+                           _expr= idv(p),
                            _geomap=this->geomap() ).evaluate()(0,0);
+    return res;
+}
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureMean() const
+{
+    double area = this->computeMeshArea();
+    double res = (1./area)*this->computePressureSum();
     return res;
 }
 
@@ -1424,19 +1471,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string const& marke
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
 {
-    using namespace Feel::vf;
+    auto const& u = this->fieldVelocity();
+    double res = integrate(_range=elements(this->mesh()),
+                           _expr= divv(u),
+                           _geomap=this->geomap() ).evaluate()(0,0);
+    return res;
+}
 
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto p = solFluid->template element<1>();
-
-    double area = integrate(_range=elements(this->mesh()),
-                            _expr=cst(1.) ).evaluate()(0,0);
-    double res = (1./area)*integrate(_range=elements(this->mesh()),
-                                     _expr= idv(p),
-                                     _geomap=this->geomap() ).evaluate()(0,0);
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceMean() const
+{
+    double area = this->computeMeshArea();
+    double res = (1./area)*this->computeVelocityDivergenceSum();
     return res;
 }
 
@@ -1444,35 +1493,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanDivergence()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
+    auto const& u = this->fieldVelocity();
 
-    double area = integrate(_range=elements(this->mesh()),
-                            _expr=cst(1.) ).evaluate()(0,0);
-    double res = (1./area)*integrate(_range=elements(this->mesh()),
-                                     _expr= divv(u),
-                                     _geomap=this->geomap() ).evaluate()(0,0);
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeNormL2Divergence()
-{
-    using namespace Feel::vf;
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-
-    double res = math::sqrt(integrate(_range=elements(this->mesh()),
-                                      _expr= pow(divv(u),2),
-                                      _geomap=this->geomap() ).evaluate()(0,0));
+    double res = math::sqrt( integrate(_range=elements(this->mesh()),
+                                       _expr= pow(divv(u),2),
+                                       _geomap=this->geomap() ).evaluate()(0,0));
     return res;
 }
 
