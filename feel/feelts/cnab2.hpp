@@ -110,13 +110,13 @@ public:
         }
 
     template<typename FT>
-    void start( FT const& d );
+    void start( FT& d );
 
-    template<typename FT>
-    bool next( FT const& d, bool is_converged=true );
+    template<typename FT, typename BCType>
+    bool next( FT& d, BCType& bc, bool is_converged=true );
 
-    template<typename FT>
-    std::pair<double,bool> computeError( FT const& d );
+    template<typename FT, typename BCType>
+    std::pair<double,bool> computeError( FT& d, BCType& bc );
 
 
     field_t const& extrapolateVelocity();
@@ -128,6 +128,8 @@ public:
     mesh_ptr_t mesh;
     field_t u, up, acc, accp, d, w, uab2;
     field_t u_try, acc_try, accstar, ustar;
+
+
 };
 
 template<typename FieldType>
@@ -160,48 +162,48 @@ CNAB2<FieldType>::CNAB2( FT const& f )
 template<typename FieldType>
 template<typename FT>
 void
-CNAB2<FieldType>::start( FT const& f_d )
+CNAB2<FieldType>::start( FT& f_d )
 {
     next( f_d );
 }
 
 template<typename FieldType>
-template<typename FT>
+template<typename FT, typename BCType>
 std::pair<double,bool>
-CNAB2<FieldType>::computeError( FT const& fd )
+CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
 {
     bool averaging=false;
     if ( (index() > 0) && (index() % nstar == 0) )
     {
-        /*double tstar = tprev(1);
-        ustar.on(_range=elements(mesh), _expr=idv(u));
-        accstar.on(_range=elements(mesh), _expr=idv(acc));
-        tprev(1) = tprev(2) + kprev(1)/2;
-        u.on(_range=elements(mesh), _expr=0.5*(idv(up)+idv(ustar)));
-        acc.on(_range=elements(mesh), _expr=0.5*(idv(accp)+idv(accstar)));
-
-        // t_{n+1}
-        t() = tstar + k()/2;
-        u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()*idv(fd)/2);
-        acc_try.on(_range=elements(mesh), _expr=idv(fd));
-        k() = t()-tprev(1);
-         kprev(1) = tprev(1)-tprev(2);*/
         double tstar = tprev(1);
         double kstar = kprev(1);
         ustar.on(_range=elements(mesh), _expr=idv(u));
         accstar.on(_range=elements(mesh), _expr=idv(acc));
 
+        kprev(1) = 0.5*kstar;
+        tprev(1) = tprev(2) + kprev(1);
+
+        t() = tstar + 0.5*k();
+
         u.on( _range=elements(mesh), _expr=0.5*(idv(ustar)+idv(up)) );
         acc.on( _range=elements(mesh), _expr=0.5*(idv(accstar)+idv(acc)) );
 
-        tprev(1) = tstar + 0.5*kprev(1);
-        //kprev(1) = 0.5*kstar;
-
-        //k() = 0.5*kstar + 0.5*k();
-        t() = tstar + k();
+        for ( auto const& condition : bc )
+        {
+            auto g1 = expression(condition);
+            g1.setParameterValues( {"t",tprev(1) });
+            auto g2 = expression(condition);
+            g2.setParameterValues( {"t", t() });
+            auto g3 = expression(condition);
+            g3.setParameterValues( {"t", tstar });
+            u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+            fd.on( _range=markedfaces(mesh,marker(condition)), _expr=g2-g3 );
+        }
 
         u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()/2*idv(fd));
         acc_try.on(_range=elements(mesh), _expr=idv(fd) );
+
+        k() = 0.5*kstar + 0.5*k();
 
         if ( Environment::isMasterRank() )
             std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
@@ -223,9 +225,9 @@ CNAB2<FieldType>::computeError( FT const& fd )
 
 
 template<typename FieldType>
-template<typename FT>
+template<typename FT, typename BCType >
 bool
-CNAB2<FieldType>::next( FT const& fd, bool is_converged )
+CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
 {
     if ( is_converged )
     {
@@ -233,7 +235,7 @@ CNAB2<FieldType>::next( FT const& fd, bool is_converged )
             std::cout << "trying next step (index:" << index() << ")with kn1" << k() << " kn=" << kprev(1) << " at t=" << t() << std::endl;
         // every nstar iteration do averaging to avoid ringing (and time step stagnation)
 
-        double err = computeError( fd ).first;
+        double err = computeError( fd, bc ).first;
 
         double l2_u = normL2( _range=elements(mesh), _expr=idv(u_try));
         double l2_uab2 = normL2( _range=elements(mesh), _expr=idv(uab2));

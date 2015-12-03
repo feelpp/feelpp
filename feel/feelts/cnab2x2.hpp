@@ -74,14 +74,14 @@ public :
             CN(1).addStep( k1, elements2.first, elements2.second );
         }
 
-    template<typename ElementType1, typename ElementType2>
-    void start( ElementType1 const& element1, ElementType2 const& element2 )
+    template<typename ElementType1, typename ElementType2, typename BCType1, typename BCType2>
+    void start( ElementType1& element1, ElementType2& element2, BCType1& bc1, BCType2& bc2 )
         {
-            next( element1, element2 );
+            next( element1, element2, bc1, bc2 );
         }
 
-    template<typename ElementType1, typename ElementType2>
-    bool next( ElementType1 const& element1, ElementType2 const& element2, bool is_converged=true );
+    template<typename ElementType1, typename ElementType2, typename BCType1, typename BCType2>
+    bool next( ElementType1& element1, ElementType2& element2, BCType1& bc1, BCType2& bc2 , bool is_converged=true );
 
     bool isFinished() const
         {
@@ -118,9 +118,9 @@ private :
 
 
 template<typename Element1, typename Element2>
-template<typename ElementType1, typename ElementType2>
+template<typename ElementType1, typename ElementType2, typename BCType1, typename BCType2>
 bool
-CNAB2x2<Element1,Element2>::next( ElementType1 const& element1, ElementType2 const& element2, bool is_converged )
+CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2, BCType1& bc1, BCType2& bc2, bool is_converged )
 
 {
     if ( is_converged )
@@ -128,8 +128,8 @@ CNAB2x2<Element1,Element2>::next( ElementType1 const& element1, ElementType2 con
         if ( Environment::isMasterRank() )
             std::cout << "trying next step (index:" << this->index() << ")with kn1" << this->k() << " kn=" << this->kprev(1) << " at t=" << this->t() << std::endl;
 
-        auto r1 = CN(0).computeError(element1);
-        auto r2 = CN(1).computeError(element2);
+        auto r1 = CN(0).computeError(element1, bc1);
+        auto r2 = CN(1).computeError(element2, bc2);
         double err1 = r1.first;
         double err2 = r2.first;
         if ( r1.second )
