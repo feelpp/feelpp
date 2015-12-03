@@ -313,6 +313,13 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
+
+    // context for evaluation
+    typedef typename space_fluid_velocity_type::Context context_velocity_type;
+    typedef boost::shared_ptr<context_velocity_type> context_velocity_ptrtype;
+    typedef typename space_fluid_pressure_type::Context context_pressure_type;
+    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -675,16 +682,18 @@ public :
 #endif
     //___________________________________________________________________________________//
 
-    // save in file value of pressure at point __listPt
-    void savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
+    double computeMeshArea( std::string const& marker = "" ) const;
+    double computeMeshArea( std::list<std::string> const& markers ) const;
 
-    // compute drag and lift on a markedfaces called markerName
-    Eigen::Matrix<value_type,nDim,1> computeForce(std::string const& markerName);
-
-    double computeFlowRate(std::string const& marker);
-    double computeMeanPressure();
-    double computeMeanDivergence();
-    double computeNormL2Divergence();
+    // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
+    Eigen::Matrix<value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
+    double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
+    double computePressureSum() const;
+    double computePressureMean() const;
+    double computeVelocityDivergenceSum() const;
+    double computeVelocityDivergenceMean() const;
+    double computeVelocityDivergenceNormL2() const;
 
 #if 0
     // Averaged Preassure computed on a set of slice (false for compute on actual mesh)
@@ -904,9 +913,8 @@ protected:
     // exporter option
     bool M_isHOVisu;
     bool M_doExportVelocity, M_doExportPressure, M_doExportVorticity, M_doExportNormalStress, M_doExportWallShearStress, M_doExportViscosity;
-    bool M_doExportMeshDisplacement;
-    bool M_doExportMeshALE;
-    bool M_doExportMeshDisplacementOnInterface;
+    bool M_doExportMeshDisplacement,M_doExportMeshALE, M_doExportMeshDisplacementOnInterface;
+    bool M_doExportPid;
 
     // exporter fluid
     export_ptrtype M_exporter;
@@ -932,13 +940,17 @@ protected:
 #endif
     op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
 #endif
+    // post-process measure at point
+    context_velocity_ptrtype M_postProcessMeasuresContextVelocity;
+    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
+    // post-process measure forces (lift,drag) and flow rate
+    std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
+    std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)
     std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
-    //----------------------------------------------------
-    std::set<std::string> M_nameFilesPressureAtPoints;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

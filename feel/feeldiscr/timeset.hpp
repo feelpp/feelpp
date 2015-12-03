@@ -485,29 +485,22 @@ public:
          * @param  prefix prefix string for the region
          */
         void
-        addRegions( std::string prefix = "" )
+        addRegions( std::string const& prefix = "" )
+        {
+            this->addRegions( prefix,prefix );
+        }
+        void
+        addRegions( std::string const& prefix, std::string const& prefixfname )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
-            if ( !M_ts->M_scalar_p0 )
-            {
-                VLOG(1) << "[timeset] creating space... " << M_mesh.get()->worldComm().numberOfSubWorlds();
-                if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                else
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm() );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                M_scalar_p0 = M_ts->M_scalar_p0;
-            }
+            WorldComm const& meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
+                M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) :
+                M_mesh.get()->worldComm();
+            this->updateScalarP0( std::vector<WorldComm>(1,meshComm) );
+
             VLOG(1) << "[timeset] adding pid...\n";
-            if ( prefix.empty() )
-                add( "pid", regionProcess( M_scalar_p0 ) );
-            else
-                add( prefix + "." + "pid", regionProcess( M_scalar_p0 ) );
+            this->add( prefixvm(prefix,"pid"), prefixvm(prefixfname,"pid"),  regionProcess( M_scalar_p0 ) );
+
             //add( "marker", regionMarker( M_scalar_p0 ) );
             //add( "marker2", regionMarker2( M_scalar_p0 ) );
             //add( "marker3", regionMarker3( M_scalar_p0 ) );
@@ -841,34 +834,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
-                if ( !M_ts->M_scalar_p0 )
-                {
-                    M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                                   MESH_RENUMBER | MESH_CHECK,
-                                                                                   typename scalar_p0_space_type::periodicity_type(),
-                                                                                   func.worldsComm(),
-                                                                                   std::vector<bool>(1,extendeddof) );
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
-
-                else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
-                {
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                }
-
-                if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
-                {
-                    M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                             MESH_RENUMBER | MESH_CHECK,
-                                                                             typename scalar_p0_space_type::periodicity_type(),
-                                                                             func.worldsComm(),
-                                                                             std::vector<bool>(1,extendeddof) );
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
+                this->updateScalarP0( func.worldsComm() );
 
                 // interpolate field on visualisation space
                 // If user asks for P0 visu [exporter.element-spaces options contains P0]
@@ -884,6 +852,7 @@ public:
                 {
                     if ( !M_ts->M_scalar_p1 )
                     {
+                        bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename scalar_p1_space_type::periodicity_type(),
@@ -1112,6 +1081,37 @@ public:
         Step& operator=( Step const& );
 
         //@}
+
+        void updateScalarP0( std::vector<WorldComm> const& worldsComm )
+        {
+            if ( !M_ts->M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                               MESH_RENUMBER | MESH_CHECK,
+                                                                               typename scalar_p0_space_type::periodicity_type(),
+                                                                               worldsComm,
+                                                                               std::vector<bool>(1,extendeddof) );
+                M_scalar_p0 = M_ts->M_scalar_p0;
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+            else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
+            {
+                M_scalar_p0 = M_ts->M_scalar_p0;
+            }
+
+            if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                         MESH_RENUMBER | MESH_CHECK,
+                                                                         typename scalar_p0_space_type::periodicity_type(),
+                                                                         worldsComm,
+                                                                         std::vector<bool>(1,extendeddof) );
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+
+        }
 
         friend class boost::serialization::access;
 
