@@ -511,6 +511,18 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         return;
     bool hasMeasure = false;
 
+    // volume variation
+    auto itFindMeasures = this->modelProperties().postProcess().find("Measures");
+    if ( itFindMeasures != this->modelProperties().postProcess().end() )
+    {
+        if ( std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "VolumeVariation" ) != itFindMeasures->second.end() )
+        {
+            double volVar = this->computeVolumeVariation();
+            this->postProcessMeasuresIO().setMeasure( "volume_variation", volVar );
+            hasMeasure = true;
+        }
+    }
+
     // points evaluation
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -1132,23 +1144,23 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const&
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeIncompressibility() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation() const
 {
-    using namespace Feel::vf;
+    //using namespace Feel::vf;
+    if(!this->isStandardModel()) return 0.;
 
     auto const Id = eye<nDim,nDim>();
-
-    auto u = this->fieldDisplacement();
+    auto const& u = this->fieldDisplacement();
     auto Fv = Id + gradv(u);
     auto detFv = det(Fv);
-    auto res = integrate(_range=elements(u.mesh()),
-                         _expr=detFv,
-                         _geomap=this->geomap() ).evaluate()(0,0);
-    auto aera = integrate(_range=elements(u.mesh()),
-                          _expr=cst(1.),
-                          _geomap=this->geomap() ).evaluate()(0,0);
+    double newArea = integrate(_range=elements(u.mesh()),
+                             _expr=detFv,
+                             _geomap=this->geomap() ).evaluate()(0,0);
+    double refAera = integrate(_range=elements(u.mesh()),
+                               _expr=cst(1.),
+                               _geomap=this->geomap() ).evaluate()(0,0);
 
-    return res/aera;
+    return (newArea-refAera)/refAera;
 }
 
 //---------------------------------------------------------------------------------------------------//
