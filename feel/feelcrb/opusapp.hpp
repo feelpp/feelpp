@@ -401,6 +401,7 @@ public:
                 }
                 crb->setRebuild( false ); //do not rebuild since co-build is not finished
 
+                int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
                 if( do_offline_eim )
                 {
                     do_offline_eim = false; //re-init
@@ -408,7 +409,7 @@ public:
                     {
                         eim_sc->setRestart(false); //do not restart since co-build is not finished
 
-                        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
+                        if( use_rb )
                         {
                             eim_sc->setRB( crb ); //update rb model member to be used in eim offline
                         }
@@ -420,7 +421,7 @@ public:
                     {
                         eim_sd->setRestart(false); //do not restart since co-build is not finished
 
-                        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
+                        if( use_rb )
                         {
                             eim_sd->setRB( crb ); //update rb model member to be used in eim offline
                         }
