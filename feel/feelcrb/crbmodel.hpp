@@ -2216,14 +2216,7 @@ public:
     value_type InitialGuessVqm( uint16_type q, uint16_type m, element_type const& xi)
     {
         value_type result=0;
-        if( Environment::worldComm().globalRank() == 0 )
-        {
-            std::cout << "[InitialGuessVqm] M_InitialGuessV[" << q << "][" << m << "] = " << *M_InitialGuessV[q][m] << std::endl;
-            std::cout << "[InitialGuessVqm] xi = " << xi << std::endl;
-        }
         result = inner_product( *M_InitialGuessV[q][m] , xi );
-        if( Environment::worldComm().globalRank() == 0 )
-            std::cout << "Inner product = " << result << std::endl;
         return result;
     }
 

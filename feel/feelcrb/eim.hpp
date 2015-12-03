@@ -507,7 +507,6 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
              << " and trainset of size " << trainset->size() << "...\n";
     using namespace vf;
     int proc_number =  Environment::worldComm().globalRank();
-    parameter_type mu = M_model->parameterSpace()->element();
 
     vector_type maxerr( trainset->size() );
     maxerr.setZero();
@@ -537,9 +536,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
 
         timer.restart();
         if( boption(_name="ser.use-rb-in-eim-mu-selection") )
-        {
             solution = M_model->computeRbExpansion( mu );
-        }
         else
             solution = M_model->solve( mu );
         time_solve += timer.elapsed();
@@ -552,12 +549,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
         LOG_ASSERT( index < subtrainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << subtrainset->size() << "\n";
-        maxerr( index++ ) = resmax.template get<0>();
-        //std::cout << "proc " << proc_number << " : err_max = " << resmax.template get<0>() << std::endl;
-
-        int index2;
-        auto err = maxerr.array().abs().maxCoeff( &index2 );
-        //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << subtrainset->at(index2) << "\n";
+        maxerr( index ) = resmax.template get<0>();
+        index++;
     }
     if( Environment::worldComm().isMasterRank() )
     {
@@ -717,7 +710,8 @@ EIM<ModelType>::offline()
         max_solution = M_model->maxSolution();
 
         int cobuild_freq = ioption(_name="ser.eim-frequency");
-        int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection");
+        int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
+
         if( cobuild_freq != 0 && use_rb )
         {
             // Cobuild : If the first group (FEM solve) of EIM basis has already been built, go to loadDB (crb)
@@ -728,6 +722,7 @@ EIM<ModelType>::offline()
                 return;
             }
         }
+
     }//if ! M_restart
     /**
        \par build \f$W^g_M\f$
@@ -759,6 +754,9 @@ EIM<ModelType>::offline()
     LOG(INFO) << "start greedy algorithm...\n";
     for( ; M_M <=Mmax; ++M_M ) //err >= this->M_tol ) //Mmax == 1 : the basis has already been built at init step
     {
+        if( !this->getOfflineStep() )
+            break;
+
         timer3.restart();
         //LOG(INFO) << "M=" << M_M << "...\n";
         if( Environment::worldComm().isMasterRank() )
@@ -778,18 +776,15 @@ EIM<ModelType>::offline()
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
-        {
             std::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
-        }
+
         M_model->addOfflineError(error);
         mu = bestfit.template get<1>();
 
         timer2.restart();
         //solution = M_model->solve( mu );
         if( boption(_name="ser.use-rb-in-eim-basis-build") )
-        {
             solution = M_model->computeRbExpansion( mu );
-        }
         else
             solution = M_model->solve( mu );
 
@@ -807,11 +802,9 @@ EIM<ModelType>::offline()
             std::cout<<" -- maximum of expression computed in "<<time<<"s"<<std::endl;
         }
 
-        DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
-                 << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
-
         //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
+        //if ( (bestfit.template get<0>()/gmax.template get<0>()) < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
+        if ( bestfit.template get<0>() < doption(_name="eim.error-max") &&  ! boption(_name="eim.use-dimension-max-functions") )
         {
             M_M--;
             this->setOfflineStep(false);
@@ -827,7 +820,8 @@ EIM<ModelType>::offline()
         if( ! expression_expansion )
         {
             timer2.restart();
-            M_model->addExpressionEvaluation( M_model->operator()( mu ) ); //projection de l'expression
+            //M_model->addExpressionEvaluation( M_model->operator()( mu ) ); //projection de l'expression
+            M_model->addExpressionEvaluation( M_model->operator()( solution, mu ) ); //projection de l'expression
             time=timer2.elapsed();
             if( Environment::worldComm().isMasterRank() )
             {
@@ -912,7 +906,6 @@ EIM<ModelType>::offline()
     DVLOG(2) << "[offline] M_max = " << M_M << "...\n";
 
     this->M_offline_done = true;
-    //std::cout << " [eim offline] M_max = " << Mmax << " ,user max = " << user_max << std::endl;
     if( Mmax >= user_max ) //dimension-max has been reached
         this->setOfflineStep(false);
 }
@@ -2193,7 +2186,9 @@ public:
         setRB( rb, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
     }
     void setRB( boost::any rb, boost::mpl::bool_<false> )
-    {}
+    {
+        M_crb_built=true; //no need of M_crb for eim_no_solve approx.
+    }
     void setRB( boost::any rb, boost::mpl::bool_<true> )
     {
         try
