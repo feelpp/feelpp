@@ -57,6 +57,7 @@ public:
         accp=acc;
         u = f_u;
         acc = f_acc;
+        ok_averaging=true;
     }
 
     /**
@@ -128,7 +129,7 @@ public:
     mesh_ptr_t mesh;
     field_t u, up, acc, accp, d, w, uab2;
     field_t u_try, acc_try, accstar, ustar;
-
+    bool ok_averaging;
 
 };
 
@@ -153,7 +154,8 @@ CNAB2<FieldType>::CNAB2( FT const& f )
     u_try ( f.functionSpace() ),
     acc_try ( f.functionSpace() ),
     accstar( f.functionSpace() ),
-    ustar( f.functionSpace() )
+                             ustar( f.functionSpace() ),
+                             ok_averaging( true )
 {
     if ( Environment::isMasterRank() )
         std::cout << "--> k0=" << k0 << " T=" << T << " n*=" << nstar << " keps=" << keps  << std::endl;
@@ -173,7 +175,7 @@ std::pair<double,bool>
 CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
 {
     bool averaging=false;
-    if ( (index() > 0) && (index() % nstar == 0) )
+    if ( (index() > 0) && (index() % nstar == 0) && ok_averaging )
     {
         double tstar = tprev(1);
         double kstar = kprev(1);
@@ -208,6 +210,7 @@ CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
         if ( Environment::isMasterRank() )
             std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
         averaging = true;
+        ok_averaging=false;
     }
     else
     {
