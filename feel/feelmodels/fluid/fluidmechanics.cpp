@@ -116,7 +116,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
     {
         this->log("FluidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
-        bool hasChangedRep=true;
+        hasChangedRep=true;
         Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
     }
 
