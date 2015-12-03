@@ -143,7 +143,7 @@ public :
     void setType( std::string const& s ) { CHECK(s == "max" || s=="min" ) << "invalid type " << s; M_type = s; }
     void addMarker( std::string const& mark )
         {
-            if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) != M_meshMarkers.end() )
+            if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
                 M_meshMarkers.push_back( mark );
         }
 private :

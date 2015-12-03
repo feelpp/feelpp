@@ -40,54 +40,13 @@
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelcore/modelmeasures.hpp>
 
 
 namespace Feel
 {
 namespace FeelModels
 {
-
-class ModelMeasuresIO
-{
-public :
-    ModelMeasuresIO( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
-    ModelMeasuresIO( ModelMeasuresIO const& app ) = default;
-    void clear();
-    void start();
-    void restart( std::string const& paramKey, double val );
-    void exportMeasures();
-    void setParameter(std::string const& key,double val);
-    void setMeasure(std::string const& key,double val);
-    void setMeasureComp( std::string const& key,std::vector<double> const& values );
-    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
-    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
-
-    std::string const& pathFile() const { return M_pathFile; }
-    void setPathFile( std::string const& s ) { M_pathFile = s; }
-private :
-    WorldComm M_worldComm;
-    std::string M_pathFile;
-    std::map<std::string,double> M_mapParameterData;
-    std::map<std::string,double> M_mapMeasureData;
-};
-
-class ModelMeasuresEvaluatorContext
-{
-public :
-    ModelMeasuresEvaluatorContext() = default;
-    ModelMeasuresEvaluatorContext( ModelMeasuresEvaluatorContext const& ) = default;
-
-    std::map<std::string, std::map<int,std::string> > const& mapFieldToMapCtxIdToName() const { return M_mapFieldToMapCtxIdToName; }
-    void add( std::string const& field, int ctxId, std::string const& name );
-    bool has( std::string const& field ) const;
-    bool has( std::string const& field, int ctxId ) const;
-    std::string const& name( std::string const& field, int ctxId ) const;
-    int ctxId( std::string const& field, std::string const& name ) const;
-private :
-    // for each field, store data names evaluted : field -> ( (ctxId1->dataName1), (ctxId2->dataName2),...)
-    std::map<std::string, std::map<int,std::string> > M_mapFieldToMapCtxIdToName;
-    std::string M_emptyString;
-};
 
 class ModelNumerical : public ModelAlgebraic
     {
