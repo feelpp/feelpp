@@ -987,6 +987,26 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     bool hasMeasure = false;
 
+    // volume variation
+    auto const& ptree = this->modelProperties().postProcess().pTree();
+    std::string ppTypeMeasures = "Measures";
+    std::string ppTypeMeasuresVolumeVariation = "VolumeVariation";
+    for( auto const& ptreeLevel0 : ptree )
+    {
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == ppTypeMeasuresVolumeVariation )
+            {
+                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( ppTypeMeasuresVolumeVariation );
+                this->postProcessMeasuresIO().setMeasure("volume_variation",0.);
+                hasMeasure = true;
+            }
+        }
+    }
+
     // points evaluation
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
     {
