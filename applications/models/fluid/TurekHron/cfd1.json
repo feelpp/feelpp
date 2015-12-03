@@ -48,9 +48,9 @@
     "PostProcess":
     {
         "Fields":["velocity","pressure","pid"],
-        "Force":["wall2"],
         "Measures":
         {
+            "Forces":"wall2",
             "Points":
             {
                 "pointA":
