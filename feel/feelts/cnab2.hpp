@@ -57,7 +57,6 @@ public:
         accp=acc;
         u = f_u;
         acc = f_acc;
-        ok_averaging=true;
     }
 
     /**
@@ -116,13 +115,8 @@ public:
     template<typename FT, typename BCType>
     bool next( FT& d, BCType& bc, bool is_converged=true );
 
-    template<typename FT, typename BCType>
-    std::pair<double,bool> computeError( FT& d, BCType& bc );
-
-    void initExporter( std::string name )
-        {
-            e = exporter( _mesh=mesh, _name=name );
-        }
+    template<typename FT>
+    double computeError( FT& fd );
 
     template<typename BCType >
     void averaging( BCType& bc );
@@ -137,9 +131,6 @@ public:
     mesh_ptr_t mesh;
     field_t u, up, acc, accp, d, w, uab2;
     field_t u_try, acc_try, accstar, ustar;
-    bool ok_averaging;
-    boost::shared_ptr<Exporter<mesh_t>> e;
-
 };
 
 template<typename FieldType>
@@ -163,8 +154,7 @@ CNAB2<FieldType>::CNAB2( FT const& f )
     u_try ( f.functionSpace() ),
     acc_try ( f.functionSpace() ),
     accstar( f.functionSpace() ),
-                             ustar( f.functionSpace() ),
-                             ok_averaging( true )
+                             ustar( f.functionSpace() )
 {
     if ( Environment::isMasterRank() )
         std::cout << "--> k0=" << k0 << " T=" << T << " n*=" << nstar << " keps=" << keps  << std::endl;
@@ -179,64 +169,17 @@ CNAB2<FieldType>::start( FT& f_d )
 }
 
 template<typename FieldType>
-template<typename FT, typename BCType>
-std::pair<double,bool>
-CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
+template<typename FT>
+double
+CNAB2<FieldType>::computeError( FT& fd )
 {
-    bool averaging=false;
-    /*if ( (index() > 0) && (index() % nstar == 0) && ok_averaging )
-    {
-        double tstar = tprev(1);
-        double kstar = kprev(1);
-        ustar.on(_range=elements(mesh), _expr=idv(u));
-        accstar.on(_range=elements(mesh), _expr=idv(acc));
-
-        kprev(1) = 0.5*kstar;
-        tprev(1) = tprev(2) + kprev(1);
-
-        t() = tstar + 0.5*k();
-
-        u.on( _range=elements(mesh), _expr=0.5*(idv(ustar)+idv(up)) );
-        acc.on( _range=elements(mesh), _expr=0.5*(idv(accstar)+idv(acc)) );
-
-        for ( auto const& condition : bc )
-        {
-            auto g1 = expression(condition);
-            g1.setParameterValues( {"t",tprev(1) });
-            auto g2 = expression(condition);
-            g2.setParameterValues( {"t", t() });
-            auto g3 = expression(condition);
-            g3.setParameterValues( {"t", tstar });
-     u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
-            fd.on( _range=markedfaces(mesh,marker(condition)), _expr=2*(g2-g3)/k() );
-        }
-
-        u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()/2*idv(fd));
-        acc_try.on(_range=elements(mesh), _expr=idv(fd) );
-
-        k() = 0.5*kstar + 0.5*k();
-
-        if ( Environment::isMasterRank() )
-            std::cout << " --> averaging t_{n}=" << tprev(1) << " t={n+1}=" << t() << std::endl;
-        averaging = true;
-        ok_averaging=false;
-    }
-    else
-     {*/
-        // d^n is obtained, now updated u^n+1 and acc^n+1
     u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
     acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
         //}
     // compute AB2 velocity
     uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
 
-    ustar.on( _range=elements(mesh), _expr=idv(u_try)-idv(uab2) );
-    e->step(t())->add("diffU", ustar );
-    e->save();
-
-    // compute error
-    return std::make_pair(normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())), averaging);
-
+    return normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())) ;
 }
 
 template<typename FieldType>
@@ -279,7 +222,7 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
             std::cout << "trying next step (index:" << index() << ")with kn1" << k() << " kn=" << kprev(1) << " at t=" << t() << std::endl;
         // every nstar iteration do averaging to avoid ringing (and time step stagnation)
 
-        double err = computeError( fd, bc ).first;
+        double err = computeError( fd );
 
         double l2_u = normL2( _range=elements(mesh), _expr=idv(u_try));
         double l2_uab2 = normL2( _range=elements(mesh), _expr=idv(uab2));
@@ -313,7 +256,6 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
     else
     {
         // in this case solver did not converged and so we reduce the time step
-
         double new_k = this->k()/2. ;
         this->k() = new_k;
         this->t() = tprev(1)+this->k();
