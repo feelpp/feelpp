@@ -49,8 +49,11 @@ public :
         keps( doption( _name="cnab2.keps" ) ),
         steady_tol( doption( _name="cnab2.steady-tol" ) ),
         T( doption(_name="cnab2.time-final") ),
-        M_cnab2_vec( {element1,element2} )
+        M_cnab2_vec( {element1,element2} ),
+        nstar( ioption(_name="cnab2.nstar") )
         {
+            CN(0).initExporter("cnab2U");
+            CN(1).initExporter("cnab2T");
         }
 
     template<int N>
@@ -98,6 +101,8 @@ public :
 
     void updateTimeStep()
         {
+            if (Environment::isMasterRank() )
+                std::cout << "-> CNAB2x2 : synchronise time steps\n";
             CHECK( CN(0).t()==CN(1).t() );
             CHECK( CN(0).k()==CN(1).k() );
             this->tprev(1)=CN(0).tprev(1);
@@ -112,7 +117,7 @@ private :
 
     cnab2_vector_t M_cnab2_vec;
 
-
+    int nstar;
 
 }; // class CNAB2x2
 
@@ -126,7 +131,7 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
     if ( is_converged )
     {
         if ( Environment::isMasterRank() )
-            std::cout << "trying next step (index:" << this->index() << ")with kn1" << this->k() << " kn=" << this->kprev(1) << " at t=" << this->t() << std::endl;
+            std::cout << "trying next step (index:" << this->index() << "), with kn1=" << this->k() << " kn=" << this->kprev(1) << " at t=" << this->t() << std::endl;
 
         auto r1 = CN(0).computeError(element1, bc1);
         auto r2 = CN(1).computeError(element2, bc2);
@@ -135,7 +140,7 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
         if ( r1.second )
         {
             CHECK( r2.second ) << "Averaging was not made at same time";
-            this->updateTimeStep();
+            //this->updateTimeStep();
         }
 
         auto ktry = this->computeStep( k(), err1, err2 );
@@ -148,6 +153,17 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
 
         if ( ktry.first )
         {
+            if ( (index() > 0) && (index() % nstar == 0) )
+            {
+                double tstar = t();
+                double kstar = k();
+
+                t() = 0.5*tstar + 0.5*tprev(1);
+                k() = 0.5*kstar;
+
+                CN(0).averaging(bc1);
+                CN(1).averaging(bc2);
+            }
             CN(0).acceptedStep( ktry.second );
             CN(1).acceptedStep( ktry.second );
             this->push_back( ktry.second, this->t()+ktry.second );

@@ -119,6 +119,14 @@ public:
     template<typename FT, typename BCType>
     std::pair<double,bool> computeError( FT& d, BCType& bc );
 
+    void initExporter( std::string name )
+        {
+            e = exporter( _mesh=mesh, _name=name );
+        }
+
+    template<typename BCType >
+    void averaging( BCType& bc );
+
 
     field_t const& extrapolateVelocity();
 
@@ -130,6 +138,7 @@ public:
     field_t u, up, acc, accp, d, w, uab2;
     field_t u_try, acc_try, accstar, ustar;
     bool ok_averaging;
+    boost::shared_ptr<Exporter<mesh_t>> e;
 
 };
 
@@ -175,7 +184,7 @@ std::pair<double,bool>
 CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
 {
     bool averaging=false;
-    if ( (index() > 0) && (index() % nstar == 0) && ok_averaging )
+    /*if ( (index() > 0) && (index() % nstar == 0) && ok_averaging )
     {
         double tstar = tprev(1);
         double kstar = kprev(1);
@@ -198,8 +207,8 @@ CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
             g2.setParameterValues( {"t", t() });
             auto g3 = expression(condition);
             g3.setParameterValues( {"t", tstar });
-            u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
-            fd.on( _range=markedfaces(mesh,marker(condition)), _expr=g2-g3 );
+     u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+            fd.on( _range=markedfaces(mesh,marker(condition)), _expr=2*(g2-g3)/k() );
         }
 
         u_try.on(_range=elements(mesh), _expr=idv(ustar)+k()/2*idv(fd));
@@ -213,17 +222,49 @@ CNAB2<FieldType>::computeError( FT& fd, BCType& bc )
         ok_averaging=false;
     }
     else
-    {
+     {*/
         // d^n is obtained, now updated u^n+1 and acc^n+1
-        u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
-        acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
-    }
+    u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
+    acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
+        //}
     // compute AB2 velocity
     uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
+
+    ustar.on( _range=elements(mesh), _expr=idv(u_try)-idv(uab2) );
+    e->step(t())->add("diffU", ustar );
+    e->save();
 
     // compute error
     return std::make_pair(normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())), averaging);
 
+}
+
+template<typename FieldType>
+template<typename BCType >
+void
+CNAB2<FieldType>::averaging( BCType& bc )
+{
+    double tstar = t();
+    double kstar = k();
+
+    t() = 0.5*tstar + 0.5*tprev(1);
+    k() = 0.5*kstar;
+
+    ustar.on( _range=elements(mesh), _expr=idv(u_try) );
+    accstar.on( _range=elements(mesh), _expr=idv(acc_try) );
+
+    u_try.on( _range=elements(mesh), _expr=0.5*idv(ustar) + 0.5*idv(u) );
+    acc_try.on( _range=elements(mesh), _expr=0.5*idv(accstar) + 0.5*idv(acc) );
+
+    for ( auto const& condition : bc )
+    {
+        auto g1 = expression(condition);
+        g1.setParameterValues( {"t",t() });
+        u_try.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+    }
+
+    if ( Environment::isMasterRank() )
+        std::cout << " --> averaging k_{n}=" << k() << " t_{n}=" << t() << std::endl;
 }
 
 
@@ -255,6 +296,8 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
         if ( ktry.first )
         {
             // accept the tried step and move forward
+            if ( (index() > 0) && (index() % nstar == 0) )
+                averaging( bc );
             this->addStep( ktry.second, u_try, acc_try );
         }
         else
