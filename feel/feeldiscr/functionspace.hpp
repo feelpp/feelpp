@@ -2740,11 +2740,11 @@ public:
             return pc_ptrtype( new pc_type( functionSpace()->fe(), elt.G() ) );
         }
 
-        id_type operator()( Eigen::Matrix<value_type,nDim,1> const& __x, bool extrapolate = false ) const
+        id_type operator()( Eigen::Matrix<value_type,nDim,1> const& __x, bool extrapolate = false, bool parallel = true ) const
             {
                 node_type n( nDim );
                 for(int i = 0; i < nDim; ++i ) n[i]=__x[i];
-                return operator()( n, extrapolate );
+                return operator()( n, extrapolate, parallel );
             }
 
         /**
@@ -2752,7 +2752,7 @@ public:
          *
          * @return the interpolated value of the function at the real point x
          */
-        id_type operator()( node_type const& __x, bool extrapolate = false ) const;
+        id_type operator()( node_type const& __x, bool extrapolate = false, bool parallel = true ) const;
 
         //@}
 
