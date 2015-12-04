@@ -51,10 +51,7 @@ public :
         T( doption(_name="cnab2.time-final") ),
         M_cnab2_vec( {element1,element2} ),
         nstar( ioption(_name="cnab2.nstar") )
-        {
-            CN(0).initExporter("cnab2U");
-            CN(1).initExporter("cnab2T");
-        }
+        {}
 
     template<int N>
     field_t<N> const& rateOfChange() const
@@ -99,18 +96,6 @@ public :
             return std::make_pair( !(e > std::pow(1./0.7,3.)*keps), step*std::pow(keps/e,1./3.) );
         }
 
-    void updateTimeStep()
-        {
-            if (Environment::isMasterRank() )
-                std::cout << "-> CNAB2x2 : synchronise time steps\n";
-            CHECK( CN(0).t()==CN(1).t() );
-            CHECK( CN(0).k()==CN(1).k() );
-            this->tprev(1)=CN(0).tprev(1);
-            this->t()=CN(0).t();
-            this->kprev(1)=CN(0).kprev(1);
-            this->k()=CN(0).k();
-        }
-
 private :
     bool steady;
     double keps,steady_tol, T;
@@ -133,15 +118,8 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
         if ( Environment::isMasterRank() )
             std::cout << "trying next step (index:" << this->index() << "), with kn1=" << this->k() << " kn=" << this->kprev(1) << " at t=" << this->t() << std::endl;
 
-        auto r1 = CN(0).computeError(element1, bc1);
-        auto r2 = CN(1).computeError(element2, bc2);
-        double err1 = r1.first;
-        double err2 = r2.first;
-        if ( r1.second )
-        {
-            CHECK( r2.second ) << "Averaging was not made at same time";
-            //this->updateTimeStep();
-        }
+        double err1 = CN(0).computeError( element1 );
+        double err2 = CN(1).computeError( element2 );
 
         auto ktry = this->computeStep( k(), err1, err2 );
 
