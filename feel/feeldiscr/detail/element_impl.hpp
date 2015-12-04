@@ -379,7 +379,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const&
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::id_type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const& __x, bool extrapolate ) const
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const& __x, bool extrapolate, bool parallel ) const
 {
     this->updateGlobalValues();
 
@@ -424,7 +424,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
 #if defined(FEELPP_HAS_MPI)
 
-        if ( nprocs > 1 )
+        if ( nprocs > 1 && parallel )
         {
             mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<uint8_type/*int*/>() );
         }
@@ -438,7 +438,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         // in case where a point are localised on interprocess face, various process can find this point
         // we take only the process of smaller rank for evaluated the function at point
-        if ( nprocs > 1 )
+        if ( nprocs > 1 && parallel )
             for ( procIdEval=0 ; procIdEval < global_found_pt.size(); ++procIdEval )
                 if ( global_found_pt[procIdEval] != 0 )
                 {
@@ -458,7 +458,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 #if defined(FEELPP_HAS_MPI)
         DVLOG(2) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
 
-        if ( nprocs > 1 )
+        if ( nprocs > 1 && parallel )
         {
             mpi::broadcast( functionSpace()->mesh()->comm(), __id, procIdEval );
         }
@@ -471,7 +471,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
     else
     {
 #if defined(FEELPP_HAS_MPI)
-        if ( nprocs > 1 )
+        if ( nprocs > 1 && parallel )
         {
             mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<uint8_type/*int*/>() );
         }
@@ -480,7 +480,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         bool found = false;
         rank_type i = 0;
 
-        if ( nprocs > 1 )
+        if ( nprocs > 1 && parallel )
             for ( ; i < global_found_pt.size(); ++i )
                 if ( global_found_pt[i] != 0 )
                 {
@@ -495,7 +495,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
             DVLOG(2) << "receiving interpolation context from processor " << i << "\n";
 #if defined(FEELPP_HAS_MPI)
 
-            if ( functionSpace()->mesh()->comm().size() > 1 )
+            if ( nprocs > 1 && parallel )
             {
                 mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
             }
