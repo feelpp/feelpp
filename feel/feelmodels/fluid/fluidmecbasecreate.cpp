@@ -14,16 +14,15 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationary,
-                                                            std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
+    super_type( prefix,worldComm,subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
-    M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) ),
+    M_densityViscosityModel( new densityviscosity_model_type( prefix ) ),
     M_doExportVelocity( false), M_doExportPressure( false ), M_doExportVorticity( false ),
     M_doExportNormalStress( false), M_doExportWallShearStress( false ), M_doExportViscosity( false ),
     M_doExportMeshDisplacement( false ), M_doExportPid( false )
@@ -50,6 +49,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const&
     boost::replace_all( res, "$fluid_tag", fluidTag );
     return res;
 }
+
 // add members instatantiations need by static function expandStringFromSpec
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderVelocity;
@@ -57,6 +57,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderPressure;
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
+
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -418,7 +419,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                        _restart_at_last_save=this->restartAtLastSave(),
                        _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_bdf_fluid->setfileFormat( myFileFormat );
-    M_bdf_fluid->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
     this->timerTool("Constructor").stop("createTimeDiscr");
@@ -456,7 +457,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
                                            this->prefix(),
                                            this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
-                                           this->appliShortRepository() ));
+                                           this->rootRepositoryWithoutNumProc() ));
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
         // mesh velocity only on moving interface
@@ -536,7 +537,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
                                        _backend=M_backend,
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
-                                       _path=this->appliRepository(),
+                                       _path=this->rootRepository(),
                                        _prefix=this->prefix(),
                                        _rebuild=!this->doRestart(),
                                        _parallel=doLagP1parallel );
@@ -549,7 +550,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
                                        _backend=M_backend,
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
-                                       _path=this->appliRepository(),
+                                       _path=this->rootRepository(),
                                        _prefix=this->prefix(),
                                        _rebuild=!this->doRestart(),
                                        _parallel=doLagP1parallel );
@@ -1109,7 +1110,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
             M_fluidOutletWindkesselPressureDistal_old[k].resize( Feel::BDF_MAX_ORDER, 0 );
         }
 
-        std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+        std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
 
         if (!this->doRestart())
         {

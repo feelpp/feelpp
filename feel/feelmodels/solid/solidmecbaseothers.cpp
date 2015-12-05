@@ -122,7 +122,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||----------Info : SolidMechanics---------------||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository()
+           << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
            << "\n     -- pde name : " << M_pdeType
            << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()

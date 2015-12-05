@@ -36,9 +36,9 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm, std::string const& appliShortRepository )
+FSI<FluidType,SolidType>::FSI(std::string const& prefix,WorldComm const& worldComm, std::string const& rootRepository )
     :
-    super_type( prefix, worldComm, "", self_type::expandStringFromSpec( appliShortRepository )  ),
+    super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
@@ -120,7 +120,7 @@ FSI<FluidType,SolidType>::createMesh()
             meshesdirectories = meshesdirgiven;
     }
     else
-        meshesdirectories = fs::path(this->appliRepositoryWithoutNumProc()) / fs::path("meshes");
+        meshesdirectories = fs::path(this->rootRepositoryWithoutNumProc()) / fs::path("meshes");
 
     fs::path gp;
     if (this->hasMshfileStr())
@@ -263,7 +263,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->appliShortRepository() ) );
+        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMshfileStr(M_mshfilepathFluidPartN.string());
         M_fluidModel->build();
@@ -272,7 +272,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->appliShortRepository() ) );
+        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {

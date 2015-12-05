@@ -304,11 +304,11 @@ public:
     //___________________________________________________________________________________//
 
 
-    SolidMechanicsBase( std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+    SolidMechanicsBase( std::string const& prefix,
+                        bool buildMesh=true,
+                        WorldComm const& worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     SolidMechanicsBase( self_type const & M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );

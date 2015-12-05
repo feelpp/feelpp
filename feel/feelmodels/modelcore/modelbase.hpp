@@ -49,10 +49,10 @@ namespace FeelModels
 class ModelBase
 {
 public :
-    ModelBase( std::string _theprefix,
-               WorldComm const& _worldComm=Environment::worldComm(),
-               std::string subPrefix="",
-               std::string appliShortRepository=soption(_name="exporter.directory") );
+    ModelBase( std::string const& prefix,
+               WorldComm const& worldComm = Environment::worldComm(),
+               std::string const& subPrefix = "",
+               std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     ModelBase( ModelBase const& app ) = default;
     virtual ~ModelBase();
@@ -65,37 +65,38 @@ public :
     void setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsComm);
     virtual void createWorldsComm();
     // prefix
-    std::string prefix() const;
-    std::string subPrefix() const;
+    std::string const& prefix() const;
+    std::string const& subPrefix() const;
     // vm
     po::variables_map const& vm() const;
-    // appli repository
-    std::string appliRepositoryWithoutNumProc() const;
-    std::string appliRepository() const;
-    std::string appliShortRepository() const;
-    std::string appliShortRepositoryWithNumProc() const;
+    // root repository
+    std::string const& rootRepository() const;
+    std::string const& rootRepositoryWithoutNumProc() const;
+    std::string const& rootRepositoryWithNumProc() const;
+    static std::string rootRepositoryByDefault();
+
     // verbose
     bool verbose() const;
     bool verboseAllProc() const;
-    void log( std::string _className,std::string _functionName,std::string _msg ) const;
+    void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
     std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string s);
+    void setFilenameSaveInfo(std::string const& s);
     virtual boost::shared_ptr<std::ostringstream> getInfo() const;
     virtual void printInfo() const;
     virtual void saveInfo() const;
     virtual void printAndSaveInfo() const;
     // timer
-    TimerToolBase & timerTool(std::string s) const;
-    void addTimerTool(std::string s,std::string fileName) const;
+    TimerToolBase & timerTool( std::string const& s ) const;
+    void addTimerTool( std::string const& s, std::string const& fileName ) const;
     // save assembly/solver scalability
     bool scalabilitySave() const;
     bool scalabilityReinitSaveFile() const;
     void setScalabilitySave( bool b );
     std::string scalabilityPath() const;
-    void setScalabilityPath(std::string s);
+    void setScalabilityPath(std::string const& s);
     std::string scalabilityFilename() const;
-    void setScalabilityFilename(std::string s);
+    void setScalabilityFilename(std::string const& s);
 
 private :
     // worldcomm
@@ -106,7 +107,7 @@ private :
     std::string M_prefix;
     std::string M_subPrefix;
     // short repository name
-    std::string M_appliShortRepository;
+    std::string M_rootRepositoryWithNumProc, M_rootRepositoryWithoutNumProc;
     // verbose
     bool M_verbose,M_verboseAllProc;
     // filename for save info
