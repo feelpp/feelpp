@@ -34,17 +34,17 @@ namespace Feel {
 namespace FeelModels {
 
 
-ModelBase::ModelBase( std::string _theprefix,
-                      WorldComm const& _worldComm,
-                      std::string subPrefix,
-                      std::string appliShortRepository )
+ModelBase::ModelBase( std::string const& prefix,
+                      WorldComm const& worldComm,
+                      std::string const& subPrefix,
+                      std::string const& rootRepository )
     :
-    M_worldComm(_worldComm),
-    M_worldsComm(std::vector<WorldComm>(1,_worldComm)),
-    M_localNonCompositeWorldsComm(std::vector<WorldComm>(1,_worldComm)),
-    M_prefix(_theprefix),
-    M_subPrefix(subPrefix),
-    M_appliShortRepository(appliShortRepository),
+    M_worldComm(worldComm),
+    M_worldsComm( std::vector<WorldComm>(1,worldComm) ),
+    M_localNonCompositeWorldsComm( std::vector<WorldComm>(1,worldComm) ),
+    M_prefix( prefix ),
+    M_subPrefix( subPrefix ),
+    M_rootRepositoryWithoutNumProc( rootRepository ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
     M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"appli.info")) ),
@@ -57,10 +57,18 @@ ModelBase::ModelBase( std::string _theprefix,
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
 {
+    if ( M_rootRepositoryWithoutNumProc.empty() )
+        M_rootRepositoryWithoutNumProc = ModelBase::rootRepositoryByDefault();
+    M_rootRepositoryWithoutNumProc = Environment::expand( M_rootRepositoryWithoutNumProc );
+    if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
+        M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
+    std::string npSubDir = (boost::format( "np_%1%" ) % this->worldComm().localSize() ).str();
+    M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
     else
-        M_scalabilityPath = this->appliRepositoryWithoutNumProc();
+        M_scalabilityPath = this->rootRepositoryWithoutNumProc();
 
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-filename")))
         M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
@@ -83,40 +91,23 @@ ModelBase::setLocalNonCompositeWorldsComm(std::vector<WorldComm> const& _worldsC
 void
 ModelBase::createWorldsComm() {}//warning
 
-std::string
+std::string const&
 ModelBase::prefix() const { return M_prefix; }
-std::string
+std::string const&
 ModelBase::subPrefix() const { return M_subPrefix; }
 
 po::variables_map const&
 ModelBase::vm() const { return Environment::vm(); }
 
-std::string
-ModelBase::appliRepositoryWithoutNumProc() const
-{
-    return Environment::rootRepository()+"/"+
-        this->appliShortRepository();
-}
+std::string const&
+ModelBase::rootRepository() const { return this->rootRepositoryWithNumProc(); }
+std::string const&
+ModelBase::rootRepositoryWithoutNumProc() const { return M_rootRepositoryWithoutNumProc; }
+std::string const&
+ModelBase::rootRepositoryWithNumProc() const { return M_rootRepositoryWithNumProc; }
 
 std::string
-ModelBase::appliRepository() const
-{
-    return Environment::rootRepository() + "/" + this->appliShortRepositoryWithNumProc();
-}
-
-std::string
-ModelBase::appliShortRepository() const
-{
-    //return option(_name="exporter.directory").as<std::string>()+"/";
-    return M_appliShortRepository+"/";
-}
-
-std::string
-ModelBase::appliShortRepositoryWithNumProc() const
-{
-    return this->appliShortRepository() + (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str() + "/";
-}
-
+ModelBase::rootRepositoryByDefault() { return soption(_name="exporter.directory"); }
 
 // verbose
 bool
@@ -124,7 +115,7 @@ ModelBase::verbose() const { return M_verbose; }
 bool
 ModelBase::verboseAllProc() const { return M_verboseAllProc; }
 void
-ModelBase::log( std::string _className,std::string _functionName,std::string _msg ) const
+ModelBase::log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const
 {
     if (this->verbose()) FeelModels::Log( prefixvm(this->prefix(),_className),_functionName, _msg,
                                          this->worldComm(),this->verboseAllProc());
@@ -137,7 +128,7 @@ ModelBase::filenameSaveInfo() const
     return M_filenameSaveInfo;
 }
 void
-ModelBase::setFilenameSaveInfo(std::string s)
+ModelBase::setFilenameSaveInfo( std::string const& s )
 {
     M_filenameSaveInfo = s;
 }
@@ -160,7 +151,7 @@ ModelBase::saveInfo() const
 {
     if (this->worldComm().isMasterRank() )
     {
-        fs::path thepath = fs::path(this->appliRepository())/fs::path(this->filenameSaveInfo());
+        fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
         file.close();
@@ -175,7 +166,7 @@ ModelBase::printAndSaveInfo() const
 
 // timer
 TimerToolBase &
-ModelBase::timerTool(std::string key) const
+ModelBase::timerTool(std::string const& key) const
 {
     auto itFind = M_mapTimerTool.find( key );
     if ( itFind == M_mapTimerTool.end() )
@@ -188,7 +179,7 @@ ModelBase::timerTool(std::string key) const
         return *itFind->second;
 }
 void
-ModelBase::addTimerTool(std::string key,std::string fileName) const
+ModelBase::addTimerTool(std::string const& key,std::string const& fileName) const
 {
     CHECK( M_mapTimerTool.find( key ) == M_mapTimerTool.end() ) << "key already exist";
     if ( M_timersActivated )
@@ -218,11 +209,11 @@ ModelBase::setScalabilitySave( bool b )  { M_scalabilitySave=b; }
 std::string
 ModelBase::scalabilityPath() const { return M_scalabilityPath; }
 void
-ModelBase::setScalabilityPath(std::string s) { M_scalabilityPath=s; }
+ModelBase::setScalabilityPath( std::string const& s ) { M_scalabilityPath=s; }
 std::string
 ModelBase::scalabilityFilename() const { return M_scalabilityFilename; }
 void
-ModelBase::setScalabilityFilename(std::string s)  { M_scalabilityFilename=s; }
+ModelBase::setScalabilityFilename( std::string const& s )  { M_scalabilityFilename=s; }
 
 
 } // namespace FeelModels

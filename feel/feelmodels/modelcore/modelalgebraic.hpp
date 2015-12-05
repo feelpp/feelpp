@@ -176,8 +176,8 @@ public :
 
     ModelAlgebraic( std::string _theprefix,
                     WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+                    std::string const& subPrefix="",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 

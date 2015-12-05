@@ -97,7 +97,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository()
+           << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
            << "\n     -- pde name  : " << M_pdeType
            << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
@@ -898,7 +898,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
         if ( doWriteOnDisk )
         {
-            std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+            std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
             std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
             file.precision( 8 );
             file.setf( std::ios::scientific );

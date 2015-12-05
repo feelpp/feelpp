@@ -327,16 +327,15 @@ public:
     //___________________________________________________________________________________//
     // constructor
     FluidMechanicsBase( //bool __isStationary,
-                        std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+                        std::string const& prefix,
+                        bool __buildMesh = true,
+                        WorldComm const& _worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
-
 
     void build();
     void init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app );
