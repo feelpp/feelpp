@@ -2,18 +2,16 @@
 {
     "Name": "2D beam ",
     "ShortName":"beam2d",
-    "Model":"hyperelastic",
-    "Parameters":
+    "Model":"Hyper-Elasticity",
+    "Materials":
     {
-        "gravity":
-        {
-            "value":"-2"
+        "Solid": {
+            "name":"solidFSI3",
+            "E":"5.6e6",
+            "nu":"0.4",
+            "rho":"1e3"
         }
     },
-    // "Materials":
-    // {
-    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    // },
     "BoundaryConditions":
     {
         "displacement":
@@ -36,7 +34,19 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"]
+        "Fields":["displacement","velocity","pid"],
+        "Measures":
+        {
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0.6,0.2,0}",
+                    "fields":["displacement","velocity"]
+                }
+            }
+        }
+
     }
 
 }

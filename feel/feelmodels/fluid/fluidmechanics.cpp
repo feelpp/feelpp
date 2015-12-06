@@ -39,13 +39,13 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type( _prefix, _buildMesh,_worldComm, _subPrefix,_appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -63,7 +63,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
@@ -72,11 +72,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix, bool _buildMesh,
-                                         WorldComm const& _worldComm, std::string _subPrefix,
-                                         std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         std::string const& rootRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
 
 }
 
@@ -462,11 +462,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         else
             myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
 
-        if ( this->pdeType() == "Stokes" )
+        if ( this->modelName() == "Stokes" )
         {
             myPrecBlockNs->update( mat );
         }
-        else if ( this->pdeType() == "Oseen" )
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
             auto BetaU = this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
@@ -483,7 +483,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
             }
         }
-        else if ( this->pdeType() == "Navier-Stokes" )
+        else if ( this->modelName() == "Navier-Stokes" )
         {
             auto U = this->functionSpace()->element();
             // copy vector values in fluid element

@@ -50,7 +50,9 @@ public :
         steady_tol( doption( _name="cnab2.steady-tol" ) ),
         T( doption(_name="cnab2.time-final") ),
         M_cnab2_vec( {element1,element2} ),
-        nstar( ioption(_name="cnab2.nstar") )
+        nstar( ioption(_name="cnab2.nstar") ),
+        M_rejectedError(0),
+        M_rejectedSolver(0)
         {}
 
     template<int N>
@@ -87,7 +89,21 @@ public :
         {
             bool b1 = CN(0).isFinished();
             bool b2 =  CN(1).isFinished();
-            return b1 && b2;
+            bool is_finished = b1 && b2;
+            if (is_finished)
+                displayStats();
+            return is_finished;
+        }
+
+    void displayStats() const
+        {
+            if (Environment::isMasterRank())
+            {
+                std::cout << "CNAB2x2 stats :"
+                          << " -> Number of rejected TS (error)= " << M_rejectedError
+                          << " -> Number of rejected TS (solver)= " << M_rejectedSolver
+                          << std::endl;
+            }
         }
 
     std::pair<bool,double> computeStep( double step, double err1, double err2 )
@@ -103,6 +119,8 @@ private :
     cnab2_vector_t M_cnab2_vec;
 
     int nstar;
+    int M_rejectedError;
+    int M_rejectedSolver;
 
 }; // class CNAB2x2
 
@@ -152,17 +170,20 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
             CN(1).eraseStep(ktry.second);
             this->k() = ktry.second;
             this->t() = tprev(1)+this->k();
+            M_rejectedError++;
         }
         is_converged =  ktry.first;
 
     }
     else
     {
-        double new_k = this->k()/2;
+        double new_k = this->kprev(1);
         CN(0).eraseStep(new_k);
         CN(1).eraseStep(new_k);
         this->k() = new_k;
         this->t() = tprev(1)+this->k();
+
+        M_rejectedSolver++;
     }
 
     return is_converged;
