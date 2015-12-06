@@ -5,15 +5,18 @@
     "Model":"Navier-Stokes",
     "Parameters":
     {
-        "ubar":
-        {
-            "value":"2"
+        "ubar":"2",
+        "chi":"t<2:t"
+    },
+    "Materials":
+    {
+        //"Fluid":{ "name":"Glycerine","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+        "Fluid": {
+            "name":"fluidFSI3",
+            "rho":"1.0e3",
+            "mu":"1.0"
         }
     },
-    // "Materials":
-    // {
-    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    // },
     "BoundaryConditions":
     {
         "velocity":
@@ -22,10 +25,7 @@
             {
                 "fluid-inlet":
                 {
-                    //"expr":"{1,0}"
-                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
-                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*(t<2) + (1-(t<2)) ),0}:ubar:y:t"//thegood
-                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*(0) + (1) ),0}:ubar:y:t"
+                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
                 },
                 "fluid-wall":
                 {
@@ -57,7 +57,19 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","displacement"]
+        "Fields":["velocity","pressure","displacement","pid"],
+        "Measures":
+        {
+            "Forces":["fsi-wall","fluid-cylinder"],
+            "Points":
+            {
+                "pointB":
+                {
+                    "coord":"{0.15,0.2,0}",
+                    "fields":"pressure"
+                }
+            }
+        }
     }
 
 }
