@@ -2,7 +2,7 @@
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
-    "Model":"Oseen",//"Navier-Stokes"
+    "Model":"Navier-Stokes",
     "Parameters":
     {
         "ubar":"2",
