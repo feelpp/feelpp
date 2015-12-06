@@ -462,11 +462,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         else
             myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
 
-        if ( this->pdeType() == "Stokes" )
+        if ( this->modelName() == "Stokes" )
         {
             myPrecBlockNs->update( mat );
         }
-        else if ( this->pdeType() == "Oseen" )
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
             auto BetaU = this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
@@ -483,7 +483,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
             }
         }
-        else if ( this->pdeType() == "Navier-Stokes" )
+        else if ( this->modelName() == "Navier-Stokes" )
         {
             auto U = this->functionSpace()->element();
             // copy vector values in fluid element

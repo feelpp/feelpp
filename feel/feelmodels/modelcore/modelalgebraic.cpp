@@ -191,6 +191,14 @@ ModelAlgebraic::updateResidual( DataUpdateResidual & data ) const
 void
 ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
 {}
+void
+ModelAlgebraic::updatePicard( DataUpdateLinear & data ) const
+{}
+double
+ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
+{
+    return 0.;
+}
 
 
 
