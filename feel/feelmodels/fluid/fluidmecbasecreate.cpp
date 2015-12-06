@@ -973,13 +973,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if (buildMethodNum)
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend()) );
-#if 0
+#if 1
         bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
         if ( attachMassMatrix )
         {
             auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
             auto const& u = this->fieldVelocity();
             double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            if ( this->isStationary() ) coeff=1.;
             massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
             massbf.matrixPtr()->close();
             M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
@@ -1272,20 +1273,77 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // Forces (lift,drag) evaluation
-    std::set<std::string> markersForces;
-    if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
-        for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markersForces.insert( o );
-
-    for ( std::string marker : markersForces )
+    // forces (lift, drag) and flow rate measures
+    auto const& ptree = this->modelProperties().postProcess().pTree();
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
     {
-        this->postProcessMeasuresIO().setMeasure(marker+"_drag",0.);
-        this->postProcessMeasuresIO().setMeasure(marker+"_lift",0.);
-        hasMeasure = true;
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "Forces" )
+            {
+                // get list of marker
+                std::set<std::string> markerSet;
+                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
+                if ( markerUnique.empty() )
+                {
+                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    {
+                        std::string marker = ptreeMarker.second.template get_value<std::string>();
+                        markerSet.insert( marker );
+                    }
+                }
+                else
+                {
+                    markerSet.insert( markerUnique );
+                }
+                // save forces measure for each marker
+                for ( std::string const& marker : markerSet )
+                {
+                    ModelMeasuresForces myPpForces;
+                    myPpForces.addMarker( marker );
+                    myPpForces.setName( marker );
+                    std::string name = myPpForces.name();
+                    M_postProcessMeasuresForces.push_back( myPpForces );
+                    this->postProcessMeasuresIO().setMeasure("drag_"+name,0.);
+                    this->postProcessMeasuresIO().setMeasure("lift_"+name,0.);
+                    hasMeasure = true;
+                }
+            }
+            else if ( ptreeLevel1Name == "FlowRate" )
+            {
+                for( auto const& ptreeLevel2 : ptreeLevel1.second )
+                {
+                    ModelMeasuresFlowRate myPpFlowRate;
+                    std::string name = ptreeLevel2.first;
+                    myPpFlowRate.setup( ptreeLevel2.second, name );
+                    M_postProcessMeasuresFlowRate.push_back( myPpFlowRate );
+                    this->postProcessMeasuresIO().setMeasure("flowrate_"+name,0.);
+                    hasMeasure = true;
+                }
+            }
+            else if ( ptreeLevel1Name == "Pressure" )
+            {
+                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
+                this->postProcessMeasuresIO().setMeasure("pressure_sum",0.);
+                this->postProcessMeasuresIO().setMeasure("pressure_mean",0.);
+                hasMeasure = true;
+            }
+            else if ( ptreeLevel1Name == "VelocityDivergence" )
+            {
+                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "VelocityDivergence" );
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",0.);
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",0.);
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",0.);
+                hasMeasure = true;
+            }
+        }
     }
 
-    // points evaluation
+    // point measures
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
     {
         auto const& ptPos = evalPoints.pointPosition();

@@ -16,3 +16,7 @@ feelpp_add_application( application_solid_3d SRCS main_sm.cpp
 
 #feelpp_add_application( application_solid SRCS main_sm.cpp LINK_LIBRARIES feelpp_model_solidmechanics )
 
+install(TARGETS feelpp_application_solid_2d feelpp_application_solid_3d 
+        RUNTIME DESTINATION bin/ 
+        COMPONENT ModelApplications)
+
