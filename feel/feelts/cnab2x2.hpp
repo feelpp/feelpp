@@ -158,7 +158,7 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
     }
     else
     {
-        double new_k = this->k()/2;
+        double new_k = this->kprev(1);
         CN(0).eraseStep(new_k);
         CN(1).eraseStep(new_k);
         this->k() = new_k;
