@@ -11,14 +11,14 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
 {
 
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseenStabilisation", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEStabilisation", "start"+sc );
     boost::mpi::timer thetimer;
 
     //----------------------------------------------------------------------------------------------------//
@@ -170,9 +170,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
 
 
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateOseenStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
+    this->log("FluidMechanics","updateLinearPDEStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
 
-} // updateOseenStabilisation
+} // updateLinearPDEStabilisation
 
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//

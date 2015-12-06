@@ -179,10 +179,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     std::string theFluidModel = this->modelProperties().model();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         theFluidModel = soption(_name="model",_prefix=this->prefix());
-    this->pdeType( theFluidModel );
+    this->setModelName( theFluidModel );
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
-        M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
+        this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
     //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
