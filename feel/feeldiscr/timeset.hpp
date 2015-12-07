@@ -640,6 +640,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to local min value for these ghosts dofs (else can disturbe visualisation range)
                     if ( M_scalar_p1->dof()->buildDofTableMPIExtended() && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
@@ -650,6 +651,7 @@ public:
                         for ( int k=0;k<nGhostDofAddedInExtendedDofTable;++k )
                             M_nodal_scalar[__fname].set( startDof+k, thelocalmin );
                     }
+#endif
                 }
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
@@ -702,6 +704,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_vector_p1, func, M_nodal_vector[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_vector_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -735,6 +738,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -788,6 +792,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_tensor2_p1, func, M_nodal_tensor2[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_tensor2_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -821,6 +826,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
