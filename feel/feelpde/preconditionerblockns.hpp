@@ -57,7 +57,9 @@ public:
 
     using properties_space_type = PropertiesSpaceType;
     using properties_space_ptrtype = boost::shared_ptr<properties_space_type>;
-    
+    using property_type = typename properties_space_type::element_type;
+    typedef boost::shared_ptr<property_type> property_ptrtype;
+
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -100,6 +102,17 @@ public:
                            double mu,
                            double rho,
                            double alpha = 0 );
+
+    template<typename MuExprT, typename RhoExprT, typename AlphaExprT>
+    PreconditionerBlockNS( std::string t,
+                           space_ptrtype Xh,
+                           properties_space_ptrtype Ph,
+                           BoundaryConditions bcFlags,
+                           std::string const& s,
+                           sparse_matrix_ptrtype A,
+                           MuExprT mu,
+                           RhoExprT rho,
+                           AlphaExprT alpha );
 
     Type type() const { return M_type; }
     std::string typeStr() const
@@ -183,6 +196,12 @@ public:
          CHECK(0) << "Invalid call";
      }
 
+    template< typename Expr_convection, typename Expr_bc, typename MuExprT, typename RhoExprT, typename AlphaExprT >
+    void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
+                 Expr_bc const& g, MuExprT mu, RhoExprT rho, AlphaExprT alpha,
+                 bool hasConvection=true,
+                 double tn=0, double tn1 = 0 );
+
     template< typename Expr_convection, typename Expr_bc >
     void update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
                  Expr_bc const& g, bool hasConvection=true,
@@ -230,15 +249,17 @@ public:
 
     virtual ~PreconditionerBlockNS(){};
 
-    void setAlpha( double a ) { M_alpha = a; if ( pcdOp ) pcdOp->setAlpha( a ); }
-    void setMu( double m ) { M_mu = m; }
-    void setRho( double r ) { M_rho = r; }
+    template<typename ExprType>
+    void setAlpha( ExprType a ) { M_alpha->on( _range=elements(M_alpha.mesh()), _expr=a ); if ( pcdOp ) pcdOp->setAlpha( M_alpha ); }
+    template<typename ExprType>
+    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu.mesh() ), _expr=m ); if ( pcdOp ) pcdOp->setMu( M_mu ); }
+    template<typename ExprType>
+    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho.mesh() ), _expr=r ); if ( pcdOp ) pcdOp->setRho( M_rho ); }
 private:
     void createSubMatrices();
 private:
 
     Type M_type;
-    value_type M_mu, M_alpha, M_rho;
 
     backend_ptrtype M_b;
 
@@ -248,6 +269,10 @@ private:
     pressure_space_ptrtype M_Qh;
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
+
+    properties_space_ptrtype M_Ph;
+
+    property_ptrtype M_mu, M_alpha, M_rho;
 
     sparse_matrix_ptrtype M_helm, G, M_div, M_F, /*M_B,*/ M_Bt, M_mass, M_massv_inv;
     op_mat_ptrtype divOp, helmOp;
@@ -268,10 +293,6 @@ private:
 };
 
 
-
-
-
-
 template < typename SpaceType, typename PropertiesSpaceType >
 PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std::string t,
                                                           space_ptrtype Xh,
@@ -281,15 +302,73 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
                                                           double mu, double rho, double alpha )
     :
     M_type( PCD ),
-    M_mu( mu ),
-    M_alpha( alpha ),
-    M_rho( rho ),
     M_b(backend()),
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
     M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
     M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Ph( properties_space_type::New(Xh->mesh()) ),
+    M_mu( property_type::New(M_Ph->element(cst(mu), "mu")) ),
+    M_alpha( property_type::New(M_Ph->element(cst(alpha), "alpha")) ),
+    M_rho( property_type::New(M_Ph->element(cst(rho), "rho")) ),
+    M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
+    G( M_b->newMatrix( M_Vh, M_Vh ) ),
+    M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
+    M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
+    M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
+    M_rhs( M_b->newVector( M_Vh )  ),
+    M_aux( M_b->newVector( M_Vh )  ),
+    M_vin( M_b->newVector( M_Vh )  ),
+    M_pin( M_b->newVector( M_Qh )  ),
+    M_vout( M_b->newVector( M_Vh )  ),
+    M_pout( M_b->newVector( M_Qh )  ),
+    U( M_Xh, "U" ),
+    u( M_Vh, "u" ),
+    v( M_Vh, "v" ),
+    p( M_Qh, "p" ),
+    q( M_Qh, "q" ),
+    M_bcFlags( bcFlags ),
+    M_prefix( p )
+{
+    tic();
+    LOG(INFO) << "[PreconditionerBlockNS] setup starts";
+    this->setMatrix( A );
+    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
+    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
+
+    this->createSubMatrices();
+
+
+    initialize();
+
+    this->setType ( t );
+    toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
+}
+
+template < typename SpaceType, typename PropertiesSpaceType >
+template<typename MuExprT, typename RhoExprT, typename AlphaExprT>
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std::string t,
+                                                                             space_ptrtype Xh,
+                                                                             properties_space_ptrtype Ph,
+                                                                             BoundaryConditions bcFlags,
+                                                                             std::string const& s,
+                                                                             sparse_matrix_ptrtype A,
+                                                                             MuExprT mu,
+                                                                             RhoExprT rho,
+                                                                             AlphaExprT alpha )
+    :
+    M_type( PCD ),
+    M_b(backend()),
+    M_Xh( Xh ),
+    M_Vh( M_Xh->template functionSpace<0>() ),
+    M_Qh( M_Xh->template functionSpace<1>() ),
+    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
+    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Ph( Ph ),
+    M_mu( property_type::New(Ph->element(mu, "mu")) ),
+    M_alpha( property_type::New(Ph->element(alpha, "alpha")) ),
+    M_rho( property_type::New(Ph->element(rho, "rho")) ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
@@ -382,7 +461,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), M_rho*idt(p)*id(q)/M_mu ); 
+        m = integrate( elements(M_Qh->mesh()), idv(M_rho)*idt(p)*id(q)/idv(M_mu) );
         M_mass->close();
         if ( boption( "blockns.pmm.diag" ) )
         {
@@ -402,6 +481,31 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >
+template< typename Expr_convection, typename Expr_bc, typename MuExprT, typename RhoExprT, typename AlphaExprT >
+void
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
+             Expr_bc const& g, MuExprT mu, RhoExprT rho, AlphaExprT alpha,
+             bool hasConvection,
+             double tn, double tn1 )
+{
+    tic();
+    this->setMatrix( A );
+    this->createSubMatrices();
+
+    this->setMu(mu);
+    this->setRho(rho);
+    this->setAlpha(alpha);
+
+    if ( type() == PCD || type() == PCD_ACCELERATION )
+    {
+        tic();
+        pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
+        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+    }
+    toc( "Preconditioner::update", FLAGS_v > 0 );
+}
+
+template < typename SpaceType, typename PropertiesSpaceType >
 template< typename Expr_convection, typename Expr_bc >
 void
 PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrtype A,
@@ -416,7 +520,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrt
     if ( type() == PCD || type() == PCD_ACCELERATION )
     {
         tic();
-        pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
+        pcdOp->update( expr_b, g, M_mu, M_rho, M_alpha, hasConvection, tn, tn1 );
         toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
     toc( "Preconditioner::update", FLAGS_v > 0 );
@@ -580,9 +684,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                    ( properties_space, *, (Pdh<0>( space->mesh() )))
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( bc, *, (BoundaryConditions ()) )
-                                   ( mu,  *, doption("mu") ) 
-                                   ( rho,  *, doption("rho") )
-                                   ( alpha, *, 0. )
+                                   ( mu,  *, cst(doption("mu")) )
+                                   ( rho,  *, cst(doption("rho")) )
+                                   ( alpha, *, cst(0.) )
                                    )
                                  )
 {
