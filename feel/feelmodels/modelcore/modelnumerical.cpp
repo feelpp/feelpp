@@ -35,10 +35,10 @@ namespace FeelModels
 {
 
 
-ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
-                                std::string appliShortRepository )
+ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
+                                std::string const& rootRepository )
         :
-        super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
+        super_type( _theprefix, _worldComm, subPrefix, rootRepository ),
         M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
         M_isStationary( /*false*/ boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
@@ -56,8 +56,8 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         M_row_startInVector(0),
         M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
-        M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasuresIO( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
+        M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
+        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
         //-----------------------------------------------------------------------//
@@ -65,10 +65,14 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
         //-----------------------------------------------------------------------//
-        if ( Environment::vm().count(prefixvm(this->prefix(),"ginac-expr-directory").c_str()) )
-            M_directoryLibSymbExpr = Environment::rootRepository()+"/"+soption(_name="ginac-expr-directory",_prefix=this->prefix());
+        if ( Environment::vm().count(prefixvm(this->prefix(),"symbolic-expr.directory").c_str()) )
+        {
+            M_directoryLibSymbExpr = soption(_name="symbolic-expr.directory",_prefix=this->prefix());
+            if ( fs::path( M_directoryLibSymbExpr ).is_relative() )
+                M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc())/fs::path(M_directoryLibSymbExpr)).string();
+        }
         else
-            M_directoryLibSymbExpr = (fs::path(this->appliRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
+            M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
         //-----------------------------------------------------------------------//
         // mesh file : .msh
         if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))

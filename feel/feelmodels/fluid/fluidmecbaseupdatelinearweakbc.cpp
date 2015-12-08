@@ -11,12 +11,12 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
 {
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseenWeakBC", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "start"+sc );
 
     boost::timer thetimer;
 
@@ -441,10 +441,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     //--------------------------------------------------------------------------------------------------//
 
     std::ostringstream ostr;ostr<<thetimer.elapsed()<<"s";
-    this->log("FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str() );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "finish in "+ostr.str() );
 
 
-} // updateOseenWeakBC
+} // updateLinearPDEWeakBC
 
 } // end namespace FeelModels
 } // end namespace Feel

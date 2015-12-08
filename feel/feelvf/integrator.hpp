@@ -154,8 +154,9 @@ public:
         //
         // some typedefs
         //
-        typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-        typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
+        typedef typename boost::unwrap_reference<typename element_iterator::value_type>::type range_elt_type;
+        typedef typename boost::remove_reference<range_elt_type>::type const_t;
+        typedef typename boost::remove_const<const_t>::type the_face_element_type;
         typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
         typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
@@ -1011,10 +1012,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 if ( it == en )
                     continue;
 
-                size_type idEltTestInit = it->id();
-                if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                    idEltTestInit = it->mesh()->subMeshToMesh( idEltTestInit );
-                else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                auto const& eltInit = boost::unwrap_ref( *it );
+
+
+                size_type idEltTestInit = eltInit.id();
+                if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
                     idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
 
                 auto const& eltTestInit = __form.testSpace()->mesh()->element( idEltTestInit );
@@ -1053,10 +1057,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //
                 for ( ; it != en; ++it )
                 {
-                    size_type idElt = it->id();
-                    if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                        idElt = it->mesh()->subMeshToMesh( idElt );
-                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                    auto const& eltCur = boost::unwrap_ref( *it );
+
+                    size_type idElt = eltCur.id();
+                    if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                        idElt = eltCur.mesh()->subMeshToMesh( idElt );
+                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
                         idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
 
                     auto const& eltTest = __form.testSpace()->mesh()->element( idElt );
@@ -1073,8 +1079,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         __c->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
-                        std::cout << "Element: " << it->id() << "\n"
-                                  << " o - points : " << it->G() << "\n"
+                        std::cout << "Element: " << eltCur.id() << "\n"
+                                  << " o - points : " << eltCur.G() << "\n"
                                   << " o - quadrature :\n"
                                   << "     ref : " << this->im().points() << "\n"
                                   << "     real : " << __c->xReal() << "\n";
@@ -1103,8 +1109,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         __c1->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
-                        DLOG(INFO) << "Element: " << it->id() << "\n"
-                                      << " o - points : " << it->G() << "\n"
+                        DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                      << " o - points : " << eltCur.G() << "\n"
                                       << " o - quadrature :\n"
                                       << "     ref : " << this->im().points() << "\n"
                                       << "     real : " << __c->xReal() << "\n";
@@ -1129,14 +1135,14 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                     case GeomapStrategyType::GEOMAP_OPT:
                     {
-                        if ( it->isOnBoundary() )
+                        if ( eltCur.isOnBoundary() )
                         {
                             //ti0.restart();
                             __c->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
-                            DLOG(INFO) << "Element: " << it->id() << "\n"
-                                          << " o - points : " << it->G() << "\n"
+                            DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                          << " o - points : " << eltCur.G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";
@@ -1165,8 +1171,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             __c1->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
-                            DLOG(INFO) << "Element: " << it->id() << "\n"
-                                          << " o - points : " << it->G() << "\n"
+                            DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                          << " o - points : " << eltCur.G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";
@@ -1299,10 +1305,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 if ( it == en )
                     continue;
 
-                size_type idEltTestInit = it->id();
-                if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                    idEltTestInit = it->mesh()->subMeshToMesh( idEltTestInit );
-                else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                auto const& eltInit = boost::unwrap_ref( *it );
+
+                size_type idEltTestInit = eltInit.id();
+                if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
                     idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
 
                 auto const& eltTestInit = __form.testSpace()->mesh()->element( idEltTestInit );
@@ -1353,10 +1361,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //
                 for ( ; it != en; ++it )
                 {
-                    size_type idElt = it->id();
-                    if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                        idElt = it->mesh()->subMeshToMesh( idElt );
-                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                    auto const& eltCur = boost::unwrap_ref( *it );
+
+                    size_type idElt = eltCur.id();
+                    if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                        idElt = eltCur.mesh()->subMeshToMesh( idElt );
+                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
                         idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
 
                     auto const& eltTest = __form.testSpace()->mesh()->element( idElt );
@@ -1375,8 +1385,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         __c->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
-                        std::cout << "Element: " << it->id() << "\n"
-                                  << " o - points : " << it->G() << "\n"
+                        std::cout << "Element: " << eltCur.id() << "\n"
+                                  << " o - points : " << eltCur.G() << "\n"
                                   << " o - quadrature :\n"
                                   << "     ref : " << this->im().points() << "\n"
                                   << "     real : " << __c->xReal() << "\n";
@@ -1415,8 +1425,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         __c1->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
-                        DLOG(INFO) << "Element: " << it->id() << "\n"
-                                      << " o - points : " << it->G() << "\n"
+                        DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                      << " o - points : " << eltCur.G() << "\n"
                                       << " o - quadrature :\n"
                                       << "     ref : " << this->im().points() << "\n"
                                       << "     real : " << __c->xReal() << "\n";
@@ -1457,8 +1467,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             __c->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
-                            DLOG(INFO) << "Element: " << it->id() << "\n"
-                                          << " o - points : " << it->G() << "\n"
+                            DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                          << " o - points : " << eltCur.G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";
@@ -1487,8 +1497,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             __c1->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
-                            DLOG(INFO) << "Element: " << it->id() << "\n"
-                                          << " o - points : " << it->G() << "\n"
+                            DLOG(INFO) << "Element: " << eltCur.id() << "\n"
+                                          << " o - points : " << eltCur.G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";

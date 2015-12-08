@@ -99,7 +99,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         // other
         (prefixvm(prefix,"rebuild_mesh_partitions").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to rebuild mesh partitions ")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
-        (prefixvm(prefix,"directory-lib-expr").c_str(), Feel::po::value< std::string >(), "directory-lib-expr");
+        (prefixvm(prefix,"symbolic-expr.directory").c_str(), Feel::po::value< std::string >(), "symbolic-expr.directory");
         ;
 
     return appliBaseOptions

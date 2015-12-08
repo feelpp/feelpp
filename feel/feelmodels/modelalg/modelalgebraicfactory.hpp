@@ -170,7 +170,7 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         // fonctions obseletes
-        void AlgoPtFixe(vector_ptrtype U);
+        void AlgoPicard(vector_ptrtype U);
         //OLD version (without petsc) : not up
         void AlgoNewton(vector_ptrtype U);
 
