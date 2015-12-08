@@ -31,11 +31,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     bool _BuildExtendedPart = data.buildExtendedPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
-
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateLinearPDE", "start"+sc );
-    boost::mpi::timer thetimer;
-
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
 
@@ -57,6 +52,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         //build_SourceTerm=BuildCstPart;
         build_BoundaryNeumannTerm=BuildCstPart;
     }
+
+    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("FluidMechanics","updateLinearPDE", "start"+sc );
+    this->timerTool("Solve").start();
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
@@ -104,6 +103,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     //--------------------------------------------------------------------------------------------------//
     if ( BuildCstPart )
     {
+        this->timerTool("Solve").start();
 #if 1
         // stress tensor sigma : grad(v)
         bilinearForm_PatternCoupled +=
@@ -127,6 +127,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             integrate( _range=elements(mesh),
                        _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
+
+        double timeElapsedStressTensor = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
     }
     //--------------------------------------------------------------------------------------------------//
     // volume force
@@ -218,14 +221,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         this->updateBCPressureLinearPDE( F );
     }
     //--------------------------------------------------------------------------------------------------//
-    // Todo : BuildNonCstPart ?
-    if ( ( this->modelName() == "Oseen" || this->modelName() == "Navier-Stokes" ) && build_ConvectiveTerm)
+    // convection
+    if ( this->modelName() == "Navier-Stokes" && build_ConvectiveTerm )
     {
+        this->timerTool("Solve").start();
+
         CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-        //auto BetaU = M_bdf_fluid->poly();
-        auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution/*U*/;
+        auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
         auto betaU = BetaU.template element<0>();
-        if (M_isMoveDomain)
+        if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearForm_PatternDefault +=
@@ -249,6 +253,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                            _expr= 0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
+
+        double timeElapsedConvection = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
     }
     else if ( this->modelName() == "Stokes" && build_ConvectiveTerm && this->isMoveDomain() )
     {
@@ -320,19 +327,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
     //--------------------------------------------------------------------------------------------------//
 
-    /*if (_doClose)
-     {
-     A->close();
-     F->close();
-     }*/
-
-    // strong formulation of the boundaries conditions
+    // strong Dirichlet bc
     if ( BuildNonCstPart && _doBCStrongDirichlet)
     {
+        this->timerTool("Solve").start();
+
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletLinearPDE(A,F);
 
-#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
+#if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             bilinearForm_PatternCoupled +=
@@ -345,7 +348,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         for ( auto const& inletbc : M_fluidInletDesc )
         {
             std::string const& marker = std::get<0>( inletbc );
-            //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
             auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
 
             bilinearForm_PatternCoupled +=
@@ -354,12 +356,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                     _expr=-idv(inletVel)*N() );
         }
 
-
-
+        double timeElapsedDirichletBC = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly strong DirichletBC in "+(boost::format("%1% s") %timeElapsedDirichletBC).str() );
     }
 
-    double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") % timeElapsed).str() );
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 
 } // updateLinearPDE
 
