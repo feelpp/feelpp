@@ -250,11 +250,11 @@ public:
     virtual ~PreconditionerBlockNS(){};
 
     template<typename ExprType>
-    void setAlpha( ExprType a ) { M_alpha->on( _range=elements(M_alpha.mesh()), _expr=a ); if ( pcdOp ) pcdOp->setAlpha( M_alpha ); }
+    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu->mesh() ), _expr=m ); if ( pcdOp ) pcdOp->setMu( M_mu ); }
     template<typename ExprType>
-    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu.mesh() ), _expr=m ); if ( pcdOp ) pcdOp->setMu( M_mu ); }
+    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho->mesh() ), _expr=r ); if ( pcdOp ) pcdOp->setRho( M_rho ); }
     template<typename ExprType>
-    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho.mesh() ), _expr=r ); if ( pcdOp ) pcdOp->setRho( M_rho ); }
+    void setAlpha( ExprType a ) { M_alpha->on( _range=elements( M_alpha->mesh() ), _expr=a ); if ( pcdOp ) pcdOp->setAlpha( M_alpha ); }
 private:
     void createSubMatrices();
 private:
@@ -309,9 +309,6 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
     M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
     M_Ph( properties_space_type::New(Xh->mesh()) ),
-    M_mu( property_type::New(M_Ph->element(cst(mu), "mu")) ),
-    M_alpha( property_type::New(M_Ph->element(cst(alpha), "alpha")) ),
-    M_rho( property_type::New(M_Ph->element(cst(rho), "rho")) ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
@@ -331,6 +328,10 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     M_bcFlags( bcFlags ),
     M_prefix( p )
 {
+    M_mu = boost::make_shared<property_type>( M_Ph->element(cst(mu), "mu") );
+    M_alpha = boost::make_shared<property_type>( M_Ph->element(cst(alpha), "alpha") );
+    M_rho = boost::make_shared<property_type>( M_Ph->element(cst(rho), "rho") );
+
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
@@ -366,9 +367,6 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
     M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
     M_Ph( Ph ),
-    M_mu( property_type::New(Ph->element(mu, "mu")) ),
-    M_alpha( property_type::New(Ph->element(alpha, "alpha")) ),
-    M_rho( property_type::New(Ph->element(rho, "rho")) ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
@@ -388,6 +386,10 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     M_bcFlags( bcFlags ),
     M_prefix( p )
 {
+    M_mu = boost::make_shared<property_type>( M_Ph->element(mu, "mu") );
+    M_alpha = boost::make_shared<property_type>( M_Ph->element(alpha, "alpha") );
+    M_rho = boost::make_shared<property_type>( M_Ph->element(rho, "rho") );
+
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
@@ -461,7 +463,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), idv(M_rho)*idt(p)*id(q)/idv(M_mu) );
+        m += integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
         M_mass->close();
         if ( boption( "blockns.pmm.diag" ) )
         {
@@ -520,7 +522,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::update( sparse_matrix_ptrt
     if ( type() == PCD || type() == PCD_ACCELERATION )
     {
         tic();
-        pcdOp->update( expr_b, g, M_mu, M_rho, M_alpha, hasConvection, tn, tn1 );
+        pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
         toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
     toc( "Preconditioner::update", FLAGS_v > 0 );
