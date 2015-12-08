@@ -172,7 +172,7 @@ template< typename MeshType, int Order >
 void
 HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    //const vector_ptrtype& X = data.initialSolution();
+    //const vector_ptrtype& X = data.currentSolution();
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();

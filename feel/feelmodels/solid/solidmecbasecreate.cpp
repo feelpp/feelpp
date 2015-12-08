@@ -17,15 +17,15 @@ namespace FeelModels
 {
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type(__prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
+    super_type( prefix, worldComm, subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
-    M_mechanicalProperties( new mechanicalproperties_type( __prefix ) )
+    M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsSolve.data";
@@ -48,6 +48,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const&
     boost::replace_all( res, "$solid_tag", solidTag );
     return res;
 }
+
 // add members instatantiations need by static function expandStringFromSpec
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
@@ -344,7 +345,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
     std::string prefix1dreduced = prefixvm(this->prefix(),"1dreduced");
 
     std::string modelMeshRestartFile = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
-    std::string smpath = (fs::path( this->appliRepository() ) / fs::path( modelMeshRestartFile)).string();
+    std::string smpath = (fs::path( this->rootRepository() ) / fs::path( modelMeshRestartFile)).string();
 
     if (this->doRestart())
     {
@@ -367,17 +368,17 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
         {
             this->log("SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile" );
             std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
-            std::string path = this->appliRepository();
+            std::string path = this->rootRepository();
             std::string mshfile = path + "/" + prefix1dreduced + ".msh";
             this->setMshfileStr(mshfile);
 
             fs::path curPath=fs::current_path();
             bool hasChangedRep=false;
-            if ( curPath != fs::path(this->appliRepository()) )
+            if ( curPath != fs::path(this->rootRepository()) )
             {
-                this->log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
+                this->log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ this->rootRepository() );
                 bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
+                Environment::changeRepository( _directory=boost::format(this->rootRepository()), _subdir=false );
             }
 
             gmsh_ptrtype geodesc = geo( _filename=geofile,
@@ -592,7 +593,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                       _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_timeStepNewmark->setfileFormat( myFileFormat );
-    M_timeStepNewmark->setPathSave( (fs::path(this->appliRepository()) /
+    M_timeStepNewmark->setPathSave( (fs::path(this->rootRepository()) /
                                           fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
     if ( M_useDisplacementPressureFormulation )
@@ -604,7 +605,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                                 _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                 _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
         M_savetsPressure->setfileFormat( myFileFormat );
-        M_savetsPressure->setPathSave( (fs::path(this->appliRepository()) /
+        M_savetsPressure->setPathSave( (fs::path(this->rootRepository()) /
                                         fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
     }
 
@@ -637,7 +638,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
                                           _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
                                           _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
-    M_newmark_displ_1dReduced->setPathSave( (fs::path(this->appliRepository()) /
+    M_newmark_displ_1dReduced->setPathSave( (fs::path(this->rootRepository()) /
                                              fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
 
     this->log("SolidMechanics","createTimeDiscretisation1dReduced", "finish" );
@@ -679,7 +680,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
             auto opLagP1 = lagrangeP1(_space=Xh_create_ho,
                                       _backend=M_backend,
                                       //_worldscomm=this->localNonCompositeWorldsComm(),
-                                      _path=this->appliRepository(),
+                                      _path=this->rootRepository(),
                                       _prefix=this->prefix(),
                                       _rebuild=!this->doRestart(),
                                       _parallel=doLagP1parallel );
