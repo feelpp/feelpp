@@ -258,10 +258,10 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
 
     G->close();
 
-    if ( std::abs( M_alpha ) > 1e-15 )
+    auto alphaMax = normLinf( _range=elements(M_Qh->mesh()), _expr=idv(M_alpha), _pset=_Q<5>() );
+    if ( alphaMax.value() > 1e-15 )
     {
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
-        // G->addMatrix( M_alpha, M_mass );
         conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)*idt(p)*id(q) );
     }
 
