@@ -34,7 +34,7 @@
 namespace Feel
 {
 
-template<typename space_type, typename PropertiesSpaceType = Pdh_type<typename SpaceType::mesh_type,0>>
+template<typename space_type, typename PropertiesSpaceType = Pdh_type<typename space_type::mesh_type,0>>
 class OperatorPCD : public OperatorBase<typename space_type::value_type>
 {
     typedef OperatorBase<typename space_type::value_type> super;
