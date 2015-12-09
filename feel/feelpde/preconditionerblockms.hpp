@@ -74,9 +74,13 @@ public:
     typedef FunctionSpace<mesh_type, bases< lag_v_type >> lag_v_space_type;
     typedef boost::shared_ptr<lag_v_space_type> lag_v_space_ptrtype;
 
+    // Potential
     typedef typename potential_space_type::element_type potential_element_type;
     typedef typename lagrange_space_type::element_type lagrange_element_type;
     typedef typename coef_space_type::element_type element_coef_type;
+
+    // Grad operator
+    typedef Grad_t<lagrange_space_type, potential_space_type> grad_type;
 
     typedef typename space_type::value_type value_type;
 
@@ -90,6 +94,16 @@ public:
 
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
+
+    /// Forms type
+    typedef typename Feel::meta::LinearForm<potential_space_type>::type form1_potential_type;
+    typedef typename Feel::meta::BilinearForm<potential_space_type, potential_space_type>::type form2_potential_type;
+
+    typedef typename Feel::meta::LinearForm<lagrange_space_type>::type form1_lagrange_type;
+    typedef typename Feel::meta::BilinearForm<lagrange_space_type, lagrange_space_type>::type form2_lagrange_type;
+    
+    typedef typename Feel::meta::LinearForm<lag_v_space_type>::type form1_lag_v_type;
+    typedef typename Feel::meta::BilinearForm<lag_v_space_type, lag_v_space_type>::type form2_lag_v_type;
 
     /**
      * \param t Kind of prec (Simple or AFP)
@@ -213,10 +227,31 @@ private:
     mutable vector_ptrtype M_ozz;
     mutable vector_ptrtype M_zoz;
     mutable vector_ptrtype M_zzo;
+    
+    lagrange_element_type X;
+    lagrange_element_type Y;
+    lagrange_element_type Z;
+    mutable vector_ptrtype M_X;
+    mutable vector_ptrtype M_Y;
+    mutable vector_ptrtype M_Z;
     lagrange_element_type phi;
 
     pc_as_ptrtype M_pcAs;
+    grad_type M_grad;
+#if 0
+    form2_potential_type f2A;
+    form1_potential_type f1A;
 
+    form2_lagrange_type f2Q;
+    form2_lagrange_type f2L;
+    form2_lagrange_type f2B;
+    form1_lagrange_type f1Q;
+    form1_lagrange_type f1B;
+    form1_lagrange_type f1LQ;
+    
+    form2_lag_v_type a_alpha;
+    form1_lag_v_type b_alpha;
+#endif
 };
 
     template < typename space_type, typename coef_space_type >
@@ -256,6 +291,12 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
         M_ozz(M_backend->newVector( M_Vh )),
         M_zoz(M_backend->newVector( M_Vh )),
         M_zzo(M_backend->newVector( M_Vh )),
+        X(M_Qh, "X"),
+        Y(M_Qh, "Y"),
+        Z(M_Qh, "Z"),
+        M_X(M_backend->newVector( M_Qh )),
+        M_Y(M_backend->newVector( M_Qh )),
+        M_Z(M_backend->newVector( M_Qh )),
         phi(M_Qh, "phi")
 {
     tic();
@@ -302,6 +343,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
     }
 
     /* Initialize the blockAS prec */
+    LOG(INFO) << soption(_name="pc-type",_prefix=M_prefix_11) << "\t" << M_prefix_11 << "\n";
     if(soption(_name="pc-type",_prefix=M_prefix_11) == "AS")
     {
         M_pcAs = blockas(_space=M_Xh,
@@ -310,6 +352,59 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
                          _bc = M_model.boundaryConditions()//,_type=soption("blockms.11.as-type")
                         );
     }
+    else if(soption(_name="pc-type", _prefix=M_prefix_11) == "ams")
+#if FEELPP_DIM == 3
+    {
+        M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
+        //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
+        M_grad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
+        if(boption(M_prefix_11+".threshold"))
+        {
+            std::cout << "Threshold ...\n";
+            M_grad.matPtr()->threshold();
+        }
+
+        //M_P = pi_curl.matPtr();
+        //M_C = M_grad.matPtr();
+        auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
+                                   _backend=backend(_name=M_prefix_11),
+                                   _prefix=M_prefix_11,
+                                   _matrix=M_11
+                                   );
+        prec->setMatrix(M_11);
+        prec->attachAuxiliarySparseMatrix("G",M_grad.matPtr());
+        if(boption(M_prefix_11+".useEdge"))
+        {
+            LOG(INFO) << "[ AMS ] : using SetConstantEdgeVector \n";
+        	ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
+        	zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
+        	zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        	*M_ozz = ozz; M_ozz->close();
+        	*M_zoz = zoz; M_zoz->close();
+        	*M_zzo = zzo; M_zzo->close();
+
+        	prec->attachAuxiliaryVector("Px",M_ozz);
+        	prec->attachAuxiliaryVector("Py",M_zoz);
+        	prec->attachAuxiliaryVector("Pz",M_zzo);
+        }
+        else
+        {
+            LOG(INFO) << "[ AMS ] : using SetCoordinates \n";
+            X.on(_range=elements(M_Vh->mesh()),_expr=Px());
+            Y.on(_range=elements(M_Vh->mesh()),_expr=Py());
+            Z.on(_range=elements(M_Vh->mesh()),_expr=Pz());
+            *M_X = X; M_X->close();
+            *M_Y = Y; M_Y->close();
+            *M_Z = Z; M_Z->close();
+            prec->attachAuxiliaryVector("X",M_X);
+            prec->attachAuxiliaryVector("Y",M_Y);
+            prec->attachAuxiliaryVector("Z",M_Z);
+        }
+        //M_11Op->setPc( prec );
+    }
+#else
+    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
+#endif
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 
@@ -335,7 +430,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
 
     M_11->zero();
     A->updateSubMatrix( M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 %
-    M_11->addMatrix(1.0,M_mass);                           // A-k^2 M + M = A+(1-k^2) M
+    M_11->addMatrix(doption("parameters.e"),M_mass);                           // A-k^2 M + M = A+(1-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_dirichlet_u )
@@ -359,34 +454,17 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
         M_pcAs->update(M_11, M_L, M_hatL, M_Q);
         M_11Op->setPc( M_pcAs );
     }
-    else if(soption(M_prefix_11+".pc-type") == "ams")
+    else if(soption(_name="pc-type",_prefix=M_prefix_11) == "ams")
 #if FEELPP_DIM == 3
     {
-        M_Qh3 = lag_v_space_type::New( M_Vh->mesh());
-        // Create the interpolation and keep only the matrix
-        //auto pi_curl = I(_domainSpace=M_Qh3, _imageSpace=M_Vh);
-        auto Igrad   = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
-
-        //M_P = pi_curl.matPtr();
-        //M_C = Igrad.matPtr();
-        ozz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
-        zoz.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
-        zzo.on(_range=elements(M_Vh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-        *M_ozz = ozz; M_ozz->close();
-        *M_zoz = zoz; M_zoz->close();
-        *M_zzo = zzo; M_zzo->close();
-        auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                   _backend=backend(_name=M_prefix_11),
-                                   _prefix=M_prefix_11,
-                                   _matrix=M_11
-                                   );
-        prec->setMatrix(M_11);
-
-        prec->attachAuxiliarySparseMatrix("G",Igrad.matPtr());
-        prec->attachAuxiliaryVector("Px",M_ozz);
-        prec->attachAuxiliaryVector("Py",M_zoz);
-        prec->attachAuxiliaryVector("Pz",M_zzo);
-        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11)){
+        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
+        {
+            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
+                                       _backend=backend(_name=M_prefix_11),
+                                       _prefix=M_prefix_11,
+                                       _matrix=M_11
+                                       );
+            prec->setMatrix(M_11);
             auto _u = M_Qh3->element("_u");
             auto a_alpha = form2(_test=M_Qh3, _trial=M_Qh3);
             auto b_alpha = form1(_test=M_Qh3);
@@ -398,12 +476,14 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
             {
                 a_alpha += on(_range=markedfaces(M_Qh3->mesh(),it.first),_element=_u, _expr=it.second, _rhs=b_alpha, _type="elimination_symmetric");
             }
+            double min = M_er.min();
+            double max = M_er.max();
+            if( min == 0. && max == 0.)
+            prec->attachAuxiliarySparseMatrix("a_beta",NULL);
+            else
             prec->attachAuxiliarySparseMatrix("a_beta",M_L);
             prec->attachAuxiliarySparseMatrix("a_alpha",a_alpha.matrixPtr());
         }
-
-        //M_11Op->setPc( prec );
-
     }
 #else
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";

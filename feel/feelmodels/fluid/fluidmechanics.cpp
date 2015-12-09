@@ -39,13 +39,13 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type( _prefix, _buildMesh,_worldComm, _subPrefix,_appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -63,7 +63,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
@@ -72,11 +72,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix, bool _buildMesh,
-                                         WorldComm const& _worldComm, std::string _subPrefix,
-                                         std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         std::string const& rootRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
 
 }
 
@@ -109,16 +109,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerSlipBC();
     this->clearMarkerPressureBC();
     this->M_fluidOutletsBCType.clear();
-
-    // change path
-    fs::path curPath=fs::current_path();
-    bool hasChangedRep=false;
-    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
-    {
-        this->log("FluidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
-        bool hasChangedRep=true;
-        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
-    }
 
     // boundary conditions
     this->M_isMoveDomain = false;
@@ -290,16 +280,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", marker(d) );
         for (std::string const& currentMarker : markerList )
         {
-            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet )) );
+            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->directoryLibSymbExpr() )) );
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
         }
     }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
-
-    // go back to previous repository
-    if ( hasChangedRep )
-        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
 }
 
@@ -317,6 +303,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
             if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
             if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
+            if ( o == "pid" || o == "all" ) this->M_doExportPid = true;
         }
 }
 
@@ -475,11 +462,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         else
             myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
 
-        if ( this->pdeType() == "Stokes" )
+        if ( this->modelName() == "Stokes" )
         {
             myPrecBlockNs->update( mat );
         }
-        else if ( this->pdeType() == "Oseen" )
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
             auto BetaU = this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
@@ -496,7 +483,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
             }
         }
-        else if ( this->pdeType() == "Navier-Stokes" )
+        else if ( this->modelName() == "Navier-Stokes" )
         {
             auto U = this->functionSpace()->element();
             // copy vector values in fluid element
@@ -526,20 +513,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
-    M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannVectorial.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannTensor2.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        bcDirComp.second.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
         boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
-        myPrecBlockNs->setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        myPrecBlockNs->setParameterValues( paramValues );
     }
 
     super_type::solve();

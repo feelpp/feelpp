@@ -22,3 +22,6 @@ feelpp_add_application( application_fsi_3d SRCS main_fsi.cpp
   DEFS FEELPP_DIM=3
   )
 
+install(TARGETS feelpp_application_fsi_2d feelpp_application_fsi_3d 
+        RUNTIME DESTINATION bin/ 
+        COMPONENT ModelApplications )

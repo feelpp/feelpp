@@ -95,7 +95,7 @@ public:
     GinacEx() : super(){}
 
     explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc, std::string filename="",
-                      WorldComm const& world=Environment::worldComm() )
+                      WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
         :
         super( syms ),
         M_fun( fun ),
@@ -111,7 +111,7 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary

@@ -11,7 +11,7 @@ Provided
 # Regularized problem
 
 The AMS preconditioner internally solve a regularized problem (block 11).
-This it the one that *crash* in some configuration.
+This it the one that *crash* in some configuration: CG said or the matrix, or the prec is not definite
 I reproduce here a simulation where the regularized simulation **can** *crash*
 
 ##### Equation
@@ -57,4 +57,36 @@ It is not the case with `torus_quart_NotWorking.msh` which produce, for various 
 - unpreconditioned norm -> diverging due to indefinite preconditioner
 - preconditioned norm -> diverging due to indefinite or negative definite matrix 
 - natural -> diverging due to indefinite preconditioner
+
+##### Remarks and ongoing work
+- The use of LU as preconditionner + CG as solver is a bad choice. Indeed, the application of LU preconditioner on our symmetric matrix doesn't give any guarantee on the symmetry of the resulting preconditioned matrix. As the CG solver is designed for symmetric matrices, the use of the combination LU + CG can fail. **Proposed preconditioner/solver** : 
+ - LU + Pre-only, 
+ - Cholesky + CG 
+ - eventually use LU with BiCGStab instead of CG to deal with non symmetric matrices.
+- Proposed work/tests : 
+  - Check that the problem is coercive for all `b > 0` (see Bebendorf paper for example)
+  - Check that the product `op( curl curl )[Hcurl] x op ( grad )[H1]` is zero to ensure the operators are not buggy
+  **Working Mesh: **
+  ```sh
+  >> icurl; igrad; should_be_null=var_icurl*var_igrad;
+  >> max(max(should_be_null))
+  ans =
+   (1,1)      2.7951e-11
+  >> min(min(should_be_null))
+   ans =
+   (1,1)     -2.8096e-11
+  ```
+  **NOT Working Mesh: **
+  ```sh
+   >> icurl_nw; igrad_nw; should_be_null=var_icurl*var_igrad;
+   >> max(max(should_be_null))
+  ans =
+   (1,1)       0.0684
+  >> min(min(should_be_null))
+  ans =
+   (1,1)      -0.0684
+  ```
+  - Compute the coercivity constant from the solve of the eigenproblem, and check that this constant doesn't depend of the mesh size `h`(should converge to a constant with mesh sufficiently fine)
+
+
 
