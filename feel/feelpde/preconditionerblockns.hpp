@@ -696,7 +696,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockns<typename parameter::va
                                    typename parameter::value_type<Args, tag::properties_space>::type::element_type>::ptrtype pblockns_t;
     typedef typename meta::blockns<typename parameter::value_type<Args, tag::space>::type::element_type,
                                    typename parameter::value_type<Args, tag::properties_space>::type::element_type>::type blockns_t;
-    pblockns_t p( new blockns_t( type, space, bc, prefix, matrix, mu, rho, alpha ) );
+    pblockns_t p( new blockns_t( type, space, properties_space, bc, prefix, matrix, mu, rho, alpha ) );
     return p;
 } // btcpd
 } // Feel
