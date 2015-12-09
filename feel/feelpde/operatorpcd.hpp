@@ -230,8 +230,11 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
     double time_step = tn1-tn;
     if ( hasConvection )
         conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
-    auto diff_c = M_accel?idv(*M_mu)*time_step:idv(*M_mu);
-    conv += integrate( _range=elements(M_Qh->mesh()), _expr=diff_c*gradt(p)*trans(grad(q)));
+    // auto diff_c = M_accel?idv(*M_mu)*cst(time_step):idv(*M_mu);
+    if(M_accel)
+        conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*time_step*gradt(p)*trans(grad(q)));
+    else
+        conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*gradt(p)*trans(grad(q)));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
