@@ -669,7 +669,7 @@ namespace FeelModels
             double mpiTimerAssembly = this->application()->timerTool("Solve").elapsed("algebraic-assembly");
             if (this->application()->verboseSolverTimer())
                 Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                      (boost::format("finish assembling in %1% s") % mpiTimerAssembly ).str(),
+                                      (boost::format("picard iteration[%1%] finish assembling in %2% s") %cptIteration % mpiTimerAssembly ).str(),
                                       this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
 
             this->application()->timerTool("Solve").restart();
@@ -717,7 +717,7 @@ namespace FeelModels
             //this->application()->timerTool("Solve").setAdditionalParameter("ksp-niter",int(solveStat.nIterations()) );
             if (this->application()->verboseSolverTimer())
                 Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                      (boost::format("finish sub solve in %1% s")%tElapsed ).str(),
+                                      (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tElapsed ).str(),
                                       this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
 
             if ( !useConvergenceAlgebraic )
