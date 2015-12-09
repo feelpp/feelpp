@@ -297,7 +297,7 @@ template < typename SpaceType, typename PropertiesSpaceType >
 PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std::string t,
                                                           space_ptrtype Xh,
                                                           BoundaryConditions bcFlags,
-                                                          std::string const& p,
+                                                          std::string const& s,
                                                           sparse_matrix_ptrtype A,
                                                           double mu, double rho, double alpha )
     :
@@ -326,7 +326,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
     M_bcFlags( bcFlags ),
-    M_prefix( p )
+    M_prefix( s )
 {
     M_mu = boost::make_shared<property_type>( M_Ph->element(cst(mu), "mu") );
     M_alpha = boost::make_shared<property_type>( M_Ph->element(cst(alpha), "alpha") );
@@ -384,7 +384,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::PreconditionerBlockNS( std
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
     M_bcFlags( bcFlags ),
-    M_prefix( p )
+    M_prefix( s )
 {
     M_mu = boost::make_shared<property_type>( M_Ph->element(mu, "mu") );
     M_alpha = boost::make_shared<property_type>( M_Ph->element(alpha, "alpha") );
