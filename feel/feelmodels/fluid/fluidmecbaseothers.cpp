@@ -86,6 +86,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
     if (M_doExportWallShearStress) doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
     if (M_doExportViscosity) doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
+    if (M_doExportPid) doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -96,9 +97,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository()
+           << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- pde name  : " << M_pdeType
+           << "\n     -- pde name  : " << M_modelName
            << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
@@ -179,7 +180,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- rowstart : " << this->rowStartInMatrix()
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
-           << "\n     -- solver : " << M_pdeSolver;
+           << "\n     -- solver : " << M_solverName;
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -198,78 +199,80 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 {
     // if pde change -> force to rebuild all algebraic data at next solve
-    if ( __type != M_pdeType )
+    if ( type != M_modelName )
         this->setNeedToRebuildCstPart(true);
 
-    if ( __type == "Stokes" )
+    if ( type == "Stokes" )
     {
-        M_pdeType="Stokes";
-        M_pdeSolver="LinearSystem";
+        M_modelName="Stokes";
+        M_solverName="LinearSystem";
     }
-    else if ( __type == "Oseen" )
+    else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
     {
-        M_pdeType="Oseen";
-        M_pdeSolver="LinearSystem";
+        M_modelName="Navier-Stokes";
+        M_solverName="Oseen";
     }
-    else if ( __type == "Navier-Stokes" )
+    else if ( type == "Navier-Stokes" )
     {
-        M_pdeType="Navier-Stokes";
-        M_pdeSolver="Newton";
+        M_modelName="Navier-Stokes";
+        M_solverName="Newton";
     }
     else
-        CHECK( false ) << "invalid pdeType "<< __type << "\n";
+        CHECK( false ) << "invalid modelName "<< type << "\n";
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType() const
+std::string const&
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::modelName() const
 {
-    return M_pdeType;
+    return M_modelName;
 }
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
     // if solver change -> force to rebuild all algebraic data at next solve
-    if ( __type != M_pdeSolver )
+    if ( type != M_solverName )
         this->setNeedToRebuildCstPart(true);
 
-    if ( __type == "LinearSystem" )
-        M_pdeSolver="LinearSystem";
-    else if ( __type == "PtFixe" )
-        M_pdeSolver="PtFixe";
-    else if ( __type == "Newton" )
-        M_pdeSolver="Newton";
+    if ( type == "LinearSystem" )
+        M_solverName="LinearSystem";
+    else if ( type == "Oseen" )
+        M_solverName="Oseen";
+    else if ( type == "Picard" || type == "FixPoint" )
+        M_solverName="Picard";
+    else if ( type == "Newton" )
+        M_solverName="Newton";
     else
-        CHECK( false ) << "invalid pdeSolver " << __type << "\n";
+        CHECK( false ) << "invalid solver name " << type << "\n";
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver() const
+std::string const&
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solverName() const
 {
-    return M_pdeSolver;
+    return M_solverName;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType( std::string const& type )
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
-    if ( __type != this->densityViscosityModel()->dynamicViscosityLaw() )
-        this->setNeedToRebuildCstPart(true);
+    if ( type != this->densityViscosityModel()->dynamicViscosityLaw() )
+        this->setNeedToRebuildCstPart( true );
 
-    this->densityViscosityModel()->setDynamicViscosityLaw( __type );
+    this->densityViscosityModel()->setDynamicViscosityLaw( type );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -371,13 +374,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 #endif
     //M_exporter->step( time )->setMesh( M_mesh );
     bool hasFieldToExport = false;
+    if ( M_doExportPid )
+    {
+        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
     if ( M_doExportVelocity )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
                                        M_Solution->template element<0>() );
         hasFieldToExport = true;
-        this->log("FluidMechanics","exportResults", "velocity done" );
     }
     if ( M_doExportPressure )
     {
@@ -474,6 +481,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     //    this->meshALE()->revertReferenceMesh();
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
     bool hasFieldToExport = false;
+    if ( M_doExportPid )
+    {
+        M_exporter_ho->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
     if ( M_doExportVelocity )
     {
         M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
@@ -593,18 +605,122 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    std::set<std::string> markers;
-    if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
-        for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markers.insert( o );
-    this->postProcessMeasures().setParameter( "time", time );
-    for ( std::string marker : markers )
+    bool hasMeasure = false;
+
+    // forces (lift,drag) measures
+    for ( auto const& ppForces : M_postProcessMeasuresForces )
     {
-        auto measuredForce = this->computeForce( marker );
-        this->postProcessMeasures().setMeasure( marker+"_drag", measuredForce(0,0) );
-        this->postProcessMeasures().setMeasure( marker+"_lift", measuredForce(1,0) );
+        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
+        auto measuredForce = this->computeForce( ppForces.meshMarkers().front() );
+        std::string name = ppForces.name();
+        this->postProcessMeasuresIO().setMeasure( "drag_"+name, measuredForce(0,0) );
+        this->postProcessMeasuresIO().setMeasure( "lift_"+name, measuredForce(1,0) );
+        hasMeasure = true;
     }
-    this->postProcessMeasures().exportMeasures();
+    // flow rate measures
+    for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
+    {
+        double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
+        this->postProcessMeasuresIO().setMeasure("flowrate_"+ppFlowRate.name(),valFlowRate);
+        hasMeasure = true;
+    }
+
+    auto itFindMeasures = this->modelProperties().postProcess().find("Measures");
+    if ( itFindMeasures != this->modelProperties().postProcess().end() )
+    {
+        bool hasMeasuresPressure = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "Pressure" ) != itFindMeasures->second.end();
+        bool hasMeasuresVelocityDivergence = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "VelocityDivergence" ) != itFindMeasures->second.end();
+        double area = 0;
+        if ( hasMeasuresPressure || hasMeasuresVelocityDivergence )
+            area = this->computeMeshArea();
+        if ( hasMeasuresPressure )
+        {
+            double pressureSum = this->computePressureSum();
+            double pressureMean = pressureSum/area;
+            this->postProcessMeasuresIO().setMeasure("pressure_sum",pressureSum);
+            this->postProcessMeasuresIO().setMeasure("pressure_mean",pressureMean);
+            hasMeasure = true;
+        }
+        if ( hasMeasuresVelocityDivergence )
+        {
+            double velocityDivergenceSum = this->computeVelocityDivergenceSum();
+            double velocityDivergenceMean = velocityDivergenceSum/area;
+            double velocityDivergenceNormL2 = this->computeVelocityDivergenceNormL2();
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",velocityDivergenceNormL2);
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",velocityDivergenceMean);
+            this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",velocityDivergenceNormL2);
+            hasMeasure = true;
+        }
+    }
+
+
+    // point measures
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        if ( !ptPos.hasExpression() )
+            continue;
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "velocity" )
+            {
+                std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("velocity",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextVelocity->replace( ptIdInCtx, ptCoord );
+            }
+            else if ( field == "pressure" )
+            {
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("pressure",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextPressure->replace( ptIdInCtx, ptCoord );
+            }
+        }
+    }
+    if ( M_postProcessMeasuresContextVelocity && this->postProcessMeasuresEvaluatorContext().has("velocity") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextVelocity,
+                                                _expr=idv(this->fieldVelocity()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextVelocity->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "velocity", ctxId ) ) continue;
+            std::string const& ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "velocity",ctxId );
+            std::vector<double> vecValues = { evalAtNodes( ctxId*nDim ) };
+            if ( nDim > 1 ) vecValues.push_back( evalAtNodes( ctxId*nDim+1 ) );
+            if ( nDim > 2 ) vecValues.push_back( evalAtNodes( ctxId*nDim+2 ) );
+            this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextVelocity->node( ctxId ) << "\n";
+            hasMeasure = true;
+        }
+    }
+    if ( M_postProcessMeasuresContextPressure && this->postProcessMeasuresEvaluatorContext().has("pressure") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextPressure,
+                                                _expr=idv(this->fieldPressure()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextPressure->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "pressure", ctxId ) ) continue;
+            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "pressure",ctxId );
+            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
+            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextPressure->node( ctxId ) << "\n";
+            hasMeasure = true;
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
 }
 
 
@@ -626,10 +742,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         this->log("FluidMechanics","solve", "start by solve stokes stationary" );
 
         std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
-        std::string savePdeType = this->pdeType();
+        std::string savePdeType = this->modelName();
         // prepare Stokes-stationary config
         this->stressTensorLawType( "newtonian" );
-        this->pdeType( "Stokes" );
+        this->setModelName( "Stokes" );
         this->setStationary( true );
         // possibility to config a specific time which appear in bc
         double timeUsed = doption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.time-value-used-in-bc");
@@ -642,7 +758,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
             this->exportResults(this->timeInitial());
         // revert parameters
         this->stressTensorLawType( saveStressTensorLawType );
-        this->pdeType( savePdeType );
+        this->setModelName( savePdeType );
         this->setStationary( false );
 
         this->initTimeStep();
@@ -660,34 +776,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         this->stressTensorLawType( saveStressTensorLawType );
     }
 
-
-    //--------------------------------------------------
-    // solution vector
-    //auto Uvec = this->backend()->newBlockVector(_block=M_blockVectorSolution/*M_blockMonolitic*/);
     //--------------------------------------------------
     // run solver
-    if (M_pdeSolver=="LinearSystem")
-    {
-        M_algebraicFactory->linearSolver(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-    else if ( M_pdeSolver == "PtFixe")
-    {
-        M_algebraicFactory->AlgoPtFixe(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-    else if ( M_pdeSolver == "Newton")
-    {
-        //Uvec->close(); //????????
-        M_algebraicFactory->AlgoNewton2(this->blockVectorSolution().vector()/*Uvec*/);
-    }
-
-    //Uvec->close();
-
-    //--------------------------------------------------
-    //get solution compute with the numerical method
-    //*M_Solution = *Uvec;
-    //M_blockVectorSolution.localize(Uvec);
+    std::string algebraicSolver = M_solverName;
+    if ( algebraicSolver == "Oseen" )
+        algebraicSolver = "LinearSystem";
+    M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vector() );
+    // update sub vector
     M_blockVectorSolution.localize();
 
+    //--------------------------------------------------
     // update windkessel solution ( todo put fluidOutletWindkesselPressureDistal and Proximal in blockVectorSolution )
     int cptBlock=1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -732,20 +830,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
     {
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    if ( M_pdeType == "Stokes" || M_pdeType == "Oseen" )
-        updateOseen( data );
-#if 0
-    else if ( M_pdeType == "Navier-Stokes")
-        updatePtFixe(X,A,F,_buildCstPart,_doClose,_doBCStrongDirichlet);
-#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -805,7 +889,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
         if ( doWriteOnDisk )
         {
-            std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+            std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
             std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
             file.precision( 8 );
             file.setf( std::ios::scientific );
@@ -858,12 +942,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
          previousTimeOrder!=currentTimeOrder &&
          this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
-        if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
+        if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
             this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
             M_algebraicFactory->rebuildCstJacobian(M_Solution);
         }
-        else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
+        else if (this->solverName() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
             this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
@@ -1156,23 +1240,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
 {
     using namespace Feel::vf;
 
-    auto U1 = M_Xh->element();U1 = *X1;
+    auto U1 = this->functionSpace()->element();U1 = *Unew;
     auto u1 = U1.template element<0>();
     auto p1 = U1.template element<1>();
 
-    auto U2 = M_Xh->element();U2 = *X2;
+    auto U2 = this->functionSpace()->element();U2 = *Uold;
     auto u2 = U2.template element<0>();
     auto p2 = U2.template element<1>();
 
-    double err_u = integrate(_range=elements(M_Xh->mesh()),
-                             _expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
+    double err_u = integrate(_range=elements(this->mesh()),
+                             //_expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
+                             _expr= inner(idv(u1)-idv(u2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
-    double err_p = integrate(_range=elements(M_Xh->mesh()),
-                             _expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
+    double err_p = integrate(_range=elements(this->mesh()),
+                             //_expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
+                             _expr= inner(idv(p1)-idv(p2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
 
     return std::sqrt(err_u+err_p);
@@ -1278,49 +1364,33 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FluidMechanicsBase< ConvexType,BasisVelocityType,
-                    BasisPressureType,BasisDVType,UsePeriodicity >::savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt,
-                                                                                         bool extrapolate)
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
 {
-    auto it = __listPt.begin();
-    auto en = __listPt.end();
-
-    for ( ; it!=en ; ++it)
-    {
-        auto nameFile = prefixvm(this->prefix(),"eval-pressure-")+boost::get<0>(*it)+".data";
-        if (M_nameFilesPressureAtPoints.find(nameFile)==M_nameFilesPressureAtPoints.end())
-        {
-            if (!this->doRestart() && this->worldComm().globalRank()==this->worldComm().masterRank())
-            {
-                //ATTENTION EFFACER LES DONNEES REDONTANTE EN CAS DE RESTART
-                std::ofstream newfilePres(nameFile.c_str(), std::ios::out | std::ios::trunc);
-                newfilePres.close();
-                M_nameFilesPressureAtPoints.insert(nameFile);
-            }
-        }
-        auto const pressureOnPt = this->fieldVelocityPressurePtr()->template element<1>()(boost::get<1>(*it),extrapolate);
-
-        if (this->worldComm().globalRank()==this->worldComm().masterRank())
-        {
-            std::ofstream filePres(nameFile.c_str(), std::ios::out | std::ios::app);
-            filePres << this->time();
-            //for (uint16_type i = 0; i<mesh_type::nRealDim;++i)
-            uint16_type c = 0; //comp
-            filePres << " " << pressureOnPt(c,0,0);
-            filePres << "\n";
-            filePres.close();
-        }
-    }
-
+    return this->computeMeshArea( std::list<std::string>( { marker } ) );
 }
 
-//---------------------------------------------------------------------------------------------------------//
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
+{
+    double area = 0;
+    if ( markers.empty() || markers.front().empty() )
+        area = integrate(_range=elements(this->mesh()),
+                         _expr=cst(1.),
+                         _geomap=this->geomap() ).evaluate()(0,0);
+    else
+        area = integrate(_range=markedelements(this->mesh(),markers),
+                         _expr=cst(1.),
+                         _geomap=this->geomap() ).evaluate()(0,0);
+    return area;
+}
+
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 Eigen::Matrix<typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::value_type,
               FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nDim,1>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
     using namespace Feel::vf;
 
@@ -1347,17 +1417,46 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerNa
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string const& marker)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
+{
+    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
+    auto const& u = this->fieldVelocity();
+    double res = integrate(_range=markedfaces(this->mesh(),markers),
+                                 _expr= inner(idv(u),N()),
+                                 _geomap=this->geomap() ).evaluate()(0,0);
+    if ( !useExteriorNormal )
+        res = -res;
 
-    double res = integrate(_range=markedfaces(this->mesh(),marker),
-                           _expr= inner(idv(u),N()),
+    return res;
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureSum() const
+{
+    auto const& p = this->fieldPressure();
+    double res = integrate(_range=elements(this->mesh()),
+                           _expr= idv(p),
                            _geomap=this->geomap() ).evaluate()(0,0);
+    return res;
+}
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureMean() const
+{
+    double area = this->computeMeshArea();
+    double res = (1./area)*this->computePressureSum();
     return res;
 }
 
@@ -1365,19 +1464,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::string const& marke
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
 {
-    using namespace Feel::vf;
+    auto const& u = this->fieldVelocity();
+    double res = integrate(_range=elements(this->mesh()),
+                           _expr= divv(u),
+                           _geomap=this->geomap() ).evaluate()(0,0);
+    return res;
+}
 
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto p = solFluid->template element<1>();
-
-    double area = integrate(_range=elements(this->mesh()),
-                            _expr=cst(1.) ).evaluate()(0,0);
-    double res = (1./area)*integrate(_range=elements(this->mesh()),
-                                     _expr= idv(p),
-                                     _geomap=this->geomap() ).evaluate()(0,0);
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+double
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceMean() const
+{
+    double area = this->computeMeshArea();
+    double res = (1./area)*this->computeVelocityDivergenceSum();
     return res;
 }
 
@@ -1385,35 +1486,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanPressure()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeanDivergence()
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
+    auto const& u = this->fieldVelocity();
 
-    double area = integrate(_range=elements(this->mesh()),
-                            _expr=cst(1.) ).evaluate()(0,0);
-    double res = (1./area)*integrate(_range=elements(this->mesh()),
-                                     _expr= divv(u),
-                                     _geomap=this->geomap() ).evaluate()(0,0);
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeNormL2Divergence()
-{
-    using namespace Feel::vf;
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-
-    double res = math::sqrt(integrate(_range=elements(this->mesh()),
-                                      _expr= pow(divv(u),2),
-                                      _geomap=this->geomap() ).evaluate()(0,0));
+    double res = math::sqrt( integrate(_range=elements(this->mesh()),
+                                       _expr= pow(divv(u),2),
+                                       _geomap=this->geomap() ).evaluate()(0,0));
     return res;
 }
 
@@ -2028,22 +2109,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 
 }
 
-
-
-
-
-
 //---------------------------------------------------------------------------------------------------------//
-
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                     bool _buildCstPart,
-                                                     bool _doClose, bool _doBCStrongDirichlet ) const
-{}
-
-
 
 
 

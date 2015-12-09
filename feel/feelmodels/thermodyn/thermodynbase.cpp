@@ -14,13 +14,13 @@ namespace FeelModels
 {
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( prefix, worldComm, subPrefix, rootRepository )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsSolve.data";
@@ -136,7 +136,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvec
         // load the field velocity convection from a math expr
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
-            std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/velocity-convection";
+            std::string pathGinacExpr = this->directoryLibSymbExpr() + "/velocity-convection";
             auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
                                         this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
             M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -164,7 +164,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
     double tElpased = this->timerTool("Constructor").stop("createSpaces");
@@ -222,7 +222,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     // load an initial solution from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
     {
-        std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/initial-solution.temperature";
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                             this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         this->fieldTemperature()->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -295,7 +295,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository();
+           << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
            << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );

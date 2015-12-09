@@ -53,18 +53,18 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( std::string _prefix,
-                    bool _buildMesh=true,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string _subPrefix="",
-                    std::string _appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanics( std::string const& prefix,
+                    bool buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanics( self_type const& FM ) = default;
     //___________________________________________________________________________________//
-    static self_ptrtype New( std::string _prefix,
-                             bool _buildMesh=true,
-                             WorldComm const& _worldComm=Environment::worldComm(),
-                             std::string _subPrefix="",
-                             std::string _appliShortRepository=soption(_name="exporter.directory") );
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();

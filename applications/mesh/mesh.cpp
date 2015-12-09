@@ -27,6 +27,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpartition/partitionermetis.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelvf/vf.hpp>
 using namespace Feel;
 
@@ -49,6 +50,12 @@ int main( int argc, char** argv )
     //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
     auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>> );
     toc("loading mesh done",FLAGS_v>0);
+
+    auto Xhd0 = Pdh<0>(mesh);
+    auto measures = Xhd0->element();
+    measures.on(_range=elements(mesh),_expr=vf::meas());
+    double measMin = measures.min();
+    double measMax = measures.max();
 #if 0
     //partition( "metis", mesh, numPartitions );
     PartitionerMetis<decltype(mesh)> metis;
@@ -72,7 +79,7 @@ int main( int argc, char** argv )
         std::cout << "                h max : " << mesh->hMax() << std::endl;
         std::cout << "                h min : " << mesh->hMin() << std::endl;
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
-        std::cout << "              measure : " << mesh->measure() << std::endl;
+        std::cout << "              measure : " << mesh->measure() << "\t" << measMin<<" : " << measMax << std::endl;
 
         std::cout << "Number of Partitions : " << numPartition << std::endl ;
     }

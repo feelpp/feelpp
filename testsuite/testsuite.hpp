@@ -43,6 +43,14 @@
 #include <boost/test/floating_point_comparison.hpp>
 #include <feel/feelcore/environment.hpp>
 
+#if BOOST_VERSION >= 105900
+#define BOOST_MESSAGE(ARG) BOOST_TEST_MESSAGE(ARG)
+#endif
+#if BOOST_VERSION >= 105900
+#define FEELPP_BOOST_GLOBAL_FIXTURE(ARG) BOOST_GLOBAL_FIXTURE(ARG);
+#else
+#define FEELPP_BOOST_GLOBAL_FIXTURE(ARG) BOOST_GLOBAL_FIXTURE(ARG)
+#endif
 
 #define FEELPP_ENVIRONMENT_NO_OPTIONS                                   \
 struct Feelpp {                                                         \
@@ -59,7 +67,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp )
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 #define FEELPP_ENVIRONMENT_WITH_OPTIONS( myabout, myopts)               \
@@ -78,7 +86,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp )
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
 #define FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS( myabout)              \
 struct Feelpp {                                                         \
@@ -96,8 +104,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp )
-
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 
