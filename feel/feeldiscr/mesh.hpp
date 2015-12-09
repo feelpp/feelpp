@@ -2630,9 +2630,7 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 
 
 template<typename MeshType>
-using mesh_t = typename mpl::if_<Feel::is_shared_ptr<MeshType>,
-                                 mpl::identity<typename MeshType::element_type>,
-                                 mpl::identity<MeshType>>::type::type;
+using mesh_t = decay_type<MeshType>;
 
 
 } // Feel
