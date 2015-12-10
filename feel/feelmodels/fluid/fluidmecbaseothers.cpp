@@ -1911,6 +1911,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
 
     if ( !M_couplingFSI_RNG_useInterfaceOperator )
     {
+        if (this->doRestart())
+            this->meshALE()->revertReferenceMesh();
+
         auto const& u = this->fieldVelocity();
         form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=M_couplingFSI_RNG_matrix,
                _rowstart=this->rowStartInMatrix(),
@@ -1919,6 +1922,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
                        _expr=inner(idt(u),id(u)),
                        _geomap=this->geomap() );
         M_couplingFSI_RNG_matrix->close();
+
+        if (this->doRestart())
+            this->meshALE()->revertMovingMesh();
+
         return;
     }
 
