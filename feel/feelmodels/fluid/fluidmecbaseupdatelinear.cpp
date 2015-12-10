@@ -101,6 +101,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                               _rowstart=rowStartInVector );
 
     //--------------------------------------------------------------------------------------------------//
+        // stress tensor sigma : grad(v)
     if ( BuildCstPart )
     {
         this->timerTool("Solve").start();
@@ -130,18 +131,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
         double timeElapsedStressTensor = this->timerTool("Solve").stop();
         this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
-    }
-    //--------------------------------------------------------------------------------------------------//
-    // volume force
-    //if (build_SourceTerm)
-    this->updateSourceTermLinearPDE(F,BuildCstPart);
-
-    if (M_haveSourceAdded && BuildNonCstPart)
-    {
-        myLinearForm +=
-            integrate( _range=elements(mesh),
-                       _expr= trans(idv(*M_SourceAdded))*id(v),
-                       _geomap=this->geomap() );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -199,27 +188,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         } // if ( this->definePressureCstMethod() == "lagrange-multiplier" )
     } // if ( this->definePressureCst() )
 
-
-    //--------------------------------------------------------------------------------------------------//
-    // neumann condition
-    if (build_BoundaryNeumannTerm)
-    {
-        this->updateBCNeumannLinearPDE( F );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    //pressure fix condition
-    if (BuildCstPart && !this->markerPressureBC().empty() )
-    {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
-                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
-                       _geomap=this->geomap() );
-    }
-    if (BuildNonCstPart)
-    {
-        this->updateBCPressureLinearPDE( F );
-    }
     //--------------------------------------------------------------------------------------------------//
     // convection
     if ( this->modelName() == "Navier-Stokes" && build_ConvectiveTerm )
@@ -267,13 +235,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 #endif
     }
 
-    //--------------------------------------------------------------------------------------------------//
 
-    this->updateLinearPDEStabilisation(A,F,_BuildCstPart,A_extended,_BuildExtendedPart);
-
-    //--------------------------------------------------------------------------------------------------//
-
-    this->updateLinearPDEWeakBC(A,F,_BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
     //transients terms
@@ -298,9 +260,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         }
     }
 
-
     //--------------------------------------------------------------------------------------------------//
-
+    // volume force
+    this->updateSourceTermLinearPDE(F,BuildCstPart);
+    // source given by user
+    if ( M_haveSourceAdded && BuildNonCstPart)
+    {
+        myLinearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= trans(idv(*M_SourceAdded))*id(v),
+                       _geomap=this->geomap() );
+    }
+    //--------------------------------------------------------------------------------------------------//
+    // div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
     {
         myLinearForm +=
@@ -327,6 +299,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
     //--------------------------------------------------------------------------------------------------//
 
+    this->updateLinearPDEStabilisation(A,F,_BuildCstPart,A_extended,_BuildExtendedPart);
+
+    //--------------------------------------------------------------------------------------------------//
+    // neumann condition
+    if (build_BoundaryNeumannTerm)
+    {
+        this->updateBCNeumannLinearPDE( F );
+    }
+    //pressure fix condition
+    if (BuildCstPart && !this->markerPressureBC().empty() )
+    {
+        bilinearForm_PatternCoupled +=
+            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
+                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
+                       _geomap=this->geomap() );
+    }
+    if (BuildNonCstPart)
+    {
+        this->updateBCPressureLinearPDE( F );
+    }
+    // others bc
+    this->updateLinearPDEWeakBC(A,F,_BuildCstPart);
+
+    //--------------------------------------------------------------------------------------------------//
     // strong Dirichlet bc
     if ( BuildNonCstPart && _doBCStrongDirichlet)
     {
