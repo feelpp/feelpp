@@ -1909,6 +1909,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
     M_couplingFSI_RNG_matrix = this->backend()->newMatrix(0,0,0,0,this->algebraicFactory()->sparsityMatrixGraph());
 #endif
 
+    if ( !M_couplingFSI_RNG_useInterfaceOperator )
+    {
+        if (this->doRestart())
+            this->meshALE()->revertReferenceMesh();
+
+        auto const& u = this->fieldVelocity();
+        form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=M_couplingFSI_RNG_matrix,
+               _rowstart=this->rowStartInMatrix(),
+               _colstart=this->colStartInMatrix() ) +=
+            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                       _expr=inner(idt(u),id(u)),
+                       _geomap=this->geomap() );
+        M_couplingFSI_RNG_matrix->close();
+
+        if (this->doRestart())
+            this->meshALE()->revertMovingMesh();
+
+        return;
+    }
 
     //-----------------------------------------------------------------//
     // assembly : first version

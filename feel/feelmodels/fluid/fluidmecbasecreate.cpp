@@ -286,8 +286,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
-    double timeElapsedCreateMesh = this->timerTool("Constructor").stop("createMesh");
-    this->log("FluidMechanics","createMesh", (boost::format("finish in %1% s") % timeElapsedCreateMesh).str() );
+    double tElapsed = this->timerTool("Constructor").stop("createMesh");
+    this->log("FluidMechanics","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -390,8 +390,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
     }
 
-    this->timerTool("Constructor").stop("createSpaces");
-    this->log("FluidMechanics","createFunctionSpaces", "finish" );
+    double tElapsed = this->timerTool("Constructor").stop("createSpaces");
+    this->log("FluidMechanics","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -422,8 +422,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
-    this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("FluidMechanics","createTimeDiscretisation", "finish" );
+    double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
+    this->log("FluidMechanics","createTimeDiscretisation", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -458,13 +458,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
                                            this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
                                            this->rootRepositoryWithoutNumProc() ));
+        this->log("FluidMechanics","createALE", "--1--" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
+        this->log("FluidMechanics","createALE", "--2--" );
         // mesh velocity only on moving interface
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
 
-        this->timerTool("Constructor").stop("createALE");
-        this->log("FluidMechanics","createALE", "finish");
+        double tElapsed = this->timerTool("Constructor").stop("createALE");
+        this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );
     }
 #endif
 
@@ -476,10 +478,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcess()
 {
+    this->log("FluidMechanics","createPostProcess", "start" );
     this->timerTool("Constructor").start();
     this->createPostProcessExporters();
     //this->createPostProcessMeasures();
-    this->timerTool("Constructor").stop("createPostProcess");
+    double tElapsed = this->timerTool("Constructor").stop("createPostProcess");
+    this->log("FluidMechanics","createPostProcess", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
