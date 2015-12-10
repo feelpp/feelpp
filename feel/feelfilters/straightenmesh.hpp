@@ -87,6 +87,13 @@ straightenMesh<Mesh<Hypercube<3,1>>>( boost::shared_ptr<Mesh<Hypercube<3,1>>>,
 extern template boost::shared_ptr<Mesh<Simplex<3,2>>>
 straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>, 
                                     WorldComm const& , bool, bool  );
+
+extern template boost::shared_ptr<Mesh<Simplex<3,3>>>
+straightenMesh<Mesh<Simplex<3,3>>>( boost::shared_ptr<Mesh<Simplex<3,3>>>, 
+                                    WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Simplex<3,4>>>
+straightenMesh<Mesh<Simplex<3,4>>>( boost::shared_ptr<Mesh<Simplex<3,4>>>, 
+                                    WorldComm const& , bool, bool  );
 #endif
 }
 #endif /* FEELPP_STRAIGHTENMESH_HPP */
