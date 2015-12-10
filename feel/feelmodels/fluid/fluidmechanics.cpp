@@ -432,14 +432,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         }
 #endif
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-        double myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
         auto a_blockns = Feel::blockns( _space=this->functionSpace(),
+                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
                                         _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
                                         _bc=bcPrecPCD,
                                         _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
                                         _prefix="velocity",
-                                        _mu=this->densityViscosityModel()->cstMu(),
-                                        _rho=this->densityViscosityModel()->cstRho(),
+                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
+                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
                                         _alpha=myalpha );
         this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
     }
@@ -457,10 +459,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        if ( this->isStationary() )
-            myPrecBlockNs->setAlpha( 0. );
-        else
-            myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
+        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+        myPrecBlockNs->setAlpha( myalpha );
+        myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
+        myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
 
         if ( this->modelName() == "Stokes" )
         {
