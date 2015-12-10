@@ -353,14 +353,22 @@ FSI<FluidType,SolidType>::init()
 
     //-------------------------------------------------------------------------//
     // build interface operator for generalized robin-neumann
-    if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized")
+    if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
         auto fieldInit = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1( fieldInit );
     }
     if ( M_solidModel->is1dReducedModel() )
         M_couplingRNG_useInterfaceOperator = false;
-    if ( M_solidModel->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" && M_couplingRNG_useInterfaceOperator )
+    if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+        if ( !M_couplingRNG_useInterfaceOperator )
+        {
+            M_fluidModel->setCouplingFSI_RNG_useInterfaceOperator( false );
+            if ( boption(_name="coupling-robin-neumann-generalized.without-interface-operator.precompute-mass-matrix",_prefix=this->prefix() ) )
+                M_fluidModel->couplingFSI_RNG_updateForUse();
+        }
+        else if ( M_solidModel->isStandardModel() && M_couplingRNG_useInterfaceOperator )
     {
         auto fieldInitBis = M_fluidModel->functionSpaceVelocity()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1Bis( fieldInitBis );
@@ -481,6 +489,7 @@ FSI<FluidType,SolidType>::init()
         M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
         M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
     }
+    } // if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     //-------------------------------------------------------------------------//
 
     this->log("FSI","init","finish");
