@@ -30,6 +30,7 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
 {

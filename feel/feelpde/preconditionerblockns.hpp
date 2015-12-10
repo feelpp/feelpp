@@ -30,6 +30,7 @@
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
 {
@@ -250,11 +251,11 @@ public:
     virtual ~PreconditionerBlockNS(){};
 
     template<typename ExprType>
-    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu->mesh() ), _expr=m ); if ( pcdOp ) pcdOp->setMu( M_mu ); }
+    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu->mesh() ), _expr=m ); /*if ( pcdOp ) pcdOp->setMu( M_mu );*/ }
     template<typename ExprType>
-    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho->mesh() ), _expr=r ); if ( pcdOp ) pcdOp->setRho( M_rho ); }
+    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho->mesh() ), _expr=r ); /*if ( pcdOp ) pcdOp->setRho( M_rho );*/ }
     template<typename ExprType>
-    void setAlpha( ExprType a ) { M_alpha->on( _range=elements( M_alpha->mesh() ), _expr=a ); if ( pcdOp ) pcdOp->setAlpha( M_alpha ); }
+    void setAlpha( ExprType a ) { M_alpha->on( _range=elements( M_alpha->mesh() ), _expr=a ); /*if ( pcdOp ) pcdOp->setAlpha( M_alpha );*/ }
 private:
     void createSubMatrices();
 private:
