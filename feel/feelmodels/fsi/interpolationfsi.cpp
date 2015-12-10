@@ -659,7 +659,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
             //auto fieldExtrapolated = M_solid->fieldVelocityScal1dReduced().functionSpace()->elementPtr();
             auto fieldExtrapolated = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
             fieldExtrapolated->add(  2.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity() );
-            fieldExtrapolated->add( -1.0, this->solid()->timeStepNewmark()->previousVelocity(1) );
+            fieldExtrapolated->add( -1.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity(1) );
             fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated );
         }
 
