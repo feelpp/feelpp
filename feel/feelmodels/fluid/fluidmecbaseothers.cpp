@@ -97,9 +97,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository()
+           << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- pde name  : " << M_pdeType
+           << "\n     -- pde name  : " << M_modelName
            << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
@@ -180,7 +180,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- rowstart : " << this->rowStartInMatrix()
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
-           << "\n     -- solver : " << M_pdeSolver;
+           << "\n     -- solver : " << M_solverName;
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -199,78 +199,80 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 {
     // if pde change -> force to rebuild all algebraic data at next solve
-    if ( __type != M_pdeType )
+    if ( type != M_modelName )
         this->setNeedToRebuildCstPart(true);
 
-    if ( __type == "Stokes" )
+    if ( type == "Stokes" )
     {
-        M_pdeType="Stokes";
-        M_pdeSolver="LinearSystem";
+        M_modelName="Stokes";
+        M_solverName="LinearSystem";
     }
-    else if ( __type == "Oseen" )
+    else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
     {
-        M_pdeType="Oseen";
-        M_pdeSolver="LinearSystem";
+        M_modelName="Navier-Stokes";
+        M_solverName="Oseen";
     }
-    else if ( __type == "Navier-Stokes" )
+    else if ( type == "Navier-Stokes" )
     {
-        M_pdeType="Navier-Stokes";
-        M_pdeSolver="Newton";
+        M_modelName="Navier-Stokes";
+        M_solverName="Newton";
     }
     else
-        CHECK( false ) << "invalid pdeType "<< __type << "\n";
+        CHECK( false ) << "invalid modelName "<< type << "\n";
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType() const
+std::string const&
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::modelName() const
 {
-    return M_pdeType;
+    return M_modelName;
 }
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
     // if solver change -> force to rebuild all algebraic data at next solve
-    if ( __type != M_pdeSolver )
+    if ( type != M_solverName )
         this->setNeedToRebuildCstPart(true);
 
-    if ( __type == "LinearSystem" )
-        M_pdeSolver="LinearSystem";
-    else if ( __type == "PtFixe" )
-        M_pdeSolver="PtFixe";
-    else if ( __type == "Newton" )
-        M_pdeSolver="Newton";
+    if ( type == "LinearSystem" )
+        M_solverName="LinearSystem";
+    else if ( type == "Oseen" )
+        M_solverName="Oseen";
+    else if ( type == "Picard" || type == "FixPoint" )
+        M_solverName="Picard";
+    else if ( type == "Newton" )
+        M_solverName="Newton";
     else
-        CHECK( false ) << "invalid pdeSolver " << __type << "\n";
+        CHECK( false ) << "invalid solver name " << type << "\n";
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver() const
+std::string const&
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solverName() const
 {
-    return M_pdeSolver;
+    return M_solverName;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType(std::string __type)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType( std::string const& type )
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
-    if ( __type != this->densityViscosityModel()->dynamicViscosityLaw() )
-        this->setNeedToRebuildCstPart(true);
+    if ( type != this->densityViscosityModel()->dynamicViscosityLaw() )
+        this->setNeedToRebuildCstPart( true );
 
-    this->densityViscosityModel()->setDynamicViscosityLaw( __type );
+    this->densityViscosityModel()->setDynamicViscosityLaw( type );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -740,10 +742,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         this->log("FluidMechanics","solve", "start by solve stokes stationary" );
 
         std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
-        std::string savePdeType = this->pdeType();
+        std::string savePdeType = this->modelName();
         // prepare Stokes-stationary config
         this->stressTensorLawType( "newtonian" );
-        this->pdeType( "Stokes" );
+        this->setModelName( "Stokes" );
         this->setStationary( true );
         // possibility to config a specific time which appear in bc
         double timeUsed = doption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.time-value-used-in-bc");
@@ -756,7 +758,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
             this->exportResults(this->timeInitial());
         // revert parameters
         this->stressTensorLawType( saveStressTensorLawType );
-        this->pdeType( savePdeType );
+        this->setModelName( savePdeType );
         this->setStationary( false );
 
         this->initTimeStep();
@@ -776,7 +778,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
     //--------------------------------------------------
     // run solver
-    M_algebraicFactory->solve( M_pdeSolver, this->blockVectorSolution().vector() );
+    std::string algebraicSolver = M_solverName;
+    if ( algebraicSolver == "Oseen" )
+        algebraicSolver = "LinearSystem";
+    M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vector() );
     // update sub vector
     M_blockVectorSolution.localize();
 
@@ -825,20 +830,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
     {
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    if ( M_pdeType == "Stokes" || M_pdeType == "Oseen" )
-        updateOseen( data );
-#if 0
-    else if ( M_pdeType == "Navier-Stokes")
-        updatePtFixe(X,A,F,_buildCstPart,_doClose,_doBCStrongDirichlet);
-#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -898,7 +889,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
         if ( doWriteOnDisk )
         {
-            std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+            std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
             std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
             file.precision( 8 );
             file.setf( std::ios::scientific );
@@ -951,12 +942,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
          previousTimeOrder!=currentTimeOrder &&
          this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
-        if (this->pdeSolver() == "Newton" && !this->rebuildLinearPartInJacobian() )
+        if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
         {
             this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
             M_algebraicFactory->rebuildCstJacobian(M_Solution);
         }
-        else if (this->pdeSolver() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
+        else if (this->solverName() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
         {
             this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
             M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
@@ -1249,23 +1240,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2)
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
 {
     using namespace Feel::vf;
 
-    auto U1 = M_Xh->element();U1 = *X1;
+    auto U1 = this->functionSpace()->element();U1 = *Unew;
     auto u1 = U1.template element<0>();
     auto p1 = U1.template element<1>();
 
-    auto U2 = M_Xh->element();U2 = *X2;
+    auto U2 = this->functionSpace()->element();U2 = *Uold;
     auto u2 = U2.template element<0>();
     auto p2 = U2.template element<1>();
 
-    double err_u = integrate(_range=elements(M_Xh->mesh()),
-                             _expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
+    double err_u = integrate(_range=elements(this->mesh()),
+                             //_expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
+                             _expr= inner(idv(u1)-idv(u2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
-    double err_p = integrate(_range=elements(M_Xh->mesh()),
-                             _expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
+    double err_p = integrate(_range=elements(this->mesh()),
+                             //_expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
+                             _expr= inner(idv(p1)-idv(p2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
 
     return std::sqrt(err_u+err_p);
@@ -1916,6 +1909,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
     M_couplingFSI_RNG_matrix = this->backend()->newMatrix(0,0,0,0,this->algebraicFactory()->sparsityMatrixGraph());
 #endif
 
+    if ( !M_couplingFSI_RNG_useInterfaceOperator )
+    {
+        if (this->doRestart())
+            this->meshALE()->revertReferenceMesh();
+
+        auto const& u = this->fieldVelocity();
+        form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=M_couplingFSI_RNG_matrix,
+               _rowstart=this->rowStartInMatrix(),
+               _colstart=this->colStartInMatrix() ) +=
+            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                       _expr=inner(idt(u),id(u)),
+                       _geomap=this->geomap() );
+        M_couplingFSI_RNG_matrix->close();
+
+        if (this->doRestart())
+            this->meshALE()->revertMovingMesh();
+
+        return;
+    }
 
     //-----------------------------------------------------------------//
     // assembly : first version
@@ -2116,22 +2128,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 
 }
 
-
-
-
-
-
 //---------------------------------------------------------------------------------------------------------//
-
-
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                     bool _buildCstPart,
-                                                     bool _doClose, bool _doBCStrongDirichlet ) const
-{}
-
-
 
 
 

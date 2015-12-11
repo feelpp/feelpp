@@ -62,14 +62,14 @@ public :
     class DataUpdateLinear
     {
     public:
-        DataUpdateLinear( const vector_ptrtype& initialSolution,
+        DataUpdateLinear( const vector_ptrtype& currentSolution,
                           sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
                           bool buildCstPart,
                           sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
             :
             M_matrix( matrix ),
             M_rhs( rhs ),
-            M_initialSolution( initialSolution ),
+            M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
             M_matrixExtended( matrixExtended ),
             M_buildExtendedPart( buildExtendedPart ),
@@ -80,7 +80,7 @@ public :
 
         sparse_matrix_ptrtype& matrix() { return M_matrix; }
         vector_ptrtype& rhs() { return M_rhs; }
-        vector_ptrtype const& initialSolution() { return M_initialSolution; }
+        vector_ptrtype const& currentSolution() { return M_currentSolution; }
         bool buildCstPart() const { return M_buildCstPart; }
         sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
         bool buildExtendedPart() const { return M_buildExtendedPart; }
@@ -92,7 +92,7 @@ public :
     private :
         sparse_matrix_ptrtype M_matrix;
         vector_ptrtype M_rhs;
-        const vector_ptrtype& M_initialSolution;
+        const vector_ptrtype& M_currentSolution;
 
         bool M_buildCstPart;
         sparse_matrix_ptrtype M_matrixExtended;
@@ -176,8 +176,8 @@ public :
 
     ModelAlgebraic( std::string _theprefix,
                     WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+                    std::string const& subPrefix="",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -244,6 +244,8 @@ public :
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updatePicard( DataUpdateLinear & data ) const;
+    virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
 

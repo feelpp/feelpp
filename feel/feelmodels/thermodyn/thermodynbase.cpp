@@ -14,13 +14,13 @@ namespace FeelModels
 {
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( prefix, worldComm, subPrefix, rootRepository )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsSolve.data";
@@ -164,7 +164,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
     double tElpased = this->timerTool("Constructor").stop("createSpaces");
@@ -295,7 +295,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository();
+           << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
            << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
