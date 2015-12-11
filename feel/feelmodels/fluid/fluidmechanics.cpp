@@ -456,8 +456,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
     {
         this->log("FluidMechanics","updateInHousePreconditionerPCD", "start");
 
-        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type, typename super_type::space_densityviscosity_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type, typename super_type::space_densityviscosity_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type::template sub_functionspace_type<0> properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
         auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
         myPrecBlockNs->setAlpha( myalpha );
