@@ -327,16 +327,15 @@ public:
     //___________________________________________________________________________________//
     // constructor
     FluidMechanicsBase( //bool __isStationary,
-                        std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+                        std::string const& prefix,
+                        bool __buildMesh = true,
+                        WorldComm const& _worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
-
 
     void build();
     void init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app );
@@ -459,11 +458,12 @@ public :
 
     bool isMoveDomain() const { return M_isMoveDomain; }
 
-    void pdeType(std::string __type);
-    std::string pdeType() const;
-    void pdeSolver(std::string __type);
-    std::string pdeSolver() const;
-    void stressTensorLawType(std::string __type);
+    std::string const& modelName() const;
+    void setModelName( std::string const& type );
+    std::string const& solverName() const;
+    void setSolverName( std::string const& type );
+
+    void stressTensorLawType( std::string const& type);
     //std::string stressTensorLawType() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
@@ -776,10 +776,8 @@ public :
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
-
-    void updateOseen( DataUpdateLinear & data ) const;
-    void updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
-    void updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
+    void updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                    sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const;
 
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
@@ -789,19 +787,8 @@ public :
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
     virtual void updateBCPressureLinearPDE( vector_ptrtype& F ) const = 0;
 
-
-#if 0
-    void updatePreconditioner(const vector_ptrtype& X,
-                              sparse_matrix_ptrtype& A,
-                              sparse_matrix_ptrtype& A_extended,
-                              sparse_matrix_ptrtype& Prec) const;
-#endif
-    // non linear (fixed point)
-    void updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                      bool _buildCstPart,
-                      bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-
-    double computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2);
+    void updatePicard( DataUpdateLinear & data ) const;
+    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //___________________________________________________________________________________//
 
@@ -859,8 +846,8 @@ protected:
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
-    std::string M_pdeType;
-    std::string M_pdeSolver;
+    std::string M_modelName;
+    std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;

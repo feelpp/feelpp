@@ -38,13 +38,13 @@ namespace FeelModels
 {
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type(_prefix,_buildMesh,_worldComm,_subPrefix, _appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -61,7 +61,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if (buildMesh) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "finish",
@@ -71,13 +71,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix,
-                                         bool _buildMesh,
-                                         WorldComm const& _worldComm,
-                                         std::string _subPrefix,
-                                         std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
+                                         bool buildMesh,
+                                         WorldComm const& worldComm,
+                                         std::string const& subPrefix,
+                                         std::string const& appliShortRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, appliShortRepository );
 }
 
 

@@ -41,13 +41,13 @@ namespace FeelModels
 {
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string __prefix,
-                                                    bool __buildMesh,
-                                                    WorldComm const& __worldComm,
-                                                    std::string __subPrefix,
-                                                    std::string __appliShortRepository )
+THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__buildMesh,__subPrefix,__appliShortRepository)
+    super_type( prefix, worldComm, buildMesh, subPrefix, rootRepository )
 {
     this->log("ThermoDynamics","constructor", "start" );
 
@@ -60,7 +60,7 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string __prefix,
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
     // build mesh, space, exporter,...
-    if (__buildMesh) this->build();
+    if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
     this->log("ThermoDynamics","constructor", "finish");
 }

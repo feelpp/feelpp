@@ -92,7 +92,7 @@ void
 createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std::string const& modelMeshRestartFile )
 {
     typedef MeshType mesh_type;
-    std::string fmpath = (fs::path( model.appliRepository() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
+    std::string fmpath = (fs::path( model.rootRepository() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
     if (model.doRestart())
     {
         model.log("createMeshModel","", "restart with : "+fmpath);
@@ -107,7 +107,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
     {
         if (model.hasMshfileStr())
         {
-            std::string path = model.appliRepository();
+            std::string path = model.rootRepository();
             std::string mshfileRebuildPartitions = path + "/" + model.prefix() + ".msh";
 
             model.log("createMeshModel","", "load msh file : " + model.mshfileStr());
@@ -126,17 +126,17 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
         }
         else if (model.hasGeofileStr())
         {
-            std::string path = model.appliRepository();
+            std::string path = model.rootRepository();
             std::string mshfile = path + "/" + model.prefix() + ".msh";
             model.setMshfileStr(mshfile);
 
             fs::path curPath=fs::current_path();
             bool hasChangedRep=false;
-            if ( curPath != fs::path(model.appliRepository()) )
+            if ( curPath != fs::path(model.rootRepository()) )
             {
-                model.log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ model.appliRepository() );
+                model.log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ model.rootRepository() );
                 bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(model.appliRepository()), _subdir=false );
+                Environment::changeRepository( _directory=boost::format(model.rootRepository()), _subdir=false );
             }
 
             gmsh_ptrtype geodesc = geo( _filename=model.geofileStr(),
@@ -164,7 +164,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             }
             else
             {
-                geotoolSavePath = model.appliRepository();
+                geotoolSavePath = model.rootRepository();
             }
 
             std::string geotoolSaveName = model.geotoolSaveName();
@@ -176,7 +176,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
 
             if ( model.geotoolSaveDirectory()!=model.appliShortRepository() )
             {
-                model.log("createMeshModel","", "change rep -> " + model.appliRepository() );
+                model.log("createMeshModel","", "change rep -> " + model.rootRepository() );
                 Environment::changeRepository( _directory=boost::format(model.appliShortRepository()), _subdir=true );
             }
         }
