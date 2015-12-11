@@ -182,7 +182,6 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"do_export_wallshearstress").c_str(), Feel::po::value<bool>(), "doExportWallShearStress")
         (prefixvm(prefix,"do_export_viscosity").c_str(), Feel::po::value<bool>(), "doExportViscosity")
         (prefixvm(prefix,"do_export_meshale").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshALE")
-        (prefixvm(prefix,"do_export_meshdisplacementoninterface").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshDisplacementOnInterface")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
 
         (prefixvm(prefix,"periodicity.translate-x").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-x")
