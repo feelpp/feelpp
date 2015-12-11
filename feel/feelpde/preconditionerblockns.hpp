@@ -82,8 +82,8 @@ public:
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
-    typedef typename OperatorPCD<space_type>::type op_pcd_type;
-    typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
+    typedef typename OperatorPCD<space_type, properties_space_type>::type op_pcd_type;
+    typedef typename OperatorPCD<space_type, properties_space_type>::ptrtype op_pcd_ptrtype;
     typedef OperatorBase<value_type> op_type;
     typedef boost::shared_ptr<op_type> op_ptrtype;
 
