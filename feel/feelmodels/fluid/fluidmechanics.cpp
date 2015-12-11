@@ -296,14 +296,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
-            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
-            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
-            if ( o == "displacement" || o == "all" ) this->M_doExportMeshDisplacement = true;
-            if ( o == "vorticity" || o == "all" ) this->M_doExportVorticity = true;
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
-            if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
-            if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
-            if ( o == "pid" || o == "all" ) this->M_doExportPid = true;
+            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+            if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+            if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+
+            if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
         }
 }
 
