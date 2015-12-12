@@ -191,7 +191,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
-    //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
     // fsi options
