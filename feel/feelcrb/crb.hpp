@@ -2365,7 +2365,9 @@ CRB<TruthModelType>::offline()
     bool write_memory_evolution = all_procs || only_one_proc ;
 
     int cobuild_freq_rb = ioption(_name="ser.rb-frequency");
-    int cobuild_freq_eim = ioption(_name="ser.eim-frequency");
+    if( cobuild_freq_rb != 0 && M_N == 0 ) // First RB with SER : ( 1 EIM + 1RB, after build per group of size ser.rb-frequency )
+        cobuild_freq_rb = 1;
+
     int user_max = ioption(_name="crb.dimension-max");
     if( cobuild_freq_rb != 0 && Nold + cobuild_freq_rb <= user_max)
         M_iter_max = Nold + cobuild_freq_rb;

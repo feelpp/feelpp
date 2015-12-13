@@ -411,7 +411,10 @@ public:
 
                         if( use_rb )
                         {
+                            // TODO : if !RBbuilt() ?
                             eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+                            if( !eim_sc->modelBuilt() )
+                                eim_sc->setModel( model );
                         }
 
                         eim_sc->offline();
@@ -423,7 +426,10 @@ public:
 
                         if( use_rb )
                         {
+                            // TODO : if !RBbuilt() ?
                             eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+                            if( !eim_sd->modelBuilt() )
+                                eim_sd->setModel( model );
                         }
 
                         eim_sd->offline();
@@ -1154,7 +1160,7 @@ public:
                                     }
 
                                     ti.restart();
-                                    std::vector<double> ofem{model->output( output_index, mu, u_fem, true ), ti.elapsed()};
+                                    std::vector<double> ofem{model->output( output_index, mu, u_fem, false ), ti.elapsed()};
 
                                     if( boption(_name="crb.absolute-error") )
                                         relative_error = std::abs( ofem[0]- ocrb);
