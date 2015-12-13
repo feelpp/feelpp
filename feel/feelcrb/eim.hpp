@@ -535,10 +535,15 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         //LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
 
         timer.restart();
-        if( boption(_name="ser.use-rb-in-eim-mu-selection") )
-            solution = M_model->computeRbExpansion( mu );
+        if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+        {
+            if( boption(_name="ser.use-rb-in-eim-mu-selection") )
+                solution = M_model->computeRbExpansion( mu ); //RB
+            else
+                solution = M_model->computePfem( mu ); //PFEM
+        }
         else
-            solution = M_model->solve( mu );
+            solution = M_model->solve( mu ); //FEM
         time_solve += timer.elapsed();
 
         timer.restart();
@@ -737,7 +742,8 @@ EIM<ModelType>::offline()
     if( cobuild_freq != 0 && M_model->mMax() + cobuild_freq  <= user_max)
     {
         if( M_restart )
-            Mmax = cobuild_freq - 1;
+            Mmax = 0; // First EIM basis with SER : do only initialization step (require only one FEM approx)
+            //Mmax = cobuild_freq - 1;
         else
             Mmax = M_model->mMax() + cobuild_freq;
     }
@@ -783,10 +789,15 @@ EIM<ModelType>::offline()
 
         timer2.restart();
         //solution = M_model->solve( mu );
-        if( boption(_name="ser.use-rb-in-eim-basis-build") )
-            solution = M_model->computeRbExpansion( mu );
+        if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+        {
+            if( boption(_name="ser.use-rb-in-eim-basis-build") )
+                solution = M_model->computeRbExpansion( mu ); // Use current RB approx
+            else
+                solution = M_model->computePfem( mu ); // Use parametric FE with current affine decomposition
+        }
         else
-            solution = M_model->solve( mu );
+            solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
 
         time=timer2.elapsed();
         if( Environment::worldComm().isMasterRank() )
@@ -1225,6 +1236,8 @@ public:
     virtual bool getOfflineStep()=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
+    virtual void setModel( boost::any rbmodel )=0;
+    virtual bool modelBuilt()=0;
     virtual bool RBbuilt()=0;
     virtual void offline()=0;
 
@@ -1249,6 +1262,7 @@ public:
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
     virtual model_solution_type computeRbExpansion( parameter_type const& mu )=0;
+    virtual model_solution_type computePfem( parameter_type const& mu )=0;
     virtual double RieszResidualNorm( parameter_type const& mu )=0;
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
 
@@ -1336,6 +1350,7 @@ public:
         M_u( &u ),
         M_mu( mu ),
         M_crb_built( false ),
+        M_crbmodel_built( false ),
         M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
         M_q_vector(),
         M_g_vector(),
@@ -1517,10 +1532,15 @@ public:
 #if !defined(NDEBUG)
             M_mu.check();
 #endif
-            if( boption(_name="ser.use-rb-in-eim-basis-build") )
-                *M_u = this->computeRbExpansion( mu );
+            if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+            {
+                if( boption(_name="ser.use-rb-in-eim-basis-build") )
+                    *M_u = this->computeRbExpansion( mu ); //RB
+                else
+                    *M_u = this->computePfem( mu ); //PFEM
+            }
             else
-                *M_u = M_model->solve( mu );
+                *M_u = M_model->solve( mu ); //FEM
 
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1541,10 +1561,15 @@ public:
         {
             M_mu=mu;
             //*M_u = M_model->solve( mu );
-            if( boption(_name="ser.use-rb-in-eim-basis-build") )
-                *M_u = this->computeRbExpansion( mu );
+            if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+            {
+                if( boption(_name="ser.use-rb-in-eim-basis-build") )
+                    *M_u = this->computeRbExpansion( mu ); //RB
+                else
+                    *M_u = this->computePfem( mu ); //PFEM
+            }
             else
-                *M_u = M_model->solve( mu );
+                *M_u = M_model->solve( mu ); //FEM
 
             //auto projected_expr = vf::project( _space=this->functionSpace(), _expr=M_expr );
             //return evaluateFromContext( _context=ctx, _expr=idv(projected_expr) , _max_points_used=M );
@@ -1949,6 +1974,25 @@ public:
         this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
         return sol;
     }
+    model_solution_type computePfem( parameter_type const& mu )
+    {
+        if( this->modelBuilt() )
+            return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        else
+            return M_model->solve( mu );
+    }
+    model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<false> )
+    {
+        return M_model->functionSpace()->element();
+    }
+    model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<true> )
+    {
+        if( boption(_name="crb.use-newton") )
+            return M_crbmodel->solveFemUsingAffineDecompositionNewton( mu );
+        else
+            return M_crbmodel->solveFemUsingAffineDecompositionFixedPoint( mu );
+    }
+
     double RieszResidualNorm( parameter_type const& mu )
     {
         if( this->RBbuilt() )
@@ -2125,11 +2169,14 @@ public:
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
-        auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
+        //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
+        if( !this->modelBuilt() )
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         //make sure that the CRB DB is already build
-        M_crb = crb_ptrtype( new crb_type( appname,
-                                           M_vm ,
-                                           crbmodel ) );
+        if( !this->RBbuilt() )
+            M_crb = crb_ptrtype( new crb_type( appname,
+                                               M_vm ,
+                                               M_crbmodel ) );
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
         {
@@ -2202,6 +2249,29 @@ public:
         M_crb_built=true;
     }
 
+    void setModel( boost::any rbmodel )
+    {
+        setModel( rbmodel, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+    }
+    void setModel( boost::any rbmodel, boost::mpl::bool_<false> )
+    {
+        M_crbmodel_built=true;
+    }
+    void setModel( boost::any rbmodel, boost::mpl::bool_<true> )
+    {
+        try
+        {
+            M_crbmodel = boost::any_cast<crbmodel_ptrtype>(rbmodel);
+        }
+        catch (...)
+        {
+            std::cout << "setRB fails (bad type)" << std::endl;
+        }
+        //M_crbmodel = rbmodel;
+        M_crbmodel_built = true;
+    }
+
+    bool modelBuilt(){return M_crbmodel_built;}
     bool RBbuilt(){return M_crb_built;}
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
@@ -2539,8 +2609,10 @@ private:
     // model_solution_type& M_u;
     model_solution_type * M_u;
     parameter_type& M_mu;
+    crbmodel_ptrtype M_crbmodel;
     crb_ptrtype M_crb;
     bool M_crb_built;
+    bool M_crbmodel_built;
     sampling_ptrtype M_mu_sampling ;
     std::vector< element_type > M_q_vector ;
     std::vector< element_type > M_g_vector ;
