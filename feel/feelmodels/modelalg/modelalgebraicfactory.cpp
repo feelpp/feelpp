@@ -599,6 +599,9 @@ namespace FeelModels
 
         this->application()->timerTool("Solve").start();
 
+        this->application()->timerTool("Solve").setDataValue("algebraic-assembly",0.);
+        this->application()->timerTool("Solve").setDataValue("algebraic-solve",0.);
+
         bool useConvergenceAlgebraic = true;
 
         // assembling cst part
@@ -606,11 +609,16 @@ namespace FeelModels
              this->application()->rebuildCstPartInLinearSystem() || this->application()->needToRebuildCstPart() ||
              !this->application()->useCstMatrix() || !this->application()->useCstVector() )
         {
+            this->application()->timerTool("Solve").start();
+
             M_CstJ->zero();
             M_CstR->zero();
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             this->application()->updateLinearPDE( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
+
+            double tAssemblyElapsed = this->application()->timerTool("Solve").stop();
+            this->application()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);
         }
         this->application()->setNeedToRebuildCstPart(false);
 
@@ -636,7 +644,7 @@ namespace FeelModels
                 Uold->close();
             }
 
-            this->application()->timerTool("Solve").restart();
+            this->application()->timerTool("Solve").start();
 
             // copying cst matrix/vector
             if (this->application()->useCstMatrix() && this->application()->useCstVector() )
@@ -666,10 +674,12 @@ namespace FeelModels
             if ( this->addFunctionLinearPostAssembly != NULL )
                 this->addFunctionLinearPostAssembly(M_J,M_R);
 
-            double mpiTimerAssembly = this->application()->timerTool("Solve").elapsed("algebraic-assembly");
+            double tAssemblyElapsed = this->application()->timerTool("Solve").elapsed();
+            this->application()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);
+
             if (this->application()->verboseSolverTimer())
                 Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                      (boost::format("picard iteration[%1%] finish assembling in %2% s") %cptIteration % mpiTimerAssembly ).str(),
+                                      (boost::format("picard iteration[%1%] finish assembling in %2% s") %cptIteration % tAssemblyElapsed ).str(),
                                       this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
 
             this->application()->timerTool("Solve").restart();
@@ -692,6 +702,7 @@ namespace FeelModels
                 if ( nomResidual < std::max(rtol*normRhs,atol) )
                 {
                     hasConverged = true;
+                    this->application()->timerTool("Solve").stop();
                     break;
                 }
             }
@@ -713,11 +724,13 @@ namespace FeelModels
                                                  << solveStat.nIterations() << " iterations with norm "
                                                  << solveStat.residual() << "\n";
 
-            double tElapsed = this->application()->timerTool("Solve").elapsed("algebraic-solve");
+            double tSolveElapsed = this->application()->timerTool("Solve").stop();
+            this->application()->timerTool("Solve").addDataValue("algebraic-solve",tSolveElapsed);
+
             //this->application()->timerTool("Solve").setAdditionalParameter("ksp-niter",int(solveStat.nIterations()) );
             if (this->application()->verboseSolverTimer())
                 Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                      (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tElapsed ).str(),
+                                      (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tSolveElapsed ).str(),
                                       this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
 
             if ( !useConvergenceAlgebraic )
