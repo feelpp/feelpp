@@ -50,7 +50,7 @@ makeAbout()
 {
     AboutData about( "test_immultiscale" ,
                      "test_immultiscale" ,
-                     "0.2",
+                     "8.9e-3",
                      "test integrate Quadra",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2015 Feel++ Consortium" );
