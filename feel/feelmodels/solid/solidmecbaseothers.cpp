@@ -776,49 +776,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::saveDataInPoint(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate)
-{
-    auto it = __listPt.begin();
-    auto en = __listPt.end();
-
-    for ( ; it!=en ; ++it)
-    {
-        auto nameFile = prefixvm(this->prefix(),"disp-")+boost::get<0>(*it)+".data";
-        if (M_nameFilesData.find(nameFile)==M_nameFilesData.end())
-        {
-            if (!this->doRestart() && this->worldComm().isMasterRank())
-            {
-                //ATTENTION EFFACER LES DONNEES REDONTANTE EN CAS DE RESTART
-                std::ofstream newfileDisp(nameFile.c_str(), std::ios::out | std::ios::trunc);
-                newfileDisp.close();
-                M_nameFilesData.insert(nameFile);
-            }
-        }
-#if 1
-        auto const dispOnPt = this->fieldDisplacement()(boost::get<1>(*it),extrapolate);
-        if (this->worldComm().isMasterRank())
-        {
-            std::ofstream fileDisp(nameFile.c_str(), std::ios::out | std::ios::app);
-            fileDisp << this->time();
-            for (uint16_type i = 0; i<mesh_type::nRealDim;++i)
-                fileDisp << " " << dispOnPt(i,0,0);
-            //fileDisp << " " << this->fieldDisplacement()(boost::get<1>(*it))(i,0,0);
-            fileDisp << "\n";
-            fileDisp.close();
-        }
-#else
-        auto ctx = this->fieldDisplacement()->functionSpace()->context();
-        ctx.add( it->get<1>() );
-        auto eval_at_node = evaluateFromContext ( ctx , _expr = idv (u) );
-        double value1 = eval_at_node ( it->get<1>() );
-#endif
-    }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
     this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
