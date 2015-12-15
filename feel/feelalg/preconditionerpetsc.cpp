@@ -2479,7 +2479,9 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
+        CHECK(gMat) << "The pointer gMat is not initialized\n"; 
         MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+        CHECK(gPetsc->mat() ) << "gPetsc->mat() is not initialized\n"; 
         this->check( PetscImpl::PCHYPRE_AMSSetDiscreteGradient_HYPRE(pc, gPetsc->mat()));
     }
     else
