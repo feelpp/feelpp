@@ -434,7 +434,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
         // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
         auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
-        auto a_blockns = Feel::blockns( _space=this->functionSpace(),
+
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
                                         _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
                                         _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
                                         _bc=bcPrecPCD,
@@ -457,7 +461,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         this->log("FluidMechanics","updateInHousePreconditionerPCD", "start");
 
         typedef typename super_type::space_fluid_type space_type;
-        typedef typename super_type::space_densityviscosity_type::template sub_functionspace_type<0> properties_space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
 
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
@@ -532,8 +536,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
-        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        std::cout << "myPrecBlockNs = " << myPrecBlockNs << "\n";
         myPrecBlockNs->setParameterValues( paramValues );
     }
 
