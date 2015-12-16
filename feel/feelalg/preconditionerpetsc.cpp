@@ -3353,24 +3353,11 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
     // setup ksp
-#if PETSC_VERSION_LESS_THAN(3,5,0)
+#if PETSC_VERSION_LESS_THAN(3,5,0) || PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
     this->check( KSPSetUp( ksp ) );
 #else
-    // error if setup ksp for schur complement ( to understand! )
     if( M_typeFieldSplit != "schur" || splitId == 0 )
         this->check( KSPSetUp( ksp ) );
-
-    /*if( M_typeFieldSplit == "schur" && splitId == 1 )
-    {
-        DM dm;
-        this->check( KSPGetDM(ksp,&dm) );
-        if ( dm != NULL )
-        {
-            this->check( KSPSetDMActive(ksp,PETSC_FALSE) );
-        }
-        this->check( KSPSetUp( ksp ) );
-     }*/
-
 #endif
     PC subpc;
     // get sub-pc
