@@ -464,7 +464,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     {
         tic();
         auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m += integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
+        m = integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
         M_mass->close();
         if ( boption( "blockns.pmm.diag" ) )
         {
