@@ -541,7 +541,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
-        std::cout << "myPrecBlockNs = " << myPrecBlockNs << "\n";
         myPrecBlockNs->setParameterValues( paramValues );
     }
 
