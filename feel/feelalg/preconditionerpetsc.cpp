@@ -1625,17 +1625,17 @@ getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDe
 }
 
 po::options_description
-getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite,
+getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
                    std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, true, kspType, rtol, maxit );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescKSP( _options, prefixOver, sub, false );
     return _options;
 }
 po::options_description
-updateOptionsDescPrecBase( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+updateOptionsDescPrecBase( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string const& pcType = "lu" )
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
     //po::options_description _options( "options PC", 200);
@@ -1668,12 +1668,23 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
     return _options;
 }
 po::options_description
-getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string const& pcType = "lu" )
 {
     po::options_description _options( "options PC", 200);
     updateOptionsDescPrecBase( _options,prefix,sub,useDefaultValue,pcType );
     //for ( std::string prefixOver : prefixOverwrite )
     //    updateOptionsDescPrecBase( _options,prefixOver,sub );
+    return _options;
+
+}
+po::options_description
+getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+                        std::string const& pcType = "lu" )
+{
+    po::options_description _options( "options PC", 200);
+    updateOptionsDescPrecBase( _options,prefix,sub,true,pcType );
+    for ( std::string const& prefixOver : prefixOverwrite )
+        updateOptionsDescPrecBase( _options,prefixOver,sub,false );
     return _options;
 
 }
@@ -1699,11 +1710,11 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
 #endif
 }
 po::options_description
-getOptionsDescLU( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescLU( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC LU", 200);
     updateOptionsDescLU( _options,prefix,sub );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescLU( _options,prefixOver,sub );
     return _options;
 }
@@ -1722,11 +1733,11 @@ updateOptionsDescILU( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescILU( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescILU( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC ILU", 200);
     updateOptionsDescILU( _options,prefix,sub,true );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescILU( _options,prefixOver,sub,false );
     return _options;
 }
@@ -1751,11 +1762,11 @@ updateOptionsDescSOR( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescSOR( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescSOR( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC SOR", 200);
     updateOptionsDescSOR( _options,prefix,sub,true );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescSOR( _options,prefixOver,sub,false );
     return _options;
 }
@@ -1771,11 +1782,11 @@ updateOptionsDescGASM( po::options_description & _options, std::string const& pr
         ;
 }
 po::options_description
-getOptionsDescGASM( std::string const& prefix, std::vector<std::string> prefixOverwrite )
+getOptionsDescGASM( std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC GASM", 100);
     updateOptionsDescGASM( _options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescGASM( _options,prefixOver,false);
     return _options;
 }
@@ -1885,11 +1896,11 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ;
 }
 po::options_description
-getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC BOOMERAMG", 100);
     updateOptionsDescBOOMERAMG(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescBOOMERAMG( _options,prefixOver,false);
     return _options;
 }
@@ -1916,11 +1927,11 @@ updateOptionsDescAMS( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescAMS( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescAMS( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC AMS", 100);
     updateOptionsDescAMS(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescAMS( _options,prefixOver,false);
     return _options;
 }
@@ -1936,11 +1947,11 @@ updateOptionsDescASM( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescASM( std::string const& prefix, std::vector<std::string> prefixOverwrite )
+getOptionsDescASM( std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC ASM", 100);
     updateOptionsDescASM(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescASM( _options,prefixOver,false);
     return _options;
 }
@@ -2637,7 +2648,7 @@ ConfigurePCASM::run( PC& pc )
 ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                                 std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( precFeel, worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub") ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub", prefixOverwrite ) ),
     M_subPCtype( getOption<std::string>("pc-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subMatSolverPackage( getOption<std::string>("pc-factor-mat-solver-package-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subPCview( getOption<bool>("pc-view",prefix,"sub",prefixOverwrite,this->vm() ) ),
