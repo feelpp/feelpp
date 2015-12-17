@@ -517,20 +517,6 @@ static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, 
     CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
-static PetscErrorCode PCHYPRE_AMSSetDiscreteGradient_HYPRE(PC pc, Mat G)
-{
-    PetscErrorCode ierr;
-    ierr = PCHYPRESetDiscreteGradient(pc, G);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, Vec zzo)
-{
-    PetscErrorCode ierr;
-    ierr = PCHYPRESetEdgeConstantVectors(pc, ozz, zoz, zzo);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
 static PetscErrorCode PCHYPRE_AMSSetCoordinateVectors(PC pc,Vec x, Vec y, Vec z)
 {
     PetscErrorCode ierr;
@@ -2486,40 +2472,47 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_AMSSetCycleType(pc, M_cycle_type));
     this->check( PetscImpl::PCHYPRE_AMSSetTol(pc, M_tol));
     this->check( PetscImpl::PCHYPRE_AMSSetSmoothingOptions(pc, M_relax_type, M_relax_times, M_relax_weight, M_omega));
-    
-    if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
+
+
+    if (!pc->setupcalled)
     {
-        auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
-        CHECK(gMat) << "The pointer gMat is not initialized\n"; 
-        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
-        CHECK(gPetsc->mat() ) << "gPetsc->mat() is not initialized\n"; 
-        this->check( PetscImpl::PCHYPRE_AMSSetDiscreteGradient_HYPRE(pc, gPetsc->mat()));
-    }
-    else
-      std::cerr << "G for hypre AMS has not been provided\n";
-    if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
-    {
-        auto pxVec = this->precFeel()->auxiliaryVector("Px");
-        auto pyVec = this->precFeel()->auxiliaryVector("Py");
-        auto pzVec = this->precFeel()->auxiliaryVector("Pz");
-        VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
-        VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
-        VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
-      //TODO - correct that
-        this->check( PetscImpl::PCHYPRE_AMSSetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
-    }
-    else if ( this->precFeel()->hasAuxiliaryVector("X") && this->precFeel()->hasAuxiliaryVector("Y") && this->precFeel()->hasAuxiliaryVector("Z")  )
-    {
-        auto pxVec = this->precFeel()->auxiliaryVector("X");
-        auto pyVec = this->precFeel()->auxiliaryVector("Y");
-        auto pzVec = this->precFeel()->auxiliaryVector("Z");
-        VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
-        VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
-        VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
-        this->check( PetscImpl::PCHYPRE_AMSSetCoordinateVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
-    }
-    else
-      std::cerr << "Nor (Px, Py, Pz), nor (X, Y, Z) has been provided\n";
+        // from hypre doc, this function should be called before HYPRE AMSSetup(), so must be init once
+        if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
+        {
+            auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
+            CHECK(gMat) << "The pointer gMat is not initialized\n";
+            MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+            CHECK( gPetsc && gPetsc->mat() ) << "gPetsc->mat() is not initialized\n";
+            this->check( PCHYPRESetDiscreteGradient( pc, gPetsc->mat() ) );
+        }
+        else
+            std::cerr << "G for hypre AMS has not been provided\n";
+
+        if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
+        {
+            auto pxVec = this->precFeel()->auxiliaryVector("Px");
+            auto pyVec = this->precFeel()->auxiliaryVector("Py");
+            auto pzVec = this->precFeel()->auxiliaryVector("Pz");
+            VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+            VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+            VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+            this->check( PCHYPRESetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()) );
+        }
+        else if ( this->precFeel()->hasAuxiliaryVector("X") && this->precFeel()->hasAuxiliaryVector("Y") && this->precFeel()->hasAuxiliaryVector("Z")  )
+        {
+            auto pxVec = this->precFeel()->auxiliaryVector("X");
+            auto pyVec = this->precFeel()->auxiliaryVector("Y");
+            auto pzVec = this->precFeel()->auxiliaryVector("Z");
+            VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+            VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+            VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+            this->check( PetscImpl::PCHYPRE_AMSSetCoordinateVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
+        }
+        else
+            std::cerr << "Nor (Px, Py, Pz), nor (X, Y, Z) has been provided\n";
+    } // !pc->setupcalled
+
+
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_alpha");
