@@ -36,4 +36,5 @@ Volume(1) = {1};
 Physical Surface("BoundaryForce") = {1,2,3,5};
 Physical Surface("Fixed") = {4};
 Physical Surface("Torsion") = {6};
+//Physical Line("Torsion") = {4,8,9,12};
 Physical Volume("OmegaSolid") = {1};
