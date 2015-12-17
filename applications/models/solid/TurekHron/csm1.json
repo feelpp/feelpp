@@ -5,10 +5,7 @@
     "Model":"Hyper-Elasticity",
     "Parameters":
     {
-        "gravity":
-        {
-            "value":"2"
-        }
+        "gravity":"2"
     },
     "Materials":
     {
@@ -48,7 +45,7 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"],
+        "Fields":["displacement","Von-Mises"],
         "Measures":
         {
             "Points":
@@ -56,15 +53,7 @@
                 "pointA":
                 {
                     "coord":"{0.6,0.2,0}",
-                    "fields":["displacement","velocity"]
-                }
-            },
-            "Maximum":
-            {
-                "free-wall":
-                {
-                    "markers":"free-wall",
-                    "fields":["displacement","velocity"]
+                    "fields":["displacement"]
                 }
             }
         }
