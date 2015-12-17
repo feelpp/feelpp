@@ -251,13 +251,14 @@ public:
     virtual ~PreconditionerBlockNS(){};
 
     template<typename ExprType>
-    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu->mesh() ), _expr=m ); }
+    void setMu( ExprType m ) { M_mu->on( _range=elements( M_mu->mesh() ), _expr=m ); M_updatePMM = true; }
     template<typename ExprType>
-    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho->mesh() ), _expr=r ); }
+    void setRho( ExprType r ) { M_rho->on( _range=elements( M_rho->mesh() ), _expr=r ); M_updatePMM = true; }
     template<typename ExprType>
     void setAlpha( ExprType a ) { M_alpha->on( _range=elements( M_alpha->mesh() ), _expr=a ); }
 private:
     void createSubMatrices();
+    void updatePMM();
 private:
 
     Type M_type;
@@ -276,6 +277,7 @@ private:
     property_ptrtype M_mu, M_alpha, M_rho;
 
     sparse_matrix_ptrtype M_helm, G, M_div, M_F, /*M_B,*/ M_Bt, M_mass, M_massv_inv;
+    bool M_updatePMM;
     op_mat_ptrtype divOp, helmOp;
 
     mutable vector_ptrtype M_rhs, M_aux, M_vin,M_pin, M_vout, M_pout;
@@ -316,6 +318,7 @@ PreconditionerBlockNS( std::string t,
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
     M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
+    M_updatePMM( false ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
@@ -375,6 +378,7 @@ PreconditionerBlockNS( std::string t,
     M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
     M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
+    M_updatePMM( false ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
     M_vin( M_b->newVector( M_Vh )  ),
@@ -441,6 +445,18 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::createSubMatrices()
     }
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
 }
+
+template < typename SpaceType, typename PropertiesSpaceType >
+void
+PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::updatePMM()
+{
+    LOG(INFO) << "Updating PMM preconditioner...";
+    auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
+    m = integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
+    M_mass->close();
+    LOG(INFO) << "Updating PMM preconditioner done.";
+}
+
 template < typename SpaceType, typename PropertiesSpaceType >
 void
 PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
@@ -465,9 +481,8 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     case PMM:
     {
         tic();
-        auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
-        M_mass->close();
+        M_updatePMM = true;
+
         if ( boption( "blockns.pmm.diag" ) )
         {
             pm = diag( op( M_mass, "Mp" ) );
@@ -509,17 +524,14 @@ update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
     {
         tic();
         pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
-        
+        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
-    if ( type() == PMM )
+    if ( type() == PMM && M_updatePMM )
     {
-        LOG(INFO) << "Updating PMM preconditioner...";
-        auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
-        m = integrate( elements(M_Qh->mesh()), idv(*M_rho)*idt(p)*id(q)/idv(*M_mu) );
-        M_mass->close();
-        LOG(INFO) << "Updating PMM preconditioner done.";
+        tic();
+        updatePMM();
+        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
-    toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     toc( "Preconditioner::update", FLAGS_v > 0 );
 }
 
@@ -542,6 +554,13 @@ update( sparse_matrix_ptrtype A,
         pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
         toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
+    if ( type() == PMM && M_updatePMM )
+    {
+        tic();
+        updatePMM();
+        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+    }
+
     toc( "Preconditioner::update", FLAGS_v > 0 );
 }
 template < typename SpaceType, typename PropertiesSpaceType >
