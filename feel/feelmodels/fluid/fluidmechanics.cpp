@@ -39,13 +39,13 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type( _prefix, _buildMesh,_worldComm, _subPrefix,_appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -63,7 +63,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
@@ -72,11 +72,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string _prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix, bool _buildMesh,
-                                         WorldComm const& _worldComm, std::string _subPrefix,
-                                         std::string _appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         std::string const& rootRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
 
 }
 
@@ -296,14 +296,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
-            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
-            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
-            if ( o == "displacement" || o == "all" ) this->M_doExportMeshDisplacement = true;
-            if ( o == "vorticity" || o == "all" ) this->M_doExportVorticity = true;
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
-            if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
-            if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
-            if ( o == "pid" || o == "all" ) this->M_doExportPid = true;
+            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+            if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+            if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+
+            if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
         }
 }
 
@@ -462,11 +464,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         else
             myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
 
-        if ( this->pdeType() == "Stokes" )
+        if ( this->modelName() == "Stokes" )
         {
             myPrecBlockNs->update( mat );
         }
-        else if ( this->pdeType() == "Oseen" )
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
             auto BetaU = this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
@@ -483,7 +485,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
             }
         }
-        else if ( this->pdeType() == "Navier-Stokes" )
+        else if ( this->modelName() == "Navier-Stokes" )
         {
             auto U = this->functionSpace()->element();
             // copy vector values in fluid element

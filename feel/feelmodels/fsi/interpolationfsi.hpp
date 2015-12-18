@@ -142,8 +142,8 @@ public :
     typedef typename fluid_type::space_stress_type space_fluid_stress_type;
     typedef typename fluid_type::element_stress_type element_fluid_stress_type;
 
-    typedef typename solid_type::space_stress_type space_struct_stress_type;
-    typedef typename solid_type::element_stress_type element_struct_stress_type;
+    typedef typename solid_type::space_normal_stress_type space_struct_stress_type;
+    typedef typename solid_type::element_normal_stress_type element_struct_stress_type;
 
     //operator interpolation for this stress
     typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_type,
