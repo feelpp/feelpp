@@ -89,12 +89,20 @@ int main( int argc, char** argv )
   auto x_epi = [&](double t) -> double { return ((1+a_epi) * cos(a_epi*t) - a_epi*b_epi * cos( (1+a_epi) * t )) / 4 + 0.5; };
   auto y_epi = [&](double t) -> double { return ((1+a_epi) * sin(a_epi*t) - a_epi*b_epi * sin( (1+a_epi) * t )) / 4 + 0.5; };
 
+  auto unsigned_epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
+                                                    0, 100, option("gmsh.hsize").as<double>()/2.,
+                                                    false, 0., false, "",
+                                                    false /* signedDistance */ );
+  *unsigned_epitro = fm->march(unsigned_epitro, true );
+  std::cout<<"epitrochoid done"<<std::endl;
+  // ----------------------------------------
+
+  // ------------- unsigned epitrochoid --------------
   auto epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
                                                     0, 100, option("gmsh.hsize").as<double>()/2. );
   *epitro = fm->march( epitro, true );
   std::cout<<"epitrochoid done"<<std::endl;
   // ----------------------------------------
-
 
 
 
@@ -187,6 +195,7 @@ int main( int argc, char** argv )
   exp->step(0)->add("epitro", *epitro);
   exp->step(0)->add("sickle_cell",*sickle_cell);
   exp->step(0)->add("siclkeCellPredefied",*siclkeCellPredefied);
+  exp->step(0)->add("unsigned_epitro",*unsigned_epitro);
   exp->save();
 
 }
