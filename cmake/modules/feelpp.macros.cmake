@@ -17,7 +17,7 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX"
+    "NAME;PREFIX;DEPS"
     ""
     ${ARGN}
     )
@@ -28,6 +28,11 @@ macro(feelpp_add_testcase )
     set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
   endif()
   add_custom_target(${target})
+  if ( FEELPP_CASE_DEPS )
+    foreach(case ${FEELPP_CASE_DEPS})
+      add_dependencies(${target} ${FEELPP_CASE_PREFIX}_add_testcase_${case})
+    endforeach()
+  endif()
   ADD_CUSTOM_COMMAND(
     TARGET ${target}
     POST_BUILD
