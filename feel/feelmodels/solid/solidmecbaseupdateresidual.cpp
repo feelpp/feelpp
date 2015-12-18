@@ -39,19 +39,19 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    mesh_ptrtype mesh = M_Xh->mesh();
+    mesh_ptrtype mesh = M_XhDisplacement->mesh();
 
     size_type rowStartInVector = this->rowStartInVector();
-    auto linearFormDisplacement = form1( _test=M_Xh, _vector=R,_rowstart=rowStartInVector );
+    auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,_rowstart=rowStartInVector );
 
     //--------------------------------------------------------------------------------------------------//
 
-    auto u = M_Xh->element();
+    auto u = M_XhDisplacement->element();
     auto v = u;
     // copy vector values in fluid element
-    for ( size_type k=0;k<M_Xh->nLocalDofWithGhost();++k )
+    for ( size_type k=0;k<M_XhDisplacement->nLocalDofWithGhost();++k )
         u(k) = X->operator()(rowStartInVector+k);
-    //auto buzz1 = M_newmark_displ_struct->previousUnknown();
+    //auto buzz1 = M_timeStepNewmark->previousUnknown();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -168,12 +168,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         {
             linearFormDisplacement +=
                 integrate( _range=elements(mesh),
-                           _expr= M_newmark_displ_struct->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
+                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
                            _geomap=this->geomap() );
         }
         if (BuildCstPart)
         {
-            auto polySecondDerivDisp = M_newmark_displ_struct->polySecondDeriv();
+            auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
             linearFormDisplacement +=
                 integrate( _range=elements(mesh),
                            _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
@@ -201,7 +201,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         {
             linearFormDisplacement +=
                 integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= alpha_f*trans(idv(*M_normalStressFromFluid))*id(v),
+                           _expr= alpha_f*trans(idv(*M_fieldNormalStressFromFluid))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -246,7 +246,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             }
             if (!BuildCstPart )
             {
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid());
                 linearFormDisplacement +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(v) )/hFace(),
@@ -292,7 +292,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
     boost::mpi::timer thetimer;
     this->log("SolidMechanics","updateResidualIncompressibilityTerms", "start" );
 
-    auto mesh = M_Xh->mesh();
+    auto mesh = M_XhDisplacement->mesh();
     auto v = u;
     auto q = p;
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
@@ -305,7 +305,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
 
     size_type rowStartInVector = this->rowStartInVector();
     size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
-    auto linearFormDisplacement = form1( _test=M_Xh, _vector=R,
+    auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,
                                      _rowstart=rowStartInVector+startDofIndexPressure );
@@ -374,7 +374,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( elem
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateResidualViscoElasticityTerms start\n";
 
-    auto mesh = M_Xh->mesh();
+    auto mesh = M_XhDisplacement->mesh();
 
     auto u = U.element<0>();
     auto v = U.element<0>();
@@ -390,12 +390,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( elem
 
     auto Evbis = 0.5*(gradv(buzz1bis)+trans(gradv(buzz1bis)) );
 
-    form1( _test=M_Xh, _vector=R ) +=
+    form1( _test=M_XhDisplacement, _vector=R ) +=
         integrate( _range=elements(mesh),
                    _expr= gammav*M_bdf_displ_struct->polyDerivCoefficient(0)*trace( Ev2*trans(grad(v))),
                    _geomap=this->geomap() );
 
-    form1( _test=M_Xh, _vector=R ) +=
+    form1( _test=M_XhDisplacement, _vector=R ) +=
         integrate( _range=elements(mesh),
                    _expr= -gammav*trace( Evbis*trans(grad(v))),
                    _geomap=this->geomap() );

@@ -38,13 +38,13 @@ namespace FeelModels
 {
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type(_prefix,_buildMesh,_worldComm,_subPrefix, _appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -61,7 +61,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if (buildMesh) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "finish",
@@ -71,13 +71,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix,
-                                         bool _buildMesh,
-                                         WorldComm const& _worldComm,
-                                         std::string _subPrefix,
-                                         std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
+                                         bool buildMesh,
+                                         WorldComm const& worldComm,
+                                         std::string const& subPrefix,
+                                         std::string const& appliShortRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, appliShortRepository );
 }
 
 
@@ -141,13 +141,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
-            if ( o == "displacement" || o == "all" ) this->M_doExportDisplacement = true;
-            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
-            if ( o == "acceleration" || o == "all" ) this->M_doExportAcceleration = true;
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
-            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
-            if ( o == "material-properties" || o == "all" ) this->M_doExportMaterialProperties = true;
-            if ( o == "all" ) this->M_doExportVelocityInterfaceFromFluid = true;
+            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
+            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
+            if ( o == "acceleration" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
+            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
+            if ( o == "material-properties" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
+            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
+            if ( o == "fsi" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
+            if ( o == "Von-Mises" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
+            if ( o == "Tresca" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
+            if ( o == "principal-stresses" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
         }
 }
 

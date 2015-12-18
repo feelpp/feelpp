@@ -37,7 +37,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     :
     M_worldComm( world ),
     M_params( world ),
-    M_bc( world )
+    M_bc( world ),
+    M_postproc( world )
 {
     if ( !fs::exists( filename ) ) 
     {
@@ -116,6 +117,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     if ( pp )
     {
         LOG(INFO) << "Model with PostProcess\n";
+        if ( !directoryLibExpr.empty() )
+            M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
         
     }

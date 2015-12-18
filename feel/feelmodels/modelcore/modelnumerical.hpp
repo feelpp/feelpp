@@ -40,36 +40,13 @@
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelcore/modelmeasures.hpp>
 
 
 namespace Feel
 {
 namespace FeelModels
 {
-
-class ModelPostProcessMeasures
-{
-public :
-    ModelPostProcessMeasures( std::string const& pathFile, WorldComm const& worldComm /*= Environment::worldComm()*/ );
-    ModelPostProcessMeasures( ModelPostProcessMeasures const& app ) = default;
-    void clear();
-    void start();
-    void restart( std::string const& paramKey, double val );
-    void exportMeasures();
-    void setParameter(std::string const& key,double val);
-    void setMeasure(std::string const& key,double val);
-    bool hasParameter( std::string const& key ) const { return M_mapParameterData.find( key ) != M_mapParameterData.end() ; }
-    bool hasMeasure( std::string const& key ) const { return M_mapMeasureData.find( key ) != M_mapMeasureData.end() ; }
-
-    std::string const& pathFile() const { return M_pathFile; }
-    void setPathFile( std::string const& s ) { M_pathFile = s; }
-
-private :
-    WorldComm M_worldComm;
-    std::string M_pathFile;
-    std::map<std::string,double> M_mapParameterData;
-    std::map<std::string,double> M_mapMeasureData;
-};
 
 class ModelNumerical : public ModelAlgebraic
     {
@@ -92,8 +69,8 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+        ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
@@ -161,8 +138,11 @@ class ModelNumerical : public ModelAlgebraic
         void setExporterPath(std::string s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
-        ModelPostProcessMeasures const& postProcessMeasures() const { return M_postProcessMeasures; }
-        ModelPostProcessMeasures & postProcessMeasures() { return M_postProcessMeasures; }
+        ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
+        ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
+        ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
+        ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
+
 
     private :
 
@@ -188,7 +168,8 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_geoFileStr;
 
         std::string M_exporterPath;
-        ModelPostProcessMeasures M_postProcessMeasures;
+        ModelMeasuresIO M_postProcessMeasuresIO;
+        ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
         boost::shared_ptr<PsLogger> M_PsLogger;
 

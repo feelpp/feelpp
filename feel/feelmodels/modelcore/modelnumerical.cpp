@@ -34,188 +34,13 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelPostProcessMeasures::ModelPostProcessMeasures( std::string const& pathFile, WorldComm const& worldComm )
-    :
-    M_worldComm( worldComm ),
-    M_pathFile( pathFile )
-{}
 
-void
-ModelPostProcessMeasures::clear()
-{
-    M_mapParameterData.clear();
-    M_mapMeasureData.clear();
-}
-
-void
-ModelPostProcessMeasures::start()
-{
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
-    {
-        bool hasAlreadyWrited = false;
-        std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::trunc);
-        for ( auto const& data : M_mapParameterData )
-        {
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw( /*7*/20 ) << std::left << data.first;//"time";
-            hasAlreadyWrited = true;
-        }
-        for ( auto const& data : M_mapMeasureData )
-        {
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << data.first;
-            hasAlreadyWrited = true;
-        }
-        fileWrited << std::endl;
-        fileWrited.close();
-    }
-}
-void
-ModelPostProcessMeasures::restart( std::string const& paramKey, double val )
-{
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
-    {
-        double ti = val;//this->timeInitial();
-        std::ifstream fileI(M_pathFile, std::ios::in);
-        double timeLoaded=0;
-        double valueLoaded = 0.;
-
-        bool find=false;
-        std::ostringstream buffer;
-        bool hasAlreadyWrited = false;
-
-            std::string measureTag;
-            for ( auto const& data : M_mapParameterData )
-            {
-                fileI >> measureTag; // e.g. load time
-                if ( measureTag == "," )
-                    fileI >> measureTag; // e.g. load time
-                measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-
-                if ( hasAlreadyWrited )
-                    buffer << ",";
-                buffer << std::setw(20) << std::left << measureTag;
-                hasAlreadyWrited=true;
-            }
-            for ( auto const& data : M_mapMeasureData )
-            {
-                fileI >> measureTag;
-                if ( measureTag == "," )
-                    fileI >> measureTag; // e.g. load time
-                measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-
-                if ( hasAlreadyWrited )
-                    buffer << ",";
-                buffer << std::setw(28) << std::right << measureTag;
-                hasAlreadyWrited=true;
-            }
-            buffer << std::endl;
-
-            while ( !fileI.eof() && !find )
-            {
-                hasAlreadyWrited = false;
-
-#if 0
-                for ( auto const& data : M_mapParameterData )
-                    if ( paramKey == M_mapParameterData.first )
-                        if ( (timeLoaded-1e-7) > ti ) { find=true;break; }
-                if ( find ) break;
-#endif
-                for ( auto const& data : M_mapParameterData )
-                {
-#if 1
-                    fileI >> measureTag;
-                    if ( measureTag == "," )
-                        fileI >> measureTag; // e.g. load time
-                    measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-                    valueLoaded = std::stod(measureTag);
-#else
-                    fileI >> valueLoaded;
-#endif
-                    //std::cout << "timeLoaded " << timeLoaded << " ti " << ti << "\n";
-                    if ( hasAlreadyWrited )
-                        buffer << ",";
-                    buffer << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << valueLoaded;
-                    hasAlreadyWrited = true;
-                    // check if last writing (e.g. time equality)
-                    if ( paramKey == data.first && !find )
-                        if ( std::abs(valueLoaded-ti) < 1e-9 )
-                            find=true;
-                }
-                for ( auto const& data : M_mapMeasureData )
-                {
-#if 1
-                    fileI >> measureTag;
-                    if ( measureTag == "," )
-                        fileI >> measureTag; // e.g. load time
-                    measureTag.erase( std::remove(measureTag.begin(), measureTag.end(), ','), measureTag.end() );
-                    valueLoaded = std::stod(measureTag);
-#else
-                    fileI >> valueLoaded;
-#endif
-
-                    if ( hasAlreadyWrited )
-                        buffer << ",";
-                    buffer << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << valueLoaded;
-                    hasAlreadyWrited = true;
-
-                }
-                buffer << std::endl;
-            }
-            fileI.close();
-            std::ofstream fileW(M_pathFile/*.c_str()*/, std::ios::out | std::ios::trunc);
-            fileW << buffer.str();
-            fileW.close();
-    }
-
-}
-
-void
-ModelPostProcessMeasures::exportMeasures()
-{
-    if ( M_worldComm.isMasterRank() && !M_mapMeasureData.empty() )
-    {
-        bool hasAlreadyWrited = false;
-        std::ofstream fileWrited(M_pathFile, std::ios::out | std::ios::app);
-        for ( auto const& data : M_mapParameterData )
-        {
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw(20) << std::left << std::setprecision( 9 ) << std::scientific << data.second;
-            hasAlreadyWrited = true;
-        }
-        for ( auto const& data : M_mapMeasureData )
-        {
-            if ( hasAlreadyWrited )
-                fileWrited << ",";
-            fileWrited << std::setw(28) << std::right << std::setprecision( 16 ) << std::scientific << data.second;
-            hasAlreadyWrited = true;
-        }
-        fileWrited << std::endl;
-        fileWrited.close();
-    }
-}
-void
-ModelPostProcessMeasures::setParameter(std::string const& key,double val)
-{
-    M_mapParameterData[key] = val;
-}
-void
-ModelPostProcessMeasures::setMeasure(std::string const& key,double val)
-{
-    M_mapMeasureData[key] = val;
-
-}
-
-
-ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
-                                std::string appliShortRepository )
+ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
+                                std::string const& rootRepository )
         :
-        super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
+        super_type( _theprefix, _worldComm, subPrefix, rootRepository ),
         M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
-        M_isStationary( false /*_isStationary*/),
+        M_isStationary( /*false*/ boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
         M_restartAtLastSave( boption(_name="ts.restart.at-last-save") ),
@@ -231,8 +56,8 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         M_row_startInVector(0),
         M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
-        M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasures( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
+        M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
+        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
         //-----------------------------------------------------------------------//
@@ -240,10 +65,14 @@ ModelNumerical::ModelNumerical( std::string _theprefix, WorldComm const& _worldC
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
         //-----------------------------------------------------------------------//
-        if ( Environment::vm().count(prefixvm(this->prefix(),"ginac-expr-directory").c_str()) )
-            M_directoryLibSymbExpr = Environment::rootRepository()+"/"+soption(_name="ginac-expr-directory",_prefix=this->prefix());
+        if ( Environment::vm().count(prefixvm(this->prefix(),"symbolic-expr.directory").c_str()) )
+        {
+            M_directoryLibSymbExpr = soption(_name="symbolic-expr.directory",_prefix=this->prefix());
+            if ( fs::path( M_directoryLibSymbExpr ).is_relative() )
+                M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc())/fs::path(M_directoryLibSymbExpr)).string();
+        }
         else
-            M_directoryLibSymbExpr = (fs::path(this->appliRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
+            M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
         //-----------------------------------------------------------------------//
         // mesh file : .msh
         if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))

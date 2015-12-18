@@ -222,8 +222,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            CHECK( false ) << "not allow\n";
-            return 0;//evalijq( i,j,c1,c2,q,mpl::int_<gmc_type::nDim>() );
+            return evalq( c1,c2,q );
         }
 
         value_type
