@@ -22,10 +22,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( std::string const& p
     :
     super_type( prefix,worldComm,subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
-    M_densityViscosityModel( new densityviscosity_model_type( prefix ) ),
-    M_doExportVelocity( false), M_doExportPressure( false ), M_doExportVorticity( false ),
-    M_doExportNormalStress( false), M_doExportWallShearStress( false ), M_doExportViscosity( false ),
-    M_doExportMeshDisplacement( false ), M_doExportPid( false )
+    M_densityViscosityModel( new densityviscosity_model_type( prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -141,34 +138,45 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
                         this->worldComm(),this->verboseAllProc());
 #endif
 
+    // overwrite export field options in json if given in cfg
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
-        M_doExportVelocity = boption(_name="do_export_velocity",_prefix=this->prefix());
+        if ( boption(_name="do_export_velocity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
-        M_doExportPressure = boption(_name="do_export_pressure",_prefix=this->prefix());
+        if ( boption(_name="do_export_pressure",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
-        M_doExportMeshDisplacement = boption(_name="do_export_displacement",_prefix=this->prefix());
+        if ( boption(_name="do_export_displacement",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_vorticity").c_str()) )
-        M_doExportVorticity = boption(_name="do_export_vorticity",_prefix=this->prefix());
+        if ( boption(_name="do_export_vorticity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
-        M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
+        if ( boption(_name="do_export_normalstress",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_wallshearstress").c_str()) )
-        M_doExportWallShearStress = boption(_name="do_export_wallshearstress",_prefix=this->prefix());
+        if ( boption(_name="do_export_wallshearstress",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_viscosity").c_str()) )
-        M_doExportViscosity = boption(_name="do_export_viscosity",_prefix=this->prefix());
+        if ( boption(_name="do_export_viscosity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
 
-    M_doExportMeshALE = boption(_name="do_export_meshale",_prefix=this->prefix());
-    M_doExportMeshDisplacementOnInterface = boption(_name="do_export_meshdisplacementoninterface",_prefix=this->prefix());
+    if ( boption(_name="do_export_meshale",_prefix=this->prefix()) )
+        this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
-    {
         if ( boption(_name="do_export_all",_prefix=this->prefix()) )
         {
-            M_doExportVelocity = true; M_doExportPressure = true; M_doExportVorticity = true;
-            M_doExportNormalStress = true; M_doExportWallShearStress = true; M_doExportViscosity = true;
-            M_doExportMeshDisplacement = true; M_doExportMeshALE = true; M_doExportMeshDisplacementOnInterface=true;
-            M_doExportPid = true;
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
         }
-    }
 
     //--------------------------------------------------------------//
     M_haveSourceAdded=false;//true when update
@@ -183,7 +191,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
-    //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
     // fsi options
@@ -584,14 +591,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
         M_XhVectorialVisuHO = space_vectorial_visu_ho_type::New(_mesh=meshVisuHO/*opLagP1->mesh()*/, _worldscomm=this->localNonCompositeWorldsComm());
         //M_XhScalarVisuHO = space_scalar_visu_ho_type::New(_mesh=opLagP1->mesh(),_worldscomm=this->localNonCompositeWorldsComm());
         M_XhScalarVisuHO = M_XhVectorialVisuHO->compSpace();
-        if (M_doExportNormalStress || M_doExportWallShearStress )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) ||
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
             M_XhVectorialDiscVisuHO = space_vectorialdisc_visu_ho_type::New(_mesh=meshVisuHO/*opLagP1->mesh()*/,_worldscomm=this->localNonCompositeWorldsComm());
 
         M_velocityVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"u_visuHO"));
         M_pressureVisuHO.reset( new element_scalar_visu_ho_type(M_XhScalarVisuHO,"p_visuHO"));
         if (M_isMoveDomain) M_meshdispVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"meshdisp_visuHO"));
-        if (M_doExportNormalStress) M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
-        if (M_doExportWallShearStress) M_fieldWallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) )
+            M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
+            M_fieldWallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
 
         this->log("FluidMechanics","createPostProcessExporters", "start opInterpolation" );
         boost::mpi::timer timerOpI;
@@ -610,7 +620,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
 
-        if (M_doExportNormalStress || M_doExportWallShearStress )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) ||
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
         {
             M_opIstress = opInterpolation(_domainSpace=M_XhNormalBoundaryStress,
                                           _imageSpace=M_XhVectorialDiscVisuHO,
@@ -1251,9 +1262,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     // clean doExport with fields not available
     if ( !this->isMoveDomain() )
     {
-        M_doExportMeshDisplacement = false;
-        M_doExportMeshALE = false;
-        M_doExportMeshDisplacementOnInterface = false;
+        M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::Displacement );
+        M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::ALEMesh );
     }
     // restart exporters if restart is activated
     if (this->doRestart() && this->restartPath().empty() )

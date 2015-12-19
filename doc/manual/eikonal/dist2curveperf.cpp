@@ -30,7 +30,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/unithypercube.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 #include <fstream>
 #include <sstream>
 #include <feel/feelvf/vf.hpp>

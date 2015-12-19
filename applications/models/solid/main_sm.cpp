@@ -45,9 +45,9 @@ runApplicationSolid()
                 while ( ! fileParameter.eof() ) { fileParameter >> cptCurrent >> currentParam; }
                 fileParameter.close();
 
-                SM->fieldDisplacement().load(_path=SM->rootRepository()+(boost::format("uSol.field-%1%") %cptCurrent ).str() );
+                SM->fieldDisplacement().load(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") %cptCurrent ).str() );
                 if ( SM->useDisplacementPressureFormulation() )
-                    SM->fieldPressure().load(_path=SM->rootRepository()+(boost::format("pSol.field-%1%") %cptCurrent ).str() );
+                    SM->fieldPressure().load(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") %cptCurrent ).str() );
 
                 SM->restartExporters(cptCurrent);
                 ++cptCurrent;
@@ -68,13 +68,17 @@ runApplicationSolid()
                     std::cout << "============================================================\n";
                 }
 
+                SM->timerTool("Solve").setAdditionalParameter(variableSymbol,currentParam);
+                SM->timerTool("PostProcessing").setAdditionalParameter(variableSymbol,currentParam);
+                SM->timerTool("TimeStepping").setAdditionalParameter(variableSymbol,currentParam);
+
                 SM->addParameterInModelProperties(variableSymbol,currentParam);
                 SM->solve();
                 SM->exportResults(cptCurrent);
 
-                SM->fieldDisplacement().save(_path=SM->rootRepository()+(boost::format("uSol.field-%1%") % cptCurrent ).str() );
+                SM->fieldDisplacement().save(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") % cptCurrent ).str() );
                 if ( SM->useDisplacementPressureFormulation() )
-                    SM->fieldPressure().save(_path=SM->rootRepository()+(boost::format("pSol.field-%1%") % cptCurrent ).str() );
+                    SM->fieldPressure().save(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") % cptCurrent ).str() );
 
                 if (Environment::isMasterRank())
                 {

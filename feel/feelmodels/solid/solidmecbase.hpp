@@ -561,7 +561,6 @@ public :
     //-----------------------------------------------------------------------------------//
 
     bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
-    void saveDataInPoint(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
 
     double computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const;
     double computeVolumeVariation() const;
