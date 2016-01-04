@@ -4,6 +4,8 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+
 
 namespace Feel
 {
@@ -39,12 +41,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     bool build_Form1TransientTerm = BuildNonCstPart;
     //bool build_SourceTerm = BuildNonCstPart;
     bool build_BoundaryNeumannTerm = BuildNonCstPart;
+    bool build_StressTensorNonNewtonian = BuildNonCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
         build_Form2TransientTerm=BuildCstPart;
     }
     if (this->useFSISemiImplicitScheme())
     {
+        build_StressTensorNonNewtonian = BuildCstPart;
         if ( this->solverName() == "Oseen" )
             build_ConvectiveTerm=BuildCstPart;
         build_Form2TransientTerm=BuildCstPart;
@@ -80,8 +84,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     auto const& rho = this->densityViscosityModel()->fieldRho();
     // identity matrix
     auto const Id = eye<nDim,nDim>();
-    // stress tensor
-    auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -101,37 +103,52 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                               _rowstart=rowStartInVector );
 
     //--------------------------------------------------------------------------------------------------//
-        // stress tensor sigma : grad(v)
+    this->timerTool("Solve").start();
+
+    // stress tensor sigma : grad(v)
+    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    {
+        if ( BuildCstPart )
+        {
+            auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= inner(Sigmat,grad(v)),
+                           _geomap=this->geomap() );
+        }
+    }
+    else
+    {
+        if ( build_StressTensorNonNewtonian )
+        {
+            auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
+            auto betaU = BetaU.template element<0>();
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel());
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= 2*myViscosity*inner(deft,grad(v)),
+                           _geomap=this->geomap() );
+        }
+        if ( BuildCstPart )
+        {
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= -div(v)*idt(p),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    // incompressibility term
     if ( BuildCstPart )
     {
-        this->timerTool("Solve").start();
-#if 1
-        // stress tensor sigma : grad(v)
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       //_expr= trace(Sigmat*trans(grad(v))),
-                       _expr= inner(Sigmat,grad(v)),
-                       _geomap=this->geomap() );
-#else
-        // stress tensor sigma : grad(v) (with block decoupling)
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= 2*idv(this->densityViscosityModel()->fieldMu())*inner(deft,grad(v)),
-                       _geomap=this->geomap() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= -div(v)*idt(p),
-                       _geomap=this->geomap() );
-#endif
-        // incompressibility term
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
                        _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
-
-        double timeElapsedStressTensor = this->timerTool("Solve").stop();
-        this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
     }
+
+    double timeElapsedStressTensor = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
 
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst

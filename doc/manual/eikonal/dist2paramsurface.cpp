@@ -30,8 +30,8 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/unithypercube.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
-#include <feel/feelpde/disttocurve.hpp>
+#include <feel/feells/reinit_fms.hpp>
+#include <feel/feells/disttocurve.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
