@@ -6,7 +6,7 @@
        Date: 2005-12-03
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
