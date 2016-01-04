@@ -260,8 +260,6 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
             }
         }
 
-    G->close();
-
     auto alphaMax = normLinf( _range=elements(M_Qh->mesh()), _expr=idv(M_alpha), _pset=_Q<5>() );
     if ( alphaMax.value() > 1e-15 )
     {
@@ -269,6 +267,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
         conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)*idt(p)*id(q) );
     }
 
+    G->close();
     this->applyBC(G);
 
     static bool init_G = false;
@@ -323,6 +322,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
                 d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs,
                          _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
+        M_diff->close();
         //this->applyBC(M_diff);
     }
     if ( soption("blockns.pcd.diffusion") == "BTBt" )
