@@ -79,14 +79,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     std::string doExport_str;
-    if (M_doExportVelocity) doExport_str=(doExport_str.empty())?"velocity":doExport_str+" - velocity";
-    if (M_doExportPressure) doExport_str=(doExport_str.empty())?"pressure":doExport_str+" - pressure";
-    if (M_doExportMeshDisplacement) doExport_str=(doExport_str.empty())?"displacement":doExport_str+" - displacement";
-    if (M_doExportVorticity) doExport_str=(doExport_str.empty())?"vorticity":doExport_str+" - vorticity";
-    if (M_doExportNormalStress) doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
-    if (M_doExportWallShearStress) doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
-    if (M_doExportViscosity) doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
-    if (M_doExportPid) doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Velocity ) )
+        doExport_str=(doExport_str.empty())?"velocity":doExport_str+" - velocity";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pressure ) )
+        doExport_str=(doExport_str.empty())?"pressure":doExport_str+" - pressure";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Displacement ) )
+        doExport_str=(doExport_str.empty())?"displacement":doExport_str+" - displacement";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Vorticity ) )
+        doExport_str=(doExport_str.empty())?"vorticity":doExport_str+" - vorticity";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) )
+        doExport_str=(doExport_str.empty())?"normal stress":doExport_str+" - normal stress";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
+        doExport_str=(doExport_str.empty())?"wall shear stress":doExport_str+" - wall shear stress";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Viscosity ) )
+        doExport_str=(doExport_str.empty())?"viscosity":doExport_str+" - viscosity";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pid ) )
+        doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::ALEMesh ) )
+        doExport_str=(doExport_str.empty())?"alemesh":doExport_str+" - alemesh";
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -264,9 +274,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solverName() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+std::string const&
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
+{
+    return this->densityViscosityModel()->dynamicViscosityLaw();
+}
+
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::stressTensorLawType( std::string const& type )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& type )
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
     if ( type != this->densityViscosityModel()->dynamicViscosityLaw() )
@@ -304,7 +322,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
-    if (this->isMoveDomain() && M_doExportMeshALE )
+    if ( this->isMoveDomain() && this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::ALEMesh ) )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         this->meshALE()->exportResults( time );
@@ -374,26 +392,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 #endif
     //M_exporter->step( time )->setMesh( M_mesh );
     bool hasFieldToExport = false;
-    if ( M_doExportPid )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pid ) )
     {
         M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
-    if ( M_doExportVelocity )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Velocity ) )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
                                        M_Solution->template element<0>() );
         hasFieldToExport = true;
     }
-    if ( M_doExportPressure )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pressure ) )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
                                        M_Solution->template element<1>() );
         hasFieldToExport = true;
     }
-    if ( M_doExportVorticity )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Vorticity ) )
     {
         this->updateVorticity();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"vorticity"),
@@ -401,7 +419,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        this->fieldVorticity() );
         hasFieldToExport = true;
     }
-    if ( M_doExportNormalStress )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) )
     {
         this->updateNormalStressOnCurrentMesh();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"normalstress"),
@@ -409,14 +427,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        this->fieldNormalStress() );
         hasFieldToExport = true;
     }
-    if ( M_doExportWallShearStress )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
     {
         this->updateWallShearStress();
         M_exporter->step( time )->add( prefixvm(this->prefix(),"wallshearstress"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"wallshearstress")),
                                        this->fieldWallShearStress() );
     }
-    if ( M_doExportViscosity )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Viscosity ) )
     {
         if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
         auto uCur = M_Solution->template element<0>();
@@ -428,24 +446,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        viscosityField );
         hasFieldToExport = true;
     }
-    if ( this->isMoveDomain() && ( M_doExportMeshDisplacement || M_doExportMeshDisplacementOnInterface ) )
+    if ( this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        auto drm = M_meshALE->dofRelationShipMap();
-        auto thedisp = M_meshALE->functionSpace()->element();
 
-        for (size_type i=0;i<thedisp.nLocalDof();++i)
-            thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i);
-
-        if ( M_doExportMeshDisplacement )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Displacement ) )
         {
+            auto drm = M_meshALE->dofRelationShipMap();
+            auto thedisp = M_meshALE->functionSpace()->element();
+            for (size_type i=0;i<thedisp.nLocalDof();++i)
+                thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i);
+
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacement"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacement")),
                                            thedisp );
             hasFieldToExport = true;
         }
 
-        if ( M_doExportMeshDisplacementOnInterface )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::ALEMesh ) )
         {
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
@@ -481,28 +499,29 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     //    this->meshALE()->revertReferenceMesh();
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
     bool hasFieldToExport = false;
-    if ( M_doExportPid )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pid ) )
     {
         M_exporter_ho->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
-    if ( M_doExportVelocity )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Velocity ) )
     {
         M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity_ho")), *M_velocityVisuHO );
         hasFieldToExport = true;
     }
-    if ( M_doExportPressure )
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Pressure ) )
     {
         M_opIpressure->apply(M_Solution->template element<1>(),*M_pressureVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure_ho")), *M_pressureVisuHO );
         hasFieldToExport = true;
     }
 
-    if (M_isMoveDomain && M_doExportMeshDisplacement)
+    if ( this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         auto drm = M_meshALE->dofRelationShipMap();
+#if 0
         auto thedisp = M_meshALE->functionSpace()->element();
         for (size_type i=0;i<thedisp.nLocalDof();++i)
         {
@@ -513,9 +532,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
             thedisp(i) = M_meshALE->displacement()->operator()(i);
 #endif
         }
-        if ( M_doExportMeshDisplacement )
+#endif
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::Displacement ) )
         {
-            M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
+            //M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
+            M_opImeshdisp->apply( *M_meshALE->displacement() , *M_meshdispVisuHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshdisp_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshdisp_ho")), *M_meshdispVisuHO );
             hasFieldToExport = true;
         }
@@ -576,14 +597,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif // HAS_MESHALE
     }
 
-    if (M_doExportNormalStress)
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) )
     {
         this->updateNormalStressOnCurrentMesh();
         M_opIstress->apply( this->fieldNormalStress(),*M_normalStressVisuHO );
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"normalstress_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normalstress")), *M_normalStressVisuHO );
         hasFieldToExport = true;
     }
-    if (M_doExportWallShearStress)
+    if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
     {
         this->updateWallShearStress();
         M_opIstress->apply( this->fieldWallShearStress(),*M_fieldWallShearStressVisuHO );
@@ -741,10 +762,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
     {
         this->log("FluidMechanics","solve", "start by solve stokes stationary" );
 
-        std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
+        std::string saveStressTensorLawType = this->dynamicViscosityLaw();
         std::string savePdeType = this->modelName();
         // prepare Stokes-stationary config
-        this->stressTensorLawType( "newtonian" );
+        this->setDynamicViscosityLaw( "newtonian" );
         this->setModelName( "Stokes" );
         this->setStationary( true );
         // possibility to config a specific time which appear in bc
@@ -757,7 +778,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
         if ( boption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.do-export") )
             this->exportResults(this->timeInitial());
         // revert parameters
-        this->stressTensorLawType( saveStressTensorLawType );
+        this->setDynamicViscosityLaw( saveStressTensorLawType );
         this->setModelName( savePdeType );
         this->setStationary( false );
 
@@ -769,11 +790,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
     {
         this->log("FluidMechanics","solve", "start by solve newtonian" );
 
-        std::string saveStressTensorLawType = this->densityViscosityModel()->dynamicViscosityLaw();//stressTensorLawType();
-        this->stressTensorLawType("newtonian");
+        std::string saveStressTensorLawType = this->dynamicViscosityLaw();
+        this->setDynamicViscosityLaw("newtonian");
         this->solve();
         this->hasSolveNewtonianAtKickOff( true );
-        this->stressTensorLawType( saveStressTensorLawType );
+        this->setDynamicViscosityLaw( saveStressTensorLawType );
     }
 
     //--------------------------------------------------

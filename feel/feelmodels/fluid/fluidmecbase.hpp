@@ -59,6 +59,11 @@ namespace Feel
 {
 namespace FeelModels
 {
+enum class FluidMechanicsPostProcessFieldExported
+{
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Viscosity, ALEMesh
+};
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
 class FluidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
@@ -326,8 +331,7 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanicsBase( //bool __isStationary,
-                        std::string const& prefix,
+    FluidMechanicsBase( std::string const& prefix,
                         bool __buildMesh = true,
                         WorldComm const& _worldComm = Environment::worldComm(),
                         std::string const& subPrefix = "",
@@ -426,6 +430,7 @@ public:
     // export post process results
     void initPostProcess();
     //void restartPostProcess();
+    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -463,8 +468,8 @@ public :
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
-    void stressTensorLawType( std::string const& type);
-    //std::string stressTensorLawType() const;
+    void setDynamicViscosityLaw( std::string const& type);
+    std::string const& dynamicViscosityLaw() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -897,12 +902,10 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    // post-process field exported
+    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
     bool M_isHOVisu;
-    bool M_doExportVelocity, M_doExportPressure, M_doExportVorticity, M_doExportNormalStress, M_doExportWallShearStress, M_doExportViscosity;
-    bool M_doExportMeshDisplacement,M_doExportMeshALE, M_doExportMeshDisplacementOnInterface;
-    bool M_doExportPid;
-
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
