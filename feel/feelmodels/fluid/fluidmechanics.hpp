@@ -107,7 +107,7 @@ public:
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;
+    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
 
