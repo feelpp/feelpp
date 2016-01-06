@@ -224,6 +224,8 @@ private:
     lagrange_element_type phi;
 
     grad_type M_grad;
+
+    bool M_prec_updated; // Has the preconditioner been updated once ?
 };
 
     template < typename space_type, typename coef_space_type >
@@ -264,7 +266,8 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
         M_X(M_backend->newVector( M_Qh )),
         M_Y(M_backend->newVector( M_Qh )),
         M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi")
+        phi(M_Qh, "phi"),
+        M_prec_updated(false)
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
@@ -362,6 +365,16 @@ template < typename space_type, typename coef_space_type >
 void
 PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype A, element_coef_type mu )
 {
+    if(boption(_prefix=M_prefix,_name="reuse-prec") && M_prec_updated)
+    {
+        LOG(INFO) << "Not updating preconditioner " << M_prefix << "\n";
+        return;
+    }
+    else
+        LOG(INFO) << "Updating preconditioner " << M_prefix << "\n";
+
+    M_prec_updated = true;
+
     tic();
     this->setMatrix( A );
     BoundaryConditions M_bc = M_model.boundaryConditions();
