@@ -6,7 +6,7 @@
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
 
- Copyright (C) 2014-2015 Feel++ Consortium
+ Copyright (C) 2014-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -427,21 +427,29 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::createSubMatrices()
     tic();
     if ( !M_F )
     {
+        tic();
         M_F = this->matrix()->createSubMatrix( M_Vh_indices, M_Vh_indices, true );
         M_F->mapRowPtr()->setIndexSplit( M_Vh->dof()->indexSplit() );
         if ( M_Vh->dof()->hasIndexSplitWithComponents() )
             M_F->mapRowPtr()->setIndexSplitWithComponents( M_Vh->dof()->indexSplitWithComponents() );
         //M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        tic();
         M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
+        toc("submatrix B^T",FLAGS_v>0);
         helmOp = op( M_F, "Fu" );
         helmOp->setCloseMatrixRhs( false );
         divOp = op( M_Bt, "Bt");
+        toc("create submatrix", FLAGS_v>0);
     }
     else
     {
+        tic();
         this->matrix()->updateSubMatrix( M_F, M_Vh_indices, M_Vh_indices );
         //this->matrix()->updateSubMatrix( M_B, M_Qh_indices, M_Vh_indices );
+        tic();
         this->matrix()->updateSubMatrix( M_Bt, M_Vh_indices, M_Qh_indices );
+        toc("update submatrix B^T",FLAGS_v>0);
+        toc("update submatrix",FLAGS_v>0);
     }
     toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
 }
