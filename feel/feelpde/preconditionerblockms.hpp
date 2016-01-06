@@ -392,6 +392,7 @@ PreconditionerBlockMS<space_type>::init( void )
 #else
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
+    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
     LOG(INFO) << "Init done\n";
 }
 
