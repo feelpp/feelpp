@@ -126,6 +126,7 @@ private:
     velocity_element_type u, v;
     pressure_element_type p, q;
 
+    form2_type<pressure_space_type,pressure_space_type> form2_conv;
     sparse_matrix_ptrtype M_mass, M_diff, M_conv, G, M_B, M_massv_inv, M_A;
     vector_ptrtype rhs;
 
@@ -177,6 +178,7 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     M_mass( backend()->newMatrix(M_Qh, M_Qh) ),
     M_diff( backend()->newMatrix(M_Qh, M_Qh) ),
     M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
+    form2_conv( M_Qh, M_Qh, G ),
     G( backend()->newMatrix(M_Qh, M_Qh) ),
     M_B( backend()->newMatrix(_trial=M_Vh, _test=M_Qh) ),
     M_massv_inv( backend()->newMatrix(_trial=M_Vh, _test=M_Vh) ),
@@ -194,7 +196,7 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using mu=" << M_mu << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using rho=" << M_rho << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
-
+    
     this->assembleMass();
     this->assembleDiffusion();
 }
@@ -216,13 +218,14 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                                  double tn1 )
 {
     tic();
-    auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
-    G->zero();
+
     double time_step = tn1-tn;
-    if ( hasConvection )
-        conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
     auto diff_c = M_accel?M_mu*time_step:M_mu;
-    conv += integrate( _range=elements(M_Qh->mesh()), _expr=diff_c*gradt(p)*trans(grad(q)));
+    form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=diff_c*gradt(p)*trans(grad(q)));
+
+    
+    if ( hasConvection )
+        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
@@ -236,13 +239,13 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                     en.setParameterValues( { { "t", tn } } );
                     auto en1 = ebc.find(dir.marker())->second;
                     en1.setParameterValues( { { "t", tn1 } } );
-                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
-                                       _expr=-M_rho*trans((en1-en)/time_step)*N()*idt(p)*id(q));
+                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
+                                             _expr=-M_rho*trans((en1-en)/time_step)*N()*idt(p)*id(q));
                 }
                 else
                 {
-                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
-                                       _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
+                                             _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
                 }
             }
         }
@@ -259,7 +262,7 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
 
     static bool init_G = false;
 
-    //if ( !init_G )
+    if ( !init_G )
     {
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
