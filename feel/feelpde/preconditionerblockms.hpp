@@ -351,7 +351,7 @@ void
 PreconditionerBlockMS<space_type>::init( void )
 {
     if( Environment::worldComm().isMasterRank() )
-    std::cout << "Init precionditioner blockms\n";
+        std::cout << "Init preconditioner blockms\n";
     LOG(INFO) << "Init ...\n";
     tic();
     BoundaryConditions M_bc = M_model.boundaryConditions();
