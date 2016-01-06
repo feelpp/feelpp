@@ -44,11 +44,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Feel
 {
-template< typename space_type, typename coef_space_type >
+template< typename space_type >
     class PreconditionerBlockMS : public Preconditioner<typename space_type::value_type>
 {
     typedef Preconditioner<typename space_type::value_type> super;
 public:
+    static const uint16_type Dim = space_type::nDim;
+    typedef typename space_type::value_type value_type;
 
     typedef typename backend_type::solve_return_type solve_return_type;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
@@ -58,7 +60,6 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef boost::shared_ptr<coef_space_type> coef_space_ptrtype;
     typedef typename space_type::indexsplit_ptrtype  indexsplit_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
@@ -76,20 +77,9 @@ public:
     // Potential
     typedef typename potential_space_type::element_type potential_element_type;
     typedef typename lagrange_space_type::element_type lagrange_element_type;
-    typedef typename coef_space_type::element_type element_coef_type;
 
     // Grad operator
     typedef Grad_t<lagrange_space_type, potential_space_type> grad_type;
-
-    typedef typename space_type::value_type value_type;
-
-    static const uint16_type Dim = space_type::nDim;
-
-    typedef OperatorMatrix<value_type> op_type;
-    typedef boost::shared_ptr<op_type> op_ptrtype;
-
-    typedef OperatorMatrix<value_type> op_mat_type;
-    typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
     /// Forms type
     typedef typename Feel::meta::LinearForm<potential_space_type>::type form1_potential_type;
@@ -110,12 +100,11 @@ public:
      * \param A the full matrix
      */
     PreconditionerBlockMS( space_ptrtype Xh,
-                           coef_space_ptrtype Mh,
                            ModelProperties model,
                            std::string const& s,
                            sparse_matrix_ptrtype A);
 
-    void update( sparse_matrix_ptrtype A, element_coef_type mu );
+    void init( void );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -124,6 +113,8 @@ public:
 
     int applyInverse ( const vector_type& X, vector_type& Y ) const;
 
+    void attacheAAlpha(sparse_matrix_ptrtype _a) {M_a_alpha = _a;}
+    void attacheABeta (sparse_matrix_ptrtype _b) {M_a_beta  = _b;}
     virtual ~PreconditionerBlockMS(){};
 #if 0
     void printMatSize(int i, std::ostream &os)
@@ -183,7 +174,6 @@ private:
 
     potential_space_ptrtype M_Vh;
     lagrange_space_ptrtype M_Qh;
-    lag_v_space_ptrtype M_Qh3; // To create a_alpha & a_beta : instanciate only if needed
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
 
@@ -225,15 +215,15 @@ private:
 
     grad_type M_grad;
 
-    bool M_prec_updated; // Has the preconditioner been updated once ?
+    sparse_matrix_ptrtype M_a_alpha;
+    sparse_matrix_ptrtype M_a_beta;
 };
 
-    template < typename space_type, typename coef_space_type >
-PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
-                                                                         coef_space_ptrtype Mh,        // mu
-                                                                         ModelProperties model,        // model
-                                                                         std::string const& p,         // prefix
-                                                                         sparse_matrix_ptrtype AA )    // The matrix
+    template < typename space_type >
+PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
+                                                         ModelProperties model,        // model
+                                                         std::string const& p,         // prefix
+                                                         sparse_matrix_ptrtype AA )    // The matrix
     :
         M_backend(backend()),           // the backend associated to the PC
         M_Xh( Xh ),
@@ -266,12 +256,11 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
         M_X(M_backend->newVector( M_Qh )),
         M_Y(M_backend->newVector( M_Qh )),
         M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi"),
-        M_prec_updated(false)
+        phi(M_Qh, "phi")
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
-    this->setMatrix( AA ); // Needed only if worldComm > 1
+    this->setMatrix( AA );
 
     /* Indices are need to extract sub matrix */
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
@@ -312,10 +301,6 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
     if(soption(_name="pc-type", _prefix=M_prefix_11) == "ams")
 #if FEELPP_DIM == 3
     {
-        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
-        {
-            M_Qh3 = lag_v_space_type::New( M_Vh->mesh()); //no need for that space if we does not provide a_alpha & a_beta
-        }
         M_grad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
         // This preconditioner is linked to that backend : the backend will
@@ -361,22 +346,14 @@ PreconditionerBlockMS<space_type,coef_space_type>::PreconditionerBlockMS(space_p
     toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
 }
 
-template < typename space_type, typename coef_space_type >
+template < typename space_type >
 void
-PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype A, element_coef_type mu )
+PreconditionerBlockMS<space_type>::init( void )
 {
-    if(boption(_prefix=M_prefix,_name="reuse-prec") && M_prec_updated)
-    {
-        LOG(INFO) << "Not updating preconditioner " << M_prefix << "\n";
-        return;
-    }
-    else
-        LOG(INFO) << "Updating preconditioner " << M_prefix << "\n";
-
-    M_prec_updated = true;
-
+    if( Environment::worldComm().isMasterRank() )
+    std::cout << "Init precionditioner blockms\n";
+    LOG(INFO) << "Init ...\n";
     tic();
-    this->setMatrix( A );
     BoundaryConditions M_bc = M_model.boundaryConditions();
 
     LOG(INFO) << "Create sub Matrix\n";
@@ -390,7 +367,7 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
      */
     // Is the zero() necessary ?
     M_11->zero();
-    A->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 M
+    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 M
     M_11->addMatrix(1,M_mass);                            // A-k^2 M + M = A+(1-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
@@ -402,45 +379,25 @@ PreconditionerBlockMS<space_type,coef_space_type>::update( sparse_matrix_ptrtype
     {
         if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
         {
-            /*
-             * In that code, the \beta parameter is constant, so there is no
-             * need to rebuild the A_beta (aka M_L) matrix
-             */
             auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
                                        _backend=backend(_name=M_prefix_11),
                                        _prefix=M_prefix_11,
                                        _matrix=M_11
                                       );
             prec->setMatrix(M_11);
-            auto _u = M_Qh3->element("_u");
-            auto a_alpha = form2(_test=M_Qh3, _trial=M_Qh3);
-            auto b_alpha = form1(_test=M_Qh3);
-            for(auto it : M_model.materials() )
-            {
-                a_alpha += integrate(_range=markedelements(M_Qh3->mesh(),marker(it)), _expr=cst(1.)/idv(mu)*inner(gradt(_u), grad(_u)) + inner(idt(_u),id(_u)));
-            }
-            for(auto const & it : m_dirichlet_u)
-            {
-                a_alpha += on(_range=markedfaces(M_Qh3->mesh(),it.first),_element=_u, _expr=it.second, _rhs=b_alpha, _type="elimination_symmetric");
-            }
-            if( M_er == 0.)
-                prec->attachAuxiliarySparseMatrix("a_beta",NULL);
-            else
-                prec->attachAuxiliarySparseMatrix("a_beta",M_L);
-
-            prec->attachAuxiliarySparseMatrix("a_alpha",a_alpha.matrixPtr());
+            prec->attachAuxiliarySparseMatrix("a_alpha",M_a_alpha);
+            prec->attachAuxiliarySparseMatrix("a_beta",M_a_beta);
         }
     }
 #else
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
-
-    toc( "[PreconditionerBlockMS] update", FLAGS_v > 0 );
+    LOG(INFO) << "Init done\n";
 }
 
-template < typename space_type, typename coef_space_type >
+template < typename space_type >
 int
-PreconditionerBlockMS<space_type,coef_space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
+PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_type& Y ) const
 {
     tic();
     U = X;
@@ -476,22 +433,20 @@ PreconditionerBlockMS<space_type,coef_space_type>::applyInverse ( const vector_t
 
 namespace meta
 {
-template< typename space_type , typename coef_space_type >
+template< typename space_type >
     struct blockms
 {
-    typedef PreconditionerBlockMS<space_type, coef_space_type> type;
+    typedef PreconditionerBlockMS<space_type> type;
     typedef boost::shared_ptr<type> ptrtype;
 };
 }
 BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
-                                   typename parameter::value_type<Args, tag::space >::type::element_type,
-                                   typename parameter::value_type<Args, tag::space2 >::type::element_type
+                                   typename parameter::value_type<Args, tag::space >::type::element_type
                                    >::ptrtype ),
                                  blockms,
                                  tag,
                                  ( required
                                    ( space, *)
-                                   ( space2, *)
                                    ( matrix, *)
                                    ( model, *)
                                  )
@@ -500,16 +455,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
                                  )
                                )
 {
-    typedef typename meta::blockms<
-        typename parameter::value_type<Args, tag::space>::type::element_type,
-                 typename parameter::value_type<Args, tag::space2>::type::element_type
-                     >::ptrtype pblockms_t;
-
-    typedef typename meta::blockms<
-        typename parameter::value_type<Args, tag::space>::type::element_type,
-                 typename parameter::value_type<Args, tag::space2>::type::element_type
-                     >::type blockms_t;
-    pblockms_t p( new blockms_t( space, space2, model, prefix, matrix ) );
+    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockms_t;
+    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockms_t;
+    pblockms_t p( new blockms_t( space, model, prefix, matrix ) );
     return p;
 } // blockms
 } // Feel
