@@ -111,7 +111,7 @@ class BoundaryConditions
     /**
      * \param p prefix to be set
      */
-    void setPrefix( std::string p ) { M_prefix = p; }
+    void setPrefix( std::string const& p ) { M_prefix = p; }
 
     void setPTree( pt::ptree const& p );
 
@@ -127,6 +127,9 @@ class BoundaryConditions
     std::pair<bool,int> iparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
     std::pair<bool,double> dparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
     std::pair<bool,std::string> sparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+
+    std::list<std::string> markers( std::string const& field, std::string const& type ) const;
+    std::list<std::string> markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const;
 
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
