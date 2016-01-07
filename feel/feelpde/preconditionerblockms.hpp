@@ -393,10 +393,13 @@ PreconditionerBlockMS<space_type>::init( void )
 #else
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
+    /* 
+     * Rebuilding sub-backend
+     */
+    backend(_name=M_prefix_11, _rebuild=true);
+    backend(_name=M_prefix_22, _rebuild=true);
     toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
     LOG(INFO) << "Init done\n";
-    this->M_is_initialized = true;
-    this->M_prec_matrix_structure = MatrixStructure::SAME_PRECONDITIONER;
 }
 
 template < typename space_type >
