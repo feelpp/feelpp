@@ -5,7 +5,7 @@
    Author(s): Thomas Lantz <lantz.thomas0@gmail.com>
    Date: 2015-07-31
 
-Copyright (C) 2014-2015 Feel++ Consortium
+Copyright (C) 2014-2016 Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
