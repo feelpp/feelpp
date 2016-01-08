@@ -29,6 +29,7 @@
 #ifndef Backend_H
 #define Backend_H 1
 
+#include <functional>
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -54,6 +55,9 @@
 
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
+
+
+
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
 //#include <boost/fusion/container.hpp>
@@ -122,6 +126,14 @@ auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
+/**
+ * default pre/post solve function, a no-op
+ */
+void default_prepost_solve( vector_ptrtype const& X, vector_ptrtype& Y)
+{
+    Y = X->clone();
+}
+
 template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
@@ -176,6 +188,8 @@ public:
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
+    using pre_solve_type = std::function<void(vector_ptrtype const&,vector_ptrtype)>;
+    using post_solve_type = std::function<void(vector_ptrtype const&,vector_ptrtype)>;
     //@}
 
     /** @name Constructors, destructor
@@ -1130,6 +1144,8 @@ public:
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( reuse_jac,( bool ), M_reuse_jac )
                                        ( transpose,( bool ), false )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
@@ -1147,12 +1163,17 @@ public:
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
+
+        // set pre/post solve functions
+        M_post_solve = post;
+        M_pre_solve = pre;
+        
         vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
         *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
-
+        
         // this is done with nonlinerarsolver
         if ( !residual )
         {
@@ -1277,6 +1298,10 @@ public:
         {
             M_deleteObservers();
         }
+
+    pre_solve_type preSolve() { return M_pre_solve; }
+    post_solve_type postSolve() { return M_post_solve; }
+    
     //@}
 
 
@@ -1340,7 +1365,8 @@ private:
     bool M_showKSPMonitor;
     bool M_showKSPConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
-
+    pre_solve_type M_pre_solve;
+    post_solve_type M_post_solve;
     boost::signals2::signal<void()> M_deleteObservers;
 };
 
