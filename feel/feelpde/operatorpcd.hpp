@@ -136,8 +136,9 @@ private:
     velocity_element_type u, v;
     pressure_element_type p, q;
 
+    sparse_matrix_ptrtype G;
     form2_type<pressure_space_type,pressure_space_type> form2_conv;
-    sparse_matrix_ptrtype M_mass, M_diff, M_conv, G, M_B, M_massv_inv, M_A;
+    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_B, M_massv_inv, M_A;
     vector_ptrtype rhs;
 
     op_mat_ptrtype massOp, diffOp, convOp;
@@ -185,11 +186,11 @@ OperatorPCD<space_type, PropertiesSpaceType>::OperatorPCD( space_ptrtype Qh,
     v( M_Vh, "v" ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
+    G( backend()->newMatrix(M_Qh, M_Qh) ),
+    form2_conv( M_Qh, M_Qh, G ),
     M_mass( backend()->newMatrix(M_Qh, M_Qh) ),
     M_diff( backend()->newMatrix(M_Qh, M_Qh) ),
     M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
-    form2_conv( M_Qh, M_Qh, G ),
-    G( backend()->newMatrix(M_Qh, M_Qh) ),
     M_B( backend()->newMatrix(_trial=M_Vh, _test=M_Qh) ),
     M_massv_inv( backend()->newMatrix(_trial=M_Vh, _test=M_Vh) ),
     M_A( A ),
@@ -229,17 +230,21 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
 {
     tic();
 
-    double time_step = tn1-tn;
-    if(M_accel)
-        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*time_step*gradt(p)*trans(grad(q)));
-    else
-        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*gradt(p)*trans(grad(q)));
-
+    double time_step = M_accel?tn1-tn:1;
+    tic();
+    form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*time_step*gradt(p)*trans(grad(q)));
+    toc("OperatorPCD::update apply diffusion",FLAGS_v>0);
     
     if ( hasConvection )
+    {
+        tic();
         form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
+        toc("OperatorPCD::update apply convection",FLAGS_v>0);
+    }
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
+    {
+        tic();
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
             LOG(INFO) << "Setting Robin condition on " << dir.marker();
@@ -262,20 +267,40 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
                 }
             }
         }
+        toc("OperatorPCD::update apply Robin",FLAGS_v>0);
+    }
 
-    auto alphaMax = normLinf( _range=elements(M_Qh->mesh()), _expr=idv(M_alpha), _pset=_Q<5>() );
-    if ( alphaMax.value() > 1e-15 )
+    //auto alphaMax = normLinf( _range=elements(M_Qh->mesh()), _expr=idv(M_alpha), _pset=_Q<5>() );
+    //if ( alphaMax.value() > 1e-15 )
+    if ( M_alpha->linftyNorm() > 1e-15 )
     {
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
-        conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)*idt(p)*id(q) );
+        tic();
+        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)*idt(p)*id(q) );
+        toc("OperatorPCD::update apply mass",FLAGS_v>0);
     }
 
     G->close();
+    tic();
+    if ( soption("blockns.pcd.inflow") != "Robin" )
+        for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
+        {
+            form2_conv += on( markedfaces(M_Qh->mesh(),dir.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+        }
+
+    // on neumann boundary on velocity, apply Dirichlet condition on pressure
+    if ( soption("blockns.pcd.outflow") == "Dirichlet" )
+        for( auto cond : M_bcFlags[M_prefix]["Neumann"])
+        {
+            form2_conv += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+        }
+    toc("OperatorPCD::update apply on()",FLAGS_v>0);
+
     this->applyBC(G);
 
     static bool init_G = false;
 
-    if ( !init_G )
+    //if ( !init_G )
     {
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
@@ -314,7 +339,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
     {
         auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
         d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
-
+        LOG(INFO) << "blockns.pcd.diffusion is Laplacian";
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
             LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
@@ -326,21 +351,20 @@ OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
                          _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
         M_diff->close();
-        //this->applyBC(M_diff);
-    }
+     }
     if ( soption("blockns.pcd.diffusion") == "BTBt" )
     {
         tic();
         std::vector<size_type> M_Vh_indices( M_Vh->nLocalDofWithGhost() );
         std::vector<size_type> M_Qh_indices( M_Qh->nLocalDofWithGhost() );
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-        std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
-                   M_Vh->nLocalDofWithGhost() );
-        M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        //std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
+        //M_Vh->nLocalDofWithGhost() );
+        //M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
         toc(" - OperatorPCD Extracted B" );
         tic();
         auto m = form2( _test=M_Vh, _trial=M_Vh );
-        m = integrate( elements(M_Vh->mesh()), idv(*M_rho)*trans(idt(u))*id(v) );
+        m = integrate( elements(M_Vh->mesh()), trans(idt(u))*id(v) );
         m.matrixPtr()->close();
         toc(" - OperatorPCD Velocity Mass Matrix" );
         tic();
@@ -351,7 +375,8 @@ OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
         M_massv_inv->close();
         toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
         tic();
-        M_b->PAPt( M_massv_inv, M_B, M_diff );
+        M_b->PtAP( M_massv_inv, M_A, M_diff );
+        M_diff->close();
         toc(" - OperatorPCD B T^-1 B^T built");
         if ( Environment::numberOfProcessors() == 1 )
             M_diff->printMatlab( "BTBt.m" );
@@ -366,27 +391,6 @@ template < typename space_type, typename PropertiesSpaceType>
 void
 OperatorPCD<space_type, PropertiesSpaceType>::applyBC( sparse_matrix_ptrtype& A )
 {
-    tic();
-    auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
-
-    if ( soption("blockns.pcd.inflow") != "Robin" )
-        for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
-        {
-            a += on( markedfaces(M_Qh->mesh(),dir.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
-        }
-
-    // on neumann boundary on velocity, apply Dirichlet condition on pressure
-    if ( soption("blockns.pcd.outflow") == "Dirichlet" )
-        for( auto cond : M_bcFlags[M_prefix]["Neumann"])
-        {
-            if ( boption("blockns.weakdir" ) )
-                a+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _expr=-idv(*M_mu)*gradt(p)*N()*id(p)-idv(*M_mu)*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
-            else
-                a += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
-        }
-    rhs->close();
-    A->close();
-    toc("OperatorPCD::BC apply",FLAGS_v>0);
 }
 
 template < typename space_type, typename PropertiesSpaceType>

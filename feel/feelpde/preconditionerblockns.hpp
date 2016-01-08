@@ -480,7 +480,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     case PCD:
     case PCD_ACCELERATION:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, this->matrix(), M_b, M_bcFlags, M_prefix, M_mu, M_rho, M_alpha, M_type==PCD_ACCELERATION );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_Bt, M_b, M_bcFlags, M_prefix, M_mu, M_rho, M_alpha, M_type==PCD_ACCELERATION );
         this->setSide( super::RIGHT );
 
         toc( "Preconditioner::setType " + typeStr(), FLAGS_v > 0 );
