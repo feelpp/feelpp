@@ -41,6 +41,25 @@ extern "C"
 namespace Feel
 {
 
+PetscErrorCode feel_petsc_post_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    
+    auto e = VecDuplicate(x, &y);
+    CHKERRABORT( b->comm().globalComm(), e );
+
+    LOG(INFO) << "call feel_petsc_post_solve";
+    return e;
+}
+PetscErrorCode feel_petsc_pre_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    
+    auto e = VecDuplicate(x, &y);
+    CHKERRABORT( b->comm().globalComm(), e );
+    LOG(INFO) << "call feel_petsc_pre_solve";
+    return e;
+}
 
 template<typename T>
 BackendPetsc<T>::~BackendPetsc()
@@ -121,6 +140,19 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
+    if ( this->preSolve() )
+    {
+        int e;
+        e = KSPSetPreSolve( M_solver_petsc.ksp(), feel_petsc_pre_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        int e;
+        e = KSPSetPostSolve( M_solver_petsc.ksp(), feel_petsc_post_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
     auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations(), false );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
