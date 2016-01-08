@@ -663,8 +663,8 @@ blockms_options( std::string const& prefix )
 {
     po::options_description _options( "BLOCKMS options (" + prefix + ")" );
     return _options
-        .add(     ams_options( prefixvm(prefix, "blockms.11").c_str() ))  // the (1,1) block
-        .add( backend_options( prefixvm(prefix, "blockms.22").c_str() )); // the (2,2) block
+        .add(     ams_options( prefixvm(prefix, "11").c_str() ))  // the (1,1) block
+        .add( backend_options( prefixvm(prefix, "22").c_str() )); // the (2,2) block
 }
 
 /**
@@ -779,7 +779,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
         .add( blockns_options( prefix ) )
-        .add( blockms_options( prefix ) )
+        //.add( blockms_options( prefix ) )
 
         /* nonlinear solver options */
         .add( nlsolver_options() )

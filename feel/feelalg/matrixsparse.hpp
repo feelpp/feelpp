@@ -722,7 +722,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols )
+                     std::vector<size_type> const& cols, bool doClose = true )
     {
         CHECK( false ) << "invalid call : Not Implemented in base class";
     }

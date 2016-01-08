@@ -41,6 +41,7 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>
 #ifdef FEELPP_HAS_HPDDM
+#define HPDDM_NUMBERING 'C'
 #define BDD            // BDD module
 // #define FETI           // FETI module
 #define MUMPSSUB       // MUMPS as solver inside subdomain
@@ -441,7 +442,7 @@ void Geneopp<Dim, Order, Type>::run()
         if(ret)
             timers.back() += time.elapsed();
         tic();
-        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, Environment::worldComm());
+        HPDDM::IterativeMethod::PCG<false>(*K, b, &(uLocal[0]), Environment::worldComm());
         toc("solution");
 
         double* storage = new double[2];
