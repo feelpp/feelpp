@@ -1,26 +1,26 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
- This file is part of the Feel++ library
- 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 11 Apr 2015
- 
- Copyright (C) 2015 Feel++ Consortium
- 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
- 
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+
+   This file is part of the Feel++ library
+
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Date: 11 Apr 2015
+
+Copyright (C) 2015 Feel++ Consortium
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 #include <iostream>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -54,6 +54,7 @@ ModelPostprocessPointPosition::setup( std::string const& name )
 
 
     this->pointPosition().setName( name );
+     
     if ( hasMarker )
     {
         std::string marker = M_p.get<std::string>( "marker" );
@@ -220,6 +221,56 @@ ModelPostprocess::setup()
     auto measures = M_p.get_child_optional("Measures");
     if ( measures )
     {
+        auto evalPointsFile = measures->get_child_optional("File");
+        if ( evalPointsFile )
+        {
+          // store fields name
+          std::vector<std::string> fieldList = as_vector<std::string>( M_p, "Measures.Fields" );
+          if ( fieldList.empty() )
+          {
+              std::string fieldUnique = M_p.get<std::string>( "fields" );
+              if ( !fieldUnique.empty() )
+                  fieldList = { fieldUnique };
+          }
+
+          std::string file = M_p.get<std::string>("Measures.File"); 
+          std::ifstream in(Environment::expand(file));
+          if(in.good())
+          {
+            double d = 0.;
+            int comp = 0;
+            std::string lineData;
+            /*
+             * for each point
+             * - new ModelPostProcessPointPosition
+             * - add coord & name to it
+             */
+            while(getline(in, lineData)) 
+            {
+              ModelPostprocessPointPosition myPpPtPos( M_worldComm );
+              ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
+              d = 0.;
+              comp = 0;
+              std::stringstream lineStream(lineData);
+              while(lineStream >> d) // Read Point
+              {
+                coordData(comp) = d;
+                comp++;
+              }
+            myPpPtPos.pointPosition().setValue( coordData );
+            myPpPtPos.pointPosition().setName( "Dummy" );
+            for( std::string const& field : fieldList )
+                myPpPtPos.addFields( field );
+            M_measuresPoint.push_back( myPpPtPos );
+            }
+           if ( !M_measuresPoint.empty() )
+               this->operator[]("Measures").push_back( "Points" );
+          } // good
+          else
+          {
+            LOG(ERROR) << "Unable to open " << Environment::expand(file) << "\n";
+          }
+        }
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
         {
