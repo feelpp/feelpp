@@ -101,7 +101,7 @@ public:
     linear()
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) )
         {
         }
 
@@ -186,7 +186,7 @@ public:
     NL22( const vectorN_type& initial_guess , const vectorN_type & exact_solution)
         :
         Simget(),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_initial_guess ( initial_guess ),
         M_exact_solution( exact_solution )
         {
@@ -233,11 +233,10 @@ public:
 
             M_nlsolver->solve( map_J, map_solution, map_R, 1e-10, 10 );
             BOOST_TEST_MESSAGE( "system solved" );
-
             std::cout<<"solution of non linear problem : ("<< solution(0)<<" , "<<solution(1)<<") with initial guess ("<<M_initial_guess(0)<<" , "<<M_initial_guess(1)<<")"<<std::endl;
             double norm_solution = solution.norm();
             double norm_exact_solution = M_exact_solution.norm();
-            BOOST_CHECK_CLOSE( norm_solution, norm_exact_solution, -10);
+            BOOST_CHECK_CLOSE( norm_solution, norm_exact_solution, 1e-8);
             BOOST_TEST_MESSAGE( "solution checked" );
 
         }
@@ -271,7 +270,7 @@ BOOST_AUTO_TEST_CASE( test_nlsolve_eigen1 )
     vectorN_type initial_guess(2);
     vectorN_type exact_solution(2);
     initial_guess<<-5,-2;
-    exact_solution<<-3.93432,-1.71298;
+    exact_solution <<-3.934317165179855 , -1.712984870096597;
     app.add( new NL22( initial_guess , exact_solution ) );
 
     initial_guess<<-0.9,2;
