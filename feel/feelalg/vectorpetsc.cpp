@@ -1414,6 +1414,12 @@ VectorPetscMPI<T>::localSize() const
     return static_cast<size_type>( petsc_size );
 }
 
+vector_uptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
+}
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;
