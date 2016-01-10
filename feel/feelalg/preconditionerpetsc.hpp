@@ -339,10 +339,10 @@ public :
     //ConfigureKSP( KSP& ksp,WorldComm const& worldComm, std::string const& sub, std::string const& prefix );
     ConfigureKSP( KSP& ksp,PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
-                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
+                  std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 );
     ConfigureKSP( PreconditionerPetsc<double> * precFeel,WorldComm const& worldComm, std::string const& sub, std::string const& prefix,
                   std::vector<std::string> const& prefixOverwrite,
-                  std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 );
+                  std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 );
     bool kspView() const { return M_kspView; }
 
 private :
