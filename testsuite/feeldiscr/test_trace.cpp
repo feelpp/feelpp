@@ -218,7 +218,11 @@ main( int argc, char** argv )
                                   _email="abdoulaye.samake@imag.fr") );
     Application app;
 
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 3)
     app.add( new Test<2,3>() );
+#else
+    app.add( new Test<2,1>() );
+#endif
     app.run();
 
 }

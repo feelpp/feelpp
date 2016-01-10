@@ -261,6 +261,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
     this->setMatrix( AA );
+    this->setName(M_prefix);
 
     /* Indices are need to extract sub matrix */
     std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
@@ -367,7 +368,7 @@ PreconditionerBlockMS<space_type>::init( void )
      */
     // Is the zero() necessary ?
     M_11->zero();
-    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices); // M_11 = A-k^2 M
+    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
     M_11->addMatrix(1,M_mass);                            // A-k^2 M + M = A+(1-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
@@ -392,6 +393,12 @@ PreconditionerBlockMS<space_type>::init( void )
 #else
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
+    /* 
+     * Rebuilding sub-backend
+     */
+    backend(_name=M_prefix_11, _rebuild=true);
+    backend(_name=M_prefix_22, _rebuild=true);
+    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
     LOG(INFO) << "Init done\n";
 }
 

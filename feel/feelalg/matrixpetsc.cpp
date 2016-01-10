@@ -1037,11 +1037,11 @@ template <typename T>
 void
 MatrixPetsc<T>::updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                                  std::vector<size_type> const& rows,
-                                 std::vector<size_type> const& cols )
+                                 std::vector<size_type> const& cols, bool doClose )
 {
     CHECK( submatrix ) << "submatrix is not init";
     boost::shared_ptr<MatrixPetsc<T> > submatrixPetsc = boost::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
-    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() );
+    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() , doClose );
 }
 
 
@@ -1049,9 +1049,10 @@ template <typename T>
 void
 MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
                                    std::vector<size_type> const& cols,
-                                   Mat &submat ) const
+                                   Mat &submat, bool doClose ) const
 {
-    this->close();
+    if(doClose) // with close(), petsc believe the matrix has changed. That can be confusing
+        this->close();
     int ierr=0;
     IS isrow;
     IS iscol;
