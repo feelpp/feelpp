@@ -274,7 +274,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typename Lambda<TheExpr...>::type                       \
                 operator()( TheExpr... e) { return *this; }             \
                                                                         \
-            element_type const& e() const { return M_v; }              \
+            element_type const& e() const { return M_v; }               \
+            fe_ptrtype  fe() const { return M_v.fe(); }                 \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \

@@ -6,6 +6,7 @@
        Date: 2013-10-23
 
   Copyright (C) 2013 Université de Strasbourg
+  Copyright (C) 2013-2015 Feel++ Consortium 
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -149,13 +150,7 @@ private:
     //! copy constructor
     DofFromElement( DofFromElement const & );
     //! copy operator
-    DofFromElement& operator=( DofFromElement const & o)
-        {
-            if (this != &o )
-            {
-            }
-            return *this;
-        }
+    DofFromElement& operator=( DofFromElement const & o) = default;
 
     void addVertexDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts  )
@@ -558,7 +553,7 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
      */
     if ( is_continuous || is_discontinuous_locally )
     {
-
+#if 0
         /* idem as above but for local element
            numbering except that it is
            reset to 0 after each element */
@@ -578,6 +573,21 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
         addEdgeDof( __elt, processor, next_free_dof, shifts );
         addFaceDof( __elt, processor, next_free_dof, shifts );
         addVolumeDof( __elt, processor, next_free_dof, shifts );
+#else
+        for( auto const& ldof :  M_doftable->dof() )
+        {
+            // generate global id based on entity id, local dof id and number of local dof
+            // the functions also updates local dof signs
+            // it returns a pair 
+            auto gid_per_entity_type = std::make_pair(1,1);//globalDofId( __elt, ldof );
+            // function marker get the Marker1 of the entity associated to the localdof
+            M_doftable->insertDof( __elt.id(),
+                                   ldof, gid, processor,
+                                   next_free_dof, 1, false,
+                                   marker(__elt, ldof ) );
+            
+        }
+#endif
     }
 
     else
@@ -585,15 +595,12 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
 
         size_type ie = __elt.id();
 
-        const int ncdof = is_product?nComponents:1;
-
-        for ( uint16_type l = 0; l < nldof; ++l )
+        for( auto const& ldof: M_doftable->dof() )
         {
-            for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
-            {
-                M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
-                                                           Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
-            }
+            
+            M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, ldof.id() ),
+                                                       Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+            ++next_free_dof;
         }
     }
 }

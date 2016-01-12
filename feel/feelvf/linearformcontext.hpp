@@ -64,6 +64,11 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_rep(),
     M_rep_2(),
     M_rep_mortar(),
+    M_local_rows( M_test_dof->nLocalDof() ),
+    M_local_rows_2( 2*M_test_dof->nLocalDof() ),
+    M_mortar_local_rows( M_test_dof->nLocalDof()-1 ),
+    M_local_rowsigns( M_test_dof->nLocalDof() ),
+    M_local_rowsigns_2( 2*M_test_dof->nLocalDof() ),
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
@@ -98,6 +103,11 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_rep(),
     M_rep_2(),
     M_rep_mortar(),
+    M_local_rows( M_test_dof->nLocalDof() ),
+    M_local_rows_2( 2*M_test_dof->nLocalDof() ),
+    M_mortar_local_rows( M_test_dof->nLocalDof()-1 ),
+    M_local_rowsigns( M_test_dof->nLocalDof() ),
+    M_local_rowsigns_2( 2*M_test_dof->nLocalDof() ),
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
@@ -130,6 +140,11 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_rep(),
     M_rep_2(),
     M_rep_mortar(),
+    M_local_rows( M_test_dof->nLocalDof() ),
+    M_local_rows_2( 2*M_test_dof->nLocalDof() ),
+    M_mortar_local_rows( M_test_dof->nLocalDof()-1 ),
+    M_local_rowsigns( M_test_dof->nLocalDof() ),
+    M_local_rowsigns_2( 2*M_test_dof->nLocalDof() ),
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
@@ -167,6 +182,11 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_rep(),
     M_rep_2(),
     M_rep_mortar(),
+    M_local_rows( M_test_dof->nLocalDof() ),
+    M_local_rows_2( 2*M_test_dof->nLocalDof() ),
+    M_mortar_local_rows( M_test_dof->nLocalDof()-1 ),
+    M_local_rowsigns( M_test_dof->nLocalDof() ),
+    M_local_rowsigns_2( 2*M_test_dof->nLocalDof() ),
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr( new eval1_expr_type( expr, _gmcExpr, M_test_fec1 ) ),
     M_integrator( im )
@@ -273,7 +293,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 
     if ( !UseMortar )
     {
-        for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+        for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
         {
             M_rep( i ) = M_integrator( *M_eval0_expr, i, 0, 0 );
         }
@@ -283,7 +303,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 #if !defined(NDEBUG)
         CHECK( M_test_dof->mesh()->isBoundaryElement( M_gmc_left->id() ) ) << "element in context must be on boundary";
 #endif
-        for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+        for ( uint16_type i = 0; i < M_test_dof->nLocalDof()-1; ++i )
         {
             M_rep_mortar( i ) = M_integrator( *M_eval0_expr, i, 0, 0 );
         }
@@ -302,13 +322,13 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+    for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
     {
         uint16_type ii = i;
         // test dof element 0
         M_rep_2( ii ) = M_integrator( *M_eval0_expr, i, 0, 0 );
 
-        ii = i + test_dof_type::nDofPerElement;
+        ii = i + M_test_dof->nLocalDof();
         // test dof element 1
         M_rep_2( ii ) = M_integrator( *M_eval1_expr, i, 0, 0 );
     }
@@ -328,13 +348,13 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     if ( !UseMortar )
     {
         if ( isFirstExperience )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
             {
                 M_rep( i ) = M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }
 
         else
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
             {
                 M_rep( i ) += M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }
@@ -345,13 +365,13 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
         CHECK( M_test_dof->mesh()->isBoundaryElement( M_gmc_left->id() ) ) << "element in context must be on boundary";
 #endif
         if ( isFirstExperience )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+            for ( uint16_type i = 0; i < M_test_dof->nLocalDof()-1; ++i )
             {
                 M_rep_mortar( i ) = M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }
 
         else
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+            for ( uint16_type i = 0; i < M_test_dof->nLocalDof()-1; ++i )
             {
                 M_rep_mortar( i ) += M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }
@@ -400,8 +420,11 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1 )
 {
+#warning TODO
+    // use Eigen block copy
+#if 0
     size_type row_start = M_lb.front().globalRowStart();
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+    M_local_rows_2.head( M_test_dof->nLocalDof() ) = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
     M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
 
     if ( test_dof_type::is_modal )
@@ -414,6 +437,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 
     M_form.addVector( M_local_rows_2.data(), M_local_rows_2.size(),
                        M_rep_2.data() );
+#endif
 }
 
 }

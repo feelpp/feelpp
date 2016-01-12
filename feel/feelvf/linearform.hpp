@@ -280,14 +280,14 @@ public:
         static const int rep_shape = 2;//1+(eval_expr_type::shape::M-1>0)+(eval_expr_type::shape::N-1>0);
         //typedef boost::multi_array<value_type, rep_shape> local_vector_type;
         typedef typename space_type::dof_type test_dof_type;
-        static const int nDofPerElementTest = space_type::dof_type::nDofPerElement;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, 1> local_vector_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 1> local2_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
 
-        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, 1> mortar_local_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local_vector_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local2_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local_row_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local2_row_type;
+
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> mortar_local_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> mortar_local_row_type;
 
     public:
 
