@@ -130,6 +130,8 @@ struct node
     //typedef ublas::vector<T, ublas::bounded_array<T, S> >  type;
     typedef ublas::vector<T>  type;
 };
+template<typename T>
+using node_t = typename node<T>::type;
 
 /*!
   hessian type
