@@ -5,7 +5,8 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
         Date: 2010-05-08
 
-   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
+   Copyright (C) 2010-2015 Feel++ Constructs
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,7 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-05-08
  */
-#define BOOST_TEST_MODULE Raviar-Thomas polynomials test
+#define BOOST_TEST_MODULE Raviart-Thomas polynomials test
 // Boost.Test
 #define USE_TEST 1
 #include <boost/test/unit_test.hpp>

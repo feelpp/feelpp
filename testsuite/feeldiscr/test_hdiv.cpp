@@ -85,6 +85,7 @@ makeAbout()
 
 using namespace Feel;
 
+template<int Order>
 class TestHDiv
     :
 public Application
@@ -109,10 +110,10 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    typedef bases<RaviartThomas<0> > basis_type;
-    typedef bases<Lagrange<1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
-    typedef bases<Lagrange<1,Scalar> > lagrange_basis_s_type; //P1 scalar space
-    typedef bases< RaviartThomas<0>, Lagrange<1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    typedef bases<RaviartThomas<Order> > basis_type;
+    typedef bases<Lagrange<Order+1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
+    typedef bases<Lagrange<Order+1,Scalar> > lagrange_basis_s_type; //P1 scalar space
+    typedef bases< RaviartThomas<Order>, Lagrange<Order+1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;

@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_SUITE( darcy_on_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     typedef Mesh<Simplex<FEELPP_DIM> > mesh_type;
-    typedef FunctionSpace<mesh_type, bases<RaviartThomas<0>, Lagrange<2, Scalar, Continuous> > > space_type;
+    typedef FunctionSpace<mesh_type, bases<RaviartThomas<1>, Lagrange<2, Scalar, Continuous> > > space_type;
 
     auto mesh = loadMesh(new mesh_type);
 
