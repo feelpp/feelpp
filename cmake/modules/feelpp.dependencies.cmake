@@ -641,7 +641,14 @@ find_package(GFLAGS REQUIRED)
 
 INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
 
-SET(FEELPP_LIBRARIES ${GFLAGS_LIBRARIES} ${FEELPP_LIBRARIES})
+set(_paths "")
+set(_names "")
+feelpp_split_libs(${GFLAGS_LIBRARIES} _names _paths)
+SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+link_directories(${_paths})
+unset(_paths)
+unset(_names)
+
 if ( ${GFLAGS_INCLUDE_DIR} MATCHES "/contrib/" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/Contrib" )
 else()
@@ -652,7 +659,15 @@ endif()
 find_package(GLOG REQUIRED)
 
 INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
-SET(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES})
+
+set(_paths "")
+set(_names "")
+feelpp_split_libs(${GLOG_LIBRARIES} _names _paths)
+SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+link_directories(${_paths})
+unset(_paths)
+unset(_names)
+
 if ( ${GLOG_INCLUDE_DIR} MATCHES "/contrib/" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/Contrib" )
 else()
@@ -1170,4 +1185,5 @@ unset(_FEELPP_DEPS_LINK_DIR_NEW)
 
 MARK_AS_ADVANCED(FEELPP_DEPS_INCLUDE_DIR)
 MARK_AS_ADVANCED(FEELPP_DEPS_LINK_DIR)
+
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
