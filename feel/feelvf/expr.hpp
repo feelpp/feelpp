@@ -1127,6 +1127,50 @@ basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
     return Expr< expr_t >(  expr_t( v ) );
 }
 
+#if 1
+template<typename ExprType>
+decltype(auto)
+test( ExprType&& e )
+{
+    return typename ExprType::test_basis_type();
+}
+
+#else
+template<typename ExprType>
+decltype(auto)
+test( ExprType&& e )
+{
+    using c1 = boost::is_same<ExprType::test_basis,std::nullptr_t>;
+    return test( std::forward<ExprType>(e), mpl::bool_<c1>() );
+}
+template<typename ExprType>
+decltype(auto)
+test( ExprType&& e, mpl::bool_<true> )
+{
+    return e.expression();
+}
+
+template<typename ExprType>
+decltype(auto)
+    test( ExprType&& e, mpl::bool_<true> )
+{
+    return e.fe();
+}
+
+template<typename ExprType>
+decltype(auto)
+test( Expr<ExprType>&& e, mpl::bool_<true> )
+{
+    return e.expression();
+}
+
+template<typename ExprType>
+decltype(auto)
+test( ExprType&& e, mpl::bool_<false> )
+{
+    return std::nullptr;
+}
+#endif
 /// \endcond
 } // vf
 
