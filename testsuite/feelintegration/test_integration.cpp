@@ -144,7 +144,12 @@ struct f_matheval
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-    typedef Simplex<Dim, Order> convex_type;
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, Order )
+    static const uint16_type geoOrder = Order;
+#else
+    static const uint16_type geoOrder = FEELPP_MESH_MAX_ORDER;
+#endif
+    typedef Simplex<Dim, geoOrder> convex_type;
     typedef Mesh<convex_type, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
@@ -202,7 +207,7 @@ struct test_integration_circle: public Application
                                              _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
                                              _shape=shape,
                                              _dim=2,
-                                             _order=4,
+                                             _order=mesh_type::nOrder,
                                              _xmin=-1.,_ymin=-1.,
                                              _h=meshSize ),
                                _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );

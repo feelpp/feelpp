@@ -50,7 +50,7 @@ public :
 
     DynamicViscosityModel( std::string prefix )
         :
-        M_viscosityModelName( soption(_name="stress_tensor_law",_prefix=prefix ) ),
+        M_viscosityModelName( soption(_name="viscosity.law",_prefix=prefix ) ),
         M_cstDynamicViscosity( doption(_name="mu",_prefix=prefix) ),
         M_powerLaw_n( doption(_name="power_law.n",_prefix=prefix) ),
         M_powerLaw_k( doption(_name="power_law.k",_prefix=prefix) ),
@@ -159,6 +159,19 @@ public :
     void walburnSchneck_C3(double d) { M_walburnSchneck_C3=d; }
     double walburnSchneck_C4() const { return M_walburnSchneck_C4; }
     void walburnSchneck_C4(double d) { M_walburnSchneck_C4=d; }
+
+
+    void updateFromModelMaterials( ModelMaterials const& mat )
+    {
+        if ( mat.empty() ) return;
+        CHECK( mat.size() == 1 ) << "TODO multi-mat";
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            this->setCstDynamicViscosity( mat.mu() );
+        }
+    }
 
 
     boost::shared_ptr<std::ostringstream>

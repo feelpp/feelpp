@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2013-12-24
 
-   Copyright (C) 2013-2015 Feel++ Consortium
+   Copyright (C) 2013-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -92,6 +92,10 @@ BOOST_PARAMETER_FUNCTION(
 
     std::string filenameExpand = Environment::expand(filename);
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
+    int proc_rank = worldcomm.globalRank();
+    //Environment::isMasterRank()
+    if ( proc_rank == 0 )
+        std::cout << "[loadMesh] Loading " << fs::system_complete(mesh_name) << "\n";
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&

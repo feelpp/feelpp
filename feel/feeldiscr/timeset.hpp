@@ -86,6 +86,8 @@ enum
     STEP_OVERWRITE = ( 1<<10 )
 };
 template<typename A0,typename A1,typename A2,typename A3,typename A4> class FunctionSpace;
+namespace detail
+{
 /**
  * \class TimeSet
  * \ingroup SpaceTime
@@ -483,29 +485,22 @@ public:
          * @param  prefix prefix string for the region
          */
         void
-        addRegions( std::string prefix = "" )
+        addRegions( std::string const& prefix = "" )
+        {
+            this->addRegions( prefix,prefix );
+        }
+        void
+        addRegions( std::string const& prefix, std::string const& prefixfname )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
-            if ( !M_ts->M_scalar_p0 )
-            {
-                VLOG(1) << "[timeset] creating space... " << M_mesh.get()->worldComm().numberOfSubWorlds();
-                if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                else
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm() );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                M_scalar_p0 = M_ts->M_scalar_p0;
-            }
+            WorldComm const& meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
+                M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) :
+                M_mesh.get()->worldComm();
+            this->updateScalarP0( std::vector<WorldComm>(1,meshComm) );
+
             VLOG(1) << "[timeset] adding pid...\n";
-            if ( prefix.empty() )
-                add( "pid", regionProcess( M_scalar_p0 ) );
-            else
-                add( prefix + "." + "pid", regionProcess( M_scalar_p0 ) );
+            this->add( prefixvm(prefix,"pid"), prefixvm(prefixfname,"pid"),  regionProcess( M_scalar_p0 ) );
+
             //add( "marker", regionMarker( M_scalar_p0 ) );
             //add( "marker2", regionMarker2( M_scalar_p0 ) );
             //add( "marker3", regionMarker3( M_scalar_p0 ) );
@@ -645,6 +640,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to local min value for these ghosts dofs (else can disturbe visualisation range)
                     if ( M_scalar_p1->dof()->buildDofTableMPIExtended() && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
@@ -655,6 +651,7 @@ public:
                         for ( int k=0;k<nGhostDofAddedInExtendedDofTable;++k )
                             M_nodal_scalar[__fname].set( startDof+k, thelocalmin );
                     }
+#endif
                 }
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
@@ -707,6 +704,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_vector_p1, func, M_nodal_vector[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_vector_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -740,6 +738,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -793,6 +792,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_tensor2_p1, func, M_nodal_tensor2[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_tensor2_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -826,6 +826,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -839,34 +840,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
-                if ( !M_ts->M_scalar_p0 )
-                {
-                    M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                                   MESH_RENUMBER | MESH_CHECK,
-                                                                                   typename scalar_p0_space_type::periodicity_type(),
-                                                                                   func.worldsComm(),
-                                                                                   std::vector<bool>(1,extendeddof) );
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
-
-                else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
-                {
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                }
-
-                if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
-                {
-                    M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                             MESH_RENUMBER | MESH_CHECK,
-                                                                             typename scalar_p0_space_type::periodicity_type(),
-                                                                             func.worldsComm(),
-                                                                             std::vector<bool>(1,extendeddof) );
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
+                this->updateScalarP0( func.worldsComm() );
 
                 // interpolate field on visualisation space
                 // If user asks for P0 visu [exporter.element-spaces options contains P0]
@@ -882,6 +858,7 @@ public:
                 {
                     if ( !M_ts->M_scalar_p1 )
                     {
+                        bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename scalar_p1_space_type::periodicity_type(),
@@ -1110,6 +1087,37 @@ public:
         Step& operator=( Step const& );
 
         //@}
+
+        void updateScalarP0( std::vector<WorldComm> const& worldsComm )
+        {
+            if ( !M_ts->M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                               MESH_RENUMBER | MESH_CHECK,
+                                                                               typename scalar_p0_space_type::periodicity_type(),
+                                                                               worldsComm,
+                                                                               std::vector<bool>(1,extendeddof) );
+                M_scalar_p0 = M_ts->M_scalar_p0;
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+            else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
+            {
+                M_scalar_p0 = M_ts->M_scalar_p0;
+            }
+
+            if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                         MESH_RENUMBER | MESH_CHECK,
+                                                                         typename scalar_p0_space_type::periodicity_type(),
+                                                                         worldsComm,
+                                                                         std::vector<bool>(1,extendeddof) );
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+
+        }
 
         friend class boost::serialization::access;
 
@@ -2322,6 +2330,6 @@ TimeSet<MeshType, N>::Step::executeState( size_type __st )
         M_state.clear( STEP_ON_DISK );
     }
 }
-
+}
 }
 #endif /* __TimeSet_H */

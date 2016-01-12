@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -567,7 +567,10 @@ public:
             if ( this != &lf )
             {
                 M_X = lf.M_X;
-                M_F = lf.M_F;
+                // clone the shared pointer vector, the clone is set to 0
+                M_F = lf.M_F->clone();
+                // add the vector contrib
+                *M_F += *lf.M_F;
                 M_lb = lf.M_lb;
                 M_row_startInVector = lf.M_row_startInVector;
                 M_do_threshold = lf.M_do_threshold;

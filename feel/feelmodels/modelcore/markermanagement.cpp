@@ -223,10 +223,79 @@ MarkerManagementNeumannBC::getInfoNeumannBC() const
 
     for ( auto const& markNeumanBase : M_containerMarkers )
     {
-        std::string shapeStr = (markNeumanBase.first == NeumannBCShape::SCALAR )? "[scalar]":"[vectorial]";
-        for ( auto const& markNeuman : markNeumanBase.second/*this->markerNeumannBC()*/ )
+        std::string shapeStr = (markNeumanBase.first == NeumannBCShape::SCALAR )? "[scalar]":
+            (markNeumanBase.first == NeumannBCShape::VECTORIAL )? "[vectorial]":"[tensor2]";
+        for ( auto const& markNeuman : markNeumanBase.second )
         {
             _ostr << "\n       -- Neumann" << shapeStr << " : " << markNeuman.first;
+            if ( markNeuman.second.size() == 1 && markNeuman.second.front() == markNeuman.first ) continue;
+            _ostr << " -> (";
+            int cptMark = 0;
+            for ( auto itMark = markNeuman.second.begin(), enMark = markNeuman.second.end() ; itMark!=enMark ; ++itMark,++cptMark )
+            {
+                if ( cptMark > 0) _ostr << " , ";
+                _ostr << *itMark;
+            }
+            _ostr << ")";
+        }
+    }
+    return _ostr.str();
+}
+
+//-------------------------------------------------------------------------//
+//-------------------------------------------------------------------------//
+//-------------------------------------------------------------------------//
+
+MarkerManagementNeumannEulerianFrameBC::MarkerManagementNeumannEulerianFrameBC()
+    :
+    M_containerMarkers(),
+    M_listMarkerEmpty()
+{}
+
+void
+MarkerManagementNeumannEulerianFrameBC::clearMarkerNeumannEulerianFrameBC()
+{
+    M_containerMarkers.clear();
+}
+
+void
+MarkerManagementNeumannEulerianFrameBC::setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers )
+{
+    if ( markers.empty() ) return;
+    M_containerMarkers[shape][markerNameId] = markers;
+}
+void
+MarkerManagementNeumannEulerianFrameBC::addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape shape,std::string markerNameId)
+{
+    if ( markerNameId.empty() ) return;
+    M_containerMarkers[shape][markerNameId].push_back(markerNameId);
+}
+
+std::map<std::string,std::list<std::string> > const&
+MarkerManagementNeumannEulerianFrameBC::markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const
+{
+    CHECK( M_containerMarkers.find( shape ) != M_containerMarkers.end() ) << "invalid shape";
+    return M_containerMarkers.find( shape )->second;
+}
+std::list<std::string> const&
+MarkerManagementNeumannEulerianFrameBC::markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape,std::string markerNameId ) const
+{
+    CHECK( M_containerMarkers.find( shape ) != M_containerMarkers.end() ) << "invalid shape";
+    return M_containerMarkers.find( shape )->second.find(markerNameId)->second;
+}
+
+std::string
+MarkerManagementNeumannEulerianFrameBC::getInfoNeumannEulerianFrameBC() const
+{
+    std::ostringstream _ostr;
+
+    for ( auto const& markNeumanBase : M_containerMarkers )
+    {
+        std::string shapeStr = (markNeumanBase.first == NeumannEulerianFrameBCShape::SCALAR )? "[scalar]":
+            (markNeumanBase.first == NeumannEulerianFrameBCShape::VECTORIAL )? "[vectorial]":"[tensor2]";
+        for ( auto const& markNeuman : markNeumanBase.second )
+        {
+            _ostr << "\n       -- Neumann (EulerianFrame) " << shapeStr << " : " << markNeuman.first;
             if ( markNeuman.second.size() == 1 && markNeuman.second.front() == markNeuman.first ) continue;
             _ostr << " -> (";
             int cptMark = 0;

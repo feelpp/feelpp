@@ -1120,9 +1120,10 @@ public:
         if ( this != &form )
         {
             M_pattern = form.M_pattern;
-            M_X1 = form.M_X1;
-            M_X2 = form.M_X2;
-            M_matrix = form.M_matrix;
+            CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
+            CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.0, form.M_matrix );
             M_row_startInMatrix = form.M_row_startInMatrix;
             M_col_startInMatrix = form.M_col_startInMatrix;
             M_lb = form.M_lb;
@@ -1153,6 +1154,11 @@ public:
             return *this;
         }
 
+    BilinearForm& add( double alpha, BilinearForm&  a )
+        {
+            M_matrix->addMatrix( alpha, a.M_matrix );
+            return *this;
+        }
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1219,7 +1225,7 @@ public:
     bool isPatternSymmetric() const
     {
         Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::SYMMETRIC );
+        return ctx.test( Pattern::PATTERN_SYMMETRIC );
     }
 
     /**

@@ -49,15 +49,22 @@ public:
     typedef FluidMechanicsBase<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> super_type;
     typedef FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
+    using element_velocity_type = typename super_type::element_fluid_velocity_type;
+
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( //bool __isStationary,
-                    std::string prefix,
-                    bool __buildMesh=true,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanics( std::string const& prefix,
+                    bool buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanics( self_type const& FM ) = default;
+    //___________________________________________________________________________________//
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
@@ -87,9 +94,23 @@ public:
 
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
 
+    //___________________________________________________________________________________//
+
+    bool hasDirichletBC() const
+    {
+        return ( !M_bcDirichlet.empty() ||
+                 !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                 !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                 !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+    }
+
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
-    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
+    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
+    map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
+
     map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
 }; // FluidMechanics

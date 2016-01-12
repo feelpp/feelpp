@@ -29,8 +29,10 @@
 
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-namespace Feel {
-
+namespace Feel
+{
+namespace FeelModels
+{
 
     ModelAlgebraicFactory::ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend)
         :
@@ -238,9 +240,9 @@ namespace Feel {
                << "\n     -- reuse prec : " << (this->backend()->reusePrec()?"true":"false")
                << "\n     -- reuse prec rebuild at first Newton step : " << (this->backend()->reusePrecRebuildAtFirstNewtonStep()?"true":"false")
                << "\n   PC "
-               << "\n     -- type : " << this->backend()->pcType()
-               << "\n     -- mat solver package : " << this->backend()->pcFactorMatSolverPackageType()
-            ;
+               << "\n     -- type : " << this->backend()->pcType();
+        if ( this->backend()->pcType() == "lu" )
+            *_ostr << "\n     -- mat solver package : " << this->backend()->pcFactorMatSolverPackageType();
 
         return _ostr;
     }
@@ -253,6 +255,25 @@ namespace Feel {
             std::cout << this->getInfo()->str();
     }
 
+
+    void
+    ModelAlgebraicFactory::solve( std::string const& type,vector_ptrtype& sol )
+    {
+        if ( type == "LinearSystem" )
+        {
+            this->linearSolver( sol );
+        }
+        else if ( type == "Picard" || type == "FixPoint" )
+        {
+            this->AlgoPicard( sol );
+        }
+        else if ( type == "Newton" )
+        {
+            this->AlgoNewton2( sol );
+        }
+        else
+            CHECK( false ) << "invalid solver type " << type;
+    }
 
     //---------------------------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------------------------//
@@ -271,7 +292,9 @@ namespace Feel {
         {
             M_CstJ->zero();
             M_CstR->zero();
-            this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            //this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            this->application()->updateLinearPDE( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->application()->rebuildCstPartInLinearSystem() || this->application()->needToRebuildCstPart() ||
@@ -279,7 +302,9 @@ namespace Feel {
         {
             M_CstJ->zero();
             M_CstR->zero();
-            this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            //this->application()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            this->application()->updateLinearPDE( dataLinearCst );
         }
         this->application()->setNeedToRebuildCstPart(false);
 
@@ -304,7 +329,9 @@ namespace Feel {
             this->addFunctionLinearPreAssemblyNonCst( M_J,M_R );
 
         // assembling non cst part
-        this->application()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
+        //this->application()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
+        ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        this->application()->updateLinearPDE( dataLinearNonCst );
 
         // post-assembly (optional)
         if ( this->addFunctionLinearPostAssembly != NULL )
@@ -382,9 +409,13 @@ namespace Feel {
             }
         else
             {
-                this->application()->updateJacobian( X, J, R, true, M_Extended,false );
+                //this->application()->updateJacobian( X, J, R, true, M_Extended,false );
+                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
+                this->application()->updateJacobian( dataJacobianCst );
             }
-        M_appli->updateJacobian(X,J,R,false, M_Extended,false);
+        //M_appli->updateJacobian(X,J,R,false, M_Extended,false);
+        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        M_appli->updateJacobian( dataJacobianNonCst );
 
         this->application()->updateInHousePreconditioner( J, X );
 
@@ -405,7 +436,9 @@ namespace Feel {
             }
         else
             {
-                M_appli->updateResidual( X, R, true, true );
+                //M_appli->updateResidual( X, R, true, true );
+                ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
+                M_appli->updateResidual( dataResidualCst );
             }
 
         bool doOptimization = this->application()->useLinearJacobianInResidual() && this->application()->useCstMatrix();
@@ -413,7 +446,9 @@ namespace Feel {
         if (doOptimization)
             R->addVector(*X, *M_CstJ );
 
-        M_appli->updateResidual(X,R,false,doOptimization);
+        //M_appli->updateResidual(X,R,false,doOptimization);
+        ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        M_appli->updateResidual( dataResidualNonCst );
 
         double tElapsed = this->application()->timerTool("Solve").stop();
         this->application()->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
@@ -434,6 +469,7 @@ namespace Feel {
         //---------------------------------------------------------------------//
         this->application()->timerTool("Solve").start();
         M_appli->updateNewtonInitialGuess(U);
+        U->close();
         this->application()->timerTool("Solve").elapsed("algebraic-newton-bc");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
@@ -442,14 +478,18 @@ namespace Feel {
                 if (!M_hasBuildLinearJacobian)
                     {
                         M_CstJ->zero();
-                        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                        M_appli->updateJacobian( dataJacobianCst );
                         M_CstJ->close();
                         M_hasBuildLinearJacobian = true;
                     }
                 else if (this->application()->rebuildLinearPartInJacobian() || this->application()->needToRebuildCstPart())
                     {
                         M_CstJ->zero();
-                        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+                        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                        M_appli->updateJacobian( dataJacobianCst );
                         M_CstJ->close();
                     }
             }
@@ -464,7 +504,9 @@ namespace Feel {
                     {
                         M_CstR->zero();
                         // Warning : the second true is very important in order to build M_CstR!!!!!!
-                        M_appli->updateResidual( U, M_CstR, true, true );
+                        //M_appli->updateResidual( U, M_CstR, true, true );
+                        ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                        M_appli->updateResidual( dataResidualCst );
                         M_CstR->close();
                         M_hasBuildResidualCst = true;
                     }
@@ -472,7 +514,9 @@ namespace Feel {
                     {
                         M_CstR->zero();
                         // Warning : the second true is very important in order to build M_CstR!!!!!!
-                        M_appli->updateResidual( U, M_CstR, true, true );
+                        //M_appli->updateResidual( U, M_CstR, true, true );
+                        ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
+                        M_appli->updateResidual( dataResidualCst );
                         M_CstR->close();
                     }
             }
@@ -520,7 +564,9 @@ namespace Feel {
     ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
     {
         M_CstJ->zero();
-        M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+        //M_appli->updateJacobian( U, M_CstJ, M_R, true, M_Extended,false );
+        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+        M_appli->updateJacobian( dataJacobianCst );
         M_CstJ->close();
     }
 
@@ -530,7 +576,8 @@ namespace Feel {
     {
         M_CstJ->zero();
         M_CstR->zero();
-        M_appli->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
+        ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+        M_appli->updateLinearPDE(dataLinearCst);
         M_CstJ->close();
         M_CstR->close();
     }
@@ -545,54 +592,172 @@ namespace Feel {
 
 
     void
-    ModelAlgebraicFactory::AlgoPtFixe(vector_ptrtype U)
+    ModelAlgebraicFactory::AlgoPicard( vector_ptrtype U )
     {
-#if 0
-        double erreur=UINT_MAX,err_old=UINT_MAX;
-        double err_tol=1e-7;//this->vm()["tolerP"].template as<double>();
-        //double err1,err2,norm1,norm2;
-        uint NbMaxItPtFixe=50;
-        uint cptItPtFixe=0;
-        uint cptTime=0;
-        double normUold;
-        bool diverge=false;
-        //auto Xh = M_appli->functionSpace();
+        if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard", "start",
+                                               this->application()->worldComm(),this->application()->verboseAllProc());
 
-        vector_ptrtype F( M_backend->newVector( M_Xh ) );
-        sparse_matrix_ptrtype A( M_backend->newMatrix(_test=M_Xh,_trial=M_Xh) );
-        vector_ptrtype Uold( M_backend->newVector( M_Xh ) );
-        vector_ptrtype Uerr( M_backend->newVector( M_Xh ) );
+        this->application()->timerTool("Solve").start();
 
-        while (erreur>=err_tol && cptItPtFixe < NbMaxItPtFixe && !diverge)
+        this->application()->timerTool("Solve").setDataValue("algebraic-assembly",0.);
+        this->application()->timerTool("Solve").setDataValue("algebraic-solve",0.);
+
+        bool useConvergenceAlgebraic = true;
+
+        // assembling cst part
+        if ( !M_hasBuildLinearSystemCst ||
+             this->application()->rebuildCstPartInLinearSystem() || this->application()->needToRebuildCstPart() ||
+             !this->application()->useCstMatrix() || !this->application()->useCstVector() )
+        {
+            this->application()->timerTool("Solve").start();
+
+            M_CstJ->zero();
+            M_CstR->zero();
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            this->application()->updateLinearPDE( dataLinearCst );
+            M_hasBuildLinearSystemCst = true;
+
+            double tAssemblyElapsed = this->application()->timerTool("Solve").stop();
+            this->application()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);
+        }
+        this->application()->setNeedToRebuildCstPart(false);
+
+        vector_ptrtype Uold;
+        vector_ptrtype residual;
+        if ( !useConvergenceAlgebraic )
+            Uold = M_backend->newVector( M_R->mapPtr() );
+        else
+            residual = M_backend->newVector( M_R->mapPtr() );
+
+        bool hasConverged = false;
+
+        double convergenceRate=1;
+        double rtol = this->backend()->rToleranceSNES();//1e-6;
+        double atol = this->backend()->aToleranceSNES();//1e-50;
+        int fixPointMaxIt = this->backend()->maxIterationsSNES();
+        int cptIteration=0;
+        for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
+        {
+            if ( !useConvergenceAlgebraic )
             {
                 *Uold = *U;
-                normUold=U->l2Norm();
+                Uold->close();
+            }
 
-                M_appli->updateLinearPDE(Uold,A,F,true,true);//warning true useless
+            this->application()->timerTool("Solve").start();
 
-                //M_backend->solve( _matrix=A, _solution=U, _rhs=F/*,_maxit=23456*/ );
-                M_backend->solve( A, U, F );
+            // copying cst matrix/vector
+            if (this->application()->useCstMatrix() && this->application()->useCstVector() )
+            {
+                M_J->zero();
+                M_J->addMatrix(1.0, M_CstJ );
+                M_R->zero();
+                M_R->add(1.0, M_CstR );
+            }
+            else if ( cptIteration > 0 )
+            {
+                M_J->zero();
+                M_R->zero();
+                ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true,M_Extended,false);
+                this->application()->updateLinearPDE( dataLinearCst );
+            }
 
-                if (cptItPtFixe>0)
-                    {
-#if 0
-                        Uerr->zero();
-                        Uerr->add(1.0,Uold);
-                        Uerr->add(-1.0,U);
-                        Uerr->scale(1./normUold);
-                        err_old=erreur;
-                        erreur = Uerr->l2Norm();
-#else
-                        erreur = M_appli->computeDiff(U,Uold);
-#endif
-                        if (erreur>err_old) { diverge=true;*U=*Uold;}
-                    }
-                std::cout<<"[ModelAlgebraicFactory] : PtFixe : iter " << cptItPtFixe << " err "  << erreur  <<"\n";
+            // pre-assembly (optional)
+            if ( this->addFunctionLinearPreAssemblyNonCst != NULL )
+                this->addFunctionLinearPreAssemblyNonCst( M_J,M_R );
 
-                ++cptItPtFixe;
+            // assembling non cst part
+            ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+            this->application()->updateLinearPDE( dataLinearNonCst );
+
+            // post-assembly (optional)
+            if ( this->addFunctionLinearPostAssembly != NULL )
+                this->addFunctionLinearPostAssembly(M_J,M_R);
+
+            double tAssemblyElapsed = this->application()->timerTool("Solve").elapsed();
+            this->application()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);
+
+            if (this->application()->verboseSolverTimer())
+                Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
+                                      (boost::format("picard iteration[%1%] finish assembling in %2% s") %cptIteration % tAssemblyElapsed ).str(),
+                                      this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
+
+            this->application()->timerTool("Solve").restart();
+
+            if ( useConvergenceAlgebraic )
+            {
+                M_J->close();
+                M_R->close();
+                residual->zero();
+                residual->addVector( U,M_J );
+                residual->add( -1., M_R );
+                residual->close();
+                double nomResidual = residual->l2Norm();
+                double normRhs = M_R->l2Norm();
+                if (this->application()->verboseSolverTimer())
+                    Feel::FeelModels::Log( this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
+                                           (boost::format("picard iteration[%1%] residual norm : %2%")%cptIteration %nomResidual ).str(),
+                                           this->application()->worldComm(),this->application()->verboseSolverTimerAllProc() );
+
+                if ( nomResidual < std::max(rtol*normRhs,atol) )
+                {
+                    hasConverged = true;
+                    this->application()->timerTool("Solve").stop();
+                    break;
+                }
+            }
+
+            // assembling matrix used for preconditioner
+            this->application()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
+
+            // update in-house preconditioners
+            this->application()->updateInHousePreconditioner( M_J, U );
+
+            // solve linear system
+            auto const solveStat = M_backend->solve( _matrix=M_J,
+                                                     _solution=U,
+                                                     _rhs=M_R,
+                                                     _prec=M_PrecondManage );
+
+            if ( this->application()->errorIfSolverNotConverged() )
+                CHECK( solveStat.isConverged() ) << "the linear solver has not converged in "
+                                                 << solveStat.nIterations() << " iterations with norm "
+                                                 << solveStat.residual() << "\n";
+
+            double tSolveElapsed = this->application()->timerTool("Solve").stop();
+            this->application()->timerTool("Solve").addDataValue("algebraic-solve",tSolveElapsed);
+
+            //this->application()->timerTool("Solve").setAdditionalParameter("ksp-niter",int(solveStat.nIterations()) );
+            if (this->application()->verboseSolverTimer())
+                Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
+                                      (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tSolveElapsed ).str(),
+                                      this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
+
+            if ( !useConvergenceAlgebraic )
+            {
+                convergenceRate = this->application()->updatePicardConvergence( U,Uold );
+                if (this->application()->verboseSolverTimer())
+                    Feel::FeelModels::Log( this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
+                                           (boost::format("fix point convergence : %1%")%convergenceRate ).str(),
+                                           this->application()->worldComm(),this->application()->verboseSolverTimerAllProc() );
+
+                if ( convergenceRate < rtol )
+                {
+                    hasConverged = true;
+                    break;
+                }
 
             }
-#endif
+        } // for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
+
+        double tFixPointElapsed = this->application()->timerTool("Solve").stop();
+        //this->application()->timerTool("Solve").setAdditionalParameter("ksp-niter",int(solveStat.nIterations()) );
+
+        if (this->application()->verboseSolverTimer())
+            Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
+                                  (boost::format("finish solve in %1% s")%tFixPointElapsed ).str(),
+                                  this->application()->worldComm(),this->application()->verboseSolverTimerAllProc());
+
     }
 
 
@@ -686,4 +851,5 @@ namespace Feel {
 
 
 
+} // namespace FeelModels
 } // namespace Feel

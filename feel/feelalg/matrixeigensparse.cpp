@@ -195,9 +195,9 @@ MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenSparse<value_type>* m = dynamic_cast<MatrixEigenSparse<value_type>*>( &_m );
+    MatrixEigenSparse<value_type> const* m = dynamic_cast<MatrixEigenSparse<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenSparse" );
     FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
@@ -363,7 +363,23 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     file_out << "spy("<<varName<<");" << std::endl;
 }
 
-
+#if 0
+template <typename T>
+inline
+void MatrixEigenSparse<T>::getMatInfo(std::vector<double> &vec)
+{
+    /* block size        */ vec.push_back(-1);
+    /* nz allocated      */ vec.push_back(M_mat->nonZeros()); 
+    /* nz uzed           */ vec.push_back(M_mat->nonZeros());
+    /* nz unneeded       */ vec.push_back(-1);
+    /* memory            */ vec.push_back(-1);
+    /* assemblies        */ vec.push_back(-1);
+    /* mallocs           */ vec.push_back(-1);
+    /* fill ratio given  */ vec.push_back(-1);
+    /* fill ratio needed */ vec.push_back(-1);
+    /* factor mallocs    */ vec.push_back(-1);
+}
+#endif 
 //
 // Explicit instantiations
 //

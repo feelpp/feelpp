@@ -6,7 +6,7 @@
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
 
- Copyright (C) 2014-2015 Feel++ Consortium
+ Copyright (C) 2014-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -88,7 +88,8 @@ public:
                  std::string const& p,
                  double mu,
                  double rho,
-                 double alpha );
+                 double alpha,
+                 bool acc);
 
     OperatorPCD( const OperatorPCD& tc ) = default;
     OperatorPCD( OperatorPCD&& tc ) = default;
@@ -98,7 +99,7 @@ public:
     void initialize();
 
     template < typename ExprConvection, typename ExprBC >
-    void update( ExprConvection const& expr_b, ExprBC const& ebc, bool hasConvection=true );
+    void update( ExprConvection const& expr_b, ExprBC const& ebc, bool hasConvection=true , double tn = 0., double tn1 = 0 );
 
     void setProblemType( std::string prob_type )
         {
@@ -139,6 +140,8 @@ private:
 
     std::string M_prob_type;
 
+    bool M_accel;
+
     void assembleMass();
 
     void assembleDiffusion();
@@ -159,7 +162,8 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
                                       std::string const& p,
                                       double mu,
                                       double rho,
-                                      double alpha )
+                                      double alpha,
+                                      bool acc)
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
     M_b( b),
@@ -182,7 +186,8 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     M_prefix( p ),
     M_mu( mu ),
     M_rho( rho ),
-    M_alpha( alpha )
+    M_alpha( alpha ),
+    M_accel( acc )
 {
     initialize();
 
@@ -206,22 +211,40 @@ template < typename ExprConvection, typename ExprBC >
 void
 OperatorPCD<space_type>::update( ExprConvection const& expr_b,
                                  ExprBC const& ebc,
-                                 bool hasConvection )
+                                 bool hasConvection,
+                                 double tn, 
+                                 double tn1 )
 {
     tic();
     auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
     G->zero();
-
+    double time_step = tn1-tn;
     if ( hasConvection )
         conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
-    conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_mu*gradt(p)*trans(grad(q)));
+    auto diff_c = M_accel?M_mu*time_step:M_mu;
+    conv += integrate( _range=elements(M_Qh->mesh()), _expr=diff_c*gradt(p)*trans(grad(q)));
 
     if ( soption("blockns.pcd.inflow") == "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
             LOG(INFO) << "Setting Robin condition on " << dir.marker();
             if ( ebc.find( dir.marker() ) != ebc.end() )
-                conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.marker()), _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+            {
+                if ( M_accel )
+                {
+                    auto en = ebc.find(dir.marker())->second;
+                    en.setParameterValues( { { "t", tn } } );
+                    auto en1 = ebc.find(dir.marker())->second;
+                    en1.setParameterValues( { { "t", tn1 } } );
+                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
+                                       _expr=-M_rho*trans((en1-en)/time_step)*N()*idt(p)*id(q));
+                }
+                else
+                {
+                    conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()), 
+                                       _expr=-M_rho*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+                }
+            }
         }
 
     G->close();
@@ -280,9 +303,11 @@ OperatorPCD<space_type>::assembleDiffusion()
         {
             LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
             if ( boption("blockns.weakdir" ) )
-                d+= integrate( markedfaces(M_Qh->mesh(),cond.marker()), _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), 
+                               _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
             else
-                d += on( markedfaces(M_Qh->mesh(),cond.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+                d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, 
+                         _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
         //this->applyBC(M_diff);
     }
@@ -330,7 +355,7 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
     if ( soption("blockns.pcd.inflow") != "Robin" )
         for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
-            a += on( markedfaces(M_Qh->mesh(),dir.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+            a += on( markedfaces(M_Qh->mesh(),dir.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
 
     // on neumann boundary on velocity, apply Dirichlet condition on pressure
@@ -338,9 +363,9 @@ OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
         for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
             if ( boption("blockns.weakdir" ) )
-                a+= integrate( markedfaces(M_Qh->mesh(),cond.marker()), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+                a+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _expr=-M_mu*gradt(p)*N()*id(p)-M_mu*grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
             else
-                a += on( markedfaces(M_Qh->mesh(),cond.marker()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+                a += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
     rhs->close();
     A->close();

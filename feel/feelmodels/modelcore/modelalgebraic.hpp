@@ -59,10 +59,125 @@ public :
 
     typedef vf::BlocksBase<size_type> block_pattern_type;
 
+    class DataUpdateLinear
+    {
+    public:
+        DataUpdateLinear( const vector_ptrtype& currentSolution,
+                          sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
+                          bool buildCstPart,
+                          sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
+            :
+            M_matrix( matrix ),
+            M_rhs( rhs ),
+            M_currentSolution( currentSolution ),
+            M_buildCstPart( buildCstPart ),
+            M_matrixExtended( matrixExtended ),
+            M_buildExtendedPart( buildExtendedPart ),
+            M_doBCStrongDirichlet( true )
+            {}
+        DataUpdateLinear(DataUpdateLinear const& d) = default;
+        DataUpdateLinear(DataUpdateLinear && d) = default;
+
+        sparse_matrix_ptrtype& matrix() { return M_matrix; }
+        vector_ptrtype& rhs() { return M_rhs; }
+        vector_ptrtype const& currentSolution() { return M_currentSolution; }
+        bool buildCstPart() const { return M_buildCstPart; }
+        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
+        bool buildExtendedPart() const { return M_buildExtendedPart; }
+        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+
+        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
+        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+
+    private :
+        sparse_matrix_ptrtype M_matrix;
+        vector_ptrtype M_rhs;
+        const vector_ptrtype& M_currentSolution;
+
+        bool M_buildCstPart;
+        sparse_matrix_ptrtype M_matrixExtended;
+        bool M_buildExtendedPart;
+        bool M_doBCStrongDirichlet;
+    };
+
+    class DataUpdateResidual
+    {
+    public:
+        DataUpdateResidual( const vector_ptrtype& currentSolution, vector_ptrtype residual,
+                            bool buildCstPart, bool useJacobianLinearTerms )
+            :
+            M_residual( residual ),
+            M_currentSolution( currentSolution ),
+            M_buildCstPart( buildCstPart ),
+            M_useJacobianLinearTerms( useJacobianLinearTerms ),
+            M_doBCStrongDirichlet( true )
+            {}
+        DataUpdateResidual( DataUpdateResidual const& d ) = default;
+        DataUpdateResidual( DataUpdateResidual && d ) = default;
+
+        vector_ptrtype& residual() { return M_residual; }
+        vector_ptrtype const& currentSolution() { return M_currentSolution; }
+        bool buildCstPart() const { return M_buildCstPart; }
+        bool useJacobianLinearTerms() const { return M_useJacobianLinearTerms; }
+        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+
+        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
+        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+
+    private :
+        vector_ptrtype M_residual;
+        const vector_ptrtype& M_currentSolution;
+        bool M_buildCstPart;
+        bool M_useJacobianLinearTerms;
+        bool M_doBCStrongDirichlet;
+    };
+
+    class DataUpdateJacobian
+    {
+    public:
+        DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
+                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart,
+                            sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
+            :
+            M_jacobian( jacobian ),
+            M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
+            M_currentSolution( currentSolution ),
+            M_buildCstPart( buildCstPart ),
+            M_matrixExtended( matrixExtended ),
+            M_buildExtendedPart( buildExtendedPart ),
+            M_doBCStrongDirichlet( true )
+            {}
+
+        DataUpdateJacobian( DataUpdateJacobian const& d) = default;
+        DataUpdateJacobian( DataUpdateJacobian && d) = default;
+
+        sparse_matrix_ptrtype& jacobian() { return M_jacobian; }
+        vector_ptrtype& vectorUsedInStrongDirichlet() { return M_vectorUsedInStrongDirichlet; }
+        vector_ptrtype const& currentSolution() { return M_currentSolution; }
+
+        bool buildCstPart() const { return M_buildCstPart; }
+        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
+        bool buildExtendedPart() const { return M_buildExtendedPart; }
+        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+
+        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
+        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+
+    private :
+        sparse_matrix_ptrtype M_jacobian;
+        vector_ptrtype M_vectorUsedInStrongDirichlet;
+        const vector_ptrtype& M_currentSolution;
+        bool M_buildCstPart;
+        sparse_matrix_ptrtype M_matrixExtended;
+        bool M_buildExtendedPart;
+        bool M_doBCStrongDirichlet;
+    };
+
+
     ModelAlgebraic( std::string _theprefix,
                     WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+                    std::string const& subPrefix="",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -125,19 +240,12 @@ public :
 
     //----------------------------------------------------------------------------------//
 
-    virtual void updateNewtonInitialGuess(vector_ptrtype& U) const;// {} // const = 0;
-    virtual void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                 bool BuildCstPart,
-                                 sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                 bool _doClose=true, bool _doBCStrongDirichlet=true) const;// {}// = 0;
-    virtual void updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                                 bool BuildCstPart, bool UseJacobianLinearTerms,
-                                 bool _doClose=true, bool _doBCStrongDirichlet=true ) const;// {}// = 0;
-
-    virtual void updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                 bool _buildCstPart,
-                                 sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                 bool _doClose=true, bool _doBCStrongDirichlet=true ) const;// {}// = 0;
+    virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    virtual void updateJacobian( DataUpdateJacobian & data ) const;
+    virtual void updateResidual( DataUpdateResidual & data ) const;
+    virtual void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updatePicard( DataUpdateLinear & data ) const;
+    virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
 

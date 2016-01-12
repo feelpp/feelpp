@@ -117,8 +117,10 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+#if BOOST_VERSION < 105900
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, vector, rowstart, init, do_threshold, threshold );
 } // form
@@ -178,16 +180,19 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                           (deduced
                            ( optional                                  //    four optional parameters, with defaults
                              ( init,             *( boost::is_integral<mpl::_> ), false )
+                             ( properties,       ( size_type ), NON_HERMITIAN )
                              ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
                              ( backend,          *, Feel::backend() )
-                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) )
                              ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
                              ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
                                ) // optional
                               ) // deduced
                         )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;

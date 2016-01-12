@@ -14,12 +14,14 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XVec, vector_ptrtype& R, bool BuildCstPart,
-                                                        bool UseJacobianLinearTerms,
-                                                        bool _doClose, bool _doBCStrongDirichlet) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool BuildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
@@ -134,7 +136,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     {
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divv(u)*id(q),
+                       _expr= -divv(u)*id(q),
                        _geomap=this->geomap() );
     }
 
@@ -622,9 +624,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     //------------------------------------------------------------------------------------//
 
 
-    //if ( _doClose ) R->close();
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
+    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
@@ -635,16 +635,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletResidual(R);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateResidual","update moving boundary with strong Dirichlet");
-            modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
-    }
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
 
-    //if ( _doClose ) R->close();
+        if ( !markerDirichletEliminationOthers.empty() )
+            modifVec(markedfaces(mesh,markerDirichletEliminationOthers), u, R, vf::zero<nDim,1>(),rowStartInVector );
+
+    }
 
     //------------------------------------------------------------------------------------//
 
@@ -654,7 +662,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
 
@@ -676,6 +683,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     }
 #endif
     this->updateInitialNewtonSolutionBCDirichlet(U);
+
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+        modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
+    }
+
 
     U->close();
 

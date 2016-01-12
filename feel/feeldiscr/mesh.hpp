@@ -899,7 +899,7 @@ public:
     /**
      * Create a P1 mesh from the HO mesh
      */
-    P1_mesh_ptrtype createP1mesh() const;
+    P1_mesh_ptrtype createP1mesh( size_type ctx = EXTRACTION_KEEP_MESH_RELATION ) const;
 
     /**
      * update the Marker2 with a range of elements or faces
@@ -1068,7 +1068,9 @@ public:
                                        ( sep,( std::string ),std::string( "" ) )
                                          ) )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
             if ( !fs::exists( fs::path( path ) ) )
             {
@@ -1113,7 +1115,9 @@ public:
             )
         )
         {
+#if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
+#endif
             std::ostringstream os1;
             os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
@@ -2062,8 +2066,13 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
-Mesh<Shape, T, Tag>::createP1mesh() const
+Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
 {
+    boost::shared_ptr<SubMeshData> smd;
+    Context c( ctx );
+    bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
+    if ( keepMeshRelation )
+        smd.reset( new SubMeshData( this->shared_from_this() ) );
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type( this->worldComm() ) );
 
@@ -2107,7 +2116,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setMarker3( old_elem.marker3().value() );
         // partitioning update
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
-        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
@@ -2144,7 +2152,10 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
         // Add an equivalent element type to the new_mesh
-        new_mesh->addElement( new_elem );
+        auto const& e = new_mesh->addElement( new_elem );
+        if ( keepMeshRelation )
+            smd->bm.insert( typename SubMeshData::bm_type::value_type( e.id(), old_elem.id() ) );
+
         // increment the new element counter
         n_new_elem++;
 
@@ -2173,7 +2184,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setMarker2( old_face.marker3().value() );
                 // partitioning update
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
-                new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
                 new_face.clearIdInOthersPartitions();
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
@@ -2361,6 +2371,9 @@ Mesh<Shape, T, Tag>::createP1mesh() const
     new_mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     // run intensive job
     new_mesh->updateForUse();
+
+    if ( keepMeshRelation )
+        new_mesh->setSubMeshData( smd );
 
     return new_mesh;
 }
@@ -2626,6 +2639,11 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 
 }
 
+
+template<typename MeshType>
+using mesh_t = decay_type<MeshType>;
+
+
 } // Feel
 
 
@@ -2633,5 +2651,6 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 # include <feel/feeldiscr/meshimpl.hpp>
 # include <feel/feeldiscr/meshio.hpp>
 //#endif //
+
 
 #endif /* FEELPP_MESH_HPP */

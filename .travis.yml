@@ -90,9 +90,9 @@ before_install:
 - export NPROCS=3
 - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
   $BOOSTROOT
-- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo
+- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
   $GMSH_DIR
-- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0;
+- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc;
   echo $PETSC_DIR
 - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 install:
@@ -104,8 +104,8 @@ script:
 - make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
-- make -j1 feelpp_model_algebra
-- make install-feelpp
+- make -j1 feelpp-models-algebra
+- make install-feelpp-lib
 - ls $HOME/software/install/feelpp/include/feel
 
 branches:
@@ -137,6 +137,7 @@ deploy:
   skip_cleanup: true
   acl: public_read
   on:
+    all_branches: true
     repo: feelpp/feelpp
   secret_access_key:
     secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=

@@ -36,10 +36,10 @@ namespace FeelModels {
 
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
                                           WorldComm const& _worldComm,
-                                          std::string subPrefix,
-                                          std::string appliShortRepository )
+                                          std::string const& subPrefix,
+                                          std::string const& rootRepository )
     :
-    super_type( _theprefix,_worldComm,subPrefix,appliShortRepository),
+    super_type( _theprefix,_worldComm,subPrefix,rootRepository),
     M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
     M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
     M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),
@@ -180,23 +180,25 @@ ModelAlgebraic::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
 {}
 
 void
-ModelAlgebraic::updateNewtonInitialGuess(vector_ptrtype& U) const {} // const = 0;
+ModelAlgebraic::updateNewtonInitialGuess( vector_ptrtype& U ) const
+{}
 void
-ModelAlgebraic::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                     bool BuildCstPart,
-                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                     bool _doClose, bool _doBCStrongDirichlet) const {}// = 0;
+ModelAlgebraic::updateJacobian( DataUpdateJacobian & data ) const
+{}
 void
-ModelAlgebraic::updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                                     bool BuildCstPart, bool UseJacobianLinearTerms,
-                                     bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
-
+ModelAlgebraic::updateResidual( DataUpdateResidual & data ) const
+{}
 void
-ModelAlgebraic::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                     bool _buildCstPart,
-                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                     bool _doClose, bool _doBCStrongDirichlet ) const {}// = 0;
-
+ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
+{}
+void
+ModelAlgebraic::updatePicard( DataUpdateLinear & data ) const
+{}
+double
+ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
+{
+    return 0.;
+}
 
 
 

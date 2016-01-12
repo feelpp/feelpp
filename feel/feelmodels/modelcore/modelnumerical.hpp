@@ -40,6 +40,7 @@
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelcore/modelmeasures.hpp>
 
 
 namespace Feel
@@ -68,8 +69,8 @@ class ModelNumerical : public ModelAlgebraic
         typedef vf::BlocksBase<size_type> block_pattern_type;
 
 
-        ModelNumerical( std::string _theprefix, WorldComm const& _worldComm=WorldComm(), std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+        ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
@@ -90,8 +91,6 @@ class ModelNumerical : public ModelAlgebraic
         bool restartAtLastSave() const { return M_restartAtLastSave; }
         void setRestartAtLastSave( bool b) { M_restartAtLastSave=b; }
 
-
-
         double time() const { return this->currentTime(); }
         double currentTime() const { return M_timeCurrent; }
         void updateTime(double t);
@@ -103,41 +102,11 @@ class ModelNumerical : public ModelAlgebraic
         int tsSaveFreq() const { return M_tsSaveFreq; }
         void setTimeInitial(double v)  { M_timeInitial=v; }
 
+        ModelProperties const& modelProperties() const { return *M_modelProps; }
+        ModelProperties & modelProperties() { return *M_modelProps; }
+        void addParameterInModelProperties( std::string const& symbolName,double value );
 
-        ModelProperties const& modelProperties() const { return M_modelProps; }
-        void addParameterInModelProperties( std::string const& symbolName,double value);
-
-        // cst parameter
-        double userCstParameter(uint16_type i) const
-            {
-                CHECK( i >=1 && i <=M_parameters.size() ) << "invalid index\n";
-                return M_parameters[i-1];
-            }
-        void setUserCstParameter(uint16_type i,double val)
-            {
-                CHECK( i >=1 && i <=M_parameters.size() ) << "invalid index\n";
-                M_parameters[i-1]=val;
-            }
-        // cst geo parameter
-        double userCstGeoParameter(uint16_type i) const
-            {
-                CHECK( i >=1 && i <=M_geoParameters.size() ) << "invalid index\n";
-                return M_geoParameters[i-1];
-            }
-        void setUserCstGeoParameter(uint16_type i,double val)
-            {
-                CHECK( i >=1 && i <=M_geoParameters.size() ) << "invalid index\n";
-                M_geoParameters[i-1]=val;
-            }
-
-        // ginac expr
-        Expr< GinacEx<2> > userGinacExpr(uint16_type i, std::map<std::string,double> const& mp ) const;
-        Expr< GinacEx<2> > userGinacExpr(uint16_type i, std::pair<std::string,double> const& mp ) const;
-        std::string userGinacExprStr(uint16_type i) const;
-        std::string userGinacExprName(uint16_type i) const;
-        void setUserGinacExpr(uint16_type i,std::string expr);
-        void setUserGinacExpr(uint16_type i,std::string expr,std::string name);
-        std::string ginacExprCompilationDirectory() const;
+        std::string const& directoryLibSymbExpr() const { return M_directoryLibSymbExpr; }
 
         size_type rowStartInMatrix() const { return M_row_startInMatrix; }
         void setRowStartInMatrix(size_type r) { M_row_startInMatrix=r; }
@@ -150,15 +119,6 @@ class ModelNumerical : public ModelAlgebraic
         void setRebuildMeshPartitions(bool b) { M_rebuildMeshPartitions=b; }
 
         GeomapStrategyType geomap() const { return M_geomap; }
-
-
-        //----------------------------------------------------------------------------------//
-
-        int geotoolMeshIndex() const { return M_geotoolMeshIndex; }
-        std::string geotoolSaveDirectory() const { return M_geotoolSaveDirectory; }
-        void setGeotoolSaveDirectory(std::string s) { M_geotoolSaveDirectory=s; }
-        std::string geotoolSaveName() const { return M_geotoolSaveName; }
-        void setGeotoolSaveName(std::string s) { M_geotoolSaveName=s; }
 
         //----------------------------------------------------------------------------------//
 
@@ -173,10 +133,16 @@ class ModelNumerical : public ModelAlgebraic
         bool hasGeofileStr() const { return M_geoFileStr!="FEELMODELS_WARNING_NODEFINE"; }
 
 
-        void saveMSHfilePath(std::string namePath) const;
+        void saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
 
         void setExporterPath(std::string s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
+
+        ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
+        ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
+        ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
+        ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
+
 
     private :
 
@@ -193,13 +159,8 @@ class ModelNumerical : public ModelAlgebraic
         int M_tsSaveFreq;
         double M_timeCurrent;
 
-        ModelProperties M_modelProps;
-        std::vector<double> M_parameters,M_geoParameters;
-        std::vector<std::pair<std::string,std::string> > M_ginacExpr;
-        std::string M_ginacExprCompilationDirectory;
-
-        int M_geotoolMeshIndex;
-        std::string M_geotoolSaveDirectory,M_geotoolSaveName;
+        std::string M_directoryLibSymbExpr;
+        std::shared_ptr<ModelProperties> M_modelProps;
 
         size_type M_row_startInMatrix, M_col_startInMatrix, M_row_startInVector;
 
@@ -207,6 +168,8 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_geoFileStr;
 
         std::string M_exporterPath;
+        ModelMeasuresIO M_postProcessMeasuresIO;
+        ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
         boost::shared_ptr<PsLogger> M_PsLogger;
 

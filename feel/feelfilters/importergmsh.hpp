@@ -960,6 +960,8 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
     std::map<int,int> __gt;
 
+    rank_type theCurrentPartitionId = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+
     if ( !binary )
     {
         for(int i = 0; i < numElements; i++)
@@ -970,7 +972,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
-          rank_type partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+          rank_type partition = theCurrentPartitionId;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
@@ -1072,7 +1074,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                 int elementary = (numTags > 1) ? data[2] : 0;
                 rank_type numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
                 rank_type partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
-                    (version >= 2.2 && numTags > 3) ? data[4]-1 : 0;
+                    (version >= 2.2 && numTags > 3) ? data[4]-1 : theCurrentPartitionId;
                 if(numPartitions > 1)
                     for(int j = 0; j < numPartitions - 1; j++)
                         ghosts.push_back( (-data[5 + j]) -1 );
@@ -1365,7 +1367,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     pf.setId( mesh->numFaces() );
     pf.setMarker( __e.physical );
     pf.setMarker2( __e.elementary );
-    pf.setNumberOfPartitions( __e.numPartitions );
     pf.setProcessId( __e.partition );
     pf.setNeighborPartitionIds( __e.ghosts );
 
@@ -1397,7 +1398,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
                                       {
                                           e.setMarker( __e.physical );
                                           e.setMarker2( __e.elementary );
-                                          e.setNumberOfPartitions( __e.numPartitions );
                                           e.setProcessId( __e.partition );
                                           e.setNeighborPartitionIds( __e.ghosts );
                                       } );
@@ -1415,7 +1415,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
                                       {
                                           e.setMarker( __e.physical );
                                           e.setMarker2( __e.elementary );
-                                          e.setNumberOfPartitions( __e.numPartitions );
                                           e.setProcessId( __e.partition );
                                           e.setNeighborPartitionIds( __e.ghosts );
                                       } );
@@ -1438,7 +1437,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1483,7 +1481,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1533,7 +1530,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setId( mesh->numEdges() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     // warning : process id is define after (when call mesh->updateForUse()
     // and only for edges which belong to an active 3d element )
     e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
@@ -1597,7 +1593,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1656,7 +1651,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1721,7 +1715,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     GmshOrdering<element_type> ordering;
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 

@@ -572,14 +572,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 
             if ( doParallelBuild )
             {
-                elt.setNumberOfPartitions( it->numberOfPartitions() );
                 elt.setNeighborPartitionIds( it->neighborPartitionIds() );
             }
-            else
-            {
-                elt.setNumberOfPartitions( 1 );
-            }
-
             // accumulate the points
             for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
             {
@@ -698,12 +692,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 newFace.setProcessId(it->processId());
                 if ( doParallelBuild )
                 {
-                    newFace.setNumberOfPartitions( it->numberOfPartitions() );
                     newFace.setNeighborPartitionIds( it->neighborPartitionIds() );
-                }
-                else
-                {
-                    newFace.setNumberOfPartitions( 1 );
                 }
 
                 // set points in face and up counter for connecting with ref faces
@@ -913,7 +902,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                     elt.setNeighborPartitionIds( newNeighborPartitionIds );*/
 
 #else
-                    elt.setNumberOfPartitions( myGhostEltBase.numberOfPartitions() );
                     DCHECK( proc==myGhostEltBase.processId() ) << "invalid process id\n";
                     elt.setProcessId( proc );
                     elt.setNeighborPartitionIds( myGhostEltBase.neighborPartitionIds() );
@@ -1154,7 +1142,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel);
 }
 

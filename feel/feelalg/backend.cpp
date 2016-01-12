@@ -50,7 +50,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
 #endif
     M_prefix( "" ),
     M_nlsolver(),
-    M_rtolerance( 1e-13 ),
+    M_rtolerance( 1e-8 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
     M_rtoleranceSNES( 1e-8 ),
@@ -170,7 +170,7 @@ Backend<T>::clear()
 {
     if ( M_preconditioner )
         M_preconditioner->clear();
-    LOG(INFO) << "Sending delete signal to all observers...\n";
+    LOG(INFO) << "Sending delete signal to all observers... " << M_prefix << "\n";
     this->sendDeleteSignal();
     //this->clear ();
 }
@@ -744,7 +744,7 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
 }
 #endif
 void updateBackendKSPOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
-                              std::string const& kspType = "gmres",double rtol = 1e-13, size_type maxit=1000, bool useDefaultValue=true  )
+                              std::string const& kspType = "gmres",double rtol = 1e-8, size_type maxit=1000, bool useDefaultValue=true  )
 {
     std::string kspctx = (sub.empty())? "" : sub+"-";
     _options.add_options()
@@ -786,6 +786,11 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
+        
+        // Default value : "" let the default behavior
+        ( prefixvm( prefix,kspctx+"ksp-norm-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "default" ),
+          "Sets the norm that is used for convergence testing. Leaving this empty will use default petsc behavior. default, none, preconditioned, unpreconditioned, natural" )
 
         ( prefixvm( prefix,kspctx+"gmres-restart" ).c_str(),
           (useDefaultValue)?Feel::po::value<int>()->default_value( 30 ):Feel::po::value<int>(),
@@ -918,6 +923,7 @@ po::options_description backend_options( std::string const& prefix )
         // solver options
         ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
         ( prefixvm( prefix,"backend.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild the backend each time it is called" )
+        ( prefixvm( prefix,"backend.rebuild_op" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild the backend associated to operators" )
         ( prefixvm( prefix,"backend.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "set the backend to be verbose" )
 
         ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
@@ -968,6 +974,9 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
           "configure pc with defult petsc options" )
+        ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "none" ),
+          "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots (none, nonzero, positive_definite, inblocks)" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "mumps" ),

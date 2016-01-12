@@ -1,12 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feelmodels/thermodyn/thermodynbase.hpp>
-#include <feel/feelfilters/loadgmshmesh.hpp>
-#include <feel/feelfilters/geotool.hpp>
+//#include <feel/feelfilters/loadgmshmesh.hpp>
+//#include <feel/feelfilters/geotool.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/modelmesh/reloadmesh.hpp>
+#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 namespace Feel
 {
@@ -14,13 +14,13 @@ namespace FeelModels
 {
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( prefix, worldComm, subPrefix, rootRepository )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsSolve.data";
@@ -75,7 +75,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_meshSize = doption(_name="hsize",_prefix=this->prefix());
     M_thermalConductivity = doption(_name="thermal-conductivity",_prefix=this->prefix()); // [ W/(m*K) ]
     M_rho = doption(_name="rho",_prefix=this->prefix()); // density [ kg/(m^3) ]
     M_heatCapacity = doption(_name="heat-capacity",_prefix=this->prefix()); // [ J/(kg*K) ]
@@ -95,91 +94,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     this->log("ThermoDynamics","createMesh", "start");
     this->timerTool("Constructor").start();
 
-    // save path of file mesh
-    std::string tdpath = (fs::path( this->appliRepository() ) / fs::path(this->fileNameMeshPath())).string();
-    if (this->doRestart())
-    {
-        this->log("ThermoDynamics","createMesh","restart with : "+tdpath );
-        if ( !this->restartPath().empty() )
-        {
-            tdpath = (fs::path( this->restartPath() ) / fs::path(this->fileNameMeshPath())).string();
-        }
-        M_mesh = reloadMesh<mesh_type>(tdpath,this->worldComm());
-    }
-    else
-    {
-        if (this->hasMshfileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfileRebuildPartitions = path + "/" + this->prefix() + ".msh";
-
-            this->log("ThermoDynamics","createMesh", "load msh file : " + this->mshfileStr() );
-
-            M_mesh = loadGMSHMesh(_mesh=new mesh_type,
-                                  _filename=this->mshfileStr(),
-                                  _worldcomm=this->worldComm(),
-                                  _rebuild_partitions=this->rebuildMeshPartitions(),
-                                  _rebuild_partitions_filename=mshfileRebuildPartitions,
-                                  _partitions=this->worldComm().localSize(),
-                                  _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
-
-            if (this->rebuildMeshPartitions()) this->setMshfileStr(mshfileRebuildPartitions);
-        }
-        else if (this->hasGeofileStr())
-        {
-            std::string path = this->appliRepository();
-            std::string mshfile = path + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
-
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(this->appliRepository()) )
-            {
-                this->log("ThermoDynamics","createMesh", "change repository (temporary) for build mesh from geo : "+ this->appliRepository() );
-                bool hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(this->appliRepository()), _subdir=false );
-            }
-
-            M_mesh = GeoTool::createMeshFromGeoFile<mesh_type>(this->geofileStr(),this->prefix(),this->meshSize(),1,
-                                                               this->worldComm().localSize(),this->worldComm());
-
-            // go back to previous repository
-            if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
-        }
-        else
-        {
-            std::string geotoolSavePath;
-
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("ThermoDynamics","createMesh", "change rep -> "+ this->geotoolSaveDirectory() );
-                Environment::changeRepository( _directory=boost::format(this->geotoolSaveDirectory()), _subdir=false );
-
-                geotoolSavePath = Environment::rootRepository()+"/"+ this->geotoolSaveDirectory();
-            }
-            else
-            {
-                geotoolSavePath = this->appliRepository();
-            }
-            std::string geotoolSaveName = this->geotoolSaveName();
-            std::string geofilename = geotoolSavePath + "/" + geotoolSaveName;// without .geo
-            std::string mshfilename = geotoolSavePath + "/" + geotoolSaveName + ".msh";
-            this->setMshfileStr(mshfilename);
-
-            this->log("ThermoDynamics","createMesh", "build mesh by using geotool desc" );
-
-            this->loadConfigMeshFile(geofilename);
-
-            if ( this->geotoolSaveDirectory()!=this->appliShortRepository() )
-            {
-                this->log("ThermoDynamics","createMesh", "change rep -> " + this->appliRepository() );
-                Environment::changeRepository( _directory=boost::format(this->appliShortRepository()), _subdir=true );
-            }
-
-        }
-        this->saveMSHfilePath(tdpath);
-    }
+    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("ThermoDynamics","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -220,7 +136,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvec
         // load the field velocity convection from a math expr
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
-            std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/velocity-convection";
+            std::string pathGinacExpr = this->directoryLibSymbExpr() + "/velocity-convection";
             auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
                                         this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
             M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -248,7 +164,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
     double tElpased = this->timerTool("Constructor").stop("createSpaces");
@@ -306,7 +222,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     // load an initial solution from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
     {
-        std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/initial-solution.temperature";
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                             this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         this->fieldTemperature()->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -379,7 +295,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository();
+           << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
            << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
@@ -508,10 +424,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
-                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("ThermoDynamics","updateLinearPDE", "start"+sc);
     boost::mpi::timer thetimer;

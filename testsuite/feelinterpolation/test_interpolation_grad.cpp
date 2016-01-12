@@ -64,18 +64,73 @@ template<int Dim>
 class Test:
     public Simget
 {
+    typedef Mesh<Simplex<Dim>> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+  
+    //! Hcurl space
+    using curl_space_type = Ned1h_type<mesh_type,0>;
+    using curl_space_ptrtype = Ned1h_ptrtype<mesh_type,0>;
+
+    //! DT space
+    using rt_space_type = Dh_type<mesh_type,0>;
+    using rt_space_ptrtype = Dh_ptrtype<mesh_type,0>;
+
+    //! Pch space
+    using lag_space_type = Pch_type<mesh_type,1>;
+    using lag_space_ptrtype = Pch_ptrtype<mesh_type,1>;
+
+  //! Pch 0 space
+    using lag_0_space_type = Pdh_type<mesh_type,0>;
+    using lag_0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
+    
+
+    //! Pchv space
+    using lag_v_space_type = Pchv_type<mesh_type,1>;
+    using lag_v_space_ptrtype = Pchv_ptrtype<mesh_type,1>;
+  
+    //! Projection 
+    //Id 
+    typedef I_t<lag_space_type, lag_space_type> i_type;
+    typedef I_ptr_t<lag_space_type, lag_space_type> i_ptrtype;
+    //Grad 
+    typedef Grad_t<lag_space_type, curl_space_type> grad_type;
+    typedef Grad_ptr_t<lag_space_type, curl_space_type> grad_ptrtype;
+    //Curl
+    typedef Curl_t<curl_space_type, rt_space_type> curl_type;
+    typedef Curl_ptr_t<curl_space_type, rt_space_type> curl_ptrtype;
+    //Div 
+    typedef Div_t<rt_space_type, lag_0_space_type> div_type;
+    typedef Div_ptr_t<rt_space_type, lag_0_space_type> div_ptrtype;
+private:
+  
+  /// Mesh
+  mesh_ptrtype mesh;
+  
+  /// Spaces
+  lag_space_ptrtype Xh;
+  curl_space_ptrtype Gh;
+  rt_space_ptrtype Ch;
+  lag_0_space_ptrtype P0h;
+
+  /// Projections
+  i_type Ih;
+  grad_type Igrad;
+  curl_type Icurl;
+  div_type Idiv;
+
 public :
     
     void run()
         {
-            auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>>() );
-            auto Xh = Pch<1>(mesh);
-            auto Gh = Ned1h<0>(mesh);
-            auto Ch = Dh<0>(mesh);
-            auto P0h = Pdh<0>(mesh);
-            auto Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
-            auto Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
-            auto Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
+            mesh = loadMesh( _mesh=new mesh_type );
+            Xh = Pch<1>(mesh);
+            Gh = Ned1h<0>(mesh);
+            Ch = Dh<0>(mesh);
+            P0h = Pdh<0>(mesh);
+            Ih = I( _domainSpace = Xh, _imageSpace=Xh );
+            Igrad = Grad( _domainSpace = Xh, _imageSpace=Gh );
+            Icurl = Curl( _domainSpace = Gh, _imageSpace=Ch );
+            Idiv = Div( _domainSpace = Ch, _imageSpace=P0h );
             auto e = exporter(_mesh=mesh);
             
             int i = 0;

@@ -3,7 +3,7 @@
 
   Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -147,7 +147,6 @@ public:
         M_points( numPoints ),
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -174,7 +173,6 @@ public:
         M_points( numPoints ),
         //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_measure( 1 ),
         M_measurefaces( numTopologicalFaces ),
         M_normals( nRealDim, numTopologicalFaces ),
@@ -328,15 +326,29 @@ public:
      */
     node_type faceBarycenter( uint16_type f ) const
     {
-        return ublas::column( M_barycenterfaces, f );
+        constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
+        em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
+        
+        node_type n( nRealDim );
+        em_node_type en( n.data().begin(), n.size() );
+        en.setZero();
+        for ( uint16_type p =  0;  p < nPtsInFace; ++p )
+        {
+            // get pt id in element  from local pt id  in face
+            int ptid = this->fToP( f, p );
+            en += G.col(ptid);
+        }
+        return en / nPtsInFace;
     }
 
     /**
      * \return the barycenters at the faces of the element
      */
-    matrix_node_type faceBarycenters() const
+    FEELPP_DEPRECATED matrix_node_type faceBarycenters() const
     {
-        return M_barycenterfaces;
+        matrix_node_type n;
+        return n;
+            
     }
 
     /**
@@ -732,7 +744,6 @@ public:
 
         if ( tags.size() > 2 )
         {
-            this->setNumberOfPartitions( tags[2] );
             this->setProcessId( tags[3] );
 
             if ( tags[2] > 1 )
@@ -859,7 +870,6 @@ private:
 
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;
-    matrix_node_type M_barycenterfaces;
 
 
     double M_measure;
@@ -1010,11 +1020,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
     {
         ctx->update( *this, f );
         ublas::column( M_normals, f ) = ctx->unitNormal( 0 );
-#if 1 // doesn't work (vincent)
-        ublas::column( M_barycenterfaces, f ) = ctx->xReal( 0 );
-#else
-        ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( this->face( f ).G() ) );
-#endif
+
         double w = ( nDim == 3 )?f3[f]:( ( nDim==2 )?f2[f]:1 );
         M_measurefaces[f] = w*ctx->J( 0 )*ctx->normalNorm( 0 );
     }

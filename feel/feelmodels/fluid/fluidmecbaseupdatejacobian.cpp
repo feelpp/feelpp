@@ -14,13 +14,15 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XVec, sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                        bool _BuildCstPart,
-                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                        bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
+    bool _BuildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
@@ -151,7 +153,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    this->updateJacobianModel(U, J, R, _BuildCstPart);
+    this->updateJacobianModel(U, J, RBis, _BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
@@ -159,13 +161,66 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 
     //--------------------------------------------------------------------------------------------------//
+    //transients terms
+    bool Build_TransientTerm = !BuildCstPart;
+    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
 
-    this->updateJacobianStabilisation(U, J, R, _BuildCstPart);
+    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    {
+        bilinearForm_PatternDefault +=
+            integrate( _range=elements(mesh),
+                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                       _geomap=this->geomap() );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+    // define pressure cst
+    if ( this->definePressureCst() )
+    {
+        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
+        {
+            double beta = this->definePressureCstPenalisationBeta();
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(Xh->mesh()),
+                           _expr=beta*idt(p)*id(q),
+                           _geomap=this->geomap() );
+        }
+        if ( this->definePressureCstMethod() == "lagrange-multiplier" && BuildCstPart )
+        {
+            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
+                << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
+            auto therange=boundaryfaces(mesh);
+#else
+            auto therange=elements(mesh);
+#endif
+            auto lambda = M_XhMeanPressureLM->element();
+            form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
+                   _rowstart=this->rowStartInMatrix(),
+                   _colstart=this->colStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
+                integrate( _range=therange,//elements(mesh),
+                           _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
+                           _geomap=this->geomap() );
+
+            form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
+                   _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM,
+                   _colstart=this->colStartInMatrix() ) +=
+                integrate( _range=therange,//elements(mesh),
+                           _expr= + idt(p)*id(lambda),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+
+    this->updateJacobianStabilisation(U, J, RBis, _BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -278,60 +333,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     }
 
     //--------------------------------------------------------------------------------------------------//
-    //transients terms
-    bool Build_TransientTerm = !BuildCstPart;
-    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
-
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
-    {
-        bilinearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
-                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
-                       _geomap=this->geomap() );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    // define pressure cst
-    if ( this->definePressureCst() )
-    {
-        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
-        {
-            double beta = this->definePressureCstPenalisationBeta();
-            bilinearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
-                           _expr=beta*idt(p)*id(q),
-                           _geomap=this->geomap() );
-        }
-        if ( this->definePressureCstMethod() == "lagrange-multiplier" && BuildCstPart )
-        {
-            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
-                << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
-
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-            auto therange=boundaryfaces(mesh);
-#else
-            auto therange=elements(mesh);
-#endif
-            auto lambda = M_XhMeanPressureLM->element();
-            form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
-                   _rowstart=this->rowStartInMatrix(),
-                   _colstart=this->colStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
-                integrate( _range=therange,//elements(mesh),
-                           _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
-                           _geomap=this->geomap() );
-
-            form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
-                   _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM,
-                   _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=therange,//elements(mesh),
-                           _expr= + idt(p)*id(lambda),
-                           _geomap=this->geomap() );
-        }
-    }
-
-
-    //--------------------------------------------------------------------------------------------------//
 
     if (this->hasMarkerDirichletBClm())
     {
@@ -433,30 +434,30 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    //if (_doClose ) J->close();
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( BuildNonCstPart && _doBCStrongDirichlet && hasStrongDirichletBC )
+    if ( BuildNonCstPart && _doBCStrongDirichlet )
     {
-        auto RBis = this->backend()->newVector( J->mapRowPtr() );
-
         if ( this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletJacobian(J,RBis);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateJacobian","update moving boundary with strong Dirichlet");
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(mesh, this->markersNameMovingBoundary()),
-                    _element=u,
-                    _rhs=RBis,
-                    _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
+
+        if ( !markerDirichletEliminationOthers.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
+                    _element=u,_rhs=RBis,
+                    _expr= vf::zero<nDim,1>() );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -467,7 +468,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
 } // updateJacobian
 
 } // namespace FeelModels

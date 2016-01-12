@@ -55,6 +55,7 @@ file_options( std::string const& appname )
         ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
         ( "config-files", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
         ( "bc-file", po::value<std::string>()->default_value(appname+".bc"), "specify boundary condition (.bc) file" )
+        ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
@@ -285,6 +286,25 @@ parallel_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description cnab2_options( std::string const& prefix )
+{
+    po::options_description _options( "CNAB2 (Crank-Nicolson Adam-Bashforth order 2 adaptive scheme) options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "cnab2.time-initial" ).c_str(), po::value<double>()->default_value( 1e-8 ), "initial time step" )
+        ( prefixvm( prefix, "cnab2.time-final" ).c_str(), po::value<double>()->default_value( 1 ), "target final time" )
+        ( prefixvm( prefix, "cnab2.keps" ).c_str(), po::value<double>()->default_value( 1e-3 ), "time tolerance" )
+        ( prefixvm( prefix, "cnab2.nstar" ).c_str(), po::value<int>()->default_value( 10 ), "averaging period" )
+        ( prefixvm( prefix, "cnab2.steady" ).c_str(), po::value<bool>()->default_value( 0 ), "look for steady solution" )
+        ( prefixvm( prefix, "cnab2.steady-tol" ).c_str(), po::value<double>()->default_value( 1e-6 ), "steady solution tolerance" )
+        ( prefixvm( prefix, "cnab2.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
+        ( prefixvm( prefix, "cnab2.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
+        ( prefixvm( prefix, "cnab2.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
+        ( prefixvm( prefix, "cnab2.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
+        ( prefixvm( prefix, "cnab2.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
+        ( prefixvm( prefix, "cnab2.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " );
+
+    return _options;
+}
 /**
  * \return the command lines options for BDF
  */
@@ -340,6 +360,25 @@ po::options_description ts_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description stabilization_options( std::string const& prefix )
+{
+    po::options_description _options("Options for stabilization");
+    _options.add_options()
+        ( prefixvm( prefix, "stab.use" ).c_str(), po::value<bool>()->default_value( false ), "use or not stabilization method" )
+        ( prefixvm( prefix, "stab.div" ).c_str(), po::value<bool>()->default_value( true ), "add stabilization on divergence" )
+        ( prefixvm( prefix, "stab.compute-lambdaK" ).c_str(), po::value<bool>()->default_value( true ), "true : compute obtimized stabilization coefficient (highly recommended) / false use arbitrary constant" )
+        ( prefixvm( prefix, "stab.type" ).c_str(), po::value<std::string>()->default_value( "douglas-wang"), "douglas-wang, gls or supg" )
+        ( prefixvm( prefix, "stab.force" ).c_str(), po::value<bool>()->default_value( true ), "force the computation of stabilization terms at first iteration" )
+        ( "stab.starting-Re", po::value<double>()->default_value( 0.9 ), "maximal value of local Reynolds number before the stabilization starts" )
+
+        ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
+
+        ;
+
+    return _options.add( backend_options( prefixvm(prefix,"stab") ) );
+}
+
+
 
 Feel::po::options_description
 eimOptions( std::string const& prefix )
@@ -391,7 +430,12 @@ solvereigen_options( std::string const& prefix )
         ( ( _prefix+"solvereigen.spectrum" ).c_str(), Feel::po::value<std::string>()->default_value( "largest_magnitude" ), "eigenvalue solver position in spectrum. Choice: largest_magnitude, smallest_magnitude, largest_real, smallest_real, largest_imaginary, smallest_imaginary" )
         ( ( _prefix+"solvereigen.transform" ).c_str(), Feel::po::value<std::string>()->default_value( "shift" ), "spectral transformation. Choice: shift, shift_invert, fold, cayley" )
         ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
-        ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
+        ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "dimension of the subspace" )
+        ( ( _prefix+"solvereigen.mpd" ).c_str(), Feel::po::value<int>()->default_value( -2 ), "maximum projected dimension" )
+        ( ( _prefix+"solvereigen.interval-a" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "start of the interval in which all the eigenvalues are found" )
+        ( ( _prefix+"solvereigen.interval-b" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "end of the interval in which all the eigenvalues are found" )
+        ( ( _prefix+"solvereigen.pc-package-mumps" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use mumps in the case of interval" )
+        ( ( _prefix+"solvereigen.krylovschur-partitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of communicator to use for interval" )
         ( ( _prefix+"solvereigen.tolerance" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
         ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" )
         ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" )
@@ -594,33 +638,33 @@ blockns_options( std::string const& prefix )
     return _options;
 }
 
-// preconditioner for Magneto Static
+// preconditioner for Magneto Static - regularized
+po::options_description
+ams_options( std::string const& prefix )
+{
+    po::options_description _options( "AMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "useEdge" ).c_str(), Feel::po::value<bool>()->default_value(true), "true: SetConstantEdgeVector, false: SetCoordinates" )
+        ( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
+        ( prefixvm( prefix, "setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" )
+        ( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        ;
+    return _options
+        .add( backend_options( prefix.c_str() ))  // for AMS
+        /* if ams.pc-type == AS */
+        .add( backend_options( prefixvm(prefix, "1").c_str() )) // the (1,1).1 block
+        .add( backend_options( prefixvm(prefix, "2").c_str() )) // the (1,1).2 block
+        ;
+}
+
+// preconditioner for Magneto Static - saddle point
 po::options_description
 blockms_options( std::string const& prefix )
 {
-    po::options_description _options( "BLOCKNS options (" + prefix + ")" );
-    _options.add_options()
-        // error options
-        ( prefixvm( prefix, "blockms.type" ).c_str(), Feel::po::value<std::string>()->default_value("AFP"), "type of PC: AFP = Augmented Free Preconditioner" )
-        ( prefixvm( prefix, "blockms.rebuild_11" ).c_str(), Feel::po::value<bool>()->default_value(false), "rebuild M_11" )
-        ( prefixvm( prefix, "blockms.11.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        ( prefixvm( prefix, "blockms.22.on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ),"Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
-        //( prefixvm( prefix, "blockms.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Velocity CD preconditioner" )
-        //( prefixvm( prefix, "blockms.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Pressure CD preconditioner" )
-        //( prefixvm( prefix, "blockms.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
-        //( prefixvm( prefix, "blockms.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
-        //( prefixvm( prefix, "blockms.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
-        //( prefixvm( prefix, "blockms.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
-        //( prefixvm( prefix, "blockms.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
-        //// options for pmm
-        //( prefixvm( prefix, "blockms.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
-        ;
-        
+    po::options_description _options( "BLOCKMS options (" + prefix + ")" );
     return _options
-        .add( backend_options( prefixvm(prefix, "blockms.11").c_str() )) // the (1,1) block
-        .add( backend_options( prefixvm(prefix, "blockms.11.1").c_str() )) // the (1,1).1 block
-        .add( backend_options( prefixvm(prefix, "blockms.11.2").c_str() )) // the (1,1).2 block
-        .add( backend_options( prefixvm(prefix, "blockms.22").c_str() )); // the (2,2) block
+        .add(     ams_options( prefixvm(prefix, "11").c_str() ))  // the (1,1) block
+        .add( backend_options( prefixvm(prefix, "22").c_str() )); // the (2,2) block
 }
 
 /**
@@ -735,7 +779,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
         .add( blockns_options( prefix ) )
-        .add( blockms_options( prefix ) )
+        //.add( blockms_options( prefix ) )
 
         /* nonlinear solver options */
         .add( nlsolver_options() )
@@ -743,6 +787,7 @@ feel_options( std::string const& prefix  )
         /* discr options */
         .add( ts_options( prefix ) )
         .add( bdf_options( prefix ) )
+        .add( cnab2_options( prefix ) )
 
         /* exporter options */
         .add( exporter_options( prefix ) )

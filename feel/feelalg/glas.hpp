@@ -6,7 +6,7 @@
        Date: 2005-08-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -62,6 +62,24 @@ namespace Feel
 {
 const double Pi = 3.14159265358979323846264338328;
 const double TGV = 1e20;
+
+/**
+ * @return true is the matrix has no Inf, false otherwise
+ */
+template<typename Derived>
+inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+{
+    return ( (x - x).array() == (x - x).array()).all();
+}
+
+/**
+ * @return true is matrix has no NaN, false otherwise
+ */
+template<typename Derived>
+inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+{
+    return ((x.array() == x.array())).all();
+}
 
 template <class T>
 inline T Min ( const T &a, const T &b )

@@ -94,17 +94,16 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 
-        ThermoDynamicsBase( std::string __prefix,
-                            bool __buildMesh,
-                            WorldComm const& __worldComm,
-                            std::string __subPrefix,
-                            std::string __appliShortRepository );
+        ThermoDynamicsBase( std::string const& prefix,
+                            bool buildMesh,
+                            WorldComm const& worldComm,
+                            std::string const& subPrefix,
+                            std::string const& rootRepository );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
-        double meshSize() const { return M_meshSize; }
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperature() const { return M_fieldTemperature; }
         element_velocityconvection_ptrtype const& fieldVelocityConvection() const { return M_fieldVelocityConvection; }
@@ -167,9 +166,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         // apply assembly and solver
         virtual void solve();
 
-        virtual void updateLinearPDE( const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart,
-                                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                      bool _doClose, bool _doBCStrongDirichlet ) const;
+        void updateLinearPDE( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
         virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
         virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
@@ -191,7 +188,6 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-        double M_meshSize;
         mesh_ptrtype M_mesh;
 
         space_temperature_ptrtype M_Xh;

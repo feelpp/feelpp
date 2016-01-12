@@ -59,6 +59,11 @@ namespace Feel
 {
 namespace FeelModels
 {
+enum class FluidMechanicsPostProcessFieldExported
+{
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Viscosity, ALEMesh
+};
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
 class FluidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
@@ -113,6 +118,7 @@ public:
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
     typedef typename element_fluid_type::template sub_element<0>::type element_fluid_velocity_type;
     typedef boost::shared_ptr<element_fluid_velocity_type> element_fluid_velocity_ptrtype;
+    typedef typename space_fluid_velocity_type::component_functionspace_type component_space_fluid_velocity_type;
     // subspace pressure
     typedef typename space_fluid_type::template sub_functionspace<1>::type space_fluid_pressure_type;
     typedef typename space_fluid_type::template sub_functionspace<1>::ptrtype space_fluid_pressure_ptrtype;
@@ -162,8 +168,8 @@ public:
     //___________________________________________________________________________________//
     // function space stress
     //typedef bases<Lagrange<nOrderVelocity-1+space_alemapdisc_type::basis_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
-    typedef bases<Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> > basis_stress_type;
-    typedef FunctionSpace<mesh_type, basis_stress_type> space_stress_type;
+    typedef Lagrange<nOrderVelocity-1+mesh_type::nOrder, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
+    typedef FunctionSpace<mesh_type, bases<basis_stress_type> > space_stress_type;
     typedef boost::shared_ptr<space_stress_type> space_stress_ptrtype;
     typedef typename space_stress_type::element_type element_stress_type;
     typedef boost::shared_ptr<element_stress_type> element_stress_ptrtype;
@@ -172,9 +178,9 @@ public:
     //___________________________________________________________________________________//
     // function space vorticity
     typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                               Lagrange<nOrderVelocity, Scalar,Continuous,PointSetFekete>,
-                               Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> >::type basis_vorticity_type;
-    typedef FunctionSpace<mesh_type, basis_vorticity_type> space_vorticity_type;
+                               Lagrange<nOrderVelocity-1, Scalar,Discontinuous,PointSetFekete>,
+                               Lagrange<nOrderVelocity-1, Vectorial,Discontinuous,PointSetFekete> >::type basis_vorticity_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vorticity_type> > space_vorticity_type;
     typedef boost::shared_ptr<space_vorticity_type> space_vorticity_ptrtype;
     typedef typename space_vorticity_type::element_type element_vorticity_type;
     typedef boost::shared_ptr<element_vorticity_type> element_vorticity_ptrtype;
@@ -182,9 +188,9 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // functionspace for rho, mu, nu
-    typedef bases<BasisDVType> basis_densityviscosity_type;
+    typedef BasisDVType basis_densityviscosity_type;
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
-    typedef FunctionSpace<mesh_type, basis_densityviscosity_type> space_densityviscosity_type;
+    typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
     typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
     typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
@@ -212,6 +218,19 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
+    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
+                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    //___________________________________________________________________________________//
+    // fluid inlet
+    typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_fluidinlet_type> > space_fluidinlet_type;
+    typedef boost::shared_ptr<space_fluidinlet_type> space_fluidinlet_ptrtype;
+    typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
+    typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
+    typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
+                                  range_marked_face_type> op_interpolation_fluidinlet_type;
+    typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
     typedef bases<Lagrange<0, Scalar,Continuous>,Lagrange<0, Scalar,Continuous> > basis_fluidoutlet_windkessel_type;
@@ -299,23 +318,28 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
+
+    // context for evaluation
+    typedef typename space_fluid_velocity_type::Context context_velocity_type;
+    typedef boost::shared_ptr<context_velocity_type> context_velocity_ptrtype;
+    typedef typename space_fluid_pressure_type::Context context_pressure_type;
+    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanicsBase( //bool __isStationary,
-                        std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanicsBase( std::string const& prefix,
+                        bool __buildMesh = true,
+                        WorldComm const& _worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
-
 
     void build();
     void init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app );
@@ -329,13 +353,13 @@ public:
     void createMesh();
     void createFunctionSpaces();
     void createTimeDiscretisation();
-    void createExporters();
+    void createPostProcess();
+    void createPostProcessExporters();
     void createOthers();
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
-
-    void restartExporters();
+    void createBCFluidInlet();
 
     void loadMesh(mesh_ptrtype __mesh );
 
@@ -366,6 +390,11 @@ public:
     element_stress_type const& fieldNormalStressRefMesh() const { return *M_fieldNormalStressRefMesh; }
     element_stress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
     element_stress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
+
+    element_vorticity_ptrtype const& fieldVorticityPtr() const { return M_fieldVorticity; }
+    element_vorticity_ptrtype & fieldVorticityPtr() { return M_fieldVorticity; }
+    element_vorticity_type const& fieldVorticity() const {  CHECK( M_fieldVorticity ) << "fieldVorticity not init"; return *M_fieldVorticity; }
+    element_vorticity_type & fieldVorticity() {  CHECK( M_fieldVorticity ) << "fieldVorticity not init";return *M_fieldVorticity; }
 
     bool useExtendedDofTable() const;
 
@@ -398,10 +427,15 @@ public:
 
 
     //___________________________________________________________________________________//
-    // export results
+    // export post process results
+    void initPostProcess();
+    //void restartPostProcess();
+    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
+
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void setDoExport(bool b);
+    void exportMeasures( double time );
 private :
     void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
@@ -428,14 +462,14 @@ public :
     //___________________________________________________________________________________//
 
     bool isMoveDomain() const { return M_isMoveDomain; }
-    double meshSize() const { return M_meshSize; }
 
-    void pdeType(std::string __type);
-    std::string pdeType() const;
-    void pdeSolver(std::string __type);
-    std::string pdeSolver() const;
-    void stressTensorLawType(std::string __type);
-    //std::string stressTensorLawType() const;
+    std::string const& modelName() const;
+    void setModelName( std::string const& type );
+    std::string const& solverName() const;
+    void setSolverName( std::string const& type );
+
+    void setDynamicViscosityLaw( std::string const& type);
+    std::string const& dynamicViscosityLaw() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -542,9 +576,20 @@ public :
     // impose mean pressure with P0 Lagrange multiplier
     space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
     //___________________________________________________________________________________//
+    // fluid inlet bc
+    bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
+    bool hasFluidInlet( std::string const& type ) const
+    {
+        for (auto const& inletbc : M_fluidInletDesc )
+            if ( std::get<1>( inletbc ) == type )
+                return true;
+        return false;
+    }
+    void updateFluidInletVelocity();
+    //___________________________________________________________________________________//
     // fluid outlets bc
+    void initFluidOutlet();
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
-
     bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
     bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
     bool hasFluidOutlet(std::string const& type) const
@@ -577,7 +622,6 @@ public :
                 ++res;
         return res;
     }
-
     std::map<int,std::vector<double> > const& fluidOutletWindkesselPressureDistalOld() const { return M_fluidOutletWindkesselPressureDistal_old; }
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
@@ -600,8 +644,7 @@ public :
     void updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers );
 
     void updateWallShearStress();
-    void updateVorticity(mpl::int_<2> /***/);
-    void updateVorticity(mpl::int_<3> /***/);
+    void updateVorticity();
 
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
@@ -644,16 +687,18 @@ public :
 #endif
     //___________________________________________________________________________________//
 
-    // save in file value of pressure at point __listPt
-    void savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
+    double computeMeshArea( std::string const& marker = "" ) const;
+    double computeMeshArea( std::list<std::string> const& markers ) const;
 
-    // compute drag and lift on a markedfaces called markerName
-    Eigen::Matrix<value_type,nDim,1> computeForce(std::string markerName);
-
-    double computeFlowRate(std::string marker);
-    double computeMeanPressure();
-    double computeMeanDivergence();
-    double computeNormL2Divergence();
+    // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
+    Eigen::Matrix<value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
+    double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
+    double computePressureSum() const;
+    double computePressureMean() const;
+    double computeVelocityDivergenceSum() const;
+    double computeVelocityDivergenceMean() const;
+    double computeVelocityDivergenceNormL2() const;
 
 #if 0
     // Averaged Preassure computed on a set of slice (false for compute on actual mesh)
@@ -709,18 +754,14 @@ public :
 
     //___________________________________________________________________________________//
 
-    void updateNewtonInitialGuess(vector_ptrtype& U) const;
-
     // non linear (newton)
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                         bool BuildCstPart,sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                         bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R,
-                         bool BuildCstPart, bool UseJacobianLinearTerms,
-                         bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-    void updateJacobianModel( element_fluid_type const& U/*const vector_ptrtype& X*/, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+    void updateNewtonInitialGuess(vector_ptrtype& U) const;
+    void updateJacobian( DataUpdateJacobian & data ) const;
+    void updateResidual( DataUpdateResidual & data ) const;
+
+    void updateJacobianModel( element_fluid_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
                               bool BuildCstPart ) const;
-    void updateResidualModel( element_fluid_type const& U/*const vector_ptrtype& X*/, vector_ptrtype& R,
+    void updateResidualModel( element_fluid_type const& U, vector_ptrtype& R,
                               bool BuildCstPart, bool UseJacobianLinearTerms ) const;
 
     virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
@@ -732,25 +773,16 @@ public :
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCPressureResidual( vector_ptrtype& R ) const = 0;
 
-
-    void updateResidualStabilisation(element_fluid_type const& U/*const vector_ptrtype& X*/, vector_ptrtype& R,
+    void updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
                                      bool BuildCstPart, bool UseJacobianLinearTerms) const;
-    void updateJacobianStabilisation(element_fluid_type const& U/*const vector_ptrtype& X*/, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+    void updateJacobianStabilisation(element_fluid_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
                                      bool BuildCstPart ) const;
 
 
     // linear
-    void updateLinearPDE(const vector_ptrtype& X, sparse_matrix_ptrtype& A, vector_ptrtype& F, bool _buildCstPart,
-                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                         bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-
-    void updateOseen( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool _buildCstPart,
-                      sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                      bool _doClose=true,
-                      bool _doBCStrongDirichlet=true ) const;
-    void updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
-
-    void updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
+    void updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                    sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const;
 
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
@@ -760,19 +792,8 @@ public :
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
     virtual void updateBCPressureLinearPDE( vector_ptrtype& F ) const = 0;
 
-
-#if 0
-    void updatePreconditioner(const vector_ptrtype& X,
-                              sparse_matrix_ptrtype& A,
-                              sparse_matrix_ptrtype& A_extended,
-                              sparse_matrix_ptrtype& Prec) const;
-#endif
-    // non linear (fixed point)
-    void updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                      bool _buildCstPart,
-                      bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-
-    double computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2);
+    void updatePicard( DataUpdateLinear & data ) const;
+    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //___________________________________________________________________________________//
 
@@ -784,7 +805,6 @@ protected:
     backend_ptrtype M_backend;
     //----------------------------------------------------
     // mesh
-    double M_meshSize;
     mesh_ptrtype M_mesh;
     MeshMover<mesh_type> M_mesh_mover;
     // fluid space and solution
@@ -803,8 +823,8 @@ protected:
     element_stress_ptrtype M_fieldNormalStress, M_fieldNormalStressRefMesh;
     element_stress_ptrtype M_fieldWallShearStress;
     // vorticity space
-    space_vorticity_ptrtype M_Xh_vorticity;
-    element_vorticity_ptrtype M_vorticity;
+    space_vorticity_ptrtype M_XhVorticity;
+    element_vorticity_ptrtype M_fieldVorticity;
     //----------------------------------------------------
     // mesh ale tool and space
     bool M_isMoveDomain;
@@ -816,8 +836,8 @@ protected:
     element_stress_ptrtype M_normalStressFromStruct;
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
-    //----------------------------------------------------
 #endif
+    //----------------------------------------------------
     // tool solver ( assembly+solver )
     model_algebraic_factory_ptrtype M_algebraicFactory;
     //----------------------------------------------------
@@ -831,10 +851,8 @@ protected:
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
-    std::string M_pdeType;
-    std::string M_pdeSolver;
-    // fluid outlets bc
-    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
+    std::string M_modelName;
+    std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
@@ -862,7 +880,17 @@ protected:
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
     //----------------------------------------------------
+    // fluid inlet bc
+    std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
+    std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
+    std::map<std::string,space_fluidinlet_ptrtype> M_fluidInletSpace;
+    std::map<std::string,element_fluidinlet_ptrtype > M_fluidInletVelocity;
+    std::map<std::string,std::tuple<boost::shared_ptr<typename component_space_fluid_velocity_type::element_type>,
+                                    op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
+    std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
+    //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
+    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
     mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
@@ -874,13 +902,10 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    // post-process field exported
+    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
     bool M_isHOVisu;
-    bool M_doExportVelocity, M_doExportPressure, M_doExportVorticity, M_doExportNormalStress, M_doExportWallShearStress, M_doExportViscosity;
-    bool M_doExportMeshDisplacement;
-    bool M_doExportMeshALE;
-    bool M_doExportMeshDisplacementOnInterface;
-
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
@@ -904,15 +929,18 @@ protected:
     MeshMover<mesh_visu_ho_type> M_meshmover_visu_ho;
 #endif
     op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
-
 #endif
+    // post-process measure at point
+    context_velocity_ptrtype M_postProcessMeasuresContextVelocity;
+    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
+    // post-process measure forces (lift,drag) and flow rate
+    std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
+    std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)
     std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
-    //----------------------------------------------------
-    std::set<std::string> M_nameFilesPressureAtPoints;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

@@ -10,10 +10,10 @@
     //         "value":"-1"
     //     }
     // },
-    "Materials":
-    {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
     "BoundaryConditions":
     {
         "temperature":

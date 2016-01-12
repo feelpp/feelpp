@@ -34,12 +34,13 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, WorldComm const& _worldComm, std::string subPrefix,
-                                                                                   std::string appliShortRepository )
+
+ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
+                                std::string const& rootRepository )
         :
-        super_type( _theprefix, _worldComm, subPrefix, appliShortRepository ),
+        super_type( _theprefix, _worldComm, subPrefix, rootRepository ),
         M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
-        M_isStationary( false /*_isStationary*/),
+        M_isStationary( /*false*/ boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
         M_restartAtLastSave( boption(_name="ts.restart.at-last-save") ),
@@ -49,57 +50,29 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_modelProps( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ) ),
-        M_parameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_PARAMETERS,0)),
-        M_geoParameters(std::vector<double>(FEELMODELS_FSIBASE_NUMBER_OF_GEOPARAMETERS,0)),
-        M_ginacExpr(std::vector<std::pair<std::string,std::string> >(FEELMODELS_FSIBASE_NUMBER_OF_GINACEXPR)),
-        M_ginacExprCompilationDirectory( "" ),
-        M_geotoolMeshIndex( ioption(_name="geotool-mesh-index",_prefix=this->prefix()) ),
-        M_geotoolSaveDirectory( soption(_name="geotool-save-directory",_prefix=this->prefix()) ),
-        M_geotoolSaveName( soption(_name="geotool-save-name",_prefix=this->prefix()) ),
+        M_directoryLibSymbExpr( "" ),
         M_row_startInMatrix(0),
         M_col_startInMatrix(0),
         M_row_startInVector(0),
         M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
-        M_exporterPath( this->appliRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) )
+        M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
+        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
     {
-
+        //-----------------------------------------------------------------------//
         // move in stationary mode if we have this relation
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
-
         //-----------------------------------------------------------------------//
-        // init user cst parameters
-        for ( uint16_type k=1;k<=M_parameters.size();++k )
+        if ( Environment::vm().count(prefixvm(this->prefix(),"symbolic-expr.directory").c_str()) )
         {
-            double val = doption(_prefix=this->prefix(),_name=(boost::format("parameter%1%") %k ).str());
-            this->setUserCstParameter(k,val);
-        }
-        // init user cst geo parameters
-        for ( uint16_type k=1;k<=M_geoParameters.size();++k )
-        {
-            double val = doption(_prefix=this->prefix(),_name=(boost::format("geo-parameter%1%") %k ).str());
-            this->setUserCstGeoParameter(k,val);
-        }
-
-
-        // init user ginac expr
-        for ( uint16_type k=1;k<M_ginacExpr.size();++k )
-            {
-                std::string gexpr= soption(_prefix=this->prefix(),_name=(boost::format("ginac-expr%1%") %k ).str());
-                std::string gname= soption(_prefix=this->prefix(),_name=(boost::format("ginac-name%1%") %k ).str());
-                this->setUserGinacExpr(k,gexpr,gname);
-            }
-        if ( Environment::vm().count(prefixvm(this->prefix(),"ginac-expr-directory").c_str()) )
-        {
-            M_ginacExprCompilationDirectory=Environment::rootRepository()+"/"+soption(_name="ginac-expr-directory",_prefix=this->prefix());
+            M_directoryLibSymbExpr = soption(_name="symbolic-expr.directory",_prefix=this->prefix());
+            if ( fs::path( M_directoryLibSymbExpr ).is_relative() )
+                M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc())/fs::path(M_directoryLibSymbExpr)).string();
         }
         else
-        {
-            M_ginacExprCompilationDirectory = (fs::path(this->appliRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
-        }
+            M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
         //-----------------------------------------------------------------------//
         // mesh file : .msh
         if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
@@ -107,23 +80,21 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
         // mesh file : .geo
         if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
             M_geoFileStr = Environment::expand( soption(_prefix=this->prefix(),_name="geofile") );
-        // mesh file : geotool with .mesh file
-        if (M_geotoolSaveDirectory.empty()) M_geotoolSaveDirectory = this->appliShortRepository();//this->appliRepository();
-        if (M_geotoolSaveName.empty()) M_geotoolSaveName = this->prefix();
         //-----------------------------------------------------------------------//
         if (soption(_prefix=this->prefix(),_name="geomap")=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
+        M_modelProps = std::make_shared<ModelProperties>( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ),
+                                                          M_directoryLibSymbExpr, this->worldComm() );
     }
 
    void
    ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
    {
-        M_modelProps.parameters()[symbolName] = ModelParameter(symbolName,value);
+        M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
    }
-
 
     void
     ModelNumerical::setStationary(bool b)
@@ -139,69 +110,27 @@ ModelNumerical::ModelNumerical(/*bool _isStationary,*/ std::string _theprefix, W
     ModelNumerical::updateTime(double t)
     {
         M_timeCurrent=t;
-        M_modelProps.parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
+        M_modelProps->parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
     }
 
 
-    // ginac expr
-    Expr< GinacEx<2> >
-    ModelNumerical::userGinacExpr(uint16_type i, std::map<std::string,double> const& mp ) const
-    {
-        CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
-        std::string pathGinacExpr = (this->ginacExprCompilationDirectory().empty()) ?
-            this->userGinacExprName(i) :
-            this->ginacExprCompilationDirectory() + "/" + this->userGinacExprName(i) ;
-        return expr( this->userGinacExprStr(i), mp , pathGinacExpr );
-    }
-    Expr< GinacEx<2> >
-    ModelNumerical::userGinacExpr(uint16_type i, std::pair<std::string,double> const& mp ) const
-    {
-        return this->userGinacExpr( i,{ { mp.first, mp.second } } );
-    }
-    std::string
-    ModelNumerical::userGinacExprStr(uint16_type i) const
-    {
-        CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
-        return M_ginacExpr[i-1].first;
-    }
-    std::string
-    ModelNumerical::userGinacExprName(uint16_type i) const
-    {
-        CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
-        return M_ginacExpr[i-1].second;
-    }
-    void
-    ModelNumerical::setUserGinacExpr(uint16_type i,std::string expr)
-    {
-        CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
-        M_ginacExpr[i-1]=std::make_pair(expr,(boost::format("defaultNameGinacExpr%1%")%i).str());
-    }
-    void
-    ModelNumerical::setUserGinacExpr(uint16_type i,std::string expr,std::string name)
-    {
-        CHECK( i >=1 && i <=M_ginacExpr.size() ) << "invalid index\n";
-        M_ginacExpr[i-1]=std::make_pair(expr,name);
-    }
-    std::string
-    ModelNumerical::ginacExprCompilationDirectory() const { return M_ginacExprCompilationDirectory; }
 
     void
-    ModelNumerical::saveMSHfilePath(std::string namePath) const
+    ModelNumerical::saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath ) const
     {
+        std::string meshPathUsed = (meshPath.empty())? this->mshfileStr() : meshPath;
         if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMSHfilePath",
-                                             "namePath "+ namePath + "\nwrite :\n" + M_mshFileStr,
+                                             "fileSavePath :"+ fileSavePath + "\nwrite :\n" + meshPathUsed,
                                              this->worldComm(),this->verboseAllProc());
 
         if ( this->worldComm().isMasterRank() )
         {
-            fs::path thedir = fs::path( namePath ).parent_path();
+            fs::path thedir = fs::path( fileSavePath ).parent_path();
             if ( !fs::exists(thedir))
                 fs::create_directories(thedir);
 
-            //std::string nameFile = prefixvm(this->prefix(),namePath);
-            std::ofstream file(namePath.c_str(), std::ios::out);
-            //M_mshFileStr = this->application()->vm()[prefixvm(this->prefix(),"mshfile")].as< std::string >() ;
-            file << M_mshFileStr;
+            std::ofstream file(fileSavePath.c_str(), std::ios::out);
+            file << meshPathUsed;
             file.close();
         }
     }

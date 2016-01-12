@@ -29,7 +29,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/unithypercube.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelvf/vf.hpp>
