@@ -6,6 +6,7 @@
        Date: 2005-10-06
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,11 +27,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-06
  */
-#ifndef __FiniteElement_H
-#define __FiniteElement_H 1
+#ifndef FEELPP_FE_HPP
+#define FEELPP_FE_HPP 1
 
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
+#include <feel/feelpoly/dof.hpp>
 
 namespace Feel
 {
@@ -153,16 +155,13 @@ public:
         }
 
 #endif
-        FEELPP_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
+        DCHECK( lu.isNonsingular() ) <<  "vandermonde matrix is singular"
+                                     << " A=" << A
+                                     << " D=" << D
+                                     << " C=" << C;
 
         this->setCoefficient( ublas::trans( C ) );
 
-        //M_pset = polynomialset_type( M_primal, C );
-
-        //std::cout << "coeff = " << M_pset.coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         DVLOG(2) << "============================================================\n";
     }
     FiniteElement( FiniteElement const & fe )
@@ -256,6 +255,28 @@ public:
         return M_dual;
     }
 
+    /**
+     * @return the degrees of freedom
+     */
+    std::vector<FiniteElementDof> const& dof() const { return M_dual.dof(); }
+
+    //! @return the number of dof in finite element
+    size_type numberOfDof() const
+    {
+        return M_dual.dof().size();
+    }
+
+    //! @return the number of dof in finite element
+    size_type numberOfDofOnFace() const
+    {
+        int d = super::nDim;
+        return std::accumulate( dof().begin(), dof().end(), 0,
+                                [&d]( auto val, auto const& fe )
+                                {
+                                    return (fe.entityTopologicalDimension() == super::nDim-1 )?val++:val;
+                                } );
+    }
+    
     /**
      * \return points associated with the lagrange finite element
      */

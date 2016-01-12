@@ -7,6 +7,7 @@
 
   Copyright (C) 2006 EPFL
   Copyright (C) 2008, 2009 Université de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-01-14
  */
-#ifndef __RaviartThomas_H
-#define __RaviartThomas_H 1
+#ifndef FEELPP_RAVIARTTHOMAS_HPP
+#define FEELPP_RAVIARTTHOMAS_HPP 1
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
@@ -287,7 +288,8 @@ public:
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
+        int p = 0;
+        for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
                 e < M_convex_ref.entityRange( nDim-1 ).end();
                 ++e )
         {
@@ -319,8 +321,10 @@ public:
         if ( nDim == 3 )
             j = {3.464101615137754, 2, 2, 2};
 
+        int curdof=0;
         //for( int k = 0; k < nDim; ++k )
         {
+            uint16_type nsiblings = M_convex_ref.entityRange( nDim-1 ).end()-M_convex_ref.entityRange( nDim-1 ).begin();
             // loopover the each edge entities and add the correponding functionals
             for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
@@ -331,12 +335,16 @@ public:
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
                 dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
+
+                M_dof.emplace_back( curdof, curdof++, nDim-1, e, nsiblings, 0 );
+                
             }
         }
 
         //VLOG(1) << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
         {
+#if 0
             // we need more equations : add interior moment
             // indeed the space is orthogonal to Pk-1
             uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
@@ -361,6 +369,24 @@ public:
                 //VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                 fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
             }
+#else
+            // only interior point
+            int d = nDim;
+            int e = 0;
+            points_type Gt ( M_convex_ref.makePoints( d, 0 ) );
+            LOG(INFO) << "Gt:" << Gt;
+            ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+            LOG(INFO) << "pts:" << M_pts;
+            uint16_type nsiblings = Gt.size2();
+            LOG(INFO) << "entity topodim" << d << " id " <<  e << " nsiblings " << nsiblings << "\n";
+            for( auto && f :  componentsPointsEvaluation( primal, Gt ) )
+                fset.emplace_back( f );
+
+            for (int c = 0; c < nDim; ++c )
+                for (int j = 0, curnode=p; j < Gt.size2(); ++j )
+                M_dof.emplace_back( curdof++, curnode++, d, e, nsiblings, c );
+#endif
+            
         }
 
         //VLOG(1) << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
@@ -369,6 +395,9 @@ public:
         //VLOG(1) << "[RT Dual] done 4\n";
 
     }
+
+    std::vector<FiniteElementDof> const& dof() const { return M_dof; }
+
 
     /**
      * \return the point set
@@ -416,7 +445,7 @@ private:
     points_type M_pts;
     std::vector<points_type> M_pts_per_face;
     FunctionalSet<primal_space_type> M_fset;
-
+    std::vector<FiniteElementDof> M_dof;
 
 };
 }// detail
@@ -437,11 +466,11 @@ template<uint16_type N,
          uint16_type TheTAG=0 >
 class RaviartThomas
     :
-public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
-    fem::detail::RaviartThomasDual,
-    PointSetEquiSpaced >,
-public HDivPolynomialSet,
-public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
+        public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
+                             fem::detail::RaviartThomasDual,
+                             PointSetEquiSpaced >,
+        public HDivPolynomialSet,
+        public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
             fem::detail::RaviartThomasDual,
@@ -510,21 +539,24 @@ public:
     RaviartThomas()
         :
         super( dual_space_type( primal_space_type() ) ),
-        M_refconvex()
-    {
+        M_refconvex(),
+        n( convex_type::numTopologicalFaces )
+        {
+            for( auto f : range( static_cast<int>(convex_type::numTopologicalFaces)) )
+                n[f].resize(nDim);
 #if 0
-        VLOG(1) << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
-        VLOG(1) << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
-        VLOG(1) << "[RT] numPoints = " << numPoints << "\n";
+            VLOG(1) << "[RT] nPtsPerEdge = " << nbPtsPerEdge << "\n";
+            VLOG(1) << "[RT] nPtsPerFace = " << nbPtsPerFace << "\n";
+            VLOG(1) << "[RT] numPoints = " << numPoints << "\n";
+        
+            VLOG(1) << "[RT] nDof = " << super::nDof << "\n";
 
-        VLOG(1) << "[RT] nDof = " << super::nDof << "\n";
-
-        VLOG(1) << "[RT] coeff : " << this->coeff() << "\n";
-        VLOG(1) << "[RT] pts : " << this->points() << "\n";
-        VLOG(1) << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
-        VLOG(1) << "[RT] is_product : " << is_product << "\n";
+            VLOG(1) << "[RT] coeff : " << this->coeff() << "\n";
+            VLOG(1) << "[RT] pts : " << this->points() << "\n";
+            VLOG(1) << "[RT] eval at pts : " << this->evaluate( this->points() ) << "\n";
+            VLOG(1) << "[RT] is_product : " << is_product << "\n";
 #endif
-    }
+        }
 
     template<int subN>
     struct SubSpace
@@ -544,11 +576,10 @@ public:
         typedef  RaviartThomas<NewDim, O, T, Convex,  TheTAG> type;
     };
 
-    RaviartThomas( RaviartThomas const & cr )
-        :
-        super( cr ),
-        M_refconvex()
-    {}
+    
+    RaviartThomas( RaviartThomas const& cr ) = default;
+    RaviartThomas( RaviartThomas && cr ) = default;
+
     ~RaviartThomas()
     {}
 
@@ -565,6 +596,28 @@ public:
      */
     //@{
 
+    //! @return order of RT finite element
+    constexpr uint16_type order() const { return nOrder; }
+
+    constexpr uint16_type numberOfFacetDof( uint16_type /*c*/ ) const { return nLocalFaceDof; }
+    constexpr uint16_type numberOfDofPerFacet() const { return (nDim==2)?nDofPerEdge:nDofPerFace; }
+        
+    constexpr uint16_type dofFromFacet( uint16_type face, uint16_type local_dof_in_face ) const
+    {
+        return (nDim == 2) ? face*nDofPerEdge+local_dof_in_face : face*nDofPerFace+local_dof_in_face;
+    }
+    constexpr uint16_type numberOfInteriorDof( bool per_component = false ) const
+    {
+        return per_component?nDofPerVolume:nDofPerVolume*nComponents;
+    }
+
+    /**
+     * @return the dof from volume
+     */
+    constexpr uint16_type dofFromInterior( uint16_type interior_dof, uint16_type c ) const
+    {
+        return numberOfFacetDof() + numberOfInteriorDof(false)*c + interior_dof;
+    }
     /**
      * \return the reference convex associated with the lagrange polynomials
      */
@@ -605,23 +658,28 @@ public:
         {
             Ihloc.setZero();
             auto g=expr.geom();
-
+            
             for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
             {
                 if( g->faceId() == invalid_uint16_type_value)
-                    expr.geom()->faceNormal(  f, n, true );
+                    expr.geom()->faceNormal(  f, n[f], true );
                 else
-                    expr.geom()->faceNormal(  g->faceId(), n, true );
+                    expr.geom()->faceNormal(  g->faceId(), n[g->faceId()], true );
                 
-                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-                for ( int l = 0; l < nLocalDof; ++l )
+            }
+            for( auto const& edof : this->dof() )
+            {
+                int node_id = edof.nodeId();
+                int dof_id = edof.id();
+                if ( edof.entityTopologicalDimension() == nDim-1 ) // facet dof
                 {
-                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
-                              
-                    
+                        Ihloc(dof_id) += expr.evalq( c1, 0, node_id )*n[edof.entityId()](c1);
                 }
+                else // interior dof
+                {
+                    Ihloc(dof_id) = expr.evalq( edof.component(), 0, node_id );
+                }       
             }
         }
     local_interpolant_type
@@ -639,9 +697,9 @@ public:
             int f=0;
             {
                 if( g->faceId() == invalid_uint16_type_value)
-                    expr.geom()->faceNormal(  f, n, true );
+                    expr.geom()->faceNormal(  f, n[f], true );
                 else
-                    expr.geom()->faceNormal(  g->faceId(), n, true );
+                    expr.geom()->faceNormal(  g->faceId(), n[f], true );
                 
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
@@ -649,7 +707,7 @@ public:
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                     {
-                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                        Ihloc(q) += expr.evalq( c1, 0, q )*n[f](c1);
                     }
                     
                 }
@@ -669,32 +727,31 @@ public:
         Ihloc.setZero();
         auto g=expr.geom();
 
+        // facet 
         for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
         {
             if( g->faceId() == invalid_uint16_type_value)
-                expr.geom()->faceNormal( f, n, true );
+                expr.geom()->faceNormal( f, n[f], true );
             else
-                expr.geom()->faceNormal( g->faceId(), n, true );
-
-            auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-            for ( int l = 0; l < nLocalDof; ++l )
+                expr.geom()->faceNormal( g->faceId(), n[g->faceId()], true );
+        }
+        for( auto const& thedof : this->dof() )
+        {
+            if ( thedof.entityTopologicalDimension() == nDim-1 ) // facet dof
             {
-                int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+                for( auto const& edof: test(expr).dof() )
                 {
-                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-                    
-                    for ( uint16_type c = 0; c < ncomp; ++c )
-                    {
-                        uint16_type I = expr_basis_t::nLocalDof*c + i;
-
-                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*n(c1);
-                        }
-                    }
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        Ihloc(thedof.id()) += expr.evaliq( edof.id(), c1, 0, thedof.nodeId() )*n(c1);
                 }
             }
+            else // interior dof
+            {
+                for( auto const& edof: test(expr).dof() )
+                {
+                    Ihloc(thedof.id()) = expr.evaliq( edof.id(), thedof.component(), 0, thedof.nodeId() );
+                }
+            }       
         }
 
     }
@@ -708,146 +765,13 @@ public:
         //return detJ()*( trans( JinvT() )*expr )*Nref();
         return expr;
     }
-#if 0
-    /**
-     *
-     * \return the value of the expression at the dof
-     */
-    template<typename ExprType, typename ContextType>
-    std::vector<value_type>
-    interpolate( boost::shared_ptr<ContextType>& ctx, ExprType & expr )
-    {
-        using namespace Feel::vf;
-        typedef boost::shared_ptr<ContextType> gmc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
-        std::vector<value_type> v( nLocalDof );
-        auto I = integrate( face, _expr=_e1*N() );
-        // First deal with the face dof
-        for ( int face = 0; face < numTopologicalFaces; ++face )
-        {
-            // update the geomap at dof on face
-            ctx->update( _face=face, _element=ctx->id() );
-
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( ctx ) );
-            expr.update( mapgmc, face );
-
-            for ( int q = 0; q < nDofPerFace; ++q )
-            {
-                int ldof = nDofPerFace*face+i;
-                v[ldof] = expr.evalq( 0,0,i );
-            }
-        }
-
-        // evaluate expr \cdot n  on each face
-
-        // evaluate moments of the expression
-    }
-#endif
-
-#if 0
-    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
-                           Phi& phi_t,
-                           GPhi& g_phi_t, const bool do_gradient,
-                           HPhi& h_phi_t, const bool do_hessian
-
-                         )
-    {
-        transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
-    }
-    template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
-    static void transform( GMContext const& gmc,
-                           PC const& pc,
-                           Phi& phi_t,
-                           GPhi& g_phi_t, const bool do_gradient,
-                           HPhi& h_phi_t, const bool do_hessian
-
-                         )
-    {
-        //phi_t = phi; return ;
-        typename GMContext::gm_type::matrix_type const B = gmc.B( 0 );
-        typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
-        typename GMContext::gm_type::matrix_type JB( K/gmc.J( 0 ) );
-#if 0
-        VLOG(1) << "K= " << gmc.K( 0 ) << "\n";
-        VLOG(1) << "B= " << B << "\n";
-        VLOG(1) << "J= " << gmc.J( 0 ) << "\n";
-        VLOG(1) << "JB= " << JB << "\n";
-#endif
-        std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
-
-        if ( do_gradient )
-        {
-            //VLOG(1) << "compute gradient\n";
-            std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
-        }
-
-        if ( do_hessian )
-            std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type( 0 ) );
-
-        const uint16_type Q = gmc.nPoints();//M_grad.size2();
-
-        // transform
-        for ( uint16_type i = 0; i < nLocalDof; ++i )
-        {
-            for ( uint16_type l = 0; l < nDim; ++l )
-            {
-
-                for ( uint16_type p = 0; p < nDim; ++p )
-                {
-                    for ( uint16_type q = 0; q < Q; ++q )
-                    {
-                        // \warning : here the transformation depends on the
-                        // numbering of the degrees of freedom of the finite
-                        // element
-                        //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
-                        phi_t[i][l][0][q] += JB( l, p ) * pc.phi( i,p,0,q );
-                        //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
-                        //VLOG(1) << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
-                        //VLOG(1) << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
-                    }
-                }
-            }
-
-            //if ( do_gradient )
-            {
-
-                for ( uint16_type p = 0; p < nDim; ++p )
-                {
-                    for ( uint16_type r = 0; r < nDim; ++r )
-                    {
-                        for ( uint16_type s = 0; s < Q; ++s )
-                        {
-                            g_phi_t[i][p][r][s] = 0;
-
-                            for ( uint16_type q = 0; q < nDim; ++q )
-                            {
-                                g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad( i,q,r,s );
-                                //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
-
-                                //VLOG(1) << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
-                            }
-                        }
-
-                        //VLOG(1) << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
-
-                    }
-                }
-            }
-
-            if ( do_hessian )
-            {
-            }
-        }
-    }
-#endif
 
     //@}
 
 protected:
     reference_convex_type M_refconvex;
-    mutable ublas::vector<value_type> n{ nDim }; //normal
+    mutable std::vector<ublas::vector<value_type>> n;
 
 private:
 

@@ -47,6 +47,7 @@
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
+#include <feel/feelpoly/dof.hpp>
 
 
 
@@ -128,50 +129,14 @@ public:
                              mpl::int_<nEdges>,
                              mpl::int_<nFaces> >::type >::type::value;
 
-    LagrangeDual( LagrangeDual const& d )
-        :
-        super( d ),
-        M_convex_ref(),
-        M_eid( d.M_eid ),
-        M_pts( d.M_pts ),
-        M_points_face( d.M_points_face ),
-        M_fset( d.M_fset )
-        {}
 
+    LagrangeDual( LagrangeDual const& d ) = default;
     LagrangeDual( LagrangeDual && d ) = default;
+    
     LagrangeDual( primal_space_type const& primal )
         :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts( nDim, numPoints ),
-        M_points_face( nFacesInConvex ),
-        M_fset( primal )
-    {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
-
-        M_pts = M_pset.points();
-
-        if ( nOrder > 0 )
-        {
-            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
-            {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
-                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
-            }
-        }
-
-        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
-    }
+        LagrangeDual( primal, pointset_type() )
+        {}
 
     LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
         :
@@ -182,32 +147,52 @@ public:
         M_points_face( nFacesInConvex ),
         M_fset( primal ),
         M_pset( pts )
-    {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
-
-        if ( nOrder > 0 )
         {
-            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
-            {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
-                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
-            }
-        }
+            DVLOG(2) << "Lagrange finite element: \n";
+            DVLOG(2) << " o- dim   = " << nDim << "\n";
+            DVLOG(2) << " o- order = " << nOrder << "\n";
+            DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
+            DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+            DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+            DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+            DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
-        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
-    }
+            // for each component
+            // walk through the geometry entity from vertices up to entity of
+            // topologicalDimension equal to nDim
+            for( int c = 0, curdof = 0; c < primal_space_type::nComponents; ++c )
+            {
+                for( int d = 0, curnode = 0; d < nDim; ++d )
+                {
+                    uint16_type nsiblings = M_convex_ref.entityRange( d ).end()-M_convex_ref.entityRange( d ).begin();
+                    for ( uint16_type e = M_convex_ref.entityRange( d ).begin();
+                          e < M_convex_ref.entityRange( d ).end();
+                          ++e )
+                    {
+                        DVLOG(2) << "entity topodim" << d << " id " <<  e << "\n";
+                        M_dof.emplace_back( curdof++, curnode++, d, e, nsiblings, c );
+                    }
+                }
+            }
+            DVLOG(2) << "dof: " << M_dof;
+            if ( nOrder > 0 )
+            {
+                for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
+                      e < M_convex_ref.entityRange( nDim-1 ).end();
+                      ++e )
+                {
+                    M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
+                    DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
+                }
+            }
+
+            setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        }
 
     ~LagrangeDual() = default;
     LagrangeDual& operator=( LagrangeDual const& ) = default;
+
+    std::vector<FiniteElementDof> const& dof() const { return M_dof; }
     
     points_type const& points() const
     {
@@ -291,6 +276,7 @@ private:
     std::vector<points_type> M_points_face;
     FunctionalSet<primal_space_type> M_fset;
     pointset_type M_pset;
+    std::vector<FiniteElementDof> M_dof;
 
 };
 }// details
