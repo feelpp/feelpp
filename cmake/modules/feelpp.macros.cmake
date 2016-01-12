@@ -399,3 +399,24 @@ macro(feelpp_max max var1 var2 )
   endif()
 endmacro(feelpp_max)
 
+# This macros cleans up a variable containing a list of paths
+# It:
+# - Removes any reference to the original git source directory used for builds (important for instal with tarball)
+# - Removes any reference to the original build directory (important for instal with tarball)
+function(feelpp_clean_variable old_var new_var)
+    set(tmp_var "")
+    foreach(_entry ${old_var})
+        # Try to find build dir reference
+        set(_found_position "-1")
+        string(FIND ${_entry} ${CMAKE_BINARY_DIR} _found_position)
+        if(NOT (${_found_position} MATCHES "0") )
+            # Try to find source dir reference
+            set(_found_position "-1")
+            string(FIND ${_entry} ${CMAKE_SOURCE_DIR} _found_position)
+            if(NOT (${_found_position} MATCHES "0"))
+                set(tmp_var "${tmp_var};${_entry}")
+            endif()
+        endif()
+    endforeach()
+    set(${new_var} ${tmp_var} PARENT_SCOPE)
+endfunction(feelpp_clean_variable)

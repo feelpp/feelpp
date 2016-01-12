@@ -1141,6 +1141,33 @@ get_directory_property( FEELPP_DEFINITIONS DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE
 get_property( FEELPP_DEPS_INCLUDE_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 get_property( FEELPP_DEPS_LINK_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_DIRECTORIES)
 
+# From the variables FEELPP_DEPS_INCLUDE_DIR and FEELPP_DEPS_LINK_DIR, We remove every path that references
+# the build directory or the git clone. Those variables are meant for building external modules that
+# depend on Feel++, we cannot reference the original build directory or git clone, as they might not be present
+# on the server we build the module, e.g. if we install Feel++ with the tarball, we don't have those directories 
+# (ex: travis-ci)
+set(_FEELPP_DEPS_INCLUDE_DIR_NEW "")
+feelpp_clean_variable("${FEELPP_DEPS_INCLUDE_DIR}" _FEELPP_DEPS_INCLUDE_DIR_NEW )
+
+#message("${FEELPP_DEPS_INCLUDE_DIR}")
+#message("")
+#message("${_FEELPP_DEPS_INCLUDE_DIR_NEW}")
+#message(FATAL_ERROR "")
+set(FEELPP_DEPS_INCLUDE_DIR ${_FEELPP_DEPS_INCLUDE_DIR_NEW})
+
+unset(_FEELPP_DEPS_INCLUDE_DIR_NEW)
+
+set(_FEELPP_DEPS_LINK_DIR_NEW "")
+feelpp_clean_variable("${FEELPP_DEPS_LINK_DIR}" _FEELPP_DEPS_LINK_DIR_NEW )
+
+#message("${FEELPP_DEPS_LINK_DIR}")
+#message("")
+#message("${_FEELPP_DEPS_LINK_DIR_NEW}")
+#message(FATAL_ERROR "")
+
+set(FEELPP_DEPS_LINK_DIR ${_FEELPP_DEPS_LINK_DIR_NEW})
+unset(_FEELPP_DEPS_LINK_DIR_NEW)
+
 MARK_AS_ADVANCED(FEELPP_DEPS_INCLUDE_DIR)
 MARK_AS_ADVANCED(FEELPP_DEPS_LINK_DIR)
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
