@@ -373,7 +373,7 @@ TestMixed<Dim,Order>::run()
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( mixed )
 
