@@ -102,6 +102,7 @@ if(FEELPP_AUTOLOAD)
     include_directories(${TOP_INSTALL_DIR}/include)
     # Required for contrib headers
     include_directories(${TOP_INSTALL_DIR}/include/feel)
+    include_directories(${TOP_INSTALL_DIR}/include/feel/ginac)
     include_directories(${FEELPP_DEPS_INCLUDE_DIR})
 endif()  
 if(FEELPP_AUTOLOAD)

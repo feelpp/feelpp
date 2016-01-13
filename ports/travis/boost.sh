@@ -6,7 +6,7 @@ basedir=$HOME
 
 set -e
 # check to see if protobuf folder is empty
-if [ ! -d "$basedir/software/install/boost-1.59.0" ]; then
+if [ ! -d "$basedir/software/install/boost" ]; then
 
 wget http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.bz2/download -O boost_1_59_0.tar.bz2
 
