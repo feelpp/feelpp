@@ -1557,7 +1557,7 @@ ConfigurePC::run( PC& pc )
 
 void
 updateOptionsDescKSP( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     std::string kspctx = (sub.empty())? "" : sub+"-";
 
@@ -1603,7 +1603,7 @@ updateOptionsDescKSP( po::options_description & _options, std::string const& pre
 }
 po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, useDefaultValue, kspType, rtol, maxit );
@@ -1612,7 +1612,7 @@ getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDe
 
 po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, true, kspType, rtol, maxit );
@@ -3115,6 +3115,9 @@ ConfigurePCFieldSplit::run( PC& pc )
 
         PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
         /**/ if ( M_schurPrecond == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+        else if ( M_schurPrecond == "selfp")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELFP;
+#endif
         else if ( M_schurPrecond == "user")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_USER;
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
         else if ( M_schurPrecond == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
@@ -3167,25 +3170,22 @@ ConfigurePCFieldSplit::run( PC& pc )
             //MatView(schurMatPrecond,PETSC_VIEWER_STDOUT_WORLD);
 
             if ( D != NULL )
+            {
+#if 0
                 this->check( MatAYPX( schurMatPrecond,-1,D,MatStructure::DIFFERENT_NONZERO_PATTERN ) );
-            else
+#else
                 this->check( MatScale( schurMatPrecond, -1 ) );
+                this->check( MatAYPX( schurMatPrecond,1,D,MatStructure::DIFFERENT_NONZERO_PATTERN ) );
+#endif
+            }
+            else
+              this->check( MatScale( schurMatPrecond, -1 ) );
 
-            // this function do this
-            //jac->schur_user = schurMatPrecond;ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+            // update KSPSetOperators of jac->kspschur
             this->check( PetscImpl::PCFieldSplit_UpdateMatPrecondSchurComplement( pc, schurMatPrecond ) );
             // clean temporary mat and vec
             this->check( MatDestroy( &Bcopy ) );
             this->check( VecDestroy( &scaleDiag ) );
-
-            //ierr = KSPSetOperators(jac->kspschur,jac->schur,FieldSplitSchurPre(jac),DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
-#if 0
-            if (!lsc->L) {
-                ierr = MatMatMult(C,B,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
-            } else {
-                ierr = MatMatMult(C,B,MAT_REUSE_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
-            }
-#endif
         }
 #endif
 #if PETSC_VERSION_LESS_THAN(3,5,0)

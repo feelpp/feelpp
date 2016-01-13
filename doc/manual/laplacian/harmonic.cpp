@@ -116,7 +116,7 @@ int main(int argc, char**argv )
     a.solve(_rhs=l,_solution=u);
 
     auto m1 = lagrangeP1(_space=Vh)->mesh();
-    auto XhVisu = Pchv<1>(m1);
+    auto XhVisu = Pchv<1>(m1,true);
 
     auto opIVisu = opInterpolation(_domainSpace=Vh,
                                    _imageSpace=XhVisu,
