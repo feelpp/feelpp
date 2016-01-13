@@ -43,7 +43,7 @@ static void remove_content(upoly& A, upoly& B, upoly::value_type& c)
 	normalize_in_ring(A, &acont);
 	normalize_in_ring(B, &bcont);
 	c = gcd(acont, bcont);
-};
+}
 
 /// Check if @a candidate divides both @a A and @a B
 static bool
