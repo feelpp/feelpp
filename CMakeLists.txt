@@ -301,10 +301,10 @@ MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
+include( feelpp.macros )
+
 # Find feel++ dependencies 
 include( feelpp.dependencies )
-
-include( feelpp.macros )
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
