@@ -757,6 +757,16 @@ EIM<ModelType>::offline()
     if( Environment::worldComm().isMasterRank() )
         std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
 
+    // Print maxerror (greedy) to file
+    std::string eim_greedy_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error.dat";
+    std::ofstream greedy_maxerr;
+    if( Environment::worldComm().isMasterRank() )
+    {
+        greedy_maxerr.open(eim_greedy_file_name, std::ios::app);
+        if( M_M == 2 )
+            greedy_maxerr << "M" << "\t" << "maxErr" <<"\n";
+    }
+
     LOG(INFO) << "start greedy algorithm...\n";
     for( ; M_M <=Mmax; ++M_M ) //err >= this->M_tol ) //Mmax == 1 : the basis has already been built at init step
     {
@@ -783,6 +793,7 @@ EIM<ModelType>::offline()
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
             std::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
+        greedy_maxerr << M_M << "\t" << error <<"\n";
 
         M_model->addOfflineError(error);
         mu = bestfit.template get<1>();
@@ -910,6 +921,8 @@ EIM<ModelType>::offline()
         VLOG(2) << "================================================================================\n";
 
     }
+    if( Environment::worldComm().isMasterRank() )
+        greedy_maxerr.close();
 
     time=timer.elapsed();
     if( Environment::worldComm().isMasterRank() )
