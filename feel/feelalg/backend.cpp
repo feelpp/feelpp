@@ -50,7 +50,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
 #endif
     M_prefix( "" ),
     M_nlsolver(),
-    M_rtolerance( 1e-13 ),
+    M_rtolerance( 1e-8 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
     M_rtoleranceSNES( 1e-8 ),
@@ -744,7 +744,7 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
 }
 #endif
 void updateBackendKSPOptions( po::options_description & _options, std::string const& prefix, std::string const& sub = "",
-                              std::string const& kspType = "gmres",double rtol = 1e-13, size_type maxit=1000, bool useDefaultValue=true  )
+                              std::string const& kspType = "gmres",double rtol = 1e-8, size_type maxit=1000, bool useDefaultValue=true  )
 {
     std::string kspctx = (sub.empty())? "" : sub+"-";
     _options.add_options()

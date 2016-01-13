@@ -249,7 +249,7 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")
         ;
     solidOptions.add( gmsh_options( prefixvm(prefix,"1dreduced") ) );
-    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( on_options( prefix ) );
 }
 
 Feel::po::options_description
