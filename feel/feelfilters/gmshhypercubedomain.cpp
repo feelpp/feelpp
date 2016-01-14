@@ -225,6 +225,9 @@ GmshHypercubeDomain::getDescription2D() const
         else if ( this->structuredMesh() == 3 )
             ostr << "nx=" << M_nx << ";\n"
                  << "ny=" << M_ny << ";\n";
+        else
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
 
 
         ostr << "\n"
@@ -294,6 +297,10 @@ GmshHypercubeDomain::getDescription3D() const
             ostr << "nx=" << M_nx << ";\n"
                  << "ny=" << M_ny << ";\n"
                  << "nz=" << M_nz << ";\n";
+        else
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n"
+                 << "nz = (zmax-zmin)/h;\n";
     }
 
 
