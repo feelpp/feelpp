@@ -16,12 +16,17 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
   # require at least gcc 4.9
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-      message(ERROR "GCC version must be at least 4.9!")
+      message(FATAL_ERROR "GCC version must be at least 4.9!")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # require at least clang 3.4
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)
-      message(ERROR "Clang version must be at least 3.4! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+      string(COMPARE EQUAL "${CMAKE_CXX_COMPILER_VERSION}" "" CLANG_VERSION_EMPTY)
+      if(CLANG_VERSION_EMPTY)
+          message(WARNING "CMake was unable to check Clang version. It will assume that the version requirements are met.")
+      else()
+          message(FATAL_ERROR "Clang version must be at least 3.4! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
+      endif()
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     message(STATUS "[feelpp] Apple Clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
@@ -274,6 +279,13 @@ if ( GMP_FOUND )
   SET(FEELPP_LIBRARIES  ${GMP_LIBRARIES} ${FEELPP_LIBRARIES})
   message(STATUS "[feelpp] GMP: ${GMP_LIBRARIES}" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmp" )
+endif()
+
+find_package(GMM)
+if ( GMM_FOUND )
+  message(STATUS "[feelpp] GMM includes: ${GMM_INCLUDE_DIR}" )
+  include_directories(${GMM_INCLUDE_DIR})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmm" )
 endif()
 
 #
@@ -894,7 +906,7 @@ if ( FEELPP_ENABLE_VTK )
 
     # If we enable in-situ visualization
     # We need to look for the Paraview package for the corresponding headers
-    # As Paravie integrates vtk headers we don't need them
+    # As Paraview integrates vtk headers we don't need them
     if ( FEELPP_ENABLE_VTK_INSITU )
         FIND_PACKAGE(ParaView REQUIRED 
             COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
@@ -1113,7 +1125,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY} ${FEELPP_NLOPT_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
   set(FEELPP_LIBRARY feelpp) 
-  SET(FEELPP_INCLUDE_DIR ${FEELPP_BUILD_DIR}/ ${FEELPP_SOURCE_DIR}/ ${FEELPP_SOURCE_DIR}/contrib/gmm/include)
+  SET(FEELPP_INCLUDE_DIR ${FEELPP_BUILD_DIR}/ ${FEELPP_SOURCE_DIR}/)
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()
 

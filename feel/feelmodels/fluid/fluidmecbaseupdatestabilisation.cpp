@@ -9,16 +9,20 @@ namespace Feel
 namespace FeelModels
 {
 
+
+#define jumpgradt( u ) ::Feel::vf::leftfacet(dnt(u)) + ::Feel::vf::rightfacet(dnt(u))
+#define jumpgrad( u ) ::Feel::vf::leftface(dn(u)) + ::Feel::vf::rightface(dn(u))
+
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
 {
 
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseenStabilisation", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEStabilisation", "start"+sc );
     boost::mpi::timer thetimer;
 
     //----------------------------------------------------------------------------------------------------//
@@ -87,19 +91,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
         if (M_isMoveDomain)
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()))*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(this->meshVelocity()),N() ) )*pow(hFace(),2.0);
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
-                           _expr=val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           //_expr=val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
 #endif
         }
         else
         {
-            auto cip_stab_coeff_expr = gamma*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0);
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
-                           _expr=val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           //_expr=val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
         }
     }
@@ -170,9 +176,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenStabilisation( sparse_matrix_
 
 
     double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateOseenStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
+    this->log("FluidMechanics","updateLinearPDEStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
 
-} // updateOseenStabilisation
+} // updateLinearPDEStabilisation
 
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//
@@ -427,17 +433,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
         if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()))*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(this->meshVelocity()))*N() )*pow(hFace(),2.0);
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
-                           _expr= val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           //_expr= val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
 #endif
         }
         else
         {
 #if 1
-            auto cip_stab_coeff_expr = gamma*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
+            auto cip_stab_coeff_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0);
 #else
             auto beta_abs = vf::norm2(idv(u_extrapoled));
             auto Re = beta_abs*hFace()/idv(mu);
@@ -445,7 +452,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_flui
 #endif
             bilinearForm_PatternExtended +=
                 integrate( _range=marked3faces(Xh->mesh(),1),
-                           _expr= val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           //_expr= val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
+                           _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
         }
     }

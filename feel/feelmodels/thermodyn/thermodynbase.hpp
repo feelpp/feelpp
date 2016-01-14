@@ -94,11 +94,11 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 
-        ThermoDynamicsBase( std::string __prefix,
-                            bool __buildMesh,
-                            WorldComm const& __worldComm,
-                            std::string __subPrefix,
-                            std::string __appliShortRepository );
+        ThermoDynamicsBase( std::string const& prefix,
+                            bool buildMesh,
+                            WorldComm const& worldComm,
+                            std::string const& subPrefix,
+                            std::string const& rootRepository );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
         //___________________________________________________________________________________//
