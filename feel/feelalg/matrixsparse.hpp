@@ -722,7 +722,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols )
+                     std::vector<size_type> const& cols, bool doClose = true )
     {
         CHECK( false ) << "invalid call : Not Implemented in base class";
     }
@@ -825,6 +825,11 @@ public:
      * Implemented in MatrixPetsc
      */
     virtual void getMatInfo( std::vector<double> &) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
+    virtual void threshold( void ) 
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );

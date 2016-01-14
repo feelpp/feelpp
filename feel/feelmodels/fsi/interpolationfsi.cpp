@@ -275,7 +275,7 @@ InterpolationFSI<FluidType,SolidType>::initStressInterpolation()
         if (this->verbose() && M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank())
             std::cout << "initStressInterpolation() CONFORME" << std::endl;
         M_opStress2dTo2dconf = opInterpolation(_domainSpace=this->fluid()->fieldNormalStressRefMesh().functionSpace(),
-                                               _imageSpace=this->solid()->normalStressFromFluid()->functionSpace(),
+                                               _imageSpace=this->solid()->fieldNormalStressFromFluidPtr()->functionSpace(),
                                                _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                _type=InterpolationConforme(),
                                                _backend=M_fluid->backend() );
@@ -285,7 +285,7 @@ InterpolationFSI<FluidType,SolidType>::initStressInterpolation()
         if (this->verbose() && M_fluid->worldComm().globalRank()==M_fluid->worldComm().masterRank())
             std::cout << "initStressInterpolation() NONCONFORME" << std::endl;
         M_opStress2dTo2dnonconf = opInterpolation(_domainSpace=this->fluid()->fieldNormalStressRefMesh().functionSpace(),
-                                                  _imageSpace=this->solid()->normalStressFromFluid()->functionSpace(),
+                                                  _imageSpace=this->solid()->fieldNormalStressFromFluidPtr()->functionSpace(),
                                                   _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                   _type=InterpolationNonConforme(true,true,true,15),
                                                   _backend=M_fluid->backend() );
@@ -393,7 +393,7 @@ InterpolationFSI<FluidType,SolidType>::initVelocityInterpolationF2S()
         if (this->verbose() && this->fluid()->worldComm().isMasterRank())
             std::cout << "initVelocityInterpolationF2S() CONFORME" << std::endl;
         M_opVelocity2dTo2dconfF2S = opInterpolation(_domainSpace=this->fluid()->functionSpaceVelocity(),
-                                                    _imageSpace=this->solid()->velocityInterfaceFromFluid()->functionSpace(),
+                                                    _imageSpace=this->solid()->fieldVelocityInterfaceFromFluidPtr()->functionSpace(),
                                                     _range=markedfaces(this->solid()->mesh(),this->solid()->markerNameFSI()),
                                                     _type=InterpolationConforme(),
                                                     _backend=this->fluid()->backend() );
@@ -419,7 +419,7 @@ template< class FluidType, class SolidType >
 void
 InterpolationFSI<FluidType,SolidType>::initStressInterpolationS2F()
 {
-    M_opStress2dTo2dconfS2F = opInterpolation(_domainSpace=this->solid()->normalStressFromStruct()->functionSpace(),
+    M_opStress2dTo2dconfS2F = opInterpolation(_domainSpace=this->solid()->fieldNormalStressFromStructPtr()->functionSpace(),
                                               _imageSpace=this->fluid()->normalStressFromStruct()->functionSpace(),
                                               _range=markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()),
                                               _type=InterpolationConforme(),
@@ -495,13 +495,13 @@ InterpolationFSI<FluidType,SolidType>::transfertStress()
         if (M_interfaceFSIisConforme)
         {
             CHECK( M_opStress2dTo2dconf ) << "interpolation operator not build";
-            M_opStress2dTo2dconf->apply( *(M_fluid->fieldNormalStressRefMeshPtr()), *(M_solid->normalStressFromFluid()) );
+            M_opStress2dTo2dconf->apply( *(M_fluid->fieldNormalStressRefMeshPtr()), *(M_solid->fieldNormalStressFromFluidPtr()) );
         }
         else
         {
 #if 1
             CHECK( M_opStress2dTo2dnonconf ) << "interpolation operator not build";
-            M_opStress2dTo2dnonconf->apply( *(M_fluid->fieldNormalStressRefMeshPtr()), *(M_solid->normalStressFromFluid()) );
+            M_opStress2dTo2dnonconf->apply( *(M_fluid->fieldNormalStressRefMeshPtr()), *(M_solid->fieldNormalStressFromFluidPtr()) );
 #else
             //auto FluidPhysicalName = M_fluid->getMarkerNameFSI().front();
             auto mysubmesh = createSubmesh(this->fluid()->mesh(),markedfaces(this->fluid()->mesh(),this->fluid()->markersNameMovingBoundary()/*FluidPhysicalName*/));
@@ -659,7 +659,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
             //auto fieldExtrapolated = M_solid->fieldVelocityScal1dReduced().functionSpace()->elementPtr();
             auto fieldExtrapolated = this->solid()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
             fieldExtrapolated->add(  2.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity() );
-            fieldExtrapolated->add( -1.0, this->solid()->timeStepNewmark()->previousVelocity(1) );
+            fieldExtrapolated->add( -1.0, this->solid()->timeStepNewmark1dReduced()->previousVelocity(1) );
             fieldToTransfert = M_solid->extendVelocity1dReducedVectorial( *fieldExtrapolated );
         }
 
@@ -833,7 +833,7 @@ InterpolationFSI<FluidType,SolidType>::transfertStressS2F()
 
     this->solid()->updateNormalStressFromStruct();
     CHECK( M_opStress2dTo2dconfS2F ) << "interpolation operator not build";
-    M_opStress2dTo2dconfS2F->apply(*this->solid()->normalStressFromStruct(),
+    M_opStress2dTo2dconfS2F->apply(*this->solid()->fieldNormalStressFromStructPtr(),
                                    *this->fluid()->normalStressFromStruct());
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStressS2F", "finish",
@@ -855,7 +855,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, b
             if (M_interfaceFSIisConforme)
             {
                 CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
-                M_opVelocity2dTo2dconfF2S->apply( velExtrap,*this->solid()->velocityInterfaceFromFluid() );
+                M_opVelocity2dTo2dconfF2S->apply( velExtrap,*this->solid()->fieldVelocityInterfaceFromFluidPtr() );
             }
             else
             {
@@ -877,7 +877,7 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, b
             if (M_interfaceFSIisConforme)
             {
                 CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
-                M_opVelocity2dTo2dconfF2S->apply( velExtrap,*this->solid()->velocityInterfaceFromFluid() );
+                M_opVelocity2dTo2dconfF2S->apply( velExtrap,*this->solid()->fieldVelocityInterfaceFromFluidPtr() );
             }
             else
             {
@@ -892,10 +892,10 @@ InterpolationFSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, b
             CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
 #if 0
             M_opVelocity2dTo2dconfF2S->apply( this->fluid()->timeStepBDF()->unknown(0).template element<0>(),
-                                              *this->solid()->velocityInterfaceFromFluid() );
+                                              *this->solid()->fieldVelocityInterfaceFromFluidPtr() );
 #else
             M_opVelocity2dTo2dconfF2S->apply( this->fluid()->fieldVelocity(),
-                                              *this->solid()->velocityInterfaceFromFluid() );
+                                              *this->solid()->fieldVelocityInterfaceFromFluidPtr() );
 #endif
         }
         else

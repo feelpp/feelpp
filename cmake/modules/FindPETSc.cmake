@@ -58,7 +58,7 @@ ELSE()
   set( DARWIN_FLAVORS darwin-cxx-opt  arch-darwin-cxx-opt darwin-cxx-debug arch-darwin-cxx-debug  ${DARWIN_FLAVORS})
 ENDIF()
 #message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
-set(PETSC_VERSIONS 3.6.1_3 3.6.1 3.6.0 3.5.3_2 3.5.3 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+set(PETSC_VERSIONS 3.6.3 3.6.1_5 3.6.1_3 3.6.1 3.6.0 3.5.3_2 3.5.3 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
 
 if ( NOT PETSC_DIR )
   foreach( version ${PETSC_VERSIONS} )
@@ -121,7 +121,7 @@ find_package_multipass (PETSc petsc_config_current
 
 # Determine whether the PETSc layout is old-style (through 2.3.3) or
 # new-style (>= 3.0.0)
-if (EXISTS "${PETSC_DIR}/${PETSC_ARCH}/include/petscconf.h")   # > 2.3.3
+if (EXISTS "${PETSC_DIR}/${PETSC_ARCH}/include/petscconf.h" OR EXISTS "${PETSC_DIR}/include/petscconf.h")   # > 2.3.3
   if (EXISTS "${PETSC_DIR}/conf/rules")
     set (petsc_conf_rules "${PETSC_DIR}/conf/rules")
     set (petsc_conf_variables "${PETSC_DIR}/conf/variables")
