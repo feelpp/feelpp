@@ -232,7 +232,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
         for ( uint16_type i = 0; i < I; ++i )
         {
             M_hessian[i][0] = B*__pc->hessian(i,0)*B.transpose();
-            
+            for( uint16_type q = 1; q < Q; ++q )
+                M_hessian[i][q] = M_hessian[i][0];
             if ( vm::has_laplacian<context>::value  )
             {
                 auto lap = M_hessian[i][0].trace();
@@ -273,7 +274,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
                     //LOG(INFO) << "elt " << thegmc->id() << " L c1 " << c1 << "="<< L;
                 }
                 M_hessian[i][q] = B*__pc->hessian(i,q)*B.transpose();
-                LOG(INFO) << "elt " << thegmc->id() << " H=" << M_hessian[i][q];
+                
                 
                 if ( vm::has_laplacian<context>::value  )
                     M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
