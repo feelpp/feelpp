@@ -744,7 +744,7 @@ if ( NOT GFORTRAN_LIBRARY )
     NAMES
     gfortran
     PATHS
-    $ENV{LIBRARY_PATH}
+    $ENV{LD_LIBRARY_PATH}
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
