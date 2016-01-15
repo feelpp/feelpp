@@ -440,7 +440,13 @@ prefixvm( std::string const& prefix,
           std::string const& opt,
           std::string const& sep="." );
 
-
+/**
+ * @return a trimmed string removing all leading and trailing spaces and replace
+ * all special characters " ;:," inside the block by a _
+ */
+std::string
+sanitize( std::string const& s );
+    
 // alias for date_time namespaces
 namespace posix_time = boost::posix_time;
 namespace gregorian = boost::gregorian;
