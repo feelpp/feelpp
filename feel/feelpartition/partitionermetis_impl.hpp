@@ -181,8 +181,27 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
     // id for each element, but in terms of the contiguous indexing we defined
     // above
     LOG(INFO) << "PartitionerMetis::partitionImpl nelements : " << nelements(elements(mesh));
-    for( auto it = mesh->beginElement(), en = mesh->endElement(); it != en; ++it )
+    std::cout << "dist nElt " << std::distance(mesh->beginElement(), mesh->endElement() ) << "\n";
+    std::cout << "call nElt " << nelements(elements(mesh)) << "\n";
+    //for( auto it = mesh->beginElement(), en = mesh->endElement(); it != en; ++it )
+    for (auto const& pairElt : global_index_map )
     {
+        dof_id_type eltId = pairElt.first;
+        dof_id_type gid = pairElt.second;
+        rank_type initialPid = 0;
+        rank_type newPid = static_cast<rank_type>(part[gid]);
+        auto eltToUpdate = mesh->elementIterator( eltId,initialPid );
+        mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
+    }
+#if 0
+    for( auto & e : allelements(mesh) )
+    {
+        dof_id_type gid = global_index_map[e.id()];
+        CHECK( gid < part.size() ) << "Invalid gid " << gid << " greater or equal than partition size " << part.size();
+        rank_type pid = static_cast<rank_type>(part[gid]);
+        e.setProcessId( pid );
+
+#if 0
         dof_id_type gid = global_index_map[it->id()];
         CHECK( gid < part.size() ) << "Invalid gid " << gid << " greater or equal than partition size " << part.size();
         rank_type pid = static_cast<rank_type>(part[gid]);
@@ -199,8 +218,10 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         e.setProcessId( pid );
         mesh->elements().replace( it, e );
 #endif
+#endif
     }
-    for( auto& e : allelements(mesh) )
+#endif
+    for( auto const& e : allelements(mesh) )
     {
         std::cout << "2. element id " << e.id() << " process id " << e.processId() << "\n"; 
     }
