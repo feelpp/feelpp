@@ -44,10 +44,16 @@ prefixvm( std::string const& prefix,
     return o+opt;
 }
 
+/**
+ * @note Ensight variable description forbids ( [ + @ ! * $ ) ] - space # ^ /)
+ * see ensight gold file format documentation
+ */
 std::string
 sanitize( std::string const& s )
 {
-    return algorithm::trim_fill_copy_if(s, "_", algorithm::is_any_of(" ;*,:") );
+    
+    
+    return algorithm::trim_fill_copy_if(s, "_", algorithm::is_any_of(" ;*,:()[]@$/+-#^") );
 }
 
 
