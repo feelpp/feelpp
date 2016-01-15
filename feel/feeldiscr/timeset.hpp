@@ -509,14 +509,14 @@ public:
         template<typename FunctionType>
         void add( std::initializer_list<std::string>  __n, FunctionType const& func )
         {
-            std::vector<std::string> str( sanitize( _n ) );
+            std::vector<std::string> str( sanitize( __n ) );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
 
         template<typename FunctionType>
         void add( std::vector<std::string> const& __n, FunctionType const& func )
         {
-            add_( sanitize(__n), func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
@@ -537,7 +537,7 @@ public:
             operator()( T const& fun ) const
                 {
                     LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
+                    M_tset.add_( sanitize(fun.name()), fun, mpl::bool_<false>() );
                 }
         };
         template<typename FunctionType>
