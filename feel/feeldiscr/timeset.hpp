@@ -509,7 +509,7 @@ public:
         template<typename FunctionType>
         void add( std::initializer_list<std::string>  __n, FunctionType const& func )
         {
-            std::vector<std::string> str( __n );
+            std::vector<std::string> str( sanitize( __n ) );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
 
@@ -522,7 +522,7 @@ public:
         void add( std::string const& __n, FunctionType const& func )
         {
             tic();
-            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            add_( sanitize(__n), func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
             toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
@@ -537,7 +537,7 @@ public:
             operator()( T const& fun ) const
                 {
                     LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
+                    M_tset.add_( sanitize(fun.name()), fun, mpl::bool_<false>() );
                 }
         };
         template<typename FunctionType>
@@ -573,7 +573,7 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func )
         {
             typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
-            add( __n,__fname,func,is_ptr_or_shared_ptr() );
+            add( sanitize(__n),__fname,func,is_ptr_or_shared_ptr() );
         }
 
         template<typename FunctionType>
