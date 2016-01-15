@@ -17,7 +17,7 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX"
+    "NAME;PREFIX;DEPS"
     ""
     ${ARGN}
     )
@@ -28,6 +28,11 @@ macro(feelpp_add_testcase )
     set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
   endif()
   add_custom_target(${target})
+  if ( FEELPP_CASE_DEPS )
+    foreach(case ${FEELPP_CASE_DEPS})
+      add_dependencies(${target} ${FEELPP_CASE_PREFIX}_add_testcase_${case})
+    endforeach()
+  endif()
   ADD_CUSTOM_COMMAND(
     TARGET ${target}
     POST_BUILD
@@ -420,3 +425,17 @@ function(feelpp_clean_variable old_var new_var)
     endforeach()
     set(${new_var} ${tmp_var} PARENT_SCOPE)
 endfunction(feelpp_clean_variable)
+
+function(feelpp_split_libs libs libnames libpaths)
+    set(_paths "")
+    set(_names "")
+    foreach(_lib ${libs})
+        get_filename_component(_path ${_lib} PATH)
+        get_filename_component(_name ${_lib} NAME)
+        set(_paths ${_paths} ${_path})
+        set(_names ${_names} ${_name})
+    endforeach()
+
+    set(${libnames} ${_names} PARENT_SCOPE)
+    set(${libpaths} ${_paths} PARENT_SCOPE)
+endfunction(feelpp_split_libs)
