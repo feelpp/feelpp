@@ -27,7 +27,7 @@
    \date 2011-07-25
  */
 #include <feel/feelcore/feel.hpp>
-
+#include <boost/algorithm/string/trim_all.hpp>
 namespace Feel
 {
 
@@ -44,7 +44,11 @@ prefixvm( std::string const& prefix,
     return o+opt;
 }
 
-
+std::string
+sanitize( std::string const& s )
+{
+    return algorithm::trim_fill_copy_if(s, "_", algorithm::is_any_of(" ;*,:") );
+}
 
 
 }
