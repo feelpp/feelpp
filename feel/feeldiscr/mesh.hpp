@@ -303,6 +303,21 @@ public:
     //@{
 
     /**
+     * @brief get the number of active elements,faces,edges,points for each partition
+     * @return the number of active elements
+     */
+    size_type statNumElementsActive( rank_type p = invalid_rank_type_value ) const { return std::get<0>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumElementsAll( rank_type p = invalid_rank_type_value ) const {    return std::get<1>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumFacesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumFacesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumEdgesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumEdgesMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<1>( M_statEdges[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumPointsActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumPointsAll( rank_type p = invalid_rank_type_value ) const {       return std::get<1>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumPointsMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<2>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
+    size_type statNumVerticesAll(rank_type p = invalid_rank_type_value ) const { return M_statVertices[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ]; }
+
+    /**
      * @brief get the global number of elements
      * @details it requires communication in parallel to
      * retrieve and sum the number of elements in each subdomain.
@@ -387,41 +402,64 @@ public:
     template<typename MT>
     void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
-        //int ne = numElements();
-        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                this->endElementWithProcessId( this->worldComm().rank() ) );
-        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
-                                this->endFaceWithProcessId( this->worldComm().rank() ) );
-        int ned = std::distance( this->beginEdgeWithProcessId( this->worldComm().rank() ),
-                                this->endEdgeWithProcessId( this->worldComm().rank() ) );
-        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
-                                this->endPointWithProcessId( this->worldComm().rank() ) );
+        rank_type nProc = this->worldComm().localSize();
+
+        size_type ne = std::distance( this->beginElementWithProcessId(),
+                                      this->endElementWithProcessId() );
+        size_type nf = std::distance( this->beginFaceWithProcessId(),
+                                      this->endFaceWithProcessId() );
+        size_type ned = std::distance( this->beginEdgeWithProcessId(),
+                                       this->endEdgeWithProcessId() );
+        size_type np = std::distance( this->beginPointWithProcessId(),
+                                      this->endPointWithProcessId() );
+        size_type nv = this->numVertices();
+
+        size_type neall = this->numElements();
+        size_type nfall = this->numFaces();
+        size_type nedall = this->numEdges();
+        size_type npall = this->numPoints();
+
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.marker().isOn(); } );
+        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.marker().isOn(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
 
 
-        if ( this->worldComm().localSize() >1 )
+        M_statElements.resize( nProc,std::make_tuple(0,0) );
+        M_statFaces.resize( nProc,std::make_tuple(0,0) );
+        M_statEdges.resize( nProc,std::make_tuple(0,0) );
+        M_statPoints.resize( nProc,std::make_tuple(0,0,0) );
+        M_statVertices.resize( nProc,0 );
+
+        if ( this->worldComm().localSize() > 1 )
         {
+            std::vector<boost::tuple<boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,
+                                     boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
+            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ne,nedmarkedall),
+                                                         boost::make_tuple(np,npall,npmarkedall),nv);
+            mpi::all_gather( this->worldComm(),
+                             dataSendToAllGather,
+                             dataRecvFromAllGather );
+            for ( rank_type p=0 ; p<nProc ; ++p )
+            {
+                auto const& dataOnProc = dataRecvFromAllGather[p];
+                M_statElements[p] = std::make_tuple( boost::get<0>( boost::get<0>( dataOnProc ) ), boost::get<1>( boost::get<0>( dataOnProc ) ) );
+                M_statFaces[p] = std::make_tuple( boost::get<0>( boost::get<1>( dataOnProc ) ), boost::get<1>( boost::get<1>( dataOnProc ) ) );
+                M_statEdges[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ) );
+                M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<3>( dataOnProc ) ), boost::get<1>( boost::get<3>( dataOnProc ) ), boost::get<2>( boost::get<3>( dataOnProc ) ) );
+                M_statVertices[p] = boost::get<4>( dataOnProc );
+            }
+
 #if BOOST_VERSION >= 105500
-            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
-            std::vector<int> maxs { (int)this->numElements(), 
-                    (int)this->numFaces(), 
-                    (int)this->numEdges(), 
-                    (int)this->numPoints(), 
+            std::vector<int> maxs { (int)this->numElements(),
+                    (int)this->numFaces(),
+                    (int)this->numEdges(),
+                    (int)this->numPoints(),
                     (int)this->numVertices() };
             mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
 #else
-            std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
-            std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
             std::vector<int> maxs( 5, 0 );
             mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
 #endif
-            M_numGlobalElements = globals[0];
-            M_numGlobalFaces = globals[1];
-            M_numGlobalEdges = globals[2];
-            M_numGlobalPoints = globals[3];
-            M_numGlobalVertices = globals[4];
-
             M_maxNumElements = maxs[0];
             M_maxNumFaces = maxs[1];
             M_maxNumEdges = maxs[2];
@@ -430,56 +468,91 @@ public:
         }
         else
         {
-            M_numGlobalElements = ne;
-            M_numGlobalFaces = nf;
-            M_numGlobalEdges = ned;
-            M_numGlobalPoints = np;
-            M_numGlobalVertices = this->numVertices();
+            M_statElements[0] = std::make_tuple(ne,neall);
+            M_statFaces[0] = std::make_tuple(nf,nfmarkedall);
+            M_statEdges[0] = std::make_tuple(ned,nedmarkedall);
+            M_statPoints[0] = std::make_tuple(np,npall,npmarkedall);
+            M_statVertices[0] = nv;
 
             M_maxNumElements = ne;
             M_maxNumFaces = nf;
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
-            M_maxNumVertices = this->numVertices();
+            M_maxNumVertices = nv;
         }
+
+        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
+            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
+        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
+        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
     template<typename MT>
     void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
     {
-        //int ne = numElements();
-        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                this->endElementWithProcessId( this->worldComm().rank() ) );
-        int nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
-                                this->endFaceWithProcessId( this->worldComm().rank() ) );
-        int ned = 0;
-        int np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
-                                this->endPointWithProcessId( this->worldComm().rank() ) );
+        rank_type nProc = this->worldComm().localSize();
+
+        size_type ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                      this->endElementWithProcessId( this->worldComm().rank() ) );
+        size_type nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
+                                      this->endFaceWithProcessId( this->worldComm().rank() ) );
+        size_type ned = 0;
+        size_type np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
+                                      this->endPointWithProcessId( this->worldComm().rank() ) );
+        size_type nv = this->numVertices();
+
+        size_type neall = this->numElements();
+        size_type nfall = this->numFaces();
+        size_type nedall = 0;
+        size_type npall = this->numPoints();
+
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.marker().isOn(); } );
+        //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
+        //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
+        size_type nedmarkedall = 0;
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
 
 
-        if ( this->worldComm().localSize() >1 )
+        M_statElements.resize( nProc,std::make_tuple(0,0) );
+        M_statFaces.resize( nProc,std::make_tuple(0,0) );
+        M_statEdges.resize( nProc,std::make_tuple(0,0) );
+        M_statPoints.resize( nProc,std::make_tuple(0,0,0) );
+        M_statVertices.resize( nProc,0 );
+
+        if ( nProc >1 )
         {
+            std::vector<boost::tuple<boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,
+                                     boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
+            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),
+                                                         boost::make_tuple(np,npall,npmarkedall),nv);
+            mpi::all_gather( this->worldComm(),
+                             dataSendToAllGather,
+                             dataRecvFromAllGather );
+            for ( rank_type p=0 ; p<nProc ; ++p )
+            {
+                auto const& dataOnProc = dataRecvFromAllGather[p];
+                M_statElements[p] = std::make_tuple( boost::get<0>( boost::get<0>( dataOnProc ) ), boost::get<1>( boost::get<0>( dataOnProc ) ) );
+                M_statFaces[p] = std::make_tuple( boost::get<0>( boost::get<1>( dataOnProc ) ), boost::get<1>( boost::get<1>( dataOnProc ) ) );
+                M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ), boost::get<2>( boost::get<2>( dataOnProc ) ) );
+                M_statVertices[p] = boost::get<3>( dataOnProc );
+            }
+
 #if BOOST_VERSION >= 105500
-            std::vector<int> globals{ ne, nf, ned, np, (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(globals.data()), 5, std::plus<int>() );
-            std::vector<int> maxs { (int)this->numElements(), 
-                    (int)this->numFaces(), 
-                    (int)this->numEdges(), 
-                    (int)this->numPoints(), 
+            std::vector<int> maxs { (int)this->numElements(),
+                    (int)this->numFaces(),
+                    (int)this->numEdges(),
+                    (int)this->numPoints(),
                     (int)this->numVertices() };
             mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
 #else
-            std::vector<int> locals{ ne, nf, ned, (int)this->numPoints(), (int)this->numVertices() };
-            std::vector<int> globals( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, globals.data(), std::plus<int>() );
             std::vector<int> maxs( 5, 0 );
             mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
 #endif
-            M_numGlobalElements = globals[0];
-            M_numGlobalFaces = globals[1];
-            M_numGlobalEdges = globals[2];
-            M_numGlobalPoints = globals[3];
-            M_numGlobalVertices = globals[4];
 
             M_maxNumElements = maxs[0];
             M_maxNumFaces = maxs[1];
@@ -489,18 +562,27 @@ public:
         }
         else
         {
-            M_numGlobalElements = ne;
-            M_numGlobalFaces = nf;
-            M_numGlobalEdges = ned;
-            M_numGlobalPoints = np;
-            M_numGlobalVertices = this->numVertices();
+            M_statElements[0] = std::make_tuple(ne,neall);
+            M_statFaces[0] = std::make_tuple(nf,nfmarkedall);
+            M_statEdges[0] = std::make_tuple(ned,nedmarkedall);
+            M_statPoints[0] = std::make_tuple(np,npall,npmarkedall);
+            M_statVertices[0] = nv;
 
             M_maxNumElements = ne;
             M_maxNumFaces = nf;
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
-            M_maxNumVertices = this->numVertices();
+            M_maxNumVertices = nv;
         }
+        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
+            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
+        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
+        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
 
@@ -741,7 +823,7 @@ public:
      * @return true if \p marker exists, false otherwise
      */
     bool
-    hasMarker( std::string marker ) const
+    hasMarker( std::string const& marker ) const
         {
             return markerName( marker ) != invalid_size_type_value;
         }
@@ -751,7 +833,7 @@ public:
      * associated is Dim-1, false otherwise
      */
     bool
-    hasFaceMarker( std::string marker ) const
+    hasFaceMarker( std::string const& marker ) const
         {
             return hasMarker( marker ) && ( markerDim( marker ) == nDim-1 );
         }
@@ -761,7 +843,7 @@ public:
      * associated is Dim-2, false otherwise
      */
     bool
-    hasEdgeMarker( std::string marker ) const
+    hasEdgeMarker( std::string const& marker ) const
         {
             return (nDim == 3) && hasMarker( marker ) &&  ( markerDim( marker ) == nDim-2 );
         }
@@ -771,7 +853,7 @@ public:
      * associated is 0, false otherwise
      */
     bool
-    hasPointMarker( std::string marker ) const
+    hasPointMarker( std::string const& marker ) const
         {
             return hasMarker( marker ) &&  ( markerDim( marker ) == 0 );
         }
@@ -1780,6 +1862,11 @@ private:
     //! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
     size_type M_maxNumElements, M_maxNumFaces, M_maxNumEdges, M_maxNumPoints, M_maxNumVertices;
+    std::vector<std::tuple<size_type,size_type> > M_statElements; // ( actives,all )
+    std::vector<std::tuple<size_type,size_type,size_type> > M_statPoints; // ( actives,all,marked_all )
+    std::vector<std::tuple<size_type,size_type> > M_statFaces; // (actives,marked_all)
+    std::vector<std::tuple<size_type,size_type> > M_statEdges; // (actives,marked_all)
+    std::vector<size_type> M_statVertices;
 
     bool M_is_gm_cached = false;
     gm_ptrtype M_gm;
