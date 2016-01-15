@@ -318,6 +318,12 @@ public:
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
+
+        if(M_ts_set.size() > 0)
+        {
+            M_ts_set.back()->setName( M_prefix );
+        }
+
         return this;
     }
 
