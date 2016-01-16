@@ -800,7 +800,7 @@ void PartitionIO<MeshType>::writeMarkedSubEntities()
         //for (size_type i = 0; i < M_numParts; ++i)
         {
             auto& currentPart = *M_meshPartsOut;
-            detail::updateMarkedSubEntitiesBuffer( currentPart, M_uintBuffer );
+            Feel::detail::updateMarkedSubEntitiesBuffer( currentPart, M_uintBuffer );
         }
     }
     M_HDF5IO.write ("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
@@ -1159,7 +1159,7 @@ void PartitionIO<MeshType>::readMarkedSubEntities()
 
     M_HDF5IO.closeTable("marked_subentities");
 
-    detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces,M_numLocalMarkedEdges,M_numLocalMarkedPoints ), *M_meshPartIn );
+    Feel::detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces,M_numLocalMarkedEdges,M_numLocalMarkedPoints ), *M_meshPartIn );
 }
 
 
