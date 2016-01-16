@@ -54,7 +54,7 @@ public:
 
     boost::none_t element( uint16_type /* e */ ) const
     {
-        return boost::none_t();
+        return boost::none;
     }
 
     SubFaceOfNone() {}

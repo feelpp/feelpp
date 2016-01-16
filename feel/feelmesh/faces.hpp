@@ -801,14 +801,18 @@ public:
     //@{
 
     /**
-     * add a new face in the mesh
+     * @brief add a new face in the mesh
      * @param f a new point
      * @return the new point from the list
      */
     std::pair<face_iterator,bool> addFace( face_type& f )
     {
         std::pair<face_iterator,bool> ret =  M_faces.insert( f );
-        FEELPP_ASSERT( ret.second )( ret.second )( ret.first->id() )( f.id() ).warn( "face not added to container" );
+        LOG_IF(WARNING, ret.second == false )
+            << "addFace failed, face not added to container : "
+            << ret.first->id() << " face id:"
+            << f.id();
+        
         return ret;
     }
 
@@ -863,6 +867,50 @@ public:
                 e.setMarker3( 0 );
         } );
 
+    }
+
+    /**
+     * update faces marker 2 from a vector whose size is exactely the number of
+     * faces. This vector can be generated using a P0 discontinuous space
+     * associated to a mesh whose elements are the faces
+     */
+    template<typename ElementVecType>
+    void updateMarker2( ElementVecType const& evec )
+    {
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+
+        auto update_marker2 = [&evec]( face_type& e )
+            {
+                e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
+            };
+        for ( ; it != en; ++it )
+            M_faces.modify( this->elementIterator( boost::unwrap_ref(*it).id() ),
+                            update_marker2 );
+    }
+    
+    /**
+     * update faces marker 3 from a vector whose size is exactely the number of
+     * faces. This vector can be generated using a P0 discontinuous space
+     * associated to a mesh whose elements are the faces
+     */
+    template<typename ElementVecType>
+    void updateMarker3( ElementVecType const& evec )
+    {
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+
+        auto update_marker3 = [&evec]( face_type& e )
+            {
+                e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) );
+            };
+        for ( ; it != en; ++it )
+            M_faces.modify( this->faceIterator( boost::unwrap_ref(*it).id() ),
+                            update_marker3 );
     }
 
 
