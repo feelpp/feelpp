@@ -875,7 +875,7 @@ public:
      * associated to a mesh whose elements are the faces
      */
     template<typename ElementVecType>
-    void updateMarker2( ElementVecType const& evec )
+    void updateFacesMarker2( ElementVecType const& evec )
     {
         EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
@@ -897,7 +897,7 @@ public:
      * associated to a mesh whose elements are the faces
      */
     template<typename ElementVecType>
-    void updateMarker3( ElementVecType const& evec )
+    void updateFacesMarker3( ElementVecType const& evec )
     {
         EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
