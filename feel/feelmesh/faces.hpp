@@ -877,8 +877,7 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker2( ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
+        auto rangeElt = Feel::faces( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 
@@ -887,7 +886,7 @@ public:
                 e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
             };
         for ( ; it != en; ++it )
-            M_faces.modify( this->elementIterator( boost::unwrap_ref(*it).id() ),
+            M_faces.modify( this->faceIterator( boost::unwrap_ref(*it).id() ),
                             update_marker2 );
     }
     
@@ -899,8 +898,7 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker3( ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto rangeElt = Feel::faces( evec.mesh(), entityProcess );
+        auto rangeElt = Feel::faces( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 

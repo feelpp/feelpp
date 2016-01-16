@@ -62,6 +62,7 @@ makeAbout()
 
 BOOST_AUTO_TEST_CASE( test_elements )
 {
+    BOOST_MESSAGE( "test_elements starts");
     auto mesh2d = unitSquare();
     auto mesh = createSubmesh( mesh2d, elements(mesh2d), EXTRACTION_KEEP_MESH_RELATION );
     
@@ -72,12 +73,14 @@ BOOST_AUTO_TEST_CASE( test_elements )
     u.on( _range=elements(mesh), _expr=cst(0.));
     mesh->updateMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), 0 );
+    BOOST_MESSAGE( "test_elements ends");
 }
 
 BOOST_AUTO_TEST_CASE( test_faces )
 {
+    BOOST_MESSAGE( "test_faces starts");
     auto mesh2d = unitSquare();
-    auto mesh = createSubmesh( mesh2d, faces(mesh2d), EXTRACTION_KEEP_MESH_RELATION );
+    auto mesh = createSubmesh( mesh2d, faces(mesh2d) );
     BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(faces(mesh2d)) );
     auto Xh = Pdh<0>(mesh);
     auto u = Xh->element(cst(1.));
@@ -86,6 +89,7 @@ BOOST_AUTO_TEST_CASE( test_faces )
     u.on( _range=elements(mesh), _expr=cst(0.));
     mesh->updateFacesMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), 0 );
+    BOOST_MESSAGE( "test_faces ends");
 }
 
 
