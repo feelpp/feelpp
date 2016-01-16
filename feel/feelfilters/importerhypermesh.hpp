@@ -147,7 +147,8 @@ ImporterHyperMesh<MeshType>::readElements( mesh_type* mesh ) const
             __is >> ptids;
             e.setPoint( k, mesh->point( ptids ) );
         }
-        mesh->addElement( e, false );
+        //mesh->addElement( e, false );
+        mesh->addElement( e, true );
     }
 
     __is.close();
