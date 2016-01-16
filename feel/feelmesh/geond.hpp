@@ -1,8 +1,9 @@
-/*
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
   This file is part of the Feel library
 
   Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 UniversitÃ© Joseph Fourier (Grenoble I)
   Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
@@ -145,13 +146,11 @@ public:
         :
         super( 0 ),
         M_points( numPoints ),
-        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_measure( 1 ),
-        M_measurefaces( numTopologicalFaces ),
-        M_normals( nRealDim, numTopologicalFaces ),
-        M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
+        M_measurefaces( 0/*numTopologicalFaces*/ ),
+        M_normals( 0,0/*nRealDim, numTopologicalFaces*/ ),
+        M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -171,13 +170,11 @@ public:
         :
         super( id ),
         M_points( numPoints ),
-        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_measure( 1 ),
-        M_measurefaces( numTopologicalFaces ),
-        M_normals( nRealDim, numTopologicalFaces ),
-        M_has_points( false ),
-        M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
+        M_measurefaces( 0/*numTopologicalFaces*/ ),
+        M_normals( 0,0/*nRealDim, numTopologicalFaces*/ ),
+        M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
@@ -192,7 +189,7 @@ public:
 
     GeoND& operator=( GeoND const& ) = default;
     GeoND& operator=( GeoND && ) = default;
-    
+
     /**
      * destructor, make it virtual for derived classes
      */
@@ -200,16 +197,6 @@ public:
     {
     }
 
-#if 0
-    /**
-     * set the mesh to which this geometric entity belongs to
-     */
-    void setMeshAndGm( MeshBase const* m, gm_ptrtype const& gm ) const
-    {
-        M_mesh = m;
-        M_gm = gm;
-    }
-#endif
     /**
      * set the mesh to which this geometric entity belongs to
      */
@@ -251,7 +238,10 @@ public:
      */
     bool hasPoints() const
     {
-        return M_has_points;
+        for ( int i = 0; i < numPoints; ++i )
+            if ( M_points[ i ] == nullptr )
+                return false;
+        return numPoints > 0;
     }
     //! @return true if the element has at least a point with marker1 active
     bool hasPointWithMarker() const
@@ -264,7 +254,7 @@ public:
             }
             return pt_with_marker;
         }
-    
+
     /**
      * \return the number of points in convex
      */
@@ -301,6 +291,8 @@ public:
      */
     void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
     {
+        if ( M_neighbors.empty() )
+            M_neighbors.resize( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) );
         M_neighbors[n] = std::make_pair( neigh_id, proc_id );
     }
 
@@ -328,7 +320,7 @@ public:
     {
         constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
         em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        
+
         node_type n( nRealDim );
         em_node_type en( n.data().begin(), n.size() );
         en.setZero();
@@ -348,7 +340,6 @@ public:
     {
         matrix_node_type n;
         return n;
-            
     }
 
     /**
@@ -394,15 +385,6 @@ public:
     {
         return M_points[ i ];
     }
-
-    /**
-     */
-    PointType const & facePoint ( uint16_type __f, uint16_type const __i ) const
-    {
-        return M_face_points[__f][__i];
-    }
-
-
 
     /**
      *  The ith point (starting from the end)
@@ -543,10 +525,8 @@ public:
             int col2 = this->eToP( __e, 1 );
             double r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?res:r;
-            
         }
         return res;
-        
     }
     /**
      * @brief get the minimum edge length in the element
@@ -555,7 +535,7 @@ public:
     double hMin() const
     {
         em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        
+
         double res = 1e10;
         for ( uint16_type __e = 0; __e < numLocalEdges; ++__e )
         {
@@ -563,7 +543,6 @@ public:
             int col2 = this->eToP( __e, 1 );
             double r = (G.col(col1)-G.col(col2)).norm();
             res = ( res > r )?r:res;
-            
         }
         return res;
     }
@@ -578,10 +557,10 @@ public:
     {
         if ( nRealDim==1 )
             return 1;
-        
+
         constexpr int nEdges = GEOSHAPE::topological_face_type::numEdges;
         em_matrix_col_type G( const_cast<double*>(M_G.data().begin()), M_G.size1(), M_G.size2() );
-        
+
         double res = 0.;
         for ( uint16_type e =  0;  e < nEdges; ++e )
         {
@@ -590,7 +569,7 @@ public:
             int col1 = this->eToP( edg, 0 );
             int col2 = this->eToP( edg, 1 );
             double r = (G.col(col1)-G.col(col2)).norm();
-            res = ( res > r )?res:r;       
+            res = ( res > r )?res:r;
         }
         return res;
     }
@@ -865,9 +844,6 @@ private:
     /** geometric nodes of the element */
     std::vector<point_type*> M_points;
 
-    /** geometric nodes of the faces of the element */
-    std::vector<std::vector<point_type*> > M_face_points;
-
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;
 
@@ -876,12 +852,7 @@ private:
     std::vector<double> M_measurefaces;
     matrix_node_type M_normals;
 
-
-    bool M_has_points;
-
-    /**
-     * store neighbor element id
-     */
+    //! store neighbor element id
     std::vector<std::pair<size_type,rank_type> > M_neighbors;
 
     //! measure of the set of point element neighbors
@@ -909,12 +880,11 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const & p )
 {
     M_points[ i ] = const_cast<point_type *>( &p );
-    //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
+    //VLOG(1) << "[setPoint] Ã¼pdate point index " << i << " with "<< M_points[i]->id() << "\n";
     FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
     DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
                                                        << " n=" << M_points[i]->node();
     ublas::column( M_G, i ) = M_points[i]->node();
-    M_has_points = true;
 }
 
 
@@ -1000,6 +970,9 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<true> )
 {
+    M_normals.resize( nRealDim, numTopologicalFaces );
+    M_measurefaces.resize( numTopologicalFaces ); // must be resize before ctx because used into
+
     //auto pc =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
     auto ctx = M_gm->template context<vm::POINT|vm::NORMAL|vm::KB|vm::JACOBIAN>(
         *this,
@@ -1030,6 +1003,9 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<false> )
 {
+    // need because M_measurefaces is used in Geomap::Context
+    M_normals.resize( nRealDim, numTopologicalFaces );
+    M_measurefaces.resize( numTopologicalFaces );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
