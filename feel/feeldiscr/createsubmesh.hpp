@@ -116,8 +116,8 @@ public :
         M_subMeshIsOnBoundaryFaces( true )
         {}
 
-    CreateSubmeshTool const& operator=( CreateSubmeshTool const& t ) = default;
-    CreateSubmeshTool const& operator=( CreateSubmeshTool     && t ) = default;
+    CreateSubmeshTool & operator=( CreateSubmeshTool const& t ) = default;
+    CreateSubmeshTool & operator=( CreateSubmeshTool     && t ) = default;
 
     /**
      * build mesh using Context ctx 
