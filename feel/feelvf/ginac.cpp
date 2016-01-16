@@ -39,7 +39,7 @@ std::string str( ex && f )
 {
     std::ostringstream ostr;
     ostr << f;
-    return std::move(ostr.str());
+    return ostr.str();
 }
 std::string str( ex const& f )
 {

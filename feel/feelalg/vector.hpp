@@ -21,6 +21,7 @@
 #define __numeric_vector_h__
 
 #include <vector>
+#include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
@@ -615,6 +616,7 @@ protected:
 
 typedef Vector<double> vector_type;
 typedef boost::shared_ptr<vector_type> vector_ptrtype;
+typedef std::unique_ptr<vector_type> vector_uptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
 

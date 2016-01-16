@@ -85,7 +85,7 @@ int main(int argc, char**argv )
         std::cout << "                h min : " << mesh->hMin() << std::endl;
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
         std::cout << "              measure : " << mesh->measure() << std::endl;
- 
+
         std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;
@@ -184,7 +184,7 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
@@ -312,8 +312,8 @@ int main(int argc, char**argv )
             toc("Picard::Export");
             toc("Picard::Iteration Total");
             Environment::saveTimers( true );
-            
-            
+
+
         }
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }
@@ -325,7 +325,7 @@ int main(int argc, char**argv )
 
         double res = 0;
         auto deltaU = Vh->element();
-        auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
+        auto at_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
         map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "increment", "Dirichlet" ) } ;
         do
         {
@@ -343,7 +343,7 @@ int main(int argc, char**argv )
             r += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
-            
+
             for( auto const& d : m_dirichlet )
             {
                 if ( boption( "blockns.weakdir" ) )
