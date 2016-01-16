@@ -30,7 +30,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
-
+#include <feel/feeltiming/tic.hpp>
 #if defined( FEELPP_HAS_PETSC_H )
 
 extern "C"
@@ -1121,12 +1121,13 @@ template <typename T>
 void
 VectorPetscMPI<T>::close()
 {
+    tic();
     //FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
     //std::cout << "\n MPI CLOSE "<<std::endl;;
     super::close();
 
     this->localize();
-
+    toc("VectorPetscMPI::close",FLAGS_v>0);
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1413,6 +1414,12 @@ VectorPetscMPI<T>::localSize() const
     return static_cast<size_type>( petsc_size );
 }
 
+vector_uptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
+}
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;

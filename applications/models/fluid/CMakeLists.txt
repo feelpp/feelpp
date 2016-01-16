@@ -14,6 +14,10 @@ feelpp_add_application( application_fluid_3d SRCS main_fm.cpp
   DEFS FEELPP_DIM=3
 )
 
+feelpp_add_testcase(cavity)
+feelpp_add_testcase(TurekHron)
+feelpp_add_testcase(TurekHronExt3d)
+
 #feelpp_add_application( application_fm_2d SRCS main_fm.cpp LINK_LIBRARIES feelpp_model_fluidmechanics )
 
 install(TARGETS feelpp_application_fluid_2d feelpp_application_fluid_3d 

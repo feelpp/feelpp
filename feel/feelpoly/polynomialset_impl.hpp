@@ -266,6 +266,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
             matrix_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
+#if 0
                 //L = __pc->hessian(i,q);
                 //LOG(INFO) << "elt " << thegmc->id() << " L 1=" << L;
                 for (int c1 = 0; c1 < gmc_type::NDim; ++c1 )
@@ -273,9 +274,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
                     //L -= __gmc_pc->hessian(i,c1,q)*M_grad[i][q](0,c1);
                     //LOG(INFO) << "elt " << thegmc->id() << " L c1 " << c1 << "="<< L;
                 }
+#endif
                 M_hessian[i][q] = B*__pc->hessian(i,q)*B.transpose();
-                
-                
                 if ( vm::has_laplacian<context>::value  )
                     M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
             } // q
