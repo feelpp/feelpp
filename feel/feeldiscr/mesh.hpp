@@ -638,6 +638,7 @@ public:
     /**
      * @return the face index of the face \p n in the element \p e
      */
+    FEELPP_DEPRECATED
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
@@ -647,6 +648,7 @@ public:
     /**
      * @return the face index of the face \p n in the element \p e
      */
+    FEELPP_DEPRECATED
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
@@ -701,6 +703,7 @@ public:
     /**
      * @return the face index of the face \p n in the element \p e
      */
+    FEELPP_DEPRECATED
     face_processor_type& localFaceId( element_type const& e,
                                       size_type const n )
     {
@@ -710,6 +713,7 @@ public:
     /**
      * @return the face index of the face \p n in the element \p e
      */
+    FEELPP_DEPRECATED
     face_processor_type& localFaceId( size_type const e,
                                       size_type const n )
     {
