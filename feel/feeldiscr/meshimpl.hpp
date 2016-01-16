@@ -121,36 +121,37 @@ Mesh<Shape, T, Tag>::updateForUse()
     {
         if ( this->components().test( MESH_RENUMBER ) )
         {
-
             //this->renumber();
             VLOG(2) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
+        element_iterator iv,  en;
+
         //
         // compute the Adjacency graph
         //
+        if ( false )
+        {
         tic();
         VLOG(2) << "Compute adjacency graph\n";
-        element_iterator iv,  en;
         boost::unordered_map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
-
         boost::unordered_map<std::set<int>, size_type > _faces;
         typename boost::unordered_map<std::set<int>, size_type >::iterator _faceit;
         int next_face = 0;
 
         boost::tie( iv, en ) = this->elementsRange();
 
+        const uint16_type _numLocalFaces = this->numLocalFaces();
         for ( ; iv != en; ++iv )
         {
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+            const size_type eltId = iv->id();
+            for ( uint16_type/*size_type*/ j = 0; j < _numLocalFaces/*this->numLocalFaces()*/; j++ )
             {
                 std::set<int> s;
-
-                for ( int f = 0; f < face_type::numVertices; ++f )
+                for ( uint16_type/*int*/ f = 0; f < face_type::numVertices; ++f )
                 {
                     if ( nDim == 1 )
                         s.insert( iv->point( j ).id() );
-
                     else
                         s.insert( iv->point( iv->fToP( j, f ) ).id() );
                 }
@@ -162,28 +163,30 @@ Mesh<Shape, T, Tag>::updateForUse()
                     ++next_face;
 
                 DVLOG(2) << "------------------------------------------------------------\n";
-                DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << " process id:" << iv->processId() << "\n";
+                DVLOG(2) << "Element id: " << eltId << " local face id: " << j << " process id:" << iv->processId() << "\n";
 
+                auto const& faceIdRegistered = _faceit->second;
+                auto & f2eValRef = f2e[faceIdRegistered];
                 if ( faceinserted )
                 {
                     DVLOG(2) << " new face " << _faceit->second << " is now in store with elt "
                              << f2e[_faceit->second].template get<0>()  << " and local face id "
                              <<  f2e[_faceit->second].template get<1>()  << "\n";
 
-
-                    f2e[_faceit->second].template get<0>() = iv->id();
-                    f2e[_faceit->second].template get<1>() = j;
-                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, invalid_size_type_value );
+                    f2eValRef.template get<0>() = eltId;
+                    f2eValRef.template get<1>() = j;
+                    M_e2f[std::make_pair(eltId,j)] = boost::make_tuple( faceIdRegistered, invalid_size_type_value );
                 }
 
                 else // already stored
                 {
-                    DVLOG(2) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
-
-                    f2e[_faceit->second].template get<2>() = iv->id();
-                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
-                    M_e2f[std::make_pair(f2e[_faceit->second].template get<0>(), f2e[_faceit->second].template get<1>())] =
-                        boost::make_tuple( _faceit->second, iv->id() );
+                    DVLOG(2) << "old face " << _faceit->second
+                             << " was already in store with elt " << f2e[_faceit->second].template get<0>()
+                             << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
+                    f2eValRef.template get<2>() = eltId;
+                    M_e2f[std::make_pair(eltId,j)]=boost::make_tuple( faceIdRegistered, f2eValRef.template get<0>() );
+                    M_e2f[std::make_pair(f2eValRef.template get<0>(), f2eValRef.template get<1>())] =
+                        boost::make_tuple( faceIdRegistered, eltId );
                 }
 
 
@@ -191,6 +194,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         } // element loop
         f2e.clear();
         toc("Mesh::UpdateForUse Compute adjacency graph", FLAGS_v > 0 );
+        }
 #if 0
 
         // partition mesh
@@ -210,7 +214,8 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
-            this->check();
+            if ( this->components().test( MESH_CHECK ) )
+                this->check();
             toc("Mesh::updateForUse update entities of codimension 1",FLAGS_v>0);
             VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1";
 
@@ -218,11 +223,11 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->components().test( MESH_UPDATE_EDGES ) )
         {
-            ti.restart();
-            // update connectivities of entities of co dimension 2
-            // (edges in 3D)
+            tic();
+            // update connectivities of entities of co dimension 2 (edges in 3D)
             this->updateEntitiesCoDimensionTwo();
-            VLOG(1) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update entities of codimension 2",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 2";
         }
 
         if ( this->worldComm().localSize()>1 )
@@ -247,8 +252,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                 this->addNeighborSubdomain( iv->processId() );
         }
 
-        if ( this->components().test( MESH_UPDATE_FACES ) ||
-             this->components().test( MESH_UPDATE_EDGES )
+        if ( this->components().test( MESH_UPDATE_FACES ) &&
+             ( nDim < 3 || this->components().test( MESH_UPDATE_EDGES ) )
              )
         {
             tic();
@@ -276,7 +281,8 @@ Mesh<Shape, T, Tag>::updateForUse()
             VLOG(1) << "[Mesh::updateForUse] update add element info"; 
         }
 
-        ti.restart();
+        if ( true )
+        {
         tic();
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
@@ -293,7 +299,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  if ( e.point( i ).marker().isOn() )
                                                  {
                                                      e.point( i ).addElement( e.id(), i );
-#if 0                                                     
+#if 0
                                                      LOG(INFO) << "added to point " << e.point(i).id() << " marker " << e.point(i).marker()
                                                                << " element " << e.id() << " pt id in element " << i
                                                                << " pt(std::set) " << boost::prior( e.point(i).elements().end())->first
@@ -321,8 +327,9 @@ Mesh<Shape, T, Tag>::updateForUse()
             }
         }
         toc("register elements associated to marked points" , FLAGS_v > 0 );
-        VLOG(1) << "[Mesh::updateForUse] update add element info for marked points : " << ti.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
-        
+        VLOG(1) << "[Mesh::updateForUse] update add element info for marked points";
+        }
+
         this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
@@ -330,56 +337,37 @@ Mesh<Shape, T, Tag>::updateForUse()
             tic();
             propagateMarkers(mpl::int_<nDim>() );
             toc("Mesh::updateForUse update propagate markers",FLAGS_v>0);
-            VLOG(1) << "[Mesh::updateForUse] update propagate markers"; 
+            VLOG(1) << "[Mesh::updateForUse] update propagate markers";
         }
 
+        tic();
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
         {
-            ti.restart();
-            for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-            {
-                this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
-            }
-            VLOG(1) << "[Mesh::updateForUse] update face mesh : " << ti.elapsed() << "\n"; 
+            this->elements().modify( iv,[this]( element_type& e ) { e.setMeshAndGm( this, this->gm(), this->gm1() ); } );
         }
-
-
-#if 1
+        for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         {
-            ti.restart();
-            element_iterator iv,  en;
-            boost::tie( iv, en ) = this->elementsRange();
-            auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
-            auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-
-            for ( ; iv != en; ++iv )
-            {
-                this->elements().modify( iv,
-                                         [=,&pc,&pcf]( element_type& e )
-                                         {
-                                             e.setMeshAndGm( this, M_gm, M_gm1 );
-                                             e.updateWithPc(pc, boost::ref( pcf) );
-                                         } );
-#if 0
-                lambda::bind( &element_type::setMeshAndGm,
-                              lambda::_1,
-                              this, M_gm, M_gm1 );
-
-                this->elements().modify( iv,
-                                         lambda::bind( &element_type::updateWithPc,
-                                                       lambda::_1, pc, boost::ref( pcf ) ) );
-#endif
-            }
+            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
         }
+        toc("Mesh::updateForUse update setMesh in elements and faces",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update setMesh in elements and faces";
 
-        // update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
-        this->updateMeasures();
+        if ( !this->components().test( MESH_NO_UPDATE_MEASURES ) )
+        {
+            tic();
+            // update meas, measface, hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+            this->updateMeasures();
+            toc("Mesh::updateForUse update mesh measures",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update mesh measures";
+        }
 
         // attach mesh in the localisation tool
         M_tool_localization->setMesh( this->shared_from_this(),false );
 
     } // isUpdatedForUse
-#endif
 
+    if ( this->components().test( MESH_CHECK ) )
     {
         tic();
         // check mesh connectivity
@@ -394,8 +382,8 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_gm->initCache( this );
         M_gm1->initCache( this );
         M_is_gm_cached = true;
-        toc("Mesh::updateForUse update geomap",FLAGS_v>0);
-        VLOG(1) << "[Mesh::updateForUse] update geomap"; 
+        toc("Mesh::updateForUse update geomap cache",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update geomap cache";
     }
 
     this->setUpdatedForUse( true );
@@ -412,14 +400,34 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateMeasures()
 {
+    if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
+        return;
+
     boost::timer ti;
 
     M_local_meas = 0;
     M_local_measbdy = 0;
+
+    typename gm_type::precompute_ptrtype pc;
+    typename gm_type::faces_precompute_type pcf;
+    // not very nice and correct but this function can have a big cost so only do one time
+    bool updateMeasureWithPc = !this->isUpdatedForUse();
+    if ( updateMeasureWithPc )
+    {
+        pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
+        pcf = M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+    }
+
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
+        this->elements().modify( iv,
+                                 [=,&pc,&pcf]( element_type& e )
+                                 {
+                                     e.updateWithPc(pc, boost::ref( pcf) );
+                                 } );
+
         // only compute meas for active element (no ghost)
         if ( !iv->isGhostCell() )
             M_local_meas += iv->measure();
@@ -461,7 +469,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
             this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
     }
-    VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n"; 
+    VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n";
 
     // compute h information: average, min and max
     {
