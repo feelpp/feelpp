@@ -26,9 +26,11 @@
 
 #if defined(FEELPP_HAS_HDF5)
 #include <boost/algorithm/string/split.hpp>
-#include <feel/feelcore/hdf5.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <feel/feelcore/hdf5.hpp>
+#include <feel/feelmesh/meshpartitionset.hpp>
 
 namespace Feel
 {
@@ -242,14 +244,19 @@ private:
     bool M_transposeInFile;
     meshparts_ptrtype M_meshPartsOut;
     mesh_ptrtype M_meshPartIn;
+    std::shared_ptr<MeshPartitionSet<mesh_type>> M_meshPartitionSet;
+
     // Mesh geometry
     size_type M_numParts;
-    size_type M_numGlobalPoints, M_numLocalPoints, M_pointsOffSet;
-    size_type M_numGlobalElements, M_numLocalElements, M_elementsOffSet;
-    size_type M_numGlobalGhostElements, M_numLocalGhostElements, M_ghostElementsOffSet;
-    size_type M_numGlobalMarkedFaces, M_numLocalMarkedFaces, M_markedFacesOffSet;
-    size_type M_numGlobalMarkedEdges, M_numLocalMarkedEdges, M_markedEdgesOffSet;
-    size_type M_numGlobalMarkedPoints, M_numLocalMarkedPoints, M_markedPointsOffSet;
+
+    size_type M_numGlobalPoints,M_numGlobalElements,M_numGlobalGhostElements;
+    size_type M_numGlobalMarkedFaces,M_numGlobalMarkedEdges,M_numGlobalMarkedPoints;
+    std::map<rank_type,size_type> M_numLocalPoints, M_pointsOffSet;
+    std::map<rank_type,size_type> M_numLocalElements, M_elementsOffSet;
+    std::map<rank_type,size_type> M_numLocalGhostElements, M_ghostElementsOffSet;
+    std::map<rank_type,size_type> M_numLocalMarkedFaces, M_markedFacesOffSet;
+    std::map<rank_type,size_type> M_numLocalMarkedEdges, M_markedEdgesOffSet;
+    std::map<rank_type,size_type> M_numLocalMarkedPoints, M_markedPointsOffSet;
 
     //HDF5 I/O filter
     HDF5 M_HDF5IO;
@@ -293,6 +300,11 @@ void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
     // 1 partition per process
     // in the future we have to handle many partitions in one process
     M_numParts = 1;//M_meshParts->size();
+    //M_numParts = (numPart > 0 ) ? numPart : M_meshPartsOut->worldComm().localSize();
+
+    //M_meshPartitionSet.reset( new MeshPartitionSet<mesh_type>>( M_meshPartsOut ) );
+    M_meshPartitionSet = std::make_shared<MeshPartitionSet<mesh_type>>(M_meshPartsOut );
+
 
     tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), false);
@@ -399,13 +411,14 @@ template<typename MeshType>
 void PartitionIO<MeshType>::writeStats()
 {
     M_numParts = M_meshPartsOut->worldComm().localSize();
+    rank_type numGlobalPartition = M_meshPartitionSet->numGlobalPartition();
     // Write mesh partition stats (N = number of parts)
     // This is an N x 19 table of int
     hsize_t currentSpaceDims[2];
     hsize_t currentCount[2];
     if (! M_transposeInFile)
     {
-        currentSpaceDims[0] = M_numParts;
+        currentSpaceDims[0] = numGlobalPartition;
         currentSpaceDims[1] = 19;
         currentCount[0] = 1;
         currentCount[1] = currentSpaceDims[1];
@@ -413,30 +426,35 @@ void PartitionIO<MeshType>::writeStats()
     else
     {
         currentSpaceDims[0] = 19;
-        currentSpaceDims[1] = M_numParts;
+        currentSpaceDims[1] = numGlobalPartition;
         currentCount[0] = currentSpaceDims[0];
         currentCount[1] = 1;
     }
 
     M_numGlobalPoints = 0;
-    M_numLocalPoints = M_meshPartsOut->statNumPointsAll();
-    M_pointsOffSet = 0;
     M_numGlobalElements = 0;
-    M_numLocalElements = M_meshPartsOut->statNumElementsAll();
-    M_elementsOffSet = 0;
     M_numGlobalGhostElements = 0;
-    M_numLocalGhostElements = M_meshPartsOut->statNumElementsAll() - M_meshPartsOut->statNumElementsActive();
-    M_ghostElementsOffSet = 0;
     M_numGlobalMarkedFaces = 0;
-    M_numLocalMarkedFaces = M_meshPartsOut->statNumFacesMarkedAll();
-    M_markedFacesOffSet = 0;
     M_numGlobalMarkedEdges = 0;
-    M_numLocalMarkedEdges = M_meshPartsOut->statNumEdgesMarkedAll();
-    M_markedEdgesOffSet = 0;
     M_numGlobalMarkedPoints = 0;
-    M_numLocalMarkedPoints = M_meshPartsOut->statNumPointsMarkedAll();
-    M_markedPointsOffSet = 0;
-    for ( rank_type p=0 ; p< M_numParts ; ++p )
+
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
+    {
+        M_numLocalPoints[partId] = M_meshPartitionSet->statNumPointsAll( partId );
+        M_pointsOffSet[partId] = 0;
+        M_numLocalElements[partId] = M_meshPartitionSet->statNumElementsAll( partId );
+        M_elementsOffSet[partId] = 0;
+        M_numLocalGhostElements[partId] = M_meshPartitionSet->statNumElementsAll( partId ) - M_meshPartitionSet->statNumElementsActive( partId );
+        M_ghostElementsOffSet[partId] = 0;
+        M_numLocalMarkedFaces[partId] = M_meshPartitionSet->statNumFacesMarkedAll( partId );
+        M_markedFacesOffSet[partId] = 0;
+        M_numLocalMarkedEdges[partId] = M_meshPartitionSet->statNumEdgesMarkedAll( partId );
+        M_markedEdgesOffSet[partId] = 0;
+        M_numLocalMarkedPoints[partId] = M_meshPartitionSet->statNumPointsMarkedAll( partId );
+        M_markedPointsOffSet[partId] = 0;
+    }
+
+    for ( rank_type p=0 ; p< numGlobalPartition ; ++p )
     {
         size_type nPtAll = M_meshPartsOut->statNumPointsAll(p);
         M_numGlobalPoints += nPtAll;
@@ -450,127 +468,130 @@ void PartitionIO<MeshType>::writeStats()
         M_numGlobalMarkedEdges += nMarkedEdgesAll;
         size_type nMarkedPointsAll = M_meshPartsOut->statNumPointsMarkedAll(p);
         M_numGlobalMarkedPoints += nMarkedPointsAll;
-        if ( p < M_meshPartsOut->worldComm().localRank() )
+
+        for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
         {
-            M_pointsOffSet += nPtAll;
-            M_elementsOffSet += nEltAll;
-            M_ghostElementsOffSet += nGhostEltAll;
-            M_markedFacesOffSet += nMarkedFacesAll;
-            M_markedEdgesOffSet += nMarkedEdgesAll;
-            M_markedPointsOffSet += nMarkedPointsAll;
+            if ( p < partId )
+            {
+                M_pointsOffSet[partId] += nPtAll;
+                M_elementsOffSet[partId] += nEltAll;
+                M_ghostElementsOffSet[partId] += nGhostEltAll;
+                M_markedFacesOffSet[partId] += nMarkedFacesAll;
+                M_markedEdgesOffSet[partId] += nMarkedEdgesAll;
+                M_markedPointsOffSet[partId] += nMarkedPointsAll;
+            }
         }
     }
     // Create new table
     M_HDF5IO.createTable ("stats", H5T_STD_U32BE, currentSpaceDims);
 
-    // Fill buffer
-    M_uintBuffer.resize( 19 );
-    //for (size_type i = 0; i < M_numParts; ++i)
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
     {
-        //mesh_type& currentPart = (* (*M_meshPartsOut) [i]);
-        auto & currentPart = *M_meshPartsOut;
-        M_uintBuffer[0] = M_meshPartsOut->worldComm().localRank();
+        // Fill buffer
+        M_uintBuffer.resize( 19 );
+        M_uintBuffer[0] = partId;
         M_uintBuffer[1] = M_numGlobalPoints;
-        M_uintBuffer[2] = M_numLocalPoints;
-        M_uintBuffer[3] = M_pointsOffSet;
+        M_uintBuffer[2] = M_numLocalPoints[partId];
+        M_uintBuffer[3] = M_pointsOffSet[partId];
         M_uintBuffer[4] = M_numGlobalElements;
-        M_uintBuffer[5] = M_numLocalElements;
-        M_uintBuffer[6] = M_elementsOffSet;
+        M_uintBuffer[5] = M_numLocalElements[partId];
+        M_uintBuffer[6] = M_elementsOffSet[partId];
         M_uintBuffer[7] = M_numGlobalGhostElements;
-        M_uintBuffer[8] = M_numLocalGhostElements;
-        M_uintBuffer[9] = M_ghostElementsOffSet;
+        M_uintBuffer[8] = M_numLocalGhostElements[partId];
+        M_uintBuffer[9] = M_ghostElementsOffSet[partId];
         M_uintBuffer[10] = M_numGlobalMarkedFaces;
-        M_uintBuffer[11] = M_numLocalMarkedFaces;
-        M_uintBuffer[12] = M_markedFacesOffSet;
+        M_uintBuffer[11] = M_numLocalMarkedFaces[partId];
+        M_uintBuffer[12] = M_markedFacesOffSet[partId];
         M_uintBuffer[13] = M_numGlobalMarkedEdges;
-        M_uintBuffer[14] = M_numLocalMarkedEdges;
-        M_uintBuffer[15] = M_markedEdgesOffSet;
+        M_uintBuffer[14] = M_numLocalMarkedEdges[partId];
+        M_uintBuffer[15] = M_markedEdgesOffSet[partId];
         M_uintBuffer[16] = M_numGlobalMarkedPoints;
-        M_uintBuffer[17] = M_numLocalMarkedPoints;
-        M_uintBuffer[18] = M_markedPointsOffSet;
+        M_uintBuffer[17] = M_numLocalMarkedPoints[partId];
+        M_uintBuffer[18] = M_markedPointsOffSet[partId];
 
         hsize_t currentOffset[2];
-        if (! M_transposeInFile)
+        if ( !M_transposeInFile )
         {
-            currentOffset[0] = currentPart.worldComm().localRank();
+            currentOffset[0] = partId;
             currentOffset[1] = 0;
         }
         else
         {
             currentOffset[0] = 0;
-            currentOffset[1] = currentPart.worldComm().localRank();
+            currentOffset[1] = partId;
         }
 
-        M_HDF5IO.write ("stats", H5T_NATIVE_UINT, currentCount, currentOffset,
-                        &M_uintBuffer[0]);
+        M_HDF5IO.write("stats", H5T_NATIVE_UINT, currentCount, currentOffset, &M_uintBuffer[0]);
     }
-    M_HDF5IO.closeTable ("stats");
+    M_HDF5IO.closeTable("stats");
 }
 
 template<typename MeshType>
 void PartitionIO<MeshType>::writePoints()
 {
-    hsize_t globalDimsIds[2], globalDimsCoords[2];
-    hsize_t localDimsIds[2], localDimsCoords[2];
-    hsize_t offsetIds[2], offsetCoords[2];
-
     int d = M_meshPartsOut->nRealDim;
     int nValIds = 1;
-    if ( !M_transposeInFile )
+    hsize_t globalDimsIds[2], globalDimsCoords[2];
+    globalDimsIds[0] = 1;
+    globalDimsIds[1] = nValIds*M_numGlobalPoints;
+    globalDimsCoords[0] = 1;
+    globalDimsCoords[1] = d*M_numGlobalPoints;
+    if ( M_transposeInFile )
     {
-        globalDimsIds[0] = 1;
-        globalDimsIds[1] = nValIds*M_numGlobalPoints;
-        globalDimsCoords[0] = 1;
-        globalDimsCoords[1] = d*M_numGlobalPoints;
-
-        localDimsIds[0] = 1;
-        localDimsIds[1] = nValIds*M_numLocalPoints;
-        localDimsCoords[0] = 1;
-        localDimsCoords[1] = d*M_numLocalPoints;
-        offsetIds[0] = 0;
-        offsetIds[1] = nValIds*M_pointsOffSet;
-        offsetCoords[0] = 0;
-        offsetCoords[1] = d*M_pointsOffSet;
-    }
-    else
-    {
-        CHECK( false ) << "TODO";
+        globalDimsIds[0] = globalDimsIds[1];
+        globalDimsIds[1] = 1;
+        globalDimsCoords[0] = globalDimsCoords[1];
+        globalDimsCoords[1] = 1;
     }
 
     M_HDF5IO.createTable ("point_ids", H5T_STD_U32BE, globalDimsIds);
     M_HDF5IO.createTable ("point_coords", H5T_IEEE_F64BE, globalDimsCoords);
 
-
-    // Fill buffer
-    M_uintBuffer.resize( localDimsIds[0]*localDimsIds[1], 0 );
-    M_realBuffer.resize( localDimsCoords[0]*localDimsCoords[1], 0 );
-
-    if ( !M_transposeInFile )
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
     {
-        //for (size_type i = 0; i < M_numParts; ++i)
+        hsize_t localDimsIds[2], localDimsCoords[2];
+        hsize_t offsetIds[2], offsetCoords[2];
+
+        localDimsIds[0] = 1;
+        localDimsIds[1] = nValIds*M_numLocalPoints[partId];
+        localDimsCoords[0] = 1;
+        localDimsCoords[1] = d*M_numLocalPoints[partId];
+        offsetIds[0] = 0;
+        offsetIds[1] = nValIds*M_pointsOffSet[partId];
+        offsetCoords[0] = 0;
+        offsetCoords[1] = d*M_pointsOffSet[partId];
+        if ( M_transposeInFile )
         {
-            //mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
-            auto & currentPart = *M_meshPartsOut;
-            size_type currentBufferIndexIds = 0,currentBufferIndexCoords = 0;
-            auto pt_it = currentPart.beginPoint();
-            auto pt_en = currentPart.endPoint();
-            for( int j = 0 ; pt_it != pt_en; ++pt_it, ++j )
-            {
-                M_uintBuffer[currentBufferIndexIds++] = pt_it->id();
-
-                M_realBuffer[currentBufferIndexCoords++] = pt_it->operator[](0);
-                if ( mesh_type::nRealDim >= 2 )
-                    M_realBuffer[currentBufferIndexCoords++] = pt_it->operator[](1);
-                if ( mesh_type::nRealDim >= 3 )
-                    M_realBuffer[currentBufferIndexCoords++] = pt_it->operator[](2);
-            }
-
-            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
-            M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
+            localDimsIds[0] = localDimsIds[1];
+            localDimsIds[1] = 1;
+            localDimsCoords[0] = localDimsCoords[1];
+            localDimsCoords[1] = 1;
+            offsetIds[0] = offsetIds[1];
+            offsetIds[1] = 0;
+            offsetCoords[0] = offsetCoords[1];
+            offsetCoords[1] = 0;
         }
-    }
-    else
-    {
+        // Fill buffer
+        M_uintBuffer.resize( localDimsIds[0]*localDimsIds[1], 0 );
+        M_realBuffer.resize( localDimsCoords[0]*localDimsCoords[1], 0 );
+
+        size_type currentBufferIndexIds = 0,currentBufferIndexCoords = 0;
+        auto pt_it = M_meshPartitionSet->beginPoint( partId );
+        auto pt_en = M_meshPartitionSet->endPoint( partId );
+        for(  ; pt_it != pt_en; ++pt_it )
+        {
+            auto const& thepoint = boost::unwrap_ref(*pt_it);
+            M_uintBuffer[currentBufferIndexIds++] = thepoint.id();
+
+            M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](0);
+            if ( mesh_type::nRealDim >= 2 )
+                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](1);
+            if ( mesh_type::nRealDim >= 3 )
+                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](2);
+        }
+
+        M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
+        M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
     }
 
     M_realBuffer.resize (0);
@@ -583,53 +604,64 @@ void PartitionIO<MeshType>::writePoints()
 template<typename MeshType>
 void PartitionIO<MeshType>::writeElements()
 {
-    hsize_t globalDims[2];
-    hsize_t localDims[2];
-    hsize_t offset[2];
-
     int nVal = 2 + element_type::numPoints;// id+marker+ points
-    if (! M_transposeInFile)
+
+    hsize_t globalDims[2];
+    globalDims[0] = 1;
+    globalDims[1] = nVal*M_numGlobalElements;
+    if ( M_transposeInFile )
     {
-        globalDims[0] = 1;
-        globalDims[1] = nVal*M_numGlobalElements;
-        localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalElements;
-        offset[0] = 0;
-        offset[1] = nVal*M_elementsOffSet;
-    }
-    else
-    {
-        CHECK( false ) << "TODO";
+        globalDims[0] = globalDims[1];
+        globalDims[1] = 1;
     }
 
     M_HDF5IO.createTable ("elements", H5T_STD_U32BE, globalDims);
 
-    // Fill buffer
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-
-    if (! M_transposeInFile)
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
     {
-        //for (size_type i = 0; i < M_numParts; ++i)
+        hsize_t localDims[2];
+        hsize_t offset[2];
+        localDims[0] = 1;
+        localDims[1] = nVal*M_numLocalElements[partId];
+        offset[0] = 0;
+        offset[1] = nVal*M_elementsOffSet[partId];
+        if ( M_transposeInFile )
         {
-            auto& currentPart = *M_meshPartsOut;
-            size_type currentBufferIndex = 0;
-            auto elt_it = currentPart.beginElement();
-            auto elt_en = currentPart.endElement();
-            for( ; elt_it != elt_en; ++ elt_it )
-            {
-                M_uintBuffer[currentBufferIndex++] = elt_it->id();
-                M_uintBuffer[currentBufferIndex++] = elt_it->marker().value();
-                for (size_type k = 0; k < element_type::numPoints; ++k)
-                {
-                    M_uintBuffer[currentBufferIndex++] = elt_it->point(k).id();
-                }
-
-            }
-            M_HDF5IO.write ("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+            localDims[0] = localDims[1];
+            localDims[1] = 1;
+            offset[0] = offset[1];
+            offset[1] = 0;
         }
-    }
-    else
-    {
+        // Fill buffer
+        M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
+
+        size_type currentBufferIndex = 0;
+        auto elt_it = M_meshPartitionSet->beginActiveElement( partId );
+        auto elt_en = M_meshPartitionSet->endActiveElement( partId );
+        for( ; elt_it != elt_en; ++ elt_it )
+        {
+            auto const& theelt = boost::unwrap_ref(*elt_it);
+            M_uintBuffer[currentBufferIndex++] = theelt.id();
+            M_uintBuffer[currentBufferIndex++] = theelt.marker().value();
+            for (size_type k = 0; k < element_type::numPoints; ++k)
+            {
+                M_uintBuffer[currentBufferIndex++] = theelt.point(k).id();
+            }
+        }
+        auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
+        auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
+        for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
+        {
+            auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
+            M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+            M_uintBuffer[currentBufferIndex++] = theghostelt.marker().value();
+            for (size_type k = 0; k < element_type::numPoints; ++k)
+            {
+                M_uintBuffer[currentBufferIndex++] = theghostelt.point(k).id();
+            }
+        }
+
+        M_HDF5IO.write ("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
     }
 
     M_HDF5IO.closeTable ("elements");
@@ -639,45 +671,47 @@ template<typename MeshType>
 void PartitionIO<MeshType>::writeGhostElements()
 {
     hsize_t globalDims[2];
-    hsize_t localDims[2];
-    hsize_t offset[2];
 
     int nVal = 3;//(idGhost,pid,idActive)
-    if (! M_transposeInFile)
+    globalDims[0] = 1;
+    globalDims[1] = nVal*M_numGlobalGhostElements;
+    if ( M_transposeInFile )
     {
-        globalDims[0] = 1;
-        globalDims[1] = nVal*M_numGlobalGhostElements;
-        localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalGhostElements;
-        offset[0] = 0;
-        offset[1] = nVal*M_ghostElementsOffSet;
-    }
-    else
-    {
-        CHECK( false ) << "TODO";
+        globalDims[0] = globalDims[1];
+        globalDims[1] = 1;
     }
 
     M_HDF5IO.createTable ("elements_ghosts", H5T_STD_U32BE, globalDims);
 
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-
-    if ( !M_transposeInFile )
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
     {
-        //for (size_type i = 0; i < M_numParts; ++i)
+        hsize_t localDims[2];
+        hsize_t offset[2];
+        localDims[0] = 1;
+        localDims[1] = nVal*M_numLocalGhostElements[partId];
+        offset[0] = 0;
+        offset[1] = nVal*M_ghostElementsOffSet[partId];
+        if ( M_transposeInFile )
         {
-            size_type currentBufferIndex = 0;
-            auto& currentPart = *M_meshPartsOut;
-            auto elt_it = currentPart.beginGhostElement();
-            auto elt_en = currentPart.endGhostElement();
-            for( ; elt_it != elt_en; ++ elt_it )
-            {
-                M_uintBuffer[currentBufferIndex++] = elt_it->id();
-                M_uintBuffer[currentBufferIndex++] = elt_it->processId();
-                M_uintBuffer[currentBufferIndex++] = elt_it->idInOthersPartitions( elt_it->processId() );
-            }
+            localDims[0] = localDims[1];
+            localDims[1] = 1;
+            offset[0] = offset[1];
+            offset[1] = 0;
         }
+        M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
+
+        size_type currentBufferIndex = 0;
+        auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
+        auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
+        for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
+        {
+            auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
+            M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+            M_uintBuffer[currentBufferIndex++] = theghostelt.processId();
+            M_uintBuffer[currentBufferIndex++] = theghostelt.idInOthersPartitions( theghostelt.processId() );
+        }
+        M_HDF5IO.write ("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
     }
-    M_HDF5IO.write ("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
 
     M_HDF5IO.closeTable ("elements_ghosts");
 
@@ -685,83 +719,95 @@ void PartitionIO<MeshType>::writeGhostElements()
 
 namespace detail
 {
-template<typename MeshType>
-void updateMarkedSubEntitiesBuffer( MeshType const& mesh,std::vector<unsigned int> & buffer, mpl::int_<1> /**/ )
+template<typename MeshPartType>
+void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<1> /**/ )
 {
     size_type currentBufferIndex = 0;
-    auto point_it = mesh.beginPoint();
-    auto point_en = mesh.endPoint();
+    auto point_it = meshPartSet.beginMarkedPoint( partId );
+    auto point_en = meshPartSet.endMarkedPoint( partId );
     for( ; point_it != point_en; ++point_it )
     {
-        if ( point_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = point_it->marker().value();
-        buffer[currentBufferIndex++] = point_it->id();
+        auto const& thepoint = boost::unwrap_ref(*point_it);
+        //if ( point_it->marker().isOff() ) continue;
+        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        buffer[currentBufferIndex++] = thepoint.marker().value();
+        buffer[currentBufferIndex++] = thepoint.id();
     }
 }
-template<typename MeshType>
-void updateMarkedSubEntitiesBuffer( MeshType const& mesh,std::vector<unsigned int> & buffer, mpl::int_<2> /**/ )
+template<typename MeshPartType>
+void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<2> /**/ )
 {
     size_type currentBufferIndex = 0;
-    auto face_it = mesh.beginFace();
-    auto face_en = mesh.endFace();
+    auto face_it = meshPartSet.beginMarkedFace( partId );
+    auto face_en = meshPartSet.endMarkedFace( partId );
     for( ; face_it != face_en; ++face_it )
     {
-        if ( face_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = face_it->marker().value();
-        for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
+        auto const& theface = boost::unwrap_ref(*face_it);
+        //if ( face_it->marker().isOff() ) continue;
+        CHECK( theface.marker().isOn() ) << "not a marked face";
+        buffer[currentBufferIndex++] = theface.marker().value();
+        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
         {
-            buffer[currentBufferIndex++] = face_it->point( vLocId ).id();
+            buffer[currentBufferIndex++] = theface.point( vLocId ).id();
         }
     }
-    auto point_it = mesh.beginPoint();
-    auto point_en = mesh.endPoint();
+    auto point_it = meshPartSet.beginMarkedPoint( partId );
+    auto point_en = meshPartSet.endMarkedPoint( partId );
     for( ; point_it != point_en; ++point_it )
     {
-        if ( point_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = point_it->marker().value();
-        buffer[currentBufferIndex++] = point_it->id();
+        auto const& thepoint = boost::unwrap_ref(*point_it);
+        //if ( point_it->marker().isOff() ) continue;
+        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        buffer[currentBufferIndex++] = thepoint.marker().value();
+        buffer[currentBufferIndex++] = thepoint.id();
     }
 }
-template<typename MeshType>
-void updateMarkedSubEntitiesBuffer( MeshType const& mesh,std::vector<unsigned int> & buffer, mpl::int_<3> /**/ )
+template<typename MeshPartType>
+void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<3> /**/ )
 {
     size_type currentBufferIndex = 0;
-    auto face_it = mesh.beginFace();
-    auto face_en = mesh.endFace();
+    auto face_it = meshPartSet.beginMarkedFace( partId );
+    auto face_en = meshPartSet.endMarkedFace( partId );
     for( ; face_it != face_en; ++face_it )
     {
-        if ( face_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = face_it->marker().value();
-        for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
+        auto const& theface = boost::unwrap_ref(*face_it);
+        //if ( face_it->marker().isOff() ) continue;
+        CHECK( theface.marker().isOn() ) << "not a marked face";
+        buffer[currentBufferIndex++] = theface.marker().value();
+        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
         {
-            buffer[currentBufferIndex++] = face_it->point( vLocId ).id();
+            buffer[currentBufferIndex++] = theface.point( vLocId ).id();
         }
     }
-    auto edge_it = mesh.beginEdge();
-    auto edge_en = mesh.endEdge();
+    auto edge_it = meshPartSet.beginMarkedEdge( partId );
+    auto edge_en = meshPartSet.endMarkedEdge( partId );
     for( ; edge_it != edge_en; ++edge_it )
     {
-        if ( edge_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = edge_it->marker().value();
-        for ( uint16_type vLocId = 0; vLocId < MeshType::edge_type::numPoints ; ++vLocId )
+        auto const& theedge = boost::unwrap_ref(*edge_it);
+        //if ( edge_it->marker().isOff() ) continue;
+        CHECK( theedge.marker().isOn() ) << "not a marked edge";
+        buffer[currentBufferIndex++] = theedge.marker().value();
+        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::edge_type::numPoints ; ++vLocId )
         {
-            buffer[currentBufferIndex++] = edge_it->point( vLocId ).id();
+            buffer[currentBufferIndex++] = theedge.point( vLocId ).id();
         }
     }
-    auto point_it = mesh.beginPoint();
-    auto point_en = mesh.endPoint();
+    auto point_it = meshPartSet.beginMarkedPoint( partId );
+    auto point_en = meshPartSet.endMarkedPoint( partId );
     for( ; point_it != point_en; ++point_it )
     {
-        if ( point_it->marker().isOff() ) continue;
-        buffer[currentBufferIndex++] = point_it->marker().value();
-        buffer[currentBufferIndex++] = point_it->id();
+        auto const& thepoint = boost::unwrap_ref(*point_it);
+        //if ( point_it->marker().isOff() ) continue;
+        CHECK( thepoint.marker().isOn() ) << "not a marked point";
+        buffer[currentBufferIndex++] = thepoint.marker().value();
+        buffer[currentBufferIndex++] = thepoint.id();
     }
 }
 
-template<typename MeshType>
-void updateMarkedSubEntitiesBuffer( MeshType const& mesh,std::vector<unsigned int> & buffer )
+template<typename MeshPartType>
+void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet, rank_type partId, std::vector<unsigned int> & buffer )
 {
-    updateMarkedSubEntitiesBuffer( mesh, buffer, mpl::int_<MeshType::nDim>() );
+    updateMarkedSubEntitiesBuffer( meshPartSet, partId,buffer, mpl::int_<MeshPartType::mesh_type::nDim>() );
 }
 
 } // namespace detail
@@ -769,41 +815,42 @@ void updateMarkedSubEntitiesBuffer( MeshType const& mesh,std::vector<unsigned in
 template<typename MeshType>
 void PartitionIO<MeshType>::writeMarkedSubEntities()
 {
-    hsize_t globalDims[2];
-    hsize_t localDims[2];
-    hsize_t offset[2];
-
-    int d = M_meshPartsOut->nDim;
     int nValFace = 1 + face_type::numPoints;// (marker,ptId1,ptId2,...)
     int nValEdge = 1 + edge_type::numPoints;// (marker,ptId1,ptId2,...)
     int nValPoint = 1 + 1;// (marker,ptId1)
-    if (! M_transposeInFile)
+
+    hsize_t globalDims[2];
+    globalDims[0] = 1;
+    globalDims[1] = nValFace*M_numGlobalMarkedFaces + nValEdge*M_numGlobalMarkedEdges + nValPoint*M_numGlobalMarkedPoints ;
+    if ( M_transposeInFile )
     {
-        globalDims[0] = 1;
-        globalDims[1] = nValFace*M_numGlobalMarkedFaces + nValEdge*M_numGlobalMarkedEdges + nValPoint*M_numGlobalMarkedPoints ;
-        localDims[0] = 1;
-        localDims[1] = nValFace*M_numLocalMarkedFaces + nValEdge*M_numLocalMarkedEdges + nValPoint*M_numLocalMarkedPoints;
-        offset[0] = 0;
-        offset[1] = nValFace*M_markedFacesOffSet + nValEdge*M_markedEdgesOffSet + nValPoint*M_markedPointsOffSet;
-    }
-    else
-    {
-        CHECK( false ) << "TODO";
+        globalDims[0] = globalDims[1];
+        globalDims[1] = 1;
     }
 
     M_HDF5IO.createTable ("marked_subentities", H5T_STD_U32BE, globalDims);
 
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-
-    if ( !M_transposeInFile )
+    for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
     {
-        //for (size_type i = 0; i < M_numParts; ++i)
+        hsize_t localDims[2];
+        hsize_t offset[2];
+        localDims[0] = 1;
+        localDims[1] = nValFace*M_numLocalMarkedFaces[partId] + nValEdge*M_numLocalMarkedEdges[partId] + nValPoint*M_numLocalMarkedPoints[partId];
+        offset[0] = 0;
+        offset[1] = nValFace*M_markedFacesOffSet[partId] + nValEdge*M_markedEdgesOffSet[partId] + nValPoint*M_markedPointsOffSet[partId];
+        if ( M_transposeInFile )
         {
-            auto& currentPart = *M_meshPartsOut;
-            Feel::detail::updateMarkedSubEntitiesBuffer( currentPart, M_uintBuffer );
+            localDims[0] = localDims[1];
+            localDims[1] = 1;
+            offset[0] = offset[1];
+            offset[1] = 1;
         }
+        M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
+
+        Feel::detail::updateMarkedSubEntitiesBuffer( *M_meshPartitionSet, partId, M_uintBuffer );
+
+        M_HDF5IO.write ("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
     }
-    M_HDF5IO.write ("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
 
     M_HDF5IO.closeTable ("marked_subentities");
 
@@ -819,13 +866,15 @@ void PartitionIO<MeshType>::readStats()
     hsize_t currentCount[2];
     hsize_t currentOffset[2];
 
+    rank_type partId = M_meshPartIn->worldComm().localRank();
+
     M_HDF5IO.openTable ("stats", currentSpaceDims);
 
     if (! M_transposeInFile)
     {
         currentCount[0] = 1;
         currentCount[1] = currentSpaceDims[1];
-        currentOffset[0] = M_meshPartIn->worldComm().localRank();
+        currentOffset[0] = partId;
         currentOffset[1] = 0;
     }
     else
@@ -833,7 +882,7 @@ void PartitionIO<MeshType>::readStats()
         currentCount[0] = currentSpaceDims[0];
         currentCount[1] = 1;
         currentOffset[0] = 0;
-        currentOffset[1] = M_meshPartIn->worldComm().localRank();
+        currentOffset[1] = partId;
     }
 
     // Fill buffer
@@ -844,34 +893,34 @@ void PartitionIO<MeshType>::readStats()
     M_HDF5IO.closeTable ("stats");
 
     M_numGlobalPoints = M_uintBuffer[1];
-    M_numLocalPoints = M_uintBuffer[2];
-    M_pointsOffSet = M_uintBuffer[3];
-    LOG(INFO) << "read stat points " << M_numGlobalPoints << ","<<M_numLocalPoints<<","<<M_pointsOffSet<<"\n";
+    M_numLocalPoints[partId] = M_uintBuffer[2];
+    M_pointsOffSet[partId] = M_uintBuffer[3];
+    LOG(INFO) << "read stat points " << M_numGlobalPoints << ","<<M_numLocalPoints[partId]<<","<<M_pointsOffSet[partId]<<"\n";
 
     M_numGlobalElements = M_uintBuffer[4];
-    M_numLocalElements = M_uintBuffer[5];
-    M_elementsOffSet = M_uintBuffer[6];
-    LOG(INFO) << "read stat elements " << M_numGlobalElements << ","<<M_numLocalElements<<","<<M_elementsOffSet<<"\n";
+    M_numLocalElements[partId] = M_uintBuffer[5];
+    M_elementsOffSet[partId] = M_uintBuffer[6];
+    LOG(INFO) << "read stat elements " << M_numGlobalElements << ","<<M_numLocalElements[partId]<<","<<M_elementsOffSet[partId]<<"\n";
 
     M_numGlobalGhostElements = M_uintBuffer[7];
-    M_numLocalGhostElements = M_uintBuffer[8];
-    M_ghostElementsOffSet = M_uintBuffer[9];
-    LOG(INFO) << "read stat ghost_elements " << M_numGlobalGhostElements << ","<<M_numLocalGhostElements<<","<<M_ghostElementsOffSet<<"\n";
+    M_numLocalGhostElements[partId] = M_uintBuffer[8];
+    M_ghostElementsOffSet[partId] = M_uintBuffer[9];
+    LOG(INFO) << "read stat ghost_elements " << M_numGlobalGhostElements << ","<<M_numLocalGhostElements[partId]<<","<<M_ghostElementsOffSet[partId]<<"\n";
 
     M_numGlobalMarkedFaces = M_uintBuffer[10];
-    M_numLocalMarkedFaces = M_uintBuffer[11];
-    M_markedFacesOffSet = M_uintBuffer[12];
-    LOG(INFO) << "read stat marked_faces " << M_numGlobalMarkedFaces << ","<<M_numLocalMarkedFaces<<","<<M_markedFacesOffSet<<"\n";
+    M_numLocalMarkedFaces[partId] = M_uintBuffer[11];
+    M_markedFacesOffSet[partId] = M_uintBuffer[12];
+    LOG(INFO) << "read stat marked_faces " << M_numGlobalMarkedFaces << ","<<M_numLocalMarkedFaces[partId]<<","<<M_markedFacesOffSet[partId]<<"\n";
 
     M_numGlobalMarkedEdges = M_uintBuffer[13];
-    M_numLocalMarkedEdges = M_uintBuffer[14];
-    M_markedEdgesOffSet = M_uintBuffer[15];
-    LOG(INFO) << "read stat marked_edges " << M_numGlobalMarkedEdges << ","<<M_numLocalMarkedEdges<<","<<M_markedEdgesOffSet<<"\n";
+    M_numLocalMarkedEdges[partId] = M_uintBuffer[14];
+    M_markedEdgesOffSet[partId] = M_uintBuffer[15];
+    LOG(INFO) << "read stat marked_edges " << M_numGlobalMarkedEdges << ","<<M_numLocalMarkedEdges[partId]<<","<<M_markedEdgesOffSet[partId]<<"\n";
 
     M_numGlobalMarkedPoints = M_uintBuffer[16];
-    M_numLocalMarkedPoints = M_uintBuffer[17];
-    M_markedPointsOffSet = M_uintBuffer[18];
-    LOG(INFO) << "read stat marked_points " << M_numGlobalMarkedPoints << ","<<M_numLocalMarkedPoints<<","<<M_markedPointsOffSet<<"\n";
+    M_numLocalMarkedPoints[partId] = M_uintBuffer[17];
+    M_markedPointsOffSet[partId] = M_uintBuffer[18];
+    LOG(INFO) << "read stat marked_points " << M_numGlobalMarkedPoints << ","<<M_numLocalMarkedPoints[partId]<<","<<M_markedPointsOffSet[partId]<<"\n";
 }
 
 template<typename MeshType>
@@ -880,6 +929,8 @@ void PartitionIO<MeshType>::readPoints()
     hsize_t globalDimsIds[2], globalDimsCoords[2];
     hsize_t localDimsIds[2], localDimsCoords[2];
     hsize_t offsetIds[2], offsetCoords[2];
+
+    rank_type partId = M_meshPartIn->worldComm().localRank();
 
 
     M_HDF5IO.openTable ("point_ids", globalDimsIds);
@@ -894,13 +945,13 @@ void PartitionIO<MeshType>::readPoints()
         CHECK( globalDimsCoords[0] == 1 && globalDimsCoords[1] == d*M_numGlobalPoints ) << "BUG";
 
         localDimsIds[0] = 1;
-        localDimsIds[1] = nValIds*M_numLocalPoints;
+        localDimsIds[1] = nValIds*M_numLocalPoints[partId];
         localDimsCoords[0] = 1;
-        localDimsCoords[1] = d*M_numLocalPoints;
+        localDimsCoords[1] = d*M_numLocalPoints[partId];
         offsetIds[0] = 0;
-        offsetIds[1] = nValIds*M_pointsOffSet;
+        offsetIds[1] = nValIds*M_pointsOffSet[partId];
         offsetCoords[0] = 0;
-        offsetCoords[1] = d*M_pointsOffSet;
+        offsetCoords[1] = d*M_pointsOffSet[partId];
     }
     else
     {
@@ -918,9 +969,8 @@ void PartitionIO<MeshType>::readPoints()
     node_type coords( d );
     if (! M_transposeInFile)
     {
-        rank_type partId = M_meshPartIn->worldComm().localRank();
         size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
-        for (size_type j = 0; j < M_numLocalPoints; ++j)
+        for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
         {
             int id = M_uintBuffer[currentBufferIndexIds++];
             for( int c = 0; c < mesh_type::nRealDim; ++c )
@@ -943,6 +993,8 @@ void PartitionIO<MeshType>::readPoints()
 template<typename MeshType>
 void PartitionIO<MeshType>::readElements()
 {
+    rank_type partId = M_meshPartIn->worldComm().localRank();
+
     int nVal = 2 + element_type::numPoints;// id+marker+ points
 
     hsize_t globalDims[2];
@@ -955,9 +1007,9 @@ void PartitionIO<MeshType>::readElements()
     {
         CHECK( globalDims[0] == 1 && globalDims[1] == nVal*M_numGlobalElements ) << "BUG";
         localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalElements;
+        localDims[1] = nVal*M_numLocalElements[partId];
         offset[0] = 0;
-        offset[1] = nVal*M_elementsOffSet;
+        offset[1] = nVal*M_elementsOffSet[partId];
     }
     else
     {
@@ -969,18 +1021,18 @@ void PartitionIO<MeshType>::readElements()
     M_HDF5IO.closeTable ("elements");
 
     element_type e;
-    rank_type local_rank = M_meshPartIn->worldComm().localRank();
+    //rank_type local_rank = M_meshPartIn->worldComm().localRank();
     if (! M_transposeInFile)
     {
         size_type currentBufferIndex = 0;
-        for (size_type j = 0; j < M_numLocalElements; ++j)
+        for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
         {
             size_type id = M_uintBuffer[currentBufferIndex++];
             int marker   = M_uintBuffer[currentBufferIndex++];
             e.setId( id );
-            e.setProcessIdInPartition( local_rank );
+            e.setProcessIdInPartition( partId );
             e.setMarker( marker );
-            e.setProcessId( local_rank );// update correctlty for ghost in preparUpdateForUse()
+            e.setProcessId( partId );// update correctlty for ghost in preparUpdateForUse()
 
             for (size_type k = 0; k < element_type::numPoints; ++k)
             {
@@ -997,6 +1049,8 @@ void PartitionIO<MeshType>::readElements()
 template<typename MeshType>
 void PartitionIO<MeshType>::readGhostElements()
 {
+    rank_type partId = M_meshPartIn->worldComm().localRank();
+
     int nVal = 3; //(idGhost,pid,idActive)
 
     hsize_t globalDims[2];
@@ -1009,9 +1063,9 @@ void PartitionIO<MeshType>::readGhostElements()
     {
         CHECK( globalDims[0] == 1 && globalDims[1] == nVal*M_numGlobalGhostElements ) << "BUG";
         localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalGhostElements;
+        localDims[1] = nVal*M_numLocalGhostElements[partId];
         offset[0] = 0;
-        offset[1] = nVal*M_ghostElementsOffSet;
+        offset[1] = nVal*M_ghostElementsOffSet[partId];
     }
     else
     {
@@ -1025,16 +1079,16 @@ void PartitionIO<MeshType>::readGhostElements()
     if ( !M_transposeInFile )
     {
         size_type currentBufferIndex = 0;
-        for (size_type j = 0; j < M_numLocalGhostElements; ++j)
+        for (size_type j = 0; j < M_numLocalGhostElements[partId]; ++j)
         {
             size_type id = M_uintBuffer[currentBufferIndex++];
             int pid = M_uintBuffer[currentBufferIndex++];
             size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
 
-            auto it = M_meshPartIn->elementIterator( id, M_meshPartIn->worldComm().localRank() );
+            auto it = M_meshPartIn->elementIterator( id, partId );
             M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
             M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
-            M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( M_meshPartIn->worldComm().localRank() ) );
+            M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
         }
     }
 }
@@ -1132,6 +1186,8 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
 template<typename MeshType>
 void PartitionIO<MeshType>::readMarkedSubEntities()
 {
+    rank_type partId = M_meshPartIn->worldComm().localRank();
+
     int nValFace = 1 + face_type::numPoints;//(marker,ptId1,ptId2,...)
     int nValEdge = 1 + edge_type::numPoints;// (marker,ptId1,ptId2,...)
     int nValPoint = 1 + 1;// (marker,ptId)
@@ -1146,9 +1202,9 @@ void PartitionIO<MeshType>::readMarkedSubEntities()
     {
         CHECK( globalDims[0] == 1 && globalDims[1] == (nValFace*M_numGlobalMarkedFaces + nValEdge*M_numGlobalMarkedEdges + nValPoint*M_numGlobalMarkedPoints ) ) << "BUG";
         localDims[0] = 1;
-        localDims[1] = nValFace*M_numLocalMarkedFaces + nValEdge*M_numLocalMarkedEdges + nValPoint*M_numLocalMarkedPoints;
+        localDims[1] = nValFace*M_numLocalMarkedFaces[partId] + nValEdge*M_numLocalMarkedEdges[partId] + nValPoint*M_numLocalMarkedPoints[partId];
         offset[0] = 0;
-        offset[1] = nValFace*M_markedFacesOffSet + nValEdge*M_markedEdgesOffSet + nValPoint*M_markedPointsOffSet;
+        offset[1] = nValFace*M_markedFacesOffSet[partId] + nValEdge*M_markedEdgesOffSet[partId] + nValPoint*M_markedPointsOffSet[partId];
     }
     else
     {
@@ -1159,7 +1215,8 @@ void PartitionIO<MeshType>::readMarkedSubEntities()
 
     M_HDF5IO.closeTable("marked_subentities");
 
-    Feel::detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces,M_numLocalMarkedEdges,M_numLocalMarkedPoints ), *M_meshPartIn );
+    Feel::detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces[partId],M_numLocalMarkedEdges[partId],M_numLocalMarkedPoints[partId] ),
+                                               *M_meshPartIn );
 }
 
 
@@ -1168,9 +1225,9 @@ void PartitionIO<MeshType>::prepareUpdateForUse()
 {
     rank_type rank = M_meshPartIn->worldComm().localRank();
 
-    // put temporarly the points processId to numPart (which are not a valid part id) in ghost partition
+    // put temporarly the points processId to numPart(=number of process, which are not a valid part id) in ghost partition
     // and store neigboor part at each point id
-    rank_type ghostPointPidDetection = M_numParts;
+    rank_type ghostPointPidDetection = M_meshPartIn->worldComm().localSize();
     std::map<size_type,std::set<rank_type> > pointsToNeihborPart;
     auto ghostelt_it = M_meshPartIn->beginGhostElement();
     auto const ghostelt_en = M_meshPartIn->endGhostElement();
