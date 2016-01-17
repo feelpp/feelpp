@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_faces, T, dim_t )
     BOOST_CHECK_EQUAL( u.size(), nelements(faces(meshnd),true) );
     meshnd->updateFacesMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1))), nelements(faces(meshnd)) );
-    meshnd->updateFacesMarker3( u );
+    meshnd->updateFacesMarker3( v );
     BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3))), nelements(faces(meshnd)) );
     u.on( _range=elements(mesh), _expr=cst(2.));
     meshnd->updateFacesMarker2( u );
