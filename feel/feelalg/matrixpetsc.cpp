@@ -679,8 +679,9 @@ void MatrixPetsc<T>::close () const
     int ierr=0;
     PetscBool assembled = PETSC_FALSE;
     ierr = MatAssembled(M_mat,&assembled);
-        
-    if ( !assembled )
+    VLOG(1) << "Matrix assembled ? " << assembled;
+    //if ( !assembled )
+    if ( 1 )
     {
         tic();
         // BSK - 1/19/2004
