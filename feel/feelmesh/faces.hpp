@@ -877,17 +877,26 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker2( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::faces( evec.mesh() );
+        auto rangeElt = Feel::elements( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
-
-        auto update_marker2 = [&evec]( face_type& e )
+        size_type id = 0;
+        auto update_marker2 = [&evec,&id]( face_type& e )
             {
-                e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
+                auto dof_value = evec.localToGlobal( id, 0, 0 );
+                e.setMarker2( dof_value );
             };
         for ( ; it != en; ++it )
-            M_faces.modify( this->faceIterator( boost::unwrap_ref(*it).id() ),
-                            update_marker2 );
+        {
+            id = boost::unwrap_ref(*it).id();
+            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
+            
+            auto fid = evec.mesh()->subMeshToMesh( id );
+            auto it = this->faceIterator( fid );
+            
+            bool r = M_faces.modify( it, update_marker2 );
+            DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
+        }
     }
     
     /**
@@ -898,17 +907,26 @@ public:
     template<typename ElementVecType>
     void updateFacesMarker3( ElementVecType const& evec )
     {
-        auto rangeElt = Feel::faces( evec.mesh() );
+        auto rangeElt = Feel::elements( evec.mesh() );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
-
-        auto update_marker3 = [&evec]( face_type& e )
+        size_type id = 0;
+        auto update_marker = [&evec,&id]( face_type& e )
             {
-                e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) );
+                auto dof_value = evec.localToGlobal( id, 0, 0 );
+                e.setMarker3( dof_value );
             };
         for ( ; it != en; ++it )
-            M_faces.modify( this->faceIterator( boost::unwrap_ref(*it).id() ),
-                            update_marker3 );
+        {
+            id = boost::unwrap_ref(*it).id();
+            auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
+            
+            auto fid = evec.mesh()->subMeshToMesh( id );
+            auto it = this->faceIterator( fid );
+            
+            bool r = M_faces.modify( it, update_marker );
+            DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
+        }
     }
 
 

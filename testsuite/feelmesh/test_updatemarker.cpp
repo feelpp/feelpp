@@ -26,7 +26,7 @@
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 
 /** use Feel namespace */
@@ -56,40 +56,57 @@ makeAbout()
 
 
 
- FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
- BOOST_AUTO_TEST_SUITE( inner_suite )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+BOOST_AUTO_TEST_SUITE( updatemarker_suite )
 
+using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
 
-BOOST_AUTO_TEST_CASE( test_elements )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_elements, T, dim_t )
 {
-    BOOST_MESSAGE( "test_elements starts");
-    auto mesh2d = unitSquare();
-    auto mesh = createSubmesh( mesh2d, elements(mesh2d), EXTRACTION_KEEP_MESH_RELATION );
+    BOOST_MESSAGE( "test_elements starts for dim=" << T::value);
+    auto meshnd = unitHypercube<T::value>();
+    auto mesh = createSubmesh( meshnd, elements(meshnd), EXTRACTION_KEEP_MESH_RELATION );
     
     auto Xh = Pdh<0>(mesh);
     auto u = Xh->element(cst(1.));
+    auto v = Xh->element(cst(1.));
     mesh->updateMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), nelements(elements(mesh)) );
+    mesh->updateMarker3( v );
+    BOOST_CHECK_EQUAL( nelements(marked3elements(mesh,flag_type(1))), nelements(elements(mesh)) );
     u.on( _range=elements(mesh), _expr=cst(0.));
     mesh->updateMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), 0 );
-    BOOST_MESSAGE( "test_elements ends");
+    v.on( _range=elements(mesh), _expr=cst(4.));
+    mesh->updateMarker3( v );
+    BOOST_CHECK_EQUAL( nelements(marked3elements(mesh,flag_type(4))), nelements(elements(mesh)) );
+    BOOST_MESSAGE( "test_elements ends for dim=" << T::value);
 }
 
-BOOST_AUTO_TEST_CASE( test_faces )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_faces, T, dim_t )
 {
-    BOOST_MESSAGE( "test_faces starts");
-    auto mesh2d = unitSquare();
-    auto mesh = createSubmesh( mesh2d, faces(mesh2d) );
-    BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(faces(mesh2d)) );
+    BOOST_MESSAGE( "test_faces starts for dim=" << T::value);
+    auto meshnd = unitHypercube<T::value>();
+    auto mesh = createSubmesh( meshnd, faces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(faces(meshnd)) );
     auto Xh = Pdh<0>(mesh);
     auto u = Xh->element(cst(1.));
-    mesh->updateFacesMarker2( u );
-    BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), nelements(elements(mesh)) );
-    u.on( _range=elements(mesh), _expr=cst(0.));
-    mesh->updateFacesMarker2( u );
-    BOOST_CHECK_EQUAL( nelements(marked2elements(mesh,flag_type(1))), 0 );
-    BOOST_MESSAGE( "test_faces ends");
+    auto v = Xh->element(cst(3.));
+    BOOST_CHECK_EQUAL( u.size(), nelements(faces(meshnd),true) );
+    meshnd->updateFacesMarker2( u );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1))), nelements(faces(meshnd)) );
+    meshnd->updateFacesMarker3( u );
+    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3))), nelements(faces(meshnd)) );
+    u.on( _range=elements(mesh), _expr=cst(2.));
+    meshnd->updateFacesMarker2( u );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1))), 0 );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(2))), nelements(faces(meshnd)) );
+
+    v.on( _range=elements(mesh), _expr=cst(4.));
+    meshnd->updateFacesMarker3( v );
+    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3))), 0 );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(4))), nelements(faces(meshnd)) );
+    BOOST_MESSAGE( "test_faces ends for dim=" << T::value);
 }
 
 
