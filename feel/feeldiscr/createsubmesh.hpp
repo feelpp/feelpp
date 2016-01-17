@@ -896,7 +896,10 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
 
             auto const& oldElem = this->entityExtracted( oldEltId, rankRecv, mpl::int_<RangeType>() );
             CHECK( oldElem.id() == oldEltId ) << "invalid id";
-            CHECK( new_element_id.find(oldEltId)==new_element_id.end() ) << "this element is already present on the new mesh\n";
+            auto is_not_stored = new_element_id.find(oldEltId)==new_element_id.end();
+            LOG_IF( WARNING, is_not_stored == false )
+                << "this element is already present on the new mesh\n";
+            if ( is_not_stored == false ) continue;
 
             // create a new elem with partitioning infos
             CHECK( rankRecv != oldElem.pidInPartition() && proc_id == oldElem.pidInPartition() ) << "invalid rank id";
