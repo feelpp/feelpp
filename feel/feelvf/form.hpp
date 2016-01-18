@@ -98,8 +98,13 @@ struct compute_form1_return
     typedef vf::detail::LinearForm<test_type,vector_type,vector_type> type;
 #endif
 };
+
 /// \endcond
-//boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >
+
+/**
+ * @addtogroup FreeFunction
+ * @{
+ */
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_form1_return<Args>::type ), // 1. return type
     form1,                                       // 2. name of the function template
@@ -144,6 +149,9 @@ BOOST_PARAMETER_FUNCTION(
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
+/**
+ * @}
+ */
 
 /// \cond detail
 template<typename Args, typename T>
