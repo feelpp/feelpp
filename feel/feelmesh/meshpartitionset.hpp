@@ -66,10 +66,16 @@ public:
             auto elt_en = M_mesh->endElementWithProcessId( partId );
             for( ; elt_it != elt_en; ++ elt_it )
                 M_containerActiveElements[partId].push_back(boost::cref(*elt_it));
+            CHECK( M_containerActiveElements[partId].size() == M_statistic[partId][2] ) << "something is wrong in active element : "
+                                                                                   << M_containerActiveElements[partId].size() << " vs "
+                                                                                   << M_statistic[partId][2];
             auto ghostelt_it = M_mesh->beginGhostElement();
             auto ghostelt_en = M_mesh->endGhostElement();
             for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
                 M_containerGhostElements[partId].push_back(boost::cref(*ghostelt_it));
+            CHECK( M_containerGhostElements[partId].size() == (M_statistic[partId][1]-M_statistic[partId][2]) ) << "something is wrong in active element : "
+                                                                                                      << M_containerGhostElements[partId].size() << " vs "
+                                                                                                      << (M_statistic[partId][1]-M_statistic[partId][2]);
 
             auto pt_it = M_mesh->beginPoint();
             auto pt_en = M_mesh->endPoint();
@@ -86,11 +92,16 @@ public:
         M_localPartitionIds( localPartitionIds )
         {
             CHECK( M_localPartitionIds.size() <= M_numGlobalPartition  ) << "number of local partition (in process) can not be greater than number of partition in full mesh";
-            CHECK( false ) << "TODO";
+            if ( M_localPartitionIds.size() == M_numGlobalPartition )
+                this->buildAllPartInOnProcess();
+            else
+                CHECK( false ) << "TODO";
         }
 
     MeshPartitionSet( MeshPartitionSet const& ) = default;
     ~MeshPartitionSet() {}
+
+    mesh_ptrtype const& mesh() const { return M_mesh; }
 
     rank_type numGlobalPartition() const { return M_numGlobalPartition; }
     rank_type numLocalPartition() const { return M_localPartitionIds.size(); }
@@ -122,6 +133,9 @@ public:
     face_const_iterator endMarkedFace( rank_type p ) const { this->checkHasLocalPartition(p); return M_containerMarkedFaces.find(p)->second.end(); }
 
 private:
+
+    void buildAllPartInOnProcess();
+
     template<typename MT>
     void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
         {
@@ -194,6 +208,133 @@ private :
     std::map<rank_type,edge_container_type> M_containerMarkedEdges;
     std::map<rank_type,point_container_type> M_containerMarkedPoints;
 };
+
+
+template<typename MeshType>
+void
+MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
+{
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for( ; point_it != point_en; ++point_it )
+        M_mesh->points().modify( point_it, Feel::detail::UpdateProcessId( invalid_rank_type_value ) );
+
+    rank_type interprocessPointPidDetection = this->numGlobalPartition();
+
+    std::map<size_type,std::set<rank_type> > mapPointInterProcess;
+
+    // update active element containers + detect interprocess points
+    for ( rank_type partId : M_localPartitionIds )
+    {
+        auto elt_it = M_mesh->beginElementWithProcessId( partId );
+        auto elt_en = M_mesh->endElementWithProcessId( partId );
+        for ( ; elt_it != elt_en ; ++elt_it )
+        {
+            M_containerActiveElements[partId].push_back(boost::cref(*elt_it));
+
+            for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+            {
+                auto const& thepoint = elt_it->point( vLocId );
+                size_type ptPid = thepoint.processId();
+                if ( ptPid == invalid_rank_type_value ) // first time that we see this point
+                    M_mesh->points().modify( M_mesh->pointIterator( thepoint.id() ), Feel::detail::UpdateProcessId( partId ) );
+                else if ( ptPid != partId ) // we found an interprocess point
+                {
+                    size_type ptId = thepoint.id();
+                    //mapPointInterProcess[ptId].insert( ptPid );
+                    mapPointInterProcess[ptId].insert( partId );
+                    if ( ptPid != interprocessPointPidDetection ) // special treatment for the first interprocess detection
+                    {
+                        mapPointInterProcess[ptId].insert( ptPid );
+                        //mapPointInterProcess[ptId].insert( partId );//maybe useless already define in processId()
+                        M_mesh->points().modify( M_mesh->pointIterator( ptId ), Feel::detail::UpdateProcessId( interprocessPointPidDetection ) );
+                    }
+                }
+            }
+        }
+    }
+
+#if 0
+    for ( rank_type partId : M_localPartitionIds )
+        std::cout << "nActiveElement in part " << partId << " : " << M_containerActiveElements[partId].size() << "\n";
+#endif
+    // update ghost element containers
+    auto allelt_it = M_mesh->beginElement();
+    auto allelt_en = M_mesh->endElement();
+    for ( ; allelt_it != allelt_en ; ++allelt_it )
+    {
+        rank_type eltPid = allelt_it->processId();
+        std::set<rank_type> neighborPids;
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        {
+            auto const& thepoint = allelt_it->point( vLocId );
+            size_type ptPid = thepoint.processId();
+            if ( ptPid != interprocessPointPidDetection )
+                continue;
+
+            auto pidsTouchPoint = mapPointInterProcess.find( thepoint.id() )->second;
+            neighborPids.insert(pidsTouchPoint.begin(), pidsTouchPoint.end() );
+        }
+        for ( rank_type neighborPid : neighborPids )
+        {
+            if ( neighborPid == eltPid ) // not a gost elt
+                continue;
+            M_containerGhostElements[neighborPid].push_back(boost::cref(*allelt_it));
+        }
+    }
+#if 0
+    for ( rank_type partId : M_localPartitionIds )
+        std::cout << "nGhostElement in part " << partId << " : " << M_containerGhostElements[partId].size() << "\n";
+#endif
+    // update point containers
+    for ( rank_type partId : M_localPartitionIds )
+    {
+        // store point ids in ghost elements
+        std::set<size_type> pointIdsInGhost;
+        auto ghostelt_it = M_containerGhostElements[partId].begin();
+        auto ghostelt_en = M_containerGhostElements[partId].end();
+        for ( ; ghostelt_it != ghostelt_en ; ++ghostelt_it )
+        {
+            auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
+            for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+            {
+                pointIdsInGhost.insert( theghostelt.point(vLocId).id() );
+            }
+        }
+        //
+        auto pt_it = M_mesh->beginPointWithProcessId(partId);
+        auto pt_en = M_mesh->endPointWithProcessId(partId);
+        for ( ; pt_it != pt_en ; ++pt_it )
+        {
+            M_containerPoints[partId].push_back( boost::cref(*pt_it) );
+        }
+        for ( size_type ptId : pointIdsInGhost )
+        {
+            M_containerPoints[partId].push_back( boost::cref(*M_mesh->pointIterator( ptId ) ) );
+        }
+    }
+
+#if 0
+    for ( rank_type partId : M_localPartitionIds )
+        std::cout << "nPoints in part " << partId << " : " << M_containerPoints[partId].size() << "\n";
+#endif
+
+#if 1
+    for ( rank_type p=0;p<M_numGlobalPartition;++p )
+    {
+        M_statistic[p].resize( 6 );
+        M_statistic[p][0] = M_containerPoints[p].size();
+        M_statistic[p][1] = M_containerActiveElements[p].size() + M_containerGhostElements[p].size();
+        M_statistic[p][2] = M_containerActiveElements[p].size();
+        M_statistic[p][3] = M_containerMarkedFaces[p].size();
+        M_statistic[p][4] = M_containerMarkedEdges[p].size();
+        M_statistic[p][5] = M_containerMarkedPoints[p].size();
+    }
+
+#endif
+
+}
+
 
 } // namespace Feel
 
