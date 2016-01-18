@@ -29,6 +29,7 @@
 #ifndef Backend_H
 #define Backend_H 1
 
+#include <functional>
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -54,6 +55,9 @@
 
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
+
+
+
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
 //#include <boost/fusion/container.hpp>
@@ -122,6 +126,14 @@ auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
+/**
+ * default pre/post solve function, a no-op
+ */
+inline void default_prepost_solve( vector_ptrtype rhs, vector_ptrtype sol )
+{
+    
+}
+
 template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
@@ -176,6 +188,8 @@ public:
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
+    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     //@}
 
     /** @name Constructors, destructor
@@ -774,6 +788,12 @@ public:
             LOG(WARNING) << "Unknown backend, setting up for 'petsc'";
             return "petsc";
         }
+
+    /**
+     * @return the current datamap of the backend
+     */
+    datamap_ptrtype dataMap() const { return M_datamap; }
+    
     //@}
 
     /** @name  Mutators
@@ -875,7 +895,13 @@ public:
     void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
     void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
 
-
+    /**
+     * @brief set the current datamap of the backend
+     * this is used for example in the pre/post solve functions 
+     * to pass on the parallel data layout
+     */
+    void setDataMap( datamap_ptrtype dm ) { M_datamap = dm; }
+    
     //@}
 
     /** @name  Methods
@@ -986,6 +1012,8 @@ public:
                                        ( transpose,( bool ), false )
                                        ( close,( bool ), true )
                                        ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
@@ -1009,8 +1037,8 @@ public:
         this->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->shared_from_this(),null_space) );
-        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->shared_from_this(),near_null_space) );
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1037,8 +1065,12 @@ public:
             matrix->printMatlab( M_export+"_A.m" );
             rhs->printMatlab( M_export+"_b.m" );
         }
-
-        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
+        // set pre/post solve functions
+        M_post_solve = post;
+        M_pre_solve = pre;
+        auto dm = Feel::detail::datamap( solution );
+        this->setDataMap( dm );
+        vector_ptrtype _sol( this->newVector( dm ) );
         // initialize
         *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
@@ -1130,6 +1162,8 @@ public:
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( reuse_jac,( bool ), M_reuse_jac )
                                        ( transpose,( bool ), false )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
@@ -1147,16 +1181,22 @@ public:
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
-        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
+
+        // set pre/post solve functions
+        M_post_solve = post;
+        M_pre_solve = pre;
+        auto dm = Feel::detail::datamap( solution );
+        this->setDataMap( dm );
+        vector_ptrtype _sol( this->newVector( dm  ) );
         // initialize
         *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
-
+        
         // this is done with nonlinerarsolver
         if ( !residual )
         {
-            residual = this->newVector( ( Feel::detail::datamap( solution ) ) );
+            residual = this->newVector( dm );
             //this->nlSolver()->residual( _sol, residual );
         }
 
@@ -1168,8 +1208,8 @@ public:
             this->nlSolver()->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
-        boost::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->shared_from_this(),null_space) );
-        boost::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->shared_from_this(),near_null_space) );
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
         if ( mynullspace->size() > 0 )
         {
             this->attachNullSpace( mynullspace );
@@ -1277,6 +1317,27 @@ public:
         {
             M_deleteObservers();
         }
+
+    /**
+     * \return the pre solve function
+     */
+    pre_solve_type preSolve() { return M_pre_solve; }
+
+    /**
+     * call the pre solve function with \p x as the rhs and \p y as the solution
+     */
+    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+
+    /**
+     * \return the post solve function
+     */
+    post_solve_type postSolve() { return M_post_solve; }
+
+    /**
+     * call the post solve function with \p x as the rhs and \p y as the solution
+     */
+    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
+    
     //@}
 
 
@@ -1340,7 +1401,9 @@ private:
     bool M_showKSPMonitor;
     bool M_showKSPConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
-
+    pre_solve_type M_pre_solve;
+    post_solve_type M_post_solve;
+    datamap_ptrtype M_datamap;
     boost::signals2::signal<void()> M_deleteObservers;
 };
 

@@ -31,14 +31,18 @@ namespace Feel
 template boost::shared_ptr<Mesh<Simplex<3,1>>>
 straightenMesh<Mesh<Simplex<3,1>>>( boost::shared_ptr<Mesh<Simplex<3,1>>>,
                                     WorldComm const& , bool, bool  );
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template boost::shared_ptr<Mesh<Simplex<3,2>>>
-straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>,
-                                    WorldComm const& , bool, bool  );
-#endif
 template boost::shared_ptr<Mesh<Hypercube<3,1>>>
 straightenMesh<Mesh<Hypercube<3,1>>>( boost::shared_ptr<Mesh<Hypercube<3,1>>>,
                                     WorldComm const& , bool, bool  );
 
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
+template boost::shared_ptr<Mesh<Simplex<3,2>>>
+straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>,
+                                    WorldComm const& , bool, bool  );
+template boost::shared_ptr<Mesh<Hypercube<3,2>>>
+straightenMesh<Mesh<Hypercube<3,2>>>( boost::shared_ptr<Mesh<Hypercube<3,2>>>,
+                                      WorldComm const& , bool, bool  );
+
+#endif
 
 }
