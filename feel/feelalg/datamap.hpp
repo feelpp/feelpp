@@ -627,5 +627,10 @@ private:
 
 };
 
+using datamap_t = DataMap;
+
+using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptr_t = datamap_ptrtype;
+
 } // Feel
 #endif /* __DataMap_H */

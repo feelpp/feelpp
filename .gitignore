@@ -106,3 +106,7 @@ build/
 /research/feelpp-book/
 /research/tr
 /testsuite/feelcore/t
+/cmake.configure
+/research/chorus/
+/research/solodem
+ginac.pc

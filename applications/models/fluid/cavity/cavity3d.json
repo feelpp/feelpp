@@ -1,0 +1,51 @@
+{
+    "Name": "Fluid Mechanics",
+    "ShortName":"Fluid",
+    "Model":"Navier-Stokes",
+    "Parameters":
+    {
+        "ubar":"0.2"
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1.0",
+            "mu":"0.01"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "lid":
+                {
+                    "expr":"{ 1,0,0}:x:y:z"
+                },
+                "wall":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","pid"],
+        "Measures":
+        {
+            "Forces":"wall",
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0.5,0.5,0.5}",
+                    "fields":"pressure"
+                }
+            }
+        }
+    }
+
+}

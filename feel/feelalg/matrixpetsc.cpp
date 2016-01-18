@@ -676,19 +676,29 @@ template <typename T>
 inline
 void MatrixPetsc<T>::close () const
 {
-    // BSK - 1/19/2004
-    // strictly this check should be OK, but it seems to
-    // fail on matrix-free matrices.  Do they falsely
-    // state they are assembled?  Check with the developers...
-    //   if (this->closed())
-    //     return;
-
     int ierr=0;
-    CHECK( M_mat ) << "invalid matrix";
-    ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
-    CHKERRABORT( this->comm(),ierr );
+    PetscBool assembled = PETSC_FALSE;
+    ierr = MatAssembled(M_mat,&assembled);
+    VLOG(1) << "Matrix assembled ? " << assembled;
+    //if ( !assembled )
+    if ( 1 )
+    {
+        tic();
+        // BSK - 1/19/2004
+        // strictly this check should be OK, but it seems to
+        // fail on matrix-free matrices.  Do they falsely
+        // state they are assembled?  Check with the developers...
+        //   if (this->closed())
+        //     return;
+
+
+        CHECK( M_mat ) << "invalid matrix";
+        ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
+        CHKERRABORT( this->comm(),ierr );
+        toc("MatrixPETSc::close",FLAGS_v>0);
+    }
 }
 
 

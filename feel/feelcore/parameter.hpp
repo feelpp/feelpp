@@ -148,6 +148,9 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( files_path )
     BOOST_PARAMETER_NAME( depends )
     BOOST_PARAMETER_NAME( optimize3d_netgen )
+    BOOST_PARAMETER_NAME( pre )
+    BOOST_PARAMETER_NAME( post )
+
 // parameter for adapt
     BOOST_PARAMETER_NAME( model )
     BOOST_PARAMETER_NAME( geotracking )
@@ -233,6 +236,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( sampling )
     BOOST_PARAMETER_NAME( context )
     BOOST_PARAMETER_NAME( mpi_communications )
+    BOOST_PARAMETER_NAME( properties_space )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )

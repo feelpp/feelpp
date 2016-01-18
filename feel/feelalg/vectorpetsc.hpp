@@ -822,6 +822,21 @@ private :
 
 };
 
+/**
+ * @addtogroup FreeFunctions 
+ * @{
+ */
+
+/**
+ * @brief create a shared pointer VectorPetsc from PETSc Vec \p v
+ */
+vector_uptrtype vec( Vec v, datamap_ptrtype d );
+
+/**
+ * @}
+ */
+
+
 } // Feel
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */
