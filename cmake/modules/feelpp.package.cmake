@@ -58,6 +58,7 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
+  "/.git;"
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
   "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
