@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 17 May 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -35,7 +35,7 @@ extern "C" {
 namespace Feel {
 
 template<typename MeshType>
-void 
+void
 PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 {
     LOG(INFO) << "PartitionerMetis::partitionImpl starts...";
@@ -121,8 +121,10 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                         num_neighbors++;
                     }
                 }
+#if 0
                 std::cout << "element id " << elt.id() << " gid: " << gid << " w: " << vwgt[gid] 
                           << " neigh: " << num_neighbors << std::endl;
+#endif
                 csr_graph.prepareNumberNonZeros(gid, num_neighbors);
 #ifndef NDEBUG
                 graph_size += num_neighbors;
@@ -181,9 +183,11 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
     // id for each element, but in terms of the contiguous indexing we defined
     // above
     LOG(INFO) << "PartitionerMetis::partitionImpl nelements : " << nelements(elements(mesh));
+#if 0
     std::cout << "dist nElt " << std::distance(mesh->beginElement(), mesh->endElement() ) << "\n";
     std::cout << "call nElt " << nelements(elements(mesh)) << "\n";
-    //for( auto it = mesh->beginElement(), en = mesh->endElement(); it != en; ++it )
+#endif
+
     for (auto const& pairElt : global_index_map )
     {
         dof_id_type eltId = pairElt.first;
@@ -194,37 +198,11 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
     }
 #if 0
-    for( auto & e : allelements(mesh) )
-    {
-        dof_id_type gid = global_index_map[e.id()];
-        CHECK( gid < part.size() ) << "Invalid gid " << gid << " greater or equal than partition size " << part.size();
-        rank_type pid = static_cast<rank_type>(part[gid]);
-        e.setProcessId( pid );
-
-#if 0
-        dof_id_type gid = global_index_map[it->id()];
-        CHECK( gid < part.size() ) << "Invalid gid " << gid << " greater or equal than partition size " << part.size();
-        rank_type pid = static_cast<rank_type>(part[gid]);
-#if 0
-        mesh->elements().modify( it,
-                                 [&pid]( element_type& e ) 
-                                 { 
-                                     e.setProcessId( pid ); 
-                                     std::cout << "element id " << e.id() << " process id " << e.processId() << "\n"; 
-                                 });
-#else
-        std::cout << "element id " << it->id() << " process id " << pid << "\n"; 
-        auto e = *it;
-        e.setProcessId( pid );
-        mesh->elements().replace( it, e );
-#endif
-#endif
-    }
-#endif
     for( auto const& e : allelements(mesh) )
     {
         std::cout << "2. element id " << e.id() << " process id " << e.processId() << "\n"; 
     }
+#endif
 
     auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
     LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
