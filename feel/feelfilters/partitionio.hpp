@@ -102,7 +102,7 @@ namespace pt =  boost::property_tree;
          - marker
          - points ids
 
- * @author Christophe Prud'homme (adaptation from LifeV to Feel++)
+ * @author Christophe Prud'homme
  * @author Vincent Chabannes
  * @see
  */
@@ -127,6 +127,8 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type meshparts_type;
     typedef boost::shared_ptr<meshparts_type> meshparts_ptrtype;
+    typedef MeshPartitionSet<mesh_type> mesh_partitionset_type;
+    typedef std::shared_ptr<mesh_partitionset_type> mesh_partitionset_ptrtype;
 
     using node_type = typename mesh_type::node_type;
     using point_type = typename mesh_type::point_type;
@@ -185,6 +187,7 @@ public:
      *        writing, so the mesh parts can be cleared from memory
      */
     void write ( mesh_ptrtype mesh);
+    void write ( mesh_partitionset_ptrtype mesh);
     //! Read method
     /*!
      * Call this method to read from the HDF5 file the mesh part associated
@@ -228,10 +231,11 @@ private:
     // Methods for reading
     void readStats();
     void readPoints();
-    void readElements();
-    void readGhostElements();
+    void readElements( std::map<rank_type,std::vector<size_type>> & mapGhostHdf5IdToFeelId );
+    void readGhostElements( std::map<rank_type,std::vector<size_type>> const& mapGhostHdf5IdToFeelId );
     void readMarkedSubEntities();
-    void prepareUpdateForUse();
+    void prepareUpdateForUseStep1();
+    void prepareUpdateForUseStep2();
 
     //@}
 
@@ -244,11 +248,9 @@ private:
     bool M_transposeInFile;
     meshparts_ptrtype M_meshPartsOut;
     mesh_ptrtype M_meshPartIn;
-    std::shared_ptr<MeshPartitionSet<mesh_type>> M_meshPartitionSet;
+    mesh_partitionset_ptrtype M_meshPartitionSet;
 
     // Mesh geometry
-    size_type M_numParts;
-
     size_type M_numGlobalPoints,M_numGlobalElements,M_numGlobalGhostElements;
     size_type M_numGlobalMarkedFaces,M_numGlobalMarkedEdges,M_numGlobalMarkedPoints;
     std::map<rank_type,size_type> M_numLocalPoints, M_pointsOffSet;
@@ -289,28 +291,29 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 template<typename MeshType>
 void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 {
+    //M_meshPartitionSet = std::make_shared<mesh_partitionset_type>( meshParts );
+    this->write( std::make_shared<mesh_partitionset_type>( meshParts ) );
+}
+template<typename MeshType>
+void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype meshpartset )
+{
+    M_meshPartitionSet = meshpartset;
+    M_meshPartsOut = M_meshPartitionSet->mesh();
+
     if ( Environment::isMasterRank() )
-        writeMetaData( meshParts );
+        writeMetaData( M_meshPartsOut );
 
     //std::string h5filename = fs::path(M_filename).stem().string() + ".h5";
     //M_h5_filename = (fs::path(M_filename).parent_path() / fs::path( h5filename )).string();
 
     LOG(INFO) << "writing mesh in HDF5 format in " << M_h5_filename;
-    M_meshPartsOut = meshParts;
-    // 1 partition per process
-    // in the future we have to handle many partitions in one process
-    M_numParts = 1;//M_meshParts->size();
-    //M_numParts = (numPart > 0 ) ? numPart : M_meshPartsOut->worldComm().localSize();
-
-    //M_meshPartitionSet.reset( new MeshPartitionSet<mesh_type>>( M_meshPartsOut ) );
-    M_meshPartitionSet = std::make_shared<MeshPartitionSet<mesh_type>>(M_meshPartsOut );
-
 
     tic();
-    M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), false);
+    M_HDF5IO.openFile (M_h5_filename, M_meshPartsOut->worldComm(), false);
     tic();
     writeStats();
     toc("PartitionIO writing stats",FLAGS_v>0);
+
     tic();
     writePoints();
     toc("PartitionIO writing points",FLAGS_v>0);
@@ -346,11 +349,9 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 {
     readMetaData( meshParts );
     M_meshPartIn = meshParts;
-    M_numParts = meshParts->worldComm().localSize();
 
     tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
-
     tic();
     readStats();
     toc("PartitionIO reading stats",FLAGS_v>0);
@@ -358,10 +359,11 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
     readPoints();
     toc("PartitionIO reading points",FLAGS_v>0);
     tic();
-    readElements();
+    std::map<rank_type,std::vector<size_type>> mapGhostHdf5IdToFeelId;
+    readElements( mapGhostHdf5IdToFeelId );
     toc("PartitionIO reading elements",FLAGS_v>0);
     tic();
-    readGhostElements();
+    readGhostElements( mapGhostHdf5IdToFeelId );
     toc("PartitionIO reading ghost_elements",FLAGS_v>0);
     tic();
     readMarkedSubEntities();
@@ -370,9 +372,11 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
     M_HDF5IO.closeFile();
     toc("PartitionIO reading hdf5 file",FLAGS_v>0);
 
-    prepareUpdateForUse();
+    prepareUpdateForUseStep1();
+    prepareUpdateForUseStep2();
 
     tic();
+    M_meshPartIn->components().reset();
     M_meshPartIn->components().set( MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_CHECK );
     M_meshPartIn->updateForUse();
     toc("PartitionIO mesh update for use",FLAGS_v>0);
@@ -410,7 +414,6 @@ void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
 template<typename MeshType>
 void PartitionIO<MeshType>::writeStats()
 {
-    M_numParts = M_meshPartsOut->worldComm().localSize();
     rank_type numGlobalPartition = M_meshPartitionSet->numGlobalPartition();
     // Write mesh partition stats (N = number of parts)
     // This is an N x 19 table of int
@@ -456,17 +459,17 @@ void PartitionIO<MeshType>::writeStats()
 
     for ( rank_type p=0 ; p< numGlobalPartition ; ++p )
     {
-        size_type nPtAll = M_meshPartsOut->statNumPointsAll(p);
+        size_type nPtAll = M_meshPartitionSet->statNumPointsAll(p);
         M_numGlobalPoints += nPtAll;
-        size_type nEltAll = M_meshPartsOut->statNumElementsAll(p);
+        size_type nEltAll = M_meshPartitionSet->statNumElementsAll(p);
         M_numGlobalElements += nEltAll;
-        size_type nGhostEltAll = M_meshPartsOut->statNumElementsAll(p) - M_meshPartsOut->statNumElementsActive(p);
+        size_type nGhostEltAll = M_meshPartitionSet->statNumElementsAll(p) - M_meshPartitionSet->statNumElementsActive(p);
         M_numGlobalGhostElements += nGhostEltAll;
-        size_type nMarkedFacesAll = M_meshPartsOut->statNumFacesMarkedAll(p);
+        size_type nMarkedFacesAll = M_meshPartitionSet->statNumFacesMarkedAll(p);
         M_numGlobalMarkedFaces += nMarkedFacesAll;
-        size_type nMarkedEdgesAll = M_meshPartsOut->statNumEdgesMarkedAll(p);
+        size_type nMarkedEdgesAll = M_meshPartitionSet->statNumEdgesMarkedAll(p);
         M_numGlobalMarkedEdges += nMarkedEdgesAll;
-        size_type nMarkedPointsAll = M_meshPartsOut->statNumPointsMarkedAll(p);
+        size_type nMarkedPointsAll = M_meshPartitionSet->statNumPointsMarkedAll(p);
         M_numGlobalMarkedPoints += nMarkedPointsAll;
 
         for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
@@ -508,6 +511,11 @@ void PartitionIO<MeshType>::writeStats()
         M_uintBuffer[16] = M_numGlobalMarkedPoints;
         M_uintBuffer[17] = M_numLocalMarkedPoints[partId];
         M_uintBuffer[18] = M_markedPointsOffSet[partId];
+
+        std::ostringstream ostr;ostr << "write stat :";
+        for (int k=0;k<M_uintBuffer.size();++k)
+            ostr << " " << M_uintBuffer[k];
+        VLOG(1) << ostr.str();
 
         hsize_t currentOffset[2];
         if ( !M_transposeInFile )
@@ -604,7 +612,8 @@ void PartitionIO<MeshType>::writePoints()
 template<typename MeshType>
 void PartitionIO<MeshType>::writeElements()
 {
-    int nVal = 2 + element_type::numPoints;// id+marker+ points
+    //int nVal = 2 + element_type::numPoints;// id+marker+ points
+    int nVal = 1 + element_type::numPoints;// marker+ points
 
     hsize_t globalDims[2];
     globalDims[0] = 1;
@@ -641,7 +650,7 @@ void PartitionIO<MeshType>::writeElements()
         for( ; elt_it != elt_en; ++ elt_it )
         {
             auto const& theelt = boost::unwrap_ref(*elt_it);
-            M_uintBuffer[currentBufferIndex++] = theelt.id();
+            //M_uintBuffer[currentBufferIndex++] = theelt.id();
             M_uintBuffer[currentBufferIndex++] = theelt.marker().value();
             for (size_type k = 0; k < element_type::numPoints; ++k)
             {
@@ -653,7 +662,7 @@ void PartitionIO<MeshType>::writeElements()
         for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
         {
             auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
-            M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+            //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
             M_uintBuffer[currentBufferIndex++] = theghostelt.marker().value();
             for (size_type k = 0; k < element_type::numPoints; ++k)
             {
@@ -672,7 +681,8 @@ void PartitionIO<MeshType>::writeGhostElements()
 {
     hsize_t globalDims[2];
 
-    int nVal = 3;//(idGhost,pid,idActive)
+    //int nVal = 3;//(idGhost,pid,idActive)
+    int nVal = 1; // pid
     globalDims[0] = 1;
     globalDims[1] = nVal*M_numGlobalGhostElements;
     if ( M_transposeInFile )
@@ -706,9 +716,8 @@ void PartitionIO<MeshType>::writeGhostElements()
         for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
         {
             auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
-            M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+            //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
             M_uintBuffer[currentBufferIndex++] = theghostelt.processId();
-            M_uintBuffer[currentBufferIndex++] = theghostelt.idInOthersPartitions( theghostelt.processId() );
         }
         M_HDF5IO.write ("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
     }
@@ -846,10 +855,12 @@ void PartitionIO<MeshType>::writeMarkedSubEntities()
             offset[1] = 1;
         }
         M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
+        if ( !M_uintBuffer.empty() )
+        {
+            Feel::detail::updateMarkedSubEntitiesBuffer( *M_meshPartitionSet, partId, M_uintBuffer );
 
-        Feel::detail::updateMarkedSubEntitiesBuffer( *M_meshPartitionSet, partId, M_uintBuffer );
-
-        M_HDF5IO.write ("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+            M_HDF5IO.write ("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+        }
     }
 
     M_HDF5IO.closeTable ("marked_subentities");
@@ -932,70 +943,77 @@ void PartitionIO<MeshType>::readPoints()
 
     rank_type partId = M_meshPartIn->worldComm().localRank();
 
-
     M_HDF5IO.openTable ("point_ids", globalDimsIds);
     LOG(INFO) << "loaded points_ids:" << globalDimsIds[0] << "x" << globalDimsIds[1];
     M_HDF5IO.openTable ("point_coords", globalDimsCoords);
     LOG(INFO) << "loaded points_coords:" << globalDimsCoords[0] << "x" << globalDimsCoords[1];
     int d = mesh_type::nRealDim;//M_meshPartIn->nRealDim;
     int nValIds = 1;
-    if (! M_transposeInFile)
-    {
-        CHECK( globalDimsIds[0] == 1 && globalDimsIds[1] == nValIds*M_numGlobalPoints ) << "BUG";
-        CHECK( globalDimsCoords[0] == 1 && globalDimsCoords[1] == d*M_numGlobalPoints ) << "BUG";
 
-        localDimsIds[0] = 1;
-        localDimsIds[1] = nValIds*M_numLocalPoints[partId];
-        localDimsCoords[0] = 1;
-        localDimsCoords[1] = d*M_numLocalPoints[partId];
-        offsetIds[0] = 0;
-        offsetIds[1] = nValIds*M_pointsOffSet[partId];
-        offsetCoords[0] = 0;
-        offsetCoords[1] = d*M_pointsOffSet[partId];
-    }
-    else
+    int indexTable0 = 0, indexTable1 = 1;
+    if ( M_transposeInFile )
     {
-        CHECK( false ) << "TODO";
+        indexTable0 = 1;
+        indexTable1 = 0;
     }
 
-    M_uintBuffer.resize( localDimsIds[0]*localDimsIds[1], 0 );
-    M_realBuffer.resize( localDimsCoords[0]*localDimsCoords[1], 0 );
-    M_HDF5IO.read("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
-    M_HDF5IO.read("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
+    CHECK( globalDimsIds[indexTable0] == 1 && globalDimsIds[indexTable1] == nValIds*M_numGlobalPoints ) << "BUG";
+    CHECK( globalDimsCoords[indexTable0] == 1 && globalDimsCoords[indexTable1] == d*M_numGlobalPoints ) << "BUG";
+    if ( globalDimsIds[indexTable1] > 0 && globalDimsCoords[indexTable0] > 0 )
+    {
+        localDimsIds[indexTable0] = 1;
+        localDimsIds[indexTable1] = nValIds*M_numLocalPoints[partId];
+        localDimsCoords[indexTable0] = 1;
+        localDimsCoords[indexTable1] = d*M_numLocalPoints[partId];
+        offsetIds[indexTable0] = 0;
+        offsetIds[indexTable1] = nValIds*M_pointsOffSet[partId];
+        offsetCoords[indexTable0] = 0;
+        offsetCoords[indexTable1] = d*M_pointsOffSet[partId];
 
+        M_uintBuffer.resize( localDimsIds[indexTable0]*localDimsIds[indexTable1], 0 );
+        M_realBuffer.resize( localDimsCoords[indexTable0]*localDimsCoords[indexTable1], 0 );
+
+        if ( !M_uintBuffer.empty() && !M_realBuffer.empty() )
+        {
+            M_HDF5IO.read("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
+            M_HDF5IO.read("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
+        }
+        else
+        {
+            size_type uselessValueIds=0;
+            double uselessValueCoords=0;
+            M_HDF5IO.read("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &uselessValueIds);
+            M_HDF5IO.read("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &uselessValueCoords);
+        }
+    }
     M_HDF5IO.closeTable("point_ids");
     M_HDF5IO.closeTable("point_coords");
 
     node_type coords( d );
-    if (! M_transposeInFile)
+    size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
+    for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
     {
-        size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
-        for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
+        int id = M_uintBuffer[currentBufferIndexIds++];
+        for( int c = 0; c < mesh_type::nRealDim; ++c )
         {
-            int id = M_uintBuffer[currentBufferIndexIds++];
-            for( int c = 0; c < mesh_type::nRealDim; ++c )
-            {
-                coords[c] = M_realBuffer[currentBufferIndexCoords++];
-            }
-
-            point_type pt( id, coords, false/*onbdy*/ );
-            pt.setProcessIdInPartition( partId );
-            M_meshPartIn->addPoint( pt );
+            coords[c] = M_realBuffer[currentBufferIndexCoords++];
         }
-    }
-    else
-    {
+
+        point_type pt( id, coords, false/*onbdy*/ );
+        pt.setProcessIdInPartition( partId );
+        M_meshPartIn->addPoint( pt );
     }
     M_realBuffer.resize(0);
 
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::readElements()
+void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_type>> & mapGhostHdf5IdToFeelId )
 {
     rank_type partId = M_meshPartIn->worldComm().localRank();
 
-    int nVal = 2 + element_type::numPoints;// id+marker+ points
+    //int nVal = 2 + element_type::numPoints;// id+marker+ points
+    int nVal = 1 + element_type::numPoints;// marker+ points
 
     hsize_t globalDims[2];
     hsize_t localDims[2];
@@ -1003,55 +1021,72 @@ void PartitionIO<MeshType>::readElements()
 
     M_HDF5IO.openTable ("elements", globalDims);
     LOG(INFO) << "loaded elements:" << globalDims[0] << "x" << globalDims[1];
-    if (! M_transposeInFile)
+
+    int indexTable0 = 0, indexTable1 = 1;
+    if ( M_transposeInFile )
     {
-        CHECK( globalDims[0] == 1 && globalDims[1] == nVal*M_numGlobalElements ) << "BUG";
-        localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalElements[partId];
-        offset[0] = 0;
-        offset[1] = nVal*M_elementsOffSet[partId];
-    }
-    else
-    {
+        indexTable0 = 1;
+        indexTable1 = 0;
     }
 
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-    M_HDF5IO.read("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+    CHECK( globalDims[indexTable0] == 1 && globalDims[indexTable1] == nVal*M_numGlobalElements ) << "BUG";
+    if ( globalDims[indexTable1] > 0 )
+    {
+        localDims[indexTable0] = 1;
+        localDims[indexTable1] = nVal*M_numLocalElements[partId];
+        offset[indexTable0] = 0;
+        offset[indexTable1] = nVal*M_elementsOffSet[partId];
+
+        M_uintBuffer.resize( localDims[indexTable0]*localDims[indexTable1], 0 );
+        if ( !M_uintBuffer.empty() )
+            M_HDF5IO.read("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+        else
+        {
+            size_type uselessValue = 0;
+            M_HDF5IO.read("elements", H5T_NATIVE_UINT, localDims, offset, &uselessValue);
+        }
+    }
 
     M_HDF5IO.closeTable ("elements");
 
-    element_type e;
-    //rank_type local_rank = M_meshPartIn->worldComm().localRank();
-    if (! M_transposeInFile)
-    {
-        size_type currentBufferIndex = 0;
-        for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
-        {
-            size_type id = M_uintBuffer[currentBufferIndex++];
-            int marker   = M_uintBuffer[currentBufferIndex++];
-            e.setId( id );
-            e.setProcessIdInPartition( partId );
-            e.setMarker( marker );
-            e.setProcessId( partId );// update correctlty for ghost in preparUpdateForUse()
 
-            for (size_type k = 0; k < element_type::numPoints; ++k)
-            {
-                e.setPoint( k, M_meshPartIn->point( M_uintBuffer[ currentBufferIndex++]) );
-            }
-            M_meshPartIn->addElement( e, false );
-        }
-    }
-    else
+    size_type nActiveElement = M_numLocalElements[partId]-M_numLocalGhostElements[partId];
+    mapGhostHdf5IdToFeelId[partId].resize( M_numLocalGhostElements[partId] );
+    element_type e;
+
+    size_type currentBufferIndex = 0;
+    for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
     {
+        //size_type id = M_uintBuffer[currentBufferIndex++];
+        int marker   = M_uintBuffer[currentBufferIndex++];
+        //e.setId( id );
+        e.setProcessIdInPartition( partId );
+        e.setMarker( marker );
+        e.setProcessId( partId );// update correctlty for ghost in preparUpdateForUse()
+
+        for (size_type k = 0; k < element_type::numPoints; ++k)
+        {
+            size_type ptId = M_uintBuffer[ currentBufferIndex++];
+            CHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
+            e.setPoint( k, M_meshPartIn->point( ptId ) );
+        }
+        auto const& eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
+
+        if ( j >= nActiveElement )
+        {
+            mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.id();
+        }
     }
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::readGhostElements()
+void PartitionIO<MeshType>::readGhostElements( std::map<rank_type,std::vector<size_type>> const& mapGhostHdf5IdToFeelId )
 {
+
     rank_type partId = M_meshPartIn->worldComm().localRank();
 
-    int nVal = 3; //(idGhost,pid,idActive)
+    //int nVal = 3; //(idGhost,pid,idActive)
+    int nVal = 1; // pid
 
     hsize_t globalDims[2];
     hsize_t localDims[2];
@@ -1059,37 +1094,48 @@ void PartitionIO<MeshType>::readGhostElements()
 
     M_HDF5IO.openTable ("elements_ghosts", globalDims);
     LOG(INFO) << "loaded ghost_elements:" << globalDims[0] << "x" << globalDims[1];
-    if ( !M_transposeInFile )
+
+    int indexTable0 = 0, indexTable1 = 1;
+    if ( M_transposeInFile )
     {
-        CHECK( globalDims[0] == 1 && globalDims[1] == nVal*M_numGlobalGhostElements ) << "BUG";
-        localDims[0] = 1;
-        localDims[1] = nVal*M_numLocalGhostElements[partId];
-        offset[0] = 0;
-        offset[1] = nVal*M_ghostElementsOffSet[partId];
-    }
-    else
-    {
+        indexTable0 = 1;
+        indexTable1 = 0;
     }
 
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-    M_HDF5IO.read("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+    CHECK( globalDims[indexTable0] == 1 && globalDims[indexTable1] == nVal*M_numGlobalGhostElements ) << "BUG";
+    if ( globalDims[indexTable1] > 0 )
+    {
+        localDims[indexTable0] = 1;
+        localDims[indexTable1] = nVal*M_numLocalGhostElements[partId];
+        offset[indexTable0] = 0;
+        offset[indexTable1] = nVal*M_ghostElementsOffSet[partId];
+
+        M_uintBuffer.resize( localDims[indexTable0]*localDims[indexTable1], 0 );
+        if ( !M_uintBuffer.empty() )
+            M_HDF5IO.read("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+        else
+        {
+            size_type uselessValue = 0;
+            M_HDF5IO.read("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &uselessValue);
+        }
+    }
 
     M_HDF5IO.closeTable("elements_ghosts");
 
-    if ( !M_transposeInFile )
-    {
-        size_type currentBufferIndex = 0;
-        for (size_type j = 0; j < M_numLocalGhostElements[partId]; ++j)
-        {
-            size_type id = M_uintBuffer[currentBufferIndex++];
-            int pid = M_uintBuffer[currentBufferIndex++];
-            size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
+    size_type currentBufferIndex = 0;
+    auto itFindGhostIdPartId = mapGhostHdf5IdToFeelId.find( partId );
 
-            auto it = M_meshPartIn->elementIterator( id, partId );
-            M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
-            M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
-            M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
-        }
+    for (size_type j = 0; j < M_numLocalGhostElements[partId]; ++j)
+    {
+        size_type id = itFindGhostIdPartId->second[j];
+        //size_type idBB = M_uintBuffer[currentBufferIndex++];
+        int pid = M_uintBuffer[currentBufferIndex++];
+        //size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
+
+        auto it = M_meshPartIn->elementIterator( id, partId );
+        M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
+        //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
+        M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
     }
 }
 
@@ -1198,30 +1244,41 @@ void PartitionIO<MeshType>::readMarkedSubEntities()
 
     M_HDF5IO.openTable ("marked_subentities", globalDims);
     LOG(INFO) << "loaded marked_subentities:" << globalDims[0] << "x" << globalDims[1];
-    if ( !M_transposeInFile )
+    int indexTable0 = 0, indexTable1 = 1;
+    if ( M_transposeInFile )
     {
-        CHECK( globalDims[0] == 1 && globalDims[1] == (nValFace*M_numGlobalMarkedFaces + nValEdge*M_numGlobalMarkedEdges + nValPoint*M_numGlobalMarkedPoints ) ) << "BUG";
-        localDims[0] = 1;
-        localDims[1] = nValFace*M_numLocalMarkedFaces[partId] + nValEdge*M_numLocalMarkedEdges[partId] + nValPoint*M_numLocalMarkedPoints[partId];
-        offset[0] = 0;
-        offset[1] = nValFace*M_markedFacesOffSet[partId] + nValEdge*M_markedEdgesOffSet[partId] + nValPoint*M_markedPointsOffSet[partId];
-    }
-    else
-    {
+        indexTable0 = 1;
+        indexTable1 = 0;
     }
 
-    M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-    M_HDF5IO.read("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+    CHECK( globalDims[indexTable0] == 1 && globalDims[indexTable1] == (nValFace*M_numGlobalMarkedFaces + nValEdge*M_numGlobalMarkedEdges + nValPoint*M_numGlobalMarkedPoints ) ) << "BUG";
+    if ( globalDims[indexTable1] > 0 )
+    {
+        localDims[indexTable0] = 1;
+        localDims[indexTable1] = nValFace*M_numLocalMarkedFaces[partId] + nValEdge*M_numLocalMarkedEdges[partId] + nValPoint*M_numLocalMarkedPoints[partId];
+        offset[indexTable0] = 0;
+        offset[indexTable1] = nValFace*M_markedFacesOffSet[partId] + nValEdge*M_markedEdgesOffSet[partId] + nValPoint*M_markedPointsOffSet[partId];
+
+        M_uintBuffer.resize( localDims[indexTable0]*localDims[indexTable1], 0 );
+        if ( !M_uintBuffer.empty() )
+            M_HDF5IO.read("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+        else
+        {
+            size_type uselessValue=0;
+            M_HDF5IO.read("marked_subentities", H5T_NATIVE_UINT, localDims, offset, &uselessValue);
+        }
+    }
 
     M_HDF5IO.closeTable("marked_subentities");
 
-    Feel::detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces[partId],M_numLocalMarkedEdges[partId],M_numLocalMarkedPoints[partId] ),
-                                               *M_meshPartIn );
+    if ( globalDims[indexTable1] > 0 && !M_uintBuffer.empty() )
+        Feel::detail::updateMarkedSubEntitiesMesh( M_uintBuffer, std::make_tuple( M_numLocalMarkedFaces[partId],M_numLocalMarkedEdges[partId],M_numLocalMarkedPoints[partId] ),
+                                                   *M_meshPartIn );
 }
 
 
 template<typename MeshType>
-void PartitionIO<MeshType>::prepareUpdateForUse()
+void PartitionIO<MeshType>::prepareUpdateForUseStep1()
 {
     rank_type rank = M_meshPartIn->worldComm().localRank();
 
@@ -1285,6 +1342,138 @@ void PartitionIO<MeshType>::prepareUpdateForUse()
             }
         }
     }
+}
+
+template<typename MeshType>
+void PartitionIO<MeshType>::prepareUpdateForUseStep2()
+{
+    auto const& theWorldComm = M_meshPartIn->worldComm();
+    const rank_type nProc = theWorldComm.localSize();
+    const rank_type partId = theWorldComm.localRank();
+
+    if (nProc == 1)
+        return;
+
+    // prepare container to send  : ( pid -> (ptId1,PtId2,..),(ptId1,PtId2,..) )
+    std::map< rank_type, std::vector< std::vector<size_type> > > dataToSend;
+    std::map< rank_type, std::vector<size_type> > memoryMsgToSend;
+    auto ghostelt_it = M_meshPartIn->beginGhostElement();
+    auto const ghostelt_en = M_meshPartIn->endGhostElement();
+    for ( ; ghostelt_it!=ghostelt_en ; ++ghostelt_it )
+    {
+        const rank_type pid = ghostelt_it->processId();
+        std::vector<size_type> ptIdsInElt( mesh_type::element_type::numPoints );
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+            ptIdsInElt[vLocId] = ghostelt_it->point( vLocId ).id();
+        dataToSend[pid].push_back( ptIdsInElt );
+        memoryMsgToSend[pid].push_back( ghostelt_it->id() );
+    }
+
+    // init mpi request
+    int nbRequest=0;
+    for ( rank_type proc=0; proc<nProc; ++proc )
+    {
+        if ( dataToSend.find(proc) != dataToSend.end() )
+            nbRequest+=2;
+    }
+    if ( nbRequest ==0 ) return;
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+
+    // first send
+    auto itDataToSend = dataToSend.begin();
+    auto const enDataToSend = dataToSend.end();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        ++cptRequest;
+    }
+    // first recv
+    std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
+    for ( rank_type proc=0; proc<nProc; ++proc )
+    {
+        // if we send a msg at proc else we recv a msg from proc
+        if ( dataToSend.find(proc) != dataToSend.end() )
+        {
+            reqs[cptRequest] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
+            ++cptRequest;
+        }
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+
+    // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
+    std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
+    auto elt_it = M_meshPartIn->beginElementWithProcessId( partId );
+    auto const elt_en = M_meshPartIn->endElementWithProcessId( partId );
+    for ( ; elt_it != elt_en ; ++elt_it )
+    {
+        if ( elt_it->numberOfNeighborPartitions() < 1 )
+            continue;
+        std::set<size_type> ptIds;
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+            ptIds.insert( elt_it->point( vLocId ).id() );
+        mapPointIdsToEltId[ptIds] = elt_it->id();
+    }
+    // treatment of recv request and prepare containers to re-send
+    std::map<rank_type, std::vector<size_type> > dataToReSend;
+    auto itDataRecv = dataToRecv.begin();
+    auto const enDataRecv = dataToRecv.end();
+    for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
+    {
+        const rank_type pid = itDataRecv->first;
+        const int nDataRecv = itDataRecv->second.size();
+        dataToReSend[pid].resize( nDataRecv );
+        for ( int k=0; k<nDataRecv; ++k )
+        {
+            std::vector<size_type> const& ptIdsInEltVec = itDataRecv->second[k];
+            std::set<size_type> ptIdsInEltSet(ptIdsInEltVec.begin(),ptIdsInEltVec.end());
+            auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
+            CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
+
+            M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( itFindElt->second ), Feel::detail::UpdateNeighborPartition( pid ) );//NEW
+
+            dataToReSend[pid][k] = itFindElt->second;
+        }
+    }
+    // send respond to the request
+    cptRequest=0;
+    auto itDataToReSend = dataToReSend.begin();
+    auto const enDataToReSend = dataToReSend.end();
+    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
+    {
+        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
+        ++cptRequest;
+    }
+    // recv the initial request
+    std::map<rank_type, std::vector<size_type> > finalDataToRecv;
+    itDataToSend = dataToSend.begin();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        const rank_type pid = itDataToSend->first;
+        reqs[cptRequest] = theWorldComm.localComm().irecv( pid, 0, finalDataToRecv[pid] );
+        ++cptRequest;
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    // delete reqs because finish comm
+    delete [] reqs;
+
+    // update ghost element with element id in active partition
+    auto itFinalDataToRecv = finalDataToRecv.begin();
+    auto const enFinalDataToRecv = finalDataToRecv.end();
+    for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    {
+        const rank_type pid = itFinalDataToRecv->first;
+        const int nDataRecv = itFinalDataToRecv->second.size();
+        for ( int k=0; k<nDataRecv; ++k )
+        {
+            auto eltToUpdate = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k],pid );
+            M_meshPartIn->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( pid, itFinalDataToRecv->second[k] ) );
+        }
+    }
+
+
 }
 
 
