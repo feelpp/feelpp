@@ -69,5 +69,44 @@ BOOST_PARAMETER_FUNCTION(
     return eint/meas;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_form1_return<Args>::type ), // return type
+    form1_mean,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( test, *  )
+      ( range, *  )
+      ( expr,   * )
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
+      ( worldcomm,       (WorldComm), Environment::worldComm() )
+    )
+)
+{
+    double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
+                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
+                             _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
+    DLOG(INFO) << "[mean] nelements = " << nelements(range) << "\n";
+    DLOG(INFO) << "[mean] measure = " << meas << "\n";
+    CHECK( math::abs(meas) > 1e-16 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    auto l = form1( _test=test );
+    l = integrate( _range=range, _expr=expr/meas, _quad=quad, _geomap=geomap,
+                   _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
+                   _partitioner=partitioner, _verbose=verbose );
+    return l;
+}
+
 }
 #endif // FEELPP_VF_MEAN_HPP

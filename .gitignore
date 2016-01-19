@@ -110,3 +110,4 @@ build/
 /research/chorus/
 /research/solodem
 ginac.pc
+/applications/crb/thermalfin/thermalfinapp.cpp
