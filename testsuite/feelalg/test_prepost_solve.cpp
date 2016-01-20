@@ -162,8 +162,6 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
             if (!J) J = backend()->newMatrix( Xh, Xh );
             auto j = form2( _test=Xh, _trial=Xh, _matrix=J );
             j = a ;
-            LOG(INFO) << "call jacobian";
-            j.matrixPtr()->printMatlab("j.m");
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
@@ -172,8 +170,6 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
             auto r = form1( _test=Xh, _vector=R );
             r= integrate(_range=elements(mesh), _expr=lapf*id(v)+gradv(u)*trans(grad(v)));
             r+=integrate(_range=boundaryfaces(mesh), _expr=-gradf*N()*id(v));
-            LOG(INFO) << "call residual";
-            r.vectorPtr()->printMatlab("r.m");
         };
     u.zero();
     backend()->nlSolver()->residual = Residual;
@@ -182,7 +178,7 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
 
     double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
     BOOST_CHECK_SMALL( m, 1e-10 );
-    BOOST_MESSAGE( "MEAN:" << m );
+    BOOST_MESSAGE( "MEAN(u) must be zero:" << m );
     double mex = mean( _range=elements(Xh->mesh()), _expr=f) (0,0);
     BOOST_MESSAGE( "MEAN exact:" << mex );
     double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
