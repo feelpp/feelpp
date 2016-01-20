@@ -1800,6 +1800,11 @@ public:
 
 protected:
     /**
+     * update the adjacency graph elements (usefull if coDimensionOne not updated)
+     */
+    void updateAdjacencyElements();
+
+    /**
      * Update connectivity of entities of codimension 1
      */
     void updateEntitiesCoDimensionOne();
