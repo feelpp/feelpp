@@ -6,6 +6,7 @@
        Date: 2007-08-07
 
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-08-07
  */
-#ifndef __MESHIMPL_HPP
-#define __MESHIMPL_HPP 1
+#ifndef FEELPP_MESHIMPL_HPP
+#define FEELPP_MESHIMPL_HPP 1
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/feeltiming/tic.hpp>

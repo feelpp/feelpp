@@ -126,7 +126,7 @@ MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
   SET( FEELPP_INSTANTIATION_MODE 1 )
 ENDIF()
-SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templates to instantiate up to 5 in 2D and 4 in 3D" )
 
 # enable host specific
 include(feelpp.host)
@@ -744,7 +744,7 @@ if ( NOT GFORTRAN_LIBRARY )
     NAMES
     gfortran
     PATHS
-    $ENV{LIBRARY_PATH}
+    $ENV{LD_LIBRARY_PATH}
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
