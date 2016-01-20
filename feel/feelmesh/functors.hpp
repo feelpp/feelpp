@@ -158,9 +158,11 @@ struct UpdateFaceConnection0
         M_conn( conn )
     {}
     template<typename FaceType>
-    void operator()( FaceType& element  ) const
+    void operator()( FaceType& face  ) const
     {
-        element.setConnection0( M_conn );
+        face.setConnection0( M_conn );
+        face.setProcessId( boost::get<3>( M_conn ) );
+        face.setOnBoundary( true, FaceType::nDim );
     }
 private:
     ConnectionType const& M_conn;
@@ -169,23 +171,35 @@ private:
 template<typename ConnectionType>
 struct UpdateFaceConnection1
 {
-    UpdateFaceConnection1( ConnectionType const& conn )
+    UpdateFaceConnection1( ConnectionType const& conn, rank_type currentPid )
         :
-        M_conn( conn )
+        M_conn( conn ),
+        M_currentPid( currentPid )
     {}
     template<typename FaceType>
-    void operator()( FaceType& element  ) const
+    void operator()( FaceType& face  ) const
     {
         //element.setOnBoundary( false );
-        element.setConnection1( M_conn );
+        face.setConnection1( M_conn );
 #if 0
-        if ( ( element.element0().marker() == element.element1().marker() ) &&
-                element.marker().value() == 0 )
-            element.setMarker( element.element0().marker().value() );
+        if ( ( face.element0().marker() == face.element1().marker() ) &&
+                face.marker().value() == 0 )
+            face.setMarker( face.element0().marker().value() );
 #endif
+        face.setOnBoundary( false );
+
+        // force processId equal to M_comm.rank() if face on interprocessfaces
+        if ( face.processId()!=M_currentPid )
+        {
+            if ( ( face.element0().processId()==M_currentPid ) || ( face.element1().processId()==M_currentPid ) )
+                face.setProcessId( M_currentPid );
+        }
+
+
     }
 private:
     ConnectionType const& M_conn;
+    rank_type M_currentPid;
 
 };
 
