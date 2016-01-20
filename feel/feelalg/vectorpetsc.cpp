@@ -1414,7 +1414,11 @@ VectorPetscMPI<T>::localSize() const
     return static_cast<size_type>( petsc_size );
 }
 
+#if BOOST_VERSION < 105900
+vector_ptrtype
+#ekse
 vector_uptrtype
+#endif
 vec( Vec v, datamap_ptrtype datamap )
 {
     return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
