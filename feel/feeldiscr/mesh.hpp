@@ -985,7 +985,7 @@ public:
     /**
      * Create a P1 mesh from the HO mesh
      */
-    P1_mesh_ptrtype createP1mesh( size_type ctx = EXTRACTION_KEEP_MESH_RELATION ) const;
+    P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) const;
 
     /**
      * update the Marker2 with a range of elements or faces
@@ -2162,10 +2162,10 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
-Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
+Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
     boost::shared_ptr<SubMeshData> smd;
-    Context c( ctx );
+    Context c( ctxExtraction );
     bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
     if ( keepMeshRelation )
         smd.reset( new SubMeshData( this->shared_from_this() ) );
@@ -2255,6 +2255,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
         // increment the new element counter
         n_new_elem++;
 
+#if 0
         // Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
         {
@@ -2266,6 +2267,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
             {
                 // get the corresponding face
                 face_type const& old_face = old_elem.face( s );
+                //if ( old_face.marker().isOff() ) continue;
                 typename P1_mesh_type::face_type new_face;
                 // disconnect from elements of old mesh,
                 // the connection will be redone in updateForUse()
@@ -2296,7 +2298,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
             } // if ( this->hasFace( global_face_id ) )
         } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
 
-
+#endif
         if ( it->isGhostCell() )
         {
             DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
@@ -2320,6 +2322,42 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
 #endif
         }
     } // end for it
+
+    // add marked faces in P1 mesh
+    auto face_it = this->beginFace();
+    auto face_en = this->endFace();
+    for ( ; face_it!=face_en ; ++face_it )
+    {
+        auto const& old_face = *face_it;
+        if ( old_face.marker().isOff() ) continue;
+
+        typename P1_mesh_type::face_type new_face;
+        // is on boundary
+        new_face.setOnBoundary( old_face.isOnBoundary() );
+        // set id of face
+        new_face.setId( n_new_faces );
+        // set face markers
+        new_face.setMarker( old_face.marker().value() );
+        new_face.setMarker2( old_face.marker2().value() );
+        new_face.setMarker2( old_face.marker3().value() );
+        // partitioning update
+        new_face.setProcessIdInPartition( old_face.pidInPartition() );
+        new_face.setProcessId(old_face.processId());
+        new_face.clearIdInOthersPartitions();
+        new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
+        // update P1 points info
+        for ( uint16_type p = 0; p < face_type::numVertices; ++p )
+        {
+            //new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+            new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
+        }
+        // add it to the list of faces
+        new_mesh->addFace( new_face );
+        // increment the new face counter
+        ++n_new_faces;
+    }
+
+
 
 #if 0
     if ( nProc > 1 )
@@ -2455,16 +2493,17 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctx ) const
     }  // if ( nProc > 1 )
 #endif
 
+#if 0
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
                                                []( size_type lhs, std::pair<size_type,int> const& rhs )
                                                {
                                                    return lhs+rhs.second;
                                                } ) );
+#endif
 
-
-    DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
-    new_mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    new_mesh->components().reset();
+    new_mesh->components().set ( ctxMeshUpdate );//MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     // run intensive job
     new_mesh->updateForUse();
 
