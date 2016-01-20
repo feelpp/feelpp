@@ -327,6 +327,9 @@ public:
 template<uint16_type Dim, uint16_type Order, uint16_type RDim >
 const uint16_type Simplex<Dim, Order, RDim>::topological_dimension;
 
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Simplex<Dim, Order, RDim>::nOrder;
+
 template<int Dim> struct Line : public Simplex<1, Dim> {};
 template<int Dim> struct Triangle : public Simplex<2, Dim> {};
 template<int Dim> struct Tetrahedron : public Simplex<3, Dim> {};

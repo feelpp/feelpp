@@ -29,7 +29,7 @@ OPTION( FEELPP_ENABLE_JSONLAB "Enable JSONLAB" ON )
 
 if ( FEELPP_ENABLE_JSONLAB )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/contrib/jsonlab )
-    if ( GIT_FOUND )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/jsonlab
         WORKING_DIRECTORY ${FEELPP_SOURCE_DIR}
@@ -45,8 +45,8 @@ if ( FEELPP_ENABLE_JSONLAB )
       endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/jsonlab/ )
-        message( FATAL_ERROR "Please make sure that git submodule contrib/jsonlab is available")
-        message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/jsonlab`")
+        message( WARNING "Please make sure that git submodule contrib/jsonlab is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/jsonlab`")
       endif()
     endif()
 
