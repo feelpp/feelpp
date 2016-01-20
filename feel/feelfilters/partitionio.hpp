@@ -88,14 +88,11 @@ namespace pt =  boost::property_tree;
          - point x coordinates
          - point y coordinates
          - point z coordinates
-  4. elements - 1 x ( (2 + num of element nodes)* number of global active elements ):
-         - element id
+  4. elements - 1 x ( (1 + num of element nodes)* number of global active elements ):
          - element markers
          - points ids
-  5. elements_ghosts - 1 x (3* number of global ghost elements ):
-         - element id in current partition
+  5. elements_ghosts - 1 x ( number of global ghost elements ):
          - process id
-         - element id in active partition
   5. elements_ghosts - 1 x ( ((1+num of face node)*number of global ghost elements ):
   6. marked_subentities - 1 x ( (1+num of face node)* number of global marked faces
      + (1+num of face node)* number of global marked edges + (1+1)*number of global marked points ):
@@ -377,6 +374,7 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 
     tic();
     M_meshPartIn->components().reset();
+    //M_meshPartIn->components().set( MESH_NO_UPDATE_MEASURES );
     M_meshPartIn->components().set( MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_CHECK );
     M_meshPartIn->updateForUse();
     toc("PartitionIO mesh update for use",FLAGS_v>0);
@@ -583,23 +581,26 @@ void PartitionIO<MeshType>::writePoints()
         M_uintBuffer.resize( localDimsIds[0]*localDimsIds[1], 0 );
         M_realBuffer.resize( localDimsCoords[0]*localDimsCoords[1], 0 );
 
-        size_type currentBufferIndexIds = 0,currentBufferIndexCoords = 0;
-        auto pt_it = M_meshPartitionSet->beginPoint( partId );
-        auto pt_en = M_meshPartitionSet->endPoint( partId );
-        for(  ; pt_it != pt_en; ++pt_it )
+        if ( !M_uintBuffer.empty() && !M_realBuffer.empty() )
         {
-            auto const& thepoint = boost::unwrap_ref(*pt_it);
-            M_uintBuffer[currentBufferIndexIds++] = thepoint.id();
+            size_type currentBufferIndexIds = 0,currentBufferIndexCoords = 0;
+            auto pt_it = M_meshPartitionSet->beginPoint( partId );
+            auto pt_en = M_meshPartitionSet->endPoint( partId );
+            for(  ; pt_it != pt_en; ++pt_it )
+            {
+                auto const& thepoint = boost::unwrap_ref(*pt_it);
+                M_uintBuffer[currentBufferIndexIds++] = thepoint.id();
 
-            M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](0);
-            if ( mesh_type::nRealDim >= 2 )
-                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](1);
-            if ( mesh_type::nRealDim >= 3 )
-                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](2);
+                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](0);
+                if ( mesh_type::nRealDim >= 2 )
+                    M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](1);
+                if ( mesh_type::nRealDim >= 3 )
+                    M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](2);
+            }
+
+            M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
+            M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
         }
-
-        M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
-        M_HDF5IO.write ("point_coords", H5T_NATIVE_DOUBLE, localDimsCoords, offsetCoords, &M_realBuffer[0]);
     }
 
     M_realBuffer.resize (0);
@@ -643,34 +644,36 @@ void PartitionIO<MeshType>::writeElements()
         }
         // Fill buffer
         M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
-
-        size_type currentBufferIndex = 0;
-        auto elt_it = M_meshPartitionSet->beginActiveElement( partId );
-        auto elt_en = M_meshPartitionSet->endActiveElement( partId );
-        for( ; elt_it != elt_en; ++ elt_it )
+        if ( !M_uintBuffer.empty() )
         {
-            auto const& theelt = boost::unwrap_ref(*elt_it);
-            //M_uintBuffer[currentBufferIndex++] = theelt.id();
-            M_uintBuffer[currentBufferIndex++] = theelt.marker().value();
-            for (size_type k = 0; k < element_type::numPoints; ++k)
+            size_type currentBufferIndex = 0;
+            auto elt_it = M_meshPartitionSet->beginActiveElement( partId );
+            auto elt_en = M_meshPartitionSet->endActiveElement( partId );
+            for( ; elt_it != elt_en; ++ elt_it )
             {
-                M_uintBuffer[currentBufferIndex++] = theelt.point(k).id();
+                auto const& theelt = boost::unwrap_ref(*elt_it);
+                //M_uintBuffer[currentBufferIndex++] = theelt.id();
+                M_uintBuffer[currentBufferIndex++] = theelt.marker().value();
+                for (size_type k = 0; k < element_type::numPoints; ++k)
+                {
+                    M_uintBuffer[currentBufferIndex++] = theelt.point(k).id();
+                }
             }
-        }
-        auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
-        auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
-        for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
-        {
-            auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
-            //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
-            M_uintBuffer[currentBufferIndex++] = theghostelt.marker().value();
-            for (size_type k = 0; k < element_type::numPoints; ++k)
+            auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
+            auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
+            for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
             {
-                M_uintBuffer[currentBufferIndex++] = theghostelt.point(k).id();
+                auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
+                //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+                M_uintBuffer[currentBufferIndex++] = theghostelt.marker().value();
+                for (size_type k = 0; k < element_type::numPoints; ++k)
+                {
+                    M_uintBuffer[currentBufferIndex++] = theghostelt.point(k).id();
+                }
             }
-        }
 
-        M_HDF5IO.write ("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+            M_HDF5IO.write ("elements", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
+        }
     }
 
     M_HDF5IO.closeTable ("elements");
@@ -710,16 +713,19 @@ void PartitionIO<MeshType>::writeGhostElements()
         }
         M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
 
-        size_type currentBufferIndex = 0;
-        auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
-        auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
-        for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
+        if ( !M_uintBuffer.empty() )
         {
-            auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
-            //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
-            M_uintBuffer[currentBufferIndex++] = theghostelt.processId();
+            size_type currentBufferIndex = 0;
+            auto ghostelt_it = M_meshPartitionSet->beginGhostElement( partId );
+            auto ghostelt_en = M_meshPartitionSet->endGhostElement( partId );
+            for( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
+            {
+                auto const& theghostelt = boost::unwrap_ref(*ghostelt_it);
+                //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
+                M_uintBuffer[currentBufferIndex++] = theghostelt.processId();
+            }
+            M_HDF5IO.write ("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
         }
-        M_HDF5IO.write ("elements_ghosts", H5T_NATIVE_UINT, localDims, offset, &M_uintBuffer[0]);
     }
 
     M_HDF5IO.closeTable ("elements_ghosts");
