@@ -1416,7 +1416,7 @@ VectorPetscMPI<T>::localSize() const
 
 #if BOOST_VERSION < 105900
 vector_ptrtype
-#ekse
+#else
 vector_uptrtype
 #endif
 vec( Vec v, datamap_ptrtype datamap )
