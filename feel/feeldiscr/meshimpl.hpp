@@ -360,11 +360,14 @@ Mesh<Shape, T, Tag>::updateMeasures()
     boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
-        this->elements().modify( iv,
-                                 [=,&pc,&pcf]( element_type& e )
-                                 {
-                                     e.updateWithPc(pc, boost::ref( pcf) );
-                                 } );
+        if ( updateMeasureWithPc )
+        {
+            this->elements().modify( iv,
+                                     [=,&pc,&pcf]( element_type& e )
+                                     {
+                                         e.updateWithPc(pc, boost::ref( pcf) );
+                                     } );
+        }
 
         // only compute meas for active element (no ghost)
         if ( !iv->isGhostCell() )
@@ -1289,7 +1292,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 {
                     facePtr->setMarker2( __it->marker().value() );
                 }
-                //__it = this->eraseFace( __it );
+                __it = this->eraseFace( __it );
             }
             else
             {
@@ -1357,6 +1360,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 DVLOG(2) << "creating the face:" << _faceit->second << "\n";
 
                 face_type* facePtr = new face_type;
+                facePtr->setProcessIdInPartition( currentPid );
                 // set face id
                 facePtr->setId( next_face++ );
                 //face.disconnect();
