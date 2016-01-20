@@ -93,7 +93,7 @@ public:
         {
             CHECK( M_localPartitionIds.size() <= M_numGlobalPartition  ) << "number of local partition (in process) can not be greater than number of partition in full mesh";
             if ( M_localPartitionIds.size() == M_numGlobalPartition )
-                this->buildAllPartInOnProcess();
+                this->buildAllPartInOneProcess();
             else
                 CHECK( false ) << "TODO";
         }
@@ -134,65 +134,23 @@ public:
 
 private:
 
-    void buildAllPartInOnProcess();
+    template<typename MT>
+    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_3d<MT>::value>::type* = nullptr );
+    template<typename MT>
+    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_2d<MT>::value>::type* = nullptr );
+    template<typename MT>
+    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_1d<MT>::value>::type* = nullptr );
 
+    void buildAllPartInOneProcess();
     template<typename MT>
-    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
-        {
-            rank_type partId = M_mesh->worldComm().localRank();
-            auto face_it = M_mesh->beginFace();
-            auto face_en = M_mesh->endFace();
-            for( ; face_it != face_en; ++face_it )
-            {
-                if ( face_it->marker().isOff() ) continue;
-                M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
-            }
-            auto edge_it = M_mesh->beginEdge();
-            auto edge_en = M_mesh->endEdge();
-            for( ; edge_it != edge_en; ++edge_it )
-            {
-                if ( edge_it->marker().isOff() ) continue;
-                M_containerMarkedEdges[partId].push_back(boost::cref(*edge_it));
-            }
-            auto point_it = M_mesh->beginPoint();
-            auto point_en = M_mesh->endPoint();
-            for( ; point_it != point_en; ++point_it )
-            {
-                if ( point_it->marker().isOff() ) continue;
-                M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
-            }
-        }
+    void updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                     typename std::enable_if<is_3d<MT>::value>::type* = nullptr );
     template<typename MT>
-    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_2d<MT>::value>::type* = nullptr )
-        {
-            rank_type partId = M_mesh->worldComm().localRank();
-            auto face_it = M_mesh->beginFace();
-            auto face_en = M_mesh->endFace();
-            for( ; face_it != face_en; ++face_it )
-            {
-                if ( face_it->marker().isOff() ) continue;
-                M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
-            }
-            auto point_it = M_mesh->beginPoint();
-            auto point_en = M_mesh->endPoint();
-            for( ; point_it != point_en; ++point_it )
-            {
-                if ( point_it->marker().isOff() ) continue;
-                M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
-            }
-        }
+    void updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                     typename std::enable_if<is_2d<MT>::value>::type* = nullptr );
     template<typename MT>
-    void updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_1d<MT>::value>::type* = nullptr )
-        {
-            rank_type partId = M_mesh->worldComm().localRank();
-            auto point_it = M_mesh->beginPoint();
-            auto point_en = M_mesh->endPoint();
-            for( ; point_it != point_en; ++point_it )
-            {
-                if ( point_it->marker().isOff() ) continue;
-                M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
-            }
-        }
+    void updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                     typename std::enable_if<is_1d<MT>::value>::type* = nullptr );
 
 
 private :
@@ -211,8 +169,73 @@ private :
 
 
 template<typename MeshType>
+template<typename MT>
 void
-MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_3d<MT>::value>::type* )
+{
+    rank_type partId = M_mesh->worldComm().localRank();
+    auto face_it = M_mesh->beginFace();
+    auto face_en = M_mesh->endFace();
+    for( ; face_it != face_en; ++face_it )
+    {
+        if ( face_it->marker().isOff() ) continue;
+        M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+    }
+    auto edge_it = M_mesh->beginEdge();
+    auto edge_en = M_mesh->endEdge();
+    for( ; edge_it != edge_en; ++edge_it )
+    {
+        if ( edge_it->marker().isOff() ) continue;
+        M_containerMarkedEdges[partId].push_back(boost::cref(*edge_it));
+    }
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for( ; point_it != point_en; ++point_it )
+    {
+        if ( point_it->marker().isOff() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+    }
+}
+template<typename MeshType>
+template<typename MT>
+void
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_2d<MT>::value>::type* )
+{
+    rank_type partId = M_mesh->worldComm().localRank();
+    auto face_it = M_mesh->beginFace();
+    auto face_en = M_mesh->endFace();
+    for( ; face_it != face_en; ++face_it )
+    {
+        if ( face_it->marker().isOff() ) continue;
+        M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+    }
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for( ; point_it != point_en; ++point_it )
+    {
+        if ( point_it->marker().isOff() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+    }
+}
+template<typename MeshType>
+template<typename MT>
+void
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename std::enable_if<is_1d<MT>::value>::type* )
+{
+    rank_type partId = M_mesh->worldComm().localRank();
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for( ; point_it != point_en; ++point_it )
+    {
+        if ( point_it->marker().isOff() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+    }
+}
+
+
+template<typename MeshType>
+void
+MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
 {
     auto point_it = M_mesh->beginPoint();
     auto point_en = M_mesh->endPoint();
@@ -241,12 +264,10 @@ MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
                 else if ( ptPid != partId ) // we found an interprocess point
                 {
                     size_type ptId = thepoint.id();
-                    //mapPointInterProcess[ptId].insert( ptPid );
                     mapPointInterProcess[ptId].insert( partId );
                     if ( ptPid != interprocessPointPidDetection ) // special treatment for the first interprocess detection
                     {
                         mapPointInterProcess[ptId].insert( ptPid );
-                        //mapPointInterProcess[ptId].insert( partId );//maybe useless already define in processId()
                         M_mesh->points().modify( M_mesh->pointIterator( ptId ), Feel::detail::UpdateProcessId( interprocessPointPidDetection ) );
                     }
                 }
@@ -301,7 +322,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
                 pointIdsInGhost.insert( theghostelt.point(vLocId).id() );
             }
         }
-        //
+        // update containers
         auto pt_it = M_mesh->beginPointWithProcessId(partId);
         auto pt_en = M_mesh->endPointWithProcessId(partId);
         for ( ; pt_it != pt_en ; ++pt_it )
@@ -319,7 +340,10 @@ MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
         std::cout << "nPoints in part " << partId << " : " << M_containerPoints[partId].size() << "\n";
 #endif
 
-#if 1
+
+    this->updateMarkedSubEntitiesAllPartInOneProcess<mesh_type>( mapPointInterProcess );
+
+
     for ( rank_type p=0;p<M_numGlobalPartition;++p )
     {
         M_statistic[p].resize( 6 );
@@ -331,8 +355,185 @@ MeshPartitionSet<MeshType>::buildAllPartInOnProcess()
         M_statistic[p][5] = M_containerMarkedPoints[p].size();
     }
 
-#endif
+}
 
+
+
+template<typename MeshType>
+template<typename MT>
+void
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                                        typename std::enable_if<is_3d<MT>::value>::type* )
+{
+    rank_type interprocessPointPidDetection = this->numGlobalPartition();
+
+    auto face_it = M_mesh->beginFace();
+    auto face_en = M_mesh->endFace();
+    for ( ; face_it!=face_en ; ++face_it )
+    {
+        auto const& theface = *face_it;
+        if ( theface.marker().isOff() ) continue;
+        std::set<rank_type> facePids;
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::face_type::numVertices; ++vLocId )
+        {
+            auto const& thepoint = theface.point( vLocId );
+            rank_type ptPid = thepoint.processId();
+            if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+                facePids.insert( ptPid );
+            else if ( ptPid == interprocessPointPidDetection )
+            {
+                auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+                if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+                for ( rank_type neighPid : itPidsTouchPoint->second )
+                    facePids.insert( neighPid );
+            }
+        }
+        for ( rank_type partId : facePids )
+        {
+            M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+        }
+    }
+
+    auto edge_it = M_mesh->beginEdge();
+    auto edge_en = M_mesh->endEdge();
+    for ( ; edge_it!=edge_en ; ++edge_it )
+    {
+        auto const& theedge = *edge_it;
+        if ( theedge.marker().isOff() ) continue;
+        std::set<rank_type> edgePids;
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::edge_type::numVertices; ++vLocId )
+        {
+            auto const& thepoint = theedge.point( vLocId );
+            rank_type ptPid = thepoint.processId();
+            if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+                edgePids.insert( ptPid );
+            else if ( ptPid == interprocessPointPidDetection )
+            {
+                auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+                if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+                for ( rank_type neighPid : itPidsTouchPoint->second )
+                    edgePids.insert( neighPid );
+            }
+        }
+        for ( rank_type partId : edgePids )
+        {
+            M_containerMarkedEdges[partId].push_back(boost::cref(*edge_it));
+        }
+    }
+
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for ( ; point_it!=point_en ; ++point_it )
+    {
+        auto const& thepoint = *point_it;
+        if ( thepoint.marker().isOff() ) continue;
+        std::set<rank_type> ptPids;
+        rank_type ptPid = thepoint.processId();
+        if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+            ptPids.insert( ptPid );
+        else if ( ptPid == interprocessPointPidDetection )
+        {
+            auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+            if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+            for ( rank_type neighPid : itPidsTouchPoint->second )
+                ptPids.insert( neighPid );
+        }
+        for ( rank_type partId : ptPids )
+        {
+            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        }
+    }
+
+}
+template<typename MeshType>
+template<typename MT>
+void
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                                        typename std::enable_if<is_2d<MT>::value>::type* )
+{
+    rank_type interprocessPointPidDetection = this->numGlobalPartition();
+
+    auto face_it = M_mesh->beginFace();
+    auto face_en = M_mesh->endFace();
+    for ( ; face_it!=face_en ; ++face_it )
+    {
+        auto const& theface = *face_it;
+        if ( theface.marker().isOff() ) continue;
+        std::set<rank_type> facePids;
+        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::face_type::numVertices; ++vLocId )
+        {
+            auto const& thepoint = theface.point( vLocId );
+            rank_type ptPid = thepoint.processId();
+            if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+                facePids.insert( ptPid );
+            else if ( ptPid == interprocessPointPidDetection )
+            {
+                auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+                if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+                for ( rank_type neighPid : itPidsTouchPoint->second )
+                    facePids.insert( neighPid );
+            }
+        }
+        for ( rank_type partId : facePids )
+        {
+            M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+        }
+    }
+
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for ( ; point_it!=point_en ; ++point_it )
+    {
+        auto const& thepoint = *point_it;
+        if ( thepoint.marker().isOff() ) continue;
+        std::set<rank_type> ptPids;
+        rank_type ptPid = thepoint.processId();
+        if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+            ptPids.insert( ptPid );
+        else if ( ptPid == interprocessPointPidDetection )
+        {
+            auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+            if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+            for ( rank_type neighPid : itPidsTouchPoint->second )
+                ptPids.insert( neighPid );
+        }
+        for ( rank_type partId : ptPids )
+        {
+            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        }
+    }
+
+}
+template<typename MeshType>
+template<typename MT>
+void
+MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map<size_type,std::set<rank_type> > const& mapPointInterProcess,
+                                                                        typename std::enable_if<is_1d<MT>::value>::type* )
+{
+    rank_type interprocessPointPidDetection = this->numGlobalPartition();
+
+    auto point_it = M_mesh->beginPoint();
+    auto point_en = M_mesh->endPoint();
+    for ( ; point_it!=point_en ; ++point_it )
+    {
+        auto const& thepoint = *point_it;
+        if ( thepoint.marker().isOff() ) continue;
+        std::set<rank_type> ptPids;
+        rank_type ptPid = thepoint.processId();
+        if ( ptPid != interprocessPointPidDetection && ptPid != invalid_rank_type_value )
+            ptPids.insert( ptPid );
+        else if ( ptPid == interprocessPointPidDetection )
+        {
+            auto itPidsTouchPoint = mapPointInterProcess.find( thepoint.id() );
+            if ( itPidsTouchPoint ==  mapPointInterProcess.end() ) continue;
+            for ( rank_type neighPid : itPidsTouchPoint->second )
+                ptPids.insert( neighPid );
+        }
+        for ( rank_type partId : ptPids )
+        {
+            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        }
+    }
 }
 
 
