@@ -98,7 +98,7 @@ public :
         M_smd( new smd_type( inputMesh ) ),
         M_worldComm( wc ),
         M_updateComponentsMesh( updateComponentsMesh ),
-        M_subMeshIsOnBoundaryFaces( true )
+        M_subMeshIsOnBoundaryFaces( false )
         {
             M_listRange.push_back( range );
         }
@@ -113,7 +113,7 @@ public :
         M_smd( new smd_type( inputMesh ) ),
         M_worldComm( wc ),
         M_updateComponentsMesh( updateComponentsMesh ),
-        M_subMeshIsOnBoundaryFaces( true )
+        M_subMeshIsOnBoundaryFaces( false )
         {}
 
     CreateSubmeshTool & operator=( CreateSubmeshTool const& t ) = default;
@@ -1014,6 +1014,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 {
     auto t = createSubmeshTool( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
 }
 
@@ -1035,6 +1036,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
 
 {
     auto t = createSubmeshTool( inputMesh,range,wc,updateComponentsMesh );
+    t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
 }
 
