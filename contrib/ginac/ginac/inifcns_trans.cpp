@@ -286,7 +286,7 @@ REGISTER_FUNCTION(log, eval_func(log_eval).
                        real_part_func(log_real_part).
                        imag_part_func(log_imag_part).
                        conjugate_func(log_conjugate).
-                       latex_name("\\ln"));
+                       latex_name("\\ln"))
 
 //////////
 // sine (trigonometric function)
