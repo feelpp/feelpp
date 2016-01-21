@@ -20,7 +20,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define BOOST_TEST_MODULE test_laplacianv
+#define BOOST_TEST_MODULE test_laplacian
 #include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -150,9 +150,7 @@ public :
     }
 };
 
-<<<<<<< HEAD
 
-#if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 

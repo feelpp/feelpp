@@ -272,7 +272,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( lift )
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {
