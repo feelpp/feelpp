@@ -525,11 +525,13 @@ namespace FeelModels
         this->application()->timerTool("Solve").elapsed("algebraic-residual");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
-
+        
+        std::function<void(vector_ptrtype, vector_ptrtype)> post_solve = std::bind(&appli_type::postSolve, M_appli, std::placeholders::_1, std::placeholders::_2);
         auto const solveStat = M_backend->nlSolve( _jacobian=M_J,
                                                    _solution=U,
                                                    _residual=M_R,
-                                                   _prec=M_PrecondManage );
+                                                   _prec=M_PrecondManage,
+                                                   _post=post_solve);
         if ( false )
             Feel::FeelModels::Log(this->application()->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                            "solver stat :\n" +

@@ -248,6 +248,8 @@ public :
     virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
+    virtual void postSolve( vector_ptrtype rhs, vector_ptrtype sol ) const {}
+    //----------------------------------------------------------------------------------//
 
 private :
     // verbose
