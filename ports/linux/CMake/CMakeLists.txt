@@ -16,7 +16,24 @@ include(ExternalProject)
 
 include(Deps.cmake)
 
+OPTION(ENABLE_BUILD_CLANG "Enable Clang compilation" OFF)
 OPTION(ENABLE_GUI "Enable GUI when compiling software" OFF)
+
+if(ENABLE_BUILD_CLANG)
+    ExternalProject_Add(LLVM
+        PREFIX "${CMAKE_BINARY_DIR}"
+        #GIT_REPOSITORY "http://llvm.org/git/llvm"
+        #GIT_TAG release_37
+        DOWNLOAD_COMMAND wget http://llvm.org/releases/3.7.1/llvm-3.7.1.src.tar.xz && tar xvf llvm-3.7.1.src.tar.xz 
+        && cp -r "${CMAKE_BINARY_DIR}/src/llvm-3.7.1.src/" ${CMAKE_BINARY_DIR}/src/LLVM
+        && wget http://llvm.org/releases/3.7.1/compiler-rt-3.7.1.src.tar.xz && tar xvf compiler-rt-3.7.1.src.tar.xz
+        && mv ${CMAKE_BINARY_DIR}/src/compiler-rt-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/projects/compiler-rt
+        && wget http://llvm.org/releases/3.7.1/cfe-3.7.1.src.tar.xz && tar xvf cfe-3.7.1.src.tar.xz
+        && mv ${CMAKE_BINARY_DIR}/src/cfe-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/tools/clang
+        CMAKE_ARGS -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_PREFIX}
+    )
+
+endif()
 
 ExternalProject_Add(OpenMPI
     PREFIX "${CMAKE_BINARY_DIR}"
