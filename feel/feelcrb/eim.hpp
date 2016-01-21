@@ -816,14 +816,21 @@ EIM<ModelType>::offline()
 
         if( ioption(_name="ser.eim-frequency") != 0  ) // SER
         {
-            // Need adapt group size (r-adaptation) ?
-            double increment = math::abs( error - M_greedy_maxerr );
-            if( Environment::worldComm().isMasterRank() )
-                std::cout << " -- Absolute error (Greedy) increment = " << increment <<", tol = " << doption(_name="ser.radapt-tol") << std::endl;
-            // Adapt only if user has given tol in option (default : 0)
-            // increment > 1e-10 avoid to take into account EIM used for constants
-            if( M_M > 2 && increment > 1e-10 && increment < doption(_name="ser.radapt-tol") )
-                this->setAdaptationSER( true );
+            if( M_M > 2 ) // Ensure M_greedy_maxerr (error for previous EIM approx.) is initialized
+            {
+                // Need adapt group size (r-adaptation) ?
+                double increment = math::abs( error - M_greedy_maxerr );
+                double inc_relative = increment/math::abs( M_greedy_maxerr );
+                if( Environment::worldComm().isMasterRank() )
+                    std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
+                              << ", rtol = " << doption(_name="ser.radapt-rtol") << std::endl;
+
+                // Adapt only if user has given tol in option (default : 0)
+                // increment > 1e-10 and inc_relative > 0 avoid to take into account EIM used for constants
+                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-rtol") )
+                    this->setAdaptationSER( true );
+            }
+
             M_greedy_maxerr = error; // Store error to compute next increment
 
             // SER : choose between RB and PFEM approx
