@@ -2,6 +2,9 @@
 # \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
 # \date 2016-01-11
 
+set(LLVM_VERSION "3.7")
+set(LLVM_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/LLVM/${LLVM_VERSION})
+
 set(OPENMPI_VERSION "1.10.1")
 set(OPENMPI_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/OpenMPI/${OPENMPI_VERSION})
 
