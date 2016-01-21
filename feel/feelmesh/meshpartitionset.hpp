@@ -62,6 +62,13 @@ public:
                 M_statistic[p][5] = M_mesh->statNumPointsMarkedAll( p );
             }
 
+            M_containerPoints[partId].clear();
+            M_containerActiveElements[partId].clear();
+            M_containerGhostElements[partId].clear();
+            M_containerMarkedFaces[partId].clear();
+            M_containerMarkedEdges[partId].clear();
+            M_containerMarkedPoints[partId].clear();
+
             auto elt_it = M_mesh->beginElementWithProcessId( partId );
             auto elt_en = M_mesh->endElementWithProcessId( partId );
             for( ; elt_it != elt_en; ++ elt_it )
@@ -92,6 +99,17 @@ public:
         M_localPartitionIds( localPartitionIds )
         {
             CHECK( M_localPartitionIds.size() <= M_numGlobalPartition  ) << "number of local partition (in process) can not be greater than number of partition in full mesh";
+
+            for ( rank_type partId : M_localPartitionIds )
+            {
+                M_containerPoints[partId].clear();
+                M_containerActiveElements[partId].clear();
+                M_containerGhostElements[partId].clear();
+                M_containerMarkedFaces[partId].clear();
+                M_containerMarkedEdges[partId].clear();
+                M_containerMarkedPoints[partId].clear();
+            }
+
             if ( M_localPartitionIds.size() == M_numGlobalPartition )
                 this->buildAllPartInOneProcess();
             else
