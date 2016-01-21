@@ -402,7 +402,8 @@ crbSEROptions( std::string const& prefix )
         ( "ser.error-estimation", Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
         ( "ser.use-greedy-in-rb", Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
         ( "ser.eim-subtrainset-method", Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
-        ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy") 
+        ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy")
+        ( "ser.radapt-tol", Feel::po::value<double>()->default_value( 0.0 ), "Tolerance criterion for SER r-adaptation - default(0.0) = no adaptation")
         ;
     return seroptions;
 }
