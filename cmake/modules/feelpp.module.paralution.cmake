@@ -29,7 +29,7 @@ OPTION( FEELPP_ENABLE_PARALUTION "Enable PARALUTION" ON )
 
 if ( FEELPP_ENABLE_PARALUTION )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/paralution )
-    if ( GIT_FOUND )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/paralution
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -40,12 +40,12 @@ if ( FEELPP_ENABLE_PARALUTION )
       if(ERROR_CODE EQUAL "0")
         MESSAGE(STATUS "[feelpp] Git submodule contrib/paralution updated.")
       else()
-        MESSAGE(FATAL_ERROR "Git submodule contrib/paralution failed to be updated. Possible cause: No internet access, firewalls ...")
+        MESSAGE(WARNING "Git submodule contrib/paralution failed to be updated. Possible cause: No internet access, firewalls ...")
       endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/paralution/ )
-        message( FATAL_ERROR "Please make sure that git submodule contrib/paralution is available")
-        message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/paralution`")
+        message( WARNING "Please make sure that git submodule contrib/paralution is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/paralution`")
       endif()
     endif()
 
@@ -58,7 +58,7 @@ if ( FEELPP_ENABLE_PARALUTION )
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Paralution" )
     ADD_DEFINITIONS( -DFEELPP_HAS_PARALUTION )
   else()
-    MESSAGE(FATAL_ERROR "Paralution was not found on your system. Either install it or set FEELPP_ENABLE_PARALUTION to OFF.")
+    MESSAGE(WARNING "Paralution was not found on your system. Either install it or set FEELPP_ENABLE_PARALUTION to OFF.")
   endif()
 
 endif()
