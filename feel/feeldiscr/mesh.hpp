@@ -1111,7 +1111,7 @@ public:
     /**
      * load mesh in hdf5
      */
-    void loadHDF5( std::string const& filename ) { ioHDF5( IOStatus::isLoading, filename ); }
+    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) { ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate ); }
 
     /**
      * save mesh in hdf5
@@ -1125,7 +1125,7 @@ private:
     /**
      * save mesh in hdf5
      */
-    void ioHDF5( IOStatus status, std::string const& filename );
+    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
 public:
     /**
