@@ -228,6 +228,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
+    M_Newton_fix_mean_pressure = doption(_name="snes-fix-mean-pressure", _prefix=this->prefix());
+    //--------------------------------------------------------------//
 
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
