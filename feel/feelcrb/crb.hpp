@@ -289,9 +289,9 @@ public:
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         exporter( Exporter<mesh_type>::New( "ensight" ) ),
-        M_rebuild( this->rebuildDB() )
+        M_rebuild( this->rebuildDB() ),
+        M_SER_groupsize()
     {
-
     }
 
     //! constructor from command line options
@@ -373,7 +373,8 @@ public:
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
         exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
         M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>()),
-        M_rebuild( this->rebuildDB() )
+        M_rebuild( this->rebuildDB() ),
+        M_SER_groupsize( ioption(_name="ser.rb-frequency") )
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -413,6 +414,7 @@ public:
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
                                                _rebuild=true);
+
     }
 
 
@@ -462,7 +464,8 @@ public:
         M_Cmm_du_eim( o.M_Cmm_du ),
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
         M_coeff_du_ini_online( o.M_coeff_du_ini_online ),
-        M_rebuild( o.M_rebuild )
+        M_rebuild( o.M_rebuild ),
+        M_SER_groupsize( o.M_SER_groupsize )
     {}
 
     //! destructor
@@ -1181,8 +1184,12 @@ public:
      * if true, rebuild the database (if already exist)
      */
     bool rebuildDB() ;
+    
     void setRebuild( bool b ){ M_rebuild = b; } ;
     bool getRebuild(){ return M_rebuild; } ;
+
+    void setGroupSizeSER( int s ){ M_SER_groupsize = s; } ;
+    int getGroupSizeSER(){ return M_SER_groupsize; } ;
     /**
      * if true, show the mu selected during the offline stage
      */
@@ -1467,6 +1474,7 @@ protected:
     bool M_offline_step;
 
     bool M_rebuild;
+    int M_SER_groupsize;
 
     preconditioner_ptrtype M_preconditioner;
     preconditioner_ptrtype M_preconditioner_primal;
@@ -2070,7 +2078,7 @@ CRB<TruthModelType>::offline()
     orthonormalize_dual = boption(_name="crb.orthonormalize-dual") ;
     solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
 
-    bool cobuild = (ioption(_name="ser.rb-frequency") != 0);
+    bool cobuild = ( ioption(_name="ser.rb-frequency") != 0 );
 
 #if 0
     M_elements_database.setMN( M_N );
@@ -2364,13 +2372,18 @@ CRB<TruthModelType>::offline()
     bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
     bool write_memory_evolution = all_procs || only_one_proc ;
 
-    int cobuild_freq_rb = ioption(_name="ser.rb-frequency");
-    if( cobuild_freq_rb != 0 && M_N == 0 ) // First RB with SER : ( 1 EIM + 1RB, after build per group of size ser.rb-frequency )
-        cobuild_freq_rb = 1;
-
     int user_max = ioption(_name="crb.dimension-max");
-    if( cobuild_freq_rb != 0 && Nold + cobuild_freq_rb <= user_max)
-        M_iter_max = Nold + cobuild_freq_rb;
+    if( ioption(_name="ser.rb-frequency") != 0 ) // SER
+    {
+        if( M_N == 0 )
+            M_iter_max = Nold + 1; //Initialization step
+        else if( Nold + this->getGroupSizeSER() <= user_max )
+            M_iter_max = Nold + this->getGroupSizeSER();
+        else
+            M_iter_max = user_max;
+        // if( proc_number == this->worldComm().masterRank() )
+        //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
+    }
     else
         M_iter_max = user_max;
 

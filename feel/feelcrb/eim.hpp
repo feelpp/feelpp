@@ -308,6 +308,14 @@ public:
         {
             return M_offline_step;
         }
+    void setAdaptationSER( bool b )
+        {
+            M_adapt_SER = b;
+        }
+    bool getAdaptationSER()
+        {
+            return M_adapt_SER;
+        }
 
     void setRestart( bool b )
         {
@@ -389,6 +397,7 @@ protected:
 
     mutable bool M_offline_done;
     mutable bool M_offline_step;
+    mutable bool M_adapt_SER;
 
     double M_tol;
 
@@ -397,6 +406,7 @@ protected:
     model_type* M_model;
 
     bool M_restart;
+    double M_greedy_maxerr;
 
 protected:
 
@@ -739,13 +749,16 @@ EIM<ModelType>::offline()
     int Mmax;
     int restart = M_restart ? 1 : 0;
 
-    if( cobuild_freq != 0 && M_model->mMax() + cobuild_freq  <= user_max)
+    if( ioption(_name="ser.eim-frequency") != 0 ) // SER
     {
-        if( M_restart )
-            Mmax = 0; // First EIM basis with SER : do only initialization step (require only one FEM approx)
-            //Mmax = cobuild_freq - 1;
-        else
+        if( M_restart ) // First EIM basis with SER : do only initialization step (require only one FEM approx)
+            Mmax = 0;
+        else if ( M_model->getAdaptationSER() && M_model->mMax() < user_max ) // R-adaptation
+            Mmax = M_model->mMax() + 1;
+        else if ( M_model->mMax() + cobuild_freq  <= user_max )
             Mmax = M_model->mMax() + cobuild_freq;
+        else
+            Mmax = user_max;
     }
     else
         Mmax = user_max;
@@ -792,16 +805,28 @@ EIM<ModelType>::offline()
         time=timer2.elapsed();
         double error=bestfit.template get<0>();
         if( Environment::worldComm().isMasterRank() )
+        {
             std::cout<<" -- best fit computed in "<<time<<"s -- absolute associated error : "<<error<<std::endl;
-        greedy_maxerr << M_M << "\t" << error <<"\n";
+            greedy_maxerr << M_M << "\t" << error <<"\n";
+        }
 
         M_model->addOfflineError(error);
         mu = bestfit.template get<1>();
-
         timer2.restart();
-        //solution = M_model->solve( mu );
-        if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
+
+        if( ioption(_name="ser.eim-frequency") != 0  ) // SER
         {
+            // Need adapt group size (r-adaptation) ?
+            double increment = math::abs( error - M_greedy_maxerr );
+            if( Environment::worldComm().isMasterRank() )
+                std::cout << " -- Absolute error (Greedy) increment = " << increment <<", tol = " << doption(_name="ser.radapt-tol") << std::endl;
+            // Adapt only if user has given tol in option (default : 0)
+            // increment > 1e-10 avoid to take into account EIM used for constants
+            if( M_M > 2 && increment > 1e-10 && increment < doption(_name="ser.radapt-tol") )
+                this->setAdaptationSER( true );
+            M_greedy_maxerr = error; // Store error to compute next increment
+
+            // SER : choose between RB and PFEM approx
             if( boption(_name="ser.use-rb-in-eim-basis-build") )
                 solution = M_model->computeRbExpansion( mu ); // Use current RB approx
             else
@@ -1247,6 +1272,8 @@ public:
     virtual int maxSolution() = 0;
 
     virtual bool getOfflineStep()=0;
+    virtual bool getAdaptationSER()=0;
+    virtual void setAdaptationSER(bool b)=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
@@ -2238,6 +2265,9 @@ public:
     }
 
     bool getOfflineStep(){return M_eim->getOfflineStep();}
+    bool getAdaptationSER(){return M_eim->getAdaptationSER();}
+    void setAdaptationSER(bool b){M_eim->setAdaptationSER(b);}
+
     void offline(){M_eim->offline();}
     void setRestart(bool b){ M_eim->setRestart(b);}
 
