@@ -2991,7 +2991,7 @@ struct GT_QK
                                                                         \
         BOOST_PP_CAT(GT_,GEOM)()                                        \
             :                                                           \
-            super( boost::shared_ptr<element_gm_type>(new element_gm_type()), boost::shared_ptr<face_gm_type>(new face_gm_type() )) \
+            super( boost::make_shared<element_gm_type>(), boost::make_shared<face_gm_type>()) \
             {}                                                          \
     };                                                                  \
     /**/

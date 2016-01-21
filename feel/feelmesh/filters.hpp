@@ -183,6 +183,8 @@ using boundarypoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
 template<typename MeshType>
 using internalpoints_t = boundarypoints_t<MeshType>;
 
+template<typename IteratorRangeT>
+using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
 /**
  * namespace for meta mesh computation data structure
  */
