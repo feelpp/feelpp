@@ -192,7 +192,7 @@ public:
      * \param mesh pointer to a mesh . If the RegionMesh has been initialized and contains any
      *        state, it will be destroyed before reading
      */
-    void read (mesh_ptrtype mesh);
+    void read (mesh_ptrtype mesh, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
 
     //@}
@@ -238,8 +238,6 @@ private:
 
     //! Private Data Members
     //@{
-    WorldComm M_comm;
-    size_type M_myRank;
     std::string M_filename;
     std::string M_h5_filename;
     bool M_transposeInFile;
@@ -272,8 +270,12 @@ inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
     M_h5_filename (),
     M_transposeInFile (transposeInFile)
 {
-    std::string h5filename = fs::path(M_filename).stem().string() + ".h5";
-    M_h5_filename = (fs::path(M_filename).parent_path() / fs::path( h5filename )).string();
+    fs::path filenamefs = fs::path( fileName );
+    std::string h5filename = filenamefs.stem().string() + ".h5";
+    if ( filenamefs.is_relative() )
+        M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
+    else
+        M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
 }
 
 template<typename MeshType>
@@ -297,20 +299,16 @@ void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype meshpartset )
     M_meshPartitionSet = meshpartset;
     M_meshPartsOut = M_meshPartitionSet->mesh();
 
-    if ( Environment::isMasterRank() )
+    if ( M_meshPartsOut->worldComm().isMasterRank() )
         writeMetaData( M_meshPartsOut );
 
-    //std::string h5filename = fs::path(M_filename).stem().string() + ".h5";
-    //M_h5_filename = (fs::path(M_filename).parent_path() / fs::path( h5filename )).string();
-
     LOG(INFO) << "writing mesh in HDF5 format in " << M_h5_filename;
-
     tic();
     M_HDF5IO.openFile (M_h5_filename, M_meshPartsOut->worldComm(), false);
+
     tic();
     writeStats();
     toc("PartitionIO writing stats",FLAGS_v>0);
-
     tic();
     writePoints();
     toc("PartitionIO writing points",FLAGS_v>0);
@@ -342,7 +340,7 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
     pt::write_json(M_filename, pt);
 }
 template<typename MeshType>
-void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
+void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdate)
 {
     readMetaData( meshParts );
     M_meshPartIn = meshParts;
@@ -374,8 +372,7 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts)
 
     tic();
     M_meshPartIn->components().reset();
-    //M_meshPartIn->components().set( MESH_NO_UPDATE_MEASURES );
-    M_meshPartIn->components().set( MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_CHECK );
+    M_meshPartIn->components().set( ctxMeshUpdate );
     M_meshPartIn->updateForUse();
     toc("PartitionIO mesh update for use",FLAGS_v>0);
 }
@@ -483,6 +480,7 @@ void PartitionIO<MeshType>::writeStats()
             }
         }
     }
+
     // Create new table
     M_HDF5IO.createTable ("stats", H5T_STD_U32BE, currentSpaceDims);
 
@@ -526,7 +524,6 @@ void PartitionIO<MeshType>::writeStats()
             currentOffset[0] = 0;
             currentOffset[1] = partId;
         }
-
         M_HDF5IO.write("stats", H5T_NATIVE_UINT, currentCount, currentOffset, &M_uintBuffer[0]);
     }
     M_HDF5IO.closeTable("stats");
