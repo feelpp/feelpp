@@ -843,9 +843,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolve( vector_ptrtype rhs, vector_ptrtype sol ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {
-    if( M_Newton_fix_mean_pressure > 0 )
+    if( M_Newton_fix_mean_pressure >= 0 )
     {
         if ( Environment::isMasterRank() )
             std::cout << "Call postsolve: remove mean value to Newton pressure increment\n";
@@ -864,6 +869,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolve( vector_ptrtype rhs, vector_pt
         sol->close();
     }
 }
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
 
 //---------------------------------------------------------------------------------------------------------//
 

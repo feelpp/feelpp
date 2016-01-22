@@ -748,7 +748,12 @@ public :
     //___________________________________________________________________________________//
 
     virtual void solve();
-    void postSolve( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    //___________________________________________________________________________________//
+    void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    //___________________________________________________________________________________//
 
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     virtual void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const = 0;
