@@ -692,6 +692,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
         modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
     }
 
+    if( M_Newton_fix_mean_pressure >= 0 )
+    {
+        double fixed_mean_pressure = M_Newton_fix_mean_pressure;
+        double initial_guess_mean_pressure = this->computePressureMean();
+         
+        std::vector<size_type> indices_p(this->functionSpacePressure()->nLocalDofWithGhost());
+        size_type indexStart_p = this->functionSpaceVelocity()->nLocalDofWithGhost();
+        std::iota( indices_p.begin(), indices_p.end(), indexStart_p );
+        auto Up_vec = U->createSubVector(indices_p);
+        Up_vec->add( -initial_guess_mean_pressure + fixed_mean_pressure );
+        U->updateSubVector( Up_vec, indices_p );
+    }
 
     U->close();
 
