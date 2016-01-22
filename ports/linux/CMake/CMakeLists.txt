@@ -10,7 +10,7 @@
 # and you dependecies should be installed in subdirectories of <path_where_to_install_deps>
 
 project(feelpp-dependencies)
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 2.8.11)
 
 include(ExternalProject)
 
@@ -74,8 +74,9 @@ ExternalProject_Add(Boost
     DEPENDS OpenMPI
     PREFIX "${CMAKE_BINARY_DIR}"
     URL ${BOOST_URL}
-    PATCH_COMMAND touch ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && rm ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && touch ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && echo "using mpi ;" >> ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && echo "" >> ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam
-    CONFIGURE_COMMAND cd ${CMAKE_BINARY_DIR}/src/Boost && ./bootstrap.sh
+    CONFIGURE_COMMAND 
+    echo "using mpi $<SEMICOLON>" > ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && echo "" >> ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam
+        && cd ${CMAKE_BINARY_DIR}/src/Boost && ./bootstrap.sh
     BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/Boost && ./bjam -j16 install --layout=tagged --prefix=${BOOST_INSTALL_PREFIX} --user-config=user-config.jam variant=release threading=single,multi link=static,shared
     INSTALL_COMMAND true
 )
