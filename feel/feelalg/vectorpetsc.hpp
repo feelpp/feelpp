@@ -822,6 +822,24 @@ private :
 
 };
 
+/**
+ * @addtogroup FreeFunctions 
+ * @{
+ */
+
+/**
+ * @brief create a shared pointer VectorPetsc from PETSc Vec \p v
+ */
+#if BOOST_VERSION < 105900
+vector_ptrtype vec( Vec v, datamap_ptrtype d );
+#else
+vector_uptrtype vec( Vec v, datamap_ptrtype d );
+#endif
+/**
+ * @}
+ */
+
+
 } // Feel
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */

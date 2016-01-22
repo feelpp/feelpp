@@ -44,7 +44,8 @@ SolverEigen<T>::SolverEigen()
     M_is_initialized       ( false ),
     M_nev( 1 ),
     M_ncv( 3 ),
-    M_mpd( -2 )
+    M_mpd( invalid_size_type_value ),
+    M_interval_a( 0. ), M_interval_b( 0. )
 {
 }
 
@@ -59,8 +60,12 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
     M_is_initialized       ( false ),
     M_nev( ioption(_prefix=M_prefix,_name="solvereigen.nev") ),
     M_ncv( ioption(_prefix=M_prefix,_name="solvereigen.ncv") ),
-    M_mpd( ioption(_prefix=M_prefix,_name="solvereigen.mpd") )
+    M_mpd( invalid_size_type_value ),
+    M_interval_a( 0. ), M_interval_b( 0. )
 {
+    int mpdOption = ioption(_prefix=M_prefix,_name="solvereigen.mpd");
+    if ( mpdOption > 0 )
+        M_mpd = mpdOption;
 }
 
 template <typename T>
@@ -74,6 +79,8 @@ SolverEigen<T>::SolverEigen( SolverEigen const& eis )
     M_is_initialized       ( eis.M_is_initialized ),
     M_nev( eis.M_nev ),
     M_ncv( eis.M_ncv ),
+    M_mpd ( eis.M_mpd ),
+    M_interval_a( eis.M_interval_a ), M_interval_b( eis.M_interval_b ),
     M_maxit( eis.M_maxit ),
     M_tolerance( eis.M_tolerance ),
     M_mapRow( eis.M_mapRow ),

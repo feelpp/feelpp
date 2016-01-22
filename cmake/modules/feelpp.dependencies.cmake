@@ -126,7 +126,7 @@ MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
   SET( FEELPP_INSTANTIATION_MODE 1 )
 ENDIF()
-SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templates to instantiate up to 5 in 2D and 4 in 3D" )
 
 # enable host specific
 include(feelpp.host)
@@ -641,7 +641,14 @@ find_package(GFLAGS REQUIRED)
 
 INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
 
-SET(FEELPP_LIBRARIES ${GFLAGS_LIBRARIES} ${FEELPP_LIBRARIES})
+set(_paths "")
+set(_names "")
+feelpp_split_libs(${GFLAGS_LIBRARIES} _names _paths)
+SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+link_directories(${_paths})
+unset(_paths)
+unset(_names)
+
 if ( ${GFLAGS_INCLUDE_DIR} MATCHES "/contrib/" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/Contrib" )
 else()
@@ -652,7 +659,15 @@ endif()
 find_package(GLOG REQUIRED)
 
 INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
-SET(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES})
+
+set(_paths "")
+set(_names "")
+feelpp_split_libs(${GLOG_LIBRARIES} _names _paths)
+SET(FEELPP_LIBRARIES ${_names} ${FEELPP_LIBRARIES})
+link_directories(${_paths})
+unset(_paths)
+unset(_names)
+
 if ( ${GLOG_INCLUDE_DIR} MATCHES "/contrib/" )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/Contrib" )
 else()
@@ -729,7 +744,7 @@ if ( NOT GFORTRAN_LIBRARY )
     NAMES
     gfortran
     PATHS
-    $ENV{LIBRARY_PATH}
+    $ENV{LD_LIBRARY_PATH}
     /opt/local/lib
     /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
@@ -1141,6 +1156,34 @@ get_directory_property( FEELPP_DEFINITIONS DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE
 get_property( FEELPP_DEPS_INCLUDE_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 get_property( FEELPP_DEPS_LINK_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_DIRECTORIES)
 
+# From the variables FEELPP_DEPS_INCLUDE_DIR and FEELPP_DEPS_LINK_DIR, We remove every path that references
+# the build directory or the git clone. Those variables are meant for building external modules that
+# depend on Feel++, we cannot reference the original build directory or git clone, as they might not be present
+# on the server we build the module, e.g. if we install Feel++ with the tarball, we don't have those directories 
+# (ex: travis-ci)
+set(_FEELPP_DEPS_INCLUDE_DIR_NEW "")
+feelpp_clean_variable("${FEELPP_DEPS_INCLUDE_DIR}" _FEELPP_DEPS_INCLUDE_DIR_NEW )
+
+#message("${FEELPP_DEPS_INCLUDE_DIR}")
+#message("")
+#message("${_FEELPP_DEPS_INCLUDE_DIR_NEW}")
+#message(FATAL_ERROR "")
+set(FEELPP_DEPS_INCLUDE_DIR ${_FEELPP_DEPS_INCLUDE_DIR_NEW})
+
+unset(_FEELPP_DEPS_INCLUDE_DIR_NEW)
+
+set(_FEELPP_DEPS_LINK_DIR_NEW "")
+feelpp_clean_variable("${FEELPP_DEPS_LINK_DIR}" _FEELPP_DEPS_LINK_DIR_NEW )
+
+#message("${FEELPP_DEPS_LINK_DIR}")
+#message("")
+#message("${_FEELPP_DEPS_LINK_DIR_NEW}")
+#message(FATAL_ERROR "")
+
+set(FEELPP_DEPS_LINK_DIR ${_FEELPP_DEPS_LINK_DIR_NEW})
+unset(_FEELPP_DEPS_LINK_DIR_NEW)
+
 MARK_AS_ADVANCED(FEELPP_DEPS_INCLUDE_DIR)
 MARK_AS_ADVANCED(FEELPP_DEPS_LINK_DIR)
+
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)

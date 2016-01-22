@@ -177,7 +177,7 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
@@ -317,7 +317,7 @@ int main(int argc, char**argv )
 
         double res = 0;
         auto deltaU = Vh->element();
-        auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
+        auto at_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
         map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "increment", "Dirichlet" ) } ;
         do
         {
