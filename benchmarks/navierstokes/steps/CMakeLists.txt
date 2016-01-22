@@ -50,6 +50,6 @@ install(TARGETS feelpp_steady_ns_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_steady_ns_3d_P3P2 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_steady_ns_3d_P4P3 DESTINATION bin/ COMPONENT Bin )
 
-feelpp_add_testcase( TurekHronExt3d )
+# feelpp_add_testcase( TurekHronExt3d )
 
 ##add_subdirectory(qslapla)

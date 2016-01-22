@@ -772,7 +772,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         else
         {
-            Warning() << "no processor seems to have the point " << __x << "\n";
+            LOG( WARNING ) << "no processor seems to have the point " << __x << "\n";
         }
 
         return g_;

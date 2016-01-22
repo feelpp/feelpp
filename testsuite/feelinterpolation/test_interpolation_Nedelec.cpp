@@ -117,8 +117,7 @@ public :
     TestInterpolationHCurl()
         :
         super(),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New() )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         this->changeRepository( boost::format( "%1%/" )
                                 % this->about().appName()
@@ -130,9 +129,6 @@ public :
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 };
 
@@ -175,9 +171,7 @@ TestInterpolationHCurl::testInterpolation( std::string one_element_mesh )
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
     U_h_on_boundary.on(_range=boundaryfaces(oneelement_mesh), _expr=myexpr);
 
-    export_ptrtype exporter_proj( export_type::New( ( boost::format( "%1%" ) % this->about().appName() ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    auto exporter_proj = exporter( _mesh=mesh, _name=( boost::format( "%1%" ) % this->about().appName() ).str() );
     exporter_proj->step( 0 )->add( "U_interpolation_handly_"+mesh_path.stem().string(), U_h_int );
     exporter_proj->step( 0 )->add( "U_interpolation_on_"+mesh_path.stem().string(), U_h_on );
     exporter_proj->save();

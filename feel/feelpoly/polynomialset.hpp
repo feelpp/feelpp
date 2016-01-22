@@ -944,10 +944,20 @@ public:
         {
             return M_hessian[i][0][q]( c1,c2 );
         }
+        // hessian of scalar basis function
+        h_type const& hessian( size_type i, uint16_type q ) const
+            {
+                return M_hessian[i][0][q];
+            }
         // hessian of vectorial basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
             {
                 return M_hessian[i][c1][q]( c2,c3 );
+            }
+        // hessian of vectorial basis function
+        h_type const& hessian( size_type i, uint16_type c1, uint16_type q ) const
+            {
+                return M_hessian[i][c1][q];
             }
 
         void print()
