@@ -153,3 +153,9 @@ ExternalProject_Add(ParaView
 # Configure file for downloading packages
 # Useful when on an other machine internet is not available and we want to use LOCAL_FILE_PATH
 configure_file(get_distrib.sh.in get_distrib.sh @ONLY@)
+
+# Create a profile module for the packages
+configure_file(feelpp.profile.in feelpp.profile @ONLY@)
+
+# Create a shell script to source for loading the built applications
+configure_file(setup_env.sh.in setup_env.sh @ONLY@)
