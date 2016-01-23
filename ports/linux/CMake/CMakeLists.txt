@@ -100,6 +100,7 @@ if(LOCAL_FILE_PATH)
             && PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc ./configure 
                 --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS="-O3" 
                 --CXXOPTFLAGS="-O3" --FOPTFLAGS="-O3" --prefix=${PETSC_INSTALL_PREFIX} 
+                --with-cc=${OPENMPI_INSTALL_PREFIX}/bin/mpicc --with-fc=${OPENMPI_INSTALL_PREFIX}/bin/mpif90 --with-cxx=${OPENMPI_INSTALL_PREFIX}/bin/mpic++
                 --download-suitesparse=${LOCAL_FILE_PATH}/SuiteSparse-4.4.3.tar.gz --download-ml --download-metis --download-parmetis 
                 --download-blacs --download-scalapack=${LOCAL_FILE_PATH}/scalapack-2.0.2.tgz --download-fblaslapack --download-mumps 
                 --download-hypre=${LOCAL_FILE_PATH}/hypre-2.10.0b-p2.tar.gz --download-ptscotch --download-elemental 
