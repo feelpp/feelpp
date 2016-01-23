@@ -1,0 +1,79 @@
+#%Module1.0################
+
+set clangpath @LLVM_INSTALL_PREFIX@
+set openmpipath @OPENMPI_INSTALL_PREFIX@
+set gmshpath @GMSH_INSTALL_PREFIX@
+set boostpath @BOOST_INSTALL_PREFIX@
+set petscpath @PETSC_INSTALL_PREFIX@
+set slepcpath @SLEPC_INSTALL_PREFIX@
+set paraviewpath @PARAVIEW_INSTALL_PREFIX@
+
+if [module-info mode load] {
+    # clang
+    prepend-path PATH $clangpath/lib
+    prepend-path LD_LIBRARY_PATH $clangpath/lib
+    prepend-path manpath $clangpath/share/man/man1
+    setenv CC $clangpath/bin/clang
+    setenv CXX $clangpath/bin/clang++
+
+    # OpenMPI
+	prepend-path PATH $openmpipath/bin
+	prepend-path LD_LIBRARY_PATH $openmpipath/lib
+    
+    # Gmsh
+    prepend-path CMAKE_PREFIX_PATH $gmshpath
+	prepend-path PATH $gmshpath/bin
+	prepend-path GMSH_DIR $gmshpath
+	prepend-path LD_LIBRARY_PATH $gmshpath/lib
+    
+    # Boost
+	setenv BOOST_ROOT $boostpath
+	prepend-path LD_LIBRARY_PATH $boostpath/lib
+    
+    # PETSc
+	setenv PETSC_DIR $petscpath
+	prepend-path LD_LIBRARY_PATH $petscpath/lib
+    
+    # SLEPc
+	setenv SLEPC_DIR $slepcpath
+	prepend-path LD_LIBRARY_PATH $slepcpath/lib
+    
+    # ParaView
+	prepend-path PATH $paraviewpath/bin
+	prepend-path LD_LIBRARY_PATH $paraviewpath/lib
+}
+
+if [module-info mode remove] {
+    # Clang
+    remove-path PATH $clangpath/bin
+    remove-path LD_LIBRARY_PATH $clangpath/lib
+    remove-path MANPATH $clangpath/share/man/man1
+    unsetenv CC
+    unsetenv CXX
+
+    # OpenMPI
+	remove-path PATH $openmpipath/bin
+	remove-path LD_LIBRARY_PATH $openmpipath/lib
+
+    # Gmsh
+    remove-path CMAKE_PREFIX_PATH $gmshpath
+	remove-path PATH $gmshpath/bin
+	remove-path GMSH_DIR $gmshpath
+	remove-path LD_LIBRARY_PATH $gmshpath/lib
+    
+    # Boost
+	unsetenv BOOST_ROOT $boostpath
+	remove-path LD_LIBRARY_PATH $boostpath/lib
+    
+    # PETSc
+	unsetenv PETSC_DIR $petscpath
+	remove-path LD_LIBRARY_PATH $petscpath/lib
+    
+    # SLEPc
+	unsetenv SLEPC_DIR $slepcpath
+	remove-path LD_LIBRARY_PATH $slepcpath/lib
+
+    # ParaView
+	remove-path PATH $paraviewpath/bin
+	remove-path LD_LIBRARY_PATH $paraviewpath/lib
+}
