@@ -101,9 +101,16 @@ if(LOCAL_FILE_PATH)
                 --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS="-O3" 
                 --CXXOPTFLAGS="-O3" --FOPTFLAGS="-O3" --prefix=${PETSC_INSTALL_PREFIX} 
                 --with-cc=${OPENMPI_INSTALL_PREFIX}/bin/mpicc --with-fc=${OPENMPI_INSTALL_PREFIX}/bin/mpif90 --with-cxx=${OPENMPI_INSTALL_PREFIX}/bin/mpic++
-                --download-suitesparse=${LOCAL_FILE_PATH}/SuiteSparse-4.4.3.tar.gz --download-ml --download-metis --download-parmetis 
-                --download-blacs --download-scalapack=${LOCAL_FILE_PATH}/scalapack-2.0.2.tgz --download-fblaslapack --download-mumps 
-                --download-hypre=${LOCAL_FILE_PATH}/hypre-2.10.0b-p2.tar.gz --download-ptscotch --download-elemental 
+                --download-suitesparse=${LOCAL_FILE_PATH}/SuiteSparse-4.4.3.tar.gz 
+                --download-ml=${LOCAL_FILE_PATH}/ml-6.2-p3.tar.gz 
+                --download-metis=${LOCAL_FILE_PATH}/metis-5.1.0-p1.tar.gz
+                --download-parmetis=${LOCAL_FILE_PATH}/parmetis-4.0.3-p2.tar.gz
+                --download-scalapack=${LOCAL_FILE_PATH}/scalapack-2.0.2.tgz 
+                --download-fblaslapack=${LOCAL_FILE_PATH}/fblaslapack-3.4.2.tar.gz 
+                --download-mumps=${LOCAL_FILE_PATH}/MUMPS_5.0.0-p1.tar.gz 
+                --download-hypre=${LOCAL_FILE_PATH}/hypre-2.10.0b-p2.tar.gz 
+                --download-ptscotch=${LOCAL_FILE_PATH}/scotch_6.0.3.tar.gz 
+                --download-elemental=${LOCAL_FILE_PATH}/Elemental-0.85-p1.tar.gz 
                 --download-elemental-shared=1 --with-cxx-dialect=C++11
         BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc && make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt all
         INSTALL_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc &&  make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt install
