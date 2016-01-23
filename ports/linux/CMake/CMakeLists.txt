@@ -20,6 +20,10 @@ OPTION(ENABLE_BUILD_CLANG "Enable Clang compilation" OFF)
 OPTION(ENABLE_GUI "Enable GUI when compiling software" OFF)
 
 set(LOCAL_FILE_PATH "" CACHE PATH "Specify a path where to find packages locally (when internet is unavailable)")
+# Allows to add options to BJAM
+# Example: if Boost install crashes because it cannot find bzlib.h, you can
+# disable bzip2 with -sNO_BZIP2=1
+set(BJAM_OPTIONS "" CACHE STRING "Specify options to be passed to bjam")
 
 if(ENABLE_BUILD_CLANG)
     if(LOCAL_FILE_PATH)
@@ -70,25 +74,57 @@ ExternalProject_Add(Gmsh
     CMAKE_ARGS -DENABLE_FLTK=${ENABLE_GUI} -DENABLE_MPI=OFF -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DCMAKE_BUILD_TYPE=release -DENABLE_PETSC=OFF -DCMAKE_INSTALL_PREFIX=${GMSH_INSTALL_PREFIX}
 )
 
+# Ensure that we can pass the argument to the command line
+separate_arguments(BJAM_OPTIONS_SEP UNIX_COMMAND "${BJAM_OPTIONS}")
+
 ExternalProject_Add(Boost
     DEPENDS OpenMPI
     PREFIX "${CMAKE_BINARY_DIR}"
     URL ${BOOST_URL}
     CONFIGURE_COMMAND 
-    echo "using mpi $<SEMICOLON>" > ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam && echo "" >> ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam
+        echo "using mpi : ${OPENMPI_INSTALL_PREFIX}/bin/mpic++ $<SEMICOLON>" > ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam
+        && echo "" >> ${CMAKE_BINARY_DIR}/src/Boost/user-config.jam
         && cd ${CMAKE_BINARY_DIR}/src/Boost && ./bootstrap.sh
-    BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/Boost && ./bjam -j16 install --layout=tagged --prefix=${BOOST_INSTALL_PREFIX} --user-config=user-config.jam variant=release threading=single,multi link=static,shared
+    BUILD_COMMAND
+        cd ${CMAKE_BINARY_DIR}/src/Boost
+        && ./bjam -j4 install ${BJAM_OPTIONS_SEP} --layout=tagged --prefix=${BOOST_INSTALL_PREFIX} --user-config=user-config.jam variant=release threading=single,multi link=sh
     INSTALL_COMMAND true
 )
 
-ExternalProject_Add(PETSc
-    DEPENDS OpenMPI
-    PREFIX "${CMAKE_BINARY_DIR}"
-    URL ${PETSC_URL} 
-    CONFIGURE_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc && PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc ./configure --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS="-O3" --CXXOPTFLAGS="-O3" --FOPTFLAGS="-O3"  --prefix=${PETSC_INSTALL_PREFIX} --download-suitesparse=1  --download-ml  --download-metis  --download-parmetis  --download-blacs  --download-scalapack  --download-fblaslapack  --download-mumps  --download-hypre  --download-ptscotch --download-elemental --download-elemental-shared=1 --with-cxx-dialect=C++11
-    BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc && make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt all
-    INSTALL_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc &&  make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt install
-)
+if(LOCAL_FILE_PATH)
+    ExternalProject_Add(PETSc
+        DEPENDS OpenMPI
+        PREFIX "${CMAKE_BINARY_DIR}"
+        URL ${PETSC_URL} 
+        CONFIGURE_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc 
+            && PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc ./configure 
+                --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS="-O3" 
+                --CXXOPTFLAGS="-O3" --FOPTFLAGS="-O3" --prefix=${PETSC_INSTALL_PREFIX} 
+                --download-suitesparse=${LOCAL_FILE_PATH}/SuiteSparse-4.4.3.tar.gz --download-ml --download-metis --download-parmetis 
+                --download-blacs --download-scalapack=${LOCAL_FILE_PATH}/scalapack-2.0.2.tgz --download-fblaslapack --download-mumps 
+                --download-hypre=${LOCAL_FILE_PATH}/hypre-2.10.0b-p2.tar.gz --download-ptscotch --download-elemental 
+                --download-elemental-shared=1 --with-cxx-dialect=C++11
+        BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc && make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt all
+        INSTALL_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc &&  make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt install
+    )
+else()
+    ExternalProject_Add(PETSc
+        DEPENDS OpenMPI
+        PREFIX "${CMAKE_BINARY_DIR}"
+        URL ${PETSC_URL} 
+        CONFIGURE_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc 
+            && PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc ./configure 
+                --with-shared-libraries=1  --with-debugging=0  --COPTFLAGS="-O3" 
+                --CXXOPTFLAGS="-O3" --FOPTFLAGS="-O3" --prefix=${PETSC_INSTALL_PREFIX} 
+                --with-cc=${OPENMPI_INSTALL_PREFIX}/bin/mpicc --with-fc=${OPENMPI_INSTALL_PREFIX}/bin/mpif90 --with-cxx=${OPENMPI_INSTALL_PREFIX}/bin/mpic++
+                --download-suitesparse=1 --download-ml --download-metis --download-parmetis 
+                --download-blacs --download-scalapack=1 --download-fblaslapack --download-mumps 
+                --download-hypre=1 --download-ptscotch --download-elemental 
+                --download-elemental-shared=1 --with-cxx-dialect=C++11
+        BUILD_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc && make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt all
+        INSTALL_COMMAND cd ${CMAKE_BINARY_DIR}/src/PETSc &&  make PETSC_DIR=${CMAKE_BINARY_DIR}/src/PETSc PETSC_ARCH=arch-linux2-c-opt install
+    )
+endif()
 
 ExternalProject_Add(SLEPc
     DEPENDS PETSc
@@ -105,3 +141,7 @@ ExternalProject_Add(ParaView
     URL ${PARAVIEW_URL}
     CMAKE_ARGS -DPARAVIEW_BUILD_QT_GUI=${ENABLE_GUI} -DPARAVIEW_ENABLE_CATALYST=ON -DPARAVIEW_ENABLE_PYTHON=ON -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_USE_MPI=ON -DCMAKE_INSTALL_PREFIX=${PARAVIEW_INSTALL_PREFIX}
 )
+
+# Configure file for downloading packages
+# Useful when on an other machine internet is not available and we want to use LOCAL_FILE_PATH
+configure_file(get_distrib.sh.in get_distrib.sh @ONLY@)
