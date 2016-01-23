@@ -87,7 +87,7 @@ ExternalProject_Add(Boost
         && cd ${CMAKE_BINARY_DIR}/src/Boost && ./bootstrap.sh
     BUILD_COMMAND
         cd ${CMAKE_BINARY_DIR}/src/Boost
-        && ./bjam -j4 install ${BJAM_OPTIONS_SEP} --layout=tagged --prefix=${BOOST_INSTALL_PREFIX} --user-config=user-config.jam variant=release threading=single,multi link=sh
+        && ./bjam -j4 install ${BJAM_OPTIONS_SEP} --layout=tagged --prefix=${BOOST_INSTALL_PREFIX} --user-config=user-config.jam variant=release threading=single,multi link=static,shared
     INSTALL_COMMAND true
 )
 
