@@ -1,0 +1,32 @@
+#!/bin/bash
+
+mkdir -p deps
+cd deps
+
+# clang
+wget http://llvm.org/releases/3.7.1/llvm-3.7.1.src.tar.xz -O llvm-3.7.1.src.tar.xz
+wget http://llvm.org/releases/3.7.1/compiler-rt-3.7.1.src.tar.xz -O compiler-rt-3.7.1.src.tar.xz
+wget http://llvm.org/releases/3.7.1/cfe-3.7.1.src.tar.xz -O cfe-3.7.1.src.tar.xz
+
+# OpenMPI
+wget http://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-@OPENMPI_VERSION@.tar.gz -O openmpi-@OPENMPI_VERSION@.tar.gz
+
+# Gmsh
+wget http://gmsh.info/src/gmsh-@GMSH_VERSION@-source.tgz -O gmsh-@GMSH_VERSION@-source.tgz
+
+# Boost
+wget http://sourceforge.net/projects/boost/files/boost/@BOOST_VERSION@/boost_@BOOST_VERSION_US@.tar.gz/download -O boost_@BOOST_VERSION_US@.tar.gz
+
+# Petsc
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-@PETSC_VERSION@.tar.gz -O petsc-@PETSC_VERSION@.tar.gz
+
+wget http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.3.tar.gz -O SuiteSparse-4.4.3.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/scotch_6.0.3.tar.gz -O scotch_6.0.3.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/hypre-2.10.0b-p2.tar.gz -O hypre-2.10.0b-p2.tar.gz
+wget http://www.netlib.org/scalapack/scalapack-2.0.2.tgz -O scalapack-2.0.2.tgz
+
+# SLEPc
+wget "http://slepc.upv.es/download/download.php?filename=slepc-@SLEPC_VERSION@.tar.gz" -O slepc-@SLEPC_VERSION@.tar.gz
+
+# ParaView
+wget "http://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v4.4&type=source&os=all&downloadFile=ParaView-v4.4.0-source.tar.gz" -O ParaView-v4.4.0-source.tar.gz
