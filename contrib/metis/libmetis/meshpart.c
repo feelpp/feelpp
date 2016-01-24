@@ -19,7 +19,7 @@
 * This function partitions a finite element mesh by partitioning its nodal
 * graph using KMETIS and then assigning elements in a load balanced fashion.
 **************************************************************************/
-int METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+int Feel_METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
           idx_t *vwgt, idx_t *vsize, idx_t *nparts, real_t *tpwgts, 
           idx_t *options, idx_t *objval, idx_t *epart, idx_t *npart)
 {
@@ -47,16 +47,16 @@ int METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
   }
 
   /* get the nodal graph */
-  rstatus = METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
+  rstatus = Feel_METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
   if (rstatus != METIS_OK)
     raise(SIGERR);
 
   /* partition the graph */
   if (ptype == METIS_PTYPE_KWAY) 
-    rstatus = METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+    rstatus = Feel_METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
                   nparts, tpwgts, NULL, options, objval, npart);
   else 
-    rstatus = METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+    rstatus = Feel_METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
                   nparts, tpwgts, NULL, options, objval, npart);
 
   if (rstatus != METIS_OK)
@@ -72,8 +72,8 @@ SIGTHROW:
     options[METIS_OPTION_NUMBERING] = 1;
   }
 
-  METIS_Free(xadj);
-  METIS_Free(adjncy);
+  Feel_METIS_Free(xadj);
+  Feel_METIS_Free(adjncy);
 
   gk_siguntrap();
   gk_malloc_cleanup(0);
@@ -87,7 +87,7 @@ SIGTHROW:
 * This function partitions a finite element mesh by partitioning its dual
 * graph using KMETIS and then assigning nodes in a load balanced fashion.
 **************************************************************************/
-int METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+int Feel_METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
           idx_t *vwgt, idx_t *vsize, idx_t *ncommon, idx_t *nparts, 
           real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
           idx_t *npart) 
@@ -117,16 +117,16 @@ int METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
   }
 
   /* get the dual graph */
-  rstatus = METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
+  rstatus = Feel_METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
   if (rstatus != METIS_OK)
     raise(SIGERR);
 
   /* partition the graph */
   if (ptype == METIS_PTYPE_KWAY) 
-    rstatus = METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+    rstatus = Feel_METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
                   nparts, tpwgts, NULL, options, objval, epart);
   else 
-    rstatus = METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+    rstatus = Feel_METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
                   nparts, tpwgts, NULL, options, objval, epart);
 
   if (rstatus != METIS_OK)
@@ -161,8 +161,8 @@ SIGTHROW:
     options[METIS_OPTION_NUMBERING] = 1;
   }
 
-  METIS_Free(xadj);
-  METIS_Free(adjncy);
+  Feel_METIS_Free(xadj);
+  Feel_METIS_Free(adjncy);
 
   gk_siguntrap();
   gk_malloc_cleanup(0);
