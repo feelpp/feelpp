@@ -50,16 +50,7 @@ if(ENABLE_BUILD_CLANG)
             && mv ${CMAKE_BINARY_DIR}/src/llvm-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM
             && mv ${CMAKE_BINARY_DIR}/src/compiler-rt-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/projects/compiler-rt
             && mv ${CMAKE_BINARY_DIR}/src/cfe-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/tools/clang
-            CMAKE_ARGS 
-                -G "Unix Makefiles" 
-                -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_PREFIX}
-                -DCMAKE_BUILD_TYPE=Release
-                -DGCC_INSTALL_PREFIX=${GNU_INSTALL_DIR}
-                -DCMAKE_C_COMPILER=${GNU_INSTALL_DIR}/bin/gcc
-                -DCMAKE_CXX_COMPILER=${GNU_INSTALL_DIR}/bin/g++
-                -DBUILD_SHARED_LIBS=ON
-                -DLLVM_BUILD_TOOLS=OFF
-                -DCLANG_INCLUDE_DOCS=OFF -DCLANG_INCLUDE_TESTS=OFF
+            CMAKE_ARGS -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DGCC_INSTALL_PREFIX=${GNU_INSTALL_DIR} -DCMAKE_C_COMPILER=${GNU_INSTALL_DIR}/bin/gcc -DCMAKE_CXX_COMPILER=${GNU_INSTALL_DIR}/bin/g++ -DBUILD_SHARED_LIBS=ON -DLLVM_BUILD_TOOLS=OFF -DCLANG_INCLUDE_DOCS=OFF -DCLANG_INCLUDE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_PREFIX}
         )
     else()
         ExternalProject_Add(LLVM
@@ -75,16 +66,7 @@ if(ENABLE_BUILD_CLANG)
             && mv ${CMAKE_BINARY_DIR}/src/llvm-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM
             && mv ${CMAKE_BINARY_DIR}/src/cfe-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/tools/clang
             && mv ${CMAKE_BINARY_DIR}/src/compiler-rt-3.7.1.src ${CMAKE_BINARY_DIR}/src/LLVM/projects/compiler-rt
-            CMAKE_ARGS 
-                -G "Unix Makefiles" 
-                -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_PREFIX}
-                -DCMAKE_BUILD_TYPE=Release
-                -DGCC_INSTALL_PREFIX=${GNU_INSTALL_DIR}
-                -DCMAKE_C_COMPILER=${GNU_INSTALL_DIR}/bin/gcc
-                -DCMAKE_CXX_COMPILER=${GNU_INSTALL_DIR}/bin/g++
-                -DBUILD_SHARED_LIBS=ON
-                -DLLVM_BUILD_TOOLS=OFF
-                -DCLANG_INCLUDE_DOCS=OFF -DCLANG_INCLUDE_TESTS=OFF
+            CMAKE_ARGS -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DGCC_INSTALL_PREFIX=${GNU_INSTALL_DIR} -DCMAKE_C_COMPILER=${GNU_INSTALL_DIR}/bin/gcc -DCMAKE_CXX_COMPILER=${GNU_INSTALL_DIR}/bin/g++ -DBUILD_SHARED_LIBS=ON -DLLVM_BUILD_TOOLS=OFF -DCLANG_INCLUDE_DOCS=OFF -DCLANG_INCLUDE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL_PREFIX}
         )
     endif()
 endif()
