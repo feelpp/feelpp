@@ -15,7 +15,7 @@
 /*************************************************************************/
 /*! This function is the entry point for MCKMETIS */
 /*************************************************************************/
-int METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
+int Feel_METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
           idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, idx_t *nparts, 
           real_t *tpwgts, real_t *ubvec, idx_t *options, idx_t *objval, 
           idx_t *part)
@@ -176,7 +176,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, graph_t *graph)
   real_t *ubvec=NULL;
   int status;
 
-  METIS_SetDefaultOptions(options);
+  Feel_METIS_SetDefaultOptions(options);
   options[METIS_OPTION_NITER]   = 10;
   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
   options[METIS_OPTION_NO2HOP]  = ctrl->no2hop;
@@ -191,7 +191,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, graph_t *graph)
     case METIS_OBJTYPE_CUT:
     case METIS_OBJTYPE_VOL:
       options[METIS_OPTION_NCUTS] = ctrl->nIparts;
-      status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+      status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
                    graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
                    graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
                    options, &curobj, graph->where);
@@ -208,7 +208,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, graph_t *graph)
 
       ntrials = (ctrl->nIparts+1)/2;
       for (i=0; i<ntrials; i++) {
-        status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+        status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
                      graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
                      graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
                      options, &curobj, graph->where);
