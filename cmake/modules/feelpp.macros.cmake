@@ -404,6 +404,16 @@ macro(feelpp_max max var1 var2 )
   endif()
 endmacro(feelpp_max)
 
+#
+# compute the min of two variables
+macro(feelpp_min min var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${min} ${var2})
+  else()
+    set(${min} ${var1})
+  endif()
+endmacro(feelpp_min)
+
 # This macros cleans up a variable containing a list of paths
 # It:
 # - Removes any reference to the original git source directory used for builds (important for instal with tarball)
