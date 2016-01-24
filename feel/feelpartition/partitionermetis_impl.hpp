@@ -26,7 +26,8 @@
 
 namespace Metis {
 extern "C" {
-#include <metis.h>
+    //#include <metis.h>
+    #include <feelmetis.h>
 } //"C"
 }
 #include <feel/feelpartition/csrgraphmetis.hpp>
@@ -77,10 +78,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
     // Invoke METIS, but only on processor 0.
     // Then broadcast the resulting decomposition
-    if ( Environment::isMasterRank() )
+    if ( mesh->worldComm().isMasterRank() )
     {
         CSRGraphMetis<Metis::idx_t> csr_graph;
-        
         csr_graph.offsets.resize(mesh->numElements()+1, 0);
 
         // Local scope for these
@@ -99,7 +99,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 const dof_id_type gid = global_index_map[elt.id()];
 
                 CHECK( gid < vwgt.size() ) << "Invalid gid " << gid << " greater or equal than " << vwgt.size();
-            
+
                 // maybe there is a better weight?
                 // The weight is used to define what a balanced graph is
                 //if(!_weights)
@@ -117,7 +117,6 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                     size_type neighbor_id = elt.neighbor( ms ).first;
                     if ( neighbor_id != invalid_size_type_value )
                     {
-                                        
                         num_neighbors++;
                     }
                 }
@@ -167,13 +166,13 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
         // Use recursive if the number of partitions is less than or equal to 8
         if (np <= 8)
-            Metis::METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+            Metis::Feel_METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                             NULL, &nparts, NULL, NULL, NULL,
                                             &edgecut, &part[0]);
 
         // Otherwise  use kway
         else
-            Metis::METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+            Metis::Feel_METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                        NULL, &nparts, NULL, NULL, NULL,
                                        &edgecut, &part[0]);
 
