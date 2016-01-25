@@ -177,14 +177,21 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh,
+                             _properties_space=Pdh<0>(Vh->mesh()),
+                             _type=soption("stokes.preconditioner"),
+                             _bc=bcs, _matrix= at.matrixPtr(),
+                             _prefix="velocity" );
+    
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
     auto b = backend(_prefix="picard",_name="picard");
 
-    auto precPetsc = preconditioner( _prefix="picard",_matrix=at.matrixPtr(),_pc=b->pcEnumType(),
-                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+    auto precPetsc = preconditioner( _prefix="picard",
+                                    _matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(),
+                                    _backend=b->shared_from_this(),
                                     _worldcomm=b->comm() );
 
     bool attachMassMatrix = boption(_name="attach-mass-matrix");
