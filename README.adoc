@@ -1,14 +1,21 @@
+Feel++
+======
 
-Gitter Discussion Forum image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at https://gitter.im/feelpp/feelpp", link="https://gitter.im/feelpp/feelpp"]
+:toc:
+:toc-placement: preamble
+:toc-level: 1
 
-.Travis Builds
+Gitter Discussion Forum 
+image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
+
+.Continuous Integration
 |===
-| Branch | master | develop |
-| Build status |image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-|image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| Platform & Compiler | `master` | `develop` 
+| Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 |===
 
-## Introduction
+== Introduction
 
 [Feel++](www.feelpp.org) is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
 
@@ -20,26 +27,19 @@ Gitter Discussion Forum image:https://badges.gitter.im/Join%20Chat.svg["Join the
 
 Some basic installation procedure are available in the [INSTALL](INSTALL.md) file, the detailled process is available [here](http://www.feelpp.org/docs/develop/BuildingP.html)
 
-## Releases
+== Releases
 
 Here are the latest releases of Feel++
 
    - Feel++ [0.99.0](https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1) [![DOI](https://zenodo.org/badge/3881/feelpp/feelpp.png)](http://dx.doi.org/10.5281/zenodo.11624)
 
-## Build Status
 
-Feel++ uses Travis-CI for continuous integration.
-Travis-CI Build Status :
-
-  - develop branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=develop)](https://travis-ci.org/feelpp/feelpp)
-  - master branch : [![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=master)](https://travis-ci.org/feelpp/feelpp)
-
-## Documentation
+== Documentation
 
   - develop branch : [Feel++ Online Reference Manual](http://www.feelpp.org/docs/develop/index.html)
   - master branch (latest release) : [Feel++ Online Reference Manual](http://www.feelpp.org/docs/master/index.html)
 
-## Features
+== Features
 
   - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
   - continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
@@ -52,14 +52,15 @@ Travis-CI Build Status :
   - supports [Paraview](http://www.paraview.org) for post-processing
 
 
-## Examples
+== Examples
 
-### Laplacian in 2D using P3 Lagrange basis functions
+=== Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve
 $$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
 
-```cpp
+[source,cpp]
+---
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
@@ -92,15 +93,16 @@ int main(int argc, char**argv )
     e->save();
     return 0;
 }
-```
+---
 
 
-### Bratu equation in 2D
+=== Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve
 $$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
 
-```cpp
+[source,cpp]
+---
 #include <feel/feel.hpp>
 
 inline
@@ -169,6 +171,6 @@ main( int argc, char** argv )
     e->add( "u", u );
     e->save();
 }
-```
+---
 
 
