@@ -257,6 +257,28 @@ private:
 
 };
 
+template<typename EdgeIteratorType,typename PermutationType>
+struct UpdateEdgeAndEdgePermutation
+{
+    UpdateEdgeAndEdgePermutation( std::vector< std::pair< EdgeIteratorType,PermutationType> > const& eltToEdgeDatas )
+        :
+        M_eltToEdgeDatas( eltToEdgeDatas )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element  ) const
+    {
+        for ( uint16_type eid=0;eid< M_eltToEdgeDatas.size();++eid )
+        {
+            auto const& eltToEdgeData = M_eltToEdgeDatas[eid];
+            element.setEdge( eid, *eltToEdgeData.first );
+            element.setEdgePermutation( eid, eltToEdgeData.second );
+        }
+    }
+private:
+    std::vector< std::pair< EdgeIteratorType,PermutationType> > const& M_eltToEdgeDatas;
+};
+
+
 struct updateIdInOthersPartitions
 {
     updateIdInOthersPartitions( rank_type pid, size_type id )
