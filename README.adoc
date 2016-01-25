@@ -1,11 +1,12 @@
 
- . Gitter Discussion Forum [![Join the chat at https://gitter.im/feelpp/feelpp](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
+ . Gitter Discussion Forum 
+ image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at https://gitter.im/feelpp/feelpp", link="https://gitter.im/feelpp/feelpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
 
 .Travis Builds
 |===
-| master | develop |
-|[![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=develop)](https://travis-ci.org/feelpp/feelpp) |
-[![Build Status](https://travis-ci.org/feelpp/feelpp.svg?branch=master)](https://travis-ci.org/feelpp/feelpp) |
+| Branch | master | develop |
+| Build status |image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+|image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]|
 |===
 
 ## Introduction
