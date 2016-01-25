@@ -1,0 +1,247 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+# $Id$
+
+#source ${portpath}/../../../macports-xc5/tcl/fixLibsAndExecutables.tcl
+
+PortSystem  1.0
+# Portgroup is not an option until we find a way to get rid of the -arch option
+#PortGroup   cmake 1.0
+PortGroup   active_variants 1.1
+
+name                 feel++
+
+fetch.type           git
+git.url              https://github.com/feelpp/feelpp.git
+#git.branch           develop
+git.branch           fa3caa94ba893572b9e11c944c674ddc8ed26dfd
+version              0.100.0-beta.7
+
+# version              0.99.0-final.1
+# master_sites         https://github.com/feelpp/feelpp/releases/download/v${version}
+# distname             feelpp-${version}
+# checksums            rmd160  c28b931df50be56f1ba944cdc677688b1f778dc4 \
+#                      sha256  f3b54d8eb29623d02ece62fecb80c9fe4e78608a81185f0fc3017d4a9a2a617d
+
+
+categories           science
+platforms            macosx darwin freebsd
+maintainers          feelpp.org:christophe.prudhomme
+description          Finite Element Embedded Library and Language in C++
+long_description    \
+ Feel++ is a versatile finite element library\
+ to solve partial differential equations.\
+ \
+ Support 1D, 2D, 3D\
+ \
+ Support the following basic entities: simplices (segment, triangle,\
+ tetrahedron) and product of simplices (quadrangle, hexahedron)\
+ \
+ Support various point sets on these basic entities: equispaced\
+ points, quadrature points, interpolation points (Gauss-Lobatto,\
+ Fekete, WarpBlend?)\
+ \
+ Support continuous and discontinuous Galerkin methods\
+ \
+ Support various polynomial sets:\
+ \
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation\
+ point sets)\
+ \
+  * Dubiner(discontinuous), boundary adapted(continuous)\
+ \
+  * Legendre(discontinuous), boundary adapted(continuous)\
+ \
+ Provide mathematical concept for higher order abstraction (Function\
+ spaces and associated elements, forms and operators)\
+ \
+ Provide a language embedded in C++ for variational formulations,\
+ projection and numerical integration
+
+homepage            http://www.feelpp.org
+
+#worksrcdir	feel++-${version}
+configure	{
+    file mkdir ${worksrcpath}/build
+    system "cd ${worksrcpath}/build && ${configure.cmd} .. ${configure.args} "
+    #file mkdir ${worksrcdir}/build
+    #system "cd ${worksrcdir}/build && cmake ${configure.args} ../"
+}
+
+#build.target feelpp
+
+build {
+    if {${build.jobs} ne {} } {
+        # only the libfeelpp use // compilation
+        system "cd ${worksrcpath}/build && ${build.cmd} feelpp -j ${build.jobs} && ${build.cmd} ${build.target}"
+    } else {
+        system "cd ${worksrcpath}/build && ${build.cmd} feelpp && ${build.cmd} ${build.target}"
+    }
+}
+
+configure.env-append  PETSC_DIR=${prefix}/lib/petsc
+configure.env-append  SLEPC_DIR=${prefix}/lib/petsc
+
+
+# make sure to keep below in sync with cmake Portgroup except
+# for the configure.args option that mess up feel++
+# standard place to install extra CMake modules
+set cmake_share_module_dir ${prefix}/share/cmake/modules
+configure.cmd       cmake
+#configure.pre_args
+configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
+                    -DCMAKE_VERBOSE_MAKEFILE=OFF \
+                    -DCMAKE_COLOR_MAKEFILE=ON \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -DFEELPP_ENABLE_DOCUMENTATION=OFF \
+                    -DFEELPP_ENABLE_APPLICATIONS=OFF \
+                    -DFEELPP_ENABLE_BENCHMARKS=OFF \
+                    -DFEELPP_ENABLE_TESTS=OFF \
+                    -DFEELPP_ENABLE_RESEARCH=OFF \
+                    -DFEELPP_ENABLE_QUICKSTART=OFF \
+                    -DFEELPP_MODELS_ENABLE_THERMODYNAMICS=OFF \
+                    -DFEELPP_MODELS_ENABLE_SOLIDMECHANICS=OFF \
+                    -DFEELPP_MODELS_ENABLE_FLUIDMECHANICS=OFF \
+                    -DFEELPP_MODELS_ENABLE_FSI=OFF \
+                    -Wno-dev
+
+
+
+depends_lib    \
+    port:cmake\
+    port:boost \
+    port:petsc\
+    port:slepc\
+    port:gmsh-devel\
+    port:glpk \
+    port:libANN \
+    port:libxml2 \
+    port:vtk5 \
+    port:cln
+
+
+require_active_variants petsc atlas
+require_active_variants petsc hdf5
+require_active_variants petsc ml
+require_active_variants petsc mumps
+require_active_variants petsc openmpi
+require_active_variants petsc parmetis
+require_active_variants petsc suitesparse
+
+require_active_variants slepc openmpi
+
+default_variants    +openmpi_clang37
+if { ![variant_isset gcc49] && ![variant_isset clang36] && ![variant_isset clang36]  } {
+    default_variants    +clang37
+}
+
+variant gcc49 description {Build with gcc 4.9} conflicts clang36 clang37  {
+    depends_lib-append  port:gcc49
+    configure.compiler  macports-gcc-4.9
+    configure.args-append \
+        -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.9 \
+        -DCMAKE_C_COMPILER=${prefix}/bin/gcc-mp-4.9
+    #-DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.9
+    require_active_variants petsc gcc49
+    require_active_variants slepc gcc49
+    require_active_variants gmsh-devel gcc49
+    require_active_variants boost gcc49
+    require_active_variants cln gcc49
+}
+variant clang36 description {Build with clang 3.6} conflicts gcc49 clang37 {
+    depends_lib-append  port:clang-3.6
+    configure.compiler  macports-clang-3.6
+    configure.args-append \
+        -DCMAKE_CXX_COMPILER=${prefix}/bin/clang++-mp-3.6 \
+        -DCMAKE_C_COMPILER=${prefix}/bin/clang-mp-3.6
+    require_active_variants petsc clang36
+    require_active_variants slepc clang36
+    require_active_variants gmsh-devel clang36
+    require_active_variants boost clang36
+    require_active_variants cln clang36
+}
+variant clang37 description {Build with clang 3.6} conflicts gcc49 clang36 {
+    depends_lib-append  port:clang-3.7
+    configure.compiler  macports-clang-3.7
+    configure.args-append \
+        -DCMAKE_CXX_COMPILER=${prefix}/bin/clang++-mp-3.7 \
+        -DCMAKE_C_COMPILER=${prefix}/bin/clang-mp-3.7
+    require_active_variants petsc clang37
+    require_active_variants slepc clang37
+    require_active_variants gmsh-devel clang37
+    require_active_variants boost clang37
+    require_active_variants cln clang37
+
+}
+
+
+
+#destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
+
+# destroot {
+#    system "cd ${worksrcpath}/build && ${destroot.cmd} ${destroot.target} ${destroot.destdir}"
+# }
+
+# post-destroot {
+#     fixLibsAndExecutables ${worksrcpath} ${destroot}
+# }
+
+
+
+#post-build {
+#   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
+#}
+
+
+
+variant openmpi_gcc48 description {Use OpenMPI} conflicts openmpi_clang35 {
+    depends_lib-append      port:openmpi-gcc48
+    configure.args-append \
+        -DMPI_COMPILER=${prefix}/bin/mpicxx-openmpi-gcc48
+}
+variant openmpi_clang35 description {Use OpenMPI with openmpi-clang35 } conflicts openmpi_gcc48 {
+    depends_lib-append      port:openmpi-clang35
+    configure.args-append \
+        -DMPI_COMPILER=${prefix}/bin/mpicxx-openmpi-clang35
+}
+variant openmpi_clang37 description {Use OpenMPI with openmpi-clang37 } conflicts openmpi_gcc48 openmpi_clang35 {
+    depends_lib-append      port:openmpi-clang37
+    configure.args-append \
+        -DMPI_COMPILER=${prefix}/bin/mpicxx-openmpi-clang37
+}
+
+
+variant doc description {Add doc support} {
+  depends_lib_append \
+    port:doxygen \
+    port:latex2html \
+    port:imagemagick
+  configure.args-delete -DFEEL_ENABLE_DOCUMENTATION=OFF
+  configure.args-append -DFEEL_ENABLE_DOCUMENTATION=ON
+}
+
+variant scipy description {Add python bindings} {
+  depends_lib_append \
+    port:py27-scipy\
+    port:py27-numpy
+}
+
+variant applications description {Add applications support} {
+  configure.args-delete -DFEELPP_ENABLE_APPLICATIONS=OFF
+  configure.args-append -DFEELPP_ENABLE_APPLICATIONS=ON
+}
+
+variant octave description {Add octave bindings} {
+  depends_lib_append \
+    port:octave
+  configure.args-append \
+    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
+}
+
+#variant tbb description {Add tbb support} {
+#  depends_lib_append \
+#    port:tbb
+#}

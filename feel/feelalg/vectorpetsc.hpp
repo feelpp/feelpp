@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -139,21 +139,33 @@ public:
      * This allows ownership of v to remain with the original creator,
      * and to simply provide additional functionality with the VectorPetsc.
      */
-    VectorPetsc( Vec v )
+    VectorPetsc( Vec v, bool duplicate = false )
         :
         super(),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
-    VectorPetsc( Vec v, datamap_ptrtype const& dm )
+    VectorPetsc( Vec v, datamap_ptrtype const& dm, bool duplicate = false )
         :
         super( dm ),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( duplicate )
     {
-        this->M_vec = v;
+        if ( duplicate )
+        {
+            VecDuplicate( v, &M_vec );
+            VecCopy( v, M_vec );
+        }
+        else
+            this->M_vec = v;
         this->M_is_initialized = true;
     }
 
@@ -267,6 +279,7 @@ public:
     //@{
 
     value_type operator() ( const size_type i ) const;
+    value_type& operator() ( const size_type i );
 
 
     /**
@@ -371,6 +384,16 @@ public:
     //@{
 
     /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+
+    /**
      * Call the assemble functions
      */
     void close ()
@@ -425,6 +448,11 @@ public:
      * v(i) = value
      */
     void set ( size_type i, const value_type& value );
+
+    /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    void setVector ( int* i, int n, value_type* v );
 
     /**
      * v(i) += value
@@ -547,6 +575,11 @@ public:
     void add ( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    int reciprocal();
+
+    /**
      * @return the minimum element in the vector.
      * In case of complex numbers, this returns the minimum
      * Real part.
@@ -631,6 +664,23 @@ public:
     value_type dot( Vector<T> const& __v );
 
     /**
+     * This function creates a vector which is defined
+     * by the row indices given in the "rows" entries.
+     */
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const;
+
+    /**
+     * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
+     * into row indices given in the "rows" entries.
+     */
+    void
+    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                     std::vector<size_type> const& rows,
+                     bool init=true );
+
+    /**
      * Serialization for PETSc VECSEQ
      */
     template<class Archive>
@@ -655,7 +705,6 @@ public:
     //@}
 
 
-
 protected:
 
 public:
@@ -673,6 +722,10 @@ public:
         this->M_is_initialized = true;
         this->close();
     }
+
+    void getSubVectorPetsc( std::vector<size_type> const& rows,
+                            Vec &subvec,
+                            bool init=true ) const;
 
 
 protected:
@@ -711,7 +764,7 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
     VectorPetscMPI( datamap_ptrtype const& dm );
 
@@ -725,8 +778,11 @@ public:
                const bool fast=false );
 
     value_type operator() ( const size_type i ) const;
+    value_type& operator() ( const size_type i );
 
     void set( size_type i, const value_type& value );
+
+    void setVector( int* i, int n, value_type* v );
 
     void add( const size_type i, const value_type& value );
 
@@ -734,6 +790,12 @@ public:
 
     void addVector ( const Vector<value_type>& V_in,
                      const MatrixSparse<value_type>& A_in );
+
+    void zero();
+    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    {
+        this->zero();
+    }
 
     void clear();
 
@@ -759,6 +821,24 @@ private :
     VecScatter M_vecScatter;
 
 };
+
+/**
+ * @addtogroup FreeFunctions 
+ * @{
+ */
+
+/**
+ * @brief create a shared pointer VectorPetsc from PETSc Vec \p v
+ */
+#if BOOST_VERSION < 105900
+vector_ptrtype vec( Vec v, datamap_ptrtype d );
+#else
+vector_uptrtype vec( Vec v, datamap_ptrtype d );
+#endif
+/**
+ * @}
+ */
+
 
 } // Feel
 #endif /* FEELPP_HAS_PETSC */

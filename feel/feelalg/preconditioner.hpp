@@ -36,6 +36,7 @@
 #include <feel/feelalg/vector.hpp>
 
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/nullspace.hpp>
 
 namespace Feel
 {
@@ -56,24 +57,33 @@ class Preconditioner
 public:
 
 
-    /** @name Constants
+    /** @name Enums
      */
     //@{
 
+    /**
+     * preconditioner side
+     */
+    enum Side
+    {
+        LEFT=0, // default
+        RIGHT=1,
+        SYMMETRIC=2
+    };
 
     //@}
 
     /** @name Typedefs
      */
     //@{
-
+    typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
     typedef boost::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
     typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
-
+    
     //@}
 
     /** @name Constructors, destructor
@@ -89,11 +99,13 @@ public:
     M_name(),
     M_worldComm( o.M_worldComm ),
     M_matrix( o.M_matrix ),
+    M_side( o.M_side ),
     M_preconditioner_type( o.M_preconditioner_type ),
     M_matSolverPackage_type( o.M_matSolverPackage_type ),
     M_prec_matrix_structure ( o.M_prec_matrix_structure ),
     M_is_initialized( o.M_is_initialized ),
-    M_mat_has_changed( o.M_mat_has_changed )
+    M_mat_has_changed( o.M_mat_has_changed ),
+    M_nearNullSpace( o.M_nearNullSpace )
         {}
 
     //! destructor
@@ -113,13 +125,14 @@ public:
     //@{
 
     //! copy operator
-    Preconditioner& operator=( Preconditioner const & o )
+    Preconditioner& operator=( Preconditioner const & o ) 
         {
             if ( this != &o )
             {
                 M_name = o.M_name;
                 M_worldComm = o.M_worldComm;
                 M_matrix = o.M_matrix;
+                M_side = o.M_side;
                 M_is_initialized = o.M_is_initialized;
                 M_matSolverPackage_type = o.M_matSolverPackage_type;
                 M_prec_matrix_structure = o.M_prec_matrix_structure;
@@ -160,13 +173,13 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply( const Vector<T> & x, Vector<T> & y ) = 0;
+    virtual void apply( const Vector<T> & x, Vector<T> & y ) const = 0;
 
     /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    void apply( vector_ptrtype const& x, vector_ptrtype& y )
+    void apply( vector_ptrtype const& x, vector_ptrtype& y ) const
         {
             this->apply( *x, *y );
         }
@@ -189,6 +202,49 @@ public:
     virtual std::string name() const { return M_name; }
 
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
+
+    /**
+     * Return true if the preconditioner will be reuse
+     */
+    bool reusePrec() const { return M_prec_matrix_structure == MatrixStructure::SAME_PRECONDITIONER; }
+
+    /**
+     * @return the side of the system to which the preconditioner applies
+     */
+    Side side() const { return M_side; }
+
+    bool hasNearNullSpace( std::set<int> const& splitIds ) const { return M_nearNullSpace.find(splitIds) != M_nearNullSpace.end(); }
+    boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
+    {
+        CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
+        return M_nearNullSpace.find(splitIds)->second;
+    }
+
+    bool hasAuxiliaryVector( std::string const& key ) const { return M_auxiliaryVector.find( key ) != M_auxiliaryVector.end(); }
+    vector_ptrtype const& auxiliaryVector( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliaryVector( key ) ) << " auxiliary vector not given for this key : " << key ;
+        return M_auxiliaryVector.find( key )->second;
+    }
+
+    bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
+    sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
+        return M_auxiliarySparseMatrix.find( key )->second;
+    }
+
+    bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
+    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners.find(key)->second;
+    }
+    preconditioner_ptrtype & inHousePreconditioners( std::string const& key )
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners[key];
+    }
 
     //@}
 
@@ -216,8 +272,37 @@ public:
     /**
      * information about the preconditioner matrix structure during successive linear solves
      */
-    void setPrecMatrixStructure( MatrixStructure mstruct  );
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct  );
 
+    /**
+     * set the side \p s of the linear system to which the preconditioner applies
+     */
+    void setSide( Side s ) { M_side = s; }
+
+    void attachNearNullSpace( int k, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        std::set<int> splitIds; splitIds.insert( k );
+        this->attachNearNullSpace( splitIds, nearNullSpace );
+    }
+    void attachNearNullSpace( std::set<int> const& splitIds, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        M_nearNullSpace[splitIds] = nearNullSpace;
+    }
+
+    void attachAuxiliaryVector( std::string const& key,vector_ptrtype const& vec )
+    {
+        M_auxiliaryVector[key] = vec;
+    }
+
+    void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_auxiliarySparseMatrix[key] = mat;
+    }
+
+    void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
+    {
+        M_inHousePreconditioners[key] = pc;
+    }
 
     //@}
 
@@ -248,7 +333,12 @@ protected:
     sparse_matrix_ptrtype  M_matrix;
 
     /**
-     * Enum statitng with type of preconditioner to use.
+     * side of the preconditioner
+     */
+    Side M_side;
+    
+    /**
+     * Enum stating with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
 
@@ -267,6 +357,15 @@ protected:
      */
     bool M_is_initialized, M_mat_has_changed;
 
+    /**
+     *  Near Null Space for Field Split
+     */
+    std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
+
+    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+    std::map<std::string,vector_ptrtype> M_auxiliaryVector;
+
+    std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -280,6 +379,7 @@ Preconditioner<T>::Preconditioner ( std::string const& name, WorldComm const& wo
 M_name(name),
 M_worldComm(worldComm),
 M_matrix(),
+M_side( LEFT ),
 M_preconditioner_type   ( ILU_PRECOND ),
 M_matSolverPackage_type ( MATSOLVER_PETSC ),
 M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
@@ -351,9 +451,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         observed = true;
     }
 
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
-
+#endif
     auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
     if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
@@ -373,12 +473,22 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         {
             p->setMatrix( matrix );
         }
-        VLOG(2) << "storing preconditionerin singleton" << "\n";
+        VLOG(2) << "storing preconditioner in singleton (name = " << prefix << ")\n";
         Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;
     }
 }
+
+/**
+ * FEELPP_INSTANTIATE_PRECONDITIONER is never defined except in preconditioner.cpp
+ * where we do the instantiate. This allows to reduce the Preconditioner
+ * instantiation to the strict minimum
+ */
+#if !defined( FEELPP_INSTANTIATE_PRECONDITIONER )
+extern template class Preconditioner<double>;
+extern template class Preconditioner<std::complex<double>>;
+#endif
 
 
 } // Feel

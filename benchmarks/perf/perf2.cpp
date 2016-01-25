@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -96,10 +96,10 @@ public:
     MyIntegrals( po::variables_map const& vm, AboutData const& about )
         :
         super(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>()  ),
-        nthreads( this->vm()["nthreads"].template as<int>()  ),
-        backend( Backend<double>::build( this->vm() ) )
+        meshSize( doption("hsize") ),
+        shape( soption("shape")  ),
+        nthreads( ioption("nthreads")  ),
+        backend( Backend<double>::build( soption("backend") ) )
     {
     }
 
@@ -190,7 +190,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     //# marker1 #
     double local_domain_area;
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
 #if 1
     int n = tbb::task_scheduler_init::default_num_threads();
     double initt;
@@ -213,7 +213,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     }
     std::cout << "------------------------------------------------------------\n";
 
-    for ( int p=this->vm()["nthreads"].template as<int>(); p<=n; ++p )
+    for ( int p=ioption("nthreads"); p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
         tbb::task_scheduler_init init( p );

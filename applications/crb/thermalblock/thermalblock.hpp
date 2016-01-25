@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -472,12 +472,12 @@ void
 ThermalBlock::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
     M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
 
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
-    double hsize = option(_name="hsize").template as<double>();
+    double hsize = doption(_name="hsize");
 
     if( mshfile_name=="" )
     {
@@ -615,12 +615,12 @@ ThermalBlock::initModel()
     M->zero();
     auto muref=refParameter();
     double muref_coeff=muref(0);
-    form1( Xh, M_Fq[0][0] );
+    form1( _test=Xh, _vector=M_Fq[0][0] );
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
     BOOST_FOREACH( auto marker, southMarkers )
     {
-        form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
+        form1( _test=Xh, _vector=M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
     }
@@ -632,17 +632,17 @@ ThermalBlock::initModel()
     {
         DVLOG(2) <<"[ThermalBlock::init] domain " << domain << "\n";
 
-        form2( Xh, Xh, M_Aq[index] ) =
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[index] ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
 
         if( index == 0 )
         {
-            form2( Xh, Xh, M ) +=
+            form2( _test=Xh, _trial=Xh, _matrix=M ) +=
                 integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
         }
         else
         {
-            form2( Xh, Xh, M ) +=
+            form2( _test=Xh, _trial=Xh, _matrix=M ) +=
                 integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) * muref_coeff );
         }
         DVLOG(2) <<"[ThermalBlock::init] done with Aqm[" << index << "]\n";
@@ -658,18 +658,18 @@ ThermalBlock::initModel()
         std::string sid = subdomainFromBoundary( marker );
         subdomain_index = subdomainId( marker );
 
-        form2( Xh, Xh, M_Aq[subdomain_index-1] ) +=  integrate( markedfaces( mmesh, marker ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[subdomain_index-1] ) +=  integrate( markedfaces( mmesh, marker ),
                                                                 -gradt( u )*vf::N()*id( v )
                                                                 -grad( u )*vf::N()*idt( v )
                                                                 );
 
-        form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, marker ),
+        form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( markedfaces( mmesh, marker ),
                                           -gradt( u )*vf::N()*id( v ) * muref_coeff
                                           -grad( u )*vf::N()*idt( v ) * muref_coeff
                                           );
 
-        form2( Xh, Xh, M_Aq[last_index] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
-        form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[last_index] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         north_subdomain_index.push_back( subdomain_index );
     }
@@ -823,7 +823,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     BOOST_FOREACH( auto domain, domainMarkers )
     {
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
-        form1( Xh, B ) += integrate( markedelements( mmesh, domain ),K[domain]*pi*pi*2*g*id( v ), _Q<10>() );
+        form1( _test=Xh, _vector=B ) += integrate( markedelements( mmesh, domain ),K[domain]*pi*pi*2*g*id( v ), _Q<10>() );
     }
 
     BOOST_FOREACH( auto marker, southMarkers )
@@ -831,7 +831,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
+        form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
     BOOST_FOREACH( auto marker, northMarkers )
@@ -839,7 +839,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ), g*( -K[sid]*grad( v )*vf::N()+gamma_dir*id( v )/hFace() ) ), _Q<10>()  ;
+        form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ), g*( -K[sid]*grad( v )*vf::N()+gamma_dir*id( v )/hFace() ) ), _Q<10>()  ;
     }
 
     BOOST_FOREACH( auto marker, westMarkers )
@@ -847,7 +847,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
+        form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
     BOOST_FOREACH( auto marker, eastMarkers )
@@ -855,7 +855,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ), K[sid]*mygrad*id( v ),_Q<10>() )  ;
+        form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ), K[sid]*mygrad*id( v ),_Q<10>() )  ;
     }
 
 
@@ -869,7 +869,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     {
         // std::cout << "Building lhs for domain " << domain << std::endl;
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
-        form2( Xh, Xh, A ) += integrate( markedelements( mmesh, domain ), K[domain]*gradt( u )*trans( grad( v ) ) );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) += integrate( markedelements( mmesh, domain ), K[domain]*gradt( u )*trans( grad( v ) ) );
     }
     BOOST_FOREACH( auto marker, northMarkers )
     {

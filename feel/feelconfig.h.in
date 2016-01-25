@@ -30,11 +30,17 @@
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
 #cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
+/* Define to 1 if you have FFTW available. */
+#cmakedefine FEELPP_HAS_FFTW
+
 /* Define to 1 if you have GINAC available. */
 #cmakedefine FEELPP_HAS_GINAC
 
 /* Define to 1 if you have the GLPK headers available. */
 #cmakedefine FEELPP_HAS_GLPK_H
+
+/* define the maximum polynomial order to instantiate */
+#cmakedefine FEELPP_INSTANTIATION_ORDER_MAX @FEELPP_INSTANTIATION_ORDER_MAX@
 
 /* Define executable to launch MPI mode. */
 #cmakedefine MPIEXEC @MPIEXEC@
@@ -138,6 +144,9 @@
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 
+/* Define to 1 if you have cereal. */
+#cmakedefine FEELPP_HAS_CEREAL
+
 /* Define to 1 if you have Python. */
 #cmakedefine FEELPP_HAS_PYTHON
 
@@ -164,6 +173,12 @@
 
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
+
+/* Define to 1 if you the insitu part is enabled for VTK . */
+#cmakedefine FEELPP_VTK_INSITU_ENABLED
+
+/* Define to 1 if you have the parallel component for VTK. */
+#cmakedefine VTK_HAS_PARALLEL
 
 /* The path of installation */
 #cmakedefine INSTALL_PATH

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-01-27
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,13 +23,20 @@
 */
 /**
    \file submeshdata.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-01-27
  */
 #ifndef __SubMeshData_H
 #define __SubMeshData_H 1
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wredeclared-class-member"
+#endif
 #include <boost/bimap.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 namespace Feel
 {

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -154,13 +155,6 @@ public:
                                                                                                   uint16_type,
                                                                                                   &element_type::boundaryEntityDimension> > >,
 
-
-            // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                            multi_index::const_mem_fun<element_type,
-                                                                       rank_type,
-                                                                       &element_type::processId> >,
-
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_ghostcell>,
                                             multi_index::const_mem_fun<element_type,
@@ -188,11 +182,6 @@ public:
     typedef typename elements_type::template index<Feel::detail::by_marker3>::type marker3_elements;
     typedef typename marker3_elements::iterator marker3_element_iterator;
     typedef typename marker3_elements::const_iterator marker3_element_const_iterator;
-
-    typedef typename elements_type::template index<Feel::detail::by_pid>::type pid_elements;
-    typedef typename pid_elements::iterator pid_element_iterator;
-    typedef typename pid_elements::const_iterator pid_element_const_iterator;
-
 
     typedef typename elements_type::template index<Feel::detail::by_location>::type location_elements;
     typedef typename location_elements::iterator location_element_iterator;
@@ -717,31 +706,6 @@ public:
     {
         return M_elements.template get<Feel::detail::by_marker3>();
     }
-
-    /**
-     * get the elements container using the process id view
-     *
-     *
-     * @return the element container using process id view
-     */
-    pid_elements &
-    elementsByProcessId()
-    {
-        return M_elements.template get<Feel::detail::by_pid>();
-    }
-
-    /**
-     * get the elements container using the process id view
-     *
-     *
-     * @return the element container using marker view
-     */
-    pid_elements const&
-    elementsByProcessId() const
-    {
-        return M_elements.template get<Feel::detail::by_pid>();
-    }
-
     /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
@@ -964,10 +928,11 @@ public:
      * @param f a new point
      * @return the new point from the list
      */
-    element_type const& addElement( element_type& f )
+    element_type const& addElement( element_type& f, bool setid = true )
     {
         M_parts[f.marker().value()]++;
-        f.setId( M_elements.size() );
+        if ( setid )
+            f.setId( M_elements.size() );
         return *M_elements.insert( f ).first;
         //M_elements.push_back( f );
         //return M_elements.back();

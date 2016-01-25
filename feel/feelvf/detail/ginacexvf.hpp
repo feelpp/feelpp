@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-14
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,12 @@ public:
     {
         static const bool result = expression_type::template HasTrialFunction<Funct>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = expression_type::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = expression_type::template has_trial_basis<Func>;
+    using test_basis = typename expression_type::test_basis;
+    using trial_basis = typename expression_type::trial_basis;
 
     typedef GiNaC::ex ginac_expression_type;
     typedef GinacExVF<ExprT> this_type;
@@ -86,6 +92,7 @@ public:
 
     explicit GinacExVF( ginac_expression_type const & fun,
                         std::vector<GiNaC::symbol> const& syms,
+                        std::string const& exprDesc,
                         std::vector< std::pair<GiNaC::symbol, expression_type> >const& expr,
                         std::string filename="",
                         WorldComm const& world=Environment::worldComm() )
@@ -94,53 +101,22 @@ public:
         M_fun( fun ),
         M_expr( expr ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string())
+        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_exprDesc( exprDesc )
         {
             DVLOG(2) << "Ginac constructor with expression_type \n";
             GiNaC::lst exprs(fun);
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
-            std::string filenameWithSuffix = M_filename + ".so";
-
-            // register the GinacExprManager into Feel::Environment so that it gets the
-            // GinacExprManager is cleared up when the Environment is deleted
-            static bool observed=false;
-            if ( !observed )
+            // get filename if not given
+            if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                Environment::addDeleteObserver( GinacExprManagerDeleter::instance() );
-                observed = true;
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
             }
 
-            bool hasLinked = ( GinacExprManager::instance().find( filename ) != GinacExprManager::instance().end() )? true : false;
-            if ( hasLinked )
-            {
-                M_cfun = GinacExprManager::instance().find( filename )->second;
-            }
-            else
-            {
-                // master rank check if the lib exist and compile this one if not done
-                if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
-                {
-                    if ( !M_filename.empty() && fs::path(filename).is_absolute() && !fs::exists(fs::path(filename).parent_path()) )
-                        fs::create_directories( fs::path(filename).parent_path() );
-                    DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                    GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
-                    hasLinked=true;
-                    if ( !M_filename.empty() )
-                        GinacExprManager::instance().operator[]( filename ) = M_cfun;
-                }
-                // wait the lib compilation
-                if ( !M_filename.empty() ) world.barrier();
-                // link with other process
-                if ( !hasLinked )
-                {
-                    DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                    GiNaC::link_ex(filenameWithSuffix, *M_cfun);
-                    if ( !M_filename.empty() )
-                        GinacExprManager::instance().operator[]( filename ) = M_cfun;
-                }
-            }
+            // build ginac lib and link if necessary
+            Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
     GinacExVF( GinacExVF const & fun )
@@ -149,7 +125,8 @@ public:
         M_fun( fun.M_fun ),
         M_expr( fun.M_expr ),
         M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename )
+        M_filename( fun.M_filename ),
+        M_exprDesc( fun.M_exprDesc )
         {
             if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
             {
@@ -216,7 +193,9 @@ public:
         return exprs_vec;
     }
 
-    const int index(int i=0) const
+    int nExpression() const { return M_expr.size(); }
+
+    int index(int i=0) const
     {
         auto it = std::find_if( M_syms.begin(), M_syms.end(),
                                 [=]( GiNaC::symbol const& s ) { return s.get_name() == M_expr[i].first.get_name(); } );
@@ -234,7 +213,7 @@ public:
         return indices_vec;
     }
 
-    const bool isZero() const { return M_fun.is_zero(); }
+    bool isZero() const { return M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     //@}
@@ -246,9 +225,7 @@ public:
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         // change 0 into rank
@@ -278,12 +255,11 @@ public:
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() )
             {
-                auto exprs = expr.expressions();
-                for(auto it=exprs.begin(); it!=exprs.end(); it++)
-                    {
-                        tensor_expr_type mytensor( *it, geom, fev, feu);
-                        M_t_expr.push_back( mytensor );
-                    }
+                for (int k=0 ; k< expr.nExpression() ; ++k )
+                {
+                    tensor_expr_type mytensor( expr.expression(k), geom, fev, feu );
+                    M_t_expr.push_back( mytensor );
+                }
             }
 
         tensor( this_type const& expr,
@@ -299,12 +275,11 @@ public:
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x(  expr.parameterValue() )
             {
-                auto exprs = expr.expressions();
-                for(auto it=exprs.begin(); it!=exprs.end(); it++)
-                    {
-                        tensor_expr_type mytensor( *it, geom, fev);
-                        M_t_expr.push_back( mytensor );
-                    }
+                for (int k=0 ; k< expr.nExpression() ; ++k )
+                {
+                    tensor_expr_type mytensor( expr.expression(k), geom, fev );
+                    M_t_expr.push_back( mytensor );
+                }
             }
 
         tensor( this_type const& expr, Geo_t const& geom )
@@ -319,12 +294,11 @@ public:
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() )
             {
-                auto exprs = expr.expressions();
-                for(auto it=exprs.begin(); it!=exprs.end(); it++)
-                    {
-                        tensor_expr_type mytensor( *it, geom );
-                        M_t_expr.push_back( mytensor );
-                    }
+                for (int k=0 ; k< expr.nExpression() ; ++k )
+                {
+                    tensor_expr_type mytensor( expr.expression(k), geom );
+                    M_t_expr.push_back( mytensor );
+                }
             }
         template<typename IM>
         void init( IM const& im )
@@ -449,6 +423,7 @@ private:
     std::vector< std::pair<GiNaC::symbol,expression_type> > M_expr;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
+    std::string M_exprDesc;
 };
 
 ///\endcond detail

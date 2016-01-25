@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,24 +35,32 @@ namespace Feel
 /**
  * Context for 'on' operation on sparse matrices
  */
-enum class OnContext
+struct ContextOn
 {
-    NONE                        = 0x0, /**< none */
-    ELIMINATION                 = 0x1, /**< elimination */
-    PENALISATION                = 0x2, /**< penalisation */
-    ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-    ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
+    enum Options
+    {
+        PENALISATION                = 0x0,  /**< penalisation */
+        ELIMINATION                 = 0x1, /**< elimination */
+        KEEP_DIAGONAL   = 0x2, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+        SYMMETRIC       = 0x4,  /**< enables elimination and make a symmetric elimination */
+        CHECK           = 0x6
+    };
 };
-extern std::map<std::string, OnContext> OnContextMap;
+extern std::map<std::string, size_type> ContextOnMap;
 
 
 enum   MatrixProperties
 {
-    HERMITIAN          = 0x1,   /**< hermitian : \f$A^* = A\f$ */
-    NON_HERMITIAN      = 0x2,   /**< non hermitian : \f$A^* != A\f$ */
-    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
-    SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
-    DENSE              = 0x10    /**< dense matrix */
+    SYMMETRIC          = 1 << 1, /**< symmetric : \f$A^T = A */
+    STRUCTURALLY_SYMMETRIC = 1 << 2, 
+    HERMITIAN          = 1 << 3, /**< hermitian : \f$A^* = A\f$ */
+    NON_HERMITIAN      = 1 << 4, /**< non hermitian : \f$A^* != A\f$ */
+    POSITIVE_DEFINITE  = 1 << 5, /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
+    NEGATIVE_DEFINITE  = 1 << 6, /**< negative definite matrix : \f$v^* A v < 0 \f$ for all non-zero v */
+    INDEFINITE         = 1 << 7, /**< negative and positive eigenvalues */
+    SPD                = SYMMETRIC | POSITIVE_DEFINITE,
+    SINGULAR           = 1 << 11,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
+    DENSE              = 1 << 20,    /**< dense matrix */
 };
 
 enum MatrixTranspose
@@ -100,7 +108,7 @@ enum SolverType {CG=0,
                  RICHARDSON,
                  CHEBYSHEV,
                  PREONLY,
-
+                 GCR,
                  INVALID_SOLVER
                 };
 
@@ -124,15 +132,27 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
                          LSC_PRECOND,
+                         LSC2_PRECOND,
+                         FEELPP_BLOCKNS_PRECOND,
+                         FEELPP_BLOCKMS_PRECOND,
                          ML_PRECOND,
                          GAMG_PRECOND,
                          BOOMERAMG_PRECOND,
+                         AMS_PRECOND,
                          REDUNDANT_PRECOND,
                          NONE_PRECOND,
                          INVALID_PRECONDITIONER
                         };
 
-
+///**
+// * Defines an \p enum for norm type
+// */
+//enum  KSPNormType {KSP_NORM_DEFAULT = -1,
+//                   KSP_NORM_NONE = 0,
+//                   KSP_NORM_PRECONDITIONED = 1,
+//                   KSP_NORM_UNPRECONDITIONED = 2,
+//                   KSP_NORM_NATURAL = 3
+//};
 /**
  * Defines an \p enum for field split types
  */
@@ -301,6 +321,7 @@ enum MatSolverPackageType
     MATSOLVER_PLAPACK,
     MATSOLVER_BAS,
     MATSOLVER_BOOMERAMG,
+    MATSOLVER_AMS,
     MATSOLVER_EUCLID,
     MATSOLVER_PILUT,
 
@@ -314,11 +335,16 @@ const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
 PreconditionerType
 pcTypeConvertStrToEnum( std::string const& type );
 
+KSPNormType
+kspNormTypeConvertStrToEnum( std::string const& type );
+
 SolverType
 kspTypeConvertStrToEnum( std::string const& type );
 
 SolverNonLinearType
 snesTypeConvertStrToEnum( std::string const& type );
+std::string
+snesTypeConvertEnumToStr( SolverNonLinearType type );
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type );

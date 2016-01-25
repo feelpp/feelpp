@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-10-14
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -28,3 +28,5 @@ feelpp_add_application( doc_ge_laplacianv SRCS ge_laplacianv.cpp CFG ge_laplacia
 feelpp_add_application( doc_ge_curlcurl SRCS ge_curlcurl.cpp CFG ge_curlcurl.cfg)
 feelpp_add_application( doc_ge_stokes SRCS ge_stokes.cpp CFG ge_stokes.cfg)
 feelpp_add_application( doc_ge_stokes_curl SRCS ge_stokes_curl.cpp CFG ge_stokes_curl.cfg)
+
+file(COPY cylinder.geo DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

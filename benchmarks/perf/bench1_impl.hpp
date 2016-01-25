@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -34,7 +34,7 @@
         const int Qorder = ExpressionOrder<decltype(elements(Xh->mesh())),decltype(TheExpr)>::value; \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                    \
-    form2(Xh,Xh,M) += integrate( _range=elements(Xh->mesh()),  _expr=TheExpr );      \
+    form2(Xh,Xh,_matrix=M) += integrate( _range=elements(Xh->mesh()),  _expr=TheExpr );      \
     ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(4) << FSType::fe_type::nOrder << " "               \
         << std::setw(8) << std::setprecision( 5 ) << timer.elapsed() << " " \
@@ -50,7 +50,7 @@
         const int Qorder = ExpressionOrder<decltype(elements(Xh->mesh())),decltype(TheExprQ)>::value; \
     typename _Q<Qorder>::template apply<FSType::fe_type::nDim,double,Simplex>::type quad; \
     timer.restart();                                                \
-    form2(Xh,Xh,M) += integrate( _range=elements(Xh->mesh()), _expr=TheExpr, _quad=_Q<Qorder>() );      \
+    form2(Xh,Xh,_matrix=M) += integrate( _range=elements(Xh->mesh()), _expr=TheExpr, _quad=_Q<Qorder>() );      \
     ofs << std::setw(20) << std::string(str1)+"_"+::boost::algorithm::replace_all_copy( std::string(str), " ", "_" ) << " " \
         << std::setw(4) << FSType::fe_type::nOrder << " "               \
         << std::setw(8) << std::setprecision( 5 ) << timer.elapsed() << " " \
@@ -78,7 +78,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
     typename dp0_space_type::pointer_type P0h = dp0_space_type::New( Xh->mesh() );
     typename dp0_space_type::element_type w( P0h );
     w = vf::project( P0h, elements( Xh->mesh() ), Px() );
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -120,7 +120,7 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -161,7 +161,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -204,7 +204,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -246,7 +246,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     boost::shared_ptr<Pkh_type> Pkh = Pkh_type::New( Xh->mesh() );
     auto betak = Pkh->element( "betak" );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -280,7 +280,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -311,7 +311,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -346,7 +346,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
@@ -384,7 +384,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     typename FSType::element_type v( Xh );
     sparse_matrix_ptrtype  M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh,Xh,M,_init=true );
+    form2( Xh,Xh,_matrix=M,_init=true );
     boost::timer timer;
 
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H)

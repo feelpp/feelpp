@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -32,7 +32,8 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctional.hpp>
-#include <feel/feelvf/vf.hpp>
+
+#include <feel/feelvf/form.hpp>
 
 namespace Feel
 {
@@ -62,11 +63,7 @@ public:
 
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
-#if 0
-        M_backend( backend_type::build( BACKEND_PETSC ) ),
-#else
-        M_backend( backend_type::build( ) ), // BACKEND_PETSC is the default backend
-#endif
+        M_backend( backend_type::build( soption( _name="backend" ) ) ), // BACKEND_PETSC is the default backend
         M_vector( M_backend->newVector( space ) ),
         M_name( "functionallinear" )
     {
@@ -183,12 +180,14 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
     ) // optionnal
 )
 {
 
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinear_return<Args>::type functional_type;
     typedef typename Feel::detail::compute_functionalLinear_return<Args>::ptrtype functional_ptrtype;
     return functional_ptrtype ( new functional_type( space , backend ) );

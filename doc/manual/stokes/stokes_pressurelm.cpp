@@ -1,8 +1,9 @@
-// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 namespace Feel
 {
@@ -83,8 +84,8 @@ void runStokesDirichletLM()
     auto submesh = createSubmesh(mesh,markedfaces(mesh,presslm));
 
     auto Vh1 = THch<OrderGeo>(mesh);
-    auto Vh21 = Pch<2,PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
-    auto Vh22 = Pch<2,PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,1>(submesh);
+    auto Vh21 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
+    auto Vh22 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,1>(submesh);
 
     if (Environment::worldComm().isMasterRank())
     {
@@ -111,6 +112,22 @@ void runStokesDirichletLM()
     myblockGraph(2,2) = stencil( _test=Vh22,_trial=Vh22, _diag_is_nonzero=true, _close=false)->graph();
 
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
+
+    auto a_01 = form2( _trial=Vh21, _test=Vh1 ,_matrix=A,
+                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() );
+    auto a_10 = form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
+                       _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 );
+    auto a_11=form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
+                     _rowstart=Vh1->nLocalDofWithGhost(),
+                     _colstart=Vh1->nLocalDofWithGhost() );
+    auto a_02 = form2( _trial=Vh22, _test=Vh1 ,_matrix=A,
+                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+    auto a_20 = form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
+                       _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 );
+    auto a_22=form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
+                     _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
+                     _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+
 
     BlocksBaseVector<double> myblockVec(3);
     myblockVec(0,0) = backend()->newVector( Vh1 );
@@ -155,16 +172,12 @@ void runStokesDirichletLM()
     std::cout << "Vh21/Vh22 trial\n";
     for( auto bdy : { inlet, outlet } )
     {
-        form2( _trial=Vh21, _test=Vh1 ,_matrix=A,
-               _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
-            +=integrate( markedfaces( mesh, bdy ),
-                         -trans(cross(id(u),N()))*(Clag1t) );
+        a_01 +=integrate( markedfaces( mesh, bdy ),
+                          -trans(cross(id(u),N()))*(Clag1t) );
 
 
-        form2( _trial=Vh22, _test=Vh1 ,_matrix=A,
-               _rowstart=0, _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
-            +=integrate( markedfaces( mesh, bdy ),
-                         -trans(cross(id(u),N()))*(Clag2t) );
+        a_02 +=integrate( markedfaces( mesh, bdy ),
+                          -trans(cross(id(u),N()))*(Clag2t) );
     }
 
 
@@ -176,23 +189,19 @@ void runStokesDirichletLM()
     std::cout << "Vh21 test " << inlet << "\n";
 
 
-    form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
-        +=integrate( markedelements( submesh, inlet  ),
+
+    a_10   +=integrate( markedelements( submesh, inlet  ),
                      -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*Clag1TT);
 
     std::cout << "Vh21 test " << outlet << "\n";
 
-    form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
-        +=integrate( markedelements( submesh, outlet ),
-                     -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*Clag1TT);
+    a_10 +=integrate( markedelements( submesh, outlet ),
+                      -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*Clag1TT);
 
     std::cout << "Vh22 test " << inlet << "\n";
-    form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-               _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
-        +=integrate( markedelements( submesh, inlet ),
-                     -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*(Clag2inlet));
+
+    a_20 +=integrate( markedelements( submesh, inlet ),
+                      -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*(Clag2inlet));
 
     std::cout << "Vh22 test " << outlet << "\n";
     form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
@@ -204,13 +213,13 @@ void runStokesDirichletLM()
     std::cout << "diag Vh1\n";
     form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=Vh1->nLocalDofWithGhost() )
-        +=integrate( elements( submesh ), 1e-4*idt(lambda1)*id(lambda1) );
+        +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda1)*id(lambda1) );
 
     std::cout << "diag Vh2\n";
     form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
            _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
-        +=integrate( elements( submesh ), 1e-4*idt(lambda2)*id(lambda2));
+        +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda2)*id(lambda2));
 
 
     form1( _test=Vh1, _vector=F,_rowstart=0 )
@@ -222,14 +231,9 @@ void runStokesDirichletLM()
             _range=markedfaces(mesh,"outlet"),
             _expr= -trans(N())*id(u) );
 
-    form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(),
-           _colstart=Vh1->nLocalDofWithGhost() )
-        += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
+    a_11        += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
 
-    form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
-           _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
+    a_22
         += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda2, _expr=cst(0.));
 
     A->printMatlab("A.m");

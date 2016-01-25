@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -98,8 +98,13 @@ struct compute_form1_return
     typedef vf::detail::LinearForm<test_type,vector_type,vector_type> type;
 #endif
 };
+
 /// \endcond
-//boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >
+
+/**
+ * @addtogroup FreeFunction
+ * @{
+ */
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_form1_return<Args>::type ), // 1. return type
     form1,                                       // 2. name of the function template
@@ -117,8 +122,10 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+#if BOOST_VERSION < 105900
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, vector, rowstart, init, do_threshold, threshold );
 } // form
@@ -142,6 +149,9 @@ BOOST_PARAMETER_FUNCTION(
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
+/**
+ * @}
+ */
 
 /// \cond detail
 template<typename Args, typename T>
@@ -168,32 +178,6 @@ struct compute_form2_return<Args, mpl::true_>
 };
 /// \endcond
 
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
-    form2,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *(Feel::detail::is_matrix_ptr<mpl::_> ) ) ) // required
-    ( optional                                  //    four optional parameters, with defaults
-      ( init,             *( boost::is_integral<mpl::_> ), false )
-      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
-      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
-      ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
-      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
-    )
-)
-{
-    Feel::detail::ignore_unused_variable_warning( args );
-    //return form( test, trial, *matrix, init, false, 1e-16, pattern );
-    return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
-    //return form( test, trial, *matrix, init, false, threshold, pattern );
-    //return form( test, trial, *matrix, init, false, threshold, 0 );
-} //
-#else
 BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
                           form2,                                       // 2. name of the function template
                           tag,                                        // 3. namespace of tag types
@@ -204,16 +188,19 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                           (deduced
                            ( optional                                  //    four optional parameters, with defaults
                              ( init,             *( boost::is_integral<mpl::_> ), false )
+                             ( properties,       ( size_type ), NON_HERMITIAN )
                              ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
                              ( backend,          *, Feel::backend() )
-                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) )
                              ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
                              ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
                                ) // optional
                               ) // deduced
                         )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
@@ -223,7 +210,6 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //
 
-#endif
 
 #if 0
 BOOST_PARAMETER_FUNCTION(

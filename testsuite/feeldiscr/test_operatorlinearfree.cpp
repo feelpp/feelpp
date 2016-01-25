@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Stephane Veys <stephane.veys@imag.fr>
        Date: 2013-03-29
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ testOperatorLinearFree()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build();
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();
@@ -132,7 +132,7 @@ testOperatorLinearComposite()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();
@@ -252,7 +252,7 @@ testExpression()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( soption( _name="backend" ) );
 #endif
 
     auto mesh=unitHypercube<Dim>();

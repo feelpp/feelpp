@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,19 +29,23 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-01-29
  */
-#define USE_BOOST_TEST 1
-
+#if 1
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE H_div approximation
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
-
 #include <testsuite/testsuite.hpp>
+#endif
 
-#include <feel/feel.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/dh.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feeldiscr/projector.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 namespace Feel
 {
@@ -138,9 +142,9 @@ public:
     TestHDiv3D()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        mesh( loadMesh(_mesh = new mesh_type) )
     {
         std::cout << "[TestHDiv3D]\n";
 
@@ -164,17 +168,15 @@ private:
     //! mesh characteristic size
     double meshSize;
 
-    //! exporter factory
-    export_ptrtype exporter;
+    mesh_ptrtype mesh;
 
 }; //TestHDiv
 
 void
 TestHDiv3D::exampleProblem1()
 {
-    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
+    //mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
     auto hsize = doption("gmsh.hsize");
-    std::cout << "hsize=" << hsize << std::endl;
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
     auto K = mat<3,3>(cst(2.),cst(1.),cst(1.),
@@ -213,8 +215,6 @@ TestHDiv3D::exampleProblem1()
     // Deduce u :
     u_l = vf::project( Xhvec, elements(mesh), -K*trans(gradv(p_l)) );
 
-    std::cout << "[Darcy] Lagrange solve done" << std::endl;
-
     // ****** Dual-mixed solving - with Raviart Thomas ******
     prod_space_ptrtype Yh = prod_space_type::New( mesh );
     auto U_rt = Yh->element( "(u,p)" ); //trial
@@ -242,114 +242,93 @@ TestHDiv3D::exampleProblem1()
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
 
-    std::cout << "[Darcy] RT solve done" << std::endl;
-
     // ****** Compute error ******
     auto l2err_u = normL2( _range=elements(mesh), _expr=idv(u_l) - idv(u_rt) );
     auto l2err_p = normL2( _range=elements(mesh), _expr=idv(p_l) - idv(p_rt) );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( Environment::isMasterRank() )
         {
             std::cout << "||u(primal) - u(dual-mixed)|| = " << l2err_u << std::endl;
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
         }
 
+#if USE_BOOST_TEST
     BOOST_CHECK_SMALL( l2err_u, 1.0 );
     BOOST_CHECK_SMALL( l2err_p, 1.0 );
-
+#endif
     // ****** Export results ******
-    export_ptrtype exporter_pro1( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % "darcy" ).str() ) );
-
-    exporter_pro1->step( 0 )->setMesh( mesh );
+    std::string exporter_pro1_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % "darcy" ).str();
+    auto exporter_pro1 = exporter( _mesh=mesh,_name=exporter_pro1_name );
     exporter_pro1->step( 0 )->add( "velocity_L", u_l );
     exporter_pro1->step( 0 )->add( "potential_L", p_l );
     exporter_pro1->step( 0 )->add( "velocity_RT", u_rt );
     exporter_pro1->step( 0 )->add( "potential_RT", p_rt );
     exporter_pro1->save();
+
 }
 
 void
 TestHDiv3D::testProjector()
 {
-    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
+    //auto mesh = loadMesh(_mesh = new mesh_type);
 
     auto RTh = Dh<0>( mesh );
-    lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
-    lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
+    //lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
+    //lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
+    auto Yh_v = Pchv<1>(mesh);
+    auto Yh_s = Pch<1>(mesh);
 
     auto E = Px()*unitX() + Py()*unitY() + Pz()*unitZ(); //(x,y,z)
     auto f = cst(3.); //div(E) = f
-
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
     auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
     auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
+    // H1 projection (Lagrange)
+    auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
+    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=eye<3>() );
+    auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
+
+    // HDIV projection (Lagrange)
+    auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
+    auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(3.) );
+    auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
+
     // L2 projection (RT)
     auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
     auto E_pL2_rt = l2_rt->project( _expr= E );
     auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
-    // H1 projection (Lagrange)
-    auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
-    auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=eye<3>() );
-    auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
-
-    // H1 projection (RT)
-    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=eye<3>() );
-    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
-
-    // HDIV projection (Lagrange)
-    auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
-    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
-    auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
-    auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
-
-    // HDIV projection (RT)
-    auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-    auto E_pHDIV_rt = hdiv->project( _expr= E, _div_expr=cst(0.) );
-    auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
-
+#if USE_BOOST_TEST
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_rt ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
-
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
+#else
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
+    std::cout << "error H1: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
+    std::cout << "error HDIV: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
+    std::cout << "error L2 [RT]: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
+#endif
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % Environment::about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % proj_name ).str();
+    auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHDIV_rt );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->save();
 }
 
@@ -364,7 +343,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
 {
     BOOST_TEST_MESSAGE( "*** projection on cube ***" );
     Feel::TestHDiv3D t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
+    Feel::Environment::changeRepository( boost::format( "%1%/test_projection/" )
                                          % Feel::Environment::about().appName() );
     t.testProjector();
 }
@@ -374,7 +353,7 @@ BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
     BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
     Feel::TestHDiv3D t;
 
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_Darcy/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "%1%/test_Darcy/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % t.hSize() );
 
@@ -387,11 +366,13 @@ BOOST_AUTO_TEST_SUITE_END()
 int
 main( int argc, char* argv[] )
 {
-    Feel::Environment env( argc,argv,
-                           makeAbout(), makeOptions() );
-    Feel::TestHDiv3D app_hdiv;
-    app_hdiv.shape_functions();
+    using namespace Feel;
+    Environment env( _argc=argc,_argv=argv,
+                     _about=makeAbout(),
+                     _desc=makeOptions() );
+    TestHDiv3D app_hdiv;
     app_hdiv.testProjector();
+    app_hdiv.exampleProblem1();
 }
 
 #endif

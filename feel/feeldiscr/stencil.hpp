@@ -30,7 +30,6 @@
 #endif
 
 #include <feel/feelvf/pattern.hpp>
-#include <feel/feelvf/block.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -774,8 +773,9 @@ BOOST_PARAMETER_FUNCTION(
         // cleanup memory before doing anything
         stencilManagerGarbageCollect();
     }
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
@@ -1473,9 +1473,11 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
         //const uint16_type  n1_dof_on_element = element_dof1.size();
         const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
-
         for ( const size_type domain_eid : domains_eid_set )
         {
+            if ( trial_space_type::dof_type::is_mortar )
+                element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
+
             // Get the global indices of the DOFs with support on this element
             _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
 
@@ -1966,10 +1968,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 }
             } // for (size_type i=0; i<n1_dof_on_element_range; i++)
 
-            uint16_type nbFind = hasFinds.size();
             bool doQ=false;
+            // try to detect if we need to apply doQ
+            if ( test_space_type::is_mortar && elem.isOnBoundary() )
+                doQ = true;
+            uint16_type nbFind = hasFinds.size();
             size_type id1,id2;
-
             for ( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
                 if ( hasFinds[nF].template get<0>() )
                 {

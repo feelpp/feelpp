@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -54,7 +54,7 @@ public:
 
     boost::none_t element( uint16_type /* e */ ) const
     {
-        return boost::none_t();
+        return boost::none;
     }
 
     SubFaceOfNone() {}
@@ -163,7 +163,14 @@ public:
     {
         return *boost::get<0>( M_element1 );
     }
+    size_type idElement0() const { return boost::get<1>( M_element0 ); }
+    uint16_type idInElement0() const { return boost::get<2>( M_element0 ); }
+    rank_type pidElement0() const { return boost::get<3>( M_element0 ); }
 
+    size_type idElement1() const { return boost::get<1>( M_element1 ); }
+    uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
+    rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
+    
     size_type ad_first() const
     {
         return boost::get<1>( M_element0 );
@@ -492,9 +499,8 @@ template <uint16_type Dim,
          typename T = double>
 class GeoElement0D
     :
-    //public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-public Geo0D<Dim,T>,
-public SubFace
+    public Geo0D<Dim,T>,
+    public SubFace
 {
 public:
 
@@ -508,20 +514,22 @@ public:
     typedef SubFace super2;
 
     typedef GeoElement0D<Dim,SubFace,T> self_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
+#if 0
+    using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
+                                           mpl::identity<self_type>, 
+                                           mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
+#else
+    using element_type = self_type;
+    using gm_type = boost::none_t;
+    using gm1_type = boost::none_t;
+#endif
     typedef self_type point_type;
 
     typedef typename super::matrix_node_type matrix_node_type;
 
     static const uint16_type numLocalVertices = super::numVertices;
 
-    GeoElement0D()
-        :
-        super(),
-        super2()
-        //M_facept()
-    {}
-
+    GeoElement0D() = default;
 
     //! Declares item id and if it is on boundary
     GeoElement0D( size_type id, bool boundary = false )
@@ -547,6 +555,9 @@ public:
         //M_facept()
     {}
 
+    GeoElement0D( GeoElement0D const & g ) = default;
+    GeoElement0D( GeoElement0D && g ) = default;
+
     template<typename SF>
     GeoElement0D( GeoElement0D<Dim,SF,T> const & g )
         :
@@ -559,6 +570,9 @@ public:
     ~GeoElement0D()
     {}
 
+    GeoElement0D & operator = ( GeoElement0D const& g ) = default;
+    GeoElement0D & operator = ( GeoElement0D && g ) = default;
+    
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -820,13 +834,8 @@ public:
     /**
      * copy consttructor
      */
-    GeoElement1D( GeoElement1D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_vertices( g.M_vertices ),
-        M_vertex_permutation( g.M_vertex_permutation )
-    {}
+    GeoElement1D( GeoElement1D const& g ) = default;
+    GeoElement1D( GeoElement1D && g ) = default;
 
     /**
      * destructor
@@ -837,18 +846,8 @@ public:
     /**
      * copy operator
      */
-    GeoElement1D& operator=( GeoElement1D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            super2::operator=( g );
-            M_vertices = g.M_vertices;
-            M_vertex_permutation = g.M_vertex_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement1D& operator=( GeoElement1D const& g ) = default;
+    GeoElement1D& operator=( GeoElement1D && g ) = default;
 
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
@@ -1129,13 +1128,8 @@ public:
     /**
      * copy consttructor
      */
-    GeoElement2D( GeoElement2D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_edges( g.M_edges ),
-        M_edge_permutation( g.M_edge_permutation )
-    {}
+    GeoElement2D( GeoElement2D const& g ) = default;
+    GeoElement2D( GeoElement2D && g ) = default;
 
     /**
      * destructor
@@ -1146,18 +1140,8 @@ public:
     /**
      * copy operator
      */
-    GeoElement2D& operator=( GeoElement2D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            super2::operator=( g );
-            M_edges = g.M_edges;
-            M_edge_permutation = g.M_edge_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement2D& operator=( GeoElement2D const& g ) = default;
+    GeoElement2D& operator=( GeoElement2D && g ) = default;
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
     MeshBase const* mesh() const
@@ -1480,17 +1464,10 @@ public:
     }
 
     /**
-     * copy consttructor
+     * copy/move consttructors
      */
-    GeoElement3D( GeoElement3D const& g )
-        :
-        super( g ),
-        super2( g ),
-        M_edges( g.M_edges ),
-        M_faces( g.M_faces ),
-        M_edge_permutation( g.M_edge_permutation ),
-        M_face_permutation( g.M_face_permutation )
-    {}
+    GeoElement3D( GeoElement3D const& g ) = default;
+    GeoElement3D( GeoElement3D && g ) = default;
 
     /**
      * destructor
@@ -1501,46 +1478,36 @@ public:
     /**
      * copy operator
      */
-    GeoElement3D& operator=( GeoElement3D const& g )
-    {
-        if ( this != &g )
-        {
-            super::operator=( g );
-            M_edges = g.M_edges;
-            M_faces = g.M_faces;
-            M_edge_permutation = g.M_edge_permutation;
-            M_face_permutation = g.M_face_permutation;
-        }
-
-        return *this;
-    }
+    GeoElement3D& operator=( GeoElement3D const& g ) = default;
+    GeoElement3D& operator=( GeoElement3D && g ) = default;
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
     MeshBase const* mesh() const
     {
         return super::mesh();
     }
+
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    size_type id() const
+    size_type id() const noexcept
     {
         return super::id();
     }
 
-    Marker1 const& marker() const
+    Marker1 const& marker() const noexcept
     {
         return super::marker();
     }
-    Marker1& marker()
+    Marker1& marker() noexcept
     {
         return super::marker();
     }
-    Marker2 const& marker2() const
+    Marker2 const& marker2() const noexcept
     {
         return super::marker2();
     }
-    Marker3 const& marker3() const
+    Marker3 const& marker3() const noexcept
     {
         return super::marker3();
     }
@@ -1562,7 +1529,7 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const
+    bool isOnBoundary() const noexcept
     {
         return super::isOnBoundary();
     }
@@ -1570,7 +1537,7 @@ public:
     /**
      * \return maximum \c dimension of the sub-entity touching the boundary of the element
      */
-    uint16_type boundaryEntityDimension() const
+    uint16_type boundaryEntityDimension() const noexcept
     {
         return super::boundaryEntityDimension();
     }
@@ -1578,7 +1545,7 @@ public:
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const
+    bool isGhostCell() const noexcept
     {
         return super::isGhostCell();
     }
@@ -1586,7 +1553,7 @@ public:
     /**
      * \return process id
      */
-    rank_type processId() const
+    rank_type processId() const noexcept
     {
         return super::processId();
     }

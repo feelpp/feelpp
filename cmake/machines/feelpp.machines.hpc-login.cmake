@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-04-12
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,7 @@ FIND_LIBRARY(GFORTRAN_LIBRARY
     gfortran
     PATHS
     $ENV{gccDir}/lib64
-    $ENV{LIBRARY_PATH}
+    ENV LD_LIBRARY_PATH
+    NO_DEFAULT_PATH
 )
 message(STATUS "hpc-login gfortran lib: ${GFORTRAN_LIBRARY} ")

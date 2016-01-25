@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -31,7 +31,12 @@
 #define _OPERATORLINEAR_HPP_
 
 #include <feel/feeldiscr/operator.hpp>
-#include <feel/feelvf/vf.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/inner.hpp>
+
 
 namespace Feel
 {
@@ -88,33 +93,14 @@ public:
     OperatorLinear()
         :
         super_type(),
-#if 0
-        M_backend( backend_type::build( BACKEND_PETSC ) ),
-#else
-        M_backend( backend_type::build( ) ),
-#endif
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         M_matrix(),
         M_pattern( Pattern::COUPLED ),
         M_name("operatorlinear")
     {}
-    OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
-        :
-        super_type( ol ),
-        M_backend( ol.M_backend ),
-        M_matrix(),
-        M_pattern( ol.M_pattern ),
-        M_name(ol.M_name )
-    {
-        if ( deep_copy )
-        {
-            M_matrix = new matrix_type( *ol.M_matrix );
-        }
+    OperatorLinear( OperatorLinear const& ol ) = default;
+    OperatorLinear( OperatorLinear && ol ) = default;
 
-        else
-        {
-            M_matrix = ol.M_matrix;
-        }
-    }
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
@@ -461,8 +447,8 @@ public:
 
         auto ie = M_backend->newVector( _test=this->dualImageSpace() );
         form1( _test=this->dualImageSpace(), _vector=ie ) =
-            integrate( elements( this->domainSpace()->mesh() ),
-                       rhs_expr * id( this->dualImageSpace()->element() ) );
+            integrate( _range=elements( this->domainSpace()->mesh() ),
+                       _expr=inner( rhs_expr , id( this->dualImageSpace()->element() ) ) );
 
         M_backend->solve( M_matrix, de, ie );
 
@@ -481,15 +467,8 @@ public:
         return *this;
     }
 
-    this_type& operator=( this_type const& m )
-    {
-        M_backend = m.M_backend;
-        M_matrix->zero();
-        M_matrix->addMatrix( 1.0, m.M_matrix );
-        M_pattern = m.M_pattern;
-
-        return *this;
-    }
+    this_type& operator=( this_type const& m ) = default;
+    this_type& operator=( this_type && m ) = default;
 
     // add to underlying matrix
     template<class ExprT>
@@ -618,12 +597,14 @@ BOOST_PARAMETER_FUNCTION(
       ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 

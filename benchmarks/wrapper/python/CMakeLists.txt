@@ -1,6 +1,6 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-06-08
 #
 #  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -25,7 +25,7 @@
 macro(add_python_module modulename)
 
   FILE(COPY ${modulename}test.py DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_target( ${modulename}py DEPENDS ${modulename}test.py )
+  add_custom_target( ${modulename}test.py DEPENDS ${modulename}test.py )
   add_library( ${modulename} MODULE  ${modulename}_wrapper.cpp  )
   target_link_libraries( ${modulename} feelpp ${FEELPP_LIBRARIES} )
   set_target_properties( ${modulename} PROPERTIES PREFIX "" )

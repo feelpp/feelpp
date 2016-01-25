@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-configure_file( excompiler.cpp.in ${CMAKE_CURRENT_SOURCE_DIR}/excompiler.cpp)
+configure_file( excompiler.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/excompiler.cpp)
 
 set(ginaclib_sources
     add.cpp
@@ -9,7 +9,7 @@ set(ginaclib_sources
     clifford.cpp
     color.cpp
     constant.cpp
-    excompiler.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/excompiler.cpp
     ex.cpp
     expair.cpp
     expairseq.cpp
@@ -159,12 +159,22 @@ if (NOT BUILD_SHARED_LIBS)
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
 	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")
+else()
+  set_property(TARGET feelpp_ginac PROPERTY MACOSX_RPATH ON)
 endif()
 
-install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
-		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}"
-		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}")
-install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac")
+install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs
+		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
+		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
+install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac" COMPONENT Devel)
+
+## Feel++ modification
+## Those headers will be installed twice, Needed for custom installations to properly work and not breaking codes for now
+set(ginaclib_public_parser_headers
+    parser/parser.h
+    parser/parse_context.h)
+install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac/parser" COMPONENT Devel)
+## End Feel++ modification
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/function.h

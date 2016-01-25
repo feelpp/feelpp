@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 
   This file is part of the Feel library
@@ -167,10 +167,10 @@ public:
         :
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
 
         M_use_weak_dirichlet( this->vm().count( "weak" ) ),
-        M_gammabc( this->vm()["gammabc"].template as<double>() ),
+        M_gammabc( doption("gammabc") ),
 
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
@@ -250,7 +250,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 {
     std::vector<double> X( 1 );
     std::vector<double> Y( 2 );
-    X[0] = this->vm()["hsize"].template as<double>();
+    X[0] = doption("hsize");
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -272,7 +272,8 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
      * and preconditioners allocated witha previous backend may be invalidated
      * by a change of h for example in the case of pythin scripting
      */
-    backend = backend_ptrtype( backend_type::build( BACKEND_PETSC ) );
+    //backend = backend_ptrtype( backend_type::build( BACKEND_PETSC ) );
+    backend = backend_ptrtype( backend_type::build( soption("backend") ) );
 
     /*
      * First we create the mesh
@@ -334,10 +335,10 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
     if ( M_use_weak_dirichlet )
     {
-        form1( Xh, F ) +=
+        form1( Xh, _vector=F ) +=
             integrate( markedfaces( mesh,tag1 ),
                        zf*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
-        form1( Xh, F ) +=
+        form1( Xh, _vector=F ) +=
             integrate( markedfaces( mesh,tag2 ),
                        zf*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
 
@@ -352,11 +353,11 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
 
-    form2( Xh, Xh, D, _init=true );
+    form2( Xh, Xh, _matrix=D, _init=true );
     LOG(INFO)  << "D initialized in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    form2( Xh, Xh, D ) +=
+    form2( Xh, Xh, _matrix=D ) +=
         integrate( elements( mesh ),
                    nu*( gradt( u )*trans( grad( v ) ) )
                    + beta*( idt( u )*id( v ) ) );
@@ -366,11 +367,11 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     if ( M_use_weak_dirichlet )
     {
 
-        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag1 ),
+        form2( Xh, Xh, _matrix=D ) += integrate( markedfaces( mesh,tag1 ),
                                          ( - nu*trans( id( v ) )*( gradt( u )*N() )
                                            - nu*trans( idt( u ) )*( grad( v )*N() )
                                            + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
-        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag2 ),
+        form2( Xh, Xh, _matrix=D ) += integrate( markedfaces( mesh,tag2 ),
                                          ( - nu*trans( id( v ) )*( gradt( u )*N() )
                                            - nu*trans( idt( u ) )*( grad( v )*N() )
                                            + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
@@ -387,7 +388,7 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     if ( ! M_use_weak_dirichlet )
     {
         t1.restart();
-        form2( Xh, Xh, D ) +=
+        form2( Xh, Xh, _matrix=D ) +=
             on( markedfaces( mesh, tag1 ), u, F, g )+
             on( markedfaces( mesh, tag2 ), u, F, g );
         LOG(INFO)  << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";

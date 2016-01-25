@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-30
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,19 @@
 
 namespace Feel {
 
+template<int Order,typename MeshType>
+using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+
+template<int Order,typename MeshType>
+using dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+
+
+template<typename MeshType, int Order>
+using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+
+template<typename MeshType, int Order>
+using Dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+
 /**
  * \fn Dh<k,MeshType>
  *
@@ -42,12 +55,12 @@ namespace Feel {
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>>
+dh_ptrtype<Order,MeshType>
 Dh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<RaviartThomas<Order>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
-                                                                                                  _worldscomm=worldsComm( mesh->worldComm() ),
-                                                                                                  _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return dh_type<Order,MeshType>::New( _mesh=mesh,
+                                         _worldscomm=worldsComm( mesh->worldComm() ),
+                                         _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 

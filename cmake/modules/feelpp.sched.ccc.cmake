@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-04-26
 #
-#  Copyright (C) 2013 Université de Strasbourg
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -28,9 +28,11 @@
 #MSUB -T 1800                # Elapsed time limit in seconds of the job (default: 1800)
 #MSUB -o ${execname}_%I.o    # Standard output. %I is the job id
 #MSUB -e ${execname}_%I.e    # Error output. %I is the job id
-#MSUB -A gen7334  # Hifimagnet
-#MSUB -A gen7335  # Bloodflow
-#MSUB -A ra0840              # Project ID
+
+# Choose between one of the two projects below depending on your access
+#MSUB -A ra2704   # HP-FEEL++ PRACE
+#MSUB -A gen7335  # Bloodflow GENCI
+
 #MSUB -q standard            # Choosing large nodes
 ##MSUB -@ noreply@cea.fr:end # Uncomment this line for being notified at the end of the job by sending a mail at the given address
 

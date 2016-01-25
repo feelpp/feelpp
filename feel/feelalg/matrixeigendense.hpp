@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,6 +44,8 @@
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
+
+#include <feel/feelmath/jacobiellipticfunctions.hpp>
 
 
 namespace Feel
@@ -320,7 +322,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u, bool transpose = false ) const;
 
@@ -331,7 +333,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     void init() {}
 
@@ -356,7 +358,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type>& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m );
 
 
     /**
@@ -443,7 +445,7 @@ public:
      * stores the result in \p Eingvs:
      * \f$ Engvs = \texttt{this}*In \f$.
      */
-    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+    void eigenValues ( std::vector<std::complex<double>> &Eingvs );
 
 
 
@@ -475,6 +477,8 @@ public:
 
     //@}
 
+    void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
+
 
 
 protected:
@@ -489,6 +493,12 @@ private:
      */
     mutable matrix_type M_mat;
 };
+
+#if !defined( FEELPP_INSTANTIATE_MATRIXEIGENDENSE )
+extern template class MatrixEigenDense<double>;
+extern template class MatrixEigenDense<std::complex<double>>;
+#endif
+
 
 
 

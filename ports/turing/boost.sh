@@ -5,7 +5,8 @@
 prefix=$WORKDIR/local/boost/1.56-bgq
 cat > user-config.jam << EOF
 using mpi : mpicxx : :  ;
-using gcc : bgq  :  powerpc64-bgq-linux-clang++11 ; 
+# using gcc : bgq  :  powerpc64-bgq-linux-clang++11 ; 
+using clang :  :  powerpc64-bgq-linux-clang++11 ; 
 EOF
 
 export CXX=powerpc64-bgq-linux-g++

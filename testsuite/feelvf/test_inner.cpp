@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-14
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ public :
     void run()
     {
         auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % option(_name="gmsh.domain.shape").template as<std::string>() % Dim ).str() ,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,
                                                   _dim=Dim ) );
 
 
@@ -77,10 +77,8 @@ public :
         auto u = Xh->element();
         auto v = Xh->element();
 
-        auto g=option(_name="functions.g").template as<std::string>();
-        auto vars = symbols<Dim>();
-        auto eg = parse(g,vars);
-        u = project( _space=Xh, _expr=expr(eg,vars) );
+        auto g=soption(_name="functions.g");
+        u.on(_range=elements(mesh), _expr=expr( g ));
 
         boost::mpi::timer ti;
         if ( Environment::rank() == 0 )

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -153,17 +153,36 @@ public:
     //@{
 
     MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
-                     backend_type &backend,
+                     backend_ptrtype backend,
                      bool copy_values=true,
                      bool diag_is_nonzero=true );
 
     MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
-                     backend_type &backend,
+                     backend_ptrtype backend,
                      bool diag_is_nonzero=true );
+
+    
+    MatrixBlockBase( vf::BlocksBase<matrix_ptrtype > const & blockSet,
+                     backend_type &backend,
+                     bool copy_values=true,
+                     bool diag_is_nonzero=true )
+        :
+        MatrixBlockBase( blockSet, backend.shared_from_this(), copy_values, diag_is_nonzero )
+    {}
+
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
+                     backend_type &backend,
+                     bool diag_is_nonzero=true )
+        :
+        MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero )
+    {}
+
+    
 
     MatrixBlockBase( MatrixBlockBase const & mb )
         :
         super( mb ),
+        M_backend(mb.M_backend),
         M_mat( mb.M_mat )
     {}
 
@@ -339,7 +358,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const value_type, MatrixSparse<value_type> & );
+    void addMatrix ( const value_type, MatrixSparse<value_type> const& );
 
     void scale ( const value_type );
 
@@ -379,7 +398,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u,
             bool transpose = false ) const;
@@ -481,7 +500,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
@@ -493,7 +512,7 @@ protected:
 
 private:
 
-    //vector_matrix_ptrtype M_v;
+    backend_ptrtype M_backend;
 
     boost::shared_ptr<MatrixSparse<value_type> > M_mat;
 };

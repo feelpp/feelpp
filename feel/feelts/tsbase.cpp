@@ -5,7 +5,7 @@
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
        Date: 2014-03-17
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,9 @@ TSBase::TSBase()
     M_saveInFile( true ),
     M_saveFreq( 1 ),
     M_rankProcInNameOfFiles( false ),
-    M_worldComm( Environment::worldComm() )
+    M_fileFormat( "binary" ),
+    M_worldComm( Environment::worldComm() ),
+    M_prefix()
 {}
 
 TSBase::TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
@@ -70,7 +72,9 @@ TSBase::TSBase( po::variables_map const& vm, std::string name, std::string const
     M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
     M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
     M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
-    M_worldComm( worldComm )
+    M_fileFormat( soption( _name="bdf.file-format",_prefix=prefix ) ),
+    M_worldComm( worldComm ),
+    M_prefix( prefix )
 {}
 TSBase::TSBase( std::string name, WorldComm const& worldComm )
     :
@@ -88,7 +92,9 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_restartAtLastSave( false ),
     M_saveInFile( true ),
     M_saveFreq( 1 ),
-    M_worldComm( worldComm )
+    M_fileFormat( "binary" ),
+    M_worldComm( worldComm ),
+    M_prefix()
 {}
 
 TSBase::TSBase( TSBase const& b )
@@ -109,7 +115,9 @@ TSBase::TSBase( TSBase const& b )
     M_saveInFile( b.M_saveInFile ),
     M_saveFreq( b.M_saveFreq ),
     M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
-    M_worldComm( b.M_worldComm )
+    M_fileFormat( b.M_fileFormat ),
+    M_worldComm( b.M_worldComm ),
+    M_prefix( b.M_prefix )
 {}
 
 TSBase&
@@ -132,6 +140,7 @@ TSBase::operator=( TSBase const& b )
 
         M_saveInFile = b.M_saveInFile;
         M_rankProcInNameOfFiles = b.M_rankProcInNameOfFiles;
+        M_fileFormat = b.M_fileFormat;
 
         M_time_values_map = b.M_time_values_map;
         M_worldComm = b.M_worldComm;
@@ -144,17 +153,22 @@ TSBase::operator=( TSBase const& b )
 void
 TSBase::init()
 {
+    CHECK( M_fileFormat == "binary" || M_fileFormat == "hdf5" ) << "invalid file format " << M_fileFormat;
 #if 0
     std::ostringstream ostr;
     ostr << "bdf_o_" << M_order << "_dt_" << M_dt;
     //ostr << "bdf/" << M_name << "/o_" << M_order << "/dt_" << M_dt;
     M_path_save = ostr.str();
 #endif
-    // if directory does not exist, create it
-    if ( !fs::exists( M_path_save ) && this->saveInFile() && this->worldComm().isMasterRank() )
-        fs::create_directories( M_path_save );
-    // be sure that all process can find the path after
-    this->worldComm().barrier();
+
+    if ( this->saveInFile() )
+    {
+        // if directory does not exist, create it
+        if ( this->worldComm().isMasterRank() && !fs::exists( M_path_save ) )
+            fs::create_directories( M_path_save );
+        // be sure that all process can find the path after
+        this->worldComm().barrier();
+    }
 
     if ( M_restart )
     {

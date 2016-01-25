@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -43,6 +43,14 @@
 #include <boost/test/floating_point_comparison.hpp>
 #include <feel/feelcore/environment.hpp>
 
+#if BOOST_VERSION >= 105900
+#define BOOST_MESSAGE(ARG) BOOST_TEST_MESSAGE(ARG)
+#endif
+#if BOOST_VERSION >= 105900
+#define FEELPP_BOOST_GLOBAL_FIXTURE(ARG) BOOST_GLOBAL_FIXTURE(ARG);
+#else
+#define FEELPP_BOOST_GLOBAL_FIXTURE(ARG) BOOST_GLOBAL_FIXTURE(ARG)
+#endif
 
 #define FEELPP_ENVIRONMENT_NO_OPTIONS                                   \
 struct Feelpp {                                                         \
@@ -59,7 +67,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp )
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 #define FEELPP_ENVIRONMENT_WITH_OPTIONS( myabout, myopts)               \
@@ -78,8 +86,25 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp )
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
+#define FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS( myabout)              \
+struct Feelpp {                                                         \
+    Feelpp()                                                            \
+        :env( Feel::_argc=boost::unit_test::framework::master_test_suite().argc, \
+              Feel::_argv=boost::unit_test::framework::master_test_suite().argv, \
+              Feel::_about=myabout )                \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "setup Feel++" );                       \
+                                                                        \
+        }                                                               \
+    ~Feelpp()                                                           \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "teardown Feel++" );                    \
+        }                                                               \
+    Feel::Environment env;                                              \
+};                                                                      \
+FEELPP_BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 

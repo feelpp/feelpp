@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-02-20
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file test_env.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-02-20
  */
 #define USE_BOOST_TEST 1
@@ -58,7 +58,7 @@ makeAbout()
                            "0.2",
                            "Environment class tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2013 Feel++ Consortium" );
+                           "Copyright (C) 2013-2016 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;

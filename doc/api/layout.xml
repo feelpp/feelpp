@@ -4,7 +4,7 @@
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
     <tab type="pages" visible="yes" title="" intro=""/>
-    <tab type="classlist" visible="yes" title="Feel Objects" intro=""/>
+    <tab type="classlist" visible="yes" title="Feel++ Documentation - Library" intro=""/>
   </navindex>
 
   <!-- Layout definition for a class page -->

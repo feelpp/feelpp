@@ -1,7 +1,7 @@
 # -*- mode: cmake; coding: utf-8 -*-
 ###  CMakeLists.txt ---
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -36,3 +36,4 @@ if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/crb AND FEELPP_ENABLE_APPLICATIONS
      set(OPUS_VERSION_MICRO "${OPUS_VERSION_MICRO}" PARENT_SCOPE)
      set(OPUS_VERSION_EXTRA "${OPUS_VERSION_EXTRA}" PARENT_SCOPE)
 endif()
+add_subdirectory( models )

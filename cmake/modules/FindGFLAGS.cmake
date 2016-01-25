@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-27
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -49,15 +49,24 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  --enable-static --disable-shared  CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
           #      OUTPUT_QUIET
-          OUTPUT_FILE "gflags-configure"
+          #OUTPUT_FILE "gflags-configure"
           )
       else()
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-          #      OUTPUT_QUIET
-          OUTPUT_FILE "gflags-configure"
-          )
+        if ( APPLE )
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags 
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+            #      OUTPUT_QUIET
+            #OUTPUT_FILE "gflags-configure"
+            )
+        else(APPLE)
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} 
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+            #      OUTPUT_QUIET
+            #OUTPUT_FILE "gflags-configure"
+            )
+        endif(APPLE)
       endif(FEELPP_USE_STATIC_LINKAGE)
     endif()
 
@@ -68,7 +77,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags/ )
     if(${CMAKE_SOURCE_DIR}/contrib/gflags/src/gflags/gflags.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/gflags.h)
       message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
-      if ( APPLE AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
+      if ( APPLE AND ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"  OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang"))
         execute_process(
           COMMAND make -k -j${NProcs2} install CXXFLAGS=-stdlib=libc++
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
@@ -83,6 +92,12 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           OUTPUT_FILE "gflags-install"
           )
       endif()
+
+      if ( APPLE AND (NOT FEELPP_USE_STATIC_LINKAGE) )
+        message(STATUS "GFlags: use @rpath in dynamic lib installed")
+        EXECUTE_PROCESS(COMMAND install_name_tool -id @rpath/libfeelpp_gflags.2.dylib ${CMAKE_BINARY_DIR}/contrib/gflags/lib/libfeelpp_gflags.dylib )
+      endif()
+
     endif()
   endif()
 

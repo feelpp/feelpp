@@ -638,7 +638,7 @@ CRBSCM<TruthModelType>::offlineNoSCM()
     LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
 
-    if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
+    if( boption(_name="crb.scm.check-eigenvector") )
     {
         auto eigen_vector = modes.begin()->second.template get<2>();
         checkEigenVectorEigenValue( sym, inner_prod, eigen_vector, eigen_value );
@@ -700,7 +700,7 @@ CRBSCM<TruthModelType>::offlineSCM()
 
     size_type index;
 
-    bool use_predefined_C = option(_name="crb.scm.use-predefined-C").template as<bool>();
+    bool use_predefined_C = boption(_name="crb.scm.use-predefined-C");
     int N_log_equi = this->vm()["crb.scm.use-logEquidistributed-C"].template as<int>() ;
     int N_equi = this->vm()["crb.scm.use-equidistributed-C"].template as<int>() ;
     std::vector<int> index_vector;
@@ -852,7 +852,7 @@ CRBSCM<TruthModelType>::offlineSCM()
         M_C_eigenvalues[index] = modes.begin()->second.template get<0>();
         typedef std::pair<size_type,value_type> key_t;
 
-        if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
+        if( boption(_name="crb.scm.check-eigenvector") )
         {
             auto eigenvalue = modes.begin()->second.template get<0>();
             checkEigenVectorEigenValue( symmMatrix, B, eigenvector, eigenvalue );
@@ -957,10 +957,10 @@ template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const& A, sparse_matrix_ptrtype const& B, vector_ptrtype const& eigenvector, double eigenvalue ) const
 {
-    auto backend = backend_type::build( BACKEND_PETSC );
+    //auto backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() );
     auto Xh = M_model->functionSpace() ;
-    auto Aw =  backend->newVector( Xh );
-    auto Bw =  backend->newVector( Xh );
+    auto Aw =  backend()->newVector( Xh );
+    auto Bw =  backend()->newVector( Xh );
     A->multVector( eigenvector, Aw );
     B->multVector( eigenvector, Bw );
     //we should have Aw = eigen_value Bw
@@ -968,7 +968,7 @@ CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const&
     double energyAwAw = A->energy( Aw , Aw );
     double energyAwBw = A->energy( Aw , Bw );
     double energyBwBw = A->energy( Bw , Bw );
-    double tol = option(_name="crb.scm.check-eigenvector-tol").template as<double>();
+    double tol = doption(_name="crb.scm.check-eigenvector-tol");
     CHECK( math::abs(energyAwAw - energyAwBw) <  tol )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
     CHECK( math::abs(energyAwAw - energyAwBw) <  tol )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
 }
@@ -1787,8 +1787,8 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
     ar & M_use_scm ;
-    bool use_scm =  option(_name="crb.scm.use-scm").template as<bool>() ;
-    bool rebuild =  option(_name="crb.scm.rebuild-database").template as<bool>() ;
+    bool use_scm =  boption(_name="crb.scm.use-scm") ;
+    bool rebuild =  boption(_name="crb.scm.rebuild-database") ;
     if( M_use_scm != use_scm && rebuild==false)
     {
         if( use_scm )

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -34,13 +34,7 @@
 #define __filter_H 1
 
 #include <feel/feelcore/visitor.hpp>
-//#include <feel/feelmesh/mesh1d.hpp>
-#include <feel/feelmesh/mesh2d.hpp>
-#include <feel/feelmesh/mesh3d.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-
-#include <feel/feelcore/feel.hpp>
-
 
 #if defined(FEELPP_HAS_VTK)
 // Vtk header files
@@ -341,7 +335,6 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         pf->setMarker( 0 );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
@@ -496,7 +489,6 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         pf->setMarker( 0  );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );

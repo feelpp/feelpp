@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
 
-    static const size_type context = vm::POINT;
+    static const size_type context = vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL;
     static const bool is_terminal = false;
     static const uint16_type imorder = Order;
     static const bool imIsPoly = false;
@@ -61,6 +61,14 @@ public:
     {
         static const bool result = false;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
 
     typedef GiNaC::ex expression_type;
     typedef GinacEx<Order> this_type;
@@ -84,69 +92,34 @@ public:
      */
     //@{
 
-    explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
-                      WorldComm const& world=Environment::worldComm() )
+    GinacEx() : super(){}
+
+    explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc, std::string filename="",
+                      WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
         :
         super( syms ),
         M_fun( fun ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string())
+        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_exprDesc( exprDesc )
         {
             DVLOG(2) << "Ginac constructor with expression_type \n";
             GiNaC::lst exprs(fun);
             GiNaC::lst syml;
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
-            std::string filenameWithSuffix = M_filename + ".so";
-
-            // register the GinacExprManager into Feel::Environment so that it gets the
-            // GinacExprManager is cleared up when the Environment is deleted
-            static bool observed=false;
-            if ( !observed )
+            // get filename if not given
+            if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                Environment::addDeleteObserver( GinacExprManagerDeleter::instance() );
-                observed = true;
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
-            bool hasLinked = ( GinacExprManager::instance().find( filename ) != GinacExprManager::instance().end() )? true : false;
-            if ( hasLinked )
-            {
-                M_cfun = GinacExprManager::instance().find( filename )->second;
-            }
-            else
-            {
-                // master rank check if the lib exist and compile this one if not done
-                if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
-                {
-                    if ( !M_filename.empty() && fs::path(filename).is_absolute() && !fs::exists(fs::path(filename).parent_path()) )
-                        fs::create_directories( fs::path(filename).parent_path() );
-                    DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                    GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
-                    hasLinked=true;
-                    if ( !M_filename.empty() )
-                        GinacExprManager::instance().operator[]( filename ) = M_cfun;
-                }
-                // wait the lib compilation
-                if ( !M_filename.empty() ) world.barrier();
-                // link with other process
-                if ( !hasLinked )
-                {
-                    DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                    GiNaC::link_ex(filenameWithSuffix, *M_cfun);
-                    if ( !M_filename.empty() )
-                        GinacExprManager::instance().operator[]( filename ) = M_cfun;
-                }
-            }
+            // build ginac lib and link if necessary
+            Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
-    GinacEx( GinacEx const & fun )
-        :
-        super(fun),
-        M_fun( fun.M_fun ),
-        M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename )
-        {
-        }
+    GinacEx( GinacEx const& fun ) = default;
+    GinacEx( GinacEx && fun ) = default;
 
 
     //@}
@@ -154,7 +127,8 @@ public:
     /** @name Operator overloads
      */
     //@{
-
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -187,7 +161,7 @@ public:
 
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
-
+    std::string const& exprDesc() const { return M_exprDesc; }
 
     //@}
 
@@ -198,13 +172,11 @@ public:
         //typedef typename expression_type::value_type value_type;
         typedef double value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-    // change 0 into rank
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
+        using key_type = key_t<Geo_t>;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        // change 0 into rank
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
                               mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
                               typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<1> >,
                                                 mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
@@ -274,6 +246,9 @@ public:
             {
                 for ( auto const& comp : M_expr.indexSymbolXYZ() )
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                // is it called for updates on faces? need to check that...
+                for ( auto const& comp : M_expr.indexSymbolN() )
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
 
@@ -289,6 +264,8 @@ public:
             {
                 for ( auto const& comp : M_expr.indexSymbolXYZ() )
                     M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                for ( auto const& comp : M_expr.indexSymbolN() )
+                    M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                 M_fun(&ni,M_x.data(),&no,&M_y[q]);
             }
         }
@@ -362,6 +339,7 @@ private:
     mutable expression_type  M_fun;
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
+    std::string M_exprDesc;
 };
 template<int Order>
 std::ostream&
@@ -370,6 +348,20 @@ operator<<( std::ostream& os, GinacEx<Order> const& e )
     os << e.expression();
     return os;
 }
+
+template<int Order>
+std::string
+str( GinacEx<Order> && e )
+{
+    return str( std::forward<GinacEx<Order>>(e).expression() );
+}
+template<int Order>
+std::string
+str( GinacEx<Order> const& e )
+{
+    return str( e.expression() );
+}
+
 } // vf
 } // feel
 

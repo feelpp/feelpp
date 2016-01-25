@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-17
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 # OSX
 if(APPLE)
   if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
-    OPTION( FEELPP_ENABLE_MACOSX_RPATH "Enables MACOSX Rpath feature" ON )
+    OPTION( FEELPP_ENABLE_MACOSX_RPATH "Enables MACOSX Rpath feature" OFF )
     if  ( FEELPP_ENABLE_MACOSX_RPATH )
       set(CMAKE_MACOSX_RPATH ON)
       set(CMAKE_SKIP_BUILD_RPATH FALSE)

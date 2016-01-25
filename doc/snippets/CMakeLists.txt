@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-03-15
 #
 #  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -28,3 +28,5 @@ feelpp_add_application( bdfpod SRCS bdfpod.cpp LABELS doc)
 feelpp_add_application( perf_int SRCS perf.cpp LABELS doc )
 feelpp_add_application( pmesh SRCS pmesh.cpp CFG pmesh.cfg LABELS doc)
 feelpp_add_application( dofneighbors SRCS dofneighbors.cpp LABELS doc)
+feelpp_add_application( dofboundary SRCS dofboundary.cpp LABELS doc)
+feelpp_add_application( forms SRCS forms.cpp LABELS doc)

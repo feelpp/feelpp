@@ -308,7 +308,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.A%1%") %i ).str();
         std::string filename = ( boost::format("GinacA%1%") %i ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        ginac_expressionA.push_back( expr( soption(_name=name), Symbols( symbols_vec ) , filename ) );
     }
 
 
@@ -316,7 +316,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.M%1%") %i ).str();
         std::string filename = ( boost::format("GinacM%1%") %i ).str();
-        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(),  Symbols( symbols_vec ) , filename ) );
+        ginac_expressionM.push_back( expr( soption(_name=name),  Symbols( symbols_vec ) , filename ) );
     }
 
     for(int i=0; i<M_Nl; i++)
@@ -326,7 +326,7 @@ HeatShield<Order>::buildGinacExpressions()
         {
             std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
             std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
+            ginac_expressionF.push_back( expr( soption(_name=name), Symbols( symbols_vec ) , filename ) );
         }
     }
 
@@ -416,7 +416,7 @@ void HeatShield<Order>::initModel()
     this->M_betaFq[0].resize( M_Ql[0] );
     this->M_betaFq[1].resize( M_Ql[1] );
 
-    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
+    M_use_ginac = boption(_name="crb.use-ginac-for-beta-expressions");
 
     if( mshfile_name=="" )
     {
@@ -427,7 +427,7 @@ void HeatShield<Order>::initModel()
     else
     {
 
-        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
+        bool load_mesh_already_partitioned=boption(_name="load-mesh-already-partitioned");
         if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();
@@ -473,7 +473,7 @@ void HeatShield<Order>::initModel()
 
     M_bdf = bdf( _space=Xh, _vm=Environment::vm(), _name="heatshield" , _prefix="heatshield" );
 
-    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
+    bool dont_use_operators_free = boption(_name="do-not-use-operators-free") ;
     if( dont_use_operators_free )
     {
         this->M_Aq.resize( M_Qa );
@@ -524,7 +524,7 @@ void HeatShield<Order>::assemble()
     u = this->Xh->element();
     v = this->Xh->element();
 
-    if( option(_name="do-not-use-operators-free").template as<bool>() )
+    if( boption("do-not-use-operators-free") )
     {
         this->M_Aq[0] = backend()->newMatrix( this->Xh, this->Xh );
         this->M_Aq[1] = backend()->newMatrix( this->Xh, this->Xh );
@@ -532,12 +532,12 @@ void HeatShield<Order>::assemble()
         this->M_Mq[0] = backend()->newMatrix( this->Xh, this->Xh );
         this->M_Fq[0][0] = backend()->newVector( this->Xh );
         this->M_Fq[1][0] = backend()->newVector( this->Xh );
-        form2(this->Xh, this->Xh, this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-        form2(this->Xh, this->Xh, this->M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-        form2(this->Xh, this->Xh, this->M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
-        form2(this->Xh, this->Xh, this->M_Mq[0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-        form1(this->Xh, this->M_Fq[0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-        form1(this->Xh, this->M_Fq[1][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+        form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Mq[0]) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+        form1(_test=this->Xh, _vector=this->M_Fq[0][0]) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+        form1(_test=this->Xh, _vector=this->M_Fq[1][0]) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
     }
     else
     {
@@ -572,30 +572,30 @@ void HeatShield<Order>::assemble()
 
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, M ) =
-        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
-        integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
+        integrate( markedfaces( mesh, "left" ), 0.01 * idt( u )*id( v ) ) +
+        integrate( markedfaces( mesh, "gamma_holes" ), 0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( M );
 
     //scalar product used for mass matrix
     auto InnerMassMatrix = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, InnerMassMatrix ) =
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=InnerMassMatrix ) =
         integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
     this->addMassMatrix(InnerMassMatrix);
 
 #if 0
     //scalar product used for the POD
     Mpod = backend->newMatrix( _test=this->Xh, _trial=this->Xh );
-    form2( this->Xh, this->Xh, Mpod ) =
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=Mpod ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
 #endif
 
-    if( ! option(_name="do-not-use-operators-free").template as<bool>() )
+    if( ! boption(_name="do-not-use-operators-free") )
     {
         M_compositeLightA = opLinearComposite( _domainSpace=this->Xh , _imageSpace=this->Xh );
         M_compositeLightA->addList( M_Aq_free );
@@ -621,7 +621,7 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
 
     double s=0;
 
-    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
+    bool dont_use_operators_free = boption(_name="do-not-use-operators-free") ;
     auto fqm = backend()->newVector( this->Xh );
     if ( output_index<2 )
     {

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-04-26
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -388,12 +388,13 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearComposite_return<Args>::space_type::value_type>::build() )
+      ( backend,        *, backend() )
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::type functionalcomposite_type;
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::ptrtype functionalcomposite_ptrtype;
     return functionalcomposite_ptrtype ( new functionalcomposite_type( space , backend ) );

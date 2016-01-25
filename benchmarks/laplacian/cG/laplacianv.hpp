@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 
   This file is part of the Feel library
@@ -144,7 +144,7 @@ public:
         :
         super( argc, argv, ad, od ),
         backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
+        meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
 
@@ -250,9 +250,9 @@ LaplacianV<Dim, Order, RDim>::run()
 {
     this->addParameterValue( Dim )
     .addParameterValue( Order )
-    .addParameterValue( this->vm()["beta"].template as<double>() )
-    .addParameterValue( this->vm()["nu"].template as<double>() )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( doption("beta") )
+    .addParameterValue( doption("nu") )
+    .addParameterValue( doption("hsize") );
 
     if ( this->preProcessing() == RUN_EXIT ) return;
 
@@ -272,8 +272,8 @@ LaplacianV<Dim, Order, RDim>::run()
     element_type v( Xh, "v" );
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
-    value_type nu = this->vm()["nu"].template as<double>();
-    value_type beta = this->vm()["beta"].template as<double>();
+    value_type nu = doption("nu");
+    value_type beta = doption("beta");
 
 
     value_type pi = M_PI;

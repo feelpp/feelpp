@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2005-10-18
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,12 +22,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file test_mpi.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-10-18
- */
-#include <feel/feelcore/application.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 
 Feel::AboutData
@@ -37,7 +33,7 @@ makeAbout()
                            "0.1",
                            "MPI test",
                            Feel::AboutData::License_LGPL,
-                           "Copyright (c) 2005,2006 EPFL" );
+                           "Copyright (c) 2015 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -46,29 +42,9 @@ makeAbout()
 int main( int argc, char** argv )
 {
     using namespace Feel;
-
-#if 0
-    Feel::po::options_description test( "test options" );
-    test.add_options()
-    ( "testall", "run all test cases" )
-    ;
-#if defined( FEELPP_HAS_PETSC_H )
-    //MPI_Init( &argc, &argv );
-    //PetscInitialize (&argc, &argv, PETSC_NULL, PETSC_NULL);
-    Application app( argc, argv, makeAbout(), test );
-
-    std::cout << "[Application] N process: " << Application::nProcess() << "\n"
-              << "[Application] Id : " << Application::processId() << "\n";
-#else
-    Application app( argc, argv, makeAbout(), test );
-    std::cout << "[Application] N process: " << Application::nProcess() << "\n"
-              << "[Application] Id : " << Application::processId() << "\n";
-#endif
-    //PetscFinalize();
-#else
-		Environment env(_argc=argc, _argv=argv,
-										_about=makeAbout() );
-    std::cout << "[Environment] N process: " << Environment::numberOfProcessors() << "\n"
-              << "[Environment] Id : "       << Environment::rank() << "\n";
-#endif
+    Environment env(_argc=argc, _argv=argv,
+                    _about=makeAbout() );
+    if ( Environment::isMasterRank() )
+        std::cout << "[Environment] N process: " << Environment::numberOfProcessors() << "\n"
+                  << "[Environment] Id : "       << Environment::rank() << "\n";
 }

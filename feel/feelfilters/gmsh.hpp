@@ -569,6 +569,7 @@ public:
     void setWorldComm( WorldComm const& _worldcomm )
         {
             M_worldComm = _worldcomm;
+            M_partitions = M_worldComm.size();
         }
 
     //! set the number of partitions

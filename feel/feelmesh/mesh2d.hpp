@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -130,6 +130,8 @@ public:
     typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
     typedef typename super_edges::location_face_iterator location_edge_iterator;
     typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
+    typedef typename super_edges::pid_face_iterator pid_edge_iterator;
+    typedef typename super_edges::pid_face_const_iterator pid_edge_const_iterator;
 
     typedef Mesh2D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;

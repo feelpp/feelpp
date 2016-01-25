@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-04-17
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -59,7 +59,7 @@ int main(int argc, char**argv )
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     a += integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=zero<2>() ) ;
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=zero<2,1>() ) ;
 
     auto b = form2( _trial=Vh, _test=Vh);
     b = integrate( _range=elements( mesh ), _expr=trans(idt(u))*id(v)+0.*idt(p)*id(p) );

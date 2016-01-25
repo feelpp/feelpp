@@ -197,6 +197,37 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
+template<class Archive>
+void load( Archive & ar,
+           Eigen::MatrixXf & t,
+           const unsigned int file_version )
+{
+    int n0;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    int n1;
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( n0, n1 );
+    ar >> make_array( t.data(), t.rows()*t.cols() );
+}
+template<typename Archive>
+void save( Archive & ar,
+           const Eigen::MatrixXf & t,
+           const unsigned int file_version )
+{
+    int n0 = t.rows();
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    int n1 = t.cols();
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.rows()*t.cols() );
+}
+template<class Archive>
+void serialize( Archive & ar,
+                Eigen::MatrixXf& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
 
 //
 // VectorXd
@@ -233,9 +264,9 @@ void serialize( Archive & ar,
 //
 // Matrix<N,M>
 //
-template<int N, int M, class Archive>
+template<typename T, int N, int M, class Archive>
 void load( Archive & ar,
-           Eigen::Matrix<double,N,M> & t,
+           Eigen::Matrix<T,N,M> & t,
            const unsigned int file_version )
 {
     int n0;
@@ -244,9 +275,9 @@ void load( Archive & ar,
     ar >> BOOST_SERIALIZATION_NVP( n1 );
     ar >> make_array( t.data(), n0*n1 );
 }
-template<int N, int M, typename Archive>
+template<typename T, int N, int M, typename Archive>
 void save( Archive & ar,
-           const Eigen::Matrix<double,N,M> & t,
+           const Eigen::Matrix<T,N,M> & t,
            const unsigned int file_version )
 {
     int n0 = t.rows();
@@ -255,9 +286,9 @@ void save( Archive & ar,
     ar << BOOST_SERIALIZATION_NVP( n1 );
     ar << boost::serialization::make_array( t.data(), n0*n1 );
 }
-template<int N, int M, class Archive>
+template<typename T, int N, int M, class Archive>
 void serialize( Archive & ar,
-                Eigen::Matrix<double,N,M>& t,
+                Eigen::Matrix<T,N,M>& t,
                 const unsigned int file_version )
 {
     split_free( ar, t, file_version );
@@ -454,6 +485,106 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
+
+//
+// boost::tuple<T1,T2,T3,T4,T5>
+//
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5, class Archive>
+void load( Archive & ar,
+           boost::tuple<T1,T2,T3,T4,T5> & t,
+           const unsigned int file_version )
+{
+    T1 x1;
+    ar >> BOOST_SERIALIZATION_NVP( x1 );
+    T2 x2;
+    ar >> BOOST_SERIALIZATION_NVP( x2 );
+    T3 x3;
+    ar >> BOOST_SERIALIZATION_NVP( x3 );
+    T4 x4;
+    ar >> BOOST_SERIALIZATION_NVP( x4 );
+    T5 x5;
+    ar >> BOOST_SERIALIZATION_NVP( x5 );
+    t = boost::make_tuple( x1,x2,x3,x4,x5 );
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename Archive>
+void save( Archive & ar,
+           boost::tuple<T1,T2,T3,T4,T5> const& t,
+           const unsigned int file_version )
+{
+    T1 x1;
+    T2 x2;
+    T3 x3;
+    T4 x4;
+    T5 x5;
+    boost::tie( x1,x2,x3,x4,x5 ) = t;
+    ar << BOOST_SERIALIZATION_NVP( x1 );
+    ar << BOOST_SERIALIZATION_NVP( x2 );
+    ar << BOOST_SERIALIZATION_NVP( x3 );
+    ar << BOOST_SERIALIZATION_NVP( x4 );
+    ar << BOOST_SERIALIZATION_NVP( x5 );
+
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, class Archive>
+void serialize( Archive & ar,
+                boost::tuple<T1,T2,T3,T4,T5> & t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+//
+// boost::tuple<T1,T2,T3,T4,T5,T6>
+//
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, class Archive>
+void load( Archive & ar,
+           boost::tuple<T1,T2,T3,T4,T5,T6> & t,
+           const unsigned int file_version )
+{
+    T1 x1;
+    ar >> BOOST_SERIALIZATION_NVP( x1 );
+    T2 x2;
+    ar >> BOOST_SERIALIZATION_NVP( x2 );
+    T3 x3;
+    ar >> BOOST_SERIALIZATION_NVP( x3 );
+    T4 x4;
+    ar >> BOOST_SERIALIZATION_NVP( x4 );
+    T5 x5;
+    ar >> BOOST_SERIALIZATION_NVP( x5 );
+    T6 x6;
+    ar >> BOOST_SERIALIZATION_NVP( x6 );
+    t = boost::make_tuple( x1,x2,x3,x4,x5,x6 );
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename Archive>
+void save( Archive & ar,
+           boost::tuple<T1,T2,T3,T4,T5,T6> const& t,
+           const unsigned int file_version )
+{
+    T1 x1;
+    T2 x2;
+    T3 x3;
+    T4 x4;
+    T5 x5;
+    T6 x6;
+    boost::tie( x1,x2,x3,x4,x5,x6 ) = t;
+    ar << BOOST_SERIALIZATION_NVP( x1 );
+    ar << BOOST_SERIALIZATION_NVP( x2 );
+    ar << BOOST_SERIALIZATION_NVP( x3 );
+    ar << BOOST_SERIALIZATION_NVP( x4 );
+    ar << BOOST_SERIALIZATION_NVP( x5 );
+    ar << BOOST_SERIALIZATION_NVP( x6 );
+
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, class Archive>
+void serialize( Archive & ar,
+                boost::tuple<T1,T2,T3,T4,T5,T6> & t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+
 
 } // serialization
 } //boost

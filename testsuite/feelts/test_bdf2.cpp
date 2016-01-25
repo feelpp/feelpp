@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -33,16 +33,11 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/operations.hpp>
-#include <feel/feelvf/ginac.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/trans.hpp>
-
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
+using Feel::project;
 
 inline
 AboutData
@@ -108,19 +103,19 @@ public :
             }
             ue_g.setParameterValues( {
                     {"t", time.second},
-                    {"alpha", option(_name="parameters.alpha").template as<double>()},
-                    {"beta", option(_name="parameters.beta").template as<double>()} } );
+                    {"alpha", doption(_name="parameters.alpha")},
+                    {"beta", doption(_name="parameters.beta")} } );
             ue = project( _space=Xh, _expr=ue_g );
             mybdf->setUnknown( time.first, ue );
         }
 
         fe.setParameterValues( {
                 {"t", mybdf->timeInitial()},
-                {"alpha", option(_name="parameters.alpha").template as<double>()},
-                {"beta", option(_name="parameters.beta").template as<double>()} } );
+                {"alpha", doption(_name="parameters.alpha")},
+                {"beta", doption(_name="parameters.beta")} } );
 
-        solution = project( _space=Xh, _expr=ue_g );
-        ue = project( _space=Xh, _expr=ue_g );
+        solution.on( _range=elements(mesh), _expr=ue_g );
+        ue.on(_range=elements(mesh), _expr=ue_g );
         // compute max error which should be 0
         auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
         e->step(0)->add("exact",ue);

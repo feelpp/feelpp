@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,150 +44,6 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
-namespace Feel
-{
-    /// Geometry for one-element meshes
-    std::string
-    oneelement_geometry_ref()
-    {
-        std::string name = "one-elt-ref";
-        if(!fs::exists( name+".msh" ))
-            {
-                std::ofstream costr(name+".msh");
-                costr << "$MeshFormat\n"
-                      << "2.2 0 8\n"
-                      << "$EndMeshFormat\n"
-                      << "$PhysicalNames\n"
-                      << "3\n"
-                      << "1 1 \"hor\"\n"
-                      << "1 2 \"hypo\"\n"
-                      << "1 3 \"vert\"\n"
-                      << "$EndPhysicalNames\n"
-                      << "$Nodes\n"
-                      << "3\n"
-                      << "1 -1 -1 0\n"
-                      << "2 1 -1 0\n"
-                      << "3 -1 1 0\n"
-                      << "$EndNodes\n"
-                      << "$Elements\n"
-                      << "4\n"
-                      << "1 1 4 1 1 1 2 1 2\n"
-                      << "2 1 4 2 2 1 2 2 3\n"
-                      << "3 1 4 3 3 1 2 3 1\n"
-                      << "4 2 4 9 5 1 2 1 2 3\n"
-                      << "$EndElements\n";
-                costr.close();
-            }
-
-        return name;
-    }
-
-    // homothetic transformation of reference element (center 0, rate 2)
-    std::string
-    oneelement_geometry_real_1()
-    {
-        std::string name = "one-elt-real-homo";
-        if(!fs::exists( name+".msh" ))
-            {
-                std::ofstream costr(name+".msh");
-                costr << "$MeshFormat\n"
-                      << "2.2 0 8\n"
-                      << "$EndMeshFormat\n"
-                      << "$PhysicalNames\n"
-                      << "3\n"
-                      << "1 1 \"hor\"\n"
-                      << "1 2 \"hypo\"\n"
-                      << "1 3 \"vert\"\n"
-                      << "$EndPhysicalNames\n"
-                      << "$Nodes\n"
-                      << "3\n"
-                      << "1 -2 -2 0\n"
-                      << "2 2 -2 0\n"
-                      << "3 -2 2 0\n"
-                      << "$EndNodes\n"
-                      << "$Elements\n"
-                      << "4\n"
-                      << "1 1 4 1 1 1 2 1 2\n"
-                      << "2 1 4 2 2 1 2 2 3\n"
-                      << "3 1 4 3 3 1 2 3 1\n"
-                      << "4 2 4 9 5 1 2 1 2 3\n"
-                      << "$EndElements\n";
-                costr.close();
-            }
-
-        return name;
-    }
-
-    // Rotation of angle (-pi/2)
-    std::string
-    oneelement_geometry_real_2()
-    {
-        std::string name = "one-elt-real-rot1";
-        if(!fs::exists( name+".msh" ))
-            {
-                std::ofstream costr(name+".msh");
-                costr << "$MeshFormat\n"
-                      << "2.2 0 8\n"
-                      << "$EndMeshFormat\n"
-                      << "$PhysicalNames\n"
-                      << "3\n"
-                      << "1 1 \"hor\"\n"
-                      << "1 2 \"hypo\"\n"
-                      << "1 3 \"vert\"\n"
-                      << "$EndPhysicalNames\n"
-                      << "$Nodes\n"
-                      << "3\n"
-                      << "1 1 -1 0\n"
-                      << "2 1 1 0\n"
-                      << "3 -1 -1 0\n"
-                      << "$EndNodes\n"
-                      << "$Elements\n"
-                      << "4\n"
-                      << "1 1 4 1 1 1 2 1 2\n"
-                      << "2 1 4 2 2 1 2 2 3\n"
-                      << "3 1 4 3 3 1 2 3 1\n"
-                      << "4 2 4 9 5 1 2 1 2 3\n"
-                      << "$EndElements\n";
-                costr.close();
-            }
-        return name;
-    }
-
-    // Rotation of angle (-pi/2)
-    std::string
-    oneelement_geometry_real_3()
-    {
-        std::string name = "one-elt-real-rot2";
-        if(!fs::exists( name+".msh" ))
-            {
-                std::ofstream costr(name+".msh");
-                costr << "$MeshFormat\n"
-                      << "2.2 0 8\n"
-                      << "$EndMeshFormat\n"
-                      << "$PhysicalNames\n"
-                      << "3\n"
-                      << "1 1 \"hor\"\n"
-                      << "1 2 \"hypo\"\n"
-                      << "1 3 \"vert\"\n"
-                      << "$EndPhysicalNames\n"
-                      << "$Nodes\n"
-                      << "3\n"
-                      << "1 -1 1 0\n"
-                      << "2 -1 -1 0\n"
-                      << "3 1 1 0\n"
-                      << "$EndNodes\n"
-                      << "$Elements\n"
-                      << "4\n"
-                      << "1 1 4 1 1 1 2 1 2\n"
-                      << "2 1 4 2 2 1 2 2 3\n"
-                      << "3 1 4 3 3 1 2 3 1\n"
-                      << "4 2 4 9 5 1 2 1 2 3\n"
-                      << "$EndElements\n";
-                costr.close();
-            }
-        return name;
-    }
-
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -195,11 +51,17 @@ namespace Feel
  *
  * \return the list of options
  */
+using namespace Feel;
+
 inline
 po::options_description
 makeOptions()
 {
-    return Feel::feel_options();
+    po::options_description testHdivOptions( "test h_div options" );
+    testHdivOptions.add_options()
+        ( "meshes", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ;
+    return testHdivOptions.add( Feel::feel_options() );
 }
 
 inline
@@ -273,8 +135,7 @@ public:
     TestHDivOneElt()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         this->changeRepository( boost::format( "%1%" ) % this->about().appName() );
     }
@@ -282,25 +143,24 @@ public:
     /**
      * run the application
      */
-    void shape_functions( std::string ( *one_element_mesh )());
-    void testProjector( std::string ( *one_element_mesh_desc_fun )());
+    void shape_functions( std::string one_element_mesh );
+    void testProjector( std::string one_element_mesh );
 
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
 
-    //! exporter factory
-    export_ptrtype exporter;
-
 }; //TestHDivOneElt
 
 void
-TestHDivOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
+TestHDivOneElt::testProjector(std::string one_element_mesh )
 {
+    std::string mesh_name = one_element_mesh + ".msh";
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename=one_element_mesh_desc_fun() );
+                                  _filename=mesh_name );
 
-    auto RTh = Dh<0>( mesh );
+    //auto RTh = Dh<0>( mesh );
+    space_ptrtype RTh = space_type::New( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
@@ -313,73 +173,54 @@ TestHDivOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
     auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
-    // L2 projection (RT)
-    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
-    auto E_pL2_rt = l2_rt->project( _expr= E );
-    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
-
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
     auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
     auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
 
-    // H1 projection (RT)
-    auto h1_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_rt = h1_rt->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto error_pH1_rt = l2_lagS->project( _expr=divv(E_pH1_rt) - f );
-
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
-    auto hdiv_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HDIV );
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
     auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
 
-    // HDIV projection (RT)
-    auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-    auto E_pHDIV_rt = hdiv->project( _expr= E, _div_expr=cst(0.) );
-    auto error_pHDIV_rt = l2_lagS->project( _expr=divv(E_pHDIV_rt) - f );
+    // L2 projection (RT)
+    auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
+    auto E_pL2_rt = l2_rt->project( _expr= E );
+    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_rt, error_pH1_rt ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("HDIV projection [RT]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_rt, error_pHDIV_rt ) ), 1e-13 );
+    BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
 
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporter_proj_name = ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                       % proj_name ).str();
+    auto exporter_proj = exporter( _mesh=mesh,_name=exporter_proj_name );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[RT]", E_pH1_rt );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[RT]", E_pHDIV_rt );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
     exporter_proj->save();
 }
 
 void
-    TestHDivOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
+    TestHDivOneElt::shape_functions( std::string one_element_mesh )
 {
-    auto mesh_name = one_element_mesh_desc_fun()+".msh"; //create the mesh and load it
+    auto mesh_name = one_element_mesh +".msh"; //create the mesh and load it
+    fs::path mesh_path( mesh_name );
+
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
@@ -403,13 +244,11 @@ void
     std::vector<element_type> u_vec( Xh->nLocalDof() );
 
     std::string shape_name = "shape_functions";
-    export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                   ( boost::format( "%1%-%2%-%3%" )
-                                     % this->about().appName()
-                                     % one_element_mesh_desc_fun()
-                                     % shape_name ).str() ) );
-
-    exporter_shape->step( 0 )->setMesh( mesh );
+    std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
+                                        % this->about().appName()
+                                        % mesh_path.stem()
+                                        % shape_name ).str();
+    auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
 
     for ( size_type i = 0; i < Xh->nLocalDof(); ++i )
     {
@@ -420,7 +259,7 @@ void
         u_vec[i] = U_ref;
 
         std::ostringstream ostr;
-        ostr <<  one_element_mesh_desc_fun()<< "-" << Xh->basis()->familyName() << "-" << i;
+        ostr <<  mesh_path.stem() << "-" << Xh->basis()->familyName() << "-" << i;
         exporter_shape->step( 0 )->add( ostr.str(), U_ref );
     }
 
@@ -548,46 +387,24 @@ void
     //// ************************************************************************************ ////
 }
 
-}
+
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HDIV )
 
-BOOST_AUTO_TEST_CASE( test_hdiv_N0_ref )
+BOOST_AUTO_TEST_CASE( test_hdiv_N0_shape_func )
 {
-    BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
-    Feel::TestHDivOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_ref );
-}
-BOOST_AUTO_TEST_CASE( test_hdiv_N0_real1 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - homothetic transfo (1 elt) ***" );
-    Feel::TestHDivOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_1 );
-}
-BOOST_AUTO_TEST_CASE( test_hdiv_N0_real2 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 (1 elt) ***" );
-    Feel::TestHDivOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_2 );
-}
-
-BOOST_AUTO_TEST_CASE( test_hdiv_N0_real3 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation -pi/2 (1 elt) ***" );
-    Feel::TestHDivOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_3 );
-}
-
-BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
-{
-    BOOST_TEST_MESSAGE( "*** projection reference element (1 elt) ***" );
-    Feel::TestHDivOneElt t;
-    Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
-                                         % Feel::Environment::about().appName() );
-    t.testProjector(&Feel::oneelement_geometry_ref);
+    TestHDivOneElt t;
+    std::vector<std::string> mygeoms = vsoption(_name="meshes");//.template as< std::vector<std::string> >();
+    for(std::string geo : mygeoms)
+        {
+            std::cout << "*** shape functions on " << geo << " *** \n";
+            t.shape_functions( geo );
+            std::cout << "*** projections on " << geo << " *** \n";
+            t.testProjector( geo );
+        }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -596,11 +413,16 @@ BOOST_AUTO_TEST_SUITE_END()
 int
 main( int argc, char* argv[] )
 {
-    Feel::Environment env( argc,argv,
+    Environment env( argc,argv,
                            makeAbout(), makeOptions() );
-    Feel::TestHDivOneElt app_hdiv;
-    app_hdiv.shape_functions();
-    app_hdiv.testProjector();
+    TestHDivOneElt app_hdiv;
+    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
+    for(std::string geo : mygeoms)
+        {
+            app_hdiv.shape_functions(geo);
+            app_hdiv.testProjector(geo);
+
+        }
 }
 
 #endif

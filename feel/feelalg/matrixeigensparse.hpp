@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -298,7 +298,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        FEELPP_ASSERT( 0 ).error( "nor supported" );
+        M_tripletList.push_back(triplet(i, j, value));
     }
 
 
@@ -333,7 +333,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     void init() {}
 
@@ -358,7 +358,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type>& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m );
 
     /**
      * Add the full matrix to the
@@ -430,6 +430,10 @@ private:
     mutable std::vector<triplet> M_tripletList;
 };
 
+#if !defined( FEELPP_INSTANTIATE_MATRIXEIGENSPARSE )
+extern template class MatrixEigenSparse<double>;
+extern template class MatrixEigenSparse<std::complex<double>>;
+#endif
 
 
 } // Feel

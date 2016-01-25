@@ -1,6 +1,6 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-01-08
 #
 #  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -32,7 +32,7 @@ feelpp_add_application( polyvis EXCLUDE_FROM_ALL SRCS geom.cpp
   raviartthomas2d.cpp  raviartthomas3d.cpp
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
   #orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
-
+  CFG polyvis.cfg
 
   LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 

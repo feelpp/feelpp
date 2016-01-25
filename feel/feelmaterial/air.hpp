@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -82,7 +82,7 @@ public:
     virtual double k() const
     {
         double T = 273; // K (default)
-        return pow( 10,( 0.8616*log10( abs( T ) )-3.7142 ) );
+        return pow( 10,( 0.8616*log10( std::abs( T ) )-3.7142 ) );
     }
 
     //! density in \f$ kg/m^3 \f$

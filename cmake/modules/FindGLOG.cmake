@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-27
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -50,18 +50,27 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
       if (FEELPP_USE_STATIC_LINKAGE )
         message(STATUS "GLog: use static linkage")
         execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  --enable-static --disable-shared  CXXFLAGS=${CMAKE_CXX_FLAGS}
+          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  --enable-static --disable-shared  #CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           #      OUTPUT_QUIET
           OUTPUT_FILE "glog-configure"
           )
       else()
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-          #      OUTPUT_QUIET
-          OUTPUT_FILE "glog-configure"
-          )
+        if ( APPLE )
+            execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+            #      OUTPUT_QUIET
+            OUTPUT_FILE "glog-configure"
+            )
+        else(APPLE)
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} #CXXFLAGS=${CMAKE_CXX_FLAGS}
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+            #      OUTPUT_QUIET
+            OUTPUT_FILE "glog-configure"
+            )
+        endif(APPLE)
       endif()
         set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
     endif()
@@ -71,7 +80,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
     if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
         ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
       message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-      if ( APPLE AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
+      if ( APPLE AND ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang"))
         execute_process(
           COMMAND make -k -j${NProcs2} install CXXFLAGS=-stdlib=libc++
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
@@ -80,12 +89,17 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
           )
       else()
         execute_process(
-          COMMAND make -k -j${NProcs2} install
+          COMMAND make -k -d -j${NProcs2} install
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
           OUTPUT_FILE "glog-install"
           #OUTPUT_QUIET
           )
       endif()
+      if ( APPLE AND (NOT FEELPP_USE_STATIC_LINKAGE) )
+        message(STATUS "GLog: use @rpath in dynamic lib installed")
+        EXECUTE_PROCESS(COMMAND install_name_tool -id @rpath/libfeelpp_glog.0.dylib ${CMAKE_BINARY_DIR}/contrib/glog/lib/libfeelpp_glog.dylib )
+      endif()
+
     endif()
   endif()
   FIND_LIBRARY(GLOG_LIBRARY

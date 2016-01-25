@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -96,7 +96,7 @@ public:
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
 
-    typedef typename Component<polyset_type>::type component_type;
+    typedef typename GetComponent<polyset_type>::type component_type;
     typedef Polynomial<Poly,Scalar> scalar_component_type;
 
     typedef typename basis_type::points_type points_type;

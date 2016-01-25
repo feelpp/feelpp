@@ -1,4 +1,4 @@
-// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 #include <feel/feel.hpp>
 
 #if !defined( MESH_DIM )
@@ -36,7 +36,7 @@ int main(int argc, char**argv )
     auto Xh_F = space_type_F::New( mesh,_extended_doftable=ext_doft );
 
     // Matrix creation with extended pattern
-    backend_ptrtype backend( backend_type::build() );
+    backend_ptrtype backend( backend_type::build( soption( _name="backend" ) ) );
     auto blockStruct = BlocksStencilPattern(3,3)
         << size_type(Pattern::EXTENDED) << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO) // velocity
         << size_type(Pattern::COUPLED)  << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED) // pressure

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,210 +40,9 @@
 
 #include <testsuite/testsuite.hpp>
 #include <feel/feel.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpoly/nedelec.hpp>
-
-namespace Feel
-{
-/// Geometry for one-element meshes
-std::string
-oneelement_geometry_ref()
-{
-    std::string name = "one-elt-ref";
-    if(!fs::exists( name+".msh" ))
-        {
-            std::ofstream costr(name+".msh");
-            costr << "$MeshFormat\n"
-                  << "2.2 0 8\n"
-                  << "$EndMeshFormat\n"
-                  << "$PhysicalNames\n"
-                  << "5\n"
-                  << "2 1 \"xyFace\"\n"
-                  << "2 2 \"yzFace\"\n"
-                  << "2 3 \"xzFace\"\n"
-                  << "2 4 \"xyzFace\"\n"
-                  << "3 5 \"volume\"\n"
-                  << "$EndPhysicalNames\n"
-                  << "$Nodes\n"
-                  << "4\n"
-                  << "1 -1 -1 -1\n"
-                  << "2 1 -1 -1\n"
-                  << "3 -1 1 -1\n"
-                  << "4 -1 -1 1\n"
-                  << "$EndNodes\n"
-                  << "$Elements\n"
-                  << "5\n"
-                  << "1 2 2 1 11 1 2 3\n"
-                  << "2 2 2 2 12 1 4 3\n"
-                  << "3 2 2 3 13 1 2 4\n"
-                  << "4 2 2 4 14 2 3 4\n"
-                  << "5 4 2 5 20 3 4 1 2\n"
-                  << "$EndElements\n";
-            costr.close();
-        }
-
-        return name;
-}
-
-// homothetic transformation of reference element (center 0, rate 2)
-std::string
-oneelement_geometry_real_1()
-{
-    std::string name = "one-elt-real-homo";
-    if(!fs::exists( name+".msh" ))
-        {
-            std::ofstream costr(name+".msh");
-            costr << "$MeshFormat\n"
-                  << "2.2 0 8\n"
-                  << "$EndMeshFormat\n"
-                  << "$PhysicalNames\n"
-                  << "5\n"
-                  << "2 1 \"xyFace\"\n"
-                  << "2 2 \"yzFace\"\n"
-                  << "2 3 \"xzFace\"\n"
-                  << "2 4 \"xyzFace\"\n"
-                  << "3 5 \"volume\"\n"
-                  << "$EndPhysicalNames\n"
-                  << "$Nodes\n"
-                  << "4\n"
-                  << "1 -2 -2 -2\n"
-                  << "2 2 -2 -2\n"
-                  << "3 -2 2 -2\n"
-                  << "4 -2 -2 2\n"
-                  << "$EndNodes\n"
-                  << "$Elements\n"
-                  << "5\n"
-                  << "1 2 2 1 11 1 2 3\n"
-                  << "2 2 2 2 12 1 4 3\n"
-                  << "3 2 2 3 13 1 2 4\n"
-                  << "4 2 2 4 14 2 3 4\n"
-                  << "5 4 2 5 20 3 4 1 2\n"
-                  << "$EndElements\n";
-            costr.close();
-        }
-
-    return name;
-}
-
-// Rotation of angle (pi/2) around x axis
-std::string
-oneelement_geometry_real_2()
-{
-    std::string name = "one-elt-real-rotx";
-    if(!fs::exists( name+".msh" ))
-        {
-            std::ofstream costr(name+".msh");
-            costr << "$MeshFormat\n"
-                  << "2.2 0 8\n"
-                  << "$EndMeshFormat\n"
-                  << "$PhysicalNames\n"
-                  << "5\n"
-                  << "2 1 \"xyFace\"\n"
-                  << "2 2 \"yzFace\"\n"
-                  << "2 3 \"xzFace\"\n"
-                  << "2 4 \"xyzFace\"\n"
-                  << "3 5 \"volume\"\n"
-                  << "$EndPhysicalNames\n"
-                  << "$Nodes\n"
-                  << "4\n"
-                  << "1 -1 1 -1\n"
-                  << "2 1 1 -1\n"
-                  << "3 -1 1 1\n"
-                  << "4 -1 -1 -1\n"
-                  << "$EndNodes\n"
-                  << "$Elements\n"
-                  << "5\n"
-                  << "1 2 2 1 11 1 2 3\n"
-                  << "2 2 2 2 12 1 4 3\n"
-                  << "3 2 2 3 13 1 2 4\n"
-                  << "4 2 2 4 14 2 3 4\n"
-                  << "5 4 2 5 20 3 4 1 2\n"
-                  << "$EndElements\n";
-
-            costr.close();
-        }
-    return name;
-}
-
-// Rotation of angle (pi/2) around y axis
-std::string
-oneelement_geometry_real_3()
-{
-    std::string name = "one-elt-real-roty";
-    if(!fs::exists( name+".msh" ))
-        {
-            std::ofstream costr(name+".msh");
-            costr << "$MeshFormat\n"
-                  << "2.2 0 8\n"
-                  << "$EndMeshFormat\n"
-                  << "$PhysicalNames\n"
-                  << "5\n"
-                  << "2 1 \"xyFace\"\n"
-                  << "2 2 \"yzFace\"\n"
-                  << "2 3 \"xzFace\"\n"
-                  << "2 4 \"xyzFace\"\n"
-                  << "3 5 \"volume\"\n"
-                  << "$EndPhysicalNames\n"
-                  << "$Nodes\n"
-                  << "4\n"
-                  << "1 -1 -1 1\n"
-                  << "2 -1 -1 -1\n"
-                  << "3 -1 1 1\n"
-                  << "4 1 -1 -1\n"
-                  << "$EndNodes\n"
-                  << "$Elements\n"
-                  << "5\n"
-                  << "1 2 2 1 11 1 2 3\n"
-                  << "2 2 2 2 12 1 4 3\n"
-                  << "3 2 2 3 13 1 2 4\n"
-                  << "4 2 2 4 14 2 3 4\n"
-                  << "5 4 2 5 20 3 4 1 2\n"
-                  << "$EndElements\n";
-            costr.close();
-        }
-
-    return name;
-}
-
-// Rotation of angle (pi/2) around z axis
-std::string
-oneelement_geometry_real_4()
-{
-    std::string name = "one-elt-real-rotz";
-    if(!fs::exists( name+".msh" ))
-        {
-            std::ofstream costr(name+".msh");
-            costr << "$MeshFormat\n"
-                  << "2.2 0 8\n"
-                  << "$EndMeshFormat\n"
-                  << "$PhysicalNames\n"
-                  << "5\n"
-                  << "2 1 \"xyFace\"\n"
-                  << "2 2 \"yzFace\"\n"
-                  << "2 3 \"xzFace\"\n"
-                  << "2 4 \"xyzFace\"\n"
-                  << "3 5 \"volume\"\n"
-                  << "$EndPhysicalNames\n"
-                  << "$Nodes\n"
-                  << "4\n"
-                  << "1 1 -1 -1\n"
-                  << "2 1 1 -1\n"
-                  << "3 -1 -1 -1\n"
-                  << "4 1 -1 1\n"
-                  << "$EndNodes\n"
-                  << "$Elements\n"
-                  << "5\n"
-                  << "1 2 2 1 11 1 2 3\n"
-                  << "2 2 2 2 12 1 4 3\n"
-                  << "3 2 2 3 13 1 2 4\n"
-                  << "4 2 2 4 14 2 3 4\n"
-                  << "5 4 2 5 20 3 4 1 2\n"
-                  << "$EndElements\n";
-            costr.close();
-        }
-
-    return name;
-}
 
 /**
  * This routine returns the list of options using the
@@ -252,11 +51,17 @@ oneelement_geometry_real_4()
  *
  * \return the list of options
  */
+using namespace Feel;
+
 inline
 po::options_description
 makeOptions()
 {
-    return Feel::feel_options();
+    po::options_description testHcurl3DOptions( "test h_div 3D options" );
+    testHcurl3DOptions.add_options()
+        ( "meshes", po::value< std::vector<std::string> >(), "vector containing mesh names" )
+        ;
+    return testHcurl3DOptions.add( Feel::feel_options() );
 }
 
 inline
@@ -297,8 +102,10 @@ public:
     typedef Simplex<3,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
+    typedef Mesh< Simplex<1,1,3> > submesh1d_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef boost::shared_ptr<submesh1d_type> submesh1d_ptrtype;
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0,NedelecKind::NED1> > basis_type;
@@ -326,7 +133,7 @@ public:
     TestHCurl3DOneElt()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
         std::cout << "[TestHCurl3DOneElt]\n";
@@ -337,8 +144,8 @@ public:
     /**
      * run the application
      */
-    void shape_functions( std::string ( *one_element_mesh )() );
-    void testProjector(std::string ( *one_element_mesh_desc_fun )() );
+    void shape_functions( std::string one_element_mesh );
+    void testProjector(std::string one_element_mesh );
 
 private:
     //! linear algebra backend
@@ -349,12 +156,12 @@ private:
 
 }; //TestHDiv
 
-#if 0
 void
-TestHCurl3DOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
+TestHCurl3DOneElt::testProjector(std::string one_element_mesh )
 {
+    std::string mesh_name = one_element_mesh + ".msh";
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type,
-                                  _filename=one_element_mesh_desc_fun() );
+                                  _filename=mesh_name );
 
     space_ptrtype Nh = space_type::New( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
@@ -365,55 +172,47 @@ TestHCurl3DOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
 
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
-    auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
-    auto E_pL2_lag = l2_lagV->project( _expr= trans(E) );
+    auto E_pL2_lag = l2_lagV->project( _expr= E );
     auto error_pL2_lag = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
-
-    // L2 projection (Nedelec)
-    auto l2_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=L2 );
-    auto E_pL2_ned = l2_ned->project( _expr= trans(E) );
-    auto error_pL2_ned = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
 
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
-    auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
+    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<3,3>(cst(0.),cst(1.),cst(1.),
+                                                                     cst(1.),cst(0.),cst(1.),
+                                                                     cst(1.),cst(1.),cst(0.) ) );
     auto error_pH1_lag = l2_lagV->project( _expr=curlv(E_pH1_lag) - f );
-
-    // H1 projection (Nedelec)
-    auto h1_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=H1 ); //h1 vectorial proj
-    auto E_pH1_ned = h1_ned->project( _expr= trans(E), _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto error_pH1_ned = l2_lagV->project( _expr=curlv(E_pH1_ned) - f );
 
     // HCURL projection (Lagrange)
     auto hcurl_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HCURL );
-    auto hcurl_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=HCURL );
-    auto E_pHCURL_lag = hcurl_lagV->project( _expr= trans(E) /*, _curl_expr=cst(0.)*/ );
+    auto E_pHCURL_lag = hcurl_lagV->project( _expr= E /*, _curl_expr=f*/ );
     auto error_pHCURL_lag = l2_lagV->project( _expr=curlv(E_pHCURL_lag) - f );
 
-    // HCURL projection (Nedelec)
-    auto hcurl = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=HCURL ); //hdiv proj (RT elts)
-    auto E_pHCURL_ned = hcurl->project( _expr= trans(E) /*, _curl_expr=cst(0.)*/ );
-    auto error_pHCURL_ned = l2_lagV->project( _expr=curlv(E_pHCURL_ned) - f );
+    // L2 projection (Nedelec)
+    auto l2_ned = opProjection( _domainSpace=Nh, _imageSpace=Nh, _type=L2 );
+    auto E_pL2_ned = l2_ned->project( _expr= E );
+    auto error_pL2_ned = l2_lagV->project( _expr=curlv(E_pL2_lag) - f );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("L2 projection [NED]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_ned, error_pL2_ned ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_ned, error_pL2_ned ) ), 1e-13 );
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
-    BOOST_TEST_MESSAGE("H1 projection [NED]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_ned, error_pH1_ned ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_ned, error_pH1_ned ) ), 1e-13 );
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HCURL projection [Lagrange]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHCURL_lag, error_pHCURL_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHCURL_lag, error_pHCURL_lag ) ), 1e-13 );
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pHCURL_lag, error_pHCURL_lag ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pHCURL_lag, error_pHCURL_lag ) ), 1e-13 );
+
+    BOOST_TEST_MESSAGE("L2 projection [NED]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pL2_ned, error_pL2_ned ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pL2_ned, error_pL2_ned ) ), 1e-13 );
+#if 0
+    BOOST_TEST_MESSAGE("H1 projection [NED]: error[div(E)-f]");
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pH1_ned, error_pH1_ned ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pH1_ned, error_pH1_ned ) ), 1e-13 );
     BOOST_TEST_MESSAGE("HCURL projection [NED]: error[div(E)-f]");
-    std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHCURL_ned, error_pHCURL_ned ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHCURL_ned, error_pHCURL_ned ) ), 1e-13 );
+    std::cout << "error L2: " << math::sqrt( l2_lagV->energy( error_pHCURL_ned, error_pHCURL_ned ) ) << "\n";
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagV->energy( error_pHCURL_ned, error_pHCURL_ned ) ), 1e-13 );
+#endif
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
@@ -424,19 +223,18 @@ TestHCurl3DOneElt::testProjector(std::string ( *one_element_mesh_desc_fun )())
 
     exporter_proj->step( 0 )->setMesh( mesh );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[NED]", E_pH1_ned );
     exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHCURL_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[NED]", E_pHCURL_ned );
+    exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
     exporter_proj->save();
 }
-#endif
 
 void
-TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )() )
+TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
 {
-    auto mesh_name = one_element_mesh_desc_fun()+".msh"; //create the mesh and load it
+    auto mesh_name = one_element_mesh +".msh"; //create the mesh and load it
+    fs::path mesh_path( mesh_name );
+
     mesh_ptrtype oneelement_mesh = loadMesh( _mesh=new mesh_type,
                                              _filename=mesh_name);
 
@@ -463,7 +261,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
     export_ptrtype exporter_shape( export_type::New( this->vm(),
                                    ( boost::format( "%1%-%2%-%3%" )
                                      % this->about().appName()
-                                     % one_element_mesh_desc_fun()
+                                     % mesh_path.stem().string()
                                      % shape_name ).str() ) );
 
     exporter_shape->step( 0 )->setMesh( mesh );
@@ -477,7 +275,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
         u_vec[i] = U_ref;
 
         std::ostringstream ostr;
-        ostr <<  one_element_mesh_desc_fun() << "-" << Xh->basis()->familyName() << "-" << i;
+        ostr << mesh_path.stem().string() << "-" << Xh->basis()->familyName() << "-" << i;
         exporter_shape->step( 0 )->add( ostr.str(), U_ref );
     }
 
@@ -489,7 +287,33 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
-    std::vector<std::string> edges = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+    std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
+
+    submesh1d_ptrtype edgeMesh( new submesh1d_type );
+    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+
+    double div1sqrt2 = 1/sqrt(2.);
+
+    // Tangents (normalized) on ref element
+    auto t0 = vec(cst(0.),cst(0.),cst(-1.));
+    auto t1 = vec(cst(0.),cst(1.),cst(0.));
+    auto t2 = vec(cst(0.),cst(-div1sqrt2),cst(div1sqrt2));
+    auto t3 = vec(cst(div1sqrt2),cst(-div1sqrt2),cst(0.));
+    auto t4 = vec(cst(div1sqrt2),cst(0.),cst(-div1sqrt2));
+    auto t5 = vec(cst(1.),cst(0.),cst(0.));
+    std::vector< decltype(t0) > tangentRef{t0,t1,t2,t3,t4,t5};
+
+    // Jacobian of geometrical transforms
+    std::string jac;
+    std::string jac_name = "jac_"+ mesh_path.stem().string();
+    if(mesh_path.stem().string() == "one-elt-ref-3d" || mesh_path.stem().string() == "one-elt-real-homo-3d" )
+        jac = "{1,0,0,0,1,0,0,0,1}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotx" )
+        jac = "{1,0,0,0,0,-1,0,1,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-roty" )
+        jac = "{0,0,1,0,1,0,-1,0,0}:x:y:z";
+    else if(mesh_path.stem().string() == "one-elt-real-rotz" )
+        jac = "{0,-1,0,1,0,0,0,0,1}:x:y:z";
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );
@@ -499,17 +323,19 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
-            auto int_u_t = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+            CHECK( oneelement_mesh->hasMarkers({edge}) );
+            auto int_u_t = integrate( markedelements(edgeMesh, edge),
+                                      trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
-
             else
                 BOOST_CHECK_SMALL( int_u_t, 1e-13 );
 
-            checkidv[3*i+edgeid] = int_u_t;
+            checkidv[Xh->nLocalDof()*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedelements(edgeMesh, edge),
+                                                                  trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
@@ -517,32 +343,34 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
             else
                 BOOST_CHECK_SMALL( form_v_t, 1e-13 );
 
-            checkform1[3*i+edgeid] = form_v_t;
+            checkform1[Xh->nLocalDof()*i+edgeid] = form_v_t;
 
             ++edgeid;
         }
 
-        // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
-        // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        auto int_curlxv = integrate( elements( oneelement_mesh ), curlxv( u_vec[i] ) ).evaluate()( 0,0 );
-        auto int_vt = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+        //Stokes Theorem for curl :
+        auto int_curlv = integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(0,0);
+        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(1,0);
+        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(2,0);
 
-        BOOST_CHECK_CLOSE( int_vt, 1, 1e-13 );
-        BOOST_CHECK_CLOSE( int_curlxv, int_vt, 1e-13 );
-        checkStokesidv[i] = int_curlxv;
-        checkStokesidv[i + Xh->nLocalDof()] = int_vt;
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), trans(one())*curl( V_ref ) );
+        auto form_curlv = inner_product( u_vec[i], *F );
 
-        // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
-        // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), curlx( V_ref ) );
-        auto form_curlxv = inner_product( u_vec[i], *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),trans( T() )*id( V_ref ) );
-        auto form_vt = inner_product( u_vec[i], *F );
+        auto int_vn = integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(0,0);
+        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(1,0);
+        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(2,0);
 
-        BOOST_CHECK_CLOSE( form_vt, 1, 1e-13 );
-        BOOST_CHECK_CLOSE( form_curlxv, form_vt, 1e-13 );
-        checkStokesform1[i] = form_curlxv;
-        checkStokesform1[i + Xh->nLocalDof()] = form_vt;
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),
+                                                              -trans(one())*cross( idv(u_vec[i]),N() ) );
+        auto form_vn = inner_product( u_vec[i], *F );
+
+        BOOST_CHECK_SMALL( int_curlv - int_vn, 1e-13 );
+        checkStokesidv[i] = int_curlv;
+        checkStokesidv[i + Xh->nLocalDof()] = int_vn;
+
+        BOOST_CHECK_SMALL( form_curlv - form_vn, 1e-13 );
+        checkStokesform1[i] = form_curlv;
+        checkStokesform1[i + Xh->nLocalDof()] = form_vn;
     }
 
     BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
@@ -550,7 +378,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
                         << " ********** Using idv keyword ********************* "
                         << "\n" );
 
-    for ( int i = 0; i < 3; ++i )
+    for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -567,7 +395,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
                         << " ********** Using form1 keyword ********************* "
                         << "\n" );
 
-    for ( int i = 0; i < 3; ++i )
+    for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -586,7 +414,7 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         BOOST_TEST_MESSAGE("int(Omega) curl(N_" << i << ") = " << checkStokesidv[i] );
-        BOOST_TEST_MESSAGE("int(boundary) N_" << i << ".t = " << checkStokesidv[i+Xh->nLocalDof()] );
+        BOOST_TEST_MESSAGE("int(boundary) N_" << i << "^n = " << checkStokesidv[i+Xh->nLocalDof()] );
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
     }
 
@@ -597,59 +425,31 @@ TestHCurl3DOneElt::shape_functions( std::string ( *one_element_mesh_desc_fun )()
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         BOOST_TEST_MESSAGE("int(Omega) curl(N_" << i << ") = " << checkStokesform1[i] );
-        BOOST_TEST_MESSAGE("int(boundary) N_" << i << ".t = " << checkStokesform1[i+Xh->nLocalDof()] );
+        BOOST_TEST_MESSAGE("int(boundary) N_" << i << "^n = " << checkStokesform1[i+Xh->nLocalDof()] );
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
     }
 
     //// ************************************************************************************ ////
 }
 
-}
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HCURL3D_oneelt )
 
-BOOST_AUTO_TEST_CASE( test_hcurl3D_N0_ref )
+BOOST_AUTO_TEST_CASE( test_hcurl3D_N0 )
 {
-    BOOST_TEST_MESSAGE( "*** shape functions on reference element (1 elt) ***" );
-    Feel::TestHCurl3DOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_ref );
+    TestHCurl3DOneElt t;
+    std::vector<std::string> mygeoms = vsoption(_name="meshes");//.template as< std::vector<std::string> >();
+    for(std::string geo : mygeoms)
+        {
+            std::cout << "*** shape functions on " << geo << " *** \n";
+            t.shape_functions( geo );
+            std::cout << "*** projections on " << geo << " *** \n";
+            t.testProjector( geo );
+        }
 }
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real1 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - homothetic transfo (1 elt) ***" );
-    Feel::TestHCurl3DOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_1 );
-}
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real2 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - x axis (1 elt) ***" );
-    Feel::TestHCurl3DOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_2 );
-}
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real3 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - y axis (1 elt) ***" );
-    Feel::TestHCurl3DOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_3 );
-}
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real4 )
-{
-    BOOST_TEST_MESSAGE( "*** shape functions on real element - rotation pi/2 - z axis (1 elt) ***" );
-    Feel::TestHCurl3DOneElt t;
-    t.shape_functions( &Feel::oneelement_geometry_real_4 );
-}
-
-// BOOST_AUTO_TEST_CASE( test_hcurl_projection_ref )
-// {
-//     BOOST_TEST_MESSAGE( "*** projection on cube ***" );
-//     Feel::TestHCurl3DOneElt t;
-//     Feel::Environment::changeRepository( boost::format( "/%1%/test_projection/" )
-//                                          % Feel::Environment::about().appName() );
-//     t.testProjector(&Feel::oneelement_geometry_ref);
-// }
 
 BOOST_AUTO_TEST_SUITE_END()
 #else
@@ -657,11 +457,16 @@ BOOST_AUTO_TEST_SUITE_END()
 int
 main( int argc, char* argv[] )
 {
-    Feel::Environment env( argc,argv,
+    Environment env( argc,argv,
                            makeAbout(), makeOptions() );
-    Feel::TestHCurl3DOneElt app_hcurl;
-    app_hcurl.shape_functions();
-    app_hcurl.testProjector();
+    TestHCurl3DOneElt app_hcurl;
+    std::vector<std::string> mygeoms = option(_name="meshes").template as< std::vector<std::string> >();
+    for(std::string geo : mygeoms)
+        {
+            app_hcurl.shape_functions(geo);
+            //app_hcurl.testProjector(geo);
+
+        }
 }
 
 #endif

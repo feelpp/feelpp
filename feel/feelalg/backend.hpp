@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,6 +29,7 @@
 #ifndef Backend_H
 #define Backend_H 1
 
+#include <functional>
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -36,6 +37,7 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -53,6 +55,9 @@
 
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
+
+
+
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
 //#include <boost/fusion/container.hpp>
@@ -64,6 +69,8 @@
 //#include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
+
+#include <feel/feelalg/nullspace.hpp>
 
 namespace Feel
 {
@@ -119,6 +126,14 @@ auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
+/**
+ * default pre/post solve function, a no-op
+ */
+inline void default_prepost_solve( vector_ptrtype rhs, vector_ptrtype sol )
+{
+    
+}
+
 template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
 template<typename T> class VectorBlockBase;
@@ -159,11 +174,12 @@ public:
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    typedef backend_ptrtype ptrtype;
 
     typedef SolverNonLinear<value_type> solvernonlinear_type;
     typedef boost::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef typename SolverLinear<value_type>::solve_return_type solve_return_type;
+    typedef typename SolverLinear<real_type>::solve_return_type solve_return_type;
     typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
     typedef DataMap datamap_type;
@@ -172,6 +188,8 @@ public:
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
+    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
     //@}
 
     /** @name Constructors, destructor
@@ -188,7 +206,7 @@ public:
      * Builds a \p Backend, if Petsc is available, use Petsc by
      * default, otherwise use GMM which is distributed with feel
      */
-    static backend_ptrtype build(
+    static FEELPP_DEPRECATED backend_ptrtype build(
 #if defined( FEELPP_HAS_PETSC_H )
         BackendType = BACKEND_PETSC
 #else
@@ -198,10 +216,25 @@ public:
     );
 
     /**
-     * Builds a \p Backend
+     * build a backend
+     * \param kind the type of backend
+     * \param prefix the name of the backend
+     * \param worldcomm the communicator
+     * \return the backend
      */
-    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
-    static backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
+    
+    static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
+
+    /**
+     * build a backend
+     * \param bt the type of backend
+     * \param prefix the name of the backend
+     * \param worldcomm the communicator
+     * \return the backend
+     */
+    static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -304,7 +337,7 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
@@ -318,46 +351,60 @@ public:
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
-        if ( !buildGraphWithTranspose )
+        if ( this->type() == BackendType::BACKEND_EIGEN_DENSE ||
+             this->type() == BackendType::BACKEND_EIGEN )
         {
-            auto s = stencil( _test=test,
-                              _trial=trial,
-                              _pattern=pattern,
-                              _pattern_block=pattern_block,
-                              _diag_is_nonzero=diag_is_nonzero,
-                              _collect_garbage=collect_garbage);
-
             mat->init( test->nDof(), trial->nDof(),
-                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                       s->graph() );
+                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost() );
         }
         else
         {
-            auto s = stencil( _test=trial,
-                              _trial=test,
-                              _pattern=pattern,
-                              _pattern_block=pattern_block.transpose(),
-                              _diag_is_nonzero=false,// because transpose(do just after)
-                              _close=false,
-                              _collect_garbage=collect_garbage );
-            // get the good graph
-            auto graph = s->graph()->transpose(false);
-            if ( diag_is_nonzero )
-                graph->addMissingZeroEntriesDiagonal();
-            graph->close();
+            if ( !buildGraphWithTranspose )
+            {
+                tic();
+                auto s = stencil( _test=test,
+                                  _trial=trial,
+                                  _pattern=pattern,
+                                  _pattern_block=pattern_block,
+                                  _diag_is_nonzero=diag_is_nonzero,
+                                  _collect_garbage=collect_garbage);
+                toc( "Backend::newMatrix:: build stencil", FLAGS_v > 0 );
+                tic();
+                mat->init( test->nDof(), trial->nDof(),
+                           test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                           s->graph() );
+                toc( "Backend::newMatrix:: initialize matrix", FLAGS_v > 0 );
+            }
+            else
+            {
+                auto s = stencil( _test=trial,
+                                  _trial=test,
+                                  _pattern=pattern,
+                                  _pattern_block=pattern_block.transpose(),
+                                  _diag_is_nonzero=false,// because transpose(do just after)
+                                  _close=false,
+                                  _collect_garbage=collect_garbage );
+                // get the good graph
+                auto graph = s->graph()->transpose(false);
+                if ( diag_is_nonzero )
+                    graph->addMissingZeroEntriesDiagonal();
+                graph->close();
 
-            //maybe do that
-            //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
-            //now save the good graph in the StencilManager(only if entry is empty)
-            stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
+                //maybe do that
+                //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
+                //now save the good graph in the StencilManager(only if entry is empty)
+                stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
 
-            mat->init( test->nDof(), trial->nDof(),
-                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                       graph );
+                mat->init( test->nDof(), trial->nDof(),
+                           test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                           graph );
+            }
+            tic();
+            mat->zero();
+            mat->setIndexSplit( trial->dofIndexSplit() );
+            toc("Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
         }
 
-        mat->zero();
-        mat->setIndexSplit( trial->dofIndexSplit() );
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::newMatrix end" );
@@ -541,7 +588,7 @@ public:
      */
     std::string snesType() const
     {
-        return M_snesType;
+        return snesTypeConvertEnumToStr( this->nlSolver()->getType() );
     }
 
     /**
@@ -612,7 +659,7 @@ public:
     /**
      * \return the relative tolerance
      */
-    value_type rTolerance() const
+    real_type rTolerance() const
     {
         return M_rtolerance;
     }
@@ -620,7 +667,7 @@ public:
     /**
      * \return the relative tolerance SNES
      */
-    value_type rToleranceSNES() const
+    real_type rToleranceSNES() const
     {
         return M_rtoleranceSNES;
     }
@@ -628,7 +675,7 @@ public:
     /**
      * \return the divergence tolerance
      */
-    value_type dTolerance() const
+    real_type dTolerance() const
     {
         return M_dtolerance;
     }
@@ -636,7 +683,7 @@ public:
     /**
      * \return the SNES step length tolerance
      */
-    value_type sToleranceSNES() const
+    real_type sToleranceSNES() const
     {
         return M_stoleranceSNES;
     }
@@ -644,7 +691,7 @@ public:
     /**
      * \return the absolute tolerance
      */
-    value_type aTolerance() const
+    real_type aTolerance() const
     {
         return M_atolerance;
     }
@@ -652,7 +699,7 @@ public:
     /**
      * \return the SNES absolute tolerance
      */
-    value_type aToleranceSNES() const
+    real_type aToleranceSNES() const
     {
         return M_atoleranceSNES;
     }
@@ -693,7 +740,7 @@ public:
     /**
      * \return the KSP relative tolerance in SNES
      */
-    value_type rtoleranceKSPinSNES() const
+    real_type rtoleranceKSPinSNES() const
     {
         return M_rtoleranceKSPinSNES;
     }
@@ -723,9 +770,7 @@ public:
     }
 
     bool showKSPMonitor() const { return M_showKSPMonitor; }
-    bool showSNESMonitor() const { return M_showSNESMonitor; }
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
-    bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
 
     bool reusePrec() const { return M_reuse_prec; }
     bool reuseJac() const { return M_reuse_jac; }
@@ -735,6 +780,20 @@ public:
 
     BackendType type() const { return M_backend; }
 
+    static std::string enumToKind( BackendType bt ) 
+        {
+            if ( bt == BACKEND_EIGEN ) return "eigen";
+            if ( bt == BACKEND_EIGEN_DENSE ) return "eigen_dense";
+            if ( bt == BACKEND_PETSC ) return "petsc";
+            LOG(WARNING) << "Unknown backend, setting up for 'petsc'";
+            return "petsc";
+        }
+
+    /**
+     * @return the current datamap of the backend
+     */
+    datamap_ptrtype dataMap() const { return M_datamap; }
+    
     //@}
 
     /** @name  Mutators
@@ -749,12 +808,12 @@ public:
                                      setTolerances,
                                      tag,
                                      ( required
-                                       ( rtolerance, ( double ) )
+                                       ( rtolerance, ( real_type ) )
                                      )
                                      ( optional
                                        ( maxit,      ( size_type ), 1000 )
-                                       ( atolerance, ( double ),    1e-50 )
-                                       ( dtolerance, ( double ),    1e5 )
+                                       ( atolerance, ( real_type ),    1e-50 )
+                                       ( dtolerance, ( real_type ),    1e5 )
                                      ) )
     {
         M_rtolerance = rtolerance;
@@ -817,6 +876,10 @@ public:
     {
         return M_nlsolver;
     }
+    solvernonlinear_ptrtype const& nlSolver() const
+    {
+        return M_nlsolver;
+    }
 
     void setTranspose( bool transpose )
     {
@@ -824,9 +887,7 @@ public:
     }
 
     void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
-    void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
-    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
 
     void setReusePrec( bool b ) { M_reuse_prec=b; }
     void setReuseJac( bool b) { M_reuse_jac=b; }
@@ -834,7 +895,13 @@ public:
     void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
     void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
 
-
+    /**
+     * @brief set the current datamap of the backend
+     * this is used for example in the pre/post solve functions 
+     * to pass on the parallel data layout
+     */
+    void setDataMap( datamap_ptrtype dm ) { M_datamap = dm; }
+    
     //@}
 
     /** @name  Methods
@@ -849,29 +916,62 @@ public:
     /**
      * \return \f$ r = x^T * y \f$
      */
-    virtual real_type dot( vector_type const& x, vector_type const& y ) const;
+    virtual value_type dot( vector_type const& x, vector_type const& y ) const;
 
 
     /**
      * \return \f$ r = x^T * y \f$
      */
-    real_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
+    value_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
     {
         return this->dot( *x, *y );
     }
     /**
      * \return \f$ y = A * x \f$
      */
-    virtual void prod( sparse_matrix_type const& A, vector_type const& x, vector_type& y ) const = 0;
+    virtual void prod( sparse_matrix_type const& A, vector_type const& x, vector_type& y, bool transpose = false ) const = 0;
 
     /**
      * \return \f$ y = A * x \f$
      */
-    void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y ) const
+    void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y, bool transpose = false ) const
     {
-        this->prod( *A, *x, *y );
+        this->prod( *A, *x, *y, transpose );
     }
 
+    /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_ptrtype const& v, sparse_matrix_ptrtype& M ) const
+        {
+            return diag( *v, *M );
+        }
+    
+    /**
+     * get the matrix \c M whose diagonal is \c v
+     */
+    virtual int diag( vector_type const& v, sparse_matrix_type& M ) const
+        {
+            CHECK(0) << "Invalid call to diag(v,M). Not implemented in Backend base class";
+            return 0;
+        }
+
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_ptrtype const& M, vector_ptrtype& v ) const
+        {
+            return diag( *M, *v );
+        }
+    /**
+     * @return the vector \c v with diagonal of \c M
+     */
+    virtual int diag( sparse_matrix_type const& M, vector_type& v ) const
+        {
+            CHECK(0) << "Invalid call to diag(M,v). Not implemented in Backend base class";
+            return 0;
+        }
+    
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
      * of the inverse of \f$A\f$. this interface uses the
@@ -902,17 +1002,22 @@ public:
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
                                                                                           _worldcomm=this->comm() ) )
+                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
+                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( transpose,( bool ), false )
-                                       ( constant_null_space,( bool ), false )
+                                       ( close,( bool ), true )
+                                       ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {
@@ -928,10 +1033,31 @@ public:
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _constant_null_space=constant_null_space,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
+
         this->attachPreconditioner( prec );
+
+        // attach null space (or near null space for multigrid) in backend
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        if ( mynullspace->size() > 0 )
+        {
+            this->attachNullSpace( mynullspace );
+            if ( myNearNullSpace->size() > 0 )
+                this->attachNearNullSpace( myNearNullSpace );
+            else
+                this->attachNearNullSpace( mynullspace );
+        }
+        else if ( myNearNullSpace->size() > 0 )
+        {
+            this->attachNearNullSpace( myNearNullSpace );
+        }
+
         // make sure matrix and rhs are closed
-        matrix->close();
-        rhs->close();
+        if ( close )
+        {
+            matrix->close();
+            rhs->close();
+        }
 
         // print them in matlab format
         if ( !M_export.empty() )
@@ -939,8 +1065,12 @@ public:
             matrix->printMatlab( M_export+"_A.m" );
             rhs->printMatlab( M_export+"_b.m" );
         }
-
-        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
+        // set pre/post solve functions
+        M_post_solve = post;
+        M_pre_solve = pre;
+        auto dm = Feel::detail::datamap( solution );
+        this->setDataMap( dm );
+        vector_ptrtype _sol( this->newVector( dm ) );
         // initialize
         *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
@@ -1023,6 +1153,8 @@ public:
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
+                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
+                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitSNES/*50*/ )
                                        ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
                                        ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
@@ -1030,10 +1162,12 @@ public:
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( reuse_jac,( bool ), M_reuse_jac )
                                        ( transpose,( bool ), false )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
+                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
                                      )
                                    )
     {
@@ -1047,31 +1181,51 @@ public:
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
-        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
+
+        auto dm = Feel::detail::datamap( solution );
+        this->setDataMap( dm );
+        vector_ptrtype _sol( this->newVector( dm  ) );
         // initialize
         *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
-
+        
         // this is done with nonlinerarsolver
         if ( !residual )
         {
-            residual = this->newVector( ( Feel::detail::datamap( solution ) ) );
+            residual = this->newVector( dm );
             //this->nlSolver()->residual( _sol, residual );
         }
 
-        this->nlSolver()->setPrefix( this->prefix() );
+        //this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 
         if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
 
-        if ( reuse_prec == false && reuse_jac == false )
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
-
-        else
-            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+        // attach null space (or near null space for multigrid) in backend
+        auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
+        auto myNearNullSpace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),near_null_space);
+        if ( mynullspace->size() > 0 )
+        {
+            this->attachNullSpace( mynullspace );
+            if ( myNearNullSpace->size() > 0 )
+                this->attachNearNullSpace( myNearNullSpace );
+            else
+                this->attachNearNullSpace( mynullspace );
+        }
+        else if ( myNearNullSpace->size() > 0 )
+        {
+            this->attachNearNullSpace( myNearNullSpace );
+        }
+        this->nlSolver()->setPreSolve( pre );
+        this->nlSolver()->setPostSolve( post );
+        
+        //if ( reuse_prec == false && reuse_jac == false )
+        //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
+        //else
+        ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
 
         //new
         _sol->close();
@@ -1087,10 +1241,10 @@ public:
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$
      */
-    virtual nl_solve_return_type nlSolve( sparse_matrix_ptrtype& A,
-                                          vector_ptrtype& x,
-                                          vector_ptrtype& b,
-                                          const double, const int );
+    virtual FEELPP_DEPRECATED nl_solve_return_type nlSolve( sparse_matrix_ptrtype& A,
+                                                            vector_ptrtype& x,
+                                                            vector_ptrtype& b,
+                                                            const double, const int );
 
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$ with an
@@ -1103,6 +1257,21 @@ public:
                                           bool reusePC, bool reuseJAC );
 
     /**
+     * assemble \f$C=P^T A P\f$
+     */
+    virtual int PtAP( sparse_matrix_ptrtype const& A,
+                       sparse_matrix_ptrtype const& P,
+                       sparse_matrix_ptrtype & C
+                       ) const;
+
+    /**
+     * assemble \f$C=P A P^T\f$
+     */
+    virtual int PAPt( sparse_matrix_ptrtype const& A,
+                      sparse_matrix_ptrtype const& P,
+                      sparse_matrix_ptrtype& C ) const;
+    
+    /**
      * Attaches a Preconditioner object to be used by the solver
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
@@ -1110,6 +1279,14 @@ public:
         if ( M_preconditioner && M_preconditioner != preconditioner )
             M_preconditioner->clear();
         M_preconditioner = preconditioner;
+    }
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
+    {
+        M_nullSpace = nullSpace;
+    }
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > nearNullSpace )
+    {
+        M_nearNullSpace = nearNullSpace;
     }
 
     /**
@@ -1139,12 +1316,34 @@ public:
         {
             M_deleteObservers();
         }
+
+    /**
+     * \return the pre solve function
+     */
+    pre_solve_type preSolve() { return M_pre_solve; }
+
+    /**
+     * call the pre solve function with \p x as the rhs and \p y as the solution
+     */
+    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+
+    /**
+     * \return the post solve function
+     */
+    post_solve_type postSolve() { return M_post_solve; }
+
+    /**
+     * call the post solve function with \p x as the rhs and \p y as the solution
+     */
+    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
+    
     //@}
 
 
 
 protected:
     preconditioner_ptrtype M_preconditioner;
+    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 private:
 
     void start();
@@ -1158,8 +1357,10 @@ private:
 
     po::variables_map M_vm;
 
+protected:
     BackendType M_backend;
 
+private:
     std::string M_prefix;
 
     solvernonlinear_ptrtype M_nlsolver;
@@ -1192,15 +1393,16 @@ private:
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
-    std::string M_snesType;
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
     bool M_constant_null_space;
-    bool M_showKSPMonitor, M_showSNESMonitor;
-    bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+    bool M_showKSPMonitor;
+    bool M_showKSPConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
-
+    pre_solve_type M_pre_solve;
+    post_solve_type M_post_solve;
+    datamap_ptrtype M_datamap;
     boost::signals2::signal<void()> M_deleteObservers;
 };
 
@@ -1208,85 +1410,114 @@ private:
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
+typedef Backend<std::complex<double>> c_backend_type;
+typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
+
+
 
 namespace detail
 {
+template<typename T>
 class BackendManagerImpl:
-    public std::map<boost::tuple<BackendType,std::string,int>, backend_ptrtype >,
-    public boost::noncopyable
+        public std::map<boost::tuple<std::string,std::string,int>, typename Backend<T>::ptrtype >,
+        public boost::noncopyable
 {
 public:
-    typedef backend_ptrtype value_type;
-    typedef boost::tuple<BackendType,std::string,int> key_type;
+    typedef typename Backend<T>::ptrtype value_type;
+    typedef boost::tuple<std::string,std::string,int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
 
 };
-typedef Feel::Singleton<BackendManagerImpl> BackendManager;
+template<typename T> 
+struct BackendManager : public  Feel::Singleton<BackendManagerImpl<T>> {};
 
+template<typename T>
 struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager::instance().size() << "\n";
-            Feel::detail::BackendManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager<T>::instance().size() << "\n";
+            Feel::detail::BackendManager<T>::instance().clear();
             VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
-typedef Feel::Singleton<BackendManagerDeleterImpl> BackendManagerDeleter;
-} // detail
+template<typename T>
+struct BackendManagerDeleter
+    : public  Feel::Singleton<BackendManagerDeleterImpl<T>> 
+{};
 
 
-BOOST_PARAMETER_FUNCTION(
-    ( backend_ptrtype ), // return type
-    backend,           // 2. function name
-    tag,               // 3. namespace of tag types
-    ( optional
-      ( vm,           ( po::variables_map ), Environment::vm() )
-      ( name,           ( std::string ), "" )
-      ( kind,           ( BackendType ), BACKEND_PETSC )
-      ( rebuild,        ( bool ), false )
-      ( worldcomm,      (WorldComm), Environment::worldComm() )
-    ) )
+
+
+template<typename T>
+typename Backend<T>::ptrtype
+backend_impl( std::string const& name, std::string const& kind, bool rebuild, WorldComm const& worldcomm )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter<T>::instance() );
         observed = true;
     }
+    
+    auto git = Feel::detail::BackendManager<T>::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-
-    Feel::detail::ignore_unused_variable_warning( args );
-
-    auto git = Feel::detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
-
-    if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == false ) )
     {
-        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
     else
     {
-        if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == true ) )
+        if (  git != Feel::detail::BackendManager<T>::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
+        DVLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
-        backend_ptrtype b;
-        if ( vm.empty() )
-        {
-            b = Feel::backend_type::build( kind, worldcomm );
-        }
-        else
-            b = Feel::backend_type::build( vm, name, worldcomm );
-        VLOG(2) << "storing backend in singleton" << "\n";
-        Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        typename Backend<T>::ptrtype b;
+        b = Feel::Backend<T>::build( kind, name, worldcomm );
+        DVLOG(2) << "[backend] storing backend in singleton" << "\n";
+        Feel::detail::BackendManager<T>::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 
+}
+
+} // detail
+
+BOOST_PARAMETER_FUNCTION(
+                         ( backend_ptrtype ), // return type
+                         backend,           // 2. function name
+                         tag,               // 3. namespace of tag types
+                         ( optional
+                           ( name,           ( std::string ), "" )
+                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
+                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ) )
+{
+    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
+}
+
+
+/*
+ * Complex backend
+ */
+BOOST_PARAMETER_FUNCTION(
+                         ( c_backend_ptrtype ), // return type
+                         cbackend,           // 2. function name
+                         tag,               // 3. namespace of tag types
+                         ( optional
+                           ( name,           ( std::string ), "" )
+                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
+                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                           ( worldcomm,      (WorldComm), Environment::worldComm() )
+                           ) )
+{
+    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }
 
 template<typename T>
@@ -1342,6 +1573,11 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
     return  res < 1e-12;
 
 }
+
+#if !defined(FEELPP_BACKEND_NOEXTERN)
+extern template class Backend<double>;
+//extern template class Backend<std::complex<double>>;
+#endif
 
 }
 #endif /* Backend_H */

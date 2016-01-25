@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
 
@@ -503,10 +503,12 @@ public :
     {
         return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
     }
+
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
     }
+
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         return boost::make_tuple( M_Aqm , M_Fqm );
@@ -576,7 +578,7 @@ public :
         if( sizeA > 0 )
         {
             //if the user doesn't implement computeBetaQ function
-            //and so gives affne decomposition terms using addLhs ect...
+            //and so gives affine decomposition terms using addLhs ect...
             //then we consider we have 2 outputs
             int nboutputs=2;
             int sizeM=M_ginacMq.size();
@@ -1015,10 +1017,10 @@ public :
 
         if( vector.size() > 0 )
         {
-            bool force = option("eim.use-dimension-max-functions").template as<bool>();
+            bool force = boption("eim.use-dimension-max-functions");
             int Neim=0;
             if( force )
-                Neim = option("eim.dimension-max").template as<int>();
+                Neim = ioption("eim.dimension-max");
 
             int N = vector.size();
 

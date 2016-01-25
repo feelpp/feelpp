@@ -389,7 +389,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
 
     if( mshfile_name=="" )
     {
-        double hsize=option(_name="hsize").template as<double>();
+        double hsize=doption(_name="hsize");
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                _desc = createGeo( hsize ) );
@@ -431,7 +431,7 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     auto Pset = this->Dmu->sampling();
     //specify how many elements we take in each direction
     std::vector<int> N(2);
-    int Ne = option(_name="trainset-eim-size").template as<int>();
+    int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
     // std::string file_name = ( boost::format("eim_trainset_Ne%1%-proc%2%on%3%") % Ne %proc_number %total_proc).str();
@@ -489,7 +489,7 @@ void BenchmarkGreplLinearElliptic<Order>::checkEimExpansion()
     auto Xh=this->Xh;
     auto Pset = this->Dmu->sampling();
     std::vector<int> N(2);
-    int Ne = option(_name="trainset-eim-size").template as<int>();
+    int Ne = ioption(_name="trainset-eim-size");
     N[0]=Ne; N[1]=Ne;
     bool all_proc_same_sampling=true;
     std::string supersamplingname =(boost::format("PsetCheckEimExpansion-Ne%1%-generated-by-master-proc") %Ne ).str();
@@ -577,7 +577,7 @@ BenchmarkGreplLinearElliptic<Order>::computeMonolithicFormulation( parameter_typ
     auto Xh = this->Xh;
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
 
     auto exprg = 1./sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );
@@ -585,13 +585,13 @@ BenchmarkGreplLinearElliptic<Order>::computeMonolithicFormulation( parameter_typ
     M_monoF.resize(2);
     M_monoF[0] = backend()->newVector( Xh );
     M_monoF[1] = backend()->newVector( Xh );
-    form2( Xh, Xh, M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+    form2( _test=Xh, _trial=Xh, _matrix=M_monoA ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
-    form1( Xh, M_monoF[0] ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
-    form1( Xh, M_monoF[1] ) = integrate( _range=elements(mesh) , _expr=id( v ) );
+    form1( _test=Xh, _vector=M_monoF[0] ) = integrate( _range=elements(mesh) , _expr=id( v ) * idv(g) );
+    form1( _test=Xh, _vector=M_monoF[1] ) = integrate( _range=elements(mesh) , _expr=id( v ) );
 
     return boost::make_tuple( M_monoA, M_monoF );
 
@@ -605,7 +605,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     auto u = Xh->element();
     auto v = Xh->element();
 
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
     auto eim_g = M_funs[0];
 
     this->M_Aqm.resize( 2 );
@@ -637,11 +637,11 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     for(int m=0; m<M_g; m++)
     {
         this->M_Fqm[0][0][m] = backend()->newVector( Xh );
-        form1( Xh, this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
+        form1( _test=Xh, _vector=this->M_Fqm[0][0][m] ) = integrate( elements( mesh ), id( v ) * idv( eim_g->q(m) ) );
     }
     this->M_Fqm[1][0].resize(1);
     this->M_Fqm[1][0][0] = backend()->newVector( Xh );
-    form1( Xh, this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
+    form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) = integrate( elements( mesh ), id( v ) );
 
 
     //use computeLinearDecompositionA to provide innter product matrix
@@ -650,7 +650,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     auto mu = refParameter();
 
     M = backend()->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) )+
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
@@ -662,7 +662,7 @@ void BenchmarkGreplLinearElliptic<Order>::assemble()
     {
         auto q = eim_g->q(m);
         q.scale( beta_g(m) );
-        form2( Xh, Xh, M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M ) +=  integrate( _range=elements( mesh ), _expr= idt( u )*id( v ) * idv( q ) );
     }
 #endif
 
@@ -677,14 +677,14 @@ BenchmarkGreplLinearElliptic<Order>::computeLinearDecompositionA()
     auto muref = refParameter();
     auto u=Xh->element();
     auto v=Xh->element();
-    double gamma_dir = option(_name="gamma").template as<double>();
+    double gamma_dir = doption(_name="gamma");
 
     auto exprg = 1./sqrt( (Px()-muref(0))*(Px()-muref(0)) + (Py()-muref(1))* (Py()-muref(1)) );
     auto g = vf::project( _space=Xh, _expr=exprg );
     this->M_linearAqm.resize(1);
     this->M_linearAqm[0].resize(1);
     this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
-    form2( Xh, Xh, this->M_linearAqm[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
+    form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) + idt( u )*id( v )*idv(g) ) +
         integrate( markedfaces( mesh, "boundaries" ), gamma_dir*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )

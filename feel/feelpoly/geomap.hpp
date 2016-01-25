@@ -677,14 +677,16 @@ class Context
         M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
         M_n( M_gm->referenceConvex().normals() ),
         M_n_real( NDim ),
-        M_u_n_real( NDim ),
+        M_un_real( NDim ),
         M_n_norm( 0 ),
         M_t_real( NDim ),
+        M_ut_real( NDim ),
+        M_t_norm( 0 ),
         M_xrefq( PDim, nPoints() ),
         M_xrealq( NDim, nPoints() ),
-        M_nrealq( NDim, nPoints() ),
-        M_unrealq( NDim, nPoints() ),
-        M_nnormq( nPoints() ),
+        M_n_realq( NDim, nPoints() ),
+        M_un_realq( NDim, nPoints() ),
+        M_n_normq( nPoints() ),
 
         M_g( M_G.size2(), PDim ),
         M_K( NDim, PDim ),
@@ -744,14 +746,16 @@ Context( gm_ptrtype __gm,
     M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
     M_n( M_gm->referenceConvex().normals() ),
     M_n_real( NDim ),
-    M_u_n_real( NDim ),
+    M_un_real( NDim ),
     M_n_norm( 0 ),
     M_t_real( NDim ),
+    M_ut_real( NDim ),
+    M_t_norm( 0 ),
     M_xrefq( PDim, nPoints() ),
     M_xrealq( NDim, nPoints() ),
-    M_nrealq( NDim, nPoints() ),
-    M_unrealq( NDim, nPoints() ),
-    M_nnormq( nPoints() ),
+    M_n_realq( NDim, nPoints() ),
+    M_un_realq( NDim, nPoints() ),
+    M_n_normq( nPoints() ),
 
     M_g( M_G.size2(), PDim ),
     M_K( NDim, PDim ),
@@ -792,6 +796,31 @@ Context( gm_ptrtype __gm,
 
     update( __e, __f );
 }
+
+    // context for geomap at vertices
+    Context( gm_ptrtype __gm,
+             element_type const& __e,
+             precompute_ptrtype & __pc,
+             uint16_type __f,
+             mpl::int_<0>)
+        :
+        Context( __gm, __e, _pc )
+        {
+            
+            if ( is_linear )
+            {
+                M_gm->gradient( node_t_type(), M_g_linear );
+            }
+
+            else
+            {
+                M_Jt.resize( nPoints() );
+                M_Bt.resize( nPoints() );
+            }
+
+            update( __e, __f, mpl::int_<0>() );
+        }
+
 Context( gmc_ptrtype& p )
     :
     M_gm( p->M_gm ),
@@ -806,14 +835,16 @@ Context( gmc_ptrtype& p )
     M_G( ( gm_type::nNodes == element_type::numVertices ) ?M_element->vertices() : M_element->G() ),
     M_n( p->M_n ),
     M_n_real( p->M_n_real ),
-    M_u_n_real( p->M_u_n_real ),
+    M_un_real( p->M_un_real ),
     M_n_norm( p->M_n_norm ),
     M_t_real( p->M_t_real ),
+    M_ut_real( p->M_ut_real ),
+    M_t_norm( p->M_t_norm ),
     M_xrefq( p->M_xrefq ),
     M_xrealq( p->M_xrealq ),
-    M_nrealq( p->M_nrealq ),
-    M_unrealq( p->M_unrealq ),
-    M_nnormq( p->M_nnormq ),
+    M_n_realq( p->M_n_realq ),
+    M_un_realq( p->M_un_realq ),
+    M_n_normq( p->M_n_normq ),
     M_g( p->M_g ),
     M_K( p->M_K ),
     M_CS( p->M_CS ),
@@ -923,6 +954,17 @@ void update( element_type const& __e, uint16_type __f )
     }
 
 }
+    
+    void update( element_type const& __e, uint16_type __f, mpl::int_<0> )
+        {
+            update( __e );
+        }
+
+    void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, mpl::int_<0> )
+        {
+            M_pc=pc;
+            update( __e );
+        }
 
 void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx=true )
 {
@@ -987,9 +1029,9 @@ void update( element_type const& __e,
 
         M_xrefq.resize( PDim, nPoints() );
         M_xrealq.resize( NDim, nPoints() );
-        M_nrealq.resize( NDim, nPoints() );
-        M_unrealq.resize( NDim, nPoints() );
-        M_nnormq.resize( nPoints() );
+        M_n_realq.resize( NDim, nPoints() );
+        M_un_realq.resize( NDim, nPoints() );
+        M_n_normq.resize( nPoints() );
 
         if ( is_linear )
         {
@@ -1331,7 +1373,7 @@ value_type normalNorm( int q ) const
         return M_n_norm;
 
     else
-        return M_nnormq[q];
+        return M_n_normq[q];
 }
 
 /**
@@ -1358,7 +1400,8 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 
     else
     {
-        return ublas::column( M_nrealq, q );
+        return ublas::column( M_n_realq
+                     , q );
     }
 }
 
@@ -1370,7 +1413,7 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 node_t_type const& unitNormal() const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-    return M_u_n_real;
+    return M_un_real;
 }
 
 //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
@@ -1379,10 +1422,10 @@ node_t_type unitNormal( int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
     if ( is_linear )
-        return M_u_n_real;
+        return M_un_real;
 
     else
-        return ublas::column( M_unrealq, q );
+        return ublas::column( M_un_realq, q );
 }
 
 
@@ -1391,41 +1434,74 @@ value_type const& unitNormal( int n, int q ) const
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
 
     if ( is_linear )
-        return M_u_n_real( n );
+        return M_un_real( n );
 
     else
-        return M_unrealq( n, q );
+        return M_un_realq( n, q );
 }
-
+/**
+ * @brief the scaled tangent to the current face
+ * @return the scaled tangent
+ */
 node_t_type const& tangent() const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
     return M_t_real;
 }
-//ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
-// node_t_type const& unitNormal( int q ) const
-node_t_type tangent( int q ) const
+
+/**
+ * @brief scaled tangent at point
+
+ * @param q index of the point at which the tangent is evaluated
+ * @return the scaled tamgent at the point
+ */
+node_t_type const& tangent( int q ) const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
     if ( is_linear )
         return M_t_real;
-
-    //else
-    //return ublas::column( M_utrealq, q );
+    return M_t_realq(q);
+}
+/**
+ * @brief the unit Tangent (linear case)
+ *
+ * @return the unit tangent in the linear case
+ */
+node_t_type const& unitTangent() const
+{
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
+    return M_ut_real;
 }
 
+/**
+ * @brief the unit tangent a point \p q
+ *
+ * @param q point index
+ * @return unit tangent
+ */
+node_t_type const& unitTangent( int q ) const
+{
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
+    DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
+    return M_ut_real;
+}
 
+/**
+ * @brief unit tangent coordinate \p n at point \p q
+ *
+ * @param n coordinate
+ * @param q point index
+ *
+ * @return [description]
+ */
 value_type const& unitTangent( int n, int q ) const
 {
-    //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-#if 0
+    DCHECK( nDim == 2 ) <<  "Tangent is available only in 2D";
     if ( is_linear )
-        return M_t_real( n );
-
-    else
-        return M_utrealq( n, q );
-
-#endif
+        return M_ut_real( n );
+    return M_ut_realq( n, q );
 }
 
 /**
@@ -1625,6 +1701,37 @@ void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > co
 {
     M_pc_faces = __pcfaces;
 }
+    
+    void
+    edgeTangent(int edgeId, ublas::vector<value_type>& t, bool scaled = false) const
+        {
+            auto const& K = this->K(0);
+
+            ublas::axpy_prod( K,
+                              this->geometricMapping()->referenceConvex().tangent( edgeId ),
+                              t,
+                              true );
+            if( scaled )
+                t *= this->element().hEdge( edgeId )/ublas::norm_2(t);
+            else
+                t /= ublas::norm_2(t);
+        }
+
+    void
+    faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
+        {
+            auto const& K = this->K(0);
+            auto const& B = this->B(0);
+
+            ublas::axpy_prod( B,
+                              this->geometricMapping()->referenceConvex().normal( faceId ),
+                              n,
+                              true );
+            if ( scaled )
+                n *= this->element().faceMeasure(faceId)/ublas::norm_2(n);
+            else
+                n /= ublas::norm_2(n);
+        }
 
 //@}
 private:
@@ -1733,7 +1840,7 @@ void updateJKBN( mpl::bool_<true>  )
 
     }
 
-    if ( vm::has_hessian<context>::value )
+    if ( vm::has_hessian<context>::value || vm::has_laplacian<context>::value )
     {
 
         for ( uint16_type k = 0; k < NDim; ++k )
@@ -1763,11 +1870,11 @@ void updateJKBN( mpl::bool_<true>  )
                           M_n_real,
                           true );
         M_n_norm = ublas::norm_2( M_n_real );
-        M_u_n_real = M_n_real/M_n_norm;
+        M_un_real = M_n_real/M_n_norm;
 
     }
 
-    if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
+    if( vm::has_tangent<context>::value  && ( M_face_id != invalid_uint16_type_value ) )
     {
         if ( NDim == 2 )
         {
@@ -1778,13 +1885,14 @@ void updateJKBN( mpl::bool_<true>  )
                               true );
             double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
 
-            M_t_real *= ratio;
+            M_t_norm = ublas::norm_2( M_t_real );
+            M_ut_real = M_t_real/M_t_norm;
         }
 
         // compute projector on tangent plane
         Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
         P.setIdentity(NDim, NDim);
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_u_n_real.data().begin(), NDim,1);
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_un_real.data().begin(), NDim,1);
         P.noalias() -= N*N.transpose();
     }
 
@@ -1900,10 +2008,11 @@ void updateJKBN( mpl::bool_<false>  )
 #endif
             //std::cout << "[geomap] point " << q << " n_real = " << M_n_real << "\n";
             M_n_norm = ublas::norm_2( M_n_real );
-            M_u_n_real = M_n_real/M_n_norm;
-            ublas::column( M_nrealq, q ) = M_n_real;
-            ublas::column( M_unrealq, q ) = M_u_n_real;
-            M_nnormq[q] = M_n_norm;
+            M_un_real = M_n_real/M_n_norm;
+            ublas::column( M_n_realq
+                 , q ) = M_n_real;
+            ublas::column( M_un_realq, q ) = M_un_real;
+            M_n_normq[q] = M_n_norm;
 
             if ( NDim != PDim )
                 M_Jt[q] *= M_n_norm;
@@ -1917,9 +2026,10 @@ void updateJKBN( mpl::bool_<false>  )
 #if 0
         std::cout << "[geomap] face id = " << M_face_id << "\n"
                   << "[geomap] ref normal = " << M_gm->referenceConvex().normal( M_face_id ) << "\n"
-                  << "[geomap] M_n_real = " << M_nrealq << "\n"
-                  << "[geomap] M_unrealq = " << M_unrealq << "\n"
-                  << "[geomap] M_nnormq = " << M_nnormq << "\n";
+                  << "[geomap] M_n_real = " << M_n_realq
+          << "\n"
+                  << "[geomap] M_un_realq = " << M_un_realq << "\n"
+                  << "[geomap] M_n_normq = " << M_n_normq << "\n";
 #endif
     }
 }
@@ -1940,21 +2050,26 @@ uint16_type M_npoints;
 
 value_type M_J;
 
-//matrix_node_t_type  M_G;
 matrix_type  M_G;
 ublas::vector<node_t_type> M_n;
 node_t_type M_n_real;
-node_t_type M_u_n_real;
+node_t_type M_un_real;
 value_type M_n_norm;
 node_t_type M_t_real;
+node_t_type M_ut_real;
+value_type M_t_norm;
 
-//matrix_node_t_type const& M_xrefq;
 matrix_node_t_type  M_xrefq;
-//matrix_node_t_type M_xrealq;
 matrix_type M_xrealq;
-matrix_node_t_type M_nrealq;
-matrix_node_t_type M_unrealq;
-ublas::vector<value_type> M_nnormq;
+
+// normals
+matrix_node_t_type M_n_realq;
+matrix_node_t_type M_un_realq;
+ublas::vector<value_type> M_n_normq;
+// tangents
+matrix_node_t_type M_t_realq;
+matrix_node_t_type M_ut_realq;
+ublas::vector<value_type> M_t_normq;
 
 matrix_type M_g_linear;
 matrix_type M_g;
@@ -2006,13 +2121,11 @@ template<size_type context_v, typename ElementType>
 boost::shared_ptr<Context<context_v,ElementType> >
 context( ElementType const& e, precompute_ptrtype const& pc )
 {
-    return boost::shared_ptr<Context<context_v,ElementType> >(
-                new Context<context_v, ElementType>
-                (
-                 //super_enable_this::shared_from_this(),
-                 boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
-                e,
-                pc ) );
+    return boost::make_shared<Context<context_v,ElementType> >(
+        //super_enable_this::shared_from_this(),
+        boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+        e,
+        pc );
 }
 
 template<size_type context_v, typename ElementType>
@@ -2062,9 +2175,12 @@ class Inverse
     typedef typename geometric_mapping_type::matrix_node_t_type matrix_node_t_type;
     typedef typename geometric_mapping_type::matrix_node_t_type matrix_node_type;
 
+    typedef ublas::vector<double> dense_vector_type;
+    typedef ublas::matrix<double> dense_matrix_type;
+
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
-             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq() )
+             WorldComm const& worldComm = Environment::worldCommSeq() )
         :
         M_gm( __gm ),
         M_xref( __gm->dim() ),
@@ -2076,33 +2192,18 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
-    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
-
-    if ( M_gm->isLinear() )
-        {
-            update();
-        }
-    else
-        {
-#if defined( FEELPP_HAS_PETSC )
-            M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-            M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
-#else
-
-#endif
-        }
+    this->init();
 }
-
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1>/**/ ,
-             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq())
+             WorldComm const& worldComm = Environment::worldCommSeq() )
     :
         M_gm( __gm ),
         M_xref( __gm->dim() ),
@@ -2114,28 +2215,65 @@ class Inverse
         M_CS( __gm->dim(), __gm->dim() ),
         M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        M_nlsolver( SolverNonLinear<double>::build( "petsc","", worldComm ) )
 #else
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
-    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
+    this->init();
+}
 
-    if ( M_gm->isLinear() )
+
+private :
+    void init()
+    {
+        FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
+            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+
+        if ( M_gm->isLinear() )
         {
             update();
         }
-    else
+        else
         {
 #if defined( FEELPP_HAS_PETSC )
-        M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-        M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
-#else
-        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
+            M_nlsolver->dense_residual = std::bind( &Inverse::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->dense_jacobian = std::bind( &Inverse::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            // find xref by solving the non linear equation
+            //M_nlsolver->setType( TRUST_REGION );
+            M_nlsolver->setKspSolverType( SolverType::PREONLY );
+            M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
+            M_nlsolver->setRelativeResidualTol( 1e-12/*1e-16*/ );
+
+            M_J.reset( new dense_matrix_type( M_xref.size(),M_xref.size() ) );
+            M_R.reset( new dense_vector_type( M_xref.size() ) );
 #endif
         }
 }
+
+public :
+    template<typename GeoElem>
+    void
+    update( GeoElem const& __ge )
+    {
+        //M_G = ( geometric_mapping_type::nNodes == GeoElem::numVertices ) ?__ge.vertices() : __ge.G();
+        M_G = __ge.G();
+        if ( M_gm->isLinear() )
+        {
+            update();
+        }
+    }
+    template<typename GeoElem>
+    void
+    update( GeoElem const& __ge, mpl::int_<1>/**/ )
+    {
+        M_G = __ge.vertices();
+        if ( M_gm->isLinear() )
+        {
+            update();
+        }
+    }
 
 
 
@@ -2273,7 +2411,7 @@ void setXReal( node_type const& __xreal )
 
     if ( M_gm->isLinear() )
     {
-        update();
+        //update();
         M_is_in = linearInverse();
     }
 
@@ -2329,8 +2467,6 @@ Inverse& gmi;
 node_type xreal;
 
 };
-typedef ublas::vector<double> dense_vector_type;
-typedef ublas::matrix<double> dense_matrix_type;
 
 void updateResidual( dense_vector_type const& x, dense_vector_type& r )
 {
@@ -2528,26 +2664,29 @@ bool nonLinearInversePetsc()
     M_xref = barycenterRef();
 #endif
 
+#if 0
     dense_matrix_type J( P, P );
     dense_vector_type R( P );
-
     updateResidual( M_xref, R );
     updateJacobian( M_xref, J );
 
     // find xref by solving the non linear equation
-    M_nlsolver->setType( TRUST_REGION );
+    //M_nlsolver->setType( TRUST_REGION );
+    M_nlsolver->setKspSolverType( SolverType::PREONLY );
+    M_nlsolver->setPreconditionerType( PreconditionerType::LU_PRECOND );
     M_nlsolver->setRelativeResidualTol( 1e-16 );
-    M_nlsolver->solve( J, M_xref, R, 1e-10, 10 );
+#endif
+    M_nlsolver->solve( *M_J, M_xref, *M_R, 1e-10, 10 );
 
 
     // compute the location of xref: inside or outside the element
     bool __isin;
     double vmin;
-    this->updateResidual( M_xref, R );
+    this->updateResidual( M_xref, *M_R );
     boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
 
     if ( __isin  &&
-            ( P == N || ublas::norm_2( R ) < IN_EPS ) )
+            ( P == N || ublas::norm_2( *M_R ) < IN_EPS ) )
     {
         //LOG(INFO) << "point " << M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
         return true;
@@ -2709,6 +2848,9 @@ matrix_type M_CS;
 matrix_type M_g;
 
 boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
+boost::shared_ptr<dense_matrix_type> M_J;
+boost::shared_ptr<dense_vector_type> M_R;
+
 }; // Inverse
 
 private:
@@ -2849,7 +2991,7 @@ struct GT_QK
                                                                         \
         BOOST_PP_CAT(GT_,GEOM)()                                        \
             :                                                           \
-            super( boost::shared_ptr<element_gm_type>(new element_gm_type()), boost::shared_ptr<face_gm_type>(new face_gm_type() )) \
+            super( boost::make_shared<element_gm_type>(), boost::make_shared<face_gm_type>()) \
             {}                                                          \
     };                                                                  \
     /**/
