@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Adnane Hamiaz <hamiaz@math.unistra.fr>
        Date: 2013-04-04
 
@@ -24,7 +24,7 @@
 */
 /**
    \file laplacian_polar.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Adnane Hamiaz <hamiaz@math.unistra.fr>
    \date 2013-04-04
  */
@@ -68,8 +68,11 @@ main(int argc, char**argv )
 #endif
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    //typedef Mesh<Hypercube<2> > mesh_type;
+#if FEELPP_POLAR
+    typedef Mesh<Hypercube<2> > mesh_type;
+#else
     typedef Mesh<Simplex<2> > mesh_type;
+#endif
 
     auto mesh =  loadMesh( _mesh=new mesh_type );
 

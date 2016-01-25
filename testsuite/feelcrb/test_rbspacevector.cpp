@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -106,8 +106,8 @@ public :
     void run()
     {
         auto mesh=unitHypercube<Dim>();
-        auto Xh = Pchv<Order>( mesh );
-
+        Xh = Pchv<Order>( mesh );
+        
         auto RbSpace = RbSpacePchv<Order>( this->shared_from_this() );
         auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
         auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );

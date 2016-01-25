@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-23
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file doffromperiodic.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-10-23
  */
 #ifndef FEELPP_DofFromPeriodic_H
@@ -257,7 +257,7 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
             VLOG(2) << "add vertex periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = M_doftable->insertDof( __elt.id(), lid, iVeEl, boost::make_tuple( 0, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.point( iVeEl ).marker()  );
+            bool inserted = M_doftable->insertDof( __elt.id(), lid, iVeEl, std::make_tuple(  0, gDof ), 0, next_free_dof, 1, true, 0, __elt.point( iVeEl ).marker()  );
             VLOG(2) << "vertex periodic dof inserted : " << inserted << "\n";
 
             const int ncdof = is_product?nComponents:1;
@@ -312,7 +312,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
         DVLOG(4) << "add edge periodic dof " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
         size_type dof_id = next_free_dof;
         // next_free_dof might be incremented if a new dof is created
-        bool inserted = M_doftable->insertDof( __elt.id(), lid, iFaEl, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( iFaEl ).marker() );
+        bool inserted = M_doftable->insertDof( __elt.id(), lid, iFaEl, std::make_tuple(  1, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( iFaEl ).marker() );
         DVLOG(4) << "edge periodic dof inserted (1 or 0) : " << inserted << "\n";
 
         const int ncdof = is_product?nComponents:1;
@@ -383,7 +383,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
             DVLOG(4) << "add periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = M_doftable->insertDof( __elt.id(), lid, l, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( l ).marker() );
+            bool inserted = M_doftable->insertDof( __elt.id(), lid, l, std::make_tuple(  1, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( l ).marker() );
             DVLOG(4) << "periodic dof inserted : " << inserted << "\n";
 
             const int ncdof = is_product?nComponents:1;

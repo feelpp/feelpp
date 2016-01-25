@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -302,6 +302,8 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
+    static const uint16_type nComponents1 = polyset_type::nComponents1;
+    static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
 
     typedef CrouzeixRaviart<N, RealDim, Scalar, T, Convex> component_basis_type;
@@ -311,7 +313,7 @@ public:
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
-
+    typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
@@ -323,6 +325,15 @@ public:
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
+
+    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
 
     struct SSpace
     {
@@ -385,6 +396,76 @@ public:
     /** @name  Methods
      */
     //@{
+
+    typedef Eigen::MatrixXd local_interpolant_type;
+    local_interpolant_type
+    localInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
+        }
+
+    template<typename ExprType>
+    void
+    interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc( (c1+nComponents1*c2)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+
+        }
+    local_interpolant_type
+    faceLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalFaceDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalFaceDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                        Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+
+        }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+
+        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
+        typedef typename ExprType::tensor_expr_type::expr_type::fe_type fe_expr_type;
+
+        for( int q = 0; q <expr.geom()->nPoints(); ++q )
+            for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                    {
+                        int ldof = (c1+fe_expr_type::nComponents1*c2)*fe_expr_type::nLocalDof + i;
+                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
+                        Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
+                    }
+    }
 
     /**
      * \return the family name of the finite element

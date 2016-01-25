@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -71,9 +71,15 @@ public:
             multi_index::ordered_unique<multi_index::identity<edge_type> >,
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
+                                            multi_index::composite_key<
+                                            edge_type,
                                             multi_index::const_mem_fun<edge_type,
                                                                        Marker1 const&,
-                                                                       &edge_type::marker> >,
+                                                                       &edge_type::marker>,
+                                            multi_index::const_mem_fun<edge_type,
+                                                                       rank_type,
+                                                                       &edge_type::processId>
+                                            > >,
 
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
@@ -158,7 +164,7 @@ public:
     /**
      * \return the world communicatior
      */
-    WorldComm const& worldCommFaces() const
+    WorldComm const& worldCommEdges() const
     {
         return M_worldCommEdges;
     }
@@ -178,6 +184,15 @@ public:
     bool isBoundaryEdge( size_type const & id ) const
     {
         return M_edges.find( edge_type( id ) )->isOnBoundary();
+    }
+
+    /**
+     * \return \c true if element with id \p i is found, \c false otherwise
+     */
+    bool hasEdge( size_type i ) const
+    {
+        return M_edges.template get<0>().find( edge_type( i ) ) !=
+               M_edges.template get<0>().end();
     }
 
     edge_type const& edge( size_type i ) const
@@ -211,30 +226,34 @@ public:
      * \return the range of iterator \c (begin,end) over the faces
      * with marker \p m on processor \p p
      */
+    
     std::pair<marker_edge_iterator, marker_edge_iterator>
-    edgesWithMarker( size_type m, size_type p ) const
+    edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
-        //return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
-        return M_edges.template get<Feel::detail::by_marker>().equal_range( Marker1( m ) );
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
     }
 
-
-    marker_edge_iterator beginEdgeWithMarker( size_type m )
-    {
-        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
-    {
-        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
-    }
-    marker_edge_iterator endEdgeWithMarker( size_type m )
-    {
-        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
-    marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
-    {
-        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
-    }
+    marker_edge_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+        }
+    marker_edge_const_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+        }
+    marker_edge_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+        }
+    marker_edge_const_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+        }
 
     /**
      * get the edges container by id
@@ -390,7 +409,12 @@ public:
      * with processor \p p
      */
     std::pair<pid_edge_iterator, pid_edge_iterator>
-    edgesWithProcessId( size_type p ) const
+    edgesWithProcessId( rank_type p )
+    {
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
+    }
+    std::pair<pid_edge_const_iterator, pid_edge_const_iterator>
+    edgesWithProcessId( rank_type p ) const
     {
         return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
     }

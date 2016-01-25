@@ -15,13 +15,13 @@ cd petsc-3.3-p5
   --with-cc=${openmpiDir}/bin/mpicc \
     --with-cxx=${openmpiDir}/bin/mpic++ \
     --with-mpiexec=${openmpiDir}/bin/mpiexec \
-        --download-umfpack=1 \
+        --download-suitesparse=1 \
         --download-ml \
         --download-metis \
         --download-parmetis \
         --download-blacs \
         --download-scalapack \
-        --download-f-blas-lapack \
+        --download-fblaslapack \
         --download-mumps \
         --download-pastix \
         --download-ptscotch

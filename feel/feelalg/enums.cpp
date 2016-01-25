@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-06
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,11 +25,12 @@
 
 namespace Feel {
 
-std::map<std::string, OnContext> OnContextMap = {
-    {"none", OnContext::NONE},
-    {"elimination", OnContext::ELIMINATION},
-    {"penalisation", OnContext::PENALISATION},
-    {"elimination_symmetric", OnContext::ELIMINATION_SYMMETRIC},
+std::map<std::string, size_type> ContextOnMap = {
+    {"elimination", ContextOn::ELIMINATION},
+    {"penalisation", ContextOn::PENALISATION},
+    {"elimination_keep_diagonal", ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL},
+    {"elimination_symmetric", ContextOn::ELIMINATION|ContextOn::SYMMETRIC},
+    {"elimination_symmetric_keep_diagonal", ContextOn::ELIMINATION|ContextOn::SYMMETRIC|ContextOn::KEEP_DIAGONAL}
 
 };
 
@@ -81,13 +82,29 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="shell" )        return PreconditionerType::SHELL_PRECOND;
     else if ( type=="fieldsplit" )   return PreconditionerType::FIELDSPLIT_PRECOND;
     else if ( type=="lsc" )          return PreconditionerType::LSC_PRECOND;
+    else if ( type=="lsc2" )         return PreconditionerType::LSC2_PRECOND;
+    else if ( type=="blockns" )      return PreconditionerType::FEELPP_BLOCKNS_PRECOND;
+    else if ( type=="blockms" )      return PreconditionerType::FEELPP_BLOCKMS_PRECOND;
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
+    else if ( type=="ams" )          return PreconditionerType::AMS_PRECOND;
     else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;
     else if ( type=="none" )         return PreconditionerType::NONE_PRECOND;
     else                             return PreconditionerType::LU_PRECOND;
 }
+
+KSPNormType
+kspNormTypeConvertStrToEnum( std::string const& type )
+{
+    /**/ if ( type=="default" )          return KSP_NORM_DEFAULT;
+    else if ( type=="none" )             return KSP_NORM_NONE;
+    else if ( type=="preconditioned" )   return KSP_NORM_PRECONDITIONED;
+    else if ( type=="unpreconditioned" ) return KSP_NORM_UNPRECONDITIONED;
+    else if ( type=="natural" )          return KSP_NORM_NATURAL;
+    else                                 return KSP_NORM_DEFAULT;
+}
+
 
 SolverType
 kspTypeConvertStrToEnum( std::string const& type )
@@ -106,6 +123,7 @@ kspTypeConvertStrToEnum( std::string const& type )
     else if ( type=="richardson" ) return SolverType::RICHARDSON;
     else if ( type=="chebyshev" )  return SolverType::CHEBYSHEV;
     else if ( type=="preonly" )    return SolverType::PREONLY;
+    else if ( type=="gcr" )        return SolverType::GCR;
     else                           return SolverType::GMRES;
 }
 
@@ -130,6 +148,27 @@ snesTypeConvertStrToEnum( std::string const& type )
     else if ( type == "aspin" )                     return SolverNonLinearType::ASPIN;
     else                                            return SolverNonLinearType::LINE_SEARCH;
 }
+std::string
+snesTypeConvertEnumToStr( SolverNonLinearType type )
+{
+    /**/ if ( type == SolverNonLinearType::LINE_SEARCH )  return std::string("newtonls");
+    else if ( type == SolverNonLinearType::TRUST_REGION ) return std::string("newtontr");
+    else if ( type == SolverNonLinearType::NRICHARDSON )  return std::string("nrichardson");
+    else if ( type == SolverNonLinearType::NKSPONLY )     return std::string("ksponly");
+    else if ( type == SolverNonLinearType::VINEWTONRSLS ) return std::string("vinewtonrsls");
+    else if ( type == SolverNonLinearType::VINEWTONRSTR ) return std::string("vinewtonssls");
+    else if ( type == SolverNonLinearType::NGMRES )       return std::string("ngmres");
+    else if ( type == SolverNonLinearType::QN )           return std::string("qn");
+    else if ( type == SolverNonLinearType::NSHELL )       return std::string("shell");
+    else if ( type == SolverNonLinearType::GS )           return std::string("gs");
+    else if ( type == SolverNonLinearType::NCG )          return std::string("ncg");
+    else if ( type == SolverNonLinearType::FAS )          return std::string("fas" );
+    else if ( type == SolverNonLinearType::MS )           return std::string("ms" );
+    else if ( type == SolverNonLinearType::NASM )         return std::string("nasm");
+    else if ( type == SolverNonLinearType::ANDERSON )     return std::string("anderson");
+    else if ( type == SolverNonLinearType::ASPIN )        return std::string("aspin" );
+    else                                                  return std::string("newtonls");
+}
 
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type )
@@ -149,6 +188,7 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="plapack" )      return MatSolverPackageType::MATSOLVER_PLAPACK;
     else if ( type=="bas" )          return MatSolverPackageType::MATSOLVER_BAS;
     else if ( type=="boomeramg" )    return MatSolverPackageType::MATSOLVER_BOOMERAMG;
+    else if ( type=="ams" )          return MatSolverPackageType::MATSOLVER_AMS;
     else if ( type=="euclid" )       return MatSolverPackageType::MATSOLVER_EUCLID;
     else if ( type=="pilut" )        return MatSolverPackageType::MATSOLVER_PILUT;
     else                             return MatSolverPackageType::MATSOLVER_PETSC;

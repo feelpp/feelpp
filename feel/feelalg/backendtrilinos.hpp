@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -112,6 +112,7 @@ public:
         M_prec_type( "" ),
         M_Prec()
     {
+        this->M_backend = BackendType::BACKEND_TRILINOS;
         set_maxiter( 1000 );
         set_tol( 1e-10 );
     }
@@ -435,8 +436,9 @@ public:
 
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b ) const
+               vector_type& b, bool transpose ) const
     {
+        FEELPP_ASSERT( !transpose ).warn( "not implemented yet" );
         epetra_sparse_matrix_type const& _A = dynamic_cast<epetra_sparse_matrix_type const&>( A );
         epetra_vector_type const& _x = dynamic_cast<epetra_vector_type const&>( x );
         epetra_vector_type& _b = dynamic_cast<epetra_vector_type&>( b );

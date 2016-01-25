@@ -1,6 +1,6 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-12-01
 #
 #  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -26,7 +26,15 @@ add_custom_target(genfiles ALL)
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
+add_custom_target(feelpp_assembly)
 
+foreach(D 2 3)
+  foreach(N 1 2 3 4)
+    feelpp_add_application( assembly_${D}d_p${N} SRCS  assembly.cpp  DEFS FEELPP_DIM=${D} FEELPP_ORDER=${N})
+    add_dependencies(feelpp_assembly feelpp_assembly_${D}d_p${N})
+  endforeach()
+endforeach()
+    
 add_executable( feel_perf
   bench1_main.cpp
   bench1_run.cpp
@@ -35,7 +43,6 @@ add_executable( feel_perf
   bench1_run3d.cpp
   )
 target_link_libraries(feel_perf feelpp ${FEELPP_LIBRARIES} )
-# add_test( perf COMMAND feel_perf --hsi
 
 add_executable( feel_perf2
   perf2.cpp
@@ -48,3 +55,4 @@ add_subdirectory(stokes)
 add_subdirectory(mortar)
 add_subdirectory(tilted)
 add_subdirectory(curvature)
+add_subdirectory(io)

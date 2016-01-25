@@ -350,9 +350,9 @@ public:
                             model ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
-        M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual") ),
+        M_backend( backend() ),
+        M_backend_primal( backend(_name="backend-primal") ),
+        M_backend_dual( backend(_name="backend-dual") ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
         M_iter_max( vm["crb.dimension-max"].template as<int>() ),
@@ -374,7 +374,7 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         M_elements_database.setMN( M_N );
-        bool load_elements_db= option(_name="crb.load-elements-database").template as<bool>();
+        bool load_elements_db= boption(_name="crb.load-elements-database");
         if( load_elements_db )
         {
             if( M_elements_database.loadDB() )
@@ -1140,7 +1140,7 @@ public:
 
     bool useWNmu()
     {
-        bool use = option(_name="crb.run-on-WNmu").template as<bool>();
+        bool use = boption(_name="crb.run-on-WNmu");
         return use;
     }
 
@@ -1452,7 +1452,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         F[l]=M_model->newVector();
 
     //M_backend_primal = backend_type::build( BACKEND_PETSC );
-    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
+    bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
     M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal" );
     M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal_save" );
@@ -1480,9 +1480,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     auto Apr = M_model->newMatrix();
 
 
-    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
-    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
     int iteration=0;
     double increment_norm=1e3;
     bool is_linear=M_model->isLinear();
@@ -1508,7 +1508,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     vector_ptrtype Rhs( M_backend_primal->newVector( M_model->functionSpace() ) );
 
-    bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+    bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
           !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
@@ -1661,7 +1661,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 {
 
     //M_backend_dual = backend_type::build( BACKEND_PETSC );
-    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
+    bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
     auto udu = M_model->functionSpace()->element();
 
@@ -1694,9 +1694,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     double dt = M_model->timeStep();
 
-    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
-    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
     int iteration=0;
     double increment_norm=1e3;
 
@@ -1709,7 +1709,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     auto vec_bdf_poly = M_backend_dual->newVector( M_model->functionSpace() );
 
-    bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+    bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
     if ( M_model->isSteady() )
         udu.zero() ;
@@ -1802,7 +1802,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             }
 
 
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
+            if( boption("crb.use-symmetric-matrix") )
                 Adu = Apr;
             else
                 Apr->transpose( Adu );
@@ -1954,15 +1954,15 @@ typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
 
-    M_model_executed_in_steady_mode = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+    M_model_executed_in_steady_mode = boption(_name="crb.is-model-executed-in-steady-mode");
     int proc_number = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
-    bool rebuild_database = option(_name="crb.rebuild-database").template as<bool>() ;
-    orthonormalize_primal = option(_name="crb.orthonormalize-primal").template as<bool>() ;
-    orthonormalize_dual = option(_name="crb.orthonormalize-dual").template as<bool>() ;
-    solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
+    bool rebuild_database = boption(_name="crb.rebuild-database") ;
+    orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
+    orthonormalize_dual = boption(_name="crb.orthonormalize-dual") ;
+    solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
 
 #if 0
     M_elements_database.setMN( M_N );
@@ -1973,7 +1973,7 @@ CRB<TruthModelType>::offline()
         //M_WN = basis_functions.template get<0>();
         //M_WNdu = basis_functions.template get<1>();
         M_model->rBFunctionSpace()->setBasis( basis_functions );
-        M_database_contains_variance_info = option(_name="crb.save-information-for-variance").template as<bool>();
+        M_database_contains_variance_info = boption(_name="crb.save-information-for-variance");
     }
     else
     {
@@ -1981,15 +1981,15 @@ CRB<TruthModelType>::offline()
         CHECK( rebuild_database ) <<" No database for basis functions found. Use option crb.rebuild-database=true to force reconstruction";
     }
 #endif
-    M_use_newton = option(_name="crb.use-newton").template as<bool>() ;
+    M_use_newton = boption(_name="crb.use-newton") ;
 
     //if ( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem = false;
 
     if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
-    M_Nm = option(_name="crb.Nm").template as<int>() ;
-    bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
+    M_Nm = ioption(_name="crb.Nm") ;
+    bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
 
     boost::timer ti;
     LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
@@ -2004,7 +2004,7 @@ CRB<TruthModelType>::offline()
     double delta_du;
     size_type index;
 
-    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    int Nrestart = ioption(_name="crb.restart-from-N");
     //we do affine decomposition here to then have access to Qa, mMax ect...
     //and then resize data structure if necessary
     std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
@@ -2029,7 +2029,7 @@ CRB<TruthModelType>::offline()
     }
     else
     {
-        if( option("crb.stock-matrices").template as<bool>() )
+        if( boption("crb.stock-matrices") )
             boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
     }
     M_model->countAffineDecompositionTerms();
@@ -2054,9 +2054,9 @@ CRB<TruthModelType>::offline()
         LOG(INFO) << "[CRB::offline] compute random sampling\n";
 
         int total_proc = this->worldComm().globalSize();
-        std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
-        bool all_proc_same_sampling=option("crb.all-procs-have-same-sampling").template as<bool>();
-        int sampling_size = option("crb.sampling-size").template as<int>();
+        std::string sampling_mode = soption("crb.sampling-mode");
+        bool all_proc_same_sampling=boption("crb.all-procs-have-same-sampling");
+        int sampling_size = ioption("crb.sampling-size");
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         if( all_proc_same_sampling )
             file_name+="-all-proc-have-same-sampling";
@@ -2532,12 +2532,12 @@ CRB<TruthModelType>::offline()
 
     LOG(INFO) << "[CRB::offline] starting offline adaptive loop\n";
 
-    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
+    bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
-    bool use_predefined_WNmu = option(_name="crb.use-predefined-WNmu").template as<bool>() ;
+    bool use_predefined_WNmu = boption(_name="crb.use-predefined-WNmu") ;
 
-    int N_log_equi = option(_name="crb.use-logEquidistributed-WNmu").template as<int>() ;
-    int N_equi = option(_name="crb.use-equidistributed-WNmu").template as<int>() ;
+    int N_log_equi = ioption(_name="crb.use-logEquidistributed-WNmu") ;
+    int N_equi = ioption(_name="crb.use-equidistributed-WNmu") ;
 
     if( N_log_equi > 0 || N_equi > 0 )
         use_predefined_WNmu = true;
@@ -2571,10 +2571,10 @@ CRB<TruthModelType>::offline()
         M_maxerror = 1e10;
     }
 
-    bool all_procs = option(_name="crb.system-memory-evolution-on-all-procs").template as<bool>() ;
+    bool all_procs = boption(_name="crb.system-memory-evolution-on-all-procs") ;
     PsLogger ps ("PsLogCrbOffline" , Environment::worldComm() , "rss pmem pcpu" , all_procs );
 
-    bool only_master=option(_name="crb.system-memory-evolution").template as<bool>();
+    bool only_master=boption(_name="crb.system-memory-evolution");
     bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
     bool write_memory_evolution = all_procs || only_one_proc ;
 
@@ -2718,7 +2718,7 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] start of POD \n";
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-            bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+            bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
             if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
@@ -2909,7 +2909,7 @@ CRB<TruthModelType>::offline()
 
         M_N+=number_of_added_elements;
 
-        bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+        bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
         if(  POD_WN &&  ! M_model->isSteady() )
         {
             pod_ptrtype POD = pod_ptrtype( new pod_type() );
@@ -2929,8 +2929,8 @@ CRB<TruthModelType>::offline()
         }
         else
         {
-            double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
-            int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
+            double norm_max = doption(_name="crb.orthonormality-tol");
+            int max_iter = ioption(_name="crb.orthonormality-max-iter");
             if ( orthonormalize_primal )
             {
                 timer2.restart();
@@ -3159,8 +3159,8 @@ CRB<TruthModelType>::offline()
                     int index = M_N-l;
                     M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
                     M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_model->rBFunctionSpace()->dualBasisElement(index) );
-                    //M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WN[index] );
-                    //M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WNdu[index] );
+                    // M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WN[index] );
+                    // M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WNdu[index] );
                 }
             }//loop over m
         }//loop over q
@@ -3265,7 +3265,7 @@ CRB<TruthModelType>::offline()
             std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
         }
 
-        if( option(_name="crb.use-accurate-apee").template as<bool>() )
+        if( boption(_name="crb.use-accurate-apee") )
         {
             if( solve_dual_problem )
             {
@@ -3283,7 +3283,7 @@ CRB<TruthModelType>::offline()
 
 
 
-        M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
+        M_compute_variance = boption(_name="crb.compute-variance");
         if ( M_database_contains_variance_info )
             throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
         //buildVarianceMatrixPhi( M_N );
@@ -3359,7 +3359,7 @@ CRB<TruthModelType>::offline()
 
         check( M_WNmu->size() );
 
-        if ( option(_name="crb.check.rb").template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
+        if ( ioption(_name="crb.check.rb") == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
         if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
@@ -3382,7 +3382,7 @@ CRB<TruthModelType>::offline()
 
     if( proc_number == 0 )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
-    bool visualize_basis = option(_name="crb.visualize-basis").template as<bool>() ;
+    bool visualize_basis = boption(_name="crb.visualize-basis") ;
 
 #if 0
     if ( visualize_basis )
@@ -3598,7 +3598,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 {
 
     LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
-    backend_ptrtype backend = backend_type::build( BACKEND_PETSC ) ;
+    //backend_ptrtype backend = backend_type::build( BACKEND_PETSC, Environment::worldComm() ) ;
 
     if ( M_model->isSteady() )
     {
@@ -3609,17 +3609,17 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
     //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
-    vector_ptrtype Rhs( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Aun( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype AduUn( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Rhs( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Aun( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype AduUn( backend()->newVector( M_model->functionSpace() ) );
 
-    vector_ptrtype Mun( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Munold( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Frhs( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype un( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unold( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype undu( backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unduold( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Mun( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Munold( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Frhs( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype un( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unold( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype undu( backend()->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unduold( backend()->newVector( M_model->functionSpace() ) );
 
     //set parameters for time discretization
     auto bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_check_residual_transient" );
@@ -3650,10 +3650,10 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         Mun->scale( -1 );
         *Frhs = *F[0];
 
-        vector_ptrtype __ef_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __ea_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emu_pr(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emuold_pr(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ef_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ea_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_pr(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emuold_pr(  backend()->newVector( M_model->functionSpace() ) );
         M_model->l2solve( __ef_pr, Frhs );
         M_model->l2solve( __ea_pr, Aun );
         M_model->l2solve( __emu_pr, Mun );
@@ -3685,7 +3685,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
     time_index--;
 
-    bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
+    bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
@@ -3718,13 +3718,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         *Frhs = *F[0];
 
 
-        auto R = backend->newVector( M_model->functionSpace() );
+        auto R = backend()->newVector( M_model->functionSpace() );
         R = Frhs;
         R->add( -1 , *Mun ); //R -= Mun;
         //std::cout<<"[COMPARE] R->l2Norm() : "<<R->l2Norm()<<std::endl;
 
-        vector_ptrtype __ef_du(  backend->newVector( M_model->functionSpace() ) );
-        vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ef_du(  backend()->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_du(  backend()->newVector( M_model->functionSpace() ) );
         M_model->l2solve( __ef_du, Frhs );
         M_model->l2solve( __emu_du, Mun );
         double check_Cff_du = M_model->scalarProduct( __ef_du,__ef_du );
@@ -3741,7 +3741,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
             auto bdf_poly = bdf_dual->polyDeriv();
 
             boost::tie( M, A, F ) = M_model->update( mu , bdf_dual->time() );
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
+            if( boption("crb.use-symmetric-matrix") )
                 Adu = A;
             else
                 A->transpose( Adu );
@@ -3754,9 +3754,9 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
             Munold->scale( -1 );
             *Frhs = *F[0];
 
-            vector_ptrtype __ea_du(  backend->newVector( M_model->functionSpace() ) );
-            vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
-            vector_ptrtype __emuold_du(  backend->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __ea_du(  backend()->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emu_du(  backend()->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emuold_du(  backend()->newVector( M_model->functionSpace() ) );
             M_model->l2solve( __ea_du, AduUn );
             M_model->l2solve( __emu_du, Mun );
             M_model->l2solve( __emuold_du, Munold );
@@ -3839,7 +3839,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     LOG(INFO) << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
-    if( option("crb.use-symmetric-matrix").template as<bool>() )
+    if( boption("crb.use-symmetric-matrix") )
         At = A;
     else
         A->transpose( At );
@@ -4062,7 +4062,7 @@ void
 CRB<TruthModelType>::check( size_type N ) const
 {
 
-    if ( option(_name="crb.check.rb").template as<int>() == 0)
+    if ( ioption(_name="crb.check.rb") == 0)
         return;
 
     std::cout << "  -- check reduced basis\n";
@@ -4275,7 +4275,7 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     map_J.setZero( );
     beta_vector_type betaJqm;
 
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     if( load_elements_db )
         boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
@@ -4295,7 +4295,7 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector<beta_vector_type> betaRqm;
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     if( load_elements_db )
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
@@ -4336,14 +4336,14 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     double conditioning=0;
     double determinant=0;
-    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    if( boption(_name="crb.compute-matrix-information") )
     {
         conditioning = computeConditioning( J );
         determinant = J.determinant();
     }
 
     std::vector<beta_vector_type> betaRqm;
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     if( load_elements_db )
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
@@ -4479,11 +4479,11 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     }
 
      /**/
-    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
-    double output_fixedpoint_tol  = option(_name="crb.output-fixedpoint-tol").template as<double>();
-    bool fixedpoint_verbose  = option(_name="crb.fixedpoint-verbose").template as<bool>();
-    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    double output_fixedpoint_tol  = doption(_name="crb.output-fixedpoint-tol");
+    bool fixedpoint_verbose  = boption(_name="crb.fixedpoint-verbose");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
     double increment = increment_fixedpoint_tol;
     //uNdu[0] = Adu.lu().solve( -Ldu );
     Adu.setZero( N,N );
@@ -4699,14 +4699,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     }
 
 
-    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
-    double output_fixedpoint_tol  = option(_name="crb.output-fixedpoint-tol").template as<double>();
-    bool fixedpoint_verbose  = option(_name="crb.fixedpoint-verbose").template as<bool>();
-    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
+    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    double output_fixedpoint_tol  = doption(_name="crb.output-fixedpoint-tol");
+    bool fixedpoint_verbose  = boption(_name="crb.fixedpoint-verbose");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
     double increment = increment_fixedpoint_tol;
 
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     bool is_linear = M_model->isLinear();
     int time_iter=0;
     A.setZero( N,N );
@@ -4790,6 +4790,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         bool only_terms_time_dependent=false;
                         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , M_model->rBFunctionSpace()->primalRB() ),
                                                                                           mu , time, only_terms_time_dependent );
+                        A.setZero( N,N );
                         for ( size_type q = 0; q < Qa; ++q )
                         {
                             for(int m=0; m<mMaxA[q]; m++)
@@ -4818,6 +4819,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     bool only_terms_time_dependent=false;
                     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
 
+                    A.setZero( N,N );
                     for ( size_type q = 0; q < Qa; ++q )
                     {
                         for(int m=0; m< mMaxA[q]; m++)
@@ -4851,7 +4853,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             }
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * N * M_model->Qa();
         double * array = new double[nbelem];
@@ -4868,7 +4870,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 #endif
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * M_model->Ql(0);
         double * array = new double[nbelem];
@@ -4885,7 +4887,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 #endif
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = M_model->Qa();
         double * array = new double[nbelem];
@@ -4903,7 +4905,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 #endif
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = M_model->Ql(0);
         double * array = new double[nbelem];
@@ -4921,14 +4923,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 #endif
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
     }
 #endif
     
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
     }
@@ -4995,7 +4997,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     double condition_number = 0;
     double determinant = 0;
-    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    if( boption(_name="crb.compute-matrix-information") )
     {
         condition_number = computeConditioning( A );
         determinant = A.determinant();
@@ -5054,7 +5056,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
 
     /* initialize context and create queues for needed devices */
-    if(option(_name="parallel.opencl.device").template as<std::string>() == "gpu")
+    if(soption(_name="parallel.opencl.device") == "gpu")
     {
         nDevOK = clContext_.init(CL_DEVICE_TYPE_GPU, nDevNeeded);
     }
@@ -5121,7 +5123,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         memcpy(dbuf + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
     }
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.gpu.dump", "[CPU] Aq: ", dbuf, nbelem);
     }
@@ -5144,7 +5146,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         memcpy(dbuf + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
     }
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.gpu.dump", "[CPU] Fq: ", dbuf, nbelem);
     }
@@ -5167,7 +5169,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         dbuf[q] = betaAqm[q][0];
     }
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", dbuf, nbelem);
         //this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
@@ -5189,7 +5191,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         dbuf[q] = betaFqm[0][q][0];
     }
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", dbuf, nbelem);
         //this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
@@ -5256,7 +5258,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     /* Scalar * Matrices */
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * N * M_model->Qa();
         double * array = new double[nbelem];
@@ -5290,7 +5292,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * N * M_model->Qa();
         double * array = new double[nbelem];
@@ -5321,7 +5323,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * N;
         double * array = new double[nbelem];
@@ -5335,7 +5337,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     /* Scalar * Vector */
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * M_model->Ql( 0 );
         double * array = new double[nbelem];
@@ -5363,7 +5365,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N * M_model->Ql( 0 );
         double * array = new double[nbelem];
@@ -5394,7 +5396,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     //event.wait();
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.debug").template as<int>())
+    if(ioption(_name="parallel.debug"))
     {
         int nbelem = N;
         double * array = new double[nbelem];
@@ -5512,11 +5514,11 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(option(_name="parallel.opencl.enable").template as<bool>())
+    if(boption(_name="parallel.opencl.enable"))
     {
         matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 
-        if(option(_name="parallel.debug").template as<int>())
+        if(ioption(_name="parallel.debug"))
         {
             this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
         }
@@ -5526,7 +5528,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 #endif
     matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-        if(option(_name="parallel.debug").template as<int>())
+        if(ioption(_name="parallel.debug"))
         {
             this->dumpData("./out.cpu.dump", "[CPU] uN: ", uN[0].data(), N);
         }
@@ -5536,7 +5538,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     int size=output_vector.size();
     double o =output_vector[size-1];
-    bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
+    bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
@@ -5562,8 +5564,7 @@ typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_i
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
-
-    bool save_output_behavior = option(_name="crb.save-output-behavior").template as<bool>();
+    bool save_output_behavior = boption(_name="crb.save-output-behavior");
 
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
@@ -5745,7 +5746,7 @@ CRB<TruthModelType>::delta( size_type N,
         double primal_sum_eim=0;
         double dual_sum_eim=0;
 
-        bool accurate_apee = option(_name="crb.use-accurate-apee").template as<bool>();
+        bool accurate_apee = boption(_name="crb.use-accurate-apee");
 
         //vectors to store residual coefficients
         int K = Tf/dt;
@@ -5759,7 +5760,7 @@ CRB<TruthModelType>::delta( size_type N,
             double alphaA_up, lbti;
             M_scmA->setScmForMassMatrix( false );
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
-            if( option(_name="crb.scm.use-scm").template as<bool>() )
+            if( boption(_name="crb.scm.use-scm") )
                 boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
             //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
@@ -5768,7 +5769,7 @@ CRB<TruthModelType>::delta( size_type N,
                 M_scmM->setScmForMassMatrix( true );
                 double alphaM_up, lbti;
                 boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
-                if( option(_name="crb.scm.use-scm").template as<bool>() )
+                if( boption(_name="crb.scm.use-scm") )
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
@@ -5778,7 +5779,7 @@ CRB<TruthModelType>::delta( size_type N,
         int global_time_index=0;
         output_upper_bound.resize(K+1);
 
-        bool compute_error_for_each_time_step=option(_name="crb.compute-apee-for-each-time-step").template as<bool>();
+        bool compute_error_for_each_time_step=boption(_name="crb.compute-apee-for-each-time-step");
 
         bool model_has_eim_error = M_model->hasEimError();
 
@@ -5826,7 +5827,7 @@ CRB<TruthModelType>::delta( size_type N,
             double dual_residual=0;
 
             if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
-            bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
+            bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
 
             if( solve_dual_problem )
             {
@@ -5906,14 +5907,14 @@ CRB<TruthModelType>::delta( size_type N,
             global_time_index++;
         }//end of loop over output time
 
-        bool show_residual = option(_name="crb.show-residual").template as<bool>() ;
+        bool show_residual = boption(_name="crb.show-residual") ;
         if( ! M_offline_step && show_residual )
         {
             double sum=0;
             time_index=1;
             if( M_model->isSteady() )
                 time_index=0;
-            bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
+            bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
             LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
             for ( double time=dt; time<=Tf; time+=dt )
             {
@@ -5952,7 +5953,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::max_error_type
 CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
-    bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
+    bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
 
     int proc = Environment::worldComm().globalRank();
     int master_proc = Environment::worldComm().masterRank();
@@ -6139,7 +6140,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    //if ( option(_name="crb.check.gs").template as<int>() )
+    //if ( ioption(_name="crb.check.gs") )
     //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
     return checkOrthonormality( N , wn );
 }
@@ -6204,6 +6205,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
     auto first_element = first_wn[0];
 
     exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
+    exporter->addRegions();
     int basis_number=0;
     BOOST_FOREACH( auto wn , vect_wn )
     {
@@ -6235,6 +6237,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         }
         basis_number++;
     }
+
 
     exporter->save();
 
@@ -7075,7 +7078,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     offlineResidual( Ncur, mpl::bool_<false>(), number_of_added_elements );
 
-    bool optimize = option(_name="crb.optimize-offline-residual").template as<bool>() ;
+    bool optimize = boption(_name="crb.optimize-offline-residual") ;
 
     //the model can be time-dependant and be executed in steady mode
     //so in that case, we don't need to compute this.
@@ -7391,7 +7394,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
 
-                                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                if( boption("crb.use-symmetric-matrix") )
                                     Atq2 = Aqm[__q2][__m2];
                                 else
                                     Aqm[__q2][__m2]->transpose( Atq2 );
@@ -7431,7 +7434,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                             for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                             {
 
-                                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                if( boption("crb.use-symmetric-matrix") )
                                     Atq2 = Aqm[__q2][__m2];
                                 else
                                     Aqm[__q2][__m2]->transpose( Atq2 );
@@ -7721,7 +7724,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
     ti.restart();
 
-    bool optimize = option(_name="crb.optimize-offline-residual").template as<bool>() ;
+    bool optimize = boption(_name="crb.optimize-offline-residual") ;
 
     //
     //  Primal
@@ -7938,7 +7941,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
 
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1 = Aqm[__q1][__m1];
                     else
                         Aqm[__q1][__m1]->transpose( Atq1 );
@@ -7981,7 +7984,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1=Aqm[__q1][__m1];
                     else
                         Aqm[__q1][__m1]->transpose( Atq1 );
@@ -8001,7 +8004,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
-                                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                    if( boption("crb.use-symmetric-matrix") )
                                         Atq2 = Aqm[__q2][__m2];
                                     else
                                         Aqm[__q2][__m2]->transpose( Atq2 );
@@ -8031,7 +8034,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
-                                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                    if( boption("crb.use-symmetric-matrix") )
                                         Atq2 = Aqm[__q2][__m2];
                                     else
                                         Aqm[__q2][__m2]->transpose( Atq2 );
@@ -8059,7 +8062,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1=Aqm[__q1][__m1];
                     else
                         Aqm[__q1][__m1]->transpose( Atq1 );
@@ -8080,7 +8083,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
-                                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                    if( boption("crb.use-symmetric-matrix") )
                                         Atq2 = Aqm[__q2][__m2];
                                     else
                                         Aqm[__q2][__m2]->transpose( Atq2 );
@@ -8106,7 +8109,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                             {
                                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                                 {
-                                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                    if( boption("crb.use-symmetric-matrix") )
                                         Atq2 = Aqm[__q2][__m2];
                                     else
                                         Aqm[__q2][__m2]->transpose( Atq2 );
@@ -8438,7 +8441,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 if( itq1 != endA )
                 {
                     int Mmaxq1 = M_model->mMaxA(__q1);
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1 = Aqm[__q1][Mmaxq1];
                     else
                         Aqm[__q1][Mmaxq1]->transpose( Atq1 );
@@ -8491,7 +8494,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 {
                     int Mmaxq1 = M_model->mMaxA(__q1);
 
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1=Aqm[__q1][Mmaxq1];
                     else
                         Aqm[__q1][Mmaxq1]->transpose( Atq1 );
@@ -8511,7 +8514,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             if( itq2 != endA )
                             {
                                 int Mmaxq2 = M_model->mMaxA(__q2);
-                                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                if( boption("crb.use-symmetric-matrix") )
                                     Atq2 = Aqm[__q2][Mmaxq2];
                                 else
                                     Aqm[__q2][Mmaxq2]->transpose( Atq2 );
@@ -8555,7 +8558,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                 {
                     int Mmaxq1 = M_model->mMaxA(__q1);
 
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    if( boption("crb.use-symmetric-matrix") )
                         Atq1=Aqm[__q1][Mmaxq1];
                     else
                         Aqm[__q1][Mmaxq1]->transpose( Atq1 );
@@ -8575,7 +8578,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
                             {
                                 int Mmaxq2 = M_model->mMaxA(__q2);
 
-                                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                                if( boption("crb.use-symmetric-matrix") )
                                     Atq2 = Aqm[__q2][Mmaxq2];
                                 else
                                     Aqm[__q2][Mmaxq2]->transpose( Atq2 );
@@ -8716,11 +8719,10 @@ typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
-
-    M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
+    M_compute_variance = boption(_name="crb.compute-variance");
 
     //int Nwn = M_N;
-    int Nwn_max = option(_name="crb.dimension-max").template as<int>();
+    int Nwn_max = ioption(_name="crb.dimension-max");
 #if 0
     if (  M_error_type!=CRB_EMPIRICAL )
     {
@@ -8736,7 +8738,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         std::cout << "Nwn = "<< Nwn << " error = "<< it->second.template get<0>() << " eps=" << eps << "\n";
     }
 
-    if ( option(_name="crb.check.residual").template as<bool>() )
+    if ( boption(_name="crb.check.residual") )
     {
         std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
         std::vector< std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
@@ -8749,6 +8751,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     }
 #endif
     M_model->countAffineDecompositionTerms();
+
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
@@ -8793,7 +8796,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         int nb_coeff = primal_coefficients[final_time_index].size();
         for(int i=0 ; i<nb_coeff ; i++)
             primal_residual_norm += primal_coefficients[final_time_index][i] ;
-        bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
+        bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
         if( solve_dual_problem )
         {
             if ( M_model->isSteady() )
@@ -9168,7 +9171,7 @@ CRB<TruthModelType>::computeSquareDualNormOfDualResidual( parameter_type const& 
     boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
 
     At = M_model->newMatrix();
-    if( option("crb.use-symmetric-matrix").template as<bool>() )
+    if( boption("crb.use-symmetric-matrix") )
         At = A;
     else
         A->transpose( At );
@@ -9359,7 +9362,7 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     bool is_linear=M_model->isLinear();
     //get beta coefficients
     if( is_linear )
@@ -9483,7 +9486,7 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
-    bool load_elements_db=option(_name="crb.load-elements-database").template as<bool>();
+    bool load_elements_db=boption(_name="crb.load-elements-database");
     bool is_linear=M_model->isLinear();
     //get beta coefficients
     if( is_linear )
@@ -9573,7 +9576,7 @@ CRB<TruthModelType>::computeOnlinePrimalApee(  int N, parameter_type const& mu ,
     int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa; //d in the F.Casenave's paper
     lambda.resize(primal_size);
 
-    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    if( boption(_name="crb.compute-matrix-information") )
     {
         double cond = computeConditioning( M_primal_T );
         double det = M_primal_T.determinant();
@@ -9607,7 +9610,7 @@ CRB<TruthModelType>::computeOnlineDualApee(  int N, parameter_type const& mu , v
     int dual_size = Ql*Ql + N*Qa*Ql + N*N*Ql*Ql; //d in the F.Casenave's paper
     lambda.resize(dual_size);
 
-    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    if( boption(_name="crb.compute-matrix-information") )
     {
         double cond = computeConditioning( M_dual_T );
         double det = M_dual_T.determinant();
@@ -9635,7 +9638,7 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
 {
 
     double min=0,max=0,mean=0,standard_deviation=0;
-    int n_eval = option(_name="crb.computational-time-neval").template as<int>();
+    int n_eval = ioption(_name="crb.computational-time-neval");
 
     vectorN_type time;
     Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb_prediction;
@@ -9646,9 +9649,9 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
     Sampling->logEquidistribute( n_eval  );
 
-    bool cvg = option(_name="crb.cvg-study").template as<bool>();
-    int dimension = option(_name="crb.dimension").template as<int>();
-    double tol = option(_name="crb.online-tolerance").template as<double>();
+    bool cvg = boption(_name="crb.cvg-study");
+    int dimension = ioption(_name="crb.dimension");
+    double tol = doption(_name="crb.online-tolerance");
 
     int N=dimension;//by default we perform only one time statistics
 
@@ -9914,7 +9917,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
 
-    if( option(_name="crb.use-newton").template as<bool>() != M_use_newton  )
+    if( boption(_name="crb.use-newton") != M_use_newton  )
         {
             if( M_use_newton )
             {
@@ -9938,7 +9941,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_dual_T );
 
     ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
-    bool current_option=option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+    bool current_option=boption(_name="crb.is-model-executed-in-steady-mode");
     if( M_model_executed_in_steady_mode != current_option )
     {
         if( M_model_executed_in_steady_mode && Environment::worldComm().isMasterRank() )
@@ -10005,7 +10008,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::printErrorDuringOfflineStep()
 {
-    bool print = option(_name="crb.print-error-during-rb-construction").template as<bool>();
+    bool print = boption(_name="crb.print-error-during-rb-construction");
     return print;
 }
 
@@ -10013,8 +10016,8 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::rebuildDB()
 {
-    bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
-    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    bool rebuild_db = boption(_name="crb.rebuild-database");
+    int Nrestart = ioption(_name="crb.restart-from-N");
     bool rebuild=false;
     if ( rebuild_db && Nrestart < 1 )
     {
@@ -10031,7 +10034,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::showMuSelection()
 {
-    bool show = option(_name="crb.show-mu-selection").template as<bool>();
+    bool show = boption(_name="crb.show-mu-selection");
     return show;
 }
 

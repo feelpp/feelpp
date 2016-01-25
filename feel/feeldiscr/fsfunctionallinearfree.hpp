@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-04-26
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -147,12 +147,13 @@ BOOST_PARAMETER_FUNCTION(
       ( expr ,   * )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearFree_return<Args>::space_type::value_type>::build() )
+      ( backend,        *, backend() )
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::type functionalfree_type;
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype functionalfree_ptrtype;
     return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );
@@ -162,4 +163,3 @@ BOOST_PARAMETER_FUNCTION(
 }//Feel
 
 #endif /* _FSFUNCTIONALLINEARFREE_HPP_ */
-

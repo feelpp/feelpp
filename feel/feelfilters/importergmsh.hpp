@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -172,7 +172,7 @@ struct GMSHElement
                     0, 1
                     )
         {
-#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,8,0)
+#if GMSH_VERSION_GREATER_OR_EQUAL_THAN(2,6,1)
           std::vector<int> verts;
           ele->getVerticesIdForMSH(verts);
           indices = verts;
@@ -848,9 +848,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             __is >> __buf;
         }
 
-        for(auto it = meshMarkerNameMap.begin(), en = meshMarkerNameMap.end(); it != en; ++ it )
+        for( auto const& it : meshMarkerNameMap )
         {
-            mesh->addMarkerName( it->name, it->ids[0], it->ids[1] );
+            mesh->addMarkerName( it.name, it.ids[0], it.ids[1] );
         }
     }
 
@@ -960,6 +960,8 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
     std::map<int,int> __gt;
 
+    rank_type theCurrentPartitionId = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+
     if ( !binary )
     {
         for(int i = 0; i < numElements; i++)
@@ -970,7 +972,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
-          rank_type partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+          rank_type partition = theCurrentPartitionId;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
@@ -1072,7 +1074,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                 int elementary = (numTags > 1) ? data[2] : 0;
                 rank_type numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
                 rank_type partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
-                    (version >= 2.2 && numTags > 3) ? data[4]-1 : 0;
+                    (version >= 2.2 && numTags > 3) ? data[4]-1 : theCurrentPartitionId;
                 if(numPartitions > 1)
                     for(int j = 0; j < numPartitions - 1; j++)
                         ghosts.push_back( (-data[5 + j]) -1 );
@@ -1121,13 +1123,11 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         CHECK( numElementsPartial == numElements ) << "Invalid number of elements read from GMSH, read " << numElementsPartial << " element but expected " << numElements << "\n";
     } // binary
 
-    auto it = __gt.begin();
-    auto en = __gt.end();
-    for( ; it != en; ++it )
+    for ( auto const& it : __gt )
     {
         const char* name;
-        MElement::getInfoMSH( it->first, &name );
-        LOG(INFO) << "Read " << it->second << " " << name << " elements\n";
+        MElement::getInfoMSH( it.first, &name );
+        LOG(INFO) << "Read " << it.second << " " << name << " elements\n";
     }
 
     if ( binary )
@@ -1183,22 +1183,20 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     node_type coords( mesh_type::nRealDim );
     //M_n_b_vertices.resize( __n );
     //M_n_b_vertices.assign( __n, 0 );
-    auto it_gmshElt = __et.begin();
-    auto const en_gmshElt = __et.end();
-    for ( ; it_gmshElt!=en_gmshElt ; ++it_gmshElt )
+    for ( auto const& it_gmshElt : __et )
     // add the element to the mesh
     {
 
         //std::cout<<"isOnProcessor= "<< __et[__i].isOnProcessor()  <<"\n";
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
-        if ( it_gmshElt->isOnProcessor() == false ||
-             it_gmshElt->isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+        if ( it_gmshElt.isOnProcessor() == false ||
+             it_gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
         // add the points associates to the element on the processor
-        for ( uint16_type p = 0; p < it_gmshElt->numVertices; ++p )
+        for ( uint16_type p = 0; p < it_gmshElt.numVertices; ++p )
         {
-            int ptid = it_gmshElt->indices[p];
+            int ptid = it_gmshElt.indices[p];
             // don't do anything if the point is already registered
             if ( mesh->hasPoint( ptid ) )
                 continue;
@@ -1224,12 +1222,12 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         } // loop over local points
 
 
-        switch ( it_gmshElt->type )
+        switch ( it_gmshElt.type )
         {
             // Points
         case GMSH_POINT:
         {
-            addPoint( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addPoint( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
 
             break;
@@ -1242,7 +1240,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_LINE_4:
         case GMSH_LINE_5:
         {
-            addEdge( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addEdge( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1256,7 +1254,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_QUADRANGLE:
         case GMSH_QUADRANGLE_2:
         {
-            addFace( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addFace( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1270,7 +1268,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         case GMSH_HEXAHEDRON:
         case GMSH_HEXAHEDRON_2:
         {
-            addVolume( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
+            addVolume( mesh, it_gmshElt, __idGmshToFeel[it_gmshElt.num] );
 
             break;
         }
@@ -1279,35 +1277,29 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             break;
         }
 
-        if ( it_gmshElt->isGhost() )
+        if ( it_gmshElt.isGhost() )
         {
-            mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
+            mapGhostElt.insert( std::make_pair( it_gmshElt.num,boost::make_tuple( __idGmshToFeel[it_gmshElt.num], it_gmshElt.ghostPartitionId() ) ) );
         }
-        else if( it_gmshElt->ghosts.size() > 0 )
+        else if( it_gmshElt.ghosts.size() > 0 )
         {
-            auto itg = it_gmshElt->ghosts.begin();
-            auto const eng = it_gmshElt->ghosts.end();
-            for ( ; itg !=eng ; ++itg )
-                nbMsgToRecv[*itg]++;
+            for ( auto const& itg : it_gmshElt.ghosts )
+                nbMsgToRecv[itg]++;
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
     // treat periodic entities if any
-    auto eit = periodic_entities.begin();
-    auto een = periodic_entities.end();
-    for( ; eit != een ; ++eit )
+    for ( auto const& eit : periodic_entities )
     {
-        auto vit = eit->correspondingVertices.begin();
-        auto ven = eit->correspondingVertices.end();
-        for( ; vit != ven ; ++vit )
+        for ( auto const& vit : eit.correspondingVertices )
         {
-            auto pit1 = mesh->pointIterator( vit->first );
-            auto pit2 = mesh->pointIterator( vit->second );
+            auto pit1 = mesh->pointIterator( vit.first );
+            auto pit2 = mesh->pointIterator( vit.second );
             CHECK( pit1 != mesh->endPoint() &&
                    pit2 != mesh->endPoint() )
-                << "Periodic points data is screwd in periodic entity slave " << eit->slave
-                << " master : " << eit->master << " dimension: " << eit->dim;
+                << "Periodic points data is screwd in periodic entity slave " << eit.slave
+                << " master : " << eit.master << " dimension: " << eit.dim;
             auto p1 = *pit1;
             auto p2 = *pit2;
             p1.setMasterId( p2.id() );
@@ -1357,7 +1349,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
 
-    toc("read msh from file");
+    toc("read msh from file", FLAGS_v > 0);
 }
 
 template<typename MeshType>
@@ -1375,7 +1367,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     pf.setId( mesh->numFaces() );
     pf.setMarker( __e.physical );
     pf.setMarker2( __e.elementary );
-    pf.setNumberOfPartitions( __e.numPartitions );
     pf.setProcessId( __e.partition );
     pf.setNeighborPartitionIds( __e.ghosts );
 
@@ -1407,7 +1398,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
                                       {
                                           e.setMarker( __e.physical );
                                           e.setMarker2( __e.elementary );
-                                          e.setNumberOfPartitions( __e.numPartitions );
                                           e.setProcessId( __e.partition );
                                           e.setNeighborPartitionIds( __e.ghosts );
                                       } );
@@ -1425,7 +1415,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
                                       {
                                           e.setMarker( __e.physical );
                                           e.setMarker2( __e.elementary );
-                                          e.setNumberOfPartitions( __e.numPartitions );
                                           e.setProcessId( __e.partition );
                                           e.setNeighborPartitionIds( __e.ghosts );
                                       } );
@@ -1448,7 +1437,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1493,7 +1481,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1543,8 +1530,9 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setId( mesh->numEdges() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
-    e.setProcessId( __e.partition );
+    // warning : process id is define after (when call mesh->updateForUse()
+    // and only for edges which belong to an active 3d element )
+    e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
     e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_LINE ||
@@ -1605,7 +1593,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1664,7 +1651,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( mesh->numFaces() );
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
@@ -1729,7 +1715,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     GmshOrdering<element_type> ordering;
     e.setMarker( __e.physical );
     e.setMarker2( __e.elementary );
-    e.setNumberOfPartitions( __e.numPartitions );
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 

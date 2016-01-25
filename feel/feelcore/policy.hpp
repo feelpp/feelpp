@@ -1,12 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2004-09-10
 
-   Copyright (C) 2006,2009 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2006,2009 Universite Joseph Fourier (Grenoble I)
    Copyright (C) 2004 EPFL
+   Copyright (C) 2011-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-09-10
  */
-#ifndef __Policy_H
-#define __Policy_H 1
+#ifndef FEELPP_FEELCORE_POLICY_HPP
+#define FEELPP_FEELCORE_POLICY_HPP 1
 
 namespace Feel
 {
@@ -74,4 +75,4 @@ struct PolicyFeelTimeDefault
 
 }
 
-#endif /* __Policy_H */
+#endif /* FEELPP_FEELCORE_POLICY_HPP */

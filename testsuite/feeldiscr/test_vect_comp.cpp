@@ -15,9 +15,6 @@ using namespace Feel;
 namespace test_vect_comp
 {
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
 /*_________________________________________________*
  * Options
  *_________________________________________________*/
@@ -61,16 +58,6 @@ BOOST_AUTO_TEST_SUITE( interp_vect_comp )
 
 BOOST_AUTO_TEST_CASE( interp_vect_comp )
 {
-
-    using namespace test_vect_comp;
-
-
-    auto test_app = Application_ptrtype( new Application_type );
-
-    test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                                % test_app->about().appName()
-                              );
-
     typedef Mesh<Simplex<2,1,2> > mesh_type;
     typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
@@ -81,7 +68,7 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
 
     //-----------------------------------------------------------//
 
-    double meshSize = test_app->vm()["hsize"].as<double>();
+    double meshSize = doption(_name="hsize");
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 4,1 );
@@ -96,8 +83,8 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
 
     u = vf::project( Xh,elements( mesh ),vf::vec( vf::cst( 1. ),vf::cst( -1. ) ) );
 
-    auto ux=u.comp<X>();
-    auto uy=u.comp<Y>();
+    auto ux=u[Component::X];
+    auto uy=u[Component::Y];
 
     double s1 = integrate( elements( mesh ), trans( idv( u ) )*oneX() ).evaluate()( 0,0 );
     double sx = integrate( elements( mesh ), idv( ux ) ).evaluate()( 0,0 );

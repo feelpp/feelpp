@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -36,22 +36,13 @@ namespace Feel
 {
 
 template<size_type Contextv, size_type Value>
-struct has_value
-{
-    static const bool value = ( Contextv & Value ) != 0;
-};
+using has_value = mpl::bool_<( Contextv & Value ) != 0>;
 
 template<size_type Contextv, size_type Value>
-struct set_value
-{
-    static const bool value = ( Contextv | Value );
-};
+using set_value = mpl::bool_<( Contextv | Value )>;
 
 template<size_type Contextv, size_type Value>
-struct clear_value
-{
-    static const bool value = Contextv & ( ~Value );
-};
+using clear_value = mpl::bool_<Contextv & ( ~Value )>;
 
 /*!
   \class Context

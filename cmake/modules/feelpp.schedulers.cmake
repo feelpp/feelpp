@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-04-26
 #
-#  Copyright (C) 2013 Université de Strasbourg
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -25,5 +25,5 @@
 include( feelpp.sched.slurm )
 include( feelpp.sched.loadleveler )
 include( feelpp.sched.ccc )
-#include( feelpp.sched.oar )
+include( feelpp.sched.oar )
 

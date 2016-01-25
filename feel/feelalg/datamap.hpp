@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,7 +60,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         M_firstIndex(0),
         M_lastIndex(0),
         M_nIndex(0),
-        M_nIndexForSmallerRankId(0)
+        M_nIndexForSmallerRankId(0),
+        M_tag(0)
     {}
 
     IndexSplit( int s )
@@ -69,7 +70,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         M_firstIndex( s, invalid_size_type_value ),
         M_lastIndex( s, invalid_size_type_value ),
         M_nIndex( s, invalid_size_type_value ),
-        M_nIndexForSmallerRankId( s, invalid_size_type_value )
+        M_nIndexForSmallerRankId( s, invalid_size_type_value ),
+        M_tag(s,0)
     {}
 
     IndexSplit( IndexSplit const& is )
@@ -78,7 +80,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
         M_firstIndex( is.M_firstIndex ),
         M_lastIndex( is.M_lastIndex ),
         M_nIndex( is.M_nIndex ),
-        M_nIndexForSmallerRankId( is.M_nIndexForSmallerRankId )
+        M_nIndexForSmallerRankId( is.M_nIndexForSmallerRankId ),
+        M_tag( is.M_tag )
     {}
 
     subcontainer_type const& split( int k ) const { return this->operator[](k); }
@@ -96,6 +99,8 @@ class IndexSplit : public std::vector<std::vector<size_type> >
     void setNIndex( int i,size_type s ) { M_nIndex[i] = s; }
     size_type nIndexForSmallerRankId( int i ) const { return M_nIndexForSmallerRankId[i]; }
     void setNIndexForSmallerRankId( int i,size_type s ) { M_nIndexForSmallerRankId[i] = s; }
+    int tag( int i ) const { return M_tag[i]; }
+    void setTag( int i,int tag ) { M_tag[i]=tag; }
 
     struct FieldsDef : public std::map<int,std::set<int> >
     {
@@ -114,6 +119,7 @@ private :
 
     std::vector<size_type> M_firstIndex, M_lastIndex, M_nIndex;
     std::vector<size_type> M_nIndexForSmallerRankId;
+    std::vector<int> M_tag;
 
 };
 
@@ -157,8 +163,8 @@ public:
      */
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
 
-    DataMap( DataMap const & dm );
-
+    DataMap( DataMap const & dm ) = default;
+    DataMap( DataMap&& dm ) = default;
     virtual ~DataMap();
 
     //@}
@@ -167,7 +173,8 @@ public:
      */
     //@{
 
-    DataMap& operator=( DataMap const& dm );
+    DataMap& operator=( DataMap const& dm ) = default;
+    DataMap& operator=( DataMap && dm ) = default;
 
     //@}
 
@@ -325,7 +332,7 @@ public:
         return this->dofGlobalClusterIsOnProc( globDof, this->worldComm().globalRank() );
     }
 
-    bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
+    bool dofGlobalClusterIsOnProc( size_type globDof, rank_type proc ) const
     {
         return ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) );
     }
@@ -472,6 +479,9 @@ public:
             M_neighbor_processors.insert( procIdNeigh );
     }
 
+    std::map<size_type, std::set<rank_type> > const& activeDofSharedOnCluster() const { return M_activeDofSharedOnCluster; }
+    void setActiveDofSharedOnCluster(size_type j, std::set<rank_type> const& sharedRank ) { M_activeDofSharedOnCluster[j]=sharedRank; }
+
 
     //! \return true if DataMap is close, false otherwise
     bool closed() const
@@ -499,8 +509,12 @@ public:
 
     indexsplit_ptrtype const& indexSplit() const { return M_indexSplit; }
     void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
-
     void buildIndexSplit();
+
+    bool hasIndexSplitWithComponents() const { return (M_indexSplitWithComponents.get() != 0); }
+    indexsplit_ptrtype const& indexSplitWithComponents() const { return (M_indexSplitWithComponents)? M_indexSplitWithComponents : this->indexSplit(); }
+    void setIndexSplitWithComponents( indexsplit_ptrtype const& is ) { M_indexSplitWithComponents = is; }
+    void buildIndexSplitWithComponents( uint16_type nComp );
     //@}
 
 
@@ -518,6 +532,18 @@ public:
     //@{
 
     void close() const;
+
+    // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
+    void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
+    std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
+    // get process ids of active dof index (in cluster view) used in the input index set
+    std::map<size_type, std::set<rank_type> >
+    activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcessPresent ) const;
+
+
+    // build sub data map from an index set
+    boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
+                                                 bool _checkAndFixInputRange=true ) const;
 
     //@}
 
@@ -582,6 +608,11 @@ protected:
     std::set<rank_type> M_neighbor_processors;
 
     /**
+     * get set of rank which use an active dof (dofid on process, not cluster)
+     */
+    std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
+
+    /**
      * Communicator
      */
     WorldComm M_worldComm;
@@ -589,12 +620,17 @@ protected:
     /**
      * Index split ( differentiate multiphysic )
      */
-    indexsplit_ptrtype M_indexSplit;
+    indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
 
 private:
 
 };
+
+using datamap_t = DataMap;
+
+using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptr_t = datamap_ptrtype;
 
 } // Feel
 #endif /* __DataMap_H */

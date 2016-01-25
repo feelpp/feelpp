@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,7 @@ namespace Feel {
 template<int Dim, typename Convex=Simplex<Dim>>
 inline
 boost::shared_ptr<Mesh<Convex> >
-unitHypercube( double h = option(_name="gmsh.hsize").template as<double>() )
+unitHypercube( double h = doption(_name="gmsh.hsize") )
 {
     return createGMSHMesh(_mesh=new Mesh<Convex>,
                           _desc=domain( _name="hypercube",

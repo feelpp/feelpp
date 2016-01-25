@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-02-03
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -29,4 +29,8 @@ if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )
+if(GMSH_ADAPTMESH_INCLUDE_DIR)
+  feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )
+else()
+  message(STATUS "doc_LShape: compilation cancelled. Some headers (Openfile.h Field.h) needed for meshadaptation are missing.")
+endif()

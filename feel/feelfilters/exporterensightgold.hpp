@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,7 +39,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
@@ -125,7 +124,8 @@ public:
     */
     ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex );
 
@@ -151,6 +151,14 @@ public:
     std::string const& elementType() const
     {
         return M_element_type;
+    }
+
+    /**
+     * \return the worldcomm passed in parameters of the exporter constructor (as the worldComm() can return a sequentialized one)
+     */
+    WorldComm const& worldCommBase() const
+    {
+        return M_worldCommBase;
     }
 
 
@@ -212,6 +220,11 @@ private:
     void writeCaseFile() const;
 
     /**
+       updates the markers to be written by he exporters
+    */
+    void computeMarkersToWrite(mesh_ptrtype mesh) const;
+
+    /**
        write the 'geo' file for ensight
     */
     void writeGeoFiles() const;
@@ -226,21 +239,30 @@ private:
     void writeVariableFiles() const;
 
     template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
     template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
+    void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
 private:
+
+    /* The purpose of this variable is to keep track */
+    /* of the initial woldcomm that is given through the constructor */
+    /* This is useful, when we don't want to merge the markers, */
+    /* as the base worldComm is replaced with a sequential one */
+    /* (and it also yields less code changes that having to use an alternate variable */
+    /* containing the sequential worlcomm and leaving M_worldComm as the one in param) */
+    WorldComm M_worldCommBase;
 
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
-    mutable int time_index;
     mutable std::set<int> M_markersToWrite;
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */
     mutable int M_timeExponent;
+    // file position for explicit pointers
+    mutable MPI_Offset posInFile;
 };
 
 

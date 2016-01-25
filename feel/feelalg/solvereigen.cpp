@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -43,7 +43,9 @@ SolverEigen<T>::SolverEigen()
     M_spectral_transform   ( SHIFT ),
     M_is_initialized       ( false ),
     M_nev( 1 ),
-    M_ncv( 3 )
+    M_ncv( 3 ),
+    M_mpd( invalid_size_type_value ),
+    M_interval_a( 0. ), M_interval_b( 0. )
 {
 }
 
@@ -56,9 +58,14 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
     M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen.position"].template as<int>() ),
     M_spectral_transform   ( SHIFT ),
     M_is_initialized       ( false ),
-    M_nev( vm[M_prefix+"solvereigen.nev"].template as<int>() ),
-    M_ncv( vm[M_prefix+"solvereigen.ncv"].template as<int>() )
+    M_nev( ioption(_prefix=M_prefix,_name="solvereigen.nev") ),
+    M_ncv( ioption(_prefix=M_prefix,_name="solvereigen.ncv") ),
+    M_mpd( invalid_size_type_value ),
+    M_interval_a( 0. ), M_interval_b( 0. )
 {
+    int mpdOption = ioption(_prefix=M_prefix,_name="solvereigen.mpd");
+    if ( mpdOption > 0 )
+        M_mpd = mpdOption;
 }
 
 template <typename T>
@@ -72,6 +79,8 @@ SolverEigen<T>::SolverEigen( SolverEigen const& eis )
     M_is_initialized       ( eis.M_is_initialized ),
     M_nev( eis.M_nev ),
     M_ncv( eis.M_ncv ),
+    M_mpd ( eis.M_mpd ),
+    M_interval_a( eis.M_interval_a ), M_interval_b( eis.M_interval_b ),
     M_maxit( eis.M_maxit ),
     M_tolerance( eis.M_tolerance ),
     M_mapRow( eis.M_mapRow ),

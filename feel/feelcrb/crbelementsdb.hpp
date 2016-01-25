@@ -174,8 +174,8 @@ bool
 CRBElementsDB<ModelType>::loadDB()
 {
 
-    bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
-    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    bool rebuild_db = boption(_name="crb.rebuild-database");
+    int Nrestart = ioption(_name="crb.restart-from-N");
     if ( rebuild_db && Nrestart < 1 )
         return false;
 

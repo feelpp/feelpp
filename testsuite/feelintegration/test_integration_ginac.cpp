@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-07-05
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file test_integration_ginac.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-07-05
  */
 #include <sstream>
@@ -337,9 +337,9 @@ void poiseuille()
 
 #if 0
     std::string dim_str =  boost::str( boost::format( "2D" ) );
-    std::string u1_str = option(_name="u_exact_x",_prefix=dim_str).template as<std::string>();
-    std::string u2_str = option(_name="u_exact_y",_prefix=dim_str).template as<std::string>();
-    std::string p_str = option(_name="p_exact_ex",_prefix=dim_str).template as<std::string>();
+    std::string u1_str = soption(_name="u_exact_x",_prefix=dim_str);
+    std::string u2_str = soption(_name="u_exact_y",_prefix=dim_str);
+    std::string p_str = soption(_name="p_exact_ex",_prefix=dim_str);
     LOG(INFO) << "ux = " << u1_str;
     LOG(INFO) << "uy = " << u2_str;
     LOG(INFO) << "p = " << p_str;

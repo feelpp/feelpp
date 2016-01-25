@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-05-06
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file laplacian_quad.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-05-06
  */
 #include <feel/feel.hpp>
@@ -81,8 +81,8 @@ int main(int argc, char**argv )
                                                  _quad=_Q<20>() ) << "\n";
     v = project( _space=Vh, _expr=g );
 
-    std::cout << "values with marker WEST : " << u.extractValuesWithMarker( "WEST" ) << "\n";
-    std::cout << "values without marker WEST : " << u.extractValuesWithoutMarker( "WEST" ) << "\n";
+    std::cout << "values with marker WEST : " << u.extractValuesWithMarker( "WEST", backend() ) << "\n";
+    std::cout << "values without marker WEST : " << u.extractValuesWithoutMarker( "WEST", backend() ) << "\n";
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );

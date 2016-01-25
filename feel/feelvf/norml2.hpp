@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-04
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file norml2.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-01-04
  */
 #ifndef FEELPP_VF_NORML2_HPP
@@ -45,6 +45,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( parallel,   ( bool ), true )
       ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
@@ -56,10 +57,11 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
+    double a = integrate( _range=range, _expr=inner(expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    return math::sqrt( a );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
+    LOG_IF( WARNING, a < 0 ) << "normL2 squared negative " << a;
+    return math::sqrt( math::abs(a) );
 }
 
 }

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-06-11
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,10 +21,13 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <feel/feelconfig.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelpartition/partitionermetis.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelvf/vf.hpp>
 using namespace Feel;
 
@@ -43,8 +46,23 @@ int main( int argc, char** argv )
 
     // create a mesh with GMSH using Feel++ geometry tool
     auto numPartition = ioption(_name="numPartition");
-    auto mesh = loadMesh(_mesh=new  Mesh<Simplex<FEELPP_DIM>>, _partitions=numPartition);
+    tic();
+    //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>> );
+    toc("loading mesh done",FLAGS_v>0);
 
+    auto Xhd0 = Pdh<0>(mesh);
+    auto measures = Xhd0->element();
+    measures.on(_range=elements(mesh),_expr=vf::meas());
+    double measMin = measures.min();
+    double measMax = measures.max();
+#if 0
+    //partition( "metis", mesh, numPartitions );
+    PartitionerMetis<decltype(mesh)> metis;
+    metis.partition( mesh, numPartition );
+//mesh->saveHDF5( fs::path(soption("gmsh.filename")).string()+".h5" );
+       
+#endif
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
     if ( Environment::isMasterRank() )
@@ -54,20 +72,20 @@ int main( int argc, char** argv )
         std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
         std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
         if ( FEELPP_DIM > 2 )
-            std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;  
+            std::cout << "      number of edges : " << mesh->numGlobalEdges() << std::endl;
         std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
         std::cout << "    number of vertices : " << mesh->numGlobalVertices() << std::endl;
         std::cout << " - mesh sizes" << std::endl;
         std::cout << "                h max : " << mesh->hMax() << std::endl;
         std::cout << "                h min : " << mesh->hMin() << std::endl;
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
-        std::cout << "              measure : " << mesh->measure() << std::endl;
+        std::cout << "              measure : " << mesh->measure() << "\t" << measMin<<" : " << measMax << std::endl;
 
         std::cout << "Number of Partitions : " << numPartition << std::endl ;
     }
 
     for( auto marker: mesh->markerNames() )
-    {
+    {   
        auto name = marker.first;
        auto data = marker.second;
        if ( data[1] == mesh->dimension() )
@@ -80,7 +98,8 @@ int main( int argc, char** argv )
           {
             std::cout << " - Marker (elements) " << name << std::endl;
             std::cout << "    |- number of elements " << nelts << std::endl;
-            std::cout << "    |- measure : " << meas << "," << meas1 << std::endl;
+            std::cout << "    |- measure (elements(mesh) - markedelements(mesh,"
+                      <<name <<") : " << meas << " -- " << meas1 << std::endl;
 
           }
        }

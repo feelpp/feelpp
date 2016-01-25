@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -65,6 +65,24 @@ public:
         ExprR::template HasTrialFunction<Func>::result ;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+        ExprR::template HasTestFunction<Func>::result ;
+    template<typename Func>
+    static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result||
+        ExprR::template HasTrialFunction<Func>::result ;
+    using test_basis = typename ExprL::test_basis;
+    using trial_basis = typename ExprL::trial_basis;
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef CrossProduct<typename ExprL::template Lambda<TheExpr...>::type,typename ExprR::template Lambda<TheExpr...>::type> type; 
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_left_expr(e...),M_right_expr(e...)); }
 
     /** @name Typedefs
      */

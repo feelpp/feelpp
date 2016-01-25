@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -59,18 +59,19 @@ public:
     typedef typename domain_space_type::element_type domain_element_type;
     typedef FsFunctionalLinear<dual_image_space_type> image_element_type;
 
-    Operator()
-        :
-        M_domainSpace(),
-        M_dualImageSpace()
-    {}
+    Operator() = default;
 
     Operator( domain_space_ptrtype     domainSpace,
               dual_image_space_ptrtype dualImageSpace ) :
         M_domainSpace( domainSpace ),
         M_dualImageSpace( dualImageSpace )
     {}
+    Operator( Operator<domain_space_type,DualImageSpace> const& ) = default;
+    Operator( Operator<domain_space_type,DualImageSpace> && ) = default;
 
+    Operator& operator=( Operator const& ) = default;
+    Operator& operator=( Operator && ) = default;
+    
     virtual ~Operator() {}
 
     void setDomainSpace( domain_space_ptrtype const& domainspace )

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -170,8 +170,8 @@ public:
     StokesStabilized( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        nu( this->vm()["nu"].template as<double>() ),
+        meshSize( doption("hsize") ),
+        nu( doption("nu") ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         VLOG(1) << "[StokesStabilized] hsize = " << meshSize << "\n";
@@ -238,7 +238,7 @@ StokesStabilized<Order>::run( )
                             % this->about().appName()
                             % Dim
                             % uOrder % pOrder
-                            % this->vm()["hsize"].template as<double>()
+                            % doption("hsize")
                           );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
@@ -267,21 +267,21 @@ StokesStabilized<Order>::run( )
     std::cout << "Number of dofs: " << Xh->nDof() << "\n";
 
     double pi = 4.0 * math::atan( double( 1.0 ) );
-    const double penalisation = this->vm()["penalisation"].template as<double>();
-    const double tolerance = this->vm()["tolerance"].template as<double>();
-    const int maxiter = this->vm()["maxiter"].template as<int>();
-    const int fillin = this->vm()["fillin"].template as<int>();
-    const int bctype = this->vm()["bctype"].template as<int>();
-    const double b = this->vm()["b"].template as<double>();
-    const bool printMatrix = this->vm()["matrix"].template as<bool>();
+    const double penalisation = doption("penalisation");
+    const double tolerance = doption("tolerance");
+    const int maxiter = ioption("maxiter");
+    const int fillin = ioption("fillin");
+    const int bctype = ioption("bctype");
+    const double b = doption("b");
+    const bool printMatrix = boption("matrix");
 
-    const double drop_tolerance = this->vm()["drop_tolerance"].template as<double>();
-    const std::string residual = this->vm()["residual"].template as<std::string>();
+    const double drop_tolerance = doption("drop_tolerance");
+    const std::string residual = soption("residual");
     double lambda = 1./( 2.*nu ) - math::sqrt( 1./( 4.*nu*nu ) + 4.*pi*pi );
 
-    const bool printErrors = this->vm()["errors"].template as<bool>();
-    const bool printTimings = this->vm()["timings"].template as<bool>();
-    const bool exportGraphics = this->vm()["graphics"].template as<bool>();
+    const bool printErrors = boption("errors");
+    const bool printTimings = boption("timings");
+    const bool exportGraphics = boption("graphics");
 
     AUTO( u1, val( 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() ) ) );
     AUTO( u2, val( ( lambda/( 2.*pi ) ) * exp( lambda * Px() ) * sin( 2.*pi*Py() ) ) );

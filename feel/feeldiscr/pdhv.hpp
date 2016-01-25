@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -52,6 +52,18 @@ struct Pdhv
 
 } // meta
 
+template<typename MeshType,
+         int Order,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
+using Pdhv_type = typename meta::Pdhv<MeshType,Order,Pts,Tag>::type;
+
+template<typename MeshType,
+         int Order,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
+using Pdhv_ptrtype = typename meta::Pdhv<MeshType,Order,Pts,Tag>::ptrtype;
+
 /**
    Given a \p mesh, build a function space of vectorial discontinuous function
    which are piecewise polynomial of degree (total or in each variable) less
@@ -61,13 +73,12 @@ template<int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType,
          int Tag = 0>
 inline
-typename meta::Pdhv<MeshType,Order,Pts,Tag>::ptrtype
+Pdhv_ptrtype<MeshType,Order,Pts,Tag>
 Pdhv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
-    typedef typename meta::Pdhv<MeshType,Order,Pts,Tag>::type space_type;
-    return space_type::New( _mesh=mesh,
-                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
+                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                   _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }

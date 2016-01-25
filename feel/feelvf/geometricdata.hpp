@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,10 +83,10 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
        ( Nref    , GDNref    , 0, 0, Vectorial, M_gmc->refNormal( q )[ c1 ] , 0), \
        ( normalNorm, GDnormalNorm, 0, 0, Scalar, M_gmc->normalNorm( q ) , 0), \
        ( pT      , GDpT      , 0, jt, Tensor2, M_gmc->projectorTangent( c1, c2, q), 0), \
-       ( T       , GDT       , 0, jt, Vectorial, M_gmc->tangent( q )[ c1 ], 0), \
-       ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->tangent( q )[ 0 ] , 0), \
-       ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->tangent( q )[ 1 ] , 0), \
-       ( Tz      , GDTz      , 2, jt, Scalar   , M_gmc->tangent( q )[ 2 ] , 0), \
+       ( T       , GDT       , 0, jt, Vectorial, M_gmc->unitTangent( q )[ c1 ], 0), \
+       ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->unitTangent( q )[ 0 ] , 0), \
+       ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->unitTangent( q )[ 1 ] , 0), \
+       ( Tz      , GDTz      , 2, jt, Scalar   , M_gmc->unitTangent( q )[ 2 ] , 0), \
        ( detJ    , GDDetJ    , 0, jp, Scalar   , M_gmc->J( q )                , 0), \
        ( J       , GDJ       , 0, jkp,Tensor2  , M_gmc->K( c1, c2, q )        , 0), \
        ( JinvT   , GDJinv    , 0, jkp,Tensor2  , M_gmc->B( c1, c2, q )        , 0), \
@@ -177,6 +177,13 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        template<typename Func>                                         \
+            static const bool has_test_basis = false;                   \
+        template<typename Func>                                         \
+            static const bool has_trial_basis = false;                  \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
+                                                                        \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
         typedef value_type evaluate_type;                               \

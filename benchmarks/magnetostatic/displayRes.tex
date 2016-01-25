@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{filecontents}
+\usepackage{pgfplotstable}
+%\usepackage[active,tightpage]{preview}
+%\PreviewEnvironment{tikzpicture}
+%\setlength\PreviewBorder{4pt}
+\pgfplotsset{width=9.75cm} 
+\pgfplotsset{every axis legend/.append style={at={(0.45,-0.25)},legend columns=5,anchor=south,font=\small}}
+\tikzset{every mark/.append style={scale=0.6}}
+\tikzset{global scale/.style={scale=0.6,every node/.style={scale=0.6}}}
+\begin{document}
+
+% Convergence
+\foreach \D in {2,3}{
+  \foreach \t in {poly,sin}{
+    \foreach \m in {1,0.1,0.01,0.001,0.0001,1e-05,1e-06,1e-07}{
+      \begin{center}
+        \begin{minipage}{.49\linewidth}
+          \begin{tikzpicture}[scale=0.6]
+            \begin{loglogaxis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Relative Error},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$,$Block-hypre-hypre$}]
+              \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-lu_cg-lu_cg-lu-\t_res.txt};
+              \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-lu_cg-lu-\t_res.txt};
+              \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt};
+              \addplot+[color=green,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-hypre_cg-hypre-\t_res.txt};
+              \addplot table[x=hSize,y={create col/linear regression={y=err}}]{/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt}
+              coordinate [pos=0.25] (A)
+              coordinate [pos=0.4]  (B)
+              ;
+              \xdef\slope{\pgfplotstableregressiona}
+              \draw (A) -| (B) node [pos=0.75,anchor=west]{\pgfmathprintnumber{\slope}};
+            \end{loglogaxis}
+          \end{tikzpicture}
+        \end{minipage}
+        \hfill
+        \begin{minipage}{.49\linewidth}
+          \begin{tikzpicture}[scale=0.6]
+            \begin{axis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Time to Inverse (s)},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$,$Block-hypre-hypre$},xmode=log]
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\ta} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-lu_cg-lu_cg-lu-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\tb} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-lu_cg-lu-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\tc} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\td} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-hypre_cg-hypre-\t_res.txt};
+              \addplot+[color=black,style=solid,very thick] table [x=h,y=Total] {\ta};
+              \addplot+[color=red,style=solid,very thick] table [x=h,y=Total]   {\tb};
+              \addplot+[color=blue,style=solid,very thick] table [x=h,y=Total]  {\tc};
+              \addplot+[color=green,style=solid,very thick] table [x=h,y=Total] {\td};
+            \end{axis}
+          \end{tikzpicture}
+        \end{minipage}
+      \end{center}
+    }
+  }
+}
+\end{document}

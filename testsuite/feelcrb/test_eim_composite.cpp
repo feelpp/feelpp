@@ -180,7 +180,7 @@ public:
 
             using namespace vf;
 
-            std::cout << "avant eim" << std::endl;
+            std::cout << "before eim" << std::endl;
             auto e = eim( _model=eim_no_solve(this->shared_from_this()),
                           _element=u,
                           _space=Xh1,

@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-07-28
 #
 #  Copyright (C) 2010 Universit� de Grenoble 1 (Joseph Fourier)
@@ -61,7 +61,18 @@ find_program( GMSH_EXECUTABLE
   $ENV{GMSH_DIR}/bin
   ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
+  DOC "GMSH mesh generator"
+  NO_DEFAULT_PATH
+  )
+if(NOT GMSH_EXECUTABLE)
+find_program( GMSH_EXECUTABLE
+  NAMES gmsh
+  PATHS
+  $ENV{GMSH_DIR}/bin
+  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
+  PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
+endif()
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
@@ -83,7 +94,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATHS ${GMSH_INCLUDE_PATH}
       DOC "Directory where GMSH header files are stored" )
     if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-      set( FEELPP_HAS_GMSH_H 1 )
+      set( FEELPP_HAS_GMSH_ADAPT_H 1 )
     else ( GMSH_ADAPTMESH_INCLUDE_DIR )
       message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
       message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
@@ -117,13 +128,16 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     endif(GMSH_LIBRARY_PATH)
   endif(NOT GMSH_LIBRARY)
 
-  FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
-    PATH
-    $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    PATH_SUFFIXES
-    lib  )
+  OPTION( FEELPP_ENABLE_GL2PS "Enable the GL2PS library" ON )
+  IF ( FEELPP_ENABLE_GL2PS )
+    FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
+      PATH
+      $ENV{GMSH_DIR}
+      ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
+      ${CMAKE_SYSTEM_PREFIX_PATH}
+      PATH_SUFFIXES
+      lib  )
+  ENDIF( FEELPP_ENABLE_GL2PS )
 
   IF ( FEELPP_ENABLE_OPENGL )
     FIND_LIBRARY(GL_LIBRARY NAMES GL

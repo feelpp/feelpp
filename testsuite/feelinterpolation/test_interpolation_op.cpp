@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -132,7 +132,7 @@ struct test_interpolation_op
     backend_ptrtype backend( backend_type::build( BACKEND_GMM ) );
 #endif
 #else
-    backend_ptrtype backend( backend_type::build( ) );
+    backend_ptrtype backend( backend_type::build( soption( _name="backend" ) ) );
 #endif
     BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n" );
 
@@ -478,3 +478,4 @@ main( int argc, char* argv[] )
   return ret;
 }
 #endif
+

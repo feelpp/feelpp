@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-02-03
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -26,6 +26,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 
 feelpp_add_application( doc_traces SRCS traces.cpp LABELS doc   )
+feelpp_add_application( doc_partitioning SRCS partitioning.cpp LABELS doc   )
 feelpp_add_application( doc_explicit SRCS explicit.cpp LABELS doc   )
 
 
@@ -41,3 +42,7 @@ feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABELS doc NO_MPI
 # Non-conforming domain decomposition methods
 feelpp_add_application( doc_mortar SRCS mortar.cpp LABELS doc  NO_MPI_TEST )
 feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABELS doc NO_MPI_TEST )
+
+if(FEELPP_HAS_HPDDM)
+  feelpp_add_application(doc_geneo SRCS geneo.cpp geneo_coefficients.cpp CFG geneo.cfg LABELS doc)
+endif()

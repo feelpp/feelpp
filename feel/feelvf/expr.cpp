@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-01-05
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file expr.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-01-05
  */
 #include <feel/feelcore/feel.hpp>
@@ -37,5 +37,9 @@ namespace vf
 Expr<LambdaExpr1> _e1;
 Expr<LambdaExpr2> _e2;
 Expr<LambdaExpr3> _e3;
+
+Expr<LambdaExpr1V> _e1v;
+Expr<LambdaExpr2V> _e2v;
+Expr<LambdaExpr3V> _e3v;
 }
 }

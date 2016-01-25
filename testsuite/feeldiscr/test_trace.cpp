@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -218,7 +218,11 @@ main( int argc, char** argv )
                                   _email="abdoulaye.samake@imag.fr") );
     Application app;
 
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 3)
     app.add( new Test<2,3>() );
+#else
+    app.add( new Test<2,1>() );
+#endif
     app.run();
 
 }

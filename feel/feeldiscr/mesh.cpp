@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-12-02
 
   Copyright (C) 2012 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file mesh.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-12-02
  */
 
@@ -130,7 +130,6 @@ po::options_description mesh_options( int Dim, std::string const& prefix )
           "use extrapolation if localisation fails" )
         ( prefixvm( prefix, (boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % Dim).str() ).c_str(), Feel::po::value<int>()->default_value(-1),
           "use extrapolation if localisation fails" )
-
         ;
     return _options;
 }

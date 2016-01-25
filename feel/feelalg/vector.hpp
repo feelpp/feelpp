@@ -21,6 +21,7 @@
 #define __numeric_vector_h__
 
 #include <vector>
+#include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
@@ -79,7 +80,7 @@ public:
              const size_type n_local,
              WorldComm const& _worldComm = Environment::worldComm() );
 
-  Vector ( Vector const& v );
+    Vector ( Vector const& v );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
@@ -165,6 +166,11 @@ public:
     }
 
     /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    virtual int reciprocal();
+
+    /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
@@ -230,6 +236,16 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<T> & operator= ( const std::vector<T> &v );
+
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      * \return the sum of the components of the vector
@@ -339,6 +355,8 @@ public:
      */
     virtual T operator() ( const size_type i ) const = 0;
 
+    virtual T& operator() ( const size_type i ) = 0;
+
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
@@ -355,6 +373,11 @@ public:
      * v(i) = value
      */
     virtual void set ( const size_type i, const value_type& value ) = 0;
+
+    /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    virtual void setVector ( int* i, int n, value_type* v ) = 0;
 
     /**
      * v(i) += value
@@ -542,6 +565,35 @@ public:
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
+    /**
+     * copy vector entries in subvector ( subvector is already built from a createSubVector)
+     * row indices given in the "rows" entries.
+     */
+    virtual
+    void
+    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                     std::vector<size_type> const& rows,
+                     bool init=true )
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+        }
+
+    /**
+     * Creates the subvector "subvector" from the indices in the
+     * "rows" array.  Similar to the create_submatrix routine for
+     * the SparseMatrix class, it is currently only implemented for
+     * PetscVectors.
+     */
+    virtual
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+            boost::shared_ptr<Vector<T> > res;
+            return res;
+        }
+
 protected:
 
     /**
@@ -564,6 +616,7 @@ protected:
 
 typedef Vector<double> vector_type;
 typedef boost::shared_ptr<vector_type> vector_ptrtype;
+typedef std::unique_ptr<vector_type> vector_uptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
 
@@ -655,7 +708,41 @@ struct is_vector_ptr<boost::shared_ptr<VectorType> >
         VectorType>
 {};
 
-}
+template <typename T>
+struct syncOperator
+{
+    typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
+    syncOperator() {}
+    syncOperator( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        M_activeDofClusterUsedByProc( m )
+        {}
+    syncOperator( syncOperator const& obj ) = default;
+
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const = 0;
+    virtual bool hasOperator() const = 0;
+    std::map<size_type, std::set<rank_type> > const& activeDofClusterUsedByProc() const { return M_activeDofClusterUsedByProc; }
+    void setActiveDofClusterUsedByProc( std::map<size_type, std::set<rank_type> > const& m ) { M_activeDofClusterUsedByProc = m; }
+private :
+    std::map<size_type, std::set<rank_type> > M_activeDofClusterUsedByProc;
+
+};
+
+} // namespace detail
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr = "=" );
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+
+template <typename T>
+void
+sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
+
+
 
 } // Feel
 

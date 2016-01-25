@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -27,7 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
-
+#define FEELPP_INSTANTIATE_MATRIXEIGENDENSE 1
 #include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
 #include <feel/feelalg/vectoreigen.hpp>
@@ -155,7 +155,7 @@ MatrixEigenDense<T>::diagonal ( Vector<T>& dest ) const
 #endif
 }
 template<typename T>
-typename MatrixEigenDense<T>::value_type
+typename MatrixEigenDense<T>::real_type
 MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
                              Vector<value_type> const& __u,
                              bool tranpose ) const
@@ -181,9 +181,9 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenDense<value_type>* m = dynamic_cast<MatrixEigenDense<value_type>*>( &_m );
+    MatrixEigenDense<value_type> const* m = dynamic_cast<MatrixEigenDense<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );
     //FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
@@ -233,7 +233,8 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+		std::string varName = "var_" + filename.substr(0,filename.find("."));
+    file_out << varName  << " = [ ";
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
@@ -251,8 +252,8 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 
     file_out << "];" << std::endl;
     //file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2);" << std::endl;
-    file_out << "spy(S);" << std::endl;
+    file_out << "I="<<varName<<"(:,1); J="<<varName<<"(:,2);" << std::endl;
+    file_out << "spy("<<varName<<");" << std::endl;
 }
 
 template<typename T>
@@ -260,7 +261,8 @@ void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
                                Vector<value_type> const& vals,
                                Vector<value_type>& rhs,
-                               Context const& on_context )
+                               Context const& on_context,
+                               value_type value_on_diagonal )
 {
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
@@ -270,9 +272,9 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
-        value_type value = 1.0;
+        value_type value = value_on_diagonal;
 
-        if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
+        if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );
         M_mat.row( rows[i] ).setZero();
 
@@ -297,7 +299,7 @@ MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 
 template <typename T>
 void
-MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 {
     auto eigen_vals = M_mat.eigenvalues();
     for (size_type i=0; i < eigen_vals.size(); ++i )
@@ -350,6 +352,74 @@ MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
 }
 
 
+template<typename T>
+void
+MatrixEigenDense<T>::applyInverseSqrt( Vector<T>& vec_in, Vector<T>& vec_out )
+{
+
+    VectorEigen<T>* _rhs = dynamic_cast<VectorEigen<T>*> ( &vec_in );
+    VectorEigen<T>* res = dynamic_cast<VectorEigen<T>*> ( &vec_out );
+
+
+    std::vector<std::complex<double>> eigen_vals;
+    this->eigenValues(eigen_vals);
+
+    std::sort(eigen_vals.begin(), eigen_vals.end(),
+              [&]( std::complex<double> const& x, std::complex<double> const& y )->bool{
+                  return real(x) < real(y); } );
+
+    double m = real(eigen_vals.front());
+    double M = real(eigen_vals.back());
+
+    double k = (std::pow(M/m,1./4)-1)/(std::pow(M/m,1./4)+1);
+    double L = -std::log(k)/pi;
+
+    double K, Kp;
+    math::ellipkkp(L, K, Kp);
+
+    size_type N = 15;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> AA;
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Amb(N);
+    Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> Am1b(N);
+    std::vector<std::complex<double>> t, sn ,cn, dn;
+
+    for (double dt = 0.5; dt < N; ++dt)
+    {
+        t.push_back(std::complex<double>(0,0.5*Kp) - std::complex<double>(K,0) + std::complex<double>(dt*2*K/N,0));
+    }
+
+    math::ellipjc(t,L,sn,cn,dn);
+
+    for (size_type it = 0; it < N; ++it)
+    {
+        std::complex<double> w = math::pow(m*M,0.25)*((std::complex<double>(1./k,0)+sn[it])/(std::complex<double>(1./k,0)-sn[it]));
+        std::complex<double> dzdt = cn[it]*dn[it]/(std::pow(std::complex<double>(1./k,0)-sn[it],2.));
+
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,Eigen::Dynamic> A = this->M_mat.template cast<std::complex<double>>();
+        AA = A;
+        A *= std::complex<double>(-1.,0);
+
+        for (size_type iti = 0; iti < A.rows(); ++iti)
+        {
+            A(iti,iti) = std::pow(w,2.)-(this->M_mat).operator()(iti,iti);
+        }
+
+        Eigen::Matrix<std::complex<double>,Eigen::Dynamic,1> rhs = _rhs->vec().template cast<std::complex<double>>();
+
+        Am1b = (A.inverse())*rhs;
+        auto fw = std::pow(w,-0.5);
+        Amb += Am1b*dzdt*(std::pow(fw,2.)/w);
+    }
+
+    Amb = -8*K*std::pow(m*M,1./4)*AA*Amb.imag()/(k*pi*N);
+
+    for (size_type it = 0; it < Amb.size(); ++it)
+    {
+        res->set(it, Amb.real().operator()(it));
+    }
+}
+
+
 template <typename T>
 void
 MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
@@ -372,5 +442,6 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 // Explicit instantiations
 //
 template class MatrixEigenDense<double>;
+template class MatrixEigenDense<std::complex<double>>;
 //template class MatrixEigenDense<double,gmm::col_major>;
 }

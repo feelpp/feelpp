@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -360,6 +360,35 @@ WorldComm::operator=( WorldComm const& wc )
         M_isActive = wc.M_isActive;
     }
     return *this;
+}
+
+
+bool
+WorldComm::operator==( WorldComm const& wc ) const
+{
+    if ( this->localSize() != wc.localSize() || this->globalSize() != wc.globalSize() )
+        return false;
+
+    for ( int p = 0 ; p< this->mapColorWorld().size() ; ++p )
+        if ( this->mapColorWorld()[p] != wc.mapColorWorld()[p] )
+            return false;
+
+    for ( int p = 0 ; p< this->mapLocalRankToGlobalRank().size() ; ++p )
+        if ( this->mapLocalRankToGlobalRank()[p] != wc.mapLocalRankToGlobalRank()[p] )
+            return false;
+
+    for ( int p = 0 ; p< this->mapGlobalRankToGodRank().size() ; ++p )
+        if ( this->mapGlobalRankToGodRank()[p] != wc.mapGlobalRankToGodRank()[p] )
+            return false;
+
+    for ( int p = 0 ; p< this->activityOnWorld().size() ; ++p )
+        if ( this->activityOnWorld()[p] != wc.activityOnWorld()[p] )
+            return false;
+
+    if ( this->masterRank() != wc.masterRank() )
+        return false;
+
+    return true;
 }
 
 //-------------------------------------------------------------------------------

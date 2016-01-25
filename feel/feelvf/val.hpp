@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -48,36 +48,36 @@
 
 
 #if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,mp_type>::value || \
-                          ::boost::is_same<value_1_type,dd_real>::value || \
-                          ::boost::is_same<value_1_type,qd_real>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,mp_type>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
+   /**/
 #elif defined( FEELPP_HAS_QD_H )
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,dd_real>::value || \
-                          ::boost::is_same<value_1_type,qd_real>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
+                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
+   /**/
 #elif defined( FEELPP_HAS_MPFR )
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value || \
-                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                          ::boost::is_same<value_1_type, std::complex<double> >::value || \
-                          ::boost::is_same<value_1_type,mp_type>::value) ); \
-    /**/
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
+                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
+                         ::boost::is_same<VALUE_TYPE,mp_type>::value) ); \
+   /**/
 #else
-# define VF_CHECK_ARITHMETIC_TYPE()                                     \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<value_1_type>::value || \
-                           ::boost::is_same<value_1_type, std::complex<float> >::value || \
-                           ::boost::is_same<value_1_type, std::complex<double> >::value ) \
+# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
+    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value || \
+                           ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
+                           ::boost::is_same<VALUE_TYPE, std::complex<double> >::value ) \
                          );                                             \
-    /**/
+   /**/
 #endif
 
 namespace Feel
@@ -109,6 +109,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT1::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
+    using test_basis = typename ExprT1::test_basis;
+    using trial_basis = typename ExprT1::trial_basis;
 
     typedef UnaryFunctor<typename ExprT1::value_type> super;
     typedef typename super::functordomain_type functordomain_type;
@@ -119,7 +125,7 @@ public:
     typedef value_1_type value_type;
     typedef value_type evaluate_type;
 
-    VF_CHECK_ARITHMETIC_TYPE()
+    VF_CHECK_ARITHMETIC_TYPE(value_1_type)
 
     explicit Val( expression_1_type const& __expr1  )
         :
@@ -160,9 +166,7 @@ public:
         //typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type;
         typedef typename expression_1_type::template tensor<Geo_t> tensor2_expr_type;
         typedef typename tensor2_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename tensor2_expr_type::shape shape;

@@ -1,0 +1,110 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+#PortGroup           cmake 1.0
+
+fetch.type          svn
+fetch.user          gmsh
+fetch.password      gmsh
+svn.url             https://geuz.org/svn/gmsh/trunk
+svn.revision        19319
+svn.method          export
+svn.post_args       --username ${fetch.user} --password ${fetch.password}
+
+name                gmsh-devel
+version             2.9.0-svn-${svn.revision}
+categories          science
+platforms           darwin
+maintainers         feelpp.org:christophe.prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+worksrcdir          trunk
+conflicts           gmsh
+
+patchfiles     gmsh-devel.patch  \
+    gmsh-devel-petsc.patch
+patch.dir      ${worksrcpath}
+# https://trac.macports.org/ticket/33925
+compiler.blacklist  clang
+configure.compiler macports-gcc-4.8
+
+worksrcdir	build
+configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
+
+#configure.pre_args
+configure.args-append \
+    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
+    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
+    -DCMAKE_INSTALL_PREFIX=${prefix}\
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_COLOR_MAKEFILE=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF\
+    -DENABLE_BUILD_LIB=OFF\
+    -DENABLE_BUILD_SHARED=ON\
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
+    -DENABLE_OCC:BOOL=OFF \
+    -DENABLE_FLTK:BOOL=ON\
+    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_METIS=ON \
+    -DENABLE_TAUCS=OFF \
+    -DSEARCH_ANN_IN_SYSTEM=OFF
+
+build.target all shared
+
+depends_lib  \
+    port:mesa \
+    port:cmake \
+    port:libpng \
+    port:python27 \
+    path:lib/libpoppler.dylib:poppler \
+    port:swig \
+    port:swig-python \
+    path:lib/libfltk.dylib:fltk \
+    port:jpeg \
+    port:zlib \
+    port:texinfo
+
+
+default_variants +atlas +slepc
+
+variant atlas description {Use Atlas for BLAS-LAPACK} {
+    depends_lib-append port:atlas
+    configure.args-append \
+        -DBLAS_LAPACK_LIBRARIES=${prefix}/lib/libtatlas.dylib
+}
+
+
+variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append      port:petsc
+    depends_lib-append      port:slepc
+    configure.args-append \
+        -DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
+        -DENABLE_MPI=ON \
+        -DENABLE_PETSC=ON \
+        -DPETSC_INC=${prefix}/lib/petsc/include \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.dylib \
+        -DENABLE_SLEPC=ON \
+        -DSLEPC_INC=${prefix}/lib/slepc/include \
+        -DSLEPC_LIB=${prefix}/lib/slepc/lib/libslepc.dylib
+}
+
+
+if {![variant_isset slepc] } {
+    configure.args-append \
+        -DENABLE_MPI=OFF \
+        -DENABLE_PETSC=OFF \
+        -DENABLE_SLEPC=OFF
+}
+

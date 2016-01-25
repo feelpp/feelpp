@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -26,9 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
+#define FEELPP_INSTANTIATE_MATRIXEIGENSPARSE
 #include <boost/unordered_map.hpp>
 
 #include <feel/feelalg/matrixeigensparse.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
 
 namespace Feel
 {
@@ -139,7 +141,8 @@ MatrixEigenSparse<T>::close() const
     {
         LOG(INFO) << "Closing matrix";
         M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
-        M_tripletList.clear();
+        M_mat.makeCompressed();
+        std::vector<triplet>().swap(M_tripletList);
         M_is_closed = true;
     }
 }
@@ -148,7 +151,11 @@ template<typename T>
 void
 MatrixEigenSparse<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) const
 {
-    FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
+    if(M_is_closed) {
+        MatrixEigenSparse<T>* Atrans = dynamic_cast<MatrixEigenSparse<T>*>(&Mt);
+        Atrans->M_mat = M_mat.transpose().eval();
+        Atrans->M_is_closed = Atrans->M_is_initialized = true;
+    }
 }
 
 
@@ -188,9 +195,9 @@ MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenSparse<value_type>* m = dynamic_cast<MatrixEigenSparse<value_type>*>( &_m );
+    MatrixEigenSparse<value_type> const* m = dynamic_cast<MatrixEigenSparse<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenSparse" );
     FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
@@ -216,40 +223,92 @@ void
 MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
                                 Vector<value_type> const& vals,
                                 Vector<value_type>& rhs,
-                                Context const& on_context )
+                                Context const& on_context,
+                                value_type value_on_diagonal )
 {
     LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << M_mat.IsRowMajor;
-    Feel::detail::ignore_unused_variable_warning( rhs );
-    Feel::detail::ignore_unused_variable_warning( vals );
-    boost::unordered_map<int,std::set<int>> m;
-    for (int k=0; k<rows.size(); ++k)
-    {
-        for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
-        {
-            m[it.row()].insert(it.col());
-            double value = 1.0;
-            if ( on_context.test( OnContext::ELIMINATION_KEEP_DIAGONAL ) )
-                value = it.value();
-            rhs.add( it.row(), -it.value() * vals(rows[k]) );
-            it.valueRef() = 0;
+    //std::cout << "M_mat \n " << M_mat << "\n";
+    //VectorEigen<value_type>* erhs = dynamic_cast<VectorEigen<value_type>*> ( &rhs );
+    //std::cout << "vec \n " << erhs->vec() << "\n";
 
-            if ( it.row() == it.col() )
+    if ( !on_context.test( ContextOn::ELIMINATION) )
+        return;
+
+    if ( !M_mat.IsRowMajor )
+    {
+        std::set<int> eliminatedRow;
+        for (int k=0; k<rows.size(); ++k)
+        {
+            eliminatedRow.insert( rows[k] );
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
             {
-                it.valueRef() = value;
-                rhs.set( it.row(), value * vals(rows[k]) );
+                value_type value = value_on_diagonal;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
+
+                if ( on_context.test( ContextOn::SYMMETRIC ) )
+                    if ( eliminatedRow.find( it.row() ) == eliminatedRow.end() )
+                        rhs.add( it.row(), -it.value() * vals(rows[k]) );
+
+                if ( it.row() == it.col() )
+                {
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else if ( on_context.test( ContextOn::SYMMETRIC ) )
+                {
+                    it.valueRef() = 0;
+                }
+
             }
         }
-    }
-    for(auto rit = m.begin();rit != m.end();++rit )
-    {
-        for (typename matrix_type::InnerIterator it(M_mat,rit->first); it; ++it)
+        // eliminated row
+#if 1
+        M_mat.prune([&eliminatedRow](int i, int j, value_type) {
+                return (i==j || eliminatedRow.find(i) == eliminatedRow.end() );
+            });
+#else
+        typedef int Index;
+        for(Index j=0; j< M_mat.outerSize(); ++j)
         {
-            double value = 1.0;
-            if( rit->second.find( it.row() ) != rit->second.end() )
+            Index previousStart = M_mat.outerIndexPtr()[j];
+            Index end = M_mat.outerIndexPtr()[j+1];
+            for(Index i=previousStart; i<end; ++i)
             {
-                // don't change diagonal, it was done in the first pass
-                if ( it.row() != it.col() )
+                if ( M_mat.data().index(i)!=j )
+                {
+                    if ( eliminatedRow.find(/*j*/M_mat.data().index(i)) != eliminatedRow.end() )
+                    {
+                        double theval=0.0;
+                        M_mat.coeffRef(M_mat.data().index(i),j ) = theval;
+                        M_mat.data().value(i) = theval;
+                    }
+                }
+            }
+        }
+#endif
+    }
+    else // rowMajor
+    {
+        CHECK( !on_context.test( ContextOn::SYMMETRIC ) ) << "symetric case not supported with row major\n";
+
+        for (int k=0; k<rows.size(); ++k)
+        {
+            for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
+            {
+                value_type value = value_on_diagonal;
+                if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
+                    value = it.value();
+
+                if ( it.row() == it.col() )
+                {
+                    it.valueRef() = value;
+                    rhs.set( it.row(), value * vals(rows[k]) );
+                }
+                else
+                {
                     it.valueRef() = 0;
+                }
             }
         }
     }
@@ -282,7 +341,8 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
 
     FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
-    file_out << "S = [ ";
+		std::string varName = "var_" + filename.substr(0,filename.find("."));
+    file_out << varName << " = [ ";
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
@@ -299,14 +359,30 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     }
 
     file_out << "];" << std::endl;
-    file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "spy(S);" << std::endl;
+    file_out << "I="<<varName<<"(:,1); J="<<varName<<"(:,2); "<<varName<<"="<<varName<<"(:,3);" << std::endl;
+    file_out << "spy("<<varName<<");" << std::endl;
 }
 
-
+#if 0
+template <typename T>
+inline
+void MatrixEigenSparse<T>::getMatInfo(std::vector<double> &vec)
+{
+    /* block size        */ vec.push_back(-1);
+    /* nz allocated      */ vec.push_back(M_mat->nonZeros()); 
+    /* nz uzed           */ vec.push_back(M_mat->nonZeros());
+    /* nz unneeded       */ vec.push_back(-1);
+    /* memory            */ vec.push_back(-1);
+    /* assemblies        */ vec.push_back(-1);
+    /* mallocs           */ vec.push_back(-1);
+    /* fill ratio given  */ vec.push_back(-1);
+    /* fill ratio needed */ vec.push_back(-1);
+    /* factor mallocs    */ vec.push_back(-1);
+}
+#endif 
 //
 // Explicit instantiations
 //
 template class MatrixEigenSparse<double>;
-//template class MatrixEigenSparse<double,gmm::col_major>;
+template class MatrixEigenSparse<std::complex<double>>;
 }

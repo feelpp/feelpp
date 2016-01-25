@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -144,7 +144,12 @@ struct f_matheval
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
-    typedef Simplex<Dim, Order> convex_type;
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, Order )
+    static const uint16_type geoOrder = Order;
+#else
+    static const uint16_type geoOrder = FEELPP_MESH_MAX_ORDER;
+#endif
+    typedef Simplex<Dim, geoOrder> convex_type;
     typedef Mesh<convex_type, T > type;
     typedef boost::shared_ptr<type> ptrtype;
 };
@@ -191,7 +196,7 @@ struct test_integration_circle: public Application
     test_integration_circle()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "ellipsoid" ),
         mesh()
@@ -202,7 +207,7 @@ struct test_integration_circle: public Application
                                              _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
                                              _shape=shape,
                                              _dim=2,
-                                             _order=4,
+                                             _order=mesh_type::nOrder,
                                              _xmin=-1.,_ymin=-1.,
                                              _h=meshSize ),
                                _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
@@ -248,7 +253,7 @@ struct test_integration_circle: public Application
         BOOST_CHECK_CLOSE( v0y, pi, 2e-1 );
         BOOST_CHECK_CLOSE( v0z, pi, 2e-1 );
         BOOST_CHECK_CLOSE( v0, v00, eps  );
-        BOOST_CHECK_CLOSE( v00, pi, eps  );
+        BOOST_CHECK_CLOSE( v00, pi, 5e-4  );
 #else
         FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
         FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) )( eps ).warn ( "v0 != pi" );
@@ -327,7 +332,7 @@ struct test_integration_simplex: public Application
     test_integration_simplex()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "simplex" ),
         mesh()
@@ -477,7 +482,7 @@ struct test_integration_domain: public Application
     test_integration_domain()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -601,7 +606,7 @@ struct test_integration_boundary: public Application
     test_integration_boundary()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -689,20 +694,21 @@ struct test_integration_functions: public Application
     test_integration_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
     {
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % 2 ).str() ,
+                               _desc=domain( _name=( boost::format( "test_integration_functions_%1%-%2%-%3%" ) % shape % 2 % convex_type::type() ).str() ,
                                              _usenames=true,
-                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _convex=convex_type::type(),
                                              _shape=shape,
                                              _dim=2,
+                                             _order=convex_type::nOrder,
                                              _xmin=-1.,_ymin=-1.,
-                                             _h=meshSize ),
-                               _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+                                             _h=meshSize ) );
+                               
     }
     void operator()()
     {
@@ -840,7 +846,7 @@ struct test_integration_vectorial_functions: public Application
     test_integration_vectorial_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -1010,7 +1016,7 @@ struct test_integration_composite_functions: public Application
     test_integration_composite_functions()
         :
         Application(),
-        M_backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( soption( _name="backend" ) ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #define FEELPP_SAVEGMSHMESH_HPP 1
 
 #include <feel/feelfilters/exportergmsh.hpp>
+#include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelfilters/detail/meshfromgeoentity.hpp>
 
 namespace Feel {

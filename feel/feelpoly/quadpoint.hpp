@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -8,6 +8,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2010 Universite Joseph Fourier
+  Copyright (C) 2011-2016 Feel++ Consortium 
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,18 +54,22 @@ enum IntegrationFaceEnum
     FACE_8
 };
 
+const uint16_type DynamicDegree = invalid_uint16_type_value;
 /**
- * \class PointSetQuadrature
- * \brief Quadrature point set base class
+ * @brief Quadrature point set base class
  *
  *
- * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * @author Gilles Steiner <gilles.steiner@epfl.ch>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<class Convex, uint16_type Integration_Degree, typename T>
 class PointSetQuadrature : public PointSet<Convex,T>
 {
 public :
+
+    // true if Integration Degree is known at compile time, false otherwise
+    static constexpr bool IntegrationDegreeAtCompileTime = Integration_Degree!=DynamicDegree;
+
     static const bool is_face_im = false;
     typedef T value_type;
     typedef PointSet<Convex,value_type> super;
@@ -77,18 +82,10 @@ public :
     typedef PointSetQuadrature<Convex, Integration_Degree, T> self_type;
 
     typedef self_type parent_quadrature_type;
-    static const uint16_type I_deg = Integration_Degree;
 
     PointSetQuadrature(): super(), M_w(), M_prod(), M_exprq() {}
 
-    PointSetQuadrature( const PointSetQuadrature& Qp )
-        : super( Qp ),
-          M_w( Qp.weights() ),
-          M_w_face( Qp.allfweights() ),
-          M_n_face( Qp.allfpoints() ),
-          M_prod( Qp.nPoints() ),
-          M_exprq( Qp.nPoints() )
-    {}
+    PointSetQuadrature( const PointSetQuadrature& Qp ) = default;
 
     PointSetQuadrature( uint32_type Npoints )
         : super( Npoints ), M_w( Npoints ), M_prod( Npoints ), M_exprq( Npoints )
@@ -103,28 +100,14 @@ public :
     {}
 
 
-    virtual ~PointSetQuadrature()
-    {}
+    virtual ~PointSetQuadrature() = default;
 
     virtual bool isFaceIm() const
     {
         return is_face_im;
     }
 
-    self_type& operator=( self_type const& q )
-    {
-        if ( this != &q )
-        {
-            super::operator=( q );
-            M_w = q.M_w;
-            M_w_face = q.M_w_face;
-            M_n_face = q.M_n_face;
-            M_prod = q.M_prod;
-            M_exprq = q.M_exprq;
-        }
-
-        return *this;
-    }
+    self_type& operator=( self_type const& q ) = default;
 
     /** Face Quadrature Discussion **/
 
@@ -161,7 +144,7 @@ public :
         DCHECK( M_n_face[__f].find(__p) != M_n_face[__f].end() ) << "invalid permutation :" << __p << "\n";
         return M_n_face[__f].find(__p)->second;
     }
-
+    
 
     /**
      * \return quadrature weight of the q-th node of face f
@@ -451,7 +434,11 @@ public :
                 Integration_Degree,
                 T> super;
     public:
-        typedef super parent_quadrature_type;
+        using parent_quadrature_type = super;
+
+        // true if Integration Degree is known at compile time, false otherwise
+        static constexpr bool IntegrationDegreeAtCompileTime = Integration_Degree!=DynamicDegree;
+
         static const bool is_face_im = true;
         Face()
             :
@@ -553,12 +540,55 @@ protected:
                             boost::shared_ptr<IM> const& __qr_face,
                             mpl::bool_<true> );
 
+    template<typename Elem, typename GM, typename IM>
+    void constructQROnEdge( Elem const& ref_convex,
+                            boost::shared_ptr<GM> const& __gm,
+                            boost::shared_ptr<IM> const& __qr_edge )
+    {
+        constructQROnEdge( ref_convex, __gm, __qr_edge, mpl::bool_<( Convex::nDim == 3 )>() );
+    }
+
+    template<typename Elem, typename GM, typename IM>
+    void constructQROnEdge( Elem const& /*ref_convex*/,
+                            boost::shared_ptr<GM> const& /*__gm*/,
+                            boost::shared_ptr<IM> const& /*__qr_edge*/,
+                            mpl::bool_<false> )
+    {
+
+        typedef typename Elem::permutation_type permutation_type;
+        DCHECK(permutation_type::N_PERMUTATIONS==2) << " number of permutation must be equal to 2 here\n";
+        BOOST_STATIC_ASSERT( Elem::nDim == 1 );
+
+        M_n_edge.resize( Elem::numEdges );
+        M_w_edge.resize( Elem::numEdges );
+
+        M_n_edge[0][permutation_type::IDENTITY].resize( Elem::nDim, 1 );
+        M_w_edge[0][permutation_type::IDENTITY].resize( 1 );
+        M_n_edge[0][permutation_type::IDENTITY]( 0, 0 ) = -1;
+        M_w_edge[0][permutation_type::IDENTITY]( 0 ) = 1;
+
+        M_n_edge[1][permutation_type::IDENTITY].resize( Elem::nDim, 1 );
+        M_w_edge[1][permutation_type::IDENTITY].resize( 1 );
+        M_n_edge[1][permutation_type::IDENTITY]( 0, 0 ) = 1;
+        M_w_edge[1][permutation_type::IDENTITY]( 0 ) = 1;
+
+    }
+
+    template<typename Elem, typename GM, typename IM>
+    void constructQROnEdge( Elem const& ref_convex,
+                            boost::shared_ptr<GM> const& __gm,
+                            boost::shared_ptr<IM> const& __qr_edge,
+                            mpl::bool_<true> );
+
 protected:
 
     weights_type M_w;
 
     std::vector<std::map<uint16_type,weights_type> > M_w_face;
     std::vector<std::map<uint16_type,nodes_type > > M_n_face;
+
+    std::vector<std::map<uint16_type,weights_type> > M_w_edge;
+    std::vector<std::map<uint16_type,nodes_type > > M_n_edge;
 
     vector_type M_prod;
     mutable vector_type M_exprq;
@@ -627,6 +657,73 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
                     DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << M_w_face[ __f][__p.value()]( __ip ) << "\n";
                     //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
                     //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
+                }
+
+                DVLOG(2) << "length = " << __len << "\n";
+            }
+    }
+}
+
+
+template<class Convex, uint16_type Integration_Degree, typename T>
+template<typename Elem, typename GM, typename IM>
+void
+PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnEdge( Elem const& ref_convex,
+                                                                    boost::shared_ptr<GM> const& __gm,
+                                                                    boost::shared_ptr<IM> const& __qr_edge,
+                                                                    mpl::bool_<true>  )
+{
+    M_n_edge.resize( Elem::numEdges );
+    M_w_edge.resize( Elem::numEdges );
+
+    using permutation_type = typename Elem::edge_permutation_type;
+    using edge_pc_type =  typename GM::edge_gm_type::precompute_type;
+    using edge_pc_ptrtype =  typename GM::edge_gm_type::precompute_ptrtype;
+
+    edge_pc_ptrtype __geopc = boost::make_shared<edge_pc_type>( __gm->edgeMap(),__qr_edge->points() );
+
+    for ( uint16_type __f = 0; __f < Elem::numEdges; ++__f )
+    {
+        for ( permutation_type __p( permutation_type::IDENTITY );
+              __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                using element_type =  typename Elem::edge_type;
+                
+                // get ref convex of edge with a permutation given
+                element_type ref_convex_edge = ref_convex.edge( __f, __p.value() );
+                DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << "=" << ref_convex_edge.points() << "\n";
+                //toPython( ref_convex_edge );
+
+                auto ctx = __gm->context<(vm::JACOBIAN|vm::POINT|vm::KB)>( __gm->edgeMap(), ref_convex_edge, __geopc );
+                ctx.update( ref_convex_edge );
+                DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xref" << ctx.xRefs() << "\n";
+                DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xreal" << ctx.xReal() << "\n";
+
+                value_type __len = 0.0;
+                M_n_edge[__f][__p.value()].resize( Elem::nDim, __qr_edge->nPoints() );
+                M_w_edge[__f][__p.value()].resize( __qr_edge->nPoints() );
+
+                DVLOG(2) << "[PointSetQuadrature::constructQROnEdge] npoints on edge "
+                         << __f << " : "
+                         << __qr_edge->nPoints() << "\n";
+                // transform the quad nodes on the boundary _reference_
+                // element to the edge of the reference element edge
+
+                for ( uint16_type __ip = 0; __ip < __qr_edge->nPoints(); ++__ip )
+                {
+                    ublas::column( M_n_edge[__f][__p.value()], __ip ) = ctx.xReal( __ip );
+
+                    // w = w_edge * ||B*n|| * J
+                    M_w_edge[ __f][__p.value()]( __ip ) = __qr_edge->weight( __ip )*ctx.J( __ip );
+
+                    __len += M_w_edge[ __f][__p.value()]( __ip );
+
+
+                    DVLOG(2) << "edge " << __f << " ip = " << __ip << "       J =" << ctx.J( __ip ) << "\n";
+                    DVLOG(2) << "edge " << __f << " ip = " << __ip << "  weight =" << __qr_edge->weight( __ip ) << "\n";
+                    DVLOG(2) << "edge " << __f << " ip = " << __ip << "  weight =" << M_w_edge[ __f][__p.value()]( __ip ) << "\n";
+                    //            DVLOG(2) << "edge " << __f << " ip = " << __ip << "  x  ref =" << ctx.xRef( __ip ) << "\n";
+                    //            DVLOG(2) << "edge " << __f << " ip = " << __ip << "  x real =" << ctx.xReal( __ip ) << "\n";
                 }
 
                 DVLOG(2) << "length = " << __len << "\n";

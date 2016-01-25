@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -6,6 +6,7 @@
    Date: 2014-09-04
 
    Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
+   Copyright (C) 2011-2016 Feel++ Consortium
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -154,13 +155,18 @@ void run( bool useSMD )
         std::cout << "energyFacesStandart " << energyFacesStandart << " [2.4]\n";
 
     //-----------------------------------------------------------//
-
     auto rFacesNonStandartA = stencilRange<0,0>( boundaryfaces(mesh2) );
+#if 0
     //auto rFacesNonStandartAA = stencilRange<0,0>( markedfaces(mesh1,"cylinder") ); // Bug with this!!
     auto rFacesNonStandartAA = stencilRange<0,0>(markedelements(mesh1,"LocInterior"));
     auto graphFacesNonStandartA = ( ctxRelationLoc )?
         stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
         stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartAA) )->graph() ;
+#else
+    auto graphFacesNonStandartA = ( ctxRelationLoc )?
+        stencil(_test=Xh1,_trial=Xh2,_range=stencilRangeMap(rFacesNonStandartA) )->graph() :
+        stencil(_test=Xh2,_trial=Xh1,_range=stencilRangeMap(rFacesNonStandartA) )->graph()->transpose();
+#endif
     auto matFacesNonStandartA = backend()->newMatrix(0,0,0,0,graphFacesNonStandartA);
     auto bfFacesNonStandartA = form2(_test=Xh1,_trial=Xh2,_matrix=matFacesNonStandartA);
     bfFacesNonStandartA = integrate(_range=boundaryfaces(mesh2),

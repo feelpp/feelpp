@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -242,7 +242,8 @@ VectorEigen<T>::printMatlab( const std::string filename, bool renumber  ) const
 
         FEELPP_ASSERT( file_out )( filename ).error( "[VectorEigen::printMatlab] ERROR: File cannot be opened for writing." );
 
-        file_out << "F = [ ";
+				std::string varName = "var_" + filename.substr(0,filename.find("."));
+        file_out << varName <<" = [ ";
         file_out.precision( 16 );
         file_out.setf( std::ios::scientific );
 
@@ -378,8 +379,7 @@ VectorEigen<T>::localize ( vector_type& v_local ) const
             v_local_in[i+this->firstLocalIndex()] = M_vec.operator[]( i );
         }
 
-        MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
-                        MPI_DOUBLE, MPI_SUM, this->comm() );
+        boost::mpi::all_reduce(this->comm(), &v_local_in[0], v_local.size(), &v_local[0], std::plus<value_type>());
         DVLOG(2) << "[VectorEigen::localize] Allreduce size = " << v_local.size() << "\n";
 
     }
@@ -419,8 +419,7 @@ VectorEigen<T>::localizeToOneProcessor ( vector_type& v_local,
 
     if ( this->comm().size() > 1 )
     {
-        MPI_Reduce ( &v_tmp[0], &v_local[0], v_local.size(),
-                     MPI_DOUBLE, MPI_SUM, pid, this->comm() );
+        boost::mpi::reduce(this->comm(), &v_tmp[0], v_local.size(), &v_local[0], std::plus<value_type>(), pid);
     }
 
     else
@@ -510,8 +509,7 @@ VectorEigen<T>::pow( int n ) const
 {
     this_type _out( this->mapPtr() );
 
-    for ( int i = 0; i < ( int )this->localSize(); ++i )
-        _out[i] = math::pow( this->operator[]( i ), n );
+    _out.M_vec = M_vec.array().pow(n);
 
     return _out;
 }
@@ -541,4 +539,5 @@ void VectorEigen<T>::addVector ( const Vector<value_type>& V_in,
 // instantiation
 //
 template class VectorEigen<double>;
+template class VectorEigen<std::complex<double>>;
 } // Feel

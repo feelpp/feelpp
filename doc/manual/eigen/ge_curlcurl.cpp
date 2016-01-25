@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -49,7 +49,7 @@ EigenProblem<Dim, Order>::run()
                                    % this->about().appName()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = loadMesh(_mesh = new mesh_type );
 
@@ -61,7 +61,7 @@ EigenProblem<Dim, Order>::run()
     //a = integrate( _range=elements( mesh ), _expr=trans(curlt(u))*curl(v));
     a = integrate( _range=elements( mesh ), _expr=trace(trans(gradt(u))*grad(v)));
 
-    auto gamma = option(_name="parameters.gamma").template as<double>();
+    auto gamma = doption(_name="parameters.gamma");
     a += integrate( boundaryfaces(mesh), gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
     //a += on( _range=boundaryfaces(mesh), _element=u, _rhs=
 
@@ -71,8 +71,8 @@ EigenProblem<Dim, Order>::run()
 
     if ( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "number of eigenvalues computed= " << option(_name="solvereigen.nev").template as<int>() <<std::endl;
-        std::cout << "number of eigenvalues for convergence= " << option(_name="solvereigen.ncv").template as<int>() <<std::endl;
+        std::cout << "number of eigenvalues computed= " << ioption(_name="solvereigen.nev") <<std::endl;
+        std::cout << "number of eigenvalues for convergence= " << ioption(_name="solvereigen.ncv") <<std::endl;
     }
 
     auto modes= veigs( _formA=a, _formB=b );

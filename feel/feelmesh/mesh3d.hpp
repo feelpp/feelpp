@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -672,7 +672,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     ++next_edge;
 
                 // reset the process id (edge not connected to an active elt take this value)
-                edg.setProcessId( invalid_uint16_type_value );
+                edg.setProcessId( invalid_rank_type_value );
 
                 if ( edgeinserted )
                 {
@@ -724,7 +724,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
 
             // reset the process id (edge not connected to an active elt take this value)
-            edg.setProcessId( invalid_uint16_type_value );
+            edg.setProcessId( invalid_rank_type_value );
 
             if ( edgeinserted )
             {
@@ -751,8 +751,12 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
             else
             {
-                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-                    this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
+                auto eit =  this->edgeIterator( _edgeit->second );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) || eit->marker().isOn() )
+                {
+                    //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
+                    this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
+                }
             }
 
             // set the process id from element (only active element)

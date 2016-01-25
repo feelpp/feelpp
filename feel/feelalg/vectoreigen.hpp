@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,6 +29,7 @@
 #ifndef __VectorEigen_H
 #define __VectorEigen_H 1
 
+#include <boost/serialization/complex.hpp>
 #include <set>
 #include <boost/operators.hpp>
 #include <Eigen/Core>
@@ -359,6 +360,7 @@ public:
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
     {
         //eigen::project( (*this), eigen::range( start1, stop1 ) ) = eigen::zero_vector<value_type>( stop1 );
+        this->zero();
     }
 
     /**
@@ -386,6 +388,15 @@ public:
     {
         checkInvariant();
         M_vec( i ) = value;
+    }
+
+    /**
+     * v([i1,i2,...,in]) = [value1,...,valuen]
+     */
+    void setVector ( int* i, int n, value_type* v )
+    {
+        for ( int j = 0; j < n; ++j )
+            M_vec( i[j] ) = v[j];
     }
 
     /**
@@ -809,6 +820,7 @@ element_product( boost::shared_ptr<VectorEigen<T> > const& v1,
  */
 #if !defined( FEELPP_INSTANTIATE_VECTOREIGEN )
 extern template class VectorEigen<double>;
+extern template class VectorEigen<std::complex<double>>;
 #endif
 
 } // Feel

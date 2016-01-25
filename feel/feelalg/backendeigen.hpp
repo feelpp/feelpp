@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -31,6 +31,7 @@
 #ifndef _BACKENDEIGEN_HPP_
 #define _BACKENDEIGEN_HPP_
 
+#include <boost/make_shared.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
 #undef MatType
@@ -102,7 +103,7 @@ public:
     sparse_matrix_ptrtype
     newMatrix()
     {
-        auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type(0,0,this->comm()) );
+        auto A= boost::make_shared<eigen_sparse_matrix_type>(0,0,this->comm());
         return A;
     }
     template<typename DomainSpace, typename DualImageSpace>
@@ -115,7 +116,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), space1->map()->worldComm() ) );
+            auto A= boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -209,12 +210,15 @@ public:
     // -- LINEAR ALGEBRA INTERFACE --
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b ) const
+               vector_type& b, bool transpose ) const
     {
         eigen_sparse_matrix_type const& _A = dynamic_cast<eigen_sparse_matrix_type const&>( A );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
         eigen_vector_type& _b = dynamic_cast<eigen_vector_type&>( b );
-        _b.vec() = _A.mat()*_x.vec();
+        if(!transpose)
+            _b.vec() = _A.mat()*_x.vec();
+        else
+            _b.vec() = _A.mat().adjoint()*_x.vec();
     }
 
     solve_return_type solve( sparse_matrix_type const& A,
@@ -240,7 +244,7 @@ public:
     }
 
 
-    real_type dot( const vector_type& f,
+    value_type dot( const vector_type& f,
                    const vector_type& x ) const
     {
         eigen_vector_type const& _f = dynamic_cast<eigen_vector_type const&>( f );
@@ -265,13 +269,23 @@ template<typename T, int _Options>
 BackendEigen<T,_Options>::BackendEigen( WorldComm const& _worldComm )
     :
     super(_worldComm)
-{}
+{
+    if ( IsSparse )
+        this->M_backend = BackendType::BACKEND_EIGEN;
+    else
+        this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
+}
 
 template<typename T, int _Options>
 BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const& _worldComm  )
     :
     super( vm, prefix, _worldComm )
 {
+    if ( IsSparse )
+        this->M_backend = BackendType::BACKEND_EIGEN;
+    else
+        this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
+
     std::string _prefix = prefix;
 
     if ( !_prefix.empty() )
@@ -311,9 +325,21 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
 
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
-    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
-    solver.compute(A.mat());
-    x.vec() = solver.solve(b.vec());
+    if ( false )
+    {
+#if 0
+        // not compile with sparse matrix and row major
+        Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+#endif
+    }
+    else
+    {
+        Eigen::SparseLU<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+    }
 
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed

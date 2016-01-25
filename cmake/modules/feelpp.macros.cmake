@@ -15,12 +15,43 @@ macro(feelpp_list_subdirs result curdir)
   SET(${result} ${dirlist})
 endmacro(feelpp_list_subdirs)
 
+macro(feelpp_add_testcase )
+  PARSE_ARGUMENTS(FEELPP_CASE
+    "NAME;PREFIX;DEPS"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_CASE_NAME ${FEELPP_CASE_DEFAULT_ARGS})
+  if ( FEELPP_CASE_PREFIX )
+    set( target ${FEELPP_CASE_PREFIX}_add_testcase_${FEELPP_CASE_NAME})
+  else()
+    set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
+  endif()
+  add_custom_target(${target})
+  if ( FEELPP_CASE_DEPS )
+    foreach(case ${FEELPP_CASE_DEPS})
+      add_dependencies(${target} ${FEELPP_CASE_PREFIX}_add_testcase_${case})
+    endforeach()
+  endif()
+  ADD_CUSTOM_COMMAND(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND rsync
+    ARGS -av
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+  #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
+  #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endmacro(feelpp_add_testcase)
+
+
 # add a new application
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -55,7 +86,11 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_DEFS )
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
-  target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  if ( FEELPP_APP_NO_FEELPP_LIBRARY )
+    target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  else()
+    target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif()
 
   if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
@@ -86,10 +121,10 @@ macro(feelpp_add_application)
   else()
     if ( NOT FEELPP_APP_NO_TEST )
       IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
       IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT 30)
+        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
   endif()
@@ -119,9 +154,12 @@ macro(feelpp_add_application)
     foreach(  cfg ${FEELPP_APP_CFG} )
       #      if ( EXISTS ${cfg} )
       # extract cfg filename  to be copied in binary dir
-      get_filename_component( CFG_NAME ${cfg} NAME )
-      configure_file( ${cfg} ${CFG_NAME} )
-      INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
+      #get_filename_component( CFG_NAME ${cfg} NAME )
+      #configure_file( ${cfg} ${CFG_NAME} )
+      
+      file(COPY ${cfg} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+      
+      #INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
       #      else()
       #        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
       #      endif()
@@ -177,7 +215,8 @@ macro(OVERWITE_IF_DIFFERENT thetarget filename var dummy)
   if ( NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${filename} )
     # be careful if file does not exist we use dummy to generate the cpp file which will
     # then be overwritten using the cmake -E copy_if_different command
-    configure_file(${dummy}  ${CMAKE_CURRENT_BINARY_DIR}/${filename})
+    #configure_file(${dummy}  ${CMAKE_CURRENT_BINARY_DIR}/${filename})
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${filename} ${var} )
   endif()
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/copy_${filename} ${var})
   add_custom_command(TARGET ${thetarget} COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -187,18 +226,34 @@ endmacro()
 
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
-    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT;CLI"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
+  
+  
+
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
-  if ( NOT FEELPP_TEST_SRCS )
-    set(targetname test_${FEELPP_TEST_NAME})
-    set(filename test_${FEELPP_TEST_NAME}.cpp)
+  set(targetname feelpp_test_${FEELPP_TEST_NAME})
 
-    add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
+  if ( NOT FEELPP_TEST_SRCS )
+    set(filename test_${FEELPP_TEST_NAME}.cpp)
+    if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+    else()
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+    endif()
+    #add_executable(${targetname} ${filename})
+  else()
+     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+     else()
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+     endif()
+    #add_executable(${targetname} ${FEELPP_TEST_SRCS})
+  endif()
+    #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
     set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
     if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
       add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
@@ -210,34 +265,36 @@ macro(feelpp_add_test)
 
     if ( NOT FEELPP_TEST_NO_TEST )
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-        add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
-        set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
+        add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI} )
+        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
-      add_test(NAME test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME}  --log_level=message ${MPIEXEC_POSTFLAGS})
-      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} PROPERTY TIMEOUT 30)
+      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
+      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
     endif()
 
 
     # add TIMEOUT to test
-    if ( FEELPP_TEST_TIMEOUT )
-      if ( NOT FEELPP_TEST_NO_TEST )
+    if ( NOT FEELPP_TEST_NO_TEST )
+      if ( FEELPP_TEST_TIMEOUT )
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-          set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
         endif()
-        set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
-      endif()
-    else()
-      if ( NOT FEELPP_TEST_NO_TEST )
+        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+      else()
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-          set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT 30)
+          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_DEFAULT_TEST_TIMEOUT})
         endif()
-        set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT 30)
+        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
+
+    # cfg
     set(cfgname test_${FEELPP_TEST_NAME}.cfg)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
       configure_file(  ${cfgname} ${cfgname} )
     endif()
+
+    # test_geo
     if ( FEELPP_TEST_GEO )
       foreach(  geo ${FEELPP_TEST_GEO} )
         # extract geo filename  to be copied in binary dir
@@ -250,8 +307,6 @@ macro(feelpp_add_test)
         endif(DEFINED ENV{FEELPP_WORKDIR})
       endforeach()
     endif(FEELPP_TEST_GEO)
-
-  endif()
 
 
 endmacro(feelpp_add_test)
@@ -338,3 +393,59 @@ MACRO(feelpp_list_subdir result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
+
+#
+# compute the max of two variables
+macro(feelpp_max max var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${max} ${var1})
+  else()
+    set(${max} ${var2})
+  endif()
+endmacro(feelpp_max)
+
+#
+# compute the min of two variables
+macro(feelpp_min min var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${min} ${var2})
+  else()
+    set(${min} ${var1})
+  endif()
+endmacro(feelpp_min)
+
+# This macros cleans up a variable containing a list of paths
+# It:
+# - Removes any reference to the original git source directory used for builds (important for instal with tarball)
+# - Removes any reference to the original build directory (important for instal with tarball)
+function(feelpp_clean_variable old_var new_var)
+    set(tmp_var "")
+    foreach(_entry ${old_var})
+        # Try to find build dir reference
+        set(_found_position "-1")
+        string(FIND ${_entry} ${CMAKE_BINARY_DIR} _found_position)
+        if(NOT (${_found_position} MATCHES "0") )
+            # Try to find source dir reference
+            set(_found_position "-1")
+            string(FIND ${_entry} ${CMAKE_SOURCE_DIR} _found_position)
+            if(NOT (${_found_position} MATCHES "0"))
+                set(tmp_var "${tmp_var};${_entry}")
+            endif()
+        endif()
+    endforeach()
+    set(${new_var} ${tmp_var} PARENT_SCOPE)
+endfunction(feelpp_clean_variable)
+
+function(feelpp_split_libs libs libnames libpaths)
+    set(_paths "")
+    set(_names "")
+    foreach(_lib ${libs})
+        get_filename_component(_path ${_lib} PATH)
+        get_filename_component(_name ${_lib} NAME)
+        set(_paths ${_paths} ${_path})
+        set(_names ${_names} ${_name})
+    endforeach()
+
+    set(${libnames} ${_names} PARENT_SCOPE)
+    set(${libpaths} ${_paths} PARENT_SCOPE)
+endfunction(feelpp_split_libs)

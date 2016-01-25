@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,8 @@
  */
 #ifndef FEELPP_VF_CST_HPP
 #define FEELPP_VF_CST_HPP 1
+
+#include <feel/feelvf/expr.hpp>
 
 namespace Feel
 {
@@ -59,6 +61,13 @@ public:
         static const bool result = false;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,
             mpl::identity<mpl::identity<T> > >::type::type::type value_type;
@@ -71,21 +80,24 @@ public:
         M_constant( value )
     {
     }
-
-    Cst( Cst const& __cst )
+    constexpr explicit Cst( T&& value )
         :
-        M_constant( __cst.M_constant )
-    {
-    }
-
-    Cst&
-    operator=( Cst const& c )
+        M_constant( std::move(value) )
         {
-            if ( this != &c )
-                M_constant = c.M_constant;
-            return *this;
         }
 
+    Cst( Cst && c ) = default;
+    Cst( Cst const& c ) = default;
+    Cst& operator=( Cst const& c ) = default;
+
+    T& value_ref() 
+        {
+            return M_constant;
+        }
+    T const& value_ref()  const
+        {
+            return M_constant;
+        }
     constexpr value_type value() const
     {
         return M_constant;
@@ -121,9 +133,9 @@ public:
         typedef typename Cst<T>::expression_type expression_type;
         typedef typename Cst<T>::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
 
@@ -141,18 +153,18 @@ public:
         tensor( expression_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         tensor( expression_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& /*fev*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         tensor( expression_type const& expr, Geo_t const& /*geom*/ )
             :
-            M_constant( expr.value() )
+            M_constant( expr.value_ref() )
         {
         }
         template<typename IM>
@@ -206,7 +218,7 @@ public:
         {
             return M_constant;
         }
-        const value_type M_constant;
+        T M_constant;
     };
 
 protected:

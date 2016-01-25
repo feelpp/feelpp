@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -107,8 +107,14 @@ SolverEigenSlepc<T>::init ()
         // Set modified Gram-Schmidt orthogonalization as default
         // and leave other parameters unchanged
         BVOrthogRefineType refinement;
+#if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 6)
+        BVOrthogBlockType blockOrthoType;
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta,&blockOrthoType );
+        ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta, blockOrthoType );
+#else
         ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
         ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta );
+#endif
 
 #else
         ierr = EPSGetIP ( M_eps, &M_ip );
@@ -241,7 +247,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
         ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+        ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #ifdef USE_COMPLEX_NUMBERS
@@ -271,14 +281,22 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+#if PETSC_VERSION_LESS_THAN(3,6,0)
     ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+#else
+    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+#endif
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     std::vector<double> ret_error( nconv );
 
     if ( nconv >= 1 )
     {
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, nconv, ret_error.data() );
+#else
+        ierr = EPSComputeError( M_eps, nconv, EPS_ERROR_RELATIVE, ret_error.data() );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 
@@ -334,10 +352,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     setSlepcProblemType();
     setSlepcPositionOfSpectrum();
     setSlepcSpectralTransform();
-
-    // Set eigenvalues to be computed.
-    ierr = EPSSetDimensions ( M_eps, nev, ncv, 2*ncv );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    setSlepcDimensions();
 
     // Set the tolerance and maximum iterations.
     ierr = EPSSetTolerances ( M_eps, this->tolerance(), this->maxIterations() );
@@ -416,7 +431,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
         ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+#if SLEPC_VERSION_LT(3,6,0)
         ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+        ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
         double norm;
@@ -453,7 +472,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // TODO: possible memory leak here
     //VecDestroy( M_mode );
+#if PETSC_VERSION_LESS_THAN(3,6,0)
     ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+#else
+    ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+#endif
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 
@@ -463,7 +486,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     {
         for ( int i = 0; i < nconv; ++i )
         {
+#if SLEPC_VERSION_LT(3,6,0)
             ierr = EPSComputeRelativeError( M_eps, i, &ret_error[i] );
+#else
+            ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &ret_error[i] );
+#endif
             CHKERRABORT( PETSC_COMM_WORLD,ierr );
         }
     }
@@ -680,6 +707,75 @@ SolverEigenSlepc<T>:: setSlepcSpectralTransform()
 }
 
 
+template <typename T>
+void
+SolverEigenSlepc<T>:: setSlepcDimensions()
+{
+    int ierr = 0;
+
+    // Set eigenvalues to be computed.
+    PetscInt mpdValue = ( this->maximumProjectedDimension() != invalid_size_type_value )? this->maximumProjectedDimension() : PETSC_DEFAULT;
+    ierr = EPSSetDimensions ( M_eps,
+                              (PetscInt)this->numberOfEigenvalues(),
+                              (PetscInt)this->numberOfEigenvaluesConverged(),
+                              mpdValue );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    if( (this->intervalA()+1e-12) < this->intervalB() )
+    {
+        ierr = EPSSetProblemType( M_eps, EPS_GHEP );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ierr = EPSSetInterval( M_eps, this->intervalA(), this->intervalB() );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ierr = EPSSetWhichEigenpairs( M_eps, EPS_ALL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ierr = EPSSetType( M_eps, EPSKRYLOVSCHUR );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ST st;
+        ierr = EPSGetST ( M_eps, &st );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        ierr = STSetType(st,STSINVERT);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        KSP ksp;
+        ierr = STGetKSP(st,&ksp);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ierr = KSPSetType(ksp,KSPPREONLY);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        PC pc;
+        ierr = KSPGetPC(ksp,&pc);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        ierr = PCSetType(pc,PCCHOLESKY);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        if( boption("solvereigen.pc-package-mumps") )
+        {
+#ifdef USE_COMPLEX_NUMBERS
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Spectrum slicing with MUMPS is not available for complex scalars");
+#endif
+            // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
+            ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            /*
+             Add several MUMPS options (currently there is no better way of setting this in program):
+             '-mat_mumps_icntl_13 1': turn off ScaLAPACK for matrix inertia
+             '-mat_mumps_icntl_24 1': detect null pivots in factorization (for the case that a shift is equal to an eigenvalue)
+             '-mat_mumps_cntl_3 <tol>': a tolerance used for null pivot detection (must be larger than machine epsilon)
+
+             Note: depending on the interval, it may be necessary also to increase the workspace:
+             '-mat_mumps_icntl_14 <percentage>': increase workspace with a percentage (50, 100 or more)
+             */
+            PetscOptionsInsertString("-mat_mumps_icntl_13 1");
+        }
+    }
+}
 
 template <typename T>
 typename SolverEigenSlepc<T>::eigenpair_type
@@ -709,9 +805,9 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     //vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
     vector_ptrtype solution;
     if ( this->mapRow().worldComm().globalSize()>1 )
-        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr() ) );
+        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr(), true ) );
     else
-        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr() ) );
+        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr(), true ) );
 
 #if 0
     for ( size_type k = 0; k < solution->map().nLocalDofWithGhost(); ++k )
@@ -767,7 +863,11 @@ SolverEigenSlepc<T>::relativeError( unsigned int i )
     int ierr=0;
     PetscReal error;
 
+#if SLEPC_VERSION_LT(3,6,0)
     ierr = EPSComputeRelativeError( M_eps, i, &error );
+#else
+    ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &error );
+#endif
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     return error;

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2005-12-03
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-12-03
  */
-#ifndef __policy_H
-#define __policy_H 1
+#ifndef FEELPP_FEELPOLY_POLICY_HPP
+#define FEELPP_FEELPOLY_POLICY_HPP 1
 
 
 
@@ -41,6 +42,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/traits.hpp>
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
@@ -50,13 +52,14 @@ namespace fem
 enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
 }
 
+
 /**
  * Policy for \c Scalar polynomials or polynomial set of dimension
  * \p Dim
  * \note \c Scalar can be seen as rank 0 tensor polynomials
  */
 template<uint16_type Dim>
-struct Scalar
+struct Scalar : public ScalarBase
 {
     static const uint16_type rank = 0;
     static const uint16_type nDim = Dim;
@@ -95,7 +98,7 @@ struct Scalar
  * \note \c Vectorial can be seen as rank 1 Tensor polynomials
  */
 template<uint16_type Dim>
-struct Vectorial
+struct Vectorial : public VectorialBase
 {
     static const uint16_type rank = 1;
     static const uint16_type nDim = Dim;
@@ -239,7 +242,7 @@ struct Field
  *
  */
 template<uint16_type Dim>
-struct Tensor2
+struct Tensor2 : public Tensor2Base
 {
     static const uint16_type rank = 2;
     static const uint16_type nDim = Dim;
@@ -276,9 +279,10 @@ struct Tensor2
             {
                 ublas::project( __c_reshaped,
                                 ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) = ublas::project( __c,
-                                        ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                        ublas::slice( 0, 1, nCols ) );
+                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
+                    ublas::project( __c,
+                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                    ublas::slice( 0, 1, nCols ) );
             }
         }
 
@@ -379,6 +383,7 @@ const mpl::int_<PER_COMPONENT_FUNCTION_INDEX> INDEX_PER_COMPONENT_FUNCTION_INDEX
 const mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX> INDEX_COMPONENT_IN_COMPONENT_FUNCTION_INDEX = mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX>();
 const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>();
 
+
 /**
  * Get the component type out the available types
  * \code
@@ -387,7 +392,7 @@ const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>
  * \endcode
  */
 template<typename T>
-struct Component
+struct GetComponent
 {
     static const uint16_type nDim = T::nDim;
     typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim> > types;
@@ -481,4 +486,4 @@ struct StorageUBlas
 
 } // Feel
 
-#endif /* __policy_H */
+#endif /* FEELPP_FEELPOLY_POLICY_HPP */

@@ -354,7 +354,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         {
             // Check any regular expression `mykey=myvalue;` in the description (see
             // retrieveGeoParameters()).
-            boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+            boost::regex regex1( "^(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
             std::ostringstream _ostr;
             try{
                 _ostr << "(?1$1) = " << iGpm.second << ";";
@@ -375,7 +375,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         // Get the 'h' for hsize and modify its value in the geo file. (TODO could be included in the
         // geo-variables-list option (previous loop).
         // -----------
-        boost::regex regex2( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+        boost::regex regex2( "^(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
 
@@ -625,6 +625,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.order = M_order;
     CTX::instance()->mesh.secondOrderIncomplete = 0;
 
+		if(doption("gmsh.randFactor") > 0.)
+			CTX::instance()->mesh.randFactor = doption("gmsh.randFactor");
     //if ( M_recombine )
     if ( 0 )
     {
@@ -635,11 +637,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     else
     {
-        CTX::instance()->mesh.algo2d = ALGO_2D_FRONTAL;
+        CTX::instance()->mesh.algo2d = ( Environment::vm().count("gmsh.algo2d") )? ioption("gmsh.algo2d") : ALGO_2D_FRONTAL;
 #if defined(HAVE_TETGEN)
-        CTX::instance()->mesh.algo3d = ALGO_3D_DELAUNAY;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : ALGO_3D_DELAUNAY;
 #else
-        CTX::instance()->mesh.algo3d = ALGO_3D_FRONTAL;
+        CTX::instance()->mesh.algo3d = ( Environment::vm().count("gmsh.algo3d") )? ioption("gmsh.algo3d") : ALGO_3D_FRONTAL;
 #endif
     }
     // disable heap checking if enabled
@@ -662,6 +664,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
             M_gmodel->readGEO( __geoname );
 
         M_gmodel->mesh( dim );
+        CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
+                                                 << " should be == " << dim;
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
         {
@@ -670,9 +674,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
         LOG(INFO) << "Mesh partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
-        // convert mesh to latest binary format
-        CHECK(M_gmodel->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << M_gmodel->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
-
+        CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
+                                                 << " should be == " << dim;
         if ( M_in_memory == false )
         {
             CTX::instance()->mesh.binary = M_format;
@@ -697,10 +700,13 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
 #if BOOST_FILESYSTEM_VERSION == 3
-		std::string _name = fs::path( nameMshInput ).stem().string();
+		_name = fs::path( nameMshOutput ).stem().string();
 #elif BOOST_FILESYSTEM_VERSION == 2
-        std::string _name = fs::path( nameMshInput ).stem();
+        _name = fs::path( nameMshOutput ).stem();
 #endif
+        fs::path directory = fs::path(nameMshOutput).parent_path();
+        if ( !fs::exists(directory) )
+            fs::create_directories( directory );
 
         GModel* M_gmodel=new GModel();
         M_gmodel->readMSH( nameMshInput );
@@ -765,64 +771,63 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
 #endif
 
-std::string
-Gmsh::preamble() const
-{
-    std::ostringstream ostr;
-
-    ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
-         << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-         << "Mesh.CharacteristicLengthFromPoints=1;\n"
-         << "Mesh.ElementOrder=" << M_order << ";\n"
-         << "Mesh.SecondOrderIncomplete = 0;\n";
-
-    if ( M_recombine )
-        ostr << "Mesh.Algorithm = 5;\n";
-    else
+    std::string
+    Gmsh::preamble() const
     {
-        ostr << "Mesh.Algorithm = " << ALGO_2D_FRONTAL << ";\n";
-#if defined(HAVE_TETGEN)
-        ostr << "Mesh.Algorithm3D = " << ALGO_3D_DELAUNAY << ";\n";
-#else
-        ostr << "Mesh.Algorithm3D = " << ALGO_3D_FRONTAL << ";\n";
-#endif
-    }
+        std::ostringstream ostr;
 
-    ostr << "//Mesh.OptimizeNetgen=1;\n";
+        ostr << "Mesh.MshFileVersion = " << this->version() << ";\n"
+             << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+             << "Mesh.CharacteristicLengthFromPoints=1;\n"
+             << "Mesh.ElementOrder=" << M_order << ";\n"
+             << "Mesh.SecondOrderIncomplete = 0;\n";
 
-
-    if ( this->worldComm().globalSize() != 1 )
+        if ( M_recombine )
+            ostr << "Mesh.Algorithm = 5;\n";
+        else
         {
-ostr << "// partitioning data\n"
-         << "Mesh.Partitioner=" << M_partitioner << ";\n"
-         << "Mesh.NbPartitions=" << M_partitions << ";\n"
-         << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
+            ostr << "Mesh.Algorithm = " << ALGO_2D_FRONTAL << ";\n";
+#if defined(HAVE_TETGEN)
+            ostr << "Mesh.Algorithm3D = " << ALGO_3D_DELAUNAY << ";\n";
+#else
+            ostr << "Mesh.Algorithm3D = " << ALGO_3D_FRONTAL << ";\n";
+#endif
+        }
+
+        ostr << "//Mesh.OptimizeNetgen=1;\n";
+
+        if ( this->worldComm().globalSize() != 1 )
+        {
+            ostr << "// partitioning data\n"
+                 << "Mesh.Partitioner=" << M_partitioner << ";\n"
+                 << "Mesh.NbPartitions=" << M_partitions << ";\n"
+                 << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
         }
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
 
-    // if (this->structuredMesh() == 3)
-    // {
-    //     ostr << "nx=" << M_nx << ";\n"
-    //          << "ny=" << M_ny << ";\n";
-    // }
-    // else
-    // {
-    ostr << "h=" << M_h << ";\n";
-    //}
+        // if (this->structuredMesh() == 3)
+        // {
+        //     ostr << "nx=" << M_nx << ";\n"
+        //          << "ny=" << M_ny << ";\n";
+        // }
+        // else
+        // {
+        ostr << "h=" << M_h << ";\n";
+        //}
 
-    if ( M_recombine )
-    {
-        ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
-             << "Mesh.RecombineAll=1; //all\n";
-    }
-    else
-    {
-        ostr << "Mesh.RecombinationAlgorithm=0;\n";
-    }
+        if ( M_recombine )
+        {
+            ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
+                 << "Mesh.RecombineAll=1; //all\n";
+        }
+        else
+        {
+            ostr << "Mesh.RecombinationAlgorithm=0;\n";
+        }
 
-    return ostr.str();
-}
+        return ostr.str();
+    }
 
 /// \cond detail
 namespace detail

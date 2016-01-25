@@ -19,21 +19,25 @@ else
   cd $base_dir/www.feelpp.org
   git pull
 fi
-cd www.feelpp.org
+cd $base_dir/www.feelpp.org
 
-git checkout gh-pages
+git checkout master
+git pull --no-edit
 
-# Copy the generated doc
-rsync -avz $gh_pages/ docs
-
-# Generate the static web site
+# the resulting static pages are in _site that is not tracked by github
 jekyll build
+git checkout gh-pages
+git pull --no-edit
 
-# the resulting static pages are in _site
-rsync -avz _site ./
-
+rsync -avz _site/ .
 git add -A
-git commit -m "deploy web site" -a
-git pull origin gh-pages
-git push origin gh-pages
+git commit -m "Update web site" -a
+
+# Copy the generated doc from doxygen
+rsync -avz $gh_pages/ docs
+git add -A
+git commit -m "Update documentation" -a
+
+git push
+
 git checkout master

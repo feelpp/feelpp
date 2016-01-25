@@ -1,0 +1,53 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+
+name                gmsh
+version             2.7.0
+categories          science
+platforms           darwin
+maintainers         feelpp.org:christophe.prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+master_sites        http://www.geuz.org/gmsh/src/
+distname            gmsh-${version}-source
+extract.suffix      .tgz
+conflicts           gmsh-devel
+
+checksums           \
+                          sha1    6c73036c7caee4e3091f721d01b1640d2b329b36 \
+                          rmd160  39ecc1a097ef560a17230af609523934d48c2cf6
+
+# https://trac.macports.org/ticket/33925
+if {${configure.compiler} == "clang"} {
+    configure.compiler llvm-gcc-4.2
+}
+
+configure.args-append \
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
+    -DENABLE_OCC:BOOL=OFF \
+    -DENABLE_FLTK:BOOL=ON\
+    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_APP_BUNDLE=OFF
+
+post-build {
+    # lib and shared targets are not handled by default target
+    system "cd ${worksrcpath} && make lib shared"
+}
+
+depends_lib  \
+    port:mesa \
+    port:libpng \
+    port:fltk-devel\
+    port:jpeg \
+    port:zlib \
+    port:texinfo

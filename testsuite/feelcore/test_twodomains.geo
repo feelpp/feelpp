@@ -1,0 +1,25 @@
+h=1;
+Point(1) = {0, 0, 0, h};
+Point(2) = {1, 0, 0, h};
+Point(3) = {1, 1, 0, h};
+Point(4) = {0, 1, 0, h};
+Point(5) = {0.5, 1, 0, h};
+Point(6) = {0.5, 0, 0, h};
+Line(1) = {1, 6};
+Line(2) = {6, 2};
+Line(3) = {2, 3};
+Line(4) = {3, 5};
+Line(5) = {5, 4};
+Line(6) = {4, 1};
+Line(7) = {6, 5};
+Line Loop(10) = {5, 6, 1, 7};
+Line Loop(11) = {4, -7, 2, 3};
+Plane Surface(1) = {10};
+Plane Surface(2) = {11};
+
+Physical Surface("omega")={1,2};
+Physical Line("wall")={6, 5, 4, 3, 2, 1};
+//Physical Line("wall_right")={2,3,4};
+//Physical Line("wall_left")={1,6,5};
+//Physical Surface("left")={1};
+//Physical Surface("right")={2};

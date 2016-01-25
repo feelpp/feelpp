@@ -224,7 +224,12 @@ public:
 	void operator()(const basic & obj, const print_context & c, unsigned level) const
 	{
 		// Call the supplied member function
+#if 0
 		return (dynamic_cast<const T &>(obj).*f)(dynamic_cast<const C &>(c), level);
+#else
+        // patch feel++ (done by Vincent C.) : change dynamic_cast -> static_cast
+        return (static_cast<const T &>(obj).*f)(dynamic_cast<const C &>(c), level);
+#endif
 	}
 
 private:

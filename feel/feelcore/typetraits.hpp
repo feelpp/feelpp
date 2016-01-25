@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -131,9 +131,10 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     /**/
 #define FEELPP_STD_BINARY_FUNCS                                  \
 BOOST_PP_TUPLE_TO_LIST(                                        \
-    1,                                                         \
+    2,                                                         \
     (                                                          \
-        (pow       , std::pow, pow  )                          \
+        (pow       , std::pow, pow  ),                         \
+        (atan2     , std::atan2, atan2  )                      \
      )                                                         \
     )                                                          \
     /**/

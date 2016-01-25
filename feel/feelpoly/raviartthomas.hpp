@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -313,16 +313,11 @@ public:
         // jacobian of the transformation from reference face to the face in the
         // reference element
         std::vector<double> j;
-        {
-            // bring 'operator+=()' into scope
-            using namespace boost::assign;
+        if ( nDim == 2 )
+            j = {2.8284271247461903,2.0,2.0};
 
-            if ( nDim == 2 )
-                j += 2.8284271247461903,2.0,2.0;
-
-            if ( nDim == 3 )
-                j+= 3.464101615137754, 2, 2, 2;
-        }
+        if ( nDim == 3 )
+            j = {3.464101615137754, 2, 2, 2};
 
         //for( int k = 0; k < nDim; ++k )
         {
@@ -486,7 +481,7 @@ public:
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
-
+    typedef typename convex_type::topological_face_type face_type;
 
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
@@ -496,6 +491,16 @@ public:
     static const uint16_type numPoints = dual_space_type::numPoints;
 
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
+    //@}
+
     //@}
 
     /** @name Constructors, destructor
@@ -585,6 +590,114 @@ public:
     /** @name  Methods
      */
     //@{
+
+
+    typedef Eigen::MatrixXd local_interpolant_type;
+    local_interpolant_type
+    localInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalDof, 1 );
+        }
+
+    template<typename ExprType>
+    void
+    interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            Ihloc.setZero();
+            auto g=expr.geom();
+
+            for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+            {
+                if( g->faceId() == invalid_uint16_type_value)
+                    expr.geom()->faceNormal(  f, n, true );
+                else
+                    expr.geom()->faceNormal(  g->faceId(), n, true );
+                
+                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+                for ( int l = 0; l < nLocalDof; ++l )
+                {
+                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                              
+                    
+                }
+            }
+        }
+    local_interpolant_type
+    faceLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nLocalFaceDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            auto g = expr.geom();
+            Ihloc.setZero();
+
+            int f=0;
+            {
+                if( g->faceId() == invalid_uint16_type_value)
+                    expr.geom()->faceNormal(  f, n, true );
+                else
+                    expr.geom()->faceNormal(  g->faceId(), n, true );
+                
+                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+                for ( int l = 0; l < nLocalDof; ++l )
+                {
+                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                    {
+                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
+                    }
+                    
+                }
+            }
+        }
+
+    using apply_curl_t = mpl::bool_<true>;
+    using apply_id_t = mpl::bool_<false>;
+    
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        using shape = typename std::decay_t<ExprType>::shape;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+
+        Ihloc.setZero();
+        auto g=expr.geom();
+
+        for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+        {
+            if( g->faceId() == invalid_uint16_type_value)
+                expr.geom()->faceNormal( f, n, true );
+            else
+                expr.geom()->faceNormal( g->faceId(), n, true );
+
+            auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+            for ( int l = 0; l < nLocalDof; ++l )
+            {
+                int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
+                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+                {
+                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+                    
+                    for ( uint16_type c = 0; c < ncomp; ++c )
+                    {
+                        uint16_type I = expr_basis_t::nLocalDof*c + i;
+
+                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                        {
+                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*n(c1);
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 
     template<typename ExprType>
     static auto
@@ -732,10 +845,10 @@ public:
 
     //@}
 
-
-
 protected:
     reference_convex_type M_refconvex;
+    mutable ublas::vector<value_type> n{ nDim }; //normal
+
 private:
 
 };
