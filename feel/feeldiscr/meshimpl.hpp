@@ -900,9 +900,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     face_type face;
     face.setProcessIdInPartition( currentPid );
 
-    std::map<std::set<int>, size_type > _faces;
-    typename std::map<std::set<int>, size_type >::iterator _faceit;
-    int next_face = 0;
+    boost::unordered_map<std::set<size_type>, size_type > _faces;
+    typename boost::unordered_map<std::set<size_type>, size_type >::iterator _faceit;
+    //std::map<std::set<int>, size_type > _faces;
+    //typename std::map<std::set<int>, size_type >::iterator _faceit;
+    size_type next_face = 0;
     element_type ele;
 
     // First We check if we have already Faces stored
@@ -926,7 +928,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 #endif
         for ( ; __it!=__en; )
         {
-            std::set<int> s;
+            std::set<size_type> s;
 
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
@@ -1010,11 +1012,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             DVLOG(2) << "------------------------------------------------------------\n";
             DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
-            std::set<int> s;
+            std::set<size_type> s;
 
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
+                uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
                 s.insert( iv->point( pt_localid ).id() );
 #if !defined( NDEBUG )
                 VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
@@ -1045,7 +1047,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 face.setProcessId( __element.processId() );
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
-                    face.setPoint( k, iv->point( ele.fToP( j, k ) ) );
+                    face.setPoint( k, iv->point( /*ele.*/element_type::fToP( j, k ) ) );
 
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     face.addElement( __element_id );
@@ -1243,13 +1245,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     boost::timer ti;
     rank_type currentPid = this->worldComm().localRank();
 
-    std::map<std::set<int>, face_type* > _faces;
-    typename std::map<std::set<int>, face_type* >::iterator _faceit;
+    boost::unordered_map<std::set<size_type>, face_type* > _faces;
+    typename boost::unordered_map<std::set<size_type>, face_type* >::iterator _faceit;
+    //std::map<std::set<int>, face_type* > _faces;
+    //typename std::map<std::set<int>, face_type* >::iterator _faceit;
 
     std::vector<face_type* > _facesOrderedWithId;
 
-    int next_face = 0;
-    element_type ele;
+    size_type next_face = 0;
+    //element_type ele;
     // First We check if we have already Faces stored
     if ( ! this->faces().empty() )
     {
@@ -1264,14 +1268,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         face_iterator __it = this->beginFace();
         face_iterator __en = this->endFace();
         LOG(INFO) << "We have " << std::distance( __it, __en ) << " faces in the database";
-#if 0
-        auto itb = this->beginFaceOnBoundary();
-        auto enb = this->beginFaceOnBoundary();
-        LOG(INFO) << "We have " << std::distance( itb, enb ) << " faces on the boundary in the database";
-#endif
         for ( ; __it!=__en; )
         {
-            std::set<int> s;
+            std::set<size_type> s;
 
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
@@ -1297,12 +1296,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             else
             {
                 // ensure that item handler ids are in sync with faces ids
-                face_type* facePtr = new face_type(*__it);
+                _facesOrderedWithId.push_back( new face_type(*__it) );
+
+                face_type* facePtr = _facesOrderedWithId.back();//new face_type(*__it);
 
                 facePtr->setId( next_face++ );
 
                 _faceit->second = facePtr;
-                _facesOrderedWithId.push_back( facePtr );
+                //_facesOrderedWithId.push_back( facePtr );
 
                 //this->faces().replace( __it, __f );
                 ++__it;
@@ -1337,10 +1338,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             DVLOG(2) << "------------------------------------------------------------\n";
             DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
-            std::set<int> s;
+            std::set<size_type> s;
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
+                uint16_type pt_localid = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
                 s.insert( iv->point( pt_localid ).id() );
 #if !defined( NDEBUG )
                 VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
@@ -1359,7 +1360,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             {
                 DVLOG(2) << "creating the face:" << _faceit->second << "\n";
 
-                face_type* facePtr = new face_type;
+                _facesOrderedWithId.push_back( new face_type );
+
+                face_type* facePtr = _facesOrderedWithId.back();//new face_type;
                 facePtr->setProcessIdInPartition( currentPid );
                 // set face id
                 facePtr->setId( next_face++ );
@@ -1371,13 +1374,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 facePtr->setProcessId( __element.processId() );
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
-                    facePtr->setPoint( k, iv->point( ele.fToP( j, k ) ) );
+                    facePtr->setPoint( k, iv->point( /*ele.*/element_type::fToP( j, k ) ) );
 
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     facePtr->addElement( __element_id );
 
                 _faceit->second = facePtr;
-                _facesOrderedWithId.push_back( facePtr );
+                //_facesOrderedWithId.push_back( facePtr );
 
 
 #if !defined( NDEBUG )
