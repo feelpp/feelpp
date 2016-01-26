@@ -676,19 +676,29 @@ template <typename T>
 inline
 void MatrixPetsc<T>::close () const
 {
-    // BSK - 1/19/2004
-    // strictly this check should be OK, but it seems to
-    // fail on matrix-free matrices.  Do they falsely
-    // state they are assembled?  Check with the developers...
-    //   if (this->closed())
-    //     return;
-
     int ierr=0;
-    CHECK( M_mat ) << "invalid matrix";
-    ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
-    CHKERRABORT( this->comm(),ierr );
+    PetscBool assembled = PETSC_FALSE;
+    ierr = MatAssembled(M_mat,&assembled);
+    VLOG(1) << "Matrix assembled ? " << assembled;
+    //if ( !assembled )
+    if ( 1 )
+    {
+        tic();
+        // BSK - 1/19/2004
+        // strictly this check should be OK, but it seems to
+        // fail on matrix-free matrices.  Do they falsely
+        // state they are assembled?  Check with the developers...
+        //   if (this->closed())
+        //     return;
+
+
+        CHECK( M_mat ) << "invalid matrix";
+        ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
+        CHKERRABORT( this->comm(),ierr );
+        toc("MatrixPETSc::close",FLAGS_v>0);
+    }
 }
 
 
@@ -1028,11 +1038,11 @@ template <typename T>
 void
 MatrixPetsc<T>::updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                                  std::vector<size_type> const& rows,
-                                 std::vector<size_type> const& cols )
+                                 std::vector<size_type> const& cols, bool doClose )
 {
     CHECK( submatrix ) << "submatrix is not init";
     boost::shared_ptr<MatrixPetsc<T> > submatrixPetsc = boost::dynamic_pointer_cast<MatrixPetsc<T> >( submatrix );
-    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() );
+    this->getSubMatrixPetsc( rows,cols, submatrixPetsc->mat() , doClose );
 }
 
 
@@ -1040,9 +1050,10 @@ template <typename T>
 void
 MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
                                    std::vector<size_type> const& cols,
-                                   Mat &submat ) const
+                                   Mat &submat, bool doClose ) const
 {
-    this->close();
+    if(doClose) // with close(), petsc believe the matrix has changed. That can be confusing
+        this->close();
     int ierr=0;
     IS isrow;
     IS iscol;

@@ -11,12 +11,12 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
 {
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseenWeakBC", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "start"+sc );
 
     boost::timer thetimer;
 
@@ -152,6 +152,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 
     if ( this->hasFluidOutletWindkessel() )
     {
+        this->timerTool("Solve").start();
         if ( this->hasFluidOutletWindkesselExplicit() )
         {
             if (BuildNonCstPart)
@@ -276,6 +277,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             }
 
         }
+        double timeElapsedBC = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly windkessel bc in "+(boost::format("%1% s") %timeElapsedBC).str() );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -382,26 +385,52 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
         else if ( this->couplingFSIcondition() == "robin-neumann-generalized" )
         //---------------------------------------------------------------------------//
         {
+            this->timerTool("Solve").start();
+
             bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
 
             if ( !useInterfaceOperator )
             {
                 if ( BuildNonCstPart_robinFSI )
                 {
-                    this->meshALE()->revertReferenceMesh();
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
-                                   _geomap=this->geomap() );
+                    if ( this->couplingFSI_RNG_matrix() )
+                    {
+                        A->addMatrix( this->couplingFSI_RNG_coeffForm2(), this->couplingFSI_RNG_matrix() );
+                    }
+                    else
+                    {
+                        this->meshALE()->revertReferenceMesh();
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                                       _geomap=this->geomap() );
+                    }
                 }
                 if ( BuildNonCstPart )
                 {
-                    this->meshALE()->revertReferenceMesh();
-                    form1( _test=Xh, _vector=F,
-                           _rowstart=rowStartInVector ) +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
-                                   _geomap=this->geomap() );
+                    if ( this->couplingFSI_RNG_matrix() )
+                    {
+                        auto tempVec = M_backend->newVector( F->mapPtr() );
+                        *tempVec = *this->couplingFSI_RNG_evalForm1();
+                        tempVec->close();
+                        tempVec->scale(-1);
+                        tempVec->close();
+                        //tempVec->add( -1.,*this->couplingFSI_RNG_evalForm1() );
+                        //tempVec->close();
+                        //tempVec->addVector(*this->couplingFSI_RNG_evalForm1(), *A );
+                        F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
+                        //F->add( -1., tempVec );
+                        F->close();
+                    }
+                    else
+                    {
+                        this->meshALE()->revertReferenceMesh();
+                        form1( _test=Xh, _vector=F,
+                               _rowstart=rowStartInVector ) +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
+                                       _geomap=this->geomap() );
+                    }
                 }
                 this->meshALE()->revertMovingMesh();
             }
@@ -424,6 +453,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                     this->couplingFSI_RNG_updateLinearPDE( F );
                 }
             }
+            double timeElapsedBC = this->timerTool("Solve").stop();
+            this->log("FluidMechanics","updateLinearPDE","assembly fsi bc robin-neumann-generalized in "+(boost::format("%1% s") %timeElapsedBC ).str() );
         }
 #endif // FEELPP_MODELS_HAS_MESHALE
     }
@@ -441,10 +472,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     //--------------------------------------------------------------------------------------------------//
 
     std::ostringstream ostr;ostr<<thetimer.elapsed()<<"s";
-    this->log("FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str() );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "finish in "+ostr.str() );
 
 
-} // updateOseenWeakBC
+} // updateLinearPDEWeakBC
 
 } // end namespace FeelModels
 } // end namespace Feel

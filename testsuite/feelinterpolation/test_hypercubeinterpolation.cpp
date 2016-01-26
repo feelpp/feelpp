@@ -5,7 +5,7 @@
   Author(s): Abdoulaye Samake <abdoulaye.samake1@e.ujf-grenoble.fr>
        Date: 2013-11-15
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

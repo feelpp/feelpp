@@ -992,6 +992,7 @@ namespace FeelModels
                 M_pcMechPropField->update(this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
+#if 1
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
@@ -1005,10 +1006,19 @@ namespace FeelModels
             //updateImpl( /*mpl::int_<expr_type::nRealDim>()*/ );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
-#if 0
+#else
         // generic update but seems more slow
-        void updateImpl()
+        void updateImpl( Geo_t const& geom )
         {
+            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), super_type::loc_scalar_type::Zero() );
+            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
+
+            if ( !useDispPresForm )
+                M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
+
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1038,6 +1048,9 @@ namespace FeelModels
                     M_locEvalPrecomputeDetF3[q](0,0) = factorWithDetFv3;
                     M_locEvalPrecomputeTraceC[q](0,0) = traceCv;
                     //TODO here
+                    const value_type factorTrialDetF = (1./expr_type::nRealDim)*traceCv;
+                    typename super_type::loc_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
+                    matLocTrialDetF = factorWithDetFv2*(F - factorTrialDetF*F.inverse().transpose() );
                 }
             }
         }

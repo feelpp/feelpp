@@ -6,6 +6,7 @@
        Date: 2007-05-30
 
   Copyright (C) 2007, 2009 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +42,49 @@ extern "C"
 namespace Feel
 {
 
+PetscErrorCode feel_petsc_post_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    LOG(INFO) << "call feel_petsc_post_solve";
+    
+    if ( b->postSolve() )
+    {
+        vector_ptrtype vx( vec( x, b->dataMap() ) );
+        vector_ptrtype vy( vec( y, b->dataMap() ) );
+        b->postSolve( vx, vy );
+    }
+    else
+    {
+        LOG(WARNING) << "call feel_petsc_post_solve without post solve function, we duplicate the input into the output";
+        auto e = VecDuplicate(x, &y);
+        CHKERRABORT( b->comm().globalComm(), e );
+        e = VecCopy(x, y);
+        CHKERRABORT( b->comm().globalComm(), e );
+    }
+    LOG(INFO) << "call feel_petsc_post_solve done";
+    return 0;
+}
+PetscErrorCode feel_petsc_pre_solve(KSP ksp,Vec x,Vec y,void* ctx)
+{
+    BackendPetsc<double> * b = static_cast<BackendPetsc<double>*> ( ctx );
+    
+    if ( b->preSolve() )
+    {
+        vector_ptrtype vx( vec( x, b->dataMap() ) );
+        vector_ptrtype vy( vec( y, b->dataMap() ) );
+        b->preSolve( vx, vy );
+    }
+    else
+    {
+        LOG(WARNING) << "call feel_petsc_pre_solve without pre solve function, we duplicate the input into the output";
+        auto e = VecDuplicate(x, &y);
+        CHKERRABORT( b->comm().globalComm(), e );
+        e = VecCopy( x, y );
+        CHKERRABORT( b->comm().globalComm(), e );
+    }
+    LOG(INFO) << "call feel_petsc_pre_solve";
+    return 0;
+}
 
 template<typename T>
 BackendPetsc<T>::~BackendPetsc()
@@ -86,6 +130,20 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
+    if ( this->preSolve() )
+    {
+        int e;
+        e = KSPSetPreSolve( M_solver_petsc.ksp(), feel_petsc_pre_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        int e;
+        e = KSPSetPostSolve( M_solver_petsc.ksp(), feel_petsc_post_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
@@ -121,6 +179,19 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
+    if ( this->preSolve() )
+    {
+        int e;
+        e = KSPSetPreSolve( M_solver_petsc.ksp(), feel_petsc_pre_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        int e;
+        e = KSPSetPostSolve( M_solver_petsc.ksp(), feel_petsc_post_solve, this );
+        CHKERRABORT( this->comm().globalComm(), e);
+    }
     auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations(), false );
     DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";

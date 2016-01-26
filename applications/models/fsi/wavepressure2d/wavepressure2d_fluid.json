@@ -1,8 +1,8 @@
 // -*- mode: javascript -*-
 {
-    "Name": "fluidfsi 2D beam ",
-    "ShortName":"fluidfsibeam2d",
-    "Model":"fluidfsihyperelastic",
+    "Name": "fluid fsi",
+    "ShortName":"Fluidfsi",
+    "Model":"Navier-Stokes",
     "Parameters":
     {
         "pIn":
@@ -32,10 +32,7 @@
             },
             "interface_fsi":
             {
-                "fsi-wall":
-                {
-                    "expr":"0"
-                }
+                "fsi-wall":{}
             }
         },
         "fluid":
@@ -44,7 +41,6 @@
             {
                 "fluid-outlet":
                 {
-                    "expr":"0",                       // avoid to have a warning in output
                     "number":1,                       // number of outlet [default=1]
                     "alemesh_bc":"fixed",             // fixed,free [default=fixed]
                     "type":"windkessel",              // free,windkessel [default=free]

@@ -5,7 +5,7 @@
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
        Date: 2014-03-17
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -160,11 +160,15 @@ TSBase::init()
     //ostr << "bdf/" << M_name << "/o_" << M_order << "/dt_" << M_dt;
     M_path_save = ostr.str();
 #endif
-    // if directory does not exist, create it
-    if ( !fs::exists( M_path_save ) && this->saveInFile() && this->worldComm().isMasterRank() )
-        fs::create_directories( M_path_save );
-    // be sure that all process can find the path after
-    this->worldComm().barrier();
+
+    if ( this->saveInFile() )
+    {
+        // if directory does not exist, create it
+        if ( this->worldComm().isMasterRank() && !fs::exists( M_path_save ) )
+            fs::create_directories( M_path_save );
+        // be sure that all process can find the path after
+        this->worldComm().barrier();
+    }
 
     if ( M_restart )
     {

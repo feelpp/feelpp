@@ -23,9 +23,6 @@
 #
 
 
-feelpp_add_application( ns_phantom_3d_P2P1 SRCS ns_phantom.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG phantom.cfg phantom.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
-feelpp_add_application( ns_phantom_3d_P3P2 SRCS ns_phantom.cpp  display_flowrates.cpp INCLUDE_IN_ALL CFG phantom.cfg phantom.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=2)
-feelpp_add_application( ns_phantom_3d_P4P3 SRCS ns_phantom.cpp  display_flowrates.cpp INCLUDE_IN_ALL CFG phantom.cfg phantom.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=3)
+feelpp_add_application( ns_phantom_3d_P2P1 SRCS ns_phantom.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG mean_uIn_80_1.dat phantom.cfg phantom_cst.cfg phantom.bc phantom_cst.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
+
 install(TARGETS feelpp_ns_phantom_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_ns_phantom_3d_P3P2 DESTINATION bin/ COMPONENT Bin )
-install(TARGETS feelpp_ns_phantom_3d_P4P3 DESTINATION bin/ COMPONENT Bin )

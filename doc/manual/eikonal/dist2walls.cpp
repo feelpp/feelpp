@@ -31,7 +31,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;

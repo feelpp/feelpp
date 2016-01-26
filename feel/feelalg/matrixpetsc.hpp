@@ -459,7 +459,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols );
+                     std::vector<size_type> const& cols, bool doClose = true );
 
 
     /**
@@ -524,7 +524,7 @@ private:
 
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
-                            Mat &submat ) const;
+                            Mat &submat, bool doClose = true ) const;
 protected:
 
     /**
