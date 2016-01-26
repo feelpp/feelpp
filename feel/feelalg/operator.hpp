@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 30 Sep 2014
  
- Copyright (C) 2014-2015 Feel++ Consortium
+ Copyright (C) 2014-2016 Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -203,7 +203,8 @@ public:
         M_closeMatrixRhs( true )
     {
         LOG(INFO) << "Create operator " << this->label() << " ...\n";
-        auto b = backend(_name=this->label(),_rebuild=true);
+        //auto b = backend(_name=this->label());
+        auto b = backend(_name=this->label(),_rebuild=boption(_name="backend.rebuild_op",_prefix=this->label()));
     }
 
     OperatorMatrix( const OperatorMatrix& tc )
@@ -250,9 +251,8 @@ public:
         tic();
         *M_xx = X;
         M_xx->close();
-        M_yy->zero();
-
-        //auto r = backend(_name=this->label())->solve( _matrix=M_F, _rhs=X.shared_from_this(), _solution=Y.shared_from_this() );
+        // Petsc sets M_yy to zero when boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->label()) is false
+        
         bool cv;
         if(!this->M_pc)
         {

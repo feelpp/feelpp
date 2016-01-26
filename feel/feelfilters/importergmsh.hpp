@@ -960,6 +960,8 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
     std::map<int,int> __gt;
 
+    rank_type theCurrentPartitionId = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+
     if ( !binary )
     {
         for(int i = 0; i < numElements; i++)
@@ -970,7 +972,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
-          rank_type partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+          rank_type partition = theCurrentPartitionId;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
@@ -1072,7 +1074,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                 int elementary = (numTags > 1) ? data[2] : 0;
                 rank_type numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
                 rank_type partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
-                    (version >= 2.2 && numTags > 3) ? data[4]-1 : 0;
+                    (version >= 2.2 && numTags > 3) ? data[4]-1 : theCurrentPartitionId;
                 if(numPartitions > 1)
                     for(int j = 0; j < numPartitions - 1; j++)
                         ghosts.push_back( (-data[5 + j]) -1 );

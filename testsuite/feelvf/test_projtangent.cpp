@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-14
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

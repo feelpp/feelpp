@@ -225,6 +225,11 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
+    // context for evaluation
+    typedef typename space_displacement_type::Context context_displacement_type;
+    typedef boost::shared_ptr<context_displacement_type> context_displacement_ptrtype;
+    typedef typename space_pressure_type::Context context_pressure_type;
+    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -299,11 +304,11 @@ public:
     //___________________________________________________________________________________//
 
 
-    SolidMechanicsBase( std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+    SolidMechanicsBase( std::string const& prefix,
+                        bool buildMesh=true,
+                        WorldComm const& worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     SolidMechanicsBase( self_type const & M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );
@@ -392,11 +397,13 @@ public :
     void updateTimeStep();
     void updateVelocity();
 
+    void initPostProcess();
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportMeasures( double time );
 private :
-    void exportResultsImpl( double time );
-    void exportResultsImplHO( double time );
+    void exportFieldsImpl( double time );
+    void exportFieldsImplHO( double time );
 public :
 
     void predictorDispl();
@@ -438,6 +445,9 @@ public :
     element_displacement_ptrtype const& fieldVelocityPtr() const { return M_timeStepNewmark->currentVelocityPtr(); }
     element_displacement_type & fieldVelocity() { return M_timeStepNewmark->currentVelocity(); }
     element_displacement_type const& fieldVelocity() const { return M_timeStepNewmark->currentVelocity(); }
+
+    element_displacement_type & fieldAcceleration() { return M_timeStepNewmark->currentAcceleration(); }
+    element_displacement_type const& fieldAcceleration() const { return M_timeStepNewmark->currentAcceleration(); }
 
     element_normal_stress_ptrtype & fieldNormalStressFromFluidPtr() { return M_fieldNormalStressFromFluid; }
     element_normal_stress_ptrtype const& fieldNormalStressFromFluidPtr() const { return M_fieldNormalStressFromFluid; }
@@ -551,12 +561,9 @@ public :
     //-----------------------------------------------------------------------------------//
 
     bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
-    void saveDataInPoint(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
 
-    double computeMaxDisp() const;
-    double computeMaxDispOnBoundary(std::string __marker) const;
-
-    double computeIncompressibility() const;
+    double computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const;
+    double computeVolumeVariation() const;
 
 
     //-----------------------------------------------------------------------------------//
@@ -670,6 +677,9 @@ protected:
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     op_interpolation_visu_ho_pressure_ptrtype M_opIpressure;
 #endif
+    // post-process point evaluation
+    context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
+    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
 
     //-------------------------------------------//
     // 1d_reduced model

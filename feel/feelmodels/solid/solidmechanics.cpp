@@ -38,13 +38,13 @@ namespace FeelModels
 {
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
-                                                    bool _buildMesh,
-                                                    WorldComm const& _worldComm,
-                                                    std::string _subPrefix,
-                                                    std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type(_prefix,_buildMesh,_worldComm,_subPrefix, _appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -61,7 +61,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (_buildMesh) this->build();
+    if (buildMesh) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "finish",
@@ -71,13 +71,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string _prefix,
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string _prefix,
-                                         bool _buildMesh,
-                                         WorldComm const& _worldComm,
-                                         std::string _subPrefix,
-                                         std::string _appliShortRepository )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
+                                         bool buildMesh,
+                                         WorldComm const& worldComm,
+                                         std::string const& subPrefix,
+                                         std::string const& appliShortRepository )
 {
-    return boost::make_shared<self_type>(_prefix,_buildMesh,_worldComm,_subPrefix,_appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, appliShortRepository );
 }
 
 
@@ -339,15 +339,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
         if ( !listMarkerFaces.empty() )
             bilinearForm_PatternCoupled +=
                 on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
         if ( !listMarkerEdges.empty() )
             bilinearForm_PatternCoupled +=
                 on( _range=markededges(this->mesh(), listMarkerEdges),
-                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
         if ( !listMarkerPoints.empty() )
             bilinearForm_PatternCoupled +=
                 on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/ );
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -361,15 +364,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
             if ( !listMarkerFaces.empty() )
                 bilinearForm_PatternCoupled +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
             if ( !listMarkerEdges.empty() )
                 bilinearForm_PatternCoupled +=
                     on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
             if ( !listMarkerPoints.empty() )
                 bilinearForm_PatternCoupled +=
                     on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/ );
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
 
         }
     }
@@ -396,15 +402,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
             if ( !listMarkerFaces.empty() )
                 bilinearForm +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u,_rhs=F,_expr=expression(d) );
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
             if ( !listMarkerEdges.empty() )
                 bilinearForm +=
                     on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u,_rhs=F,_expr=expression(d) );
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
             if ( !listMarkerPoints.empty() )
                 bilinearForm +=
                     on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u,_rhs=F,_expr=expression(d) );
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
         }
         for ( auto const& bcDirComp : M_bcDirichletComponents )
         {
@@ -418,16 +427,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                 if ( !listMarkerFaces.empty() )
                     bilinearForm +=
                         on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                            _element=u[comp],_rhs=F,_expr=expression(d) );
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
                 if ( !listMarkerEdges.empty() )
                     bilinearForm +=
                         on( _range=markededges(this->mesh(), listMarkerEdges),
-                            _element=u[comp],_rhs=F,_expr=expression(d) );
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
                 if ( !listMarkerPoints.empty() )
                     bilinearForm +=
                         on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                            _element=u[comp],_rhs=F,_expr=expression(d) );
-
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
             }
         }
     }
@@ -444,8 +455,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
         for( auto const& d : M_bcDirichlet )
             bilinearForm +=
                 on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                    _element=u, _rhs=F,
-                    _expr=cst(0.) );
+                    _element=u, _rhs=F, _expr=cst(0.),
+                    _prefix=this->prefix() );
     }
 }
 

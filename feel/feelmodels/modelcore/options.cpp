@@ -99,7 +99,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         // other
         (prefixvm(prefix,"rebuild_mesh_partitions").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to rebuild mesh partitions ")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
-        (prefixvm(prefix,"directory-lib-expr").c_str(), Feel::po::value< std::string >(), "directory-lib-expr");
+        (prefixvm(prefix,"symbolic-expr.directory").c_str(), Feel::po::value< std::string >(), "symbolic-expr.directory");
         ;
 
     return appliBaseOptions
@@ -118,7 +118,6 @@ fluidMechanics_options(std::string const& prefix)
     fluidOptions.add_options()
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()/*->default_value("Navier-Stokes")*/, "fluid model : Navier-Stokes,Oseen,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
-        (prefixvm(prefix,"stress_tensor_law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
@@ -126,6 +125,7 @@ fluidMechanics_options(std::string const& prefix)
         //(prefixvm(prefix,"strain_tensor.use-sym-tensor").c_str(), Feel::po::value< bool >()->default_value(true), "sym tensor or not ")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1050 ), "density [ kg.m^3]")
         (prefixvm(prefix,"mu").c_str(), Feel::po::value<double>()->default_value( 0.00345 ), "dynamic viscosity [ Pa.s = kg/(m.s^2) ]")
+        (prefixvm(prefix,"viscosity.law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
         (prefixvm(prefix,"viscosity.zero_shear").c_str(), Feel::po::value< double >()->default_value( 0.056 ), "parameter mu_0 for generalized Newtonian [ Pa.s ]  ")
         (prefixvm(prefix,"viscosity.infinite_shear").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "parameter mu_inf for generalized Newtonian [ Pa.s ] ")
         (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
@@ -182,7 +182,6 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"do_export_wallshearstress").c_str(), Feel::po::value<bool>(), "doExportWallShearStress")
         (prefixvm(prefix,"do_export_viscosity").c_str(), Feel::po::value<bool>(), "doExportViscosity")
         (prefixvm(prefix,"do_export_meshale").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshALE")
-        (prefixvm(prefix,"do_export_meshdisplacementoninterface").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshDisplacementOnInterface")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
 
         (prefixvm(prefix,"periodicity.translate-x").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-x")
@@ -193,6 +192,7 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"periodicity.pressure-jump").c_str(), Feel::po::value<double>()->default_value(1.0), "periodicity.pressure-jump ")
 
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
+        (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
         ;
 
     fluidOptions.add_options()
@@ -249,7 +249,7 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-near-null-space").c_str(), Feel::po::value<bool>()->default_value( true ), "use-near-null-space")
         ;
     solidOptions.add( gmsh_options( prefixvm(prefix,"1dreduced") ) );
-    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+    return solidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( on_options( prefix ) );
 }
 
 Feel::po::options_description
@@ -292,6 +292,8 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-interface-operator").c_str(), Feel::po::value<bool>()->default_value( true ),"use-interface-operator")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.manual-scaling").c_str(), Feel::po::value<double>()->default_value( 1.0 ),"manual-scaling")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.without-interface-operator.precompute-mass-matrix").c_str(), Feel::po::value<bool>()->default_value( true ),"precompute-mass-matrix")
+
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")
         ;

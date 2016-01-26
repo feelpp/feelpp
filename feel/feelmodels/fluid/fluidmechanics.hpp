@@ -53,18 +53,18 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( std::string _prefix,
-                    bool _buildMesh=true,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string _subPrefix="",
-                    std::string _appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanics( std::string const& prefix,
+                    bool buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanics( self_type const& FM ) = default;
     //___________________________________________________________________________________//
-    static self_ptrtype New( std::string _prefix,
-                             bool _buildMesh=true,
-                             WorldComm const& _worldComm=Environment::worldComm(),
-                             std::string _subPrefix="",
-                             std::string _appliShortRepository=soption(_name="exporter.directory") );
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
@@ -107,7 +107,7 @@ public:
 private :
     map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcMovingBoundary, M_bcNeumannScalar, M_bcPressure, M_bcSlip, M_bcFluidOutlets;
+    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
     map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
     map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
 

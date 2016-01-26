@@ -714,13 +714,14 @@ SolverEigenSlepc<T>:: setSlepcDimensions()
     int ierr = 0;
 
     // Set eigenvalues to be computed.
+    PetscInt mpdValue = ( this->maximumProjectedDimension() != invalid_size_type_value )? this->maximumProjectedDimension() : PETSC_DEFAULT;
     ierr = EPSSetDimensions ( M_eps,
-                              this->numberOfEigenvalues(),
-                              this->numberOfEigenvaluesConverged(),
-                              this->maximumProjectedDimension() );
+                              (PetscInt)this->numberOfEigenvalues(),
+                              (PetscInt)this->numberOfEigenvaluesConverged(),
+                              mpdValue );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-    if( this->intervalA() < this->intervalB() )
+    if( (this->intervalA()+1e-12) < this->intervalB() )
     {
         ierr = EPSSetProblemType( M_eps, EPS_GHEP );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
