@@ -149,7 +149,6 @@ public:
         M_G( nRealDim, numPoints ),
         //M_measure( 1 ),
         //M_measurefaces( 0/*numTopologicalFaces*/ ),
-        M_normals( 0,0/*nRealDim, numTopologicalFaces*/ ),
         M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         //M_meas_pneighbors( 0 ),
         M_marker1(),
@@ -173,7 +172,6 @@ public:
         M_G( nRealDim, numPoints ),
         //M_measure( 1 ),
         //M_measurefaces( 0/*numTopologicalFaces*/ ),
-        M_normals( 0,0/*nRealDim, numTopologicalFaces*/ ),
         M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
         //M_meas_pneighbors( 0 ),
         M_marker1(),
@@ -638,17 +636,45 @@ public:
     /**
      * \return the normals at the barycenter of the faces
      */
-    FEELPP_DEPRECATED matrix_node_type const& normals() const
+    matrix_node_type normals() const
     {
-        return M_normals;
+        matrix_node_type _normals( nRealDim, numTopologicalFaces);
+        if  ( nDim != nRealDim )
+        {
+            CHECK( false ) << "normal when nDim != nRealDim is not implemented";
+            return _normals;
+        }
+
+        if ( !M_gm1.use_count() )
+            M_gm1 = gm1_ptrtype( new gm1_type );
+
+        auto pcf =  M_gm1->preComputeOnFaces( M_gm1, M_gm1->referenceConvex().barycenterFaces() );
+        auto ctx = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, 0 );
+        for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
+        {
+            ctx->update( *this, f );
+            ublas::column( _normals, f ) = ctx->unitNormal( 0 );
+        }
+        return _normals;
     }
 
     /**
      * \return the normal at the barycenter of the face \p f
      */
-    FEELPP_DEPRECATED ublas::matrix_column<matrix_node_type const>  normal( uint16_type f ) const
+    node_type normal( uint16_type f ) const
     {
-        return ublas::column( M_normals, f );
+        if  ( nDim != nRealDim )
+        {
+            CHECK( false ) << "normal when nDim != nRealDim is not implemented";
+            return node_type(0);
+        }
+
+        if ( !M_gm1.use_count() )
+            M_gm1 = gm1_ptrtype( new gm1_type );
+        auto pcf =  M_gm1->preComputeOnFaces( M_gm1, M_gm1->referenceConvex().barycenterFaces() );
+        auto ctx = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, f );
+        ctx->update( *this, f );
+        return ctx->unitNormal( 0 );
     }
 
     /**
@@ -888,7 +914,6 @@ private:
 
     //double M_measure;
     //std::vector<double> M_measurefaces;
-    matrix_node_type M_normals;
 
     //! store neighbor element id
     std::vector<std::pair<size_type,rank_type> > M_neighbors;
@@ -1014,8 +1039,6 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<true> )
 {
-    M_normals.resize( nRealDim, numTopologicalFaces );
-
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
     {
         // must be resize before ctx because used into
@@ -1044,7 +1067,6 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_t
     for ( int f = 0; f < numTopologicalFaces; ++f )
     {
         ctx->update( *this, f );
-        ublas::column( M_normals, f ) = ctx->unitNormal( 0 );
 
         double w = ( nDim == 3 )?f3[f]:( ( nDim==2 )?f2[f]:1 );
         //M_measurefaces[f] = w*ctx->J( 0 )*ctx->normalNorm( 0 );
@@ -1057,7 +1079,6 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updatep( typename gm_type::faces_precompute_type& pcf, mpl::bool_<false> )
 {
     // need because M_measurefaces is used in Geomap::Context
-    M_normals.resize( nRealDim, numTopologicalFaces );
     //M_measurefaces.reserve( numTopologicalFaces );
     //M_measurefaces.resize( numTopologicalFaces );
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
