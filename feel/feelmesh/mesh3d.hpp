@@ -583,17 +583,20 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
                                              permutation ) );
     }
 
-    element_iterator iv,  en;
-    boost::tie( iv, en ) = this->elementsRange();
-
-    for ( ; iv != en; ++iv )
+#if !defined( NDEBUG )
+    if ( this->components().test( MESH_UPDATE_FACES ) )
     {
-        for ( size_type j = 0; j < numLocalFaces(); j++ )
+        element_iterator iv,  en;
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
         {
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
+            for ( size_type j = 0; j < numLocalFaces(); j++ )
+            {
+                FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
+            }
         }
     }
-
+#endif
     DVLOG(2) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
 #if 1
