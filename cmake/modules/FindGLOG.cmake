@@ -56,12 +56,21 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog )
           OUTPUT_FILE "glog-configure"
           )
       else()
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} #CXXFLAGS=${CMAKE_CXX_FLAGS}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-          #      OUTPUT_QUIET
-          OUTPUT_FILE "glog-configure"
-          )
+        if ( APPLE )
+            execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+            #      OUTPUT_QUIET
+            OUTPUT_FILE "glog-configure"
+            )
+        else(APPLE)
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} #CXXFLAGS=${CMAKE_CXX_FLAGS}
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+            #      OUTPUT_QUIET
+            OUTPUT_FILE "glog-configure"
+            )
+        endif(APPLE)
       endif()
         set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
     endif()

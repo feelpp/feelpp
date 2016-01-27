@@ -143,6 +143,8 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
             auto const& eltGhost = mesh.element(*iteltghost,theprocGhost);
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
+                if ( !eltGhost.facePtr(f) )
+                    continue;
                 auto const& faceOnGhost = eltGhost.face(f);
                 for ( uint16_type vv = 0; vv < MeshType::face_type::numVertices && !findFace ; ++vv )
                 {
@@ -228,6 +230,8 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
             bool findFace=false;
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
+                if ( !eltGhost.facePtr(f) )
+                    continue;
                 auto const& faceOnGhost = eltGhost.face(f);
                 for ( uint16_type vv = 0; vv < MeshType::face_type::numEdges && !findFace ; ++vv )
                 {
@@ -1125,6 +1129,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
         for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
         {
+            if ( !eltOffProc.facePtr(f) )
+                continue;
             auto const& theface = eltOffProc.face(f);
             if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
             {

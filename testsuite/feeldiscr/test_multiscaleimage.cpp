@@ -148,11 +148,14 @@ BOOST_AUTO_TEST_CASE( test_run3 )
     tms3.run(2*ps,10*ps,2);
 }
 
+/*
+this size is really too big for a test
 BOOST_AUTO_TEST_CASE( test_run4 )
 {
     Test_MultiScale tms4(12345,67890);
     tms4.run(90*ps,1234*ps,4);
 }
+ */
 
 BOOST_AUTO_TEST_CASE( test_run5 )
 {
