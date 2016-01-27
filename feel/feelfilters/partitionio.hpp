@@ -384,7 +384,7 @@ void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
     pt::read_json(M_filename, pt);
     //M_h5_filename = pt.get<std::string>("mesh.h5");
     //if ( fs::exist( fs::path(M_filename).parent_path()/ fs::path(M_h5_filename) ) )
-    meshParts->setNumberOfPartitions(pt.get("mesh.partition.n",meshParts->worldComm()->globalSize()));
+    meshParts->setNumberOfPartitions(pt.get("mesh.partition.n",meshParts->worldComm().globalSize()));
     auto physicals = pt.get_child_optional("mesh.physicals");
 
     if ( physicals )
