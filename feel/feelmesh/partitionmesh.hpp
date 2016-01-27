@@ -27,6 +27,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <feel/feelmesh/meshpartitionset.hpp>
 #include <feel/feelpartition/partitioner.hpp>
+#include <feel/feelpartition/partitionermetis.hpp>
 
 
 
@@ -40,7 +41,7 @@ namespace Feel {
  * @return a std::unique_ptr to a MeshPartitionSet
  */
 template<typename MeshType>
-std::unique_ptr<MeshPartitionSet<MeshType>
+std::unique_ptr<MeshPartitionSet<MeshType>>
 partitionMesh( boost::shared_ptr<MeshType> mesh,
                rank_type nGlobalParts )
 {

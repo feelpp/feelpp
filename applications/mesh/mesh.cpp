@@ -21,11 +21,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include <feel/feelconfig.h>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelpartition/partitionermetis.hpp>
+#include <feel/feelmesh/partitionmesh.hpp>
+#include <feel/feelfilters/partitionio.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -35,7 +36,10 @@ int main( int argc, char** argv )
 {
     po::options_description opts ( "Mesh basic information and partition");
     opts.add_options()
-        ( "numPartition", po::value<int>()->default_value(1), "Number of partitions" );
+        ( "mesh.filename", po::value<std::string>(), "mesh file name " )
+        ( "mesh.partition.p", po::value<bool>()->default_value(0), "partition the mesh" )
+        ( "mesh.partition.n", po::value<int>()->default_value(2), "Number of partitions" )
+        ( "mesh.partition.t", po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" );
 
     // initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
@@ -45,24 +49,27 @@ int main( int argc, char** argv )
                                    _email="feelpp-devel@feelpp.org" ) );
 
     // create a mesh with GMSH using Feel++ geometry tool
-    auto numPartition = ioption(_name="numPartition");
+    auto numPartition = ioption(_name="mesh.partition.n");
     tic();
     //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>> );
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0 );
     toc("loading mesh done",FLAGS_v>0);
+    
+    if ( boption("mesh.partition.p") && Environment::numberOfProcessors() == 1 )
+    {
+        // build a MeshPartitionSet based on a mesh partition that will feed a
+        // partition io data structure to generate a parallel hdf5 file from which
+        // the parallel mesh can be loaded
+        using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
+        io_t io( fs::path(soption("mesh.filename")).stem().string()+".json" );
+        io.write( partitionMesh( mesh, ioption("mesh.partition.n") ) );
+    } 
 
     auto Xhd0 = Pdh<0>(mesh);
     auto measures = Xhd0->element();
     measures.on(_range=elements(mesh),_expr=vf::meas());
     double measMin = measures.min();
     double measMax = measures.max();
-#if 0
-    //partition( "metis", mesh, numPartitions );
-    PartitionerMetis<decltype(mesh)> metis;
-    metis.partition( mesh, numPartition );
-//mesh->saveHDF5( fs::path(soption("gmsh.filename")).string()+".h5" );
-       
-#endif
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
 
     if ( Environment::isMasterRank() )
@@ -81,7 +88,7 @@ int main( int argc, char** argv )
         std::cout << "                h avg : " << mesh->hAverage() << std::endl;
         std::cout << "              measure : " << mesh->measure() << "\t" << measMin<<" : " << measMax << std::endl;
 
-        std::cout << "Number of Partitions : " << numPartition << std::endl ;
+        std::cout << "Number of Partitions : " << mesh->numberOfPartitions() << std::endl ;
     }
 
     for( auto marker: mesh->markerNames() )
