@@ -827,8 +827,8 @@ public:
         :
         super( id ),
         super2(),
-        M_vertices( numLocalVertices, 0 ),
-        M_vertex_permutation( numLocalVertices )
+        M_vertices( numLocalVertices, nullptr )
+        //M_vertex_permutation( numLocalVertices )
     {
     }
     /**
@@ -1011,10 +1011,12 @@ public:
     /**
      * \sa edgePermutation(), permutation()
      */
-    vertex_permutation_type facePermutation( uint16_type i ) const
+    vertex_permutation_type facePermutation( uint16_type /*i*/ ) const
     {
-        FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
-        return M_vertex_permutation[i];
+        return edge_permutation_type();
+
+        //FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
+        //return M_vertex_permutation[i];
     }
 
 private:
@@ -1034,7 +1036,7 @@ private:
 
     std::vector<uint8_type> M_map;
     ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
-    ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
+    //ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
 template<uint16_type Dim,
@@ -1454,13 +1456,12 @@ public:
         super( id ),
         super2(),
         M_edges( numLocalEdges, nullptr ),
-        M_faces( numLocalFaces ),
+        M_faces( numLocalFaces, nullptr ),
         M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) ),
-        M_face_permutation( numLocalFaces )
+        M_face_permutation( numLocalFaces, face_permutation_type( face_permutation_type::IDENTITY ) )
     {
-        std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
-
-        std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
+        //std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
+        //std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1611,7 +1612,7 @@ public:
     edge_type const* edgePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+        //DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
 
         return M_edges[i];
     }

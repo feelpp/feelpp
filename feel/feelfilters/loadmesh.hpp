@@ -173,7 +173,7 @@ BOOST_PARAMETER_FUNCTION(
         LOG(INFO) << " Loading mesh in HDF5 format";
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         auto m = boost::make_shared<_mesh_type>();
-        m->loadHDF5( mesh_name.string() );
+        m->loadHDF5( mesh_name.string(), update );
         return m;
     }
 #endif
