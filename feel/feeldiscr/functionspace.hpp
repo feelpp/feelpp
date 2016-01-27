@@ -3429,10 +3429,13 @@ public:
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
 
-            if ( !fs::exists( fs::path( path ) ) )
+            // if directory does not exist, create it only by one process
+            if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
                 fs::create_directories( fs::path( path ) );
             }
+            // wait creating directory
+            this->worldComm().barrier();
 
             std::ostringstream os1;
             os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";

@@ -110,7 +110,7 @@ endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
-SET(FEELPP_DEFAULT_TEST_TIMEOUT "60")
+SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
@@ -127,7 +127,7 @@ SET(FEELPP_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
 if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
   # max order to instantiate
-  set(FEELPP_INSTANTIATION_ORDER_MAX 5)
+  set(FEELPP_INSTANTIATION_ORDER_MAX 3)
 endif()
 
 
@@ -301,10 +301,10 @@ MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
+include( feelpp.macros )
+
 # Find feel++ dependencies 
 include( feelpp.dependencies )
-
-include( feelpp.macros )
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -440,5 +440,5 @@ include(feelpp.directive)
 # The add_subdirectory is way too soon to get those values
 set(config_file "cmake/modules/Feel++Config.cmake")
 configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake COMPONENT Devel)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
 

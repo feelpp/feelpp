@@ -273,5 +273,11 @@ public:
     }
 };
 
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Hypercube<Dim, Order, RDim>::topological_dimension;
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Hypercube<Dim, Order, RDim>::nOrder;
+
 }
 #endif /* __Hypercube_H */

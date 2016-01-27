@@ -1557,7 +1557,7 @@ ConfigurePC::run( PC& pc )
 
 void
 updateOptionsDescKSP( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     std::string kspctx = (sub.empty())? "" : sub+"-";
 
@@ -1603,7 +1603,7 @@ updateOptionsDescKSP( po::options_description & _options, std::string const& pre
 }
 po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, useDefaultValue, kspType, rtol, maxit );
@@ -1612,7 +1612,7 @@ getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDe
 
 po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, true, kspType, rtol, maxit );

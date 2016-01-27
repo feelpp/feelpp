@@ -23,10 +23,10 @@ endforeach()
 
 # Taylor Hood iso-parametric with pressure , solid same order pressusre
 foreach( _DIM 2 3)
-  feelpp_max( MAX_ORDER 3 ${FEELPP_INSTANTIATION_ORDER_MAX})
-  message(STATUS "[feelpp] FSI ${_DIM}D iso-parametric PN+1PNG1 N=3..${MAX_ORDER}")
-  foreach( _FLUID_U_ORDER RANGE 3 ${MAX_ORDER} )
-    math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
+  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FSI ${_DIM}D iso-parametric PN+1PNGN N=2..${MAX_ORDER}")
+  foreach( _FLUID_P_ORDER RANGE 2 ${MAX_ORDER} )
+    math(EXPR _FLUID_U_ORDER '${_FLUID_P_ORDER}+1')
     genLibFSI(
       DIM ${_DIM}
       FLUID_U_ORDER ${_FLUID_U_ORDER}

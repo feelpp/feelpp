@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+
 namespace Feel
 {
 template< typename space_type >
