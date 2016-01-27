@@ -154,8 +154,8 @@ public:
     template<int GeoOrder>
     struct GetImMeasure
     {
+        // quadrature formula used in entity measure (for ho geo, need to check)
         static const uint16_type quad_order = (nOrder-1)*nDim;
-        // quadrature formula used in entity measure (only true for geoOrder=1)
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
                                   mpl::identity<typename IMGeneric<quad_order,Dim,Hypercube,Gauss,double>::type >,
                                   mpl::identity<typename IMGeneric<quad_order,Dim,Simplex,Gauss,double>::type > >::type::type type;
@@ -171,10 +171,7 @@ public:
         super( 0 ),
         M_points( numPoints ),
         M_G( nRealDim, numPoints ),
-        //M_measure( 1 ),
-        //M_measurefaces( 0/*numTopologicalFaces*/ ),
-        M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
-        //M_meas_pneighbors( 0 ),
+        M_neighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -194,10 +191,7 @@ public:
         super( id ),
         M_points( numPoints ),
         M_G( nRealDim, numPoints ),
-        //M_measure( 1 ),
-        //M_measurefaces( 0/*numTopologicalFaces*/ ),
-        M_neighbors( 0 ),//numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) ),
-        //M_meas_pneighbors( 0 ),
+        M_neighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
