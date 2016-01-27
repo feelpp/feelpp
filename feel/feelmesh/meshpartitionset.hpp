@@ -554,7 +554,6 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
     }
 }
 
-
 } // namespace Feel
 
 #endif // FEELPP_MESHPARTITION_HPP
