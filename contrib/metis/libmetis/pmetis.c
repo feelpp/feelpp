@@ -88,7 +88,7 @@
            
 */
 /*************************************************************************/
-int METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
+int Feel_METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
           idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, 
           idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options, 
           idx_t *objval, idx_t *part)
