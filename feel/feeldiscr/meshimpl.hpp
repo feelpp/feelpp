@@ -362,11 +362,13 @@ Mesh<Shape, T, Tag>::updateMeasures()
     if ( updateMeasureWithPc )
     {
         pc = M_gm->preCompute( M_gm, thequad.points() );
-        pcf = M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
+        if ( nDim == nRealDim ) // else not works
+            pcf = M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
         if ( meshIsStraightened )
         {
             pc1 = M_gm1->preCompute( M_gm1, thequad1.points() );
-            pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
+            if ( nDim == nRealDim )
+                pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
         }
     }
 
@@ -407,7 +409,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                     M_local_measbdy += ( *_faces.first )->measure();
 #else
-        if ( nDim == 1 )
+        if ( nDim == 1 || nDim != nRealDim )
             M_local_measbdy = 0;
         else
             for ( int f = 0; f < iv->numTopologicalFaces; ++f )
