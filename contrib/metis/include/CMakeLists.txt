@@ -1,3 +1,3 @@
 if(METIS_INSTALL)
-  install(FILES metis.h DESTINATION include)
+  install(FILES feelmetis.h DESTINATION include)
 endif()

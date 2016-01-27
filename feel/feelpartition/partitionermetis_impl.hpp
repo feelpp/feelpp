@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 17 May 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -26,7 +26,8 @@
 
 namespace Metis {
 extern "C" {
-#include <metis.h>
+    //#include <metis.h>
+    #include <feelmetis.h>
 } //"C"
 }
 #include <feel/feelpartition/csrgraphmetis.hpp>
@@ -35,7 +36,7 @@ extern "C" {
 namespace Feel {
 
 template<typename MeshType>
-void 
+void
 PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 {
     LOG(INFO) << "PartitionerMetis::partitionImpl starts...";
@@ -77,10 +78,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
     // Invoke METIS, but only on processor 0.
     // Then broadcast the resulting decomposition
-    if ( Environment::isMasterRank() )
+    if ( mesh->worldComm().isMasterRank() )
     {
         CSRGraphMetis<Metis::idx_t> csr_graph;
-        
         csr_graph.offsets.resize(mesh->numElements()+1, 0);
 
         // Local scope for these
@@ -99,7 +99,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 const dof_id_type gid = global_index_map[elt.id()];
 
                 CHECK( gid < vwgt.size() ) << "Invalid gid " << gid << " greater or equal than " << vwgt.size();
-            
+
                 // maybe there is a better weight?
                 // The weight is used to define what a balanced graph is
                 //if(!_weights)
@@ -117,12 +117,13 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                     size_type neighbor_id = elt.neighbor( ms ).first;
                     if ( neighbor_id != invalid_size_type_value )
                     {
-                                        
                         num_neighbors++;
                     }
                 }
+#if 0
                 std::cout << "element id " << elt.id() << " gid: " << gid << " w: " << vwgt[gid] 
                           << " neigh: " << num_neighbors << std::endl;
+#endif
                 csr_graph.prepareNumberNonZeros(gid, num_neighbors);
 #ifndef NDEBUG
                 graph_size += num_neighbors;
@@ -165,13 +166,13 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
         // Use recursive if the number of partitions is less than or equal to 8
         if (np <= 8)
-            Metis::METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+            Metis::Feel_METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                             NULL, &nparts, NULL, NULL, NULL,
                                             &edgecut, &part[0]);
 
         // Otherwise  use kway
         else
-            Metis::METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+            Metis::Feel_METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                        NULL, &nparts, NULL, NULL, NULL,
                                        &edgecut, &part[0]);
 
@@ -181,29 +182,26 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
     // id for each element, but in terms of the contiguous indexing we defined
     // above
     LOG(INFO) << "PartitionerMetis::partitionImpl nelements : " << nelements(elements(mesh));
-    for( auto it = mesh->beginElement(), en = mesh->endElement(); it != en; ++it )
-    {
-        dof_id_type gid = global_index_map[it->id()];
-        CHECK( gid < part.size() ) << "Invalid gid " << gid << " greater or equal than partition size " << part.size();
-        rank_type pid = static_cast<rank_type>(part[gid]);
 #if 0
-        mesh->elements().modify( it,
-                                 [&pid]( element_type& e ) 
-                                 { 
-                                     e.setProcessId( pid ); 
-                                     std::cout << "element id " << e.id() << " process id " << e.processId() << "\n"; 
-                                 });
-#else
-        std::cout << "element id " << it->id() << " process id " << pid << "\n"; 
-        auto e = *it;
-        e.setProcessId( pid );
-        mesh->elements().replace( it, e );
+    std::cout << "dist nElt " << std::distance(mesh->beginElement(), mesh->endElement() ) << "\n";
+    std::cout << "call nElt " << nelements(elements(mesh)) << "\n";
 #endif
+
+    for (auto const& pairElt : global_index_map )
+    {
+        dof_id_type eltId = pairElt.first;
+        dof_id_type gid = pairElt.second;
+        rank_type initialPid = 0;
+        rank_type newPid = static_cast<rank_type>(part[gid]);
+        auto eltToUpdate = mesh->elementIterator( eltId,initialPid );
+        mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
     }
-    for( auto& e : allelements(mesh) )
+#if 0
+    for( auto const& e : allelements(mesh) )
     {
         std::cout << "2. element id " << e.id() << " process id " << e.processId() << "\n"; 
     }
+#endif
 
     auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
     LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
