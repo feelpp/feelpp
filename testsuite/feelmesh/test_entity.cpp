@@ -245,15 +245,19 @@ BOOST_AUTO_TEST_CASE( test_triangle )
     BOOST_CHECK_SMALL( ublas::norm_2( tria.barycenter()-G1 ), 1e-14 );
     BOOST_CHECK_CLOSE( tria.measure(), 1, 1e-14 );
     // check normals
+    auto allnormals = tria.normals();
     G1( 0 )=1./math::sqrt( 2. );
     G1( 1 )=1./math::sqrt( 2. );
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
     G1( 0 )=-1./math::sqrt( 2. );
     G1( 1 )=1./math::sqrt( 2. );
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 1 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
     G1( 0 )=0;
     G1( 1 )=-1.;
     BOOST_CHECK_SMALL( ublas::norm_2( tria.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
     // check face measures
     BOOST_CHECK_CLOSE( tria.faceMeasure( 0 ), math::sqrt( 2. ), 2e-14 );
     BOOST_CHECK_CLOSE( tria.faceMeasure( 1 ), math::sqrt( 2. ), 1e-14 );
@@ -316,6 +320,93 @@ BOOST_AUTO_TEST_CASE( test_tetra )
     BOOST_CHECK_CLOSE( tetra.faceMeasure( 2 ), 2, 1e-14 );
 #endif
 }
+BOOST_AUTO_TEST_CASE( test_interval_hypercube )
+{
+    using namespace Feel;
+
+    typedef GeoND<1,Hypercube<1, 1, 1> >::point_type point_type;
+    // interval
+    GeoND<1,Hypercube<1, 1, 1> > interval;
+    point_type V1( 1 );
+    V1( 0 )=1;
+    point_type V2( 1 );
+    V2( 0 )=3;
+    interval.setPoint( 0, V1 );
+    interval.setPoint( 1, V2 );
+    ublas::vector<double> G1( 1 );
+    G1( 0 )=2;
+    interval.update();
+    std::cout << "[interval] barycenter = " << interval.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( interval.measure(), 2, 1e-14 );
+    G1( 0 )=-1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal( 0 )-G1 ), 1e-14 );
+    G1( 0 )=1;
+    BOOST_CHECK_SMALL( ublas::norm_2( interval.normal( 1 )-G1 ), 1e-14 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( interval.G() - interval.vertices() ), 1e-14 );
+}
+BOOST_AUTO_TEST_CASE( test_quadrangle )
+{
+    using namespace Feel;
+
+    typedef GeoND<2,Hypercube<2, 1, 2> >::point_type point_type;
+    // interval
+    GeoND<2,Hypercube<2, 1, 2> > quad;
+
+    point_type V1;
+    V1( 0 )=1;
+    V1( 1 )=0;
+    point_type V2;
+    V2( 0 )=3;
+    V2( 1 )=0;
+    point_type V3;
+    V3( 0 )=4;
+    V3( 1 )=2;
+    point_type V4;
+    V4( 0 )=2;
+    V4( 1 )=1;
+    quad.setPoint( 0, V1 );
+    quad.setPoint( 1, V2 );
+    quad.setPoint( 2, V3 );
+    quad.setPoint( 3, V4 );
+    ublas::vector<double> G1( 2 );
+    G1( 0 )=5./2.;
+    G1( 1 )=3./4.;
+    quad.update();
+    std::cout << "[quad] barycenter = " << quad.barycenter() << "\n";
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.barycenter()-G1 ), 1e-14 );
+    BOOST_CHECK_CLOSE( quad.measure(), (5./2.), 1e-14 );
+
+    // check normals
+    auto allnormals = quad.normals();
+    G1( 0 )=0.;
+    G1( 1 )=-1.;
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 0 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 0 )-G1 ), 1e-14 );
+    G1( 0 )=2./math::sqrt( 5. );
+    G1( 1 )=-1./math::sqrt( 5. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 1 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 1 )-G1 ), 1e-14 );
+    G1( 0 )=-1/math::sqrt( 5. );
+    G1( 1 )=2./math::sqrt( 5. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 2 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 2 )-G1 ), 1e-14 );
+    G1( 0 )=-1./math::sqrt( 2. );
+    G1( 1 )=1./math::sqrt( 2. );
+    BOOST_CHECK_SMALL( ublas::norm_2( quad.normal( 3 )-G1 ), 1e-14 );
+    BOOST_CHECK_SMALL( ublas::norm_2( ublas::column( allnormals, 3 )-G1 ), 1e-14 );
+
+    // check face measures
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 0 ), 2., 2e-14 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 1 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 2 ), math::sqrt( 5. ), 1e-12 );
+    BOOST_CHECK_CLOSE( quad.faceMeasure( 3 ), math::sqrt( 2. ), 1e-12 );
+
+    BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( quad.G() - quad.vertices() ), 1e-14 );
+}
+
+
 BOOST_AUTO_TEST_CASE( test_entity_range_ )
 {
     //test_entity_range<1,1>();
