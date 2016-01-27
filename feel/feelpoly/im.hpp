@@ -201,6 +201,17 @@ struct _Q
 };
 
 
+template<int IMORDER,
+         int DIM,
+         template<uint16_type, uint16_type, uint16_type> class Entity,
+         template<class Convex, uint16_type O, typename T2> class QPS,
+         typename T>
+struct IMGeneric
+{
+    typedef typename _Q<IMORDER,QPS>::template apply<DIM,T,Entity>::type type;
+};
+
+
 #if 0
 template<int Dim,
          uint16_type Order,
