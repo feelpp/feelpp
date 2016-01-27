@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2010 Universite de Grenoble 1 (Joseph Fourier)
-  Copyright (C) 2010-2015 Feel++ Consortium
+  Copyright (C) 2010-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -183,6 +183,8 @@ using boundarypoints_t = boost::tuple<mpl::size_t<MESH_POINTS>,
 template<typename MeshType>
 using internalpoints_t = boundarypoints_t<MeshType>;
 
+template<typename IteratorRangeT>
+using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
 /**
  * namespace for meta mesh computation data structure
  */

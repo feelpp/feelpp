@@ -17,7 +17,7 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX"
+    "NAME;PREFIX;DEPS"
     ""
     ${ARGN}
     )
@@ -28,6 +28,11 @@ macro(feelpp_add_testcase )
     set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
   endif()
   add_custom_target(${target})
+  if ( FEELPP_CASE_DEPS )
+    foreach(case ${FEELPP_CASE_DEPS})
+      add_dependencies(${target} ${FEELPP_CASE_PREFIX}_add_testcase_${case})
+    endforeach()
+  endif()
   ADD_CUSTOM_COMMAND(
     TARGET ${target}
     POST_BUILD
@@ -399,3 +404,48 @@ macro(feelpp_max max var1 var2 )
   endif()
 endmacro(feelpp_max)
 
+#
+# compute the min of two variables
+macro(feelpp_min min var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${min} ${var2})
+  else()
+    set(${min} ${var1})
+  endif()
+endmacro(feelpp_min)
+
+# This macros cleans up a variable containing a list of paths
+# It:
+# - Removes any reference to the original git source directory used for builds (important for instal with tarball)
+# - Removes any reference to the original build directory (important for instal with tarball)
+function(feelpp_clean_variable old_var new_var)
+    set(tmp_var "")
+    foreach(_entry ${old_var})
+        # Try to find build dir reference
+        set(_found_position "-1")
+        string(FIND ${_entry} ${CMAKE_BINARY_DIR} _found_position)
+        if(NOT (${_found_position} MATCHES "0") )
+            # Try to find source dir reference
+            set(_found_position "-1")
+            string(FIND ${_entry} ${CMAKE_SOURCE_DIR} _found_position)
+            if(NOT (${_found_position} MATCHES "0"))
+                set(tmp_var "${tmp_var};${_entry}")
+            endif()
+        endif()
+    endforeach()
+    set(${new_var} ${tmp_var} PARENT_SCOPE)
+endfunction(feelpp_clean_variable)
+
+function(feelpp_split_libs libs libnames libpaths)
+    set(_paths "")
+    set(_names "")
+    foreach(_lib ${libs})
+        get_filename_component(_path ${_lib} PATH)
+        get_filename_component(_name ${_lib} NAME)
+        set(_paths ${_paths} ${_path})
+        set(_names ${_names} ${_name})
+    endforeach()
+
+    set(${libnames} ${_names} PARENT_SCOPE)
+    set(${libpaths} ${_paths} PARENT_SCOPE)
+endfunction(feelpp_split_libs)

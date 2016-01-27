@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-30
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -47,6 +47,12 @@ struct Ned1h
 };
 
 } // meta
+
+template<typename MeshType,int Order>
+using Ned1h_type = typename meta::Ned1h<MeshType,Order>::type;
+
+template<typename MeshType,int Order>
+using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order>::ptrtype;
 
 /**
  * \fn Ned1h<k,MeshType>

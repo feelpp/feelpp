@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2013-12-24
 
-   Copyright (C) 2013-2015 Feel++ Consortium
+   Copyright (C) 2013-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -173,7 +173,7 @@ BOOST_PARAMETER_FUNCTION(
         LOG(INFO) << " Loading mesh in HDF5 format";
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         auto m = boost::make_shared<_mesh_type>();
-        m->loadHDF5( mesh_name.string() );
+        m->loadHDF5( mesh_name.string(), update );
         return m;
     }
 #endif

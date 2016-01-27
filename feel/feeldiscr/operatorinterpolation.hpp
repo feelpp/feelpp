@@ -6,7 +6,7 @@
        Date: 2008-02-01
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2015 Feel++ Consortium
+  Copyright (C) 2010-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -71,8 +71,15 @@ public :
     using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
     using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
     using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
-    
-    constexpr InterpolationTypeBase( bool useComm=true, 
+
+    constexpr InterpolationTypeBase()
+        :
+        M_searchWithCommunication( true ),
+        M_componentsAreSamePoint( true ),
+        M_onlyLocalizeOnBoundary( false ),
+        M_nbNearNeighborInKdTree( 15)
+        {}  
+    constexpr InterpolationTypeBase( bool useComm, 
                                      bool compAreSamePt=true, 
                                      bool onlyLocalizeOnBoundary=false, 
                                      int nbNearNeighborInKdTree=15 )
@@ -85,6 +92,9 @@ public :
 
     InterpolationTypeBase( InterpolationTypeBase const& a) = default;
     InterpolationTypeBase( InterpolationTypeBase && a) = default;
+
+    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
 
     constexpr bool searchWithCommunication() const noexcept { return M_searchWithCommunication; }
     constexpr bool componentsAreSamePoint() const noexcept { return M_componentsAreSamePoint; }
@@ -139,7 +149,9 @@ struct InterpolationNonConforming : public InterpolationTypeBase<false,interpola
     using super = InterpolationTypeBase<false,interpolation_operand_type::ID>;
     static const uint16_type value=super::isConforming();
 
-    constexpr InterpolationNonConforming( bool useComm=true, 
+    constexpr InterpolationNonConforming() = default;
+
+    constexpr InterpolationNonConforming( bool useComm, 
                                           bool compAreSamePt=true, 
                                           bool onlyLocalizeOnBoundary=false, 
                                           int nbNearNeighborInKdTree=15 )
@@ -156,6 +168,7 @@ struct InterpolationNonConforming : public InterpolationTypeBase<false,interpola
         {}
     InterpolationNonConforming( InterpolationNonConforming const& ) = default;
     InterpolationNonConforming( InterpolationNonConforming && ) = default;
+    InterpolationNonConforming& operator=( InterpolationNonConforming const& ) = default;
 };
 using InterpolationNonConforme = InterpolationNonConforming;
 struct InterpolationConforming : public InterpolationTypeBase<true,interpolation_operand_type::ID>
@@ -163,7 +176,9 @@ struct InterpolationConforming : public InterpolationTypeBase<true,interpolation
     using super = InterpolationTypeBase<true,interpolation_operand_type::ID>;
     static const uint16_type value=super::isConforming();
 
-    constexpr InterpolationConforming(bool useComm=true, 
+    constexpr InterpolationConforming() = default;
+    
+    constexpr InterpolationConforming(bool useComm, 
                                       bool compAreSamePt=true, 
                                       bool onlyLocalizeOnBoundary=false, 
                                       int nbNearNeighborInKdTree=15 )
@@ -180,7 +195,7 @@ struct InterpolationConforming : public InterpolationTypeBase<true,interpolation
         {}
     InterpolationConforming( InterpolationConforming const& ) = default;
     InterpolationConforming( InterpolationConforming && ) = default;
-    
+    InterpolationConforming& operator=( InterpolationConforming const& ) = default;
     
 };
 using InterpolationConforme = InterpolationConforming;
@@ -194,6 +209,8 @@ template<typename C>
 struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::GRADIENT>
 {
     using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::GRADIENT>;
+
+    constexpr InterpolationGradient() = default;
     constexpr InterpolationGradient( C c,
                                      bool useComm = true,
                                      bool compAreSamePt=true, 
@@ -204,12 +221,14 @@ struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,int
         {}
     InterpolationGradient( InterpolationGradient const& ) = default;
     InterpolationGradient( InterpolationGradient && ) = default;
+    InterpolationGradient& operator=( InterpolationGradient const& ) = default;
 };
 
 template<typename C>
 struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>
 {
     using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>;
+    constexpr InterpolationCurl() = default;
     constexpr InterpolationCurl( C c,
                                      bool useComm = true,
                                      bool compAreSamePt=true, 
@@ -220,22 +239,25 @@ struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpo
         {}
     InterpolationCurl( InterpolationCurl const& ) = default;
     InterpolationCurl( InterpolationCurl && ) = default;
+    InterpolationCurl& operator=( InterpolationCurl const& ) = default;
 };
 
 template<typename C>
 struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>
 {
     using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>;
+    constexpr InterpolationDiv() = default;
     constexpr InterpolationDiv( C c,
-                                     bool useComm = true,
-                                     bool compAreSamePt=true, 
-                                     bool onlyLocalizeOnBoundary=false, 
-                                     int nbNearNeighborInKdTree=15 )
+                                bool useComm = true,
+                                bool compAreSamePt=true, 
+                                bool onlyLocalizeOnBoundary=false, 
+                                int nbNearNeighborInKdTree=15 )
         :
         super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
         {}
     InterpolationDiv( InterpolationDiv const& ) = default;
     InterpolationDiv( InterpolationDiv && ) = default;
+    InterpolationDiv& operator=( InterpolationDiv const& ) = default;
 };
 
 template<typename C, typename ...Args>
@@ -3248,11 +3270,81 @@ struct opinterprangetype
  */
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 using operator_interpolation_t = 
-    OperatorInterpolation<DomainSpaceType, 
-                          ImageSpaceType,
-                          range_t<IteratorRange>,
-                          InterpType>;
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationNonConforming >
+using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType =InterpolationNonConforming>
+using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
     
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_ptr_t = boost::shared_ptr<Div_t<DomainSpaceType,
+                                          ImageSpaceType,
+                                          IteratorRange,
+                                          InterpType>>;
+
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,

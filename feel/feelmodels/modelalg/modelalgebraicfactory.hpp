@@ -158,7 +158,7 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
-
+        void solve( std::string const& type,vector_ptrtype& sol );
         void linearSolver( vector_ptrtype &U );
         void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ );
         void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
@@ -170,7 +170,7 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         // fonctions obseletes
-        void AlgoPtFixe(vector_ptrtype U);
+        void AlgoPicard(vector_ptrtype U);
         //OLD version (without petsc) : not up
         void AlgoNewton(vector_ptrtype U);
 
