@@ -6,7 +6,7 @@
        Date: 2008-02-14
 
   Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public

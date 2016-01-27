@@ -29,10 +29,14 @@
 
 namespace Feel {
 
-ModelParameters::ModelParameters()
+ModelParameters::ModelParameters( WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
-ModelParameters::ModelParameters(pt::ptree const& p)
+ModelParameters::ModelParameters( pt::ptree const& p, WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
 ModelParameters::~ModelParameters()
@@ -65,17 +69,34 @@ ModelParameters::setup()
             {
                 try
                 {
-                    auto val= f.get<double>("value");
+                    auto val= M_p.get<std::string>(v.first);
                     LOG(INFO) << "adding parameter " << t << " with value " << val;
-                    this->operator[](t) = ModelParameter( t, val, val, val );
+                    this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
                 }
                 catch( ... )
                 {
-                    this->operator[](t) = ModelParameter( t, 0., 0., 0. );
+                    try
+                    {
+                        auto val= f.get<double>("value");
+                        LOG(INFO) << "adding parameter " << t << " with value " << val;
+                        this->operator[](t) = ModelParameter( t, val, val, val );
+                    }
+                    catch( ... )
+                    {
+                        try
+                        {
+                            auto val= f.get<std::string>("value");
+                            LOG(INFO) << "adding parameter " << t << " with value " << val;
+                            this->operator[](t) = ModelParameter( t, val, M_directoryLibExpr, M_worldComm );
+                        }
+                        catch( ... )
+                        {
+                            this->operator[](t) = ModelParameter( t, 0., 0., 0. );
+                        }
+                    }
                 }
             }
         }
-        
     }
 }
 
@@ -95,6 +116,40 @@ ModelParameters::saveMD(std::ostream &os)
   }
   os << "\n";
 }
+
+
+void
+ModelParameters::updateParameterValues()
+{
+#if 0
+    for( auto const& p : *this )
+        if ( p.second.hasExpression() )
+            for ( auto const& mysymb : p.second.expression().expression().symbols() )
+                std::cout << "p.first " << p.first << " mysymb " << mysymb.get_name() << "\n";
+#endif
+    std::map<std::string,double> mp;
+    for( auto const& p : *this )
+        if ( !p.second.hasExpression() || p.second.expression().expression().symbols().empty() )
+            mp[p.first] = p.second.value();
+    // update all parameters with expression which not depends of symbols (can be improved)
+    this->setParameterValues( mp );
+}
+void
+ModelParameters::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for( auto & p : *this )
+        p.second.setParameterValues( mp );
+}
+
+std::map<std::string,double>
+ModelParameters::toParameterValues() const
+{
+    std::map<std::string,double> pv;
+    for( auto const& p : *this )
+        pv[p.first]=p.second.value();
+    return pv;
+}
+
 
 
 }

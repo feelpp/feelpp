@@ -4,9 +4,14 @@
     "Model":"Navier-Stokes",
     "Parameters":
     {
-        "ubar":
-        {
-            "value":"1"
+        "ubar":"1.0"
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "name":"myFluidMat",
+            "rho":"1.0e3",
+            "mu":"1.0"
         }
     },
     "BoundaryConditions":
@@ -42,8 +47,24 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure"],
-        "Force":["wall2"]
+        "Fields":["velocity","pressure","pid"],
+        "Measures":
+        {
+            "Forces":"wall2",
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0.6,0.2,0}",
+                    "fields":"pressure"
+                },
+                "pointB":
+                {
+                    "coord":"{0.15,0.2,0}",
+                    "fields":"pressure"
+                }
+            }
+        }
     }
 
 }

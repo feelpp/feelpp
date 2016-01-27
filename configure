@@ -14,7 +14,7 @@ Options:
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
      --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
-     --max-order=x                   maximum polynomial order to instantiate(default: 5)
+     --max-order=x                   maximum polynomial order to instantiate(default: 3)
      --cxxflags                      override cxxflags 
      --cmakeflags                    add extra cmake flags 
      --prefix=PATH                   define install path
@@ -31,7 +31,7 @@ _HAS_ERROR=no
 _WANT_HELP=no
 PROJECT_INSTALL_PREFIX=`pwd`
 PROJECT_STD_CPP=14
-PROJECT_MAX_ORDER=5
+PROJECT_MAX_ORDER=3
 PROJECTSRCROOT=`dirname $0`
 GENERATOR="Unix Makefiles"
 

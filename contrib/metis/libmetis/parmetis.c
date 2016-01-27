@@ -25,7 +25,7 @@
       sizes array.
 */
 /*************************************************************************/
-int METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+int Feel_METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
            idx_t npes, idx_t *options, idx_t *perm, idx_t *iperm, idx_t *sizes) 
 {
   idx_t i, ii, j, l, nnvtxs=0;

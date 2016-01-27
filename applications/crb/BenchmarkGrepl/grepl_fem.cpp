@@ -6,7 +6,7 @@
   Author(s): Cecile Daversin  <cecile.daversin@lncmi.cnrs.fr>
        Date: 2011-12-07
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public

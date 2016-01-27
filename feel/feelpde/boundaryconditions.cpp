@@ -31,14 +31,15 @@
 namespace Feel
 {
 
-BoundaryConditions::BoundaryConditions()
+BoundaryConditions::BoundaryConditions( WorldComm const& world )
     :
     BoundaryConditions( "" )
 {}
 
-BoundaryConditions::BoundaryConditions( std::string const& p )
+BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
     :
     super(),
+    M_worldComm( world ),
     M_prefix( p )
 {
     fs::path bc( Environment::expand( soption("bc-file") ) );
@@ -203,5 +204,32 @@ BoundaryConditions::param( std::string const& field,std::string const& bc, std::
     return std::make_pair(false,defaultValue);
 }
 
+std::list<std::string>
+BoundaryConditions::markers( std::string const& field, std::string const& type ) const
+{
+    return this->markers( { { field,type } } );
+}
+
+std::list<std::string>
+BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+{
+    std::list<std::string> res;
+    for ( auto const& key : listKeys )
+    {
+        std::string const& field = key.first;
+        std::string const& type = key.second;
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() )
+            continue;
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() )
+            continue;
+        for ( auto const& f : itFindType->second )
+        {
+            res.push_back( f.marker() );
+        }
+    }
+    return res;
+}
 
 }//Feel

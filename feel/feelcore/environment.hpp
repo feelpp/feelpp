@@ -308,6 +308,14 @@ public:
     }
 
     /**
+     * return master rank in mpi communicator
+     */
+    static rank_type masterRank()
+    {
+        return S_worldcomm->masterRank();
+    }
+
+    /**
      * @return true if number of process is 1, hence the environment is
      * sequential
      */
@@ -322,7 +330,7 @@ public:
      */
     static bool isParallel() 
     {
-        return !isSequential();;
+        return !isSequential();
     }
     /**
      * rank 0 process is considered the master process
@@ -332,7 +340,7 @@ public:
      */
     static bool isMasterRank()
     {
-        return rank() == 0;
+        return rank() == masterRank();
     }
 
     static po::command_line_parser const& commandLineParser()

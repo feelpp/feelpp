@@ -6,7 +6,7 @@
  Date: 2010-04-14
  
  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
- Copyright (C) 2010-2015 Feel++ Consortium
+ Copyright (C) 2010-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -199,7 +199,7 @@ AboutData makeAboutDefault( std::string name )
                      "0.1",
                      name,
                      AboutData::License_GPL,
-                     "Copyright (c) 2012-2015 Feel++ Consortium" );
+                     "Copyright (c) 2012-2016 Feel++ Consortium" );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
