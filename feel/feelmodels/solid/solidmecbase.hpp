@@ -457,6 +457,14 @@ public :
     element_vectorial_ptrtype const& fieldVelocityInterfaceFromFluidPtr() const { return M_fieldVelocityInterfaceFromFluid; }
     element_vectorial_type const& fieldVelocityInterfaceFromFluid() const { return *M_fieldVelocityInterfaceFromFluid; }
 
+
+    // princial stresses
+    std::vector<element_stress_scal_ptrtype> const& fieldsPrincipalStresses() const { return M_fieldsPrincipalStresses; }
+    element_stress_scal_ptrtype const& fieldsPrincipalStresses(int k) const { CHECK( k < M_fieldsPrincipalStresses.size() ) << "invalid index"; return M_fieldsPrincipalStresses[k]; }
+    // Von Mises and Tresca Criterions
+    element_stress_scal_ptrtype const& fieldVonMisesCriterions() const { return M_fieldVonMisesCriterions; }
+    element_stress_scal_ptrtype const& fieldTrescaCriterions() const { return M_fieldTrescaCriterions; }
+
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
