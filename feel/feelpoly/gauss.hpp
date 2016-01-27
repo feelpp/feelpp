@@ -33,6 +33,8 @@
 
 namespace Feel
 {
+template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+
 /*!
  * \class Gauss
  * \brief Gauss quadrature points
