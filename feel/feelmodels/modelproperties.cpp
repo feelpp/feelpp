@@ -87,7 +87,14 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_params.setDirectoryLibExpr( directoryLibExpr );
         M_params.setPTree( *par );
-        
+    }
+    auto func = M_p.get_child_optional("Functions");
+    if ( func )
+    {
+        LOG(INFO) << "Model with functions\n";
+        if ( !directoryLibExpr.empty() )
+            M_functions.setDirectoryLibExpr( directoryLibExpr );
+        M_functions.setPTree( *func );
     }
     auto bc = M_p.get_child_optional("BoundaryConditions");
     if ( bc )
@@ -96,7 +103,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
-        
     }
     else
     {
