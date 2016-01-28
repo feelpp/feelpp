@@ -841,71 +841,16 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     if ( this->markerNameFSI().size()>0 )
         this->createAdditionalFunctionSpacesFSI();
 
-    // update timediscr and exporters
-    if (!this->doRestart())
-    {
-        if (this->isStandardModel())
-        {
-            // start time step
-            M_timeStepNewmark->start(*M_fieldDisplacement);
-            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->start( M_XhPressure );
-            // up current time
-            this->updateTime( M_timeStepNewmark->time() );
-        }
-        else if (this->is1dReducedModel())
-        {
-            // start time step
-            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
-        }
-    }
-    else if (!this->isStationary()) // do a restart and transient mode
-    {
-        if (this->isStandardModel())
-        {
-            // restart time step
-            M_timeStepNewmark->restart();
-            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->restart();
-            // load a previous solution as current solution
-            *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
-            if ( M_useDisplacementPressureFormulation ) *M_fieldPressure = M_savetsPressure->unknown(0);
-            // up initial time
-            this->setTimeInitial( M_timeStepNewmark->timeInitial() );
-            // restart exporter
-            this->restartExporters();
-            // up current time
-            this->updateTime( M_timeStepNewmark->time() );
+    //-------------------------------------------------//
+    // start or restart time step scheme
+    if ( !this->isStationary() )
+        this->initTimeStep();
 
-        }
-        else  if (this->is1dReducedModel())
-        {
-            // restart time step
-            M_newmark_displ_1dReduced->restart();
-            // load a previous solution as current solution
-            *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
-            this->updateInterfaceDispFrom1dDisp();
-            // up initial time
-            this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
-            // restart exporter
-            this->restartExporters1dReduced();
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
-        }
-    }
-
-    this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
-
-    // clean doExport with fields not available
-    if ( !M_useDisplacementPressureFormulation )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::Pressure );
-    if ( this->is1dReducedModel() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::NormalStress );
-#if 0
-    if ( !this->fieldVelocityInterfaceFromFluidPtr() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
-#endif
-
+    // update parameters values
+    this->modelProperties().parameters().updateParameterValues();
+    // init function defined in json
+    this->initUserFunctions();
+    // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
 
 
@@ -979,17 +924,176 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+{
+    // update timediscr and exporters
+    if (!this->doRestart())
+    {
+        if (this->isStandardModel())
+        {
+            // start time step
+            M_timeStepNewmark->start(*M_fieldDisplacement);
+            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->start( M_XhPressure );
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+        }
+        else if (this->is1dReducedModel())
+        {
+            // start time step
+            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
+            // up current time
+            this->updateTime( M_newmark_displ_1dReduced->time() );
+        }
+    }
+    else // do a restart
+    {
+        if (this->isStandardModel())
+        {
+            // restart time step
+            M_timeStepNewmark->restart();
+            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->restart();
+            // load a previous solution as current solution
+            *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
+            if ( M_useDisplacementPressureFormulation ) *M_fieldPressure = M_savetsPressure->unknown(0);
+            // up initial time
+            this->setTimeInitial( M_timeStepNewmark->timeInitial() );
+            // up current time
+            this->updateTime( M_timeStepNewmark->time() );
+
+        }
+        else  if (this->is1dReducedModel())
+        {
+            // restart time step
+            M_newmark_displ_1dReduced->restart();
+            // load a previous solution as current solution
+            *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
+            this->updateInterfaceDispFrom1dDisp();
+            // up initial time
+            this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
+            // up current time
+            this->updateTime( M_newmark_displ_1dReduced->time() );
+        }
+    }
+
+    this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
+
+
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        std::string funcName = funcData.name();
+
+        if ( funcData.isScalar() )
+        {
+            if ( this->hasFieldUserScalar( funcName ) )
+                continue;
+            M_fieldsUserScalar[funcName] = this->functionSpaceDisplacement()->compSpace()->elementPtr();
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
+        }
+    }
+
+    this->updateUserFunctions();
+}
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().functions().setParameterValues( paramValues );
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
+            continue;
+
+        std::string funcName = funcData.name();
+        if ( funcData.isScalar() )
+        {
+            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserScalar[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionScalar() );
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial2() );
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=elements(this->mesh()),_expr=funcData.expressionVectorial3() );
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+
+    // clean doExport with fields not available
+    if ( !M_useDisplacementPressureFormulation )
+        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::Pressure );
+    if ( this->is1dReducedModel() )
+        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::NormalStress );
+#if 0
+    if ( !this->fieldVelocityInterfaceFromFluidPtr() )
+        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
+#endif
+
+    // add user functions
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+    {
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+                M_postProcessUserFieldExported.insert( o );
+        }
+    }
+
+    // restart exporter
+    if (this->doRestart())
+        this->restartExporters( this->timeInitial() );
+
     // update post-process expression
-    this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     bool hasMeasure = false;
+    auto const& ptree = this->modelProperties().postProcess().pTree();
 
     // volume variation
-    auto const& ptree = this->modelProperties().postProcess().pTree();
     std::string ppTypeMeasures = "Measures";
     std::string ppTypeMeasuresVolumeVariation = "VolumeVariation";
     for( auto const& ptreeLevel0 : ptree )
@@ -1008,6 +1112,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
+                                                    "sigma_xx","sigma_xy","sigma_xz","sigma_yx","sigma_yy","sigma_yz","sigma_zx","sigma_zy","sigma_zz" };
     // points evaluation
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
     {
@@ -1050,6 +1156,19 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
                 this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
                 hasMeasure = true;
             }
+            else if ( fieldNameStressScalar.find( field ) != fieldNameStressScalar.end() )
+            {
+                this->createAdditionalFunctionSpacesStressTensor();
+                if (!M_postProcessMeasuresContextStressScalar )
+                    M_postProcessMeasuresContextStressScalar.reset( new context_stress_scal_type( M_XhStressTensor->compSpace()->context() ) );
+                int ctxId = M_postProcessMeasuresContextStressScalar->nPoints();
+                M_postProcessMeasuresContextStressScalar->add( ptCoord );
+                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
+                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
+                hasMeasure = true;
+            }
+
         }
     }
 
