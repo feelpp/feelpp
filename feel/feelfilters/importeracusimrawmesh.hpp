@@ -3,6 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
+             Christophe Prud'homme  <christophe.prudhomme@feelpp.org>
        Date: 2016-01-15
 
   Copyright (C) 2009-2016 Feel++ Consortium
@@ -22,22 +23,40 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file importerhypermesh.hpp
+   \file importerAcusimRawMesh.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
+   \author Christophe Prud'homme  <christophe.prudhomme@feelpp.org>
    \date 2016-01-15
  */
 
-#ifndef FEELPP_IMPORTERHYPERMESH_HPP
-#define FEELPP_IMPORTERHYPERMESH_HPP 1
+#ifndef FEELPP_IMPORTERACUSIMRAWMESH_HPP
+#define FEELPP_IMPORTERACUSIMRAWMESH_HPP 1
 
+#include <multimap>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
 namespace Feel
 {
+namespace detail
+{
+const pt::ptree& empty_ptree(){
+    static pt::ptree t;
+    return t;
+}
+}
 
+/**
+ * Reader for Acusim Raw Mesh Format from Acusim (C) Altair
+ *
+ * the main file is an XML file describing
+ *  - the points coordinates
+ *  - the connectivity of the elements
+ *  - the connectivity of the marked faces
+ * the faces are marked using the third string in the name attribute of the surface_set
+ */
 template<typename MeshType>
-class ImporterHyperMesh : public Importer<MeshType>
+class ImporterAcusimRawMesh : public Importer<MeshType>
 {
     typedef Importer<MeshType> super;
 public:
@@ -49,10 +68,12 @@ public:
     typedef typename super::face_type face_type;
     typedef typename super::element_type element_type;
 
-    ImporterHyperMesh( WorldComm const& _worldcomm = Environment::worldComm() )
+    ImporterAcusimRawMesh( WorldComm const& _worldcomm = Environment::worldComm() )
         {}
 
-    ImporterHyperMesh( ImporterHyperMesh const& ) = default;
+    ImporterAcusimRawMesh( std::string const& filename, WorldComm const& _worldcomm = Environment::worldComm() );
+
+    ImporterAcusimRawMesh( ImporterAcusimRawMesh const& ) = default;
 
     void visit( mesh_type* mesh );
 
@@ -61,6 +82,7 @@ public:
 
     void setFilenameNodes( std::string const& path ) { M_filenameNodes = path; }
     void setFilenameElements( std::string const& path ) { M_filenameElements = path; }
+    
 
 private :
     void readNodes( mesh_type* mesh ) const;
@@ -68,21 +90,67 @@ private :
 
 private :
     std::string M_filenameNodes, M_filenameElements;
+    std::multi_map<std::string,std::string> M_filenamesFaces;
 };
 
 template<typename MeshType>
+ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filename, WorldComm const& wc )
+{
+    pt::ptree tree;
+    if ( fs::exists( filename ) )
+        pt::read_xml(filename, tree);
+    else
+        LOG(ERROR) << "Invalid AcusimRawMesh filename " << filename;
+    fs::path pp = fs::path( filename ).parent_path();
+    {
+        auto const& attributes = tree.get_child("mesh.coordinates.<xmlattr>", Feel::detail::empty_ptree() );
+        auto c_filename = attributes.get_optional<std::string>("file");
+        if ( !c_filename )
+            LOG(ERROR) << "AcusimRawMesh coordinate not available";
+        this->setFilenameNodes( (pp/fs::path(*c_filename)).string() );
+    }
+    std::string e_topology;
+    {
+        auto const& attributes = tree.get_child("mesh.element_set.<xmlattr>", Feel::detail::empty_ptree() );
+        auto e_filename = attributes.get_optional<std::string>("file");
+        e_topology = attributes.get<std::string>("topology", "");
+        if ( !e_filename )
+            LOG(ERROR) << "AcusimRawMesh element_set not available";
+        this->setFilenameElements( (pp/fs::path(*e_filename)).string() );
+    }
+    if ( wc.globalRank() == 0 ) 
+        std::cout << ". loading AcusimRawMesh, coordinates " << this->filenameNodes() << " element_set " << this->filenameElements() << " (" << e_topology << ")\n";
+
+    for( auto const& surface_set : tree.get_child("mesh.surface_set", Feel::detail::empty_ptree()) )
+    {
+        std::cout << "reading " << surface_set.first << "\n"; 
+        auto const& attributes = surface_set.second;
+        auto name = attributes.get_optional<std::string>("name");
+        
+        auto e_filename = attributes.get_optional<std::string>("file");
+        e_topology = attributes.get<std::string>("topology", "");
+        if ( !e_filename )
+            LOG(ERROR) << "AcusimRawMesh element_set not available";
+        auto p = std::make_pair(marker, (pp/fs::path(*e_filename)).string()  );
+        M_filenamesFaces.insert( p ); 
+        if ( wc.globalRank() == 0 ) 
+            std::cout << "  .. surface_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
+    }
+
+}
+
+template<typename MeshType>
 void
-ImporterHyperMesh<MeshType>::visit( mesh_type* mesh )
+ImporterAcusimRawMesh<MeshType>::visit( mesh_type* mesh )
 {
     CHECK( fs::exists( this->filenameNodes() ) ) << "filenameNodes not exist : " << this->filenameNodes();
     CHECK( fs::exists( this->filenameElements() ) ) << "filenameElements not exist : " << this->filenameElements();
     this->readNodes( mesh );
     this->readElements( mesh );
 }
-
 template<typename MeshType>
 void
-ImporterHyperMesh<MeshType>::readNodes( mesh_type* mesh ) const
+ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
 {
     std::ifstream __is( this->filenameNodes().c_str() );
 
@@ -114,7 +182,7 @@ ImporterHyperMesh<MeshType>::readNodes( mesh_type* mesh ) const
 }
 template<typename MeshType>
 void
-ImporterHyperMesh<MeshType>::readElements( mesh_type* mesh ) const
+ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
 {
     std::ifstream __is ( this->filenameElements().c_str() );
 
@@ -157,4 +225,4 @@ ImporterHyperMesh<MeshType>::readElements( mesh_type* mesh ) const
 
 } // namespace Feel
 
-#endif // FEELPP_IMPORTERHYPERMESH_HPP
+#endif // FEELPP_IMPORTERACUSIMRAWMESH_HPP
