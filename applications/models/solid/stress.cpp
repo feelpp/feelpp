@@ -70,8 +70,8 @@ runApplicationSolid()
 #if defined(ELASTICITY_ANA)
     e->add( "analytic", anal );
 #endif
-    e->add( "vonMises", *vm );
-    e->add( "tresca", *tr );
+    e->add( "vonMises", vm );
+    e->add( "tresca", tr );
     for( auto i : range(FEELPP_DIM))
         e->add( (boost::format( "principal-stress-%1%") %i).str(), *(s[i]) );
     e->save();
