@@ -347,14 +347,29 @@ Mesh<Shape, T, Tag>::updateMeasures()
     M_local_meas = 0;
     M_local_measbdy = 0;
 
+    typedef typename element_type::quad_meas_type quad_meas_type;
+    typedef typename element_type::quad_meas1_type quad_meas1_type;
+    quad_meas_type thequad;
+    quad_meas1_type thequad1;
     typename gm_type::precompute_ptrtype pc;
     typename gm_type::faces_precompute_type pcf;
+    typename gm1_type::precompute_ptrtype pc1;
+    typename gm1_type::faces_precompute_type pcf1;
+    // assume that a high order mesh is straightened (probably we need to store this info in the mesh)
+    bool meshIsStraightened = (nOrder > 1);
     // not very nice and correct but this function can have a big cost so only do one time
     bool updateMeasureWithPc = !this->isUpdatedForUse();
     if ( updateMeasureWithPc )
     {
-        pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
-        pcf = M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+        pc = M_gm->preCompute( M_gm, thequad.points() );
+        if ( nDim == nRealDim ) // else not works
+            pcf = M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
+        if ( meshIsStraightened )
+        {
+            pc1 = M_gm1->preCompute( M_gm1, thequad1.points() );
+            if ( nDim == nRealDim )
+                pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
+        }
     }
 
     element_iterator iv,  en;
@@ -363,11 +378,22 @@ Mesh<Shape, T, Tag>::updateMeasures()
     {
         if ( updateMeasureWithPc )
         {
-            this->elements().modify( iv,
-                                     [=,&pc,&pcf]( element_type& e )
-                                     {
-                                         e.updateWithPc(pc, boost::ref( pcf) );
-                                     } );
+            if ( meshIsStraightened && !iv->isOnBoundary() )
+            {
+                this->elements().modify( iv,
+                                         [=,&pc1,&thequad1,&pcf1]( element_type& e )
+                                         {
+                                             e.updateWithPc1(pc1, boost::ref( pcf1), thequad );
+                                         } );
+            }
+            else
+            {
+                this->elements().modify( iv,
+                                         [=,&pc,&thequad,&pcf]( element_type& e )
+                                         {
+                                             e.updateWithPc(pc, boost::ref( pcf), thequad );
+                                         } );
+            }
         }
 
         // only compute meas for active element (no ghost)
@@ -383,7 +409,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                     M_local_measbdy += ( *_faces.first )->measure();
 #else
-        if ( nDim == 1 )
+        if ( nDim == 1 || nDim != nRealDim )
             M_local_measbdy = 0;
         else
             for ( int f = 0; f < iv->numTopologicalFaces; ++f )
