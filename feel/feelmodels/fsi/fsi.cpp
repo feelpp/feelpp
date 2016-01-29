@@ -203,7 +203,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     for ( auto const& e : elements(submeshStruct) )
       {
         auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
-        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap()[ theface.element0().id() ].first;
+        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
         auto const& theface2 = FM->mesh()->element(idElt2,e.processId()).face(theface.pos_first());
         smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
