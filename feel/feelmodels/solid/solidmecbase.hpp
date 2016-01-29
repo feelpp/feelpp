@@ -88,7 +88,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
-    static const uint16_type nOrder = BasisDisplacementType::nOrder;//OrderDisp;
+    static const uint16_type nOrder = BasisDisplacementType::nOrder;
     static const uint16_type nOrderDisplacement = nOrder;
     static const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
     typedef BasisDisplacementType basis_u_type;
@@ -104,6 +104,9 @@ public:
     typedef boost::shared_ptr<element_displacement_type> element_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_vectorial_type;
     typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
+    typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
+    typedef typename space_displacement_scalar_type::element_type element_displacement_scalar_type;
+    typedef boost::shared_ptr<element_displacement_scalar_type> element_displacement_scalar_ptrtype;
     //___________________________________________________________________________________//
     // pressure space
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_pressure_type;
@@ -230,6 +233,9 @@ public:
     typedef boost::shared_ptr<context_displacement_type> context_displacement_ptrtype;
     typedef typename space_pressure_type::Context context_pressure_type;
     typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+    typedef typename space_stress_scal_type::Context context_stress_scal_type;
+    typedef boost::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -345,11 +351,6 @@ protected :
     void createAdditionalFunctionSpacesFSI1dReduced();
 
 public :
-    void restartExporters() { this->restartExporters( this->timeInitial() ); }
-    void restartExporters1dReduced() { this->restartExporters1dReduced( this->timeInitial() ); }
-    void restartExporters( double time );
-    void restartExporters1dReduced( double time );
-
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"SolidMechanicsMesh.path"); }
 
@@ -373,7 +374,7 @@ public :
     }
 
     //-----------------------------------------------------------------------------------//
-    // all model
+    // all models
     //-----------------------------------------------------------------------------------//
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
@@ -393,9 +394,12 @@ public :
         else// if (this->is1dReducedModel())
             return this->timeStepNewmark1dReduced();
     }
-
+    void initTimeStep();
     void updateTimeStep();
     void updateVelocity();
+
+    void initUserFunctions();
+    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     void initPostProcess();
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -405,6 +409,9 @@ private :
     void exportFieldsImpl( double time );
     void exportFieldsImplHO( double time );
 public :
+    void restartExporters() { this->restartExporters( this->timeInitial() ); }
+    void restartExporters( double time );
+
 
     void predictorDispl();
 
@@ -456,6 +463,32 @@ public :
     element_vectorial_ptrtype & fieldVelocityInterfaceFromFluidPtr() { return M_fieldVelocityInterfaceFromFluid; }
     element_vectorial_ptrtype const& fieldVelocityInterfaceFromFluidPtr() const { return M_fieldVelocityInterfaceFromFluid; }
     element_vectorial_type const& fieldVelocityInterfaceFromFluid() const { return *M_fieldVelocityInterfaceFromFluid; }
+
+    // stress tensor ( tensor2 )
+    element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
+    element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
+
+    // princial stresses
+    std::vector<element_stress_scal_ptrtype> const& fieldsPrincipalStresses() const { return M_fieldsPrincipalStresses; }
+    element_stress_scal_ptrtype const& fieldPrincipalStressesPtr(int k) const { CHECK( k < M_fieldsPrincipalStresses.size() ) << "invalid index"; return M_fieldsPrincipalStresses[k]; }
+    element_stress_scal_type const& fieldPrincipalStresses(int k) const { return *this->fieldPrincipalStressesPtr(k); }
+    // Von Mises and Tresca Criterions
+    element_stress_scal_ptrtype const& fieldVonMisesCriterionsPtr() const { return M_fieldVonMisesCriterions; }
+    element_stress_scal_ptrtype const& fieldTrescaCriterionsPtr() const { return M_fieldTrescaCriterions; }
+    element_stress_scal_type const& fieldVonMisesCriterions() const { return *M_fieldVonMisesCriterions; }
+    element_stress_scal_type const& fieldTrescaCriterions() const { return *M_fieldTrescaCriterions; }
+
+    // fields defined in json
+    std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
+    std::map<std::string,element_displacement_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
+    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
+    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
+    element_displacement_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
+    element_displacement_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
+        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
+    element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
+    element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
@@ -525,7 +558,6 @@ public :
 
     void updateSubMeshDispFSIFromPrevious();
 
-    //std::list<std::string> getMarkerNameFSI() const { return M_markerNameFSI; }
     std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
     double gammaNitschFSI() const { return M_gammaNitschFSI; }
     void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
@@ -533,20 +565,11 @@ public :
     void muFluidFSI(double d) { M_muFluidFSI=d; }
 
 
-
     void updateNormalStressFromStruct();
     void updateStressCriterions();
 
     void updatePreStress() { *U_displ_struct_prestress=*M_fieldDisplacement; }
 
-
-    //template <typename element_fluid_ptrtype>
-    //void updateStressTensor(element_fluid_ptrtype fluidSol);
-
-    //void updateStressTensorBis(element_stress_ptrtype stressN);
-
-    template <typename element_fluid_ptrtype>
-    void updateVelocityInterface(element_fluid_ptrtype fluidSol);
 
     //usefull for 1d reduced model
     void updateInterfaceDispFrom1dDisp();
@@ -663,6 +686,8 @@ protected:
 
     // post-process
     std::set<SolidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessUserFieldExported;
+
     // exporter
     exporter_ptrtype M_exporter;
     // ho exporter
@@ -680,6 +705,7 @@ protected:
     // post-process point evaluation
     context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
     context_pressure_ptrtype M_postProcessMeasuresContextPressure;
+    context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
 
     //-------------------------------------------//
     // 1d_reduced model
@@ -724,18 +750,16 @@ protected:
     double M_genAlpha_gamma;
     double M_genAlpha_beta;
 
-    //std::list<std::string> M_markerNameBCRobin;
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    //std::list<std::string> M_markerNameFSI;
     double M_gammaNitschFSI;
     double M_muFluidFSI;
     boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
-
-    std::set<std::string> M_nameFilesData;
-
+    // fields defined in json
+    std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;
+    std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
 
