@@ -114,7 +114,8 @@ BOOST_PARAMETER_FUNCTION(
                     std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
-                auto m = boost::make_shared<_mesh_type>();
+                _mesh_ptrtype m( mesh );
+                m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname );
                 return m;
             }
@@ -181,7 +182,8 @@ BOOST_PARAMETER_FUNCTION(
             std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
-        auto m = boost::make_shared<_mesh_type>();
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
         m->loadHDF5( mesh_name.string(), update );
         return m;
     }
@@ -194,9 +196,13 @@ BOOST_PARAMETER_FUNCTION(
             std::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
         LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
-        auto m = boost::make_shared<_mesh_type>();
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
         ImporterAcusimRawMesh<_mesh_type> i( mesh_name.string(), worldcomm );
         i.visit( m.get() );
+        m->components().reset();
+        m->components().set( update );
+        m->updateForUse();
         return m;
     }
 
