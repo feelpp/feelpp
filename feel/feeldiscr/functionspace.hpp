@@ -4731,9 +4731,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
         mesh_components |= MESH_UPDATE_FACES;
 
-    M_mesh->components().set( mesh_components );
-
-    M_mesh->updateForUse();
+    if ( !M_mesh->isUpdatedForUse() )
+    {
+        M_mesh->components().set( mesh_components );
+        M_mesh->updateForUse();
+    }
 
     if ( is_periodic )
     {
