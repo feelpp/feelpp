@@ -1224,6 +1224,7 @@ public :
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
+          ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
         ) //optional
     )
     {
@@ -1272,8 +1273,17 @@ public :
 
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             _mesh->accept( import );
-            _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-            _mesh->updateForUse();
+
+            if ( update )
+            {
+                _mesh->components().reset();
+                _mesh->components().set( update );
+                _mesh->updateForUse();
+            }
+            else
+            {
+                _mesh->components().reset();
+            }
 
             if ( straighten && _mesh_type::nOrder > 1 )
                 return straightenMesh( _mesh, worldcomm.subWorldComm(), false, false );
