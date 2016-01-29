@@ -34,35 +34,27 @@ using namespace Feel;
 
 int main( int argc, char** argv )
 {
-    po::options_description opts ( "Mesh basic information and partition");
-    opts.add_options()
-        ( "mesh.filename", po::value<std::string>(), "mesh file name " )
-        ( "mesh.partition.p", po::value<bool>()->default_value(0), "partition the mesh" )
-        ( "mesh.partition.n", po::value<int>()->default_value(2), "Number of partitions" )
-        ( "mesh.partition.t", po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" );
-
     // initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=opts,
                      _about=about( _name="mesh" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
 
-    // create a mesh with GMSH using Feel++ geometry tool
-    auto numPartition = ioption(_name="mesh.partition.n");
     tic();
     //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0 );
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0, _filename=soption("mesh.filename"), 
+                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
     toc("loading mesh done",FLAGS_v>0);
     
-    if ( boption("mesh.partition.p") && Environment::numberOfProcessors() == 1 )
+    if ( boption("mesh.partition.enable") && Environment::numberOfProcessors() == 1 )
     {
         // build a MeshPartitionSet based on a mesh partition that will feed a
         // partition io data structure to generate a parallel hdf5 file from which
         // the parallel mesh can be loaded
         using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
         io_t io( fs::path(soption("mesh.filename")).stem().string()+".json" );
-        io.write( partitionMesh( mesh, ioption("mesh.partition.n") ) );
+        io.write( partitionMesh( mesh, ioption("mesh.partition.size") ) );
+        return 0;
     } 
 
     auto Xhd0 = Pdh<0>(mesh);
