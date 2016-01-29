@@ -88,6 +88,15 @@ public:
             return M_syms;
         }
 
+    bool hasSymbol( std::string const& symb ) const
+        {
+            for ( auto const& s : M_syms )
+                if ( s.get_name() == symb)
+                    return true;
+            return false;
+        }
+
+
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
 
