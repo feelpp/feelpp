@@ -146,6 +146,13 @@ struct has_stifness
     static const bool value = has_value<Context, STIFFNESS>::value;
 };
 
+template<size_type Context>
+struct has_measure
+{
+    static const bool value = has_value<Context, MEASURE>::value;
+};
+
+
 } // vm
 
 using namespace vm;
