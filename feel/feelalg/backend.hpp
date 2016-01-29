@@ -1182,9 +1182,6 @@ public:
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
 
-        // set pre/post solve functions
-        M_post_solve = post;
-        M_pre_solve = pre;
         auto dm = Feel::detail::datamap( solution );
         this->setDataMap( dm );
         vector_ptrtype _sol( this->newVector( dm  ) );
@@ -1222,7 +1219,9 @@ public:
         {
             this->attachNearNullSpace( myNearNullSpace );
         }
-
+        this->nlSolver()->setPreSolve( pre );
+        this->nlSolver()->setPostSolve( post );
+        
         //if ( reuse_prec == false && reuse_jac == false )
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
         //else

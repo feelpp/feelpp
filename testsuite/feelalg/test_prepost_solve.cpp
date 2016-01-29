@@ -130,6 +130,69 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     e->save();
 }
 
+BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
+{
+    BOOST_MESSAGE("test_prepost_nlsolve, checking with " << soption("functions.f"));
+    auto f = expr(soption("functions.f"),"f");
+    auto gradf = grad<2>(f);
+    auto lapf = laplacian(f);
+    auto mesh = unitSquare();
+    auto Xh = Pch<1>( mesh );
+    auto u = Xh->element();
+    auto v = Xh->element();
+    auto a = form2( _test=Xh, _trial = Xh);
+    a = integrate(_range=elements(mesh), _expr=gradt(u)*trans(grad(u)));
+    auto l = form1( _test=Xh );
+    a.close();
+    l.close();
+    auto zeromean =  [&Xh,&v]( vector_ptrtype rhs, vector_ptrtype sol )
+        {
+            if ( Environment::isMasterRank() )
+                std::cout << " . Call postsolve(nonlinear): remove mean value to input vector\n";
+            v = *sol;
+            v.close();
+            double m = mean( _range=elements(Xh->mesh()), _expr=idv(v))(0,0);
+            v.add( -m );
+            *sol = v;
+            sol->close();
+        };
+
+    auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        {
+            if (!J) J = backend()->newMatrix( Xh, Xh );
+            auto j = form2( _test=Xh, _trial=Xh, _matrix=J );
+            j = a ;
+        };
+    auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+        {
+            auto u = Xh->element();
+            u = *X;
+            auto r = form1( _test=Xh, _vector=R );
+            r= integrate(_range=elements(mesh), _expr=lapf*id(v)+gradv(u)*trans(grad(v)));
+            r+=integrate(_range=boundaryfaces(mesh), _expr=-gradf*N()*id(v));
+        };
+    u.zero();
+    backend()->nlSolver()->residual = Residual;
+    backend()->nlSolver()->jacobian = Jacobian;
+    backend()->nlSolve( _solution=u, _pre=zeromean, _post=zeromean );
+
+    double m = mean( _range=elements(Xh->mesh()), _expr=idv(u))(0,0);
+    BOOST_CHECK_SMALL( m, 1e-10 );
+    BOOST_MESSAGE( "MEAN(u) must be zero:" << m );
+    double mex = mean( _range=elements(Xh->mesh()), _expr=f) (0,0);
+    BOOST_MESSAGE( "MEAN exact:" << mex );
+    double l2error = normL2( _range=elements(mesh), _expr=(idv(u)-m)-(f-mex) );
+    if ( Environment::isMasterRank() )
+    {
+        std::cout << "||u-(f-mex)||=" << l2error << std::endl;
+    }
+    v.on(_range=elements(mesh), _expr=f-mex);
+    auto e = exporter( _mesh=mesh, _prefix="nlsolve" );
+    e->add( "u", u );
+    e->add( "v", v );
+    e->save();
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

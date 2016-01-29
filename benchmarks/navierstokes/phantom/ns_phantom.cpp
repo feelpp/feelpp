@@ -38,6 +38,8 @@ int main(int argc, char**argv )
         ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
         ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "Q", po::value<double>()->default_value( 0.0000052166503023447670669 ), "Flow rate" )
+        ( "pulsatile", po::value<bool>()->default_value( 1.0 ), "Equal to 0 for a cst flow and equal to 1 for a pulsatile flow" )
+        ( "filename", po::value<std::string>()->default_value( "data.dat" ), "Data filename" )
         ( "ns.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Navier-Stokes preconditioner: petsc, PCD, PMM" )
         ;
     nsphantomoptions.add( backend_options( "ns" ) );
@@ -78,16 +80,16 @@ int main(int argc, char**argv )
     auto v = V.element<0>();
     auto p = U.element<1>();
     auto q = V.element<1>();
-    
+
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
     double Q = doption(_name="Q");
-    
+    auto filename=soption("filename");
+    bool pulsatile = boption(_name="pulsatile");
+
     if ( Environment::isMasterRank() )
     {
-        std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
-        std::cout.width(16);
-        std::cout << std::left << Q*0.012*rho/(pi*0.006*0.006*mu);
+        std::cout << "U-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << p_order+1;
         std::cout.width(16);
@@ -111,19 +113,18 @@ int main(int argc, char**argv )
             std::cout << " - pcd.order: " << ioption( "blockns.pcd.order" ) << "\n\n";
 
         }
-        
-    }
 
+    }
     toc("space");tic();
-    
+
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
-    
+
     auto deft = gradt( u );
     auto def = grad( v );
 
     auto mybdf = bdf( _space=Vh, _name="mybdf" );
     U = mybdf->unknown(0);
- 
+
     std::vector<std::string> flowrates_str={"inlet","outlet"};
     auto f_flowIn = form1(_test=Vh->functionSpace<0>() );
     std::map<std::string,form1_type<functionspace_type<decltype(Vh->functionSpace<0>())>>> flowrates_f;
@@ -131,7 +132,7 @@ int main(int argc, char**argv )
     {
         flowrates_f[f] = form1(_test=Vh->functionSpace<0>() );
         flowrates_f[f] = integrate(_range=markedfaces(mesh,f), _expr=inner(id(u),N()));
-        
+
     }
     std::ofstream ofs( "flowrates.md" );
     std::map<std::string,double> flowrates;
@@ -142,21 +143,56 @@ int main(int argc, char**argv )
     display_flowrates_header( ofs, flowrates );
 
     auto ft = form1( _test=Vh );
-
     auto a = form2( _trial=Vh, _test=Vh), at = form2( _trial=Vh, _test=Vh);
-
     a = integrate( _range=elements( mesh ), _expr=mu*inner( deft, grad(v) ) + rho*mybdf->polyDerivCoefficient(0)*trans(idt(u))*id(u) );
     a +=integrate( _range=elements( mesh ), _expr=-div( v )*idt( p ) - divt( u )*id( q ) );
     auto e = exporter( _mesh=mesh );
-    auto w = Vh->functionSpace<0>()->element( curlv(u), "w" );
 
+    //*********************                poiseuille                *********************
+    auto area_inlet = integrate(_range=markedfaces(mesh,"inlet"), _expr=cst(1.)).evaluate()( 0, 0 );
+    auto poiseuille = 1-4*(Py()*Py()+Px()*Px())/25;
+    auto int_poiseuille = integrate(_range=markedfaces(mesh,"inlet"), _expr=poiseuille).evaluate()( 0, 0 );
+    double coeff = area_inlet/int_poiseuille;
+    if ( Environment::isMasterRank() )
+    {
+        std::cout<<"[NAvier-Stokes]Area inlet = "<<area_inlet<<"\n";
+        std::cout<<"[NAvier-Stokes]Coefficient = "<<coeff<<"\n";
+    }
+    //*************************************************************************************
     /*
      * retrieve vector fields from boundary condition factory
      */
     //auto dirichlet_conditions = BoundaryConditionFactory::instance().getVectorFields<dim> ( "velocity", "Dirichlet" );
     BoundaryConditions bcs;
     map_vector_field<dim,1,2> dirichlet_conditions { bcs.getVectorFields<dim> ( "velocity", "Dirichlet" ) };
-  
+    
+    
+    if (pulsatile==1)
+    {
+        double temps;
+        double v_mean;
+        std::ifstream fichier(filename, std::ios::in);
+        if(!fichier)
+            if ( Environment::isMasterRank() )
+            {
+                std::cout<<"Echec d'ouverture du fichier \n";
+            }
+        else
+            if ( Environment::isMasterRank() )
+            {
+                std::cout<<"Lecture du fichier "<<filename<<".dat \n\n";
+            }
+        fichier >> temps >> v_mean;
+        dirichlet_conditions.setParameterValues( { {"v",v_mean }});
+        dirichlet_conditions.setParameterValues( { {"c",coeff }});
+        if ( Environment::isMasterRank() )
+        {
+            std::cout<<"\t [NAvier-Stokes]Temps = "<<temps<<"\n";
+            std::cout<<"\t [NAvier-Stokes]v_mean = "<<v_mean<<"\n";
+
+        }
+    }
+    
     /*
      * Navier-Stokes block preconditioners
      */
@@ -168,7 +204,7 @@ int main(int argc, char**argv )
                               _mu=mu,
                               _rho=rho,
                               _prefix="velocity" );
-    
+
     toc("bdf, forms,...");
 
     for ( mybdf->restart();  mybdf->isFinished() == false; mybdf->next(U) )
@@ -203,7 +239,11 @@ int main(int argc, char**argv )
         tic();
         for( auto const& condition : dirichlet_conditions )
         {
-            dirichlet_conditions.setParameterValues( { {"t",mybdf->time()}}  );
+            if (pulsatile==1)
+            {
+                dirichlet_conditions.setParameterValues( { {"v",v_mean }});
+                dirichlet_conditions.setParameterValues( { {"c",coeff }});
+            }
             at+=on(_range=markedfaces(mesh,marker(condition)), _rhs=ft, _element=u,_expr=expression(condition));
         }
         toc("update lhs dirichlet ");
@@ -222,7 +262,7 @@ int main(int argc, char**argv )
         toc("Solve");
 
         tic();
-        
+
         for( auto & f : flowrates_f )
         {
             if (f.first=="inlet" || f.first=="outlet")
@@ -235,17 +275,15 @@ int main(int argc, char**argv )
         {
             std::cout<< "\n \n \n ============= FLOW OVER RADIAL SECTIONS =================\n";
             bool ok = display_flowrates( std::cout, mybdf->time(), flowrates, Q );
-            if ( !ok ) 
+            if ( !ok )
                 std::cout << "WARNING ! flow rate issue at time " << mybdf->time() << "\n";
             display_flowrates( ofs, mybdf->time(), flowrates, Q );
             std::cout<< "\n \n \n ==========================================================\n";
-            
         }
-        
+
         toc("Postprocess");
         tic();
         e->step(mybdf->time())->add( "u", u );
-        w.on( _range=elements(mesh), _expr=curlv(u) );
         e->step(mybdf->time())->add( "p", p );
         auto mean_p = mean( _range=elements(mesh), _expr=idv(p) )( 0, 0 );
         e->step(mybdf->time())->addScalar( "mean_p", mean_p );
@@ -253,11 +291,17 @@ int main(int argc, char**argv )
         //e->restart( mybdf->time() );
         toc("Exporter");
         toc("time step");
-
+        if( pulsatile == 1)
+        {
+            fichier >> temps >> v_mean;
+            if ( Environment::isMasterRank() )
+            {
+                std::cout<<"[NAvier-Stokes]Temps = "<<temps<<"\n";
+                std::cout<<"[NAvier-Stokes]v_mean = "<<v_mean<<"\n";
+            }
+        }
     }
     //! [marker1]
 
-
-
-    return 0;
+    return 0 ;
 }

@@ -20,7 +20,7 @@
            METIS.
 */
 /*************************************************************************/
-int METIS_Free(void *ptr)
+int Feel_METIS_Free(void *ptr)
 {
   if (ptr != NULL) free(ptr);
   return METIS_OK;
@@ -33,7 +33,7 @@ int METIS_Free(void *ptr)
     \param options points to an array of size at least METIS_NOPTIONS.
 */
 /*************************************************************************/
-int METIS_SetDefaultOptions(idx_t *options)
+int Feel_METIS_SetDefaultOptions(idx_t *options)
 {
   iset(METIS_NOPTIONS, -1, options);
 
