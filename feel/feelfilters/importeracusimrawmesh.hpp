@@ -32,7 +32,9 @@
 #ifndef FEELPP_IMPORTERACUSIMRAWMESH_HPP
 #define FEELPP_IMPORTERACUSIMRAWMESH_HPP 1
 
-#include <multimap>
+#include <map>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
@@ -90,7 +92,7 @@ private :
 
 private :
     std::string M_filenameNodes, M_filenameElements;
-    std::multi_map<std::string,std::string> M_filenamesFaces;
+    std::multimap<std::string,std::string> M_filenamesFaces;
 };
 
 template<typename MeshType>
@@ -121,12 +123,19 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
     if ( wc.globalRank() == 0 ) 
         std::cout << ". loading AcusimRawMesh, coordinates " << this->filenameNodes() << " element_set " << this->filenameElements() << " (" << e_topology << ")\n";
 
-    for( auto const& surface_set : tree.get_child("mesh.surface_set", Feel::detail::empty_ptree()) )
+    for( auto const& s : tree.get_child("mesh", Feel::detail::empty_ptree()) )
     {
-        std::cout << "reading " << surface_set.first << "\n"; 
-        auto const& attributes = surface_set.second;
+        if ( s.first != "surface_set" )
+            continue;
+        auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
         auto name = attributes.get_optional<std::string>("name");
         
+        typedef std::vector< std::string > split_vector_type;
+    
+        split_vector_type split_name; // #2: Search for tokens
+        boost::split( split_name, *name, boost::is_any_of("\t "), boost::token_compress_on ); 
+
+        std::string marker = split_name[2];
         auto e_filename = attributes.get_optional<std::string>("file");
         e_topology = attributes.get<std::string>("topology", "");
         if ( !e_filename )
@@ -145,8 +154,23 @@ ImporterAcusimRawMesh<MeshType>::visit( mesh_type* mesh )
 {
     CHECK( fs::exists( this->filenameNodes() ) ) << "filenameNodes not exist : " << this->filenameNodes();
     CHECK( fs::exists( this->filenameElements() ) ) << "filenameElements not exist : " << this->filenameElements();
+    if ( mesh->worldComm().globalRank() == 0 ) 
+        std::cout << ".reading nodes file" << std::endl;
+    tic();
     this->readNodes( mesh );
+    toc("ImporterAcusimRawMesh read nodes");
+    if ( mesh->worldComm().globalRank() == 0 ) 
+    {
+        std::cout << ".reading nodes file done" << std::endl;
+        std::cout << ".reading elements file..." << std::endl;
+    }
+    tic();
     this->readElements( mesh );
+    toc("ImporterAcusimRawMesh read elements");
+    if ( mesh->worldComm().globalRank() == 0 ) 
+    {
+        std::cout << ".reading elements file" << std::endl;
+    }
 }
 template<typename MeshType>
 void
