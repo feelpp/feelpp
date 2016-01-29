@@ -136,7 +136,7 @@ public:
     {
         if(Environment::isMasterRank())
             std::cout << "[TestHDiv]\n";
-        this->changeRepository( boost::format( "/benchmark_darcy/%1%/h_%2%/" )
+        this->changeRepository( boost::format( "benchmark_darcy/%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("hsize")
                                 );
