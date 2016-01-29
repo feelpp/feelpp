@@ -80,19 +80,18 @@ public:
     void visit( mesh_type* mesh );
 
     std::string const& filenameNodes() const { return M_filenameNodes; }
-    std::string const& filenameElements() const { return M_filenameElements; }
 
     void setFilenameNodes( std::string const& path ) { M_filenameNodes = path; }
-    void setFilenameElements( std::string const& path ) { M_filenameElements = path; }
-    
+
 
 private :
     void readNodes( mesh_type* mesh ) const;
     void readElements( mesh_type* mesh ) const;
+    void readFaces( mesh_type* mesh ) const;
 
 private :
-    std::string M_filenameNodes, M_filenameElements;
-    std::multimap<std::string,std::string> M_filenamesFaces;
+    std::string M_filenameNodes;
+    std::multimap<std::string,std::string> M_filenamesElements, M_filenamesFaces;
 };
 
 template<typename MeshType>
@@ -111,39 +110,49 @@ ImporterAcusimRawMesh<MeshType>::ImporterAcusimRawMesh( std::string const& filen
             LOG(ERROR) << "AcusimRawMesh coordinate not available";
         this->setFilenameNodes( (pp/fs::path(*c_filename)).string() );
     }
+    if ( wc.isMasterRank() )
+        std::cout << ". loading AcusimRawMesh, coordinates " << this->filenameNodes() << "\n";
     std::string e_topology;
-    {
-        auto const& attributes = tree.get_child("mesh.element_set.<xmlattr>", Feel::detail::empty_ptree() );
-        auto e_filename = attributes.get_optional<std::string>("file");
-        e_topology = attributes.get<std::string>("topology", "");
-        if ( !e_filename )
-            LOG(ERROR) << "AcusimRawMesh element_set not available";
-        this->setFilenameElements( (pp/fs::path(*e_filename)).string() );
-    }
-    if ( wc.globalRank() == 0 ) 
-        std::cout << ". loading AcusimRawMesh, coordinates " << this->filenameNodes() << " element_set " << this->filenameElements() << " (" << e_topology << ")\n";
 
     for( auto const& s : tree.get_child("mesh", Feel::detail::empty_ptree()) )
     {
-        if ( s.first != "surface_set" )
-            continue;
-        auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
-        auto name = attributes.get_optional<std::string>("name");
-        
-        typedef std::vector< std::string > split_vector_type;
-    
-        split_vector_type split_name; // #2: Search for tokens
-        boost::split( split_name, *name, boost::is_any_of("\t "), boost::token_compress_on ); 
+        if ( s.first == "element_set" )
+        {
+            auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
+            auto name = attributes.get_optional<std::string>("name");
+            typedef std::vector< std::string > split_vector_type;
+            split_vector_type split_name; // #2: Search for tokens
+            boost::split( split_name, *name, boost::is_any_of("\t "), boost::token_compress_on );
+            std::string marker = split_name[0];
+            auto e_filename = attributes.get_optional<std::string>("file");
+            e_topology = attributes.get<std::string>("topology", "");
+            if ( !e_filename )
+                LOG(ERROR) << "AcusimRawMesh element_set not available";
+            auto p = std::make_pair(marker, (pp/fs::path(*e_filename)).string()  );
+            M_filenamesElements.insert( p );
+            if ( wc.isMasterRank() )
+                std::cout << "  .. element_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
+        }
+        else if ( s.first == "surface_set" )
+        {
+            auto const& attributes = s.second.get_child("<xmlattr>", Feel::detail::empty_ptree() );
+            auto name = attributes.get_optional<std::string>("name");
 
-        std::string marker = split_name[2];
-        auto e_filename = attributes.get_optional<std::string>("file");
-        e_topology = attributes.get<std::string>("topology", "");
-        if ( !e_filename )
-            LOG(ERROR) << "AcusimRawMesh element_set not available";
-        auto p = std::make_pair(marker, (pp/fs::path(*e_filename)).string()  );
-        M_filenamesFaces.insert( p ); 
-        if ( wc.globalRank() == 0 ) 
-            std::cout << "  .. surface_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
+            typedef std::vector< std::string > split_vector_type;
+
+            split_vector_type split_name; // #2: Search for tokens
+            boost::split( split_name, *name, boost::is_any_of("\t "), boost::token_compress_on );
+
+            std::string marker = split_name[2];
+            auto e_filename = attributes.get_optional<std::string>("file");
+            e_topology = attributes.get<std::string>("topology", "");
+            if ( !e_filename )
+                LOG(ERROR) << "AcusimRawMesh surface_set not available";
+            auto p = std::make_pair(marker, (pp/fs::path(*e_filename)).string()  );
+            M_filenamesFaces.insert( p );
+            if ( wc.isMasterRank() )
+                std::cout << "  .. surface_set " << p.first << " - " << p.second << " (" << e_topology << ")\n";
+        }
     }
 
 }
@@ -153,13 +162,13 @@ void
 ImporterAcusimRawMesh<MeshType>::visit( mesh_type* mesh )
 {
     CHECK( fs::exists( this->filenameNodes() ) ) << "filenameNodes not exist : " << this->filenameNodes();
-    CHECK( fs::exists( this->filenameElements() ) ) << "filenameElements not exist : " << this->filenameElements();
-    if ( mesh->worldComm().globalRank() == 0 ) 
+
+    if ( mesh->worldComm().isMasterRank() )
         std::cout << ".reading nodes file" << std::endl;
     tic();
     this->readNodes( mesh );
     toc("ImporterAcusimRawMesh read nodes");
-    if ( mesh->worldComm().globalRank() == 0 ) 
+    if ( mesh->worldComm().isMasterRank() )
     {
         std::cout << ".reading nodes file done" << std::endl;
         std::cout << ".reading elements file..." << std::endl;
@@ -167,9 +176,17 @@ ImporterAcusimRawMesh<MeshType>::visit( mesh_type* mesh )
     tic();
     this->readElements( mesh );
     toc("ImporterAcusimRawMesh read elements");
-    if ( mesh->worldComm().globalRank() == 0 ) 
+    if ( mesh->worldComm().isMasterRank() )
     {
-        std::cout << ".reading elements file" << std::endl;
+        std::cout << ".reading elements file done" << std::endl;
+        std::cout << ".reading faces files..." << std::endl;
+    }
+    tic();
+    this->readFaces( mesh );
+    toc("ImporterAcusimRawMesh read faces");
+    if ( mesh->worldComm().isMasterRank() )
+    {
+        std::cout << ".reading faces files done" << std::endl;
     }
 }
 template<typename MeshType>
@@ -199,6 +216,7 @@ ImporterAcusimRawMesh<MeshType>::readNodes( mesh_type* mesh ) const
 
         point_type pt( ptid, coords, false );
         pt.setProcessIdInPartition( partId );
+        pt.setProcessId( partId );
         mesh->addPoint( pt );
     }
 
@@ -208,42 +226,127 @@ template<typename MeshType>
 void
 ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
 {
-    std::ifstream __is ( this->filenameElements().c_str() );
-
-    if ( !__is.is_open() )
-    {
-        std::ostringstream ostr;
-        LOG(ERROR) << "Invalid file name " << this->filenameElements() << " (file not found)";
-        ostr << "Invalid file name " << this->filenameElements() << " (file not found)\n";
-        throw std::invalid_argument( ostr.str() );
-    }
 
     int eltid = 0;
     rank_type partId = mesh->worldComm().localRank();
-
     element_type e;
     int ptids = 0;
+    int markerId = 1;
     //std::vector<int> ptids( element_type::numPoints );
-    while ( !__is.eof() )
+
+    for ( auto const& datafileElements : M_filenamesElements )
     {
-        __is >> eltid;
-        if (__is.eof() )
-            break;
 
-        e.setId( eltid );
-        e.setProcessIdInPartition( partId );
-        e.setProcessId( partId );
-
-        for (size_type k = 0; k < element_type::numPoints; ++k)
+        std::string const& marker = datafileElements.first;
+        std::string const& filenameElements = datafileElements.second;
+        if ( mesh->worldComm().isMasterRank() )
         {
-            __is >> ptids;
-            e.setPoint( k, mesh->point( ptids ) );
+            std::cout << "reading element file with marker "<< marker  << " : "<< filenameElements << std::endl;
         }
-        //mesh->addElement( e, false );
-        mesh->addElement( e, true );
-    }
 
-    __is.close();
+        std::ifstream __is ( filenameElements.c_str() );
+
+        if ( !__is.is_open() )
+        {
+            std::ostringstream ostr;
+            LOG(ERROR) << "Invalid file name " << filenameElements << " (file not found)";
+            ostr << "Invalid file name " << filenameElements << " (file not found)\n";
+            throw std::invalid_argument( ostr.str() );
+            continue;
+        }
+
+        mesh->addMarkerName( marker, markerId, mesh_type::nDim );
+
+        while ( !__is.eof() )
+        {
+            __is >> eltid;
+            if (__is.eof() )
+                break;
+
+            e.setId( eltid );
+            e.setProcessIdInPartition( partId );
+            e.setProcessId( partId );
+            e.setMarker( markerId );
+            e.setMarker2( markerId );
+
+            for (size_type k = 0; k < element_type::numPoints; ++k)
+            {
+                __is >> ptids;
+                e.setPoint( k, mesh->point( ptids ) );
+            }
+            //mesh->addElement( e, false );
+            mesh->addElement( e, true );
+        }
+
+        __is.close();
+        ++markerId;
+    }
+}
+
+template<typename MeshType>
+void
+ImporterAcusimRawMesh<MeshType>::readFaces( mesh_type* mesh ) const
+{
+    if ( M_filenamesFaces.empty() )
+        return;
+
+    rank_type partId = mesh->worldComm().localRank();
+    int eltidConnected = 0, faceid = 0, faceidTemp = 0, ptids = 0;
+    face_type f;
+
+    // get next markerId as maxPreviousMarkerId + 1
+    int markerId = 0;
+    for( auto const& _marker: mesh->markerNames() )
+        markerId = std::max( (int)_marker.second[0], (int)markerId );
+    ++markerId;
+
+    for ( auto const& datafileFaces : M_filenamesFaces )
+    {
+
+        std::string const& marker = datafileFaces.first;
+        std::string const& filenameFaces = datafileFaces.second;
+        if ( mesh->worldComm().isMasterRank() )
+        {
+            std::cout << "reading faces file with marker "<< marker  << " : "<< filenameFaces << std::endl;
+        }
+
+        std::ifstream __is ( filenameFaces.c_str() );
+
+        if ( !__is.is_open() )
+        {
+            std::ostringstream ostr;
+            LOG(ERROR) << "Invalid file name " << filenameFaces << " (file not found)";
+            ostr << "Invalid file name " << filenameFaces << " (file not found)\n";
+            throw std::invalid_argument( ostr.str() );
+            continue;
+        }
+
+        mesh->addMarkerName( marker, markerId, mesh_type::nDim-1 );
+
+        while ( !__is.eof() )
+        {
+            __is >> eltidConnected;
+            if (__is.eof() )
+                break;
+            __is >> faceidTemp;
+
+            f.setId( faceid++ );
+            f.setProcessIdInPartition( partId );
+            f.setProcessId( partId );
+            f.setMarker( markerId );
+            f.setMarker2( markerId );
+
+            for (size_type k = 0; k < face_type::numPoints; ++k)
+            {
+                __is >> ptids;
+                f.setPoint( k, mesh->point( ptids ) );
+            }
+            mesh->addFace( f );
+        }
+
+        __is.close();
+        ++markerId;
+    }
 
 }
 
