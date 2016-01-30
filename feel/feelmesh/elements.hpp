@@ -62,7 +62,8 @@ namespace detail
     void
     updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<3> /**/)
     {
-        e.edge( i ).addElementGhost( e.processId(),e.id() );
+        if ( e.edgePtr(i) )
+            e.edge( i ).addElementGhost( e.processId(),e.id() );
     }
 }
 
