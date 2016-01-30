@@ -31,7 +31,7 @@
 using namespace Feel;
 
 template <typename ShapeType>
-void run()
+void run( std::vector<int> const& nParts)
 {
     typedef Mesh<ShapeType> mesh_type;
 
@@ -67,41 +67,43 @@ void run()
 
         //saveGMSHMesh(_mesh=mesh,_filename="tototi.msh");
 
-        int nPartition = ioption(_name="part");
-
         fs::path inputDir = inputPathMesh.parent_path();
         std::string inputFilenameWithoutExt = inputPathMesh.stem().string();
-        std::string outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
-        std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
 
-        std::string outputPathMesh = (inputDir / fs::path(outputFilenameWithExt) ).string();
-        if ( Environment::vm().count("ofile") )
+        for ( int nPartition : nParts )
         {
-            outputPathMesh = fs::system_complete( soption("ifile") ).string();
-            if ( fs::path(outputPathMesh).extension() != ".json" )
-                outputPathMesh = outputPathMesh + ".json";
+
+            std::string outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
+            std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
+            std::string outputPathMesh = ( fs::current_path() / fs::path(outputFilenameWithExt) ).string();
+            if ( Environment::vm().count("ofile") )
+            {
+                outputPathMesh = fs::system_complete( soption("ofile") ).string();
+                if ( fs::path(outputPathMesh).extension() != ".json" )
+                    outputPathMesh = outputPathMesh + ".json";
+            }
+            else if ( Environment::vm().count("odir") )
+            {
+                fs::path odir = fs::system_complete( soption("odir") ).string();
+                outputPathMesh = (odir / fs::path(outputFilenameWithExt) ).string();
+            }
+
+            fs::path outputDir = fs::path(outputPathMesh).parent_path();
+            if ( !fs::exists( outputDir ) )
+                fs::create_directories( outputDir );
+
+
+            std::cout << "start mesh partitioning and save on disk : " << outputPathMesh << "\n";
+
+            // build a MeshPartitionSet based on a mesh partition that will feed a
+            // partition io data structure to generate a parallel hdf5 file from which
+            // the parallel mesh can be loaded
+            tic();
+            using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
+            io_t io( outputPathMesh );
+            io.write( partitionMesh( mesh, nPartition ) );
+            toc("paritioning and save on disk done",FLAGS_v>0);
         }
-        else if ( Environment::vm().count("odir") )
-        {
-            fs::path odir = fs::system_complete( soption("odir") ).string();
-            outputPathMesh = (odir / fs::path(outputFilenameWithExt) ).string();
-        }
-
-        fs::path outputDir = fs::path(outputPathMesh).parent_path();
-        if ( !fs::exists( outputDir ) )
-            fs::create_directories( outputDir );
-
-
-        std::cout << "start mesh partitioning and save on disk : " << outputPathMesh << "\n";
-
-        // build a MeshPartitionSet based on a mesh partition that will feed a
-        // partition io data structure to generate a parallel hdf5 file from which
-        // the parallel mesh can be loaded
-        tic();
-        using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
-        io_t io( outputPathMesh );
-        io.write( partitionMesh( mesh, nPartition ) );
-        toc("paritioning and save on disk done",FLAGS_v>0);
     }
 
 }
@@ -114,10 +116,10 @@ int main( int argc, char** argv )
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
         ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh dimension" )
-        ( "part", po::value<int>()->default_value( -1 ), "number of partition" )
+        ( "part", po::value<std::vector<int> >()->multitoken(), "number of partition" )
         ( "ifile", po::value<std::string>(), "input mesh filename" )
-        ( "ofile", po::value<std::string>(), "output mesh filename" )
-        ( "odir", po::value<std::string>(), "output mesh filename" )
+        ( "odir", po::value<std::string>(), "output directory [optional]" )
+        ( "ofile", po::value<std::string>(), "output mesh filename [optional]" )
 		;
 
     Environment env( _argc=argc, _argv=argv,
@@ -128,11 +130,16 @@ int main( int argc, char** argv )
 
     int dim = ioption(_name="dim");
     std::string shape = soption(_name="shape");
-    int nPart = ioption(_name="part");
-    if ( nPart <= 0 )
+
+    std::vector<int> nParts;
+    if ( Environment::vm().count("part"))
+        nParts = Environment::vm()["part"].as<std::vector<int> >();
+
+    if ( nParts.empty() )
     {
         if ( Environment::isMasterRank() )
-            std::cout << "do nothing because --part is missing or not valid\n";
+            std::cout << "do nothing because --part is missing\n";
+        return 0;
     }
 
     if ( !Environment::vm().count("ifile") )
@@ -152,7 +159,7 @@ int main( int argc, char** argv )
 
     if ( dim == 1 )
     {
-        run<Simplex<1>>();
+        run<Simplex<1>>( nParts );
     }
     else
     {
@@ -160,16 +167,16 @@ int main( int argc, char** argv )
         {
             switch ( dim )
             {
-            case 2 : run<Simplex<2>>(); break;
-            case 3 : run<Simplex<3>>(); break;
+            case 2 : run<Simplex<2>>( nParts ); break;
+            case 3 : run<Simplex<3>>( nParts ); break;
             }
         }
         else if ( shape == "hypercube" )
         {
             switch ( dim )
             {
-            case 2 : run<Hypercube<2>>(); break;
-            case 3 : run<Hypercube<3>>(); break;
+            case 2 : run<Hypercube<2>>( nParts ); break;
+            case 3 : run<Hypercube<3>>( nParts ); break;
             }
         }
     }
