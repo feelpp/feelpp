@@ -172,6 +172,7 @@ public:
 
         //std::cout << "P = " << M_points << "\n";
         make_normals();
+        computeBarycenters();
         computeMeasure();
     }
 
@@ -237,6 +238,7 @@ public:
 
 
         make_normals();
+        computeBarycenters();
         computeMeasure();
     }
 
@@ -348,8 +350,8 @@ public:
      */
     matrix_node_type faceVertices( uint16_type f ) const
     {
-        const int d[3] = { 1,2,4 };
-        matrix_node_type v( nDim, d[nDim-1]  );
+        const int d[4] = { 0,1,2,4 };
+        matrix_node_type v( nDim, d[nDim]  );
         // there is exactely nDim vertices on each face on a d-simplex
 
         for ( int p = 0; p < d[nDim]; ++p )
@@ -373,7 +375,7 @@ public:
     /**
      * \return the barycenter of the reference simplex
      */
-    node_type barycenter() const
+    node_type const& barycenter() const
     {
         return M_barycenter;
     }
@@ -381,7 +383,7 @@ public:
     /**
      * \return the barycenter of the faces of the reference simplex
      */
-    points_type barycenterFaces() const
+    points_type const& barycenterFaces() const
     {
         return M_barycenterfaces;
     }
@@ -867,10 +869,11 @@ private:
     {
         M_normals.resize( numNormals );
 
-        for ( int n = 0; n < numNormals; ++n )
+        for ( uint16_type n = 0; n < numNormals; ++n )
         {
-            M_normals[n].resize( nDim );
-            M_normals[n].clear();
+            //M_normals[n].resize( nDim );
+            //M_normals[n].clear();
+            M_normals[n] = ublas::scalar_vector<value_type>( nDim, 0. );
         }
 
         if ( nDim == 1 )

@@ -396,7 +396,7 @@ void run( Application_ptrtype & theApp )
     const int nOrderPoly = OrderPoly;
     const int nOrderGeo = 1;
 
-    theApp->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/%2%d/P%3%/" )
+    theApp->changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%d/P%3%/" )
                               % theApp->about().appName()
                               % nDim
                               % OrderPoly );
