@@ -73,7 +73,7 @@
                 "pointD":
                 {
                     "coord":"{2,0,0.6}",
-                    "fields":["sigma_yy"]
+                    "fields":["stress_yy"]
                 }
             }
         }
