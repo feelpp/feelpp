@@ -90,7 +90,7 @@ public:
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    
+
     //! sparse matrix type associated with backend
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -105,7 +105,7 @@ public:
         super(),
         Xh()
     {
-        this->changeRepository( boost::format( "/grepl_fem/%1%-%2%" )
+        this->changeRepository( boost::format( "grepl_fem/%1%-%2%" )
                                 % doption(_name="mu1")
                                 % doption(_name="mu2")
                                 );
@@ -294,7 +294,7 @@ int main( int argc, char** argv )
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=makeAbout() );
-    
+
     GreplFem app;
 
     app.run();
