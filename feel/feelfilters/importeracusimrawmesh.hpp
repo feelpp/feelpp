@@ -42,7 +42,10 @@ namespace Feel
 {
 namespace detail
 {
-const pt::ptree& empty_ptree(){
+inline 
+const pt::ptree& 
+empty_ptree()
+{
     static pt::ptree t;
     return t;
 }
