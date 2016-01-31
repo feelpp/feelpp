@@ -47,7 +47,7 @@ feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
-feelpp_add_test( vect_comp )
+feelpp_add_test( element_component )
 feelpp_add_test( matrixfield )
 
 if ( FEELPP_HAS_FFTW )
