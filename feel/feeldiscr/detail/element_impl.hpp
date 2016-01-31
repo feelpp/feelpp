@@ -187,6 +187,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     super(),
     M_start( 0 ),
     M_ct( ComponentType::NO_COMPONENT ),
+    M_ct2( ComponentType::NO_COMPONENT ),
     M_containersOffProcess( boost::none )
 {}
 
@@ -199,6 +200,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     M_name( __e.M_name ),
     M_start( __e.M_start ),
     M_ct( __e.M_ct ),
+    M_ct2( __e.M_ct2 ),
     M_containersOffProcess( __e.M_containersOffProcess )
 {
     DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
@@ -220,6 +222,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     M_desc( __desc ),
     M_start( __start ),
     M_ct( __ct ),
+    M_ct2( ComponentType::NO_COMPONENT ),
     M_containersOffProcess( boost::none )
 {
     LOG(INFO) << "creating element " << name() << " : " << description();
@@ -249,7 +252,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
                                                              std::string const& __name,
                                                              std::string const& __desc,
                                                              size_type __start,
-                                                             ComponentType __ct )
+                                                             ComponentType __ct, ComponentType __ct2 )
     :
     super( __c ),
     M_functionspace( __functionspace ),
@@ -257,6 +260,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     M_desc( __desc ),
     M_start( __start ),
     M_ct( __ct ),
+    M_ct2( __ct2 ),
     M_containersOffProcess( boost::none )
 {
     DVLOG(2) << "Element<range>::range::start = " << __c.start() << "\n";
@@ -275,9 +279,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
                                                              container_type const& __c,
                                                              std::string const& __name,
                                                              size_type __start,
-                                                             ComponentType __ct )
+                                                             ComponentType __ct, ComponentType __ct2 )
     :
-    Element( __functionspace, __c, __name, __name, __start, __ct ) 
+    Element( __functionspace, __c, __name, __name, __start, __ct, __ct2 )
 {}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -341,6 +345,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
 
         M_start = __e.M_start;
         M_ct = __e.M_ct;
+        M_ct2 = __e.M_ct2;
         M_containersOffProcess = __e.M_containersOffProcess;
 
         this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
