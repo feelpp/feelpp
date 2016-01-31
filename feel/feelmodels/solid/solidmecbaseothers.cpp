@@ -518,6 +518,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
     }
 
 }
+#if 0
 namespace detail
 {
 template <typename ElementTensor2Type>
@@ -547,6 +548,7 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
     return uComp;
 }
 } // namespace detail
+#endif
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -569,7 +571,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
-                                                    "sigma_xx","sigma_xy","sigma_xz","sigma_yx","sigma_yy","sigma_yz","sigma_zx","sigma_zy","sigma_zz" };
+                                                    "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -677,63 +679,33 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
             else if ( field == "princial-stress-3" && nDim == 3 )
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
                                                    _expr=idv(this->fieldPrincipalStresses(2)) );
-#if 0
-            else if ( field == "sigma_xx")
+            else if ( field == "stress_xx")
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(0,0) );
-            else if ( field == "sigma_xy")
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::X)) );
+            else if ( field == "stress_xy")
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(0,1) );
-            else if ( field == "sigma_xz" && nDim == 3 )
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::Y)) );
+            else if ( field == "stress_xz" && nDim == 3 )
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(0,2) );
-            else if ( field == "sigma_yx")
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::Z)) );
+            else if ( field == "stress_yx")
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(1,0) );
-            else if ( field == "sigma_yy")
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::X)) );
+            else if ( field == "stress_yy")
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(1,1) );
-            else if ( field == "sigma_yz" && nDim == 3)
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::Y)) );
+            else if ( field == "stress_yz" && nDim == 3)
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(1,2) );
-            else if ( field == "sigma_zx" && nDim == 3)
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::Z)) );
+            else if ( field == "stress_zx" && nDim == 3)
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(2,0) );
-            else if ( field == "sigma_zy" && nDim == 3)
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::X)) );
+            else if ( field == "stress_zy" && nDim == 3)
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(2,1) );
-            else if ( field == "sigma_zz" && nDim == 3)
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::Y)) );
+            else if ( field == "stress_zz" && nDim == 3)
                 evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(this->fieldStressTensor())(2,2) );
-#else
-            else if ( field == "sigma_xx")
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),0,0)) );
-            else if ( field == "sigma_xy")
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),0,1)) );
-            else if ( field == "sigma_xz" && nDim == 3 )
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),0,2)) );
-            else if ( field == "sigma_yx")
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),1,0)) );
-            else if ( field == "sigma_yy")
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),1,1)) );
-            else if ( field == "sigma_yz" && nDim == 3)
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),1,2)) );
-            else if ( field == "sigma_zx" && nDim == 3)
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),2,0)) );
-            else if ( field == "sigma_zy" && nDim == 3)
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),2,1)) );
-            else if ( field == "sigma_zz" && nDim == 3)
-                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
-                                                   _expr=idv(detail::componentFieldFromTensor2Field(this->fieldStressTensor(),2,2)) );
-#endif
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::Z)) );
             for ( int ctxId=0;ctxId<M_postProcessMeasuresContextStressScalar->nPoints();++ctxId )
             {
                 if ( !this->postProcessMeasuresEvaluatorContext().has( field, ctxId ) ) continue;
