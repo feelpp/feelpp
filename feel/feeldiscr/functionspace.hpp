@@ -2046,13 +2046,15 @@ public:
                  std::string const& __name,
                  std::string const& __desc,
                  size_type __start = 0,
-                 ComponentType __ct = ComponentType::NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT,
+                 ComponentType __ct2 = ComponentType::NO_COMPONENT );
 
         Element( functionspace_ptrtype const& __functionspace,
                  container_type const& __c,
                  std::string const& __name = "unknown",
                  size_type __start = 0,
-                 ComponentType __ct = ComponentType::NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT,
+                 ComponentType __ct2 = ComponentType::NO_COMPONENT );
 
         ~Element();
 
@@ -2142,37 +2144,53 @@ public:
          * @return the i-th component of the element
          */
         component_type
-        comp( ComponentType i ) const
+        comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
             //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
         }
         component_type
-        comp( ComponentType i, mpl::bool_<true> ) const
+        comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
+                              startContainerIndex,//start()+(size_type)i,
                               i );
             return c;
         }
         component_type
-        comp( ComponentType i, mpl::bool_<false> ) const
+        comp( ComponentType i, ComponentType j, mpl::bool_<false> ) const
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
-                              start()+(size_type)i,
+                              startContainerIndex,//start()+(size_type)i,
                               i );
             return c;
         }
@@ -2184,51 +2202,68 @@ public:
          * @return the i-th component of the element
          */
         component_type
-        comp( ComponentType i )
+        comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
             //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
         }
         component_type
-        comp( ComponentType i, mpl::bool_<true> )
+        comp( ComponentType i, ComponentType j, mpl::bool_<true> )
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
-                              i );
+                              startContainerIndex,//start()+(size_type)i,
+                              i,j );
             return c;
         }
         component_type
-        comp( ComponentType i, mpl::bool_<false> )
+        comp( ComponentType i, ComponentType j, mpl::bool_<false> )
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int) i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int) i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
-                              i );
+                              startContainerIndex,//start()+(size_type)i,
+                              i,j );
             return c;
         }
         component_type
         operator[]( ComponentType i )
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         component_type
         operator[]( ComponentType i ) const
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
         operator[]( size_type i )
@@ -3746,7 +3781,7 @@ public:
         size_type M_start;
 
         //! type of the component
-        ComponentType M_ct;
+        ComponentType M_ct, M_ct2;
 
         // only init in // with composite case : ex p = U.element<1>()
         mutable boost::optional<container_vector_type> M_containersOffProcess;
