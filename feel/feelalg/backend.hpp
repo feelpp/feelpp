@@ -999,7 +999,7 @@ public:
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
+                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
                                                                                           _worldcomm=this->comm() ) )
                                        ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
@@ -1151,7 +1151,7 @@ public:
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
+                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
                                        ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
@@ -1280,6 +1280,16 @@ public:
             M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
+    
+    /**
+     * @return the preconditioner attached to the backend
+     */
+    preconditioner_ptrtype preconditioner() 
+    {
+        return M_preconditioner;
+    }
+    
+
     void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > nullSpace )
     {
         M_nullSpace = nullSpace;
