@@ -141,6 +141,7 @@ template<int NR, typename T> class VectorBlock;
 
 template<typename T> class BlocksBaseSparseMatrix;
 
+class BackendBase{};
 /**
  * \class Backend
  * \brief base class for all linear algebra backends
@@ -150,7 +151,8 @@ template<typename T> class BlocksBaseSparseMatrix;
  */
 template<typename T>
 class Backend:
-    public boost::enable_shared_from_this<Backend<T> >
+        public BackendBase,
+        public boost::enable_shared_from_this<Backend<T> >
 {
 public:
 
@@ -198,7 +200,8 @@ public:
 
     Backend( WorldComm const& worldComm=Environment::worldComm() );
     Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
-    Backend( Backend const & );
+    Backend( Backend const& ) = default;
+    Backend( Backend && ) = default;
     virtual ~Backend();
 
 
@@ -1272,6 +1275,13 @@ public:
                       sparse_matrix_ptrtype& C ) const;
     
     /**
+     * attach the default preconditioner
+     */
+    void attachPreconditioner()
+    {
+    }
+    
+    /**
      * Attaches a Preconditioner object to be used by the solver
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
@@ -1422,8 +1432,6 @@ typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
 typedef Backend<std::complex<double>> c_backend_type;
 typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
-
-
 
 namespace detail
 {
