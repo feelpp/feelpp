@@ -44,16 +44,25 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
     double intMarkedLinesSubmeshFaces = integrate(_range=markedfaces(submeshFaces,"markLines"),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intMarkedLinesSubmeshFaces-4*2*l,1e-12 );
     size_type nMarkedPointsSubmeshFaces = nelements( markedpoints(submeshFaces,"markPoints"), true );
-    BOOST_CHECK( nMarkedPointsSubmeshFaces == 4 );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmeshFaces >= 4 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmeshFaces == 4 );
 
     auto submeshLines = createSubmesh(mesh,markededges(mesh,"markLines"),1,size_type(0));
     double intSubmeshLines = integrate(_range=elements(submeshLines),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intSubmeshLines-12*2*l,1e-12 );
     size_type nMarkedPointsSubmeshLines = nelements( markedpoints(submeshLines,"markPoints"), true );
-    BOOST_CHECK( nMarkedPointsSubmeshLines == 8 );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmeshLines >= 8 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmeshLines == 8 );
 
     size_type nMarkedPoints = nelements( markedpoints(mesh,"markPoints"), true );
-    BOOST_CHECK( nMarkedPoints == 8 );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPoints >= 8 );
+    else
+        BOOST_CHECK( nMarkedPoints == 8 );
 
     mesh->updateMarker3WithRange(markedfaces(mesh,"GammaNeumann"),1);
     mesh->updateMarkersFromFaces();
@@ -61,7 +70,10 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
     double intSubmesh = integrate(_range=markedfaces(submesh,"GammaNeumann"),_expr=cst(1.) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( intSubmesh-1*(2*l*2*l),1e-12 );
     size_type nMarkedPointsSubmesh = nelements( markedpoints(submesh,"markPoints"), true );
-    BOOST_CHECK( nMarkedPointsSubmesh == 4 );
+    if ( Environment::numberOfProcessors() > 1 )
+        BOOST_CHECK( nMarkedPointsSubmesh >= 4 );
+    else
+        BOOST_CHECK( nMarkedPointsSubmesh == 4 );
 
 }
 
