@@ -88,24 +88,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_faces, T, dim_t )
     BOOST_MESSAGE( "test_faces starts for dim=" << T::value);
     auto meshnd = unitHypercube<T::value>();
     auto mesh = createSubmesh( meshnd, faces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
-    BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(faces(meshnd)) );
+    size_type nFaceInParallelMeshnd = nelements(faces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
+    BOOST_CHECK_EQUAL( nelements(elements(mesh),true), nFaceInParallelMeshnd  );
     auto Xh = Pdh<0>(mesh);
     auto u = Xh->element(cst(1.));
     auto v = Xh->element(cst(3.));
-    BOOST_CHECK_EQUAL( u.size(), nelements(faces(meshnd),true) );
+    BOOST_CHECK_EQUAL( u.size(), nFaceInParallelMeshnd );
     meshnd->updateFacesMarker2( u );
-    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1))), nelements(faces(meshnd)) );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1)),true), nFaceInParallelMeshnd );
     meshnd->updateFacesMarker3( v );
-    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3))), nelements(faces(meshnd)) );
+    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3)),true), nFaceInParallelMeshnd );
     u.on( _range=elements(mesh), _expr=cst(2.));
     meshnd->updateFacesMarker2( u );
     BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(1))), 0 );
-    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(2))), nelements(faces(meshnd)) );
+    BOOST_CHECK_EQUAL( nelements(marked2faces(meshnd,flag_type(2)),true), nFaceInParallelMeshnd );
 
     v.on( _range=elements(mesh), _expr=cst(4.));
     meshnd->updateFacesMarker3( v );
     BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(3))), 0 );
-    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(4))), nelements(faces(meshnd)) );
+    BOOST_CHECK_EQUAL( nelements(marked3faces(meshnd,flag_type(4)),true), nFaceInParallelMeshnd );
     BOOST_MESSAGE( "test_faces ends for dim=" << T::value);
 }
 
