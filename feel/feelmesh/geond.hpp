@@ -266,7 +266,8 @@ public:
             for ( int i = 0; i < numPoints; ++i )
             {
                 pt_with_marker = this->point( i ).marker().isOn();
-                break;
+                if ( pt_with_marker )
+                    break;
             }
             return pt_with_marker;
         }
@@ -288,7 +289,7 @@ public:
      */
     uint16_type nNeighbors() const
     {
-        return numNeighbors;
+        return M_neighbors.size();//numNeighbors;
     }
 
     /**
