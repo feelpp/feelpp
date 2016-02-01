@@ -2114,7 +2114,7 @@ public:
         comp( mpl::bool_<true> )
         {
             CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
-            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nLocalDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
@@ -2127,7 +2127,7 @@ public:
         comp( mpl::bool_<false> )
         {
             CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
-            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nLocalDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof()  ),
@@ -2161,7 +2161,7 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
@@ -2183,7 +2183,7 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
@@ -2219,7 +2219,7 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
@@ -2242,7 +2242,7 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
@@ -4133,6 +4133,14 @@ public:
     size_type nDofPerComponent() const
     {
         return this->nDof()/qDim();
+    }
+
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalDofPerComponent() const
+    {
+        return this->nLocalDof()/qDim();
     }
 
 
