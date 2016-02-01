@@ -180,7 +180,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("SolidMechanics","loadParameterFromOptionsVm", "start" );
 
-    M_useDisplacementPressureFormulation = boption(_name="use-incompressibility-constraint",_prefix=this->prefix());
+    std::string formulation = soption(_name="formulation",_prefix=this->prefix());
+    M_useDisplacementPressureFormulation = false;
+    if ( formulation == "displacement-pressure" )
+        M_useDisplacementPressureFormulation = true;
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
 
     std::string theSolidModel = this->modelProperties().model();
@@ -1113,7 +1116,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
-                                                    "sigma_xx","sigma_xy","sigma_xz","sigma_yx","sigma_yy","sigma_yz","sigma_zx","sigma_zy","sigma_zz" };
+                                                    "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
     {
