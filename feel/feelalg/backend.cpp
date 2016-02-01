@@ -266,7 +266,6 @@ template<>
 inline void 
 Backend<double>::attachPreconditioner()
 {
-    std::cout << "attach prec" << std::endl;
     auto p = Feel::preconditioner( _prefix=this->prefix(),
                                    _pc=this->pcEnumType(),
                                    _backend=this->shared_from_this(),

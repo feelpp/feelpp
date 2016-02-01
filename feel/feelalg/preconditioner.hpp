@@ -436,7 +436,7 @@ struct compute_prec_return
     typedef boost::shared_ptr<Preconditioner<value_type>> type;
 };
 
-BOOST_PARAMETER_FUNCTION( ( typename compute_prec_return<Args>::type ),
+BOOST_PARAMETER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                           preconditioner,
                           tag,
                           ( required
@@ -468,6 +468,8 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_prec_return<Args>::type ),
     if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
+        if ( matrix && !git->second->matrix() )
+            git->second->setMatrix( matrix );
         return git->second;
     }
 
