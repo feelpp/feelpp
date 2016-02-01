@@ -167,7 +167,7 @@ private:
     template <int RangeType,typename SubMeshType>
     void updateParallelSubMesh( boost::shared_ptr<SubMeshType> & newMesh,
                                 std::map<size_type,size_type> & new_node_numbers,
-                                std::map<size_type,size_type> & new_element_id,
+                                std::map<size_type,size_type> const& new_element_id,
                                 std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > const& ghostCellsFind,
                                 bool renumberPoint, size_type n_new_nodes );
     typename MeshType::element_type const&
@@ -789,7 +789,7 @@ template <int RangeType,typename SubMeshType>
 void
 CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::shared_ptr<SubMeshType> & newMesh,
                                                                          std::map<size_type,size_type> & new_node_numbers,
-                                                                         std::map<size_type,size_type> & new_element_id,
+                                                                         std::map<size_type,size_type> const& new_element_id,
                                                                          std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > const& ghostCellsFind,
                                                                          bool renumberPoint,size_type n_new_nodes )
 {
@@ -879,6 +879,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
     // delete reqs because finish comm
     delete [] reqs;
 
+    std::map<size_type,std::vector<std::pair<rank_type,size_type> > > mapActiveEltDuplicatedInWorld;
     // treat second recv and build ghost elements
     for ( auto const& dataToRecvPair : dataToRecv2 )
     {
@@ -896,84 +897,123 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
 
             auto const& oldElem = this->entityExtracted( oldEltId, rankRecv, mpl::int_<RangeType>() );
             CHECK( oldElem.id() == oldEltId ) << "invalid id";
-            auto is_not_stored = new_element_id.find(oldEltId)==new_element_id.end();
+
+            auto itFindNewActiveElt = new_element_id.find(oldEltId);
+            bool is_not_stored = itFindNewActiveElt == new_element_id.end();
+#if 0
             LOG_IF( WARNING, is_not_stored == false )
                 << "this element is already present on the new mesh\n";
             if ( is_not_stored == false ) continue;
-
-            // create a new elem with partitioning infos
-            CHECK( rankRecv != oldElem.pidInPartition() && proc_id == oldElem.pidInPartition() ) << "invalid rank id";
-            element_type newElem;
-            newElem.setMarker( oldElem.marker().value() );
-            newElem.setMarker2( oldElem.marker2().value() );
-            newElem.setMarker3( oldElem.marker3().value() );
-            newElem.setProcessIdInPartition( proc_id );
-            newElem.setProcessId( rankRecv );
-            newElem.addNeighborPartitionId( rankRecv );
-
-            // Loop over the nodes on this element.
-            for ( uint16_type n=0; n < oldElem.nPoints(); n++ )
+#endif
+            if ( is_not_stored )
             {
-                auto const& oldPoint = oldElem.point( n );
-                size_type oldPointId = oldPoint.id();
-                size_type newPtId = invalid_size_type_value;
-                auto itFindPoint = new_node_numbers.find( oldPointId );
-                if ( itFindPoint != new_node_numbers.end() )
-                    newPtId = itFindPoint->second;
-                else//if ( itFindPoint == new_node_numbers.end() )
+                // create a new elem with partitioning infos
+                CHECK( rankRecv != oldElem.pidInPartition() && proc_id == oldElem.pidInPartition() ) << "invalid rank id";
+                element_type newElem;
+                newElem.setMarker( oldElem.marker().value() );
+                newElem.setMarker2( oldElem.marker2().value() );
+                newElem.setMarker3( oldElem.marker3().value() );
+                newElem.setProcessIdInPartition( proc_id );
+                newElem.setProcessId( rankRecv );
+                newElem.addNeighborPartitionId( rankRecv );
+
+                // Loop over the nodes on this element.
+                for ( uint16_type n=0; n < oldElem.nPoints(); n++ )
                 {
-                    DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] insert point " << oldPoint << "\n";
-                    newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
-                    new_node_numbers[oldPointId] = newPtId;
-                    // create point and keep default process id because point not in partition ( invalid_rank_value_type )
-                    point_type pt( newPtId, oldPoint );
-                    pt.setProcessIdInPartition( proc_id );
-                    pt.setMarker( oldPoint.marker().value() );
-                    pt.setMarker2( oldPoint.marker2().value() );
-                    pt.setMarker3( oldPoint.marker3().value() );
-                    // Add this node to the new mesh
-                    newMesh->addPoint ( pt );
-                    DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] number of  points " << newMesh->numPoints() << "\n";
-                    // Increment the new node counter
-                    //n_new_nodes++;
-                }
+                    auto const& oldPoint = oldElem.point( n );
+                    size_type oldPointId = oldPoint.id();
+                    size_type newPtId = invalid_size_type_value;
+                    auto itFindPoint = new_node_numbers.find( oldPointId );
+                    if ( itFindPoint != new_node_numbers.end() )
+                        newPtId = itFindPoint->second;
+                    else//if ( itFindPoint == new_node_numbers.end() )
+                    {
+                        DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] insert point " << oldPoint << "\n";
+                        newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
+                        new_node_numbers[oldPointId] = newPtId;
+                        // create point and keep default process id because point not in partition ( invalid_rank_value_type )
+                        point_type pt( newPtId, oldPoint );
+                        pt.setProcessIdInPartition( proc_id );
+                        pt.setMarker( oldPoint.marker().value() );
+                        pt.setMarker2( oldPoint.marker2().value() );
+                        pt.setMarker3( oldPoint.marker3().value() );
+                        // Add this node to the new mesh
+                        newMesh->addPoint ( pt );
+                        DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] number of  points " << newMesh->numPoints() << "\n";
+                        // Increment the new node counter
+                        //n_new_nodes++;
+                    }
 #if 0
-                else if ( newMesh->point( newPtId ).processId() != invalid_rank_type_value )
-                {
-                    // update NeighborPartition for this points
-                    auto ptToUpdate = newMesh->pointIterator( newPtId );
-                    newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( rankRecv ) );
-                }
+                    else if ( newMesh->point( newPtId ).processId() != invalid_rank_type_value )
+                    {
+                        // update NeighborPartition for this points
+                        auto ptToUpdate = newMesh->pointIterator( newPtId );
+                        newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( rankRecv ) );
+                    }
 #endif
 
-                // Define this element's connectivity on the new mesh
-                if ( renumberPoint )
-                    CHECK ( newPtId < newMesh->numPoints() ) << "invalid connectivity";
+                    // Define this element's connectivity on the new mesh
+                    if ( renumberPoint )
+                        CHECK ( newPtId < newMesh->numPoints() ) << "invalid connectivity";
 
-                newElem.setPoint( n, newMesh->point( newPtId ) );
-                // if ( RangeType == MESH_EDGES )
-                //    newElem.setFace( n, newMesh->point( newPtId ) );
+                    newElem.setPoint( n, newMesh->point( newPtId ) );
+                    // if ( RangeType == MESH_EDGES )
+                    //    newElem.setFace( n, newMesh->point( newPtId ) );
 
-                DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] adding point old(" << oldPointId
-                         << ") as point new(" << newPtId << ") in element " << newElem.id() << "\n";
+                    DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] adding point old(" << oldPointId
+                             << ") as point new(" << newPtId << ") in element " << newElem.id() << "\n";
 
-            } // for (uint16_type n=0 ... )
+                } // for (uint16_type n=0 ... )
 
-            // update id in other part
-            newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
+                // update id in other part
+                newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
 
-            // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem, true );
+                // Add an equivalent element type to the new_mesh
+                auto const& e = newMesh->addElement( newElem, true );
 
-            const size_type newEltId = e.id();
-            // update mesh relation
-            new_element_id[oldEltId] = newEltId;
-            // mesh relation not yet activated for edges
-            if ( RangeType != MESH_EDGES )
-                M_smd->bm.insert( typename smd_type::bm_type::value_type( newEltId, oldEltId ) );
+                const size_type newEltId = e.id();
+
+                // mesh relation not yet activated for edges
+                if ( RangeType != MESH_EDGES )
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( newEltId, oldEltId ) );
+            }
+            else // already stored as active element
+            {
+                size_type newEltId = itFindNewActiveElt->second;
+                mapActiveEltDuplicatedInWorld[newEltId].push_back( std::make_pair( rankRecv, idEltActiveInOtherProc ) );
+            }
 
         } // for ( size_type k )
     } // for ( auto dataRecv2 )
+
+    // maybe some active elements are duplicated in parallel mesh at interprocess zone,
+    // we consider an unique active element with the minimal pid
+    for ( auto const& dataEltDuplicated : mapActiveEltDuplicatedInWorld )
+    {
+        size_type newId = dataEltDuplicated.first;
+        auto eltIt = newMesh->elementIterator( newId, proc_id );
+
+        rank_type minPid = proc_id;
+        std::set<rank_type> allpid;
+        allpid.insert( proc_id );
+        for ( auto const& dataOtherProc : dataEltDuplicated.second )
+        {
+            rank_type otherPid = dataOtherProc.first;
+            if ( otherPid < minPid )
+                minPid = otherPid;
+            allpid.insert( otherPid );
+        }
+        allpid.erase( minPid );
+
+        newMesh->elements().modify( eltIt, [&minPid,&allpid,&dataEltDuplicated] (element_type & e)
+                                    {
+                                        for ( rank_type opid : allpid )
+                                            e.addNeighborPartitionId( opid );
+                                        for ( auto const& dataOtherProc : dataEltDuplicated.second )
+                                            e.setIdInOtherPartitions( dataOtherProc.first,dataOtherProc.second );
+                                        e.setProcessId( minPid );
+                                    } );
+    }
 
 }
 
