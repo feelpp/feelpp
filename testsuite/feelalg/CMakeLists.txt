@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testalg )
-foreach(TEST petsc umfpack matrix ublas vector graph backend sub_matrix)
+foreach(TEST petsc umfpack matrix ublas vector graph backend sub_matrix topetsc)
 
   feelpp_add_test( ${TEST}  NO_MPI_TEST )
 

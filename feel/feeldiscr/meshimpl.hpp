@@ -2377,9 +2377,10 @@ updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultgh
 {
     typedef typename ElementType::value_type value_type;
     // get edges id and bary
-    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(0, false, std::vector<double>(ElementType::nRealDim) ));
+    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(invalid_size_type_value, false, std::vector<double>(ElementType::nRealDim) ));
     for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
     {
+        if ( !theelt.edgePtr( j ) ) continue;
         auto const& theedge = theelt.edge( j );
         idEdgesWithBary[j].template get<0>() = theedge.id();
         idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
@@ -2418,6 +2419,8 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
     for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
     {
         auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
+        if ( idEdgeRecv == invalid_size_type_value )
+            continue;
         const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
         auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
 
@@ -2426,6 +2429,7 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
         bool hasFind=false;
         for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
         {
+            if ( !theelt.edgePtr( j2 ) ) continue;
             auto const& theedgej2 = theelt.edge( j2 );
             auto const& theGj2 = theedgej2.vertices();
             //compute edge barycenter

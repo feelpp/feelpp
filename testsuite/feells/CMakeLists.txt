@@ -23,6 +23,9 @@
 #
 
 set_directory_properties(PROPERTIES LABEL testls )
-foreach(TEST levelset extender_from_interface )
+foreach(TEST levelset )
     feelpp_add_test( ${TEST} )
+endforeach()
+foreach(TEST extender_from_interface )
+    feelpp_add_test( ${TEST} NO_MPI_TEST )
 endforeach()
