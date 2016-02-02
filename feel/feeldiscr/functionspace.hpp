@@ -1639,10 +1639,19 @@ public:
 
     // basis context
     //typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
+#if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
                               mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
                               //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
+#else
+    static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
+        vm::POINT|vm::GRAD|vm::JACOBIAN|vm::KB :
+        vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB;
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<mpl::void_>,
+                              mpl::identity<typename basis_0_type::template Context<basis_context_value, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+#endif
     typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
@@ -1781,11 +1790,7 @@ public:
                 DVLOG(2) << "build precompute data structure for geometric mapping\n";
 
                 // build geometric mapping
-                //auto gmc2 = M_Xh->mesh()->gm()->template context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ),
-                //
-                //                                                                                            gmpc );
-                auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ), gmpc );
-                //auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ), gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<basis_context_type::gmc_type::context>( M_Xh->mesh()->element( eid ), gmpc );
                 DVLOG(2) << "build geometric mapping context\n";
                 // compute finite element context
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
@@ -2657,7 +2662,7 @@ public:
             {
                 for( int i = 0 ; it != en; ++it, ++i )
                 {
-                    v[0].setZero(1);
+                    v[0].setZero();
                     auto basis = it->second;
                     id( *basis, v );
                     int global_index = it->first;
