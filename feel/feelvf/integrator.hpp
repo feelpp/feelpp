@@ -4872,9 +4872,14 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     // typedef on formcontext
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
+    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test)? 1 : 0;
+
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type,map_gmc_form_type,mortarTag> form_mortar_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
 
 
     element_iterator elt_it, elt_en;
@@ -4927,21 +4932,33 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
     //-----------------------------------------------//
-
+    // test form context
     pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), __form.testSpace()->fe()->points() ) );
-    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcForm ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcForm ) );
     map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
-    //-----------------------------------------------//
-
     focb_ptrtype formc( new form_context_type( __form,
-                                               mapgmcForm,
-                                               mapgmcForm,
-                                               mapgmcExpr,
-                                               this->expression(),
-                                               face_ims[__face_id_in_elt_0],
-                                               imRange ) );
+                                               mapgmcForm, mapgmcForm,
+                                               mapgmcExpr, this->expression(),
+                                               face_ims[__face_id_in_elt_0], imRange ) );
 
+    //-----------------------------------------------//
+    // test form context : mortar
+    form_mortar_context_ptrtype formcMortar;
+    pc_form_ptrtype geopcFormMortar;
+    gmc_form_ptrtype gmcFormMortar;
+    if ( has_mortar_test )
+    {
+        // mortar
+        geopcFormMortar.reset( new pc_form_type( __form.gm(), __form.template testFiniteElement<has_mortar_test>()->points() ) );
+        gmcFormMortar.reset( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormMortar ) );
+        map_gmc_form_type mapgmcFormMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormMortar ) );
+
+        formcMortar.reset( new form_mortar_context_type( __form,
+                                                         mapgmcFormMortar, mapgmcFormMortar,
+                                                         mapgmcExpr, this->expression(),
+                                                         face_ims[__face_id_in_elt_0], imRange ) );
+    }
     //-----------------------------------------------//
 
     auto meshTest = __form.testSpace()->mesh();
@@ -4968,21 +4985,39 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
             auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest );
             auto gmcExpr_it = vec_gmcExpr.begin();
             auto const gmcExpr_en = vec_gmcExpr.end();
-            bool isFirstExperience = true;
-            for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+            bool isFirstExperience = true, isFirstExperienceMortar = true;
+            if ( has_mortar_test && eltTest.isOnBoundary() )
             {
-                geopcForm->update( gmcExpr_it->template get<2>() );
-                gmcForm->update( eltTest,geopcForm );
-                map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
-                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
-                __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
-                formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+                for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+                {
+                    geopcFormMortar->update( gmcExpr_it->template get<2>() );
+                    gmcFormMortar->update( eltTest,geopcFormMortar );
+                    map_gmc_form_type mapgmcFormMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormMortar ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                    __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                    formcMortar->updateInCaseOfInterpolate( mapgmcFormMortar, mapgmcFormMortar, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-                formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
-                isFirstExperience = false;
+                    formcMortar->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperienceMortar );
+                    isFirstExperienceMortar = false;
+                }
+                formcMortar->assemble();
             }
+            else
+            {
+                for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+                {
+                    geopcForm->update( gmcExpr_it->template get<2>() );
+                    gmcForm->update( eltTest,geopcForm );
+                    map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                    __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-            formc->assemble();
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                    isFirstExperience = false;
+                }
+                formc->assemble();
+            }
         }
     }
     else
