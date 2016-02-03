@@ -54,6 +54,7 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
  
 ## hdf5
 ```
+# For codes using fortran, add FC=`which mpif90` and the "--enable-fortran --enable-fortran2003" options
 CC=`which mpicc` CXX=`which mpic++` ./configure --enable-parallel --prefix=/data/software/install/hdf5/1.8.15-patch1/gcc-4.9.0/openmpi-1.10 --enable-build-all --enable-production
 make install
 ```
