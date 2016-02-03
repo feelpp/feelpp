@@ -44,7 +44,8 @@ update( geometric_mapping_context_ptrtype const& __gmc,
                 //std::cout << "gmc->npoints = "  << M_gmc->nPoints() << "\n";
                 M_npoints = __pc->nPoints();
 
-                const int ntdof = nDof*nComponents1;
+                //const int ntdof = nDof*nComponents1;
+                const int ntdof = this->nDofs();
                 M_phi.resize( boost::extents[ntdof][M_npoints] );
                 //M_gradphi.resize( boost::extents[ntdof][M_npoints] );
 
