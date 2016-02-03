@@ -174,7 +174,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     auto en_elt = rangeElt.template get<2>();
     if ( std::distance(it_elt,en_elt)==0 )
     {
-        // call updateMeasures in parallel here because this function is call ( at the end of this function)
+        // call updateMeasures in parallel here because this function is called ( at the end of this function)
         // by others proc which have elements and need collective comm
         if ( imesh->worldComm().localSize() > 1 ) {
             //imesh->updateForUse();

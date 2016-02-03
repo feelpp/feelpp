@@ -2220,6 +2220,11 @@ param( data_geo_ptrtype __dg )
  *_________________________________________________*
  *_________________________________________________*/
 
+void
+writePoint( uint16_type _numLoc, data_geo_ptrtype _dg , node_type const& _node )
+{
+    writePoint( _numLoc,_dg,_node(0),_node(1),_node(2) );
+}
 
 void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3 )
 {

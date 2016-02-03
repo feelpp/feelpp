@@ -59,18 +59,19 @@ public:
     typedef typename domain_space_type::element_type domain_element_type;
     typedef FsFunctionalLinear<dual_image_space_type> image_element_type;
 
-    Operator()
-        :
-        M_domainSpace(),
-        M_dualImageSpace()
-    {}
+    Operator() = default;
 
     Operator( domain_space_ptrtype     domainSpace,
               dual_image_space_ptrtype dualImageSpace ) :
         M_domainSpace( domainSpace ),
         M_dualImageSpace( dualImageSpace )
     {}
+    Operator( Operator<domain_space_type,DualImageSpace> const& ) = default;
+    Operator( Operator<domain_space_type,DualImageSpace> && ) = default;
 
+    Operator& operator=( Operator const& ) = default;
+    Operator& operator=( Operator && ) = default;
+    
     virtual ~Operator() {}
 
     void setDomainSpace( domain_space_ptrtype const& domainspace )

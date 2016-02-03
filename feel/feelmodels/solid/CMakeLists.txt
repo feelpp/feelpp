@@ -1,27 +1,37 @@
-###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 23 Feb 2015
-#
-#  Copyright (C) 2015 Feel++ Consortium
-#
-# Distributed under the GPL(GNU Public License):
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-#
+# geo order 1
+foreach( _DIM 2 3)
+  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  feelpp_max( MAX_ORDER 1 ${_D_ORDER})
+  message(STATUS "[feelpp] SOLID ${_DIM}D PNG1 N=1..${MAX_ORDER}")
+  foreach( _DISP_ORDER RANGE 1 ${MAX_ORDER} )
+    genLibSolidMechanics(
+      DIM ${_DIM}
+      DISP_ORDER ${_DISP_ORDER}
+      GEO_ORDER 1
+      DENSITY_COEFFLAME_TYPE P0d
+      ADD_CMAKE_INSTALL
+      )
+    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
+  endforeach()
+endforeach()
 
-set(SRC solidmechanics.cpp)
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelmodels/solid "${SRC};${HDR}")
+# iso-parametric
+foreach( _DIM 2 3)
+  math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
+  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_D_ORDER})
+  message(STATUS "[feelpp] SOLID ${_DIM}D PNGN N=2..${MAX_ORDER}")
+  foreach( _DISP_ORDER RANGE 2 ${MAX_ORDER} )
+    genLibSolidMechanics(
+      DIM ${_DIM}
+      DISP_ORDER ${_DISP_ORDER}
+      GEO_ORDER ${_DISP_ORDER}
+      DENSITY_COEFFLAME_TYPE P0d
+      ADD_CMAKE_INSTALL
+      )
+    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
+  endforeach()
+endforeach()
+
+add_library(feelpp_model_solidmechanics SHARED libsolidmechanics.cpp )
+target_link_libraries(feelpp_model_solidmechanics ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})

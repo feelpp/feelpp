@@ -41,6 +41,7 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeltiming/tic.hpp>
 #ifdef FEELPP_HAS_HPDDM
+#define HPDDM_NUMBERING 'C'
 #define BDD            // BDD module
 // #define FETI           // FETI module
 #define MUMPSSUB       // MUMPS as solver inside subdomain
@@ -170,6 +171,7 @@ template<uint16_type Dim, uint16_type Order, template<uint16_type> class Type>
 void Geneopp<Dim, Order, Type>::run()
 {
     static_assert(Dim == 2 || Dim == 3, "Wrong dimension");
+    HPDDM::Option& opt = *HPDDM::Option::get();
     mpi::timer time;
     boost::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     NullSpace<double> ns;
@@ -177,18 +179,20 @@ void Geneopp<Dim, Order, Type>::run()
 #ifdef FEELPP_HAS_HPDDM
 #if defined(FETI)
     typedef HpFeti<FetiPrcdtnr::DIRICHLET, double, 'S'> prec_type;
-    constexpr unsigned short nu = 0;
+    opt["geneo_nu"] = 0;
 #elif defined(BDD)
     typedef HpBdd<double, 'S'> prec_type;
-    unsigned short nu = ioption("nu");
 #endif
+    unsigned short nu = opt["geneo_nu"];
     prec_type* K = new prec_type;
     tic();
-    unsigned short p = ioption("p");
-    unsigned short topology = ioption("topology");
     MPI_Comm comm;
-    bool exclude = boption("exclude");
+    bool exclude = opt.set("master_exclude");
+    unsigned short p = opt["master_p"];
+    unsigned short topology = opt["master_topology"];
     bool excluded = HPDDM::DMatrix::splitCommunicator(Environment::worldComm(), comm, exclude, p, topology);
+    opt["master_p"] = p;
+    opt["master_topology"] = topology;
     boost::mpi::communicator bComm(comm, boost::mpi::comm_take_ownership);
     WorldComm wComm(bComm, bComm, bComm, bComm.rank(), std::vector<int>(bComm.size(), true));
     toc("communicators");
@@ -367,21 +371,23 @@ void Geneopp<Dim, Order, Type>::run()
         time.restart();
         K->renumber(interface, b);
         timers[4] = time.elapsed();
-        if(nu != 0 || doption("threshold") > 0.0) {
+        if(nu != 0 || opt.set("geneo_threshold")) {
             bComm.barrier();
             time.restart();
             K->computeSchurComplement();
             timers[7] = time.elapsed();
             bComm.barrier();
             time.restart();
-            K->solveGEVP<'S'>(nu, doption("threshold"));
+            double threshold = std::max(0.0, opt.val("geneo_threshold"));
+            K->solveGEVP<'S'>(nu, threshold);
+            opt["geneo_nu"] = nu;
             timers[8] = time.elapsed();
             K->super::super::initialize(nu);
         }
         K->callNumfactPreconditioner();
-        const char scaling = soption("scaling")[0];
+        unsigned short scaling = opt["substructuring_scaling"];
         double* rho = nullptr;
-        if(scaling == 'r') {
+        if(scaling == 2) {
             double* rho = new double[VhLocal->nDof()];
             coefficients(rho, VhLocal);
             K->renumber(interface, rho);
@@ -390,23 +396,14 @@ void Geneopp<Dim, Order, Type>::run()
         delete [] rho;
         uLocal = VhLocal->element();
     }
-    std::vector<unsigned short> parm(5);
-    parm[HPDDM::Parameter::P]            = p;
-    parm[HPDDM::Parameter::TOPOLOGY]     = topology;
-    parm[HPDDM::Parameter::DISTRIBUTION] = HPDDM::DMatrix::NON_DISTRIBUTED;
-    parm[HPDDM::Parameter::STRATEGY]     = ioption("strategy");
-    if(nu == 0)
-        parm[HPDDM::Parameter::NU]       = excluded ? 0 : K->getLocal();
-    else
-        parm[HPDDM::Parameter::NU]       = nu;
-    unsigned short it = ioption("it");
-    double eps = doption("eps");
     Environment::worldComm().barrier();
+    if(bComm.rank() != 0 || excluded)
+        opt.remove("verbosity");
     if(excluded) {
         K->Subdomain::initialize(&comm);
-        K->buildTwo<2>(Environment::worldComm(), parm);
+        K->buildTwo<2>(Environment::worldComm());
         Environment::worldComm().barrier();
-        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), it, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<true>(*K, static_cast<double*>(nullptr), static_cast<double*>(nullptr), Environment::worldComm());
         delete K;
     }
     else {
@@ -414,7 +411,7 @@ void Geneopp<Dim, Order, Type>::run()
         int flag = 0;
         time.restart();
         if(exclude) {
-            ret = K->buildTwo<1>(Environment::worldComm(), parm);
+            ret = K->buildTwo<1>(Environment::worldComm());
             if(ret) {
                 MPI_Test(&(ret->first), &flag, MPI_STATUS_IGNORE);
                 if(flag) {
@@ -424,7 +421,7 @@ void Geneopp<Dim, Order, Type>::run()
             }
         }
         else
-            ret = K->buildTwo<0>(Environment::worldComm(), parm);
+            ret = K->buildTwo<0>(Environment::worldComm());
         timers[6] = time.elapsed();
         time.restart();
         K->callNumfact();
@@ -445,7 +442,7 @@ void Geneopp<Dim, Order, Type>::run()
         if(ret)
             timers.back() += time.elapsed();
         tic();
-        HPDDM::IterativeMethod::PCG<false>(*K, &(uLocal[0]), b, it, eps, Environment::worldComm(), Environment::isMasterRank());
+        HPDDM::IterativeMethod::PCG<false>(*K, b, &(uLocal[0]), Environment::worldComm());
         toc("solution");
 
         double* storage = new double[2];
@@ -454,7 +451,7 @@ void Geneopp<Dim, Order, Type>::run()
 
         K->originalNumbering(interface, &(uLocal[0]));
 
-        double stats[3] = { K->getMult() / 2.0, mesh->neighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
+        double stats[3] { K->getMult() / 2.0, mesh->neighborSubdomains().size() / static_cast<double>(bComm.size()), static_cast<double>(K->getAllDof()) };
         if(bComm.rank() == 0) {
             std::streamsize ss = std::cout.precision();
             std::cout << std::scientific << " --- error = " << storage[1] << " / " << storage[0] << std::endl;
@@ -472,7 +469,7 @@ void Geneopp<Dim, Order, Type>::run()
             time.restart();
             auto VhVisu = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order, Type>>>::New(_mesh = mesh, _worldscomm = worldsComm(wComm));
             double timeFeel = time.elapsed();
-            if(wComm.rank() == 0)
+            if(bComm.rank() == 0)
                 std::cout << std::scientific << " --- FunctionSpace in " << timeFeel << std::endl;
 #ifdef FEELPP_HAS_HPDDM
             auto uVisu = vf::project(_space = VhVisu, _expr = idv(uLocal));
@@ -488,7 +485,7 @@ void Geneopp<Dim, Order, Type>::run()
                 assemble(D, F, VhVisu);
                 generateRBM(ev = nullptr, VhVisu, ns);
                 timeFeel = time.elapsed();
-                if(wComm.rank() == 0)
+                if(bComm.rank() == 0)
                     std::cout << std::scientific << " --- assembly in " << timeFeel << std::endl;
                 time.restart();
                 auto u = VhVisu->element();
@@ -501,7 +498,7 @@ void Geneopp<Dim, Order, Type>::run()
 #else
                 double error = 0.0;
 #endif
-                if(wComm.rank() == 0)
+                if(bComm.rank() == 0)
                     std::cout << std::scientific << " --- relative error with respect to solution from PETSc = " << error << " (computed in " << timeFeel << ")" << std::endl;
 #ifdef FEELPP_HAS_HPDDM
             }
@@ -537,25 +534,14 @@ void Geneopp<Dim, Order, Type>::run()
 int main(int argc, char** argv) {
     using namespace Feel;
 
-    po::options_description opts("FETI/BDD options");
-    opts.add_options()
-        ("scaling", po::value<std::string>()->default_value("m"), "kind of scaling")
-        ("p", po::value<int>()->default_value(1), "number of master processes")
-        ("topology", po::value<int>()->default_value(0), "distribution of the coarse operator")
-        ("strategy", po::value<int>()->default_value(3), "ordering tool for the direct coarse solver (only useful when using MUMPS)")
-        ("eps", po::value<double>()->default_value(1e-8), "relative preconditioned residual")
-        ("threshold", po::value<double>()->default_value(0.0), "threshold for dropping eigenpairs")
-        ("it", po::value<int>()->default_value(100), "maximum number of iterations")
-        ("nu", po::value<int>()->default_value(0), "number of eigenvalues")
-        ("exclude", po::value<bool>()->default_value(false), "exclude the master processes")
-        ;
     /**
      * Initialize Feel++ Environment
      */
-    Environment env(_argc = argc, _argv = argv, _desc = opts,
+    Environment env(_argc = argc, _argv = argv,
                     _about = about(_name = "geneo",
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
+    HPDDM::Option::get()->parse(argc, argv, Environment::isMasterRank());
     Application app;
     // app.add(new Geneopp<2, 1, Scalar>());
     // app.add(new Geneopp<3, 2, Scalar>());

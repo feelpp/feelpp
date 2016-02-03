@@ -6,6 +6,7 @@
        Date: 2008-02-01
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -36,11 +37,52 @@
 
 namespace Feel
 {
+using conforming_t = mpl::bool_<true>;
+using nonconforming_t = mpl::bool_<false>;
+//extern constexpr conforming_t conforming;
+//extern constexpr nonconforming_t nonconforming;
+template<typename C>
+constexpr bool is_conforming = C::value;
 
+enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV };
+
+inline std::ostream&
+operator<<( std::ostream& os, interpolation_operand_type const& o )
+{
+    if ( o == interpolation_operand_type::ID )
+        os << "ID";
+    if ( o == interpolation_operand_type::GRADIENT )
+        os << "GRADIENT";
+    if ( o == interpolation_operand_type::CURL )
+        os << "CURL";
+    if ( o == interpolation_operand_type::DIV )
+        os << "DIV";
+    return os;
+}
+
+template<bool C, interpolation_operand_type O>
 class InterpolationTypeBase
 {
 public :
-    InterpolationTypeBase( bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    static constexpr bool is_conforming = C;
+    static constexpr interpolation_operand_type interpolation_operand = O;
+    using operand_t = mpl::int_<static_cast<int>( interpolation_operand )>;
+    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
+    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
+    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
+    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
+
+    constexpr InterpolationTypeBase()
+        :
+        M_searchWithCommunication( true ),
+        M_componentsAreSamePoint( true ),
+        M_onlyLocalizeOnBoundary( false ),
+        M_nbNearNeighborInKdTree( 15)
+        {}  
+    constexpr InterpolationTypeBase( bool useComm, 
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
     :
         M_searchWithCommunication( useComm ),
         M_componentsAreSamePoint( compAreSamePt ),
@@ -48,19 +90,52 @@ public :
         M_nbNearNeighborInKdTree( nbNearNeighborInKdTree )
     {}
 
-    InterpolationTypeBase( InterpolationTypeBase const& a)
-    :
-        M_searchWithCommunication( a.M_searchWithCommunication ),
-        M_componentsAreSamePoint( a.M_componentsAreSamePoint ),
-        M_onlyLocalizeOnBoundary( a.M_onlyLocalizeOnBoundary ),
-        M_nbNearNeighborInKdTree( a.M_nbNearNeighborInKdTree )
-    {}
+    InterpolationTypeBase( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase( InterpolationTypeBase && a) = default;
 
-    bool searchWithCommunication() const { return M_searchWithCommunication; }
-    bool componentsAreSamePoint() const { return M_componentsAreSamePoint; }
-    bool onlyLocalizeOnBoundary() const { return M_onlyLocalizeOnBoundary; }
-    int nbNearNeighborInKdTree() const { return M_nbNearNeighborInKdTree; }
+    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
 
+    constexpr bool searchWithCommunication() const noexcept { return M_searchWithCommunication; }
+    constexpr bool componentsAreSamePoint() const noexcept { return M_componentsAreSamePoint; }
+    constexpr bool onlyLocalizeOnBoundary() const noexcept { return M_onlyLocalizeOnBoundary; }
+    constexpr int nbNearNeighborInKdTree() const noexcept { return M_nbNearNeighborInKdTree; }
+
+    static constexpr bool isConforming() noexcept { return is_conforming; }
+    static constexpr interpolation_operand_type interpolationOperand() noexcept { return interpolation_operand; }
+    static constexpr bool requiresDerivatives() noexcept 
+        { 
+            return interpolation_operand == interpolation_operand_type::GRADIENT || 
+                interpolation_operand == interpolation_operand_type::CURL || 
+                interpolation_operand == interpolation_operand_type::DIV;
+        }
+                
+    template<typename Elt>
+    static constexpr decltype(auto) operand( Elt&& e ) 
+        {
+            return operand( std::forward<Elt>(e), operand_t() );
+        }
+private:
+    template<typename Elt>
+    static constexpr decltype(auto) operand( Elt&& e, id_t ) 
+        {
+            return vf::id( std::forward<Elt>(e) );
+        }
+    template<typename Elt>
+    static constexpr decltype(auto) operand( Elt&& e, gradient_t ) 
+        {
+            return trans(vf::grad( std::forward<Elt>(e) ));
+        }
+    template<typename Elt>
+    static constexpr decltype(auto) operand( Elt&& e, curl_t ) 
+        {
+            return vf::curl( std::forward<Elt>(e) );
+        }
+    template<typename Elt>
+    static constexpr decltype(auto) operand( Elt&& e, div_t ) 
+        {
+            return vf::div( std::forward<Elt>(e) );
+        }
 private :
 
     bool M_searchWithCommunication;
@@ -69,25 +144,150 @@ private :
     int M_nbNearNeighborInKdTree;
 };
 
-struct InterpolationNonConforme : public InterpolationTypeBase
+struct InterpolationNonConforming : public InterpolationTypeBase<false,interpolation_operand_type::ID>
 {
-    static const uint16_type value=0;
+    using super = InterpolationTypeBase<false,interpolation_operand_type::ID>;
+    static const uint16_type value=super::isConforming();
 
-    InterpolationNonConforme( bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    constexpr InterpolationNonConforming() = default;
+
+    constexpr InterpolationNonConforming( bool useComm, 
+                                          bool compAreSamePt=true, 
+                                          bool onlyLocalizeOnBoundary=false, 
+                                          int nbNearNeighborInKdTree=15 )
         :
-        InterpolationTypeBase(useComm,compAreSamePt, onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        super(useComm,compAreSamePt, onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
     {}
+    constexpr InterpolationNonConforming( nonconforming_t nc,
+                                          bool useComm=true, 
+                                          bool compAreSamePt=true, 
+                                          bool onlyLocalizeOnBoundary=false, 
+                                          int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt, onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationNonConforming( InterpolationNonConforming const& ) = default;
+    InterpolationNonConforming( InterpolationNonConforming && ) = default;
+    InterpolationNonConforming& operator=( InterpolationNonConforming const& ) = default;
+};
+using InterpolationNonConforme = InterpolationNonConforming;
+struct InterpolationConforming : public InterpolationTypeBase<true,interpolation_operand_type::ID>
+{
+    using super = InterpolationTypeBase<true,interpolation_operand_type::ID>;
+    static const uint16_type value=super::isConforming();
+
+    constexpr InterpolationConforming() = default;
+    
+    constexpr InterpolationConforming(bool useComm, 
+                                      bool compAreSamePt=true, 
+                                      bool onlyLocalizeOnBoundary=false, 
+                                      int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+    {}
+    constexpr InterpolationConforming(conforming_t c,
+                                      bool useComm=true, 
+                                      bool compAreSamePt=true, 
+                                      bool onlyLocalizeOnBoundary=false, 
+                                      int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationConforming( InterpolationConforming const& ) = default;
+    InterpolationConforming( InterpolationConforming && ) = default;
+    InterpolationConforming& operator=( InterpolationConforming const& ) = default;
+    
+};
+using InterpolationConforme = InterpolationConforming;
+
+template<typename C>
+using InterpolationID = typename mpl::if_<C,
+                                          mpl::identity<InterpolationConforming>,
+                                          mpl::identity<InterpolationNonConforming>>::type::type;
+
+template<typename C>
+struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::GRADIENT>
+{
+    using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::GRADIENT>;
+
+    constexpr InterpolationGradient() = default;
+    constexpr InterpolationGradient( C c,
+                                     bool useComm = true,
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationGradient( InterpolationGradient const& ) = default;
+    InterpolationGradient( InterpolationGradient && ) = default;
+    InterpolationGradient& operator=( InterpolationGradient const& ) = default;
 };
 
-struct InterpolationConforme : public InterpolationTypeBase
+template<typename C>
+struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>
 {
-    static const uint16_type value=1;
-
-    InterpolationConforme(bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>;
+    constexpr InterpolationCurl() = default;
+    constexpr InterpolationCurl( C c,
+                                     bool useComm = true,
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
         :
-        InterpolationTypeBase(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
-    {}
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationCurl( InterpolationCurl const& ) = default;
+    InterpolationCurl( InterpolationCurl && ) = default;
+    InterpolationCurl& operator=( InterpolationCurl const& ) = default;
 };
+
+template<typename C>
+struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>
+{
+    using super = InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>;
+    constexpr InterpolationDiv() = default;
+    constexpr InterpolationDiv( C c,
+                                bool useComm = true,
+                                bool compAreSamePt=true, 
+                                bool onlyLocalizeOnBoundary=false, 
+                                int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+        {}
+    InterpolationDiv( InterpolationDiv const& ) = default;
+    InterpolationDiv( InterpolationDiv && ) = default;
+    InterpolationDiv& operator=( InterpolationDiv const& ) = default;
+};
+
+template<typename C, typename ...Args>
+InterpolationID<C>
+makeInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationID<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
+template<typename C, typename ...Args>
+InterpolationGradient<C>
+makeGradientInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationGradient<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
+template<typename C, typename ...Args>
+InterpolationCurl<C>
+makeCurlInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationCurl<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
+template<typename C, typename ...Args>
+InterpolationDiv<C>
+makeDivInterpolation( C&& c, Args&&... args )
+{
+    return InterpolationDiv<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
 
 
 namespace detailsup
@@ -129,10 +329,8 @@ idElt( EltType & elt,mpl::size_t<MESH_FACES> )
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
-         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator>,
-         typename InterpType = InterpolationNonConforme >
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = decltype(makeInterpolation<nonconforming_t>(nonconforming_t())) >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
     typedef OperatorLinear<DomainSpaceType, ImageSpaceType> super;
@@ -192,7 +390,7 @@ public:
                              image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
 
     // type conforme or non conforme
-    typedef InterpType interpolation_type;
+    using interpolation_type = std::remove_reference_t<std::remove_const_t<InterpType>>;
 
     // matrix graph
     typedef GraphCSR graph_type;
@@ -211,7 +409,7 @@ public:
     /**
      * default constructor
      */
-    OperatorInterpolation() : super() {}
+    OperatorInterpolation() = default;
 
     /**
      * Construction the global interpolation operator from \p
@@ -242,15 +440,9 @@ public:
     /**
      * copy constructor
      */
-    OperatorInterpolation( OperatorInterpolation const & oi )
-        :
-        super( oi ),
-        M_listRange( oi.M_listRange ),
-        M_WorldCommFusion( oi.M_WorldCommFusion ),
-        M_interptype( oi.M_interptype )
-    {}
-
-    ~OperatorInterpolation() {}
+    OperatorInterpolation( OperatorInterpolation const& oi ) = default;
+    OperatorInterpolation( OperatorInterpolation && oi ) = default;
+    ~OperatorInterpolation() = default;
 
     //@}
 
@@ -258,6 +450,8 @@ public:
      */
     //@{
 
+    OperatorInterpolation& operator=( OperatorInterpolation const& ) = default;
+    OperatorInterpolation& operator=( OperatorInterpolation && ) = default;
 
     //@}
 
@@ -285,6 +479,11 @@ public:
     /** @name  Methods
      */
     //@{
+
+    /**
+     * @return interpolation type
+     */
+    constexpr interpolation_type const& type() const noexcept { return M_interptype; }
 
     //@}
 
@@ -366,11 +565,12 @@ private:
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                                                        dual_image_space_ptrtype const& imagespace,
-                                                                                                        backend_ptrtype const& backend,
-                                                                                                        InterpType const& interptype,
-                                                                                                        bool ddmethod )
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::
+OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                       dual_image_space_ptrtype const& imagespace,
+                       backend_ptrtype const& backend,
+                       InterpType const& interptype,
+                       bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
@@ -385,12 +585,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                                                        dual_image_space_ptrtype const& imagespace,
-                                                                                                        IteratorRange const& r,
-                                                                                                        backend_ptrtype const& backend,
-                                                                                                        InterpType const& interptype,
-                                                                                                        bool ddmethod )
+OperatorInterpolation<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>::
+OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                       dual_image_space_ptrtype const& imagespace,
+                       IteratorRange const& r,
+                       backend_ptrtype const& backend,
+                       InterpType const& interptype,
+                       bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
@@ -404,12 +605,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 }
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                                                        dual_image_space_ptrtype const& imagespace,
-                                                                                                        std::list<IteratorRange> const& r,
-                                                                                                        backend_ptrtype const& backend,
-                                                                                                        InterpType const& interptype,
-                                                                                                        bool ddmethod )
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::
+OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                       dual_image_space_ptrtype const& imagespace,
+                       std::list<IteratorRange> const& r,
+                       backend_ptrtype const& backend,
+                       InterpType const& interptype,
+                       bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange( r ),
@@ -476,6 +678,7 @@ struct PrecomputeDomainBasisFunction
     //typedef GeoElementType geoelement_type;
     typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
     typedef typename DomainSpaceType::basis_type fe_type;
+    typedef typename ImageSpaceType::basis_type image_fe_type;
     typedef ExprType expression_type;
 
     // geomap context
@@ -514,18 +717,16 @@ struct PrecomputeDomainBasisFunction
 
     void update( geoelement_type const& elt )
     {
-        if ( !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
+        if ( !vm::has_grad<context>::value && !vm::has_curl<context>::value && !vm::has_div<context>::value && 
+             !mpl::or_<is_hdiv_conforming<typename DomainSpaceType::fe_type>, is_hcurl_conforming<typename DomainSpaceType::fe_type> >::type::value &&
              !mpl::or_<is_hdiv_conforming<typename ImageSpaceType::fe_type>, is_hcurl_conforming<typename ImageSpaceType::fe_type> >::type::value )
             return;
 
         M_gmc->update( elt );
         M_fec->update( M_gmc );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
-        map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
-        t_expr_type texpr( M_expr, mapgmc, mapfec );
+        t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
 
-        //IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
 
@@ -554,8 +755,10 @@ private :
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_gmc ) );
         map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
         t_expr_type texpr( M_expr, mapgmc, mapfec );
-
-        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        using shape = typename t_expr_type::shape;
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
+                                         image_fe_type::is_product?image_fe_type::nComponents*image_fe_type::nLocalDof:image_fe_type::nLocalDof);
+        
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
     void init(mpl::false_ )
@@ -580,7 +783,9 @@ private :
         map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0> >( M_fec ) );
         t_expr_type texpr( M_expr, mapgmc, mapfec );
 
-        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::nComponents*fe_type::nLocalDof, texpr.geom()->nPoints() );
+        using shape = typename t_expr_type::shape;
+        M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product?fe_type::nComponents*fe_type::nLocalDof:fe_type::nLocalDof, 
+                                         new_basis_type::is_product?new_basis_type::nComponents*new_basis_type::nLocalDof:new_basis_type::nLocalDof );
         newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
     }
 
@@ -603,7 +808,7 @@ precomputeDomainBasisFunction( boost::shared_ptr<DomainSpaceType> const& domainS
                                ExprType const& expr )
 {
     typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType> res_type;
-    return boost::shared_ptr<res_type>( new res_type( domainSpace, imageSpace, expr ) );
+    return boost::make_shared<res_type>( domainSpace, imageSpace, expr );
 }
 
 //--------------------------------------------------------------------------------------------------//
@@ -738,45 +943,16 @@ template <typename DomainDofType,typename ImageDofType, typename ImageEltType, t
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & /*gmcDomain*/,
-                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/,
-                                mpl::bool_<true> /**/ )
+                                boost::shared_ptr<DomainGmcType> & /*gmcDomain*/, mpl::bool_<true> /**/ )
 {
     return imagedof->localDofInElement( imageElt, imageLocDof, comp );
 }
 
-#if 0
-template <typename DomainDofType,typename ImageDofType, typename ImageEltType>
-uint16_type
-domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
-                                ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                mpl::bool_<false> /**/ )
-{
-    auto const imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
-    bool find=false;
-    size_type thelocDofToFind = invalid_size_type_value;
-    for ( uint16_type jloc = 0; jloc < DomainDofType::fe_type::nLocalDof; ++jloc )
-    {
-        const size_type theglobdof =  boost::get<0>( domaindof->localToGlobal( domainEltId, jloc, comp ) );
-        auto const domainGlobDofPt =domaindof->dofPoint( theglobdof ).template get<0>();
-        bool find2=true;
-        for (uint16_type d=0;d< DomainDofType::nRealDim;++d)
-        {
-            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-9);
-        }
-        if (find2) { thelocDofToFind=jloc;find=true; }
-    }
-    CHECK( find ) << "not find a compatible dof\n ";
-    return thelocDofToFind;
-}
-#else
 template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain,
-                                boost::shared_ptr<DomainGmcType> & gmcDomain,
-                                mpl::bool_<false> /**/ )
+                                boost::shared_ptr<DomainGmcType> & gmcDomain,mpl::bool_<false> /**/ )
 {
     typedef typename ImageDofType::fe_type ImageBasisType;
     typedef typename DomainDofType::fe_type DomainBasisType;
@@ -798,16 +974,14 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
         if (find2) { thelocDofToFind=jloc;find=true;break; }
     }
     CHECK( find ) << "not find a compatible dof\n ";
-    return thelocDofToFind;
+    return new_basis_type::nLocalDof*comp + thelocDofToFind;
 }
-#endif
-    template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
+
+template <typename DomainDofType,typename ImageDofType, typename ImageEltType, typename DomainGmcType>
 uint16_type
 domainLocalDofFromImageLocalDof( boost::shared_ptr<DomainDofType> const& domaindof,boost::shared_ptr<ImageDofType> const& imagedof,
                                  ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof,uint16_type comp, size_type domainEltId,
-                                 //boost::shared_ptr<typename DomainDofType::mesh_type::gm_type::template Context<vm::POINT, typename DomainDofType::mesh_type::element_type> > & gmcDomain
-                                 boost::shared_ptr<DomainGmcType> & gmcDomain
-                                 )
+                                 boost::shared_ptr<DomainGmcType> & gmcDomain )
 {
     return domainLocalDofFromImageLocalDof( domaindof,imagedof,imageElt,imageLocDof,imageGlobDof,comp,domainEltId,gmcDomain,
                                             mpl::bool_< DomainDofType::nDim == ImageDofType::nDim >() );
@@ -978,7 +1152,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
 
-    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+    auto sparsity_graph = boost::make_shared<graph_type>( this->dualImageSpace()->dof(), this->domainSpace()->dof() );
 
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
@@ -990,7 +1164,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // done for each element
 
     auto uDomain = this->domainSpace()->element();
-    auto expr = vf::id(uDomain);
+    auto expr = interpolation_type::operand(uDomain);
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
     Eigen::MatrixXd IhLoc;
 
@@ -1036,12 +1210,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                 for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
-                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                    int nc = (image_basis_type::is_product)? image_basis_type::nComponents : 1;
+                    for ( uint16_type comp = 0; comp < nc; ++comp )
                     {
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
                         auto const& thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
-
+                        
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
                              ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
                         {
@@ -1063,6 +1238,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                             for ( auto const& domain_eid : domains_eid_set )
                             {
+                                auto const& s = domaindof->localToGlobalSigns( domain_eid );
 
                                 const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
 
@@ -1074,30 +1250,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 {
-                                    uint16_type compDomain = (domain_basis_type::is_product)? comp : 0;
-
-                                    // get column
-                                    const size_type j = domaindof->localToGlobal( domain_eid, jloc, compDomain ).index();
-
-                                    if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+                                    uint16_type nCompDomain = (domain_basis_type::is_product)?domain_basis_type::nComponents:1;
+                                    for(int cdomain = 0;cdomain < nCompDomain;++cdomain )
                                     {
-                                        //up the pattern graph
-                                        auto& row = sparsity_graph->row( ig1 );
-                                        row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-                                    }
-                                    else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
-                                    {
-                                        const value_type val = thedofImage.sign()*IhLoc( (comp/*+nComponents1*c2*/)*domain_basis_type::nLocalDof+jloc,
-                                                                                       ilocprime );
-                                        this->matPtr()->set( i,j,val );
-#if 0
-                                        // get interpolated value ( by call fe->evaluate() )
-                                        // keep this code in order to memory ordering of this one
-                                        const value_type val = Mloc( domain_basis_type::nComponents1*jloc +
-                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                     comp,
-                                                                     ilocprime );
-#endif
+                                        if ( domain_basis_type::is_product && 
+                                             image_basis_type::is_product && 
+                                             ( M_interptype.interpolationOperand() == interpolation_operand_type::ID ) 
+                                             && cdomain != comp) continue;
+                                            
+                                        // get column
+                                        const size_type j = domaindof->localToGlobal( domain_eid, jloc, cdomain ).index();
+
+                                        if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+                                        {
+                                            //up the pattern graph
+                                            auto& row = sparsity_graph->row( ig1 );
+                                            row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
+                                        }
+                                        else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
+                                        {
+                                            
+                                            const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
+                                                                                  ilocprime );
+                                            this->matPtr()->set( i,j,val );
+                                        }
                                     }
                                 }
 
@@ -1204,7 +1380,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     //------------------------
                                     // localisation process
                                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::value>());
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
                                     eltIdLocalised = resLocalisation.template get<1>();
@@ -1482,7 +1658,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
     uint16_type nMPIsearch=15;//5;
-    if( InterpType::value==1) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
     else if (this->domainSpace()->mesh()->worldComm().localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
    // only one int this case
    if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
@@ -1844,7 +2020,7 @@ OperatorInterpolation<DomainSpaceType,
                     // the searched point
                     ublas::column(ptsReal,0 ) = pointsSearched[proc_id][k];
                     // vertice with conforme case
-                    if (InterpType::value==1)
+                    if (InterpType::isConforming())
                         {
                             const uint16_type sizeVertices = memmap_vertices[proc_id][k].size();
                             verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
@@ -1857,7 +2033,7 @@ OperatorInterpolation<DomainSpaceType,
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
-                                                                 mpl::int_<interpolation_type::value>());
+                                                                 mpl::int_<interpolation_type::isConforming()>());
                     if (!resLocalisation.template get<0>()[0]) // not find
                         {
                             for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
@@ -1950,7 +2126,7 @@ OperatorInterpolation<DomainSpaceType,
                     const auto comp = memmapComp[proc_id][k];
                     ublas::column(ptsReal,0 ) = imagedof->dofPoint(gdof).template get<0>();
                     // vertice with conforme case
-                    if (InterpType::value==1)
+                    if (InterpType::isConforming())
                         {
                             const uint16_type sizeVertices = memmap_vertices[proc_id][k].size();
                             verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
@@ -1962,7 +2138,7 @@ OperatorInterpolation<DomainSpaceType,
 
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-                    auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::value>());
+                    auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::isConforming()>());
                     if (!resLocalisation.template get<0>()[0]) // not find
                         {
                             memory_localisationFail.push_back(boost::make_tuple(gdof,comp) );
@@ -2246,7 +2422,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                             const int rankToSend = localMeshRankToWorldCommFusion_domain[rankLocalization];
                             this->worldCommFusion().globalComm().send(rankToSend,tag_Points,pointsSearched[rankLocalization]);
                             this->worldCommFusion().globalComm().send(rankToSend,tag_Comp,memmapComp[rankLocalization]);
-                            if (InterpType::value==1)
+                            if (InterpType::isConforming())
                                 this->worldCommFusion().globalComm().send(rankToSend,tag_Vertices,memmap_vertices[rankLocalization]);
                         }
                 }
@@ -2261,7 +2437,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                     const int rankToRecv = localMeshRankToWorldCommFusion_image[proc];
                                     this->worldCommFusion().globalComm().recv(rankToRecv,tag_Points,dataToRecv);
                                     this->worldCommFusion().globalComm().recv(rankToRecv,tag_Comp,dataToRecv_Comp);
-                                    if (InterpType::value==1)
+                                    if (InterpType::isConforming())
                                         this->worldCommFusion().globalComm().recv(rankToRecv,tag_Vertices,dataToRecv_Vertices);
 
                                     const size_type nDataRecv = dataToRecv.size();
@@ -2278,7 +2454,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             // get real point to search
                                             ublas::column(ptsReal,0) = dataToRecv[k];
                                             // vertice with conforme case
-                                            if (InterpType::value==1)
+                                            if (InterpType::isConforming())
                                                 {
                                                     const uint16_type sizeVertices = dataToRecv_Vertices[k].size();
                                                     verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
@@ -2630,7 +2806,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     {
         const rank_type rankToSend = localMeshRankToWorldCommFusion_domain[rankLocalization];
         //CHECK( rankToSend == rankLocalization ) << "strange " << rankToSend << " " << rankLocalization << "\n";
-        if (InterpType::value==0)
+        if (InterpType::isConforming()==0)
             CHECK( memmap_vertices[rankLocalization].size() == 0 ) << " memmap_vertices must be empty in conformal case\n";
 
         dataToSend[rankLocalization] = boost::make_tuple( pointsSearched[rankLocalization], memmapComp[rankLocalization], memmap_vertices[rankLocalization] );
@@ -2695,7 +2871,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
             // get real point to search
             ublas::column(ptsReal,0) = dataToRecv_ptsSearch[k];
             // vertice with conforme case
-            if (InterpType::value==1)
+            if (InterpType::isConforming())
             {
                 const uint16_type sizeVertices = dataToRecv_Vertices[k].size();
                 verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
@@ -2706,7 +2882,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                 verticesOfEltSearched = eltRandom.vertices();
             // search process
             if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
-            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
+            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::isConforming()>());
             if (resLocalisation.template get<0>()[0]) // is find
             {
                 eltIdLocalised = resLocalisation.template get<1>();
@@ -3013,13 +3189,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                     }
                                 }
                                 memSetGdofAndComp[procForPt].push_back(boost::make_tuple(gdof,comp));
-                                if (InterpType::value==1)  // conformal case
+                                if (InterpType::isConforming())  // conformal case
                                     memSetVertices_conformeInterp[procForPt].push_back(theImageElt.vertices());
                             }
                             else // only with myself
                             {
                                 memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
-                                if (InterpType::value==1) // conformal case
+                                if (InterpType::isConforming()) // conformal case
                                     memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(theImageElt.vertices());
                             }
 
@@ -3047,7 +3223,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
             memmapComp[proc].resize(nData);
             pointsSearched[proc].resize(nData);
             // conforme case
-            if(InterpType::value==1) memmap_vertices[proc].resize(nData);
+            if(InterpType::isConforming()) memmap_vertices[proc].resize(nData);
 
             auto it_GdofAndComp = memSetGdofAndComp[proc].begin();
             auto it_vertices = memSetVertices_conformeInterp[proc].begin();
@@ -3056,7 +3232,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                     memmapGdof[proc][k]=it_GdofAndComp->template get<0>();//gdof;
                     memmapComp[proc][k]=it_GdofAndComp->template get<1>();//comp
                     pointsSearched[proc][k]=imagedof->dofPoint(it_GdofAndComp->template get<0>()).template get<0>();//node
-                    if(InterpType::value==1) // conforme case
+                    if(InterpType::isConforming()) // conforme case
                         {
                             memmap_vertices[proc][k].resize(it_vertices->size2());
                             for (uint16_type v=0;v<it_vertices->size2();++v)
@@ -3075,37 +3251,150 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 
+
 namespace detail
 {
 template <typename RangeType>
 struct opinterprangetype
 {
-    typedef typename mpl::if_< boost::is_std_list<RangeType>,
-                               mpl::identity<RangeType>,
-                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+    typedef range_t<RangeType> type;
 };
 }
 
+
+/**
+ * get the type of an OperatorInterpolation
+ * \code
+ * operator_interpolation_t<space_1_type,space_2_type,elements_t<typename space_2_type::mesh_type>, >
+ * \endcode
+ */
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
-boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType> >
+using operator_interpolation_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationNonConforming >
+using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType =InterpolationNonConforming>
+using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
+    
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationGradient<nonconforming_t>>
+using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationCurl<nonconforming_t>>
+using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
+                                            ImageSpaceType,
+                                            IteratorRange,
+                                            InterpType>>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_t = 
+OperatorInterpolation<DomainSpaceType, 
+                      ImageSpaceType,
+                      range_t<IteratorRange>,
+                      InterpType>;
+
+template<typename DomainSpaceType,
+         typename ImageSpaceType,
+         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename InterpType = InterpolationDiv<nonconforming_t>>
+using Div_ptr_t = boost::shared_ptr<Div_t<DomainSpaceType,
+                                          ImageSpaceType,
+                                          IteratorRange,
+                                          InterpType>>;
+
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
+decltype(auto)
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           boost::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
           typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
           InterpType const& interptype,
-          bool ddmethod
-        )
+          bool ddmethod )
 {
-    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType> operatorinterpolation_type;
+    typedef OperatorInterpolation<DomainSpaceType, 
+                                  ImageSpaceType,
+                                  typename Feel::detail::opinterprangetype<IteratorRange>::type,
+                                  InterpType> operatorinterpolation_type;
+    
+    operatorinterpolation_type o ( domainspace,
+                                   imagespace,
+                                   r,
+                                   backend,
+                                   interptype,
+                                   ddmethod );
+    return o;
+}
 
-    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend,interptype,ddmethod ) );
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
+decltype(auto)
+opInterpPtr( boost::shared_ptr<DomainSpaceType> const& domainspace,
+             boost::shared_ptr<ImageSpaceType> const& imagespace,
+             IteratorRange const& r,
+             typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
+             InterpType const& interptype,
+             bool ddmethod )
+{
+    typedef OperatorInterpolation<DomainSpaceType, 
+                                  ImageSpaceType,
+                                  typename Feel::detail::opinterprangetype<IteratorRange>::type,
+                                  InterpType> operatorinterpolation_type;
+
+    auto opI = boost::make_shared<operatorinterpolation_type>( domainspace,
+                                                               imagespace,
+                                                               r,
+                                                               backend,
+                                                               interptype,
+                                                               ddmethod );
 
     return opI;
 }
 
 
 
-template<typename Args>
+template<typename Args,typename DefaultType = InterpolationNonConforming>
 struct compute_opInterpolation_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
@@ -3120,19 +3409,17 @@ struct compute_opInterpolation_return
 
     typedef typename Feel::detail::opinterprangetype<iterator_base_range_type>::type iterator_range_type;
 
-    typedef typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<Args,
-             tag::type,
-             InterpolationNonConforme
-             >::type >::type >::type interpolation_type;
+    using interpolation_type = std::remove_const_t<
+        std::remove_reference_t<
+            typename parameter::binding<Args,tag::type,DefaultType>::type >>;
+    
 
-
-    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,interpolation_type> > type;
+    typedef OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> type;
+    typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> > ptrtype;
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
+    ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
     opInterpolation,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
@@ -3142,12 +3429,113 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( range,          *, elements( imageSpace->mesh() )  )
       ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, InterpolationNonConforme()  )
+      ( type,           *, InterpolationNonConforming()  )
       ( ddmethod,  (bool),  false )
-    ) // optionnal
+    ) // optional
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
+    std::remove_const_t<decltype(type)> t( type );
+    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod );
+
+} // opInterpolation
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
+    I,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, InterpolationNonConforming() )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args,InterpolationGradient<nonconforming_t>>::type ), // 1. return type
+    Grad,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, makeGradientInterpolation<nonconforming_t>( nonconforming_t() ) )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // Grad
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args,InterpolationCurl<nonconforming_t>>::type ), // 1. return type
+    Curl,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, makeCurlInterpolation<nonconforming_t>( nonconforming_t() ) )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
+
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+
+} // opInterpolation
+
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename compute_opInterpolation_return<Args,InterpolationDiv<nonconforming_t>>::type ), // 1. return type
+    Div,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( type,           *, makeDivInterpolation<nonconforming_t>( nonconforming_t() ) )
+      ( ddmethod,  (bool),  false )
+    ) // optional
+)
+{
+#if BOOST_VERSION < 105900
+    Feel::detail::ignore_unused_variable_warning( args );
+#endif
 
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 

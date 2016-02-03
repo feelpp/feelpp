@@ -7,7 +7,7 @@
 
   Copyright (C) 2004 EPFL
   Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ public:
 
     typedef Exporter<MeshType,N> etype;
     typedef boost::shared_ptr<etype> ptrtype;
-    typedef TimeSet<MeshType,N> timeset_type;
+    typedef Feel::detail::TimeSet<MeshType,N> timeset_type;
     typedef typename timeset_type::mesh_type mesh_type;
     typedef typename timeset_type::mesh_ptrtype mesh_ptrtype;
     typedef boost::shared_ptr<timeset_type> timeset_ptrtype;
@@ -108,7 +108,7 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
-    
+
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
@@ -183,7 +183,7 @@ public:
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
-     */    
+     */
     static boost::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
                                                          WorldComm const& worldComm = Environment::worldComm() );
 
@@ -318,6 +318,12 @@ public:
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
+
+        if(M_ts_set.size() > 0)
+        {
+            M_ts_set.back()->setName( M_prefix );
+        }
+
         return this;
     }
 
@@ -551,9 +557,9 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
     auto e =  exporter_type::New( name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    if ( geo == "change_coords_only" )
+    if ( std::string(geo).compare("change_coords_only") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
-    else if ( geo == "change" )
+    else if ( std::string(geo).compare("change") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
     else // default
         e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );

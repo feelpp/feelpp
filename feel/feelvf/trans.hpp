@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -63,6 +63,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     /** @name Typedefs
      */
@@ -105,7 +111,8 @@ public:
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-
+        static constexpr size_type context = this_type::context; 
+        using expr_type = typename this_type::expression_type;
         typedef typename Transpose<typename tensor_expr_type::shape>::type shape;
 
         template <class Args> struct sig

@@ -1,0 +1,52 @@
+{
+    "Name": "Fluid Mechanics",
+    "ShortName":"Fluid",
+    "Model":"myfluidmodel",
+    "Parameters":
+    {
+        "ubar":
+        {
+            "value":"2"
+        },
+        "chi":
+        {
+            "value":"t<2:t"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "inlet":
+                {
+                    "expr":"{ 1.5*ubar*23.795*(4./0.1681)*y*(0.41-y)*z*(0.41-z)*( ((1-cos(pi*t/2))/2)*(t<2) + (1-(t<2)) ),0}:ubar:y:z:t"
+                },
+                "wall1":
+                {
+                    "expr":"{0,0}"
+                },
+                "wall2":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "outlet":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure"]
+    }
+
+}

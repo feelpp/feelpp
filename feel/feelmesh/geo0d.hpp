@@ -169,19 +169,16 @@ public:
     }
 
     /**
-     * copy constructor
-     * @param G the Geo0D to copy
+     * copy/move constructors
      */
-    Geo0D( Geo0D const & G );
+    Geo0D( Geo0D const & G ) = default;
+    Geo0D( Geo0D && G ) = default;
 
     /**
-     * assignement operator
-     *
-     * @param G the geo0D to copy
-     *
-     * @return the newly assigned Geo0D
+     * assignement operators
      */
-    Geo0D & operator=( Geo0D const & G );
+    Geo0D & operator=( Geo0D const& G ) = default;
+    Geo0D & operator=( Geo0D && G ) = default;
 
     template<typename AE>
     Geo0D & operator=( ublas::vector_expression<AE> const& expr )
@@ -644,43 +641,6 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     this->setOnBoundary( boundary );
 }
 
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D( Geo0D const & G )
-    :
-    super( G ),
-    super2( G ),
-    M_master_id( G.id() ),
-    M_is_vertex( G.M_is_vertex ),
-    M_is_parametric( G.M_is_parametric ),
-    M_marker1( G.M_marker1 ),
-    M_marker2( G.M_marker2 ),
-    M_marker3( G.M_marker3 ),
-    M_gdim( G.M_gdim ),
-    M_gtag( G.M_gtag ),
-    M_uv( G.M_uv )
-{
-}
-
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T> &
-Geo0D<Dim, T>::operator=( Geo0D<Dim, T> const & G )
-{
-    if (  this == &G )
-        return *this;
-
-    super::operator=( G );
-    super2::operator=( G );
-    M_master_id = G.masterId();
-    M_is_vertex = G.M_is_vertex;
-    M_is_parametric = G.M_is_parametric;
-    M_marker1 = G.M_marker1;
-    M_marker2 = G.M_marker2;
-    M_marker3 = G.M_marker3;
-    M_gdim = G.M_gdim;
-    M_gtag = G.M_gtag;
-    M_uv = G.M_uv;
-    return *this;
-}
 
 template<uint16_type Dim, typename T>
 std::ostream &

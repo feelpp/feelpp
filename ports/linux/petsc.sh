@@ -9,6 +9,8 @@ export PETSC_DIR=`pwd`
     --with-fc=/usr/bin/mpif90 \
     --enable-debugging=0\
     --COPTFLAGS="-O3"\
+    --CXXOPTFLAGS="-O3"\
+    --FOPTFLAGS="-O3"\
     --download-metis \
     --download-parmetis \
     --download-blacs \

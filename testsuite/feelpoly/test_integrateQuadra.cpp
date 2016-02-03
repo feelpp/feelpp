@@ -103,8 +103,8 @@ class Test
                   << "int_Omega  " << grad_g << " = "
                   << intgrad_f  << std::endl;
 
-        BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 1e-1 );
-        BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 1e-1 );
+        BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 5 );
+        BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 5 );
 
         std::cout <<"" << std::endl;
 

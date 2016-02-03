@@ -24,7 +24,7 @@
 #include <feel/feel.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 
-bool display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates );
+bool display_flowrates( std::ostream& os, double t, std::map<std::string, double> const& flowrates, double Q );
 bool display_flowrates_header( std::ostream& os, std::map<std::string, double> const& flowrates );
 
 int main(int argc, char**argv )
@@ -37,6 +37,7 @@ int main(int argc, char**argv )
         ( "Um", po::value<double>()->default_value( 0.3 ), "max velocity at inflow" )
         ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
         ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
+        ( "Q", po::value<double>()->default_value( 0.0000052166503023447670669 ), "Flow rate" )
         ( "ns.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Navier-Stokes preconditioner: petsc, PCD, PMM" )
         ;
     unsteadyfdaoptions.add( backend_options( "ns" ) );
@@ -48,7 +49,6 @@ int main(int argc, char**argv )
     constexpr int dim = FEELPP_DIM;
     constexpr int p_order = FEELPP_ORDER_P;
     tic();
-    double Di=0.012;
     auto mesh = loadMesh( new Mesh<Simplex<dim>> );
     size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
@@ -81,12 +81,13 @@ int main(int argc, char**argv )
     
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
+    double Q = doption(_name="Q");
     
     if ( Environment::isMasterRank() )
     {
         std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
-        std::cout << std::left << 0.0461*0.012*rho/mu;
+        std::cout << std::left << Q*0.012*rho/(pi*0.006*0.006*mu);
         std::cout.width(16);
         std::cout << std::left << p_order+1;
         std::cout.width(16);
@@ -202,7 +203,8 @@ int main(int argc, char**argv )
         auto extrapu = extrap.element<0>();
         // add BDF term to the right hand side from previous time steps
         ft = integrate( _range=elements(mesh), _expr=rho*(trans(idv(rhsu))*id(u) ) );
-        toc("update rhs");tic();
+        toc("update rhs");
+        tic();
 
         tic();
         at.zero();
@@ -227,7 +229,7 @@ int main(int argc, char**argv )
 
         if ( soption("ns.preconditioner") != "petsc" )
         {
-            a_blockns->update( at.matrixPtr(), idv(extrapu), dirichlet_conditions );
+            a_blockns->update( at.matrixPtr(), rho*idv(extrapu), dirichlet_conditions );
             at.solveb(_rhs=ft,_solution=U,_backend=backend(_name="ns",_rebuild=false),_prec=a_blockns);
         }
         else
@@ -241,16 +243,19 @@ int main(int argc, char**argv )
         
         for( auto & f : flowrates_f )
         {
-            flowrates[f.first]= f.second( u );
+            if (f.first=="inlet" || f.first=="outlet")
+                flowrates[f.first]= f.second(u);
+            else
+                flowrates[f.first]= 0.5*f.second(u);
         }
 
         if (Environment::isMasterRank())
         {
             std::cout<< "\n \n \n ============= FLOW OVER RADIAL SECTIONS =================\n";
-            bool ok = display_flowrates( std::cout, mybdf->time(), flowrates );
+            bool ok = display_flowrates( std::cout, mybdf->time(), flowrates, Q );
             if ( !ok ) 
                 std::cout << "WARNING ! flow rate issue at time " << mybdf->time() << "\n";
-            display_flowrates( ofs, mybdf->time(), flowrates );
+            display_flowrates( ofs, mybdf->time(), flowrates, Q );
             std::cout<< "\n \n \n ==========================================================\n";
             
         }

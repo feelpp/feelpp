@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-14
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,12 @@ public:
     {
         static const bool result = expression_type::template HasTrialFunction<Funct>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = expression_type::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = expression_type::template has_trial_basis<Func>;
+    using test_basis = typename expression_type::test_basis;
+    using trial_basis = typename expression_type::trial_basis;
 
     typedef GiNaC::ex ginac_expression_type;
     typedef GinacExVF<ExprT> this_type;
@@ -219,9 +225,7 @@ public:
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         // change 0 into rank

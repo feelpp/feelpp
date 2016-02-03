@@ -29,10 +29,143 @@
 
 namespace Feel {
 
-ModelPostprocess::ModelPostprocess()
+template <typename T>
+std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
+{
+    std::vector<T> r;
+    for (auto& item : pt.get_child(key))
+        r.push_back(item.second.template get_value<T>());
+    return r;
+}
+
+void
+ModelPostprocessPointPosition::setup( std::string const& name )
+{
+
+    // fields is necessary
+    if ( !M_p.get_child_optional("fields") )
+        return;
+
+    bool hasCoord = (M_p.get_child_optional("coord"))?true:false;
+    bool hasMarker = (M_p.get_child_optional("marker"))?true:false;
+    // coord or marker is necessary
+    if ( !hasCoord && !hasMarker )
+        return;
+
+
+    this->pointPosition().setName( name );
+    if ( hasMarker )
+    {
+        std::string marker = M_p.get<std::string>( "marker" );
+        this->pointPosition().setMeshMarker( marker );
+    }
+    if ( hasCoord )
+    {
+        std::string coordExpr = M_p.get<std::string>( "coord" );
+        //std::cout << "coordExpr : "<< coordExpr << "\n";
+
+        auto parseExpr = GiNaC::parse(coordExpr);
+        auto const& coordMatExpr = parseExpr.first.evalm();
+        auto const& coordExprSymbol = parseExpr.second;
+        int nComp = coordMatExpr.nops();
+        ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
+        //for ( auto symbb : coordExprSymbol )
+        //    std::cout << "symbb " << symbb << "\n";
+        if ( coordExprSymbol.empty() || ( coordExprSymbol.size() == 1 && coordExprSymbol[0].get_name() == "0" ) )
+        {
+            int nComp = GiNaC::parse(coordExpr).first.evalm().nops();
+            //std::cout << "ncomp " << nComp << "\n";
+            for (int comp=0;comp<nComp;++comp )
+            {
+                std::string compExpr = str( coordMatExpr.op(comp) );
+                try
+                {
+                    coordData(comp) = std::stod( compExpr );
+                }
+                catch (std::invalid_argument& err)
+                {
+                    LOG(WARNING) << "cast fail from expr to double\n";
+                    coordData(comp) = 0;
+                }
+            }
+            LOG(INFO) << "point coord is a cst expr : " << coordData(0) << "," << coordData(1) << "," << coordData(2);
+            this->pointPosition().setValue( coordData );
+        }
+        else
+        {
+            LOG(INFO) << "point coord is a symbolic expr : " << coordExpr;
+            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, M_worldComm );
+        }
+    } // hasCoord
+
+    // store fields name
+    std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
+    if ( fieldList.empty() )
+    {
+        std::string fieldUnique = M_p.get<std::string>( "fields" );
+        if ( !fieldUnique.empty() )
+            fieldList = { fieldUnique };
+    }
+    for( std::string const& field : fieldList )
+    {
+        // std::cout << "add field = " << field << "\n";
+        this->addFields( field );
+    }
+
+}
+
+void
+ModelPostprocessExtremum::setup( std::string const& name )
+{
+    // fields is necessary
+    if ( !M_p.get_child_optional("fields") )
+        return;
+    // markers is necessary
+    if ( !M_p.get_child_optional("markers") )
+        return;
+
+    this->extremum().setName( name );
+
+    // store fields name
+    std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
+    if ( fieldList.empty() )
+    {
+        std::string fieldUnique = M_p.get<std::string>( "fields" );
+        if ( !fieldUnique.empty() )
+            fieldList = { fieldUnique };
+    }
+    for( std::string const& field : fieldList )
+    {
+        //std::cout << "add extremum field = " << field << " (with name " << name << ")\n";
+        this->addFields( field );
+    }
+
+    // store markers
+    std::vector<std::string> markerList = as_vector<std::string>( M_p, "markers" );
+    if ( markerList.empty() )
+    {
+        std::string markerUnique = M_p.get<std::string>( "markers" );
+        if ( !markerUnique.empty() )
+            markerList = { markerUnique };
+    }
+    for( std::string const& marker : markerList )
+    {
+        //std::cout << "add extremum marker = " << marker << " (with name " << name << ")\n";
+        this->extremum().addMarker( marker );
+    }
+
+
+}
+
+
+ModelPostprocess::ModelPostprocess( WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
-ModelPostprocess::ModelPostprocess(pt::ptree const& p)
+ModelPostprocess::ModelPostprocess(pt::ptree const& p, WorldComm const& world )
+    :
+    M_worldComm( world )
 {}
 
 ModelPostprocess::~ModelPostprocess()
@@ -43,15 +176,6 @@ ModelPostprocess::setPTree( pt::ptree const& p )
 {
     M_p = p;
     setup();
-}
-
-template <typename T>
-std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
-{
-    std::vector<T> r;
-    for (auto& item : pt.get_child(key))
-        r.push_back(item.second.template get_value<T>());
-    return r;
 }
 
 void
@@ -92,6 +216,49 @@ ModelPostprocess::setup()
         }
         
     }
+
+    auto measures = M_p.get_child_optional("Measures");
+    if ( measures )
+    {
+        auto evalPoints = measures->get_child_optional("Points");
+        if ( evalPoints )
+        {
+            for( auto const& evalPoint : *evalPoints )
+            {
+                ModelPostprocessPointPosition myPpPtPos( M_worldComm );
+                myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
+                myPpPtPos.setPTree( evalPoint.second, evalPoint.first );
+                if ( !myPpPtPos.fields().empty() )
+                    M_measuresPoint.push_back( myPpPtPos );
+            }
+            if ( !M_measuresPoint.empty() )
+                this->operator[]("Measures").push_back( "Points" );
+        }
+
+        for ( std::string const& extremumType : std::vector<std::string>( { "Maximum","Minimum" } ) )
+        {
+            auto measuresExtremum = measures->get_child_optional( extremumType );
+            if ( measuresExtremum )
+            {
+                for( auto const& measureExtremum : *measuresExtremum )
+                {
+                    ModelPostprocessExtremum myPpExtremum( M_worldComm );
+                    if ( extremumType == "Maximum" )
+                        myPpExtremum.extremum().setType( "max" );
+                    else
+                        myPpExtremum.extremum().setType( "min" );
+                    myPpExtremum.setDirectoryLibExpr( M_directoryLibExpr );
+                    myPpExtremum.setPTree( measureExtremum.second, measureExtremum.first );
+                    if ( !myPpExtremum.fields().empty() )
+                        M_measuresExtremum.push_back( myPpExtremum );
+                }
+                if ( !M_measuresPoint.empty() )
+                    this->operator[]("Measures").push_back( "Maximum" );
+            }
+        }
+    }
+
+
 }
 
 void
@@ -109,5 +276,13 @@ ModelPostprocess::saveMD(std::ostream &os)
     os << "</ul>|\n";
   }
 }
+
+void
+ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for( auto & p : M_measuresPoint )
+        p.setParameterValues( mp );
+}
+
 
 }

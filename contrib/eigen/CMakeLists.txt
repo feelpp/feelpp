@@ -74,8 +74,8 @@ set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
-  message(FATAL_ERROR
-    "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
+#  message(FATAL_ERROR
+#    "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
 

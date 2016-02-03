@@ -23,8 +23,6 @@ namespace test_graphcsr
 
 using namespace Feel;
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -64,18 +62,15 @@ makeAbout()
  * Run
  *_________________________________________________*/
 
-void run( Application_ptrtype & theApp )
+void run()
 {
     //using namespace Feel;
-    theApp->changeRepository( boost::format( "/testsuite/%1%/" )
-                              % theApp->about().appName() );
-
 
     //--------------------------------------------------------------------------------------------------//
     // mesh
     const int nDim = 2;
     const int nOrderGeo = 1;
-    double meshSize = theApp->vm()["hsize"].as<double>();
+    double meshSize = doption(_name="hsize");
 
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_type;
 
@@ -163,23 +158,9 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( test_graphcsr::makeAbout(), test_graphcsr::make
 
 BOOST_AUTO_TEST_SUITE( graphcsr )
 
-typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
 BOOST_AUTO_TEST_CASE( graphcsr_case1 )
 {
-    using namespace Feel;
-
-    auto theApp = Application_ptrtype( new Application_type );
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    test_graphcsr::run( theApp );
-
+    test_graphcsr::run();
 }
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -193,21 +174,6 @@ main( int argc, char** argv )
     Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
                            _argv=boost::unit_test::framework::master_test_suite().argv,
                            _desc=makeOptions(),_about=makeAbout());
-
-    typedef Feel::Application Application_type;
-    typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-
-    auto theApp = Application_ptrtype( new Application_type );
-
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    test_graphcsr::run( theApp );
-
+    test_graphcsr::run();
 }
 #endif

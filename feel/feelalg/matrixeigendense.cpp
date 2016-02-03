@@ -181,9 +181,9 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenDense<value_type>* m = dynamic_cast<MatrixEigenDense<value_type>*>( &_m );
+    MatrixEigenDense<value_type> const* m = dynamic_cast<MatrixEigenDense<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );
     //FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
@@ -261,7 +261,8 @@ void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
                                Vector<value_type> const& vals,
                                Vector<value_type>& rhs,
-                               Context const& on_context )
+                               Context const& on_context,
+                               value_type value_on_diagonal )
 {
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
@@ -271,7 +272,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
-        value_type value = 1.0;
+        value_type value = value_on_diagonal;
 
         if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );

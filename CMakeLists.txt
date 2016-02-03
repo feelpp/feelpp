@@ -31,6 +31,10 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	cmake_policy(SET CMP0038 NEW)
 	message(STATUS "[feelpp] use NEW policy CMP0042" )
 	cmake_policy(SET CMP0042 NEW)
+    if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
+      message(STATUS "[feelpp] use OLD policy CMP0064" )
+      cmake_policy(SET CMP0064 OLD)
+    endif()
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
@@ -96,6 +100,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
@@ -105,7 +110,7 @@ endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
-SET(FEELPP_DEFAULT_TEST_TIMEOUT "30")
+SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
@@ -119,6 +124,11 @@ SET(FEELPP_ROOT ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Root directory for F
 SET(FEELPP_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Root directory for Feel++ sources")
 SET(FEELPP_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 SET(FEELPP_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+
+if ( NOT DEFINED FEELPP_INSTANTIATION_ORDER_MAX)
+  # max order to instantiate
+  set(FEELPP_INSTANTIATION_ORDER_MAX 3)
+endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
@@ -154,21 +164,14 @@ else(APPLE)
   set(FEELPP_OS "${CMAKE_SYSTEM_NAME}")
 endif(APPLE)
 
+
+
 if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8.0)
-     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-     # A cosmetic change - do not work properly within emacs
-     #if (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9.0)
-     #  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always" )
-     #endif()
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
-  endif()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic  -ftemplate-depth-256 -Wno-inline" )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
+#  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
@@ -298,26 +301,27 @@ MESSAGE(STATUS "[feelpp] SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "[feelpp] SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
-# Find Feel++ or at least it dependencies
-FIND_PACKAGE(Feel++ REQUIRED)
-
 include( feelpp.macros )
+
+# Find feel++ dependencies 
+include( feelpp.dependencies )
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
-#   there is README.md file in the directory
+#   there is README.{md,adoc} file in the directory
 #   that the directory path include "research"
 # for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
 # option which are set to OFF by default
 MESSAGE(STATUS "[feelpp] Feel++ projects :")
 feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
+      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
     string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" )
+    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "HYDROMORPHO" OR ${PROJECT} STREQUAL "SIVIBIRPP"  )
       option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
     else()
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " OFF)
+      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
     endif()
     option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
 		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
@@ -357,6 +361,7 @@ IF( FEELPP_MINIMAL_CONFIGURATION )
   UNSET( FEELPP_INSTANTIATION_MODE CACHE )
   SET(FEELPP_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
 ENDIF( FEELPP_MINIMAL_CONFIGURATION )
+
 
 option(FEELPP_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" ON)
 if (ANN_FOUND AND GLPK_FOUND)
@@ -431,3 +436,10 @@ include(feelpp.package)
 # Post-config message
 ################################################################################
 include(feelpp.directive)
+
+# The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
+# The add_subdirectory is way too soon to get those values
+set(config_file "cmake/modules/Feel++Config.cmake")
+configure_file( ${config_file}.in ${config_file} @ONLY)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
+

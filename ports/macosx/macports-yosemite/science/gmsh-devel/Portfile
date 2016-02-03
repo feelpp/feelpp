@@ -79,40 +79,54 @@ depends_lib  \
 
 default_variants +atlas +slepc
 
-if { ![variant_isset gcc48] && ![variant_isset clang36]  } {
+if { ![variant_isset gcc48] && ![variant_isset clang36] && ![variant_isset clang37]  } {
     #default_variants +gcc48
-    default_variants +clang36
+    default_variants +clang37
 }
-if {![variant_isset openmpi_gcc48] && ![variant_isset openmpi_clang35] } {
+if {![variant_isset openmpi_gcc48] && ![variant_isset openmpi_clang35] && ![variant_isset openmpi_clang37] } {
     #default_variants +openmpi_gcc48
-    default_variants +openmpi_clang35
+    default_variants +openmpi_clang37
 }
 
-variant gcc48 description {Build with gcc48} conflicts clang36 {
+variant gcc48 description {Build with gcc48} conflicts clang36 clang37 {
     depends_lib-append      port:gcc48
     configure.compiler macports-gcc-4.8
     configure.args-append \
        -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8 \
        -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8
 }
-variant clang36 description {Build with clang36} conflicts gcc48 {
+variant clang36 description {Build with clang36} conflicts gcc48 clang37 {
     depends_lib-append  port:clang-3.6
     configure.compiler  macports-clang-3.6
     configure.args-append \
         -DCMAKE_C_COMPILER=/opt/local/bin/clang-mp-3.6 \
         -DCMAKE_CXX_COMPILER=/opt/local/bin/clang++-mp-3.6
 }
+variant clang37 description {Build with clang37} conflicts gcc48 clang36 {
+    depends_lib-append  port:clang-3.7
+    configure.compiler  macports-clang-3.7
+    configure.args-append \
+        -DCMAKE_C_COMPILER=/opt/local/bin/clang-mp-3.7 \
+        -DCMAKE_CXX_COMPILER=/opt/local/bin/clang++-mp-3.7
+}
+
 variant openmpi_gcc48 description {Build Boost.MPI} conflicts debug openmpi_clang35 {
     depends_lib-append      port:openmpi-gcc48
     configure.args-append \
         -DMPI_CXX_COMPILER=/opt/local/bin/mpicxx-openmpi-gcc48 \
         -DMPI_C_COMPILER=/opt/local/bin/mpicc-openmpi-gcc48
 }
-variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conflicts debug openmpi_gcc48 {
+variant openmpi_clang35 description {Build Boost.MPI with openmpi-clang35 } conflicts debug openmpi_gcc48 openmpi_clang37 {
     depends_lib-append      port:openmpi-clang35
     configure.args-append \
         -DMPI_CXX_COMPILER=/opt/local/bin/mpicxx-openmpi-clang35 \
         -DMPI_C_COMPILER=/opt/local/bin/mpicc-openmpi-clang35
+}
+variant openmpi_clang37 description {Build Boost.MPI with openmpi-clang37 } conflicts debug openmpi_gcc48 openmpi_clang35 {
+    depends_lib-append      port:openmpi-clang37
+    configure.args-append \
+        -DMPI_CXX_COMPILER=/opt/local/bin/mpicxx-openmpi-clang37 \
+        -DMPI_C_COMPILER=/opt/local/bin/mpicc-openmpi-clang37
 }
 variant atlas description {Use Atlas for BLAS-LAPACK} {
     depends_lib-append port:atlas

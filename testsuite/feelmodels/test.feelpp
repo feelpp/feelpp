@@ -1,6 +1,7 @@
 // -*- mode: javascript -*-
 {
     "Name": "Turek",
+    "Model":"Navier-Stokes",
     "Description":"Fluid flow around a cylinder",
     "Parameters":
     {
@@ -21,6 +22,7 @@
     {
         "fluid":
         {
+            "name":"fluid",
             "rho": "1", // density
             "eta": "0.001" // dynamic_viscosity
         }
@@ -33,8 +35,10 @@
             {
                 "inflow":
                 {
+                    // inflow condition
                     "expr":"{4*Um*y*( H-y )/H^2,0}:y:Um:H"
                 },
+                /* outflow condition */
                 "wall":
                 {
                     "expr":"{0,0}"
@@ -48,7 +52,7 @@
             {
                 "outlet":
                 {
-                    "expr":"{0,0,0,0}"
+                    "expr":"{0,0,0,0}" // outlet
                 }
             }
         }

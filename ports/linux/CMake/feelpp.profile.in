@@ -1,0 +1,101 @@
+#%Module1.0################
+
+set clangpath @LLVM_INSTALL_PREFIX@
+set mpipath @OPENMPI_INSTALL_PREFIX@
+set gmshpath @GMSH_INSTALL_PREFIX@
+set boostpath @BOOST_INSTALL_PREFIX@
+set petscpath @PETSC_INSTALL_PREFIX@
+set slepcpath @SLEPC_INSTALL_PREFIX@
+set paraviewpath @PARAVIEW_INSTALL_PREFIX@
+
+if [module-info mode load] {
+    # clang
+    prepend-path PATH $clangpath/lib
+    prepend-path LD_LIBRARY_PATH $clangpath/lib
+    prepend-path manpath $clangpath/share/man/man1
+    setenv CC $clangpath/bin/clang
+    setenv CXX $clangpath/bin/clang++
+
+    # OpenMPI
+    prepend-path CMAKE_PREFIX_PATH $mpipath
+	prepend-path PATH $mpipath/bin
+	prepend-path LD_LIBRARY_PATH $mpipath/lib
+	prepend-path MANPATH $mpipath/share/man
+    
+    # Gmsh
+    prepend-path CMAKE_PREFIX_PATH $gmshpath
+	prepend-path PATH $gmshpath/bin
+	prepend-path GMSH_DIR $gmshpath
+	prepend-path LD_LIBRARY_PATH $gmshpath/lib
+    
+    # Boost
+    prepend-path CMAKE_PREFIX_PATH $boostpath
+	prepend-path PATH $boostpath/bin
+	prepend-path LD_LIBRARY_PATH $boostpath/lib
+	setenv BOOST_ROOT $boostpath
+    
+    # PETSc
+    prepend-path CMAKE_PREFIX_PATH $petscpath
+	prepend-path PATH $petscpath/bin
+	prepend-path LD_LIBRARY_PATH $petscpath/lib
+	setenv PETSC_DIR $petscpath
+    
+    # SLEPc
+    prepend-path CMAKE_PREFIX_PATH $slepcpath
+	prepend-path PATH $slepcpath/bin
+	prepend-path LD_LIBRARY_PATH $slepcpath/lib
+	setenv SLEPC_DIR $slepcpath
+    
+    # ParaView
+	prepend-path CMAKE_PREFIX_PATH $paraviewpath
+	prepend-path PATH $paraviewpath/bin
+	prepend-path LD_LIBRARY_PATH $paraviewpath/lib
+    prepend-path LD_LIBRARY_PATH $paraviewpath/lib/paraview-4.4
+    prepend-path PYTHONPATH $paraviewpath/lib/paraview-4.4/site-packages
+}
+
+if [module-info mode remove] {
+    # Clang
+    remove-path PATH $clangpath/bin
+    remove-path LD_LIBRARY_PATH $clangpath/lib
+    remove-path MANPATH $clangpath/share/man/man1
+    unsetenv CC
+    unsetenv CXX
+
+    # OpenMPI
+    remove-path CMAKE_PREFIX_PATH $mpipath
+	remove-path PATH $mpipath/bin
+	remove-path LD_LIBRARY_PATH $mpipath/lib
+	remove-path MANPATH $mpipath/share/man
+
+    # Gmsh
+    remove-path CMAKE_PREFIX_PATH $gmshpath
+	remove-path PATH $gmshpath/bin
+	remove-path GMSH_DIR $gmshpath
+	remove-path LD_LIBRARY_PATH $gmshpath/lib
+    
+    # Boost
+    remove-path CMAKE_PREFIX_PATH $boostpath
+	remove-path PATH $boostpath/bin
+	remove-path LD_LIBRARY_PATH $boostpath/lib
+	unsetenv BOOST_ROOT $boostpath
+    
+    # PETSc
+    remove-path CMAKE_PREFIX_PATH $petscpath
+	remove-path PATH $petscpath/bin
+	remove-path LD_LIBRARY_PATH $petscpath/lib
+	unsetenv PETSC_DIR $petscpath
+    
+    # SLEPc
+    remove-path CMAKE_PREFIX_PATH $slepcpath
+	remove-path PATH $slepcpath/bin
+	remove-path LD_LIBRARY_PATH $slepcpath/lib
+	unsetenv SLEPC_DIR $slepcpath
+
+    # ParaView
+	remove-path CMAKE_PREFIX_PATH $paraviewpath
+	remove-path PATH $paraviewpath/bin
+	remove-path LD_LIBRARY_PATH $paraviewpath/lib
+    remove-path LD_LIBRARY_PATH $paraviewpath/lib/paraview-4.4
+    remove-path PYTHONPATH $paraviewpath/lib/paraview-4.4/site-packages
+}

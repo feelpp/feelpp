@@ -13,7 +13,10 @@ Options:
  -d, --debug                         debug mode
 -rd, --relwithdebinfo                relwithdebinfo mode
  -r, --release                       release mode
+     --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
+     --max-order=x                   maximum polynomial order to instantiate(default: 3)
      --cxxflags                      override cxxflags 
+     --cmakeflags                    add extra cmake flags 
      --prefix=PATH                   define install path
  -v, --verbose                       enable verbose output
  -h, --help                          help page
@@ -27,6 +30,8 @@ EOT
 _HAS_ERROR=no
 _WANT_HELP=no
 PROJECT_INSTALL_PREFIX=`pwd`
+PROJECT_STD_CPP=14
+PROJECT_MAX_ORDER=3
 PROJECTSRCROOT=`dirname $0`
 GENERATOR="Unix Makefiles"
 
@@ -52,6 +57,7 @@ _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
 CXXFLAGS=
+CMAKEFLAGS=
 ENABLE_NUMA=TRUE
 ENABLE_CUDA=TRUE
 
@@ -132,8 +138,21 @@ while [ -n "$1" ]; do
 #   --og)
    #       _WANT_OG=no
    #       ;;
+   --max-order=*)
+           PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
+           echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
+           export PROJECT_MAX_ORDER
+           ;;  
+   --std=c++*)
+       PROJECT_STD_CPP=`echo $1 | sed "s,^--std=c++\(.*\),\1,"`
+       echo "using c++$PROJECT_STD_CPP..."
+       export PROJECT_STD_CPP
+       ;;  
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
+       ;;
+   --cmakeflags=*)
+       CMAKEFLAGS=`echo $1 | sed "s,^--cmakeflags=\(.*\),\1,"`
        ;;
    --local-config)
       _WANT_LOCAL_CONFIG=yes
@@ -183,10 +202,13 @@ echo CMAKE_FIND_DIR=${CMAKE_FIND_DIR}
 echo "# Do not edit" > cmake.configure
 if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
   echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+  echo "SET(CMAKE_SKIP_RPATH ON)" >> cmake.configure
 fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
-echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH "Project root")" >> cmake.configure
+echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++14 or c++1z\")"  >> cmake.configure
+echo "SET(FEELPP_INSTANTIATION_ORDER_MAX \"$PROJECT_MAX_ORDER\" CACHE PATH \"Feel++ maximum polynomial order instantiation\")"  >> cmake.configure
+echo "SET(PROJECT_ROOT ${PROJECTSRCROOT} CACHE PATH \"Project root\")" >> cmake.configure
 echo "SET(ARCH \"`arch`\" CACHE STRING \"Project ARCH\" FORCE)" >> cmake.configure
 if [ "X${MKL_ROOT}" != "X" ]; then
 echo "set(MKL_INCLUDE_PATH             \"${MKL_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
@@ -232,4 +254,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}

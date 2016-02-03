@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-06
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -88,10 +88,23 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
+    else if ( type=="ams" )          return PreconditionerType::AMS_PRECOND;
     else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;
     else if ( type=="none" )         return PreconditionerType::NONE_PRECOND;
     else                             return PreconditionerType::LU_PRECOND;
 }
+
+KSPNormType
+kspNormTypeConvertStrToEnum( std::string const& type )
+{
+    /**/ if ( type=="default" )          return KSP_NORM_DEFAULT;
+    else if ( type=="none" )             return KSP_NORM_NONE;
+    else if ( type=="preconditioned" )   return KSP_NORM_PRECONDITIONED;
+    else if ( type=="unpreconditioned" ) return KSP_NORM_UNPRECONDITIONED;
+    else if ( type=="natural" )          return KSP_NORM_NATURAL;
+    else                                 return KSP_NORM_DEFAULT;
+}
+
 
 SolverType
 kspTypeConvertStrToEnum( std::string const& type )
@@ -175,6 +188,7 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="plapack" )      return MatSolverPackageType::MATSOLVER_PLAPACK;
     else if ( type=="bas" )          return MatSolverPackageType::MATSOLVER_BAS;
     else if ( type=="boomeramg" )    return MatSolverPackageType::MATSOLVER_BOOMERAMG;
+    else if ( type=="ams" )          return MatSolverPackageType::MATSOLVER_AMS;
     else if ( type=="euclid" )       return MatSolverPackageType::MATSOLVER_EUCLID;
     else if ( type=="pilut" )        return MatSolverPackageType::MATSOLVER_PILUT;
     else                             return MatSolverPackageType::MATSOLVER_PETSC;

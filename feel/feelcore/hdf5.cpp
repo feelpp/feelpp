@@ -26,19 +26,21 @@
    \author Radu Popescu <radu.popescu@epfl.ch>
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
    \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
-   \date 2013-10-16
+   \author Guillaume Dollé <gdolle@unistra.fr>
+   \date 2015-10-01
  */
 
 #include <feel/feelcore/hdf5.hpp>
 
 #ifdef FEELPP_HAS_HDF5
 
+
 // ===================================================
 // Constructor
 // ===================================================
 
-Feel::HDF5::HDF5 (const std::string& fileName, const comm_type& comm,
-                       const bool& existing)
+Feel::HDF5::HDF5( const std::string& fileName, const comm_type& comm,
+                  const bool& existing )
 {
     openFile (fileName, comm, existing);
 }
@@ -47,9 +49,20 @@ Feel::HDF5::HDF5 (const std::string& fileName, const comm_type& comm,
 // Public Methods
 // ===================================================
 
-void Feel::HDF5::openFile (const std::string& fileName,
+bool Feel::HDF5::groupExist( const std::string& groupName )
+{
+    herr_t status;
+    // Turn off error print.
+    H5Eset_auto( H5E_DEFAULT, NULL, NULL );
+    //status = H5Oget_info_by_name( M_fileId, groupName.c_str(), 0, H5P_DEFAULT );
+    status = H5Gget_objinfo( M_fileId, groupName.c_str(), 0, NULL );
+    bool exist = ( status >= 0 );
+    return exist;
+}
+
+void Feel::HDF5::openFile( const std::string& fileName,
                            const comm_type& comm,
-                           const bool& existing)
+                           const bool& existing )
 {
     hid_t plistId;
     MPI_Comm mpiComm = comm.comm();
@@ -72,29 +85,63 @@ void Feel::HDF5::openFile (const std::string& fileName,
     H5Pclose (plistId);
 }
 
-void Feel::HDF5::createGroup (const std::string& GroupName)
+void Feel::HDF5::createGroup( const std::string& groupName )
 {
 #ifdef H5_USE_16_API
-        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
+        M_groupList [groupName] = H5Gcreate (M_fileId, groupName.c_str(), H5P_DEFAULT) ;
 #else
-        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
+        M_groupList [groupName] = H5Gcreate (M_fileId, groupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
 #endif
+        LOG(INFO) << "Create HDF5 group: " << groupName << "\n";
 }
 
-void Feel::HDF5::createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType, 
-                                     hsize_t tableDimensions[], const bool& existing)
+void Feel::HDF5::openGroup( const std::string& groupName,
+                            const bool& createIfNotExist )
+{
+    bool exist = groupExist( groupName );
+    if( exist )
+    {
+        M_groupList [groupName] = H5Gopen (M_fileId, groupName.c_str(), H5P_DEFAULT);
+        LOG(INFO) << "Open HDF5 group: " << groupName;
+    }
+    else
+    {
+        if( createIfNotExist )
+        {
+            createGroup( groupName );
+        }
+    }
+}
+
+void Feel::HDF5::openGroups( const std::string& groupName,
+                             const bool& createIfNotExist )
+{
+    const boost::char_separator<char> sep("/");
+    boost::tokenizer<boost::char_separator<char>> tokens(groupName, sep);
+
+    // Begin at root.
+    std::string group="/";
+    for (const auto& t : tokens)
+    {
+        group+=t;
+        openGroup( group, createIfNotExist );
+        group+="/";
+    }
+}
+
+void Feel::HDF5::createTable ( const std::string& groupName,
+                               const std::string& tableName,
+                               hid_t& fileDataType,
+                               hsize_t tableDimensions[],
+                               const bool& existing )
 {
     if (!existing)
-    {   
-#ifdef H5_USE_16_API
-        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT) ;
-#else
-        M_groupList [GroupName] = H5Gcreate (M_fileId, GroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) ;
-#endif
+    {
+       openGroups(groupName);
     }
 
-    tableHandle& currentTable = M_tableList[GroupName+tableName] ;
-    hid_t group_id = M_groupList[GroupName] ;
+    tableHandle& currentTable = M_tableList[groupName+tableName] ;
+    hid_t group_id = M_groupList[groupName] ;
 
     currentTable.filespace = H5Screate_simple (2, tableDimensions,
                                                tableDimensions);
@@ -110,9 +157,9 @@ void Feel::HDF5::createTable (const std::string& GroupName, const std::string& t
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
 }
 
-void Feel::HDF5::createTable (const std::string& tableName,
-                                 hid_t& fileDataType,
-                                 hsize_t tableDimensions[])
+void Feel::HDF5::createTable( const std::string& tableName,
+                              hid_t& fileDataType,
+                              hsize_t tableDimensions[] )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
@@ -130,8 +177,8 @@ void Feel::HDF5::createTable (const std::string& tableName,
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_INDEPENDENT);
 }
 
-void Feel::HDF5::openTable (const std::string& tableName,
-                               hsize_t tableDimensions[])
+void Feel::HDF5::openTable( const std::string& tableName,
+                            hsize_t tableDimensions[] )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
@@ -146,9 +193,9 @@ void Feel::HDF5::openTable (const std::string& tableName,
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
 }
 
-void Feel::HDF5::write (const std::string& tableName,
-                           hid_t& memDataType, hsize_t currentCount[],
-                           hsize_t currentOffset[], void* buffer)
+void Feel::HDF5::write( const std::string& tableName,
+                        hid_t& memDataType, hsize_t currentCount[],
+                        hsize_t currentOffset[], void* buffer )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
@@ -162,9 +209,9 @@ void Feel::HDF5::write (const std::string& tableName,
     H5Sclose (memspace);
 }
 
-void Feel::HDF5::read (const std::string& tableName,
-                          hid_t& memDataType, hsize_t currentCount[],
-                          hsize_t currentOffset[], void* buffer)
+void Feel::HDF5::read( const std::string& tableName,
+                       hid_t& memDataType, hsize_t currentCount[],
+                       hsize_t currentOffset[], void* buffer )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
@@ -179,7 +226,7 @@ void Feel::HDF5::read (const std::string& tableName,
     H5Sclose (memspace);
 }
 
-void Feel::HDF5::closeTable (const std::string& tableName)
+void Feel::HDF5::closeTable( const std::string& tableName )
 {
     tableHandle& currentTable = M_tableList[tableName];
     H5Dclose (currentTable.dataset);
@@ -188,10 +235,37 @@ void Feel::HDF5::closeTable (const std::string& tableName)
     M_tableList.erase (tableName);
 }
 
-void Feel::HDF5::closeGroup (const std::string& groupName)
+void Feel::HDF5::closeGroup( const std::string& groupName )
 {
-    H5Gclose (M_groupList [groupName]) ;
-    M_groupList.erase (groupName) ;
+    H5Gclose (M_groupList [groupName]);
+    M_groupList.erase (groupName);
+}
+
+void Feel::HDF5::closeGroups( const std::string& groupName )
+{
+    const boost::char_separator<char> sep("/");
+    boost::tokenizer<boost::char_separator<char>> tokens(groupName, sep);
+    std::vector<std::string> vtokens(tokens.begin(),tokens.end());
+
+    std::string group = groupName;
+    int gnsize = group.size();
+
+    // Transform to begin and not end with a slash.
+    if(group[0] != '/') group.insert( group.begin(), '/' );
+    if(group[gnsize-1] == '/') group.pop_back();
+
+    for( auto it=vtokens.rbegin(); it!=vtokens.rend(); ++it )
+    {
+        if( M_groupList.count(group) != 0 )
+        {
+            closeGroup(group);
+            LOG(INFO) << "HDF5 close group: " << group << "\n";
+        }
+        if( group.size() > it->size() )
+        {
+            group.erase( group.end()-it->size()-1,group.end() );
+        }
+    }
 }
 
 void Feel::HDF5::closeFile()

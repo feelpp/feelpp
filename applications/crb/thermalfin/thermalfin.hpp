@@ -33,7 +33,7 @@ makeThermalFinAbout( std::string const& str = "thermalfin" )
     return about;
 }
 
-class ThermalFin : public ModelCrbBase<ParameterSpace<5>, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>
+class ThermalFin : public ModelCrbBase<ParameterSpace<6>, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>
 {
 public:
     //! initialisation of the model
@@ -49,6 +49,7 @@ public:
 
 
 void
+
 ThermalFin::initModel()
 {
 
@@ -64,10 +65,10 @@ ThermalFin::initModel()
 
     //static const int N = 2;
     auto mu_min = Dmu->element();
-    mu_min << 0.1, 0.1, 0.1, 0.1, 0.001;
+    mu_min << 0.1, 0.1, 0.1, 0.1, 0.001, 1;
     Dmu->setMin( mu_min );
     auto mu_max = Dmu->element();
-    mu_max << 10, 10, 10, 10, 1;
+    mu_max << 10, 10, 10, 10, 1, 4;
     Dmu->setMax( mu_max );
 
     auto u = Xh->element();
@@ -78,25 +79,42 @@ ThermalFin::initModel()
                    _expr=gradt(u)*trans(grad(v)) );
     this->addLhs( { a0 , "1" } );
 
-    auto a1 = form2( _trial=Xh, _test=Xh);
-    a1 =  integrate(_range=markedelements(mesh,"omega1"),
-                    _expr= gradt(u)*trans(grad(v)) );
-    this->addLhs( { a1 , "mu0" } );
+    auto a1x = form2( _trial=Xh, _test=Xh);
+    a1x =  integrate(_range=markedelements(mesh,"omega1"),
+                     _expr= 2.5*dxt(u)*trans(dx(v)) );
+    this->addLhs( { a1x , "mu0/mu5" } );
+    auto a1y = form2( _trial=Xh, _test=Xh);
+    a1y =  integrate(_range=markedelements(mesh,"omega1"),
+                     _expr= 1./2.5*dyt(u)*trans(dy(v)) );
+    this->addLhs( { a1y , "mu0*mu5" } );
 
-    auto a2 = form2( _trial=Xh, _test=Xh);
-    a2 =  integrate(_range=markedelements(mesh,"omega2"),
-                    _expr= gradt(u)*trans(grad(v)) );
-    this->addLhs( { a2 , "mu1" } );
+    auto a2x = form2( _trial=Xh, _test=Xh);
+    a2x =  integrate(_range=markedelements(mesh,"omega2"),
+                     _expr= 2.5*dxt(u)*trans(dx(v)) );
+    this->addLhs( { a2x , "mu1/mu5" } );
+    auto a2y = form2( _trial=Xh, _test=Xh);
+    a2y =  integrate(_range=markedelements(mesh,"omega2"),
+                     _expr= 1./2.5*dyt(u)*trans(dy(v)) );
+    this->addLhs( { a2y , "mu1*mu5" } );
 
-    auto a3 = form2( _trial=Xh, _test=Xh);
-    a3 = integrate(_range=markedelements(mesh,"omega3"),
-                    _expr= gradt(u)*trans(grad(v)) );
-    this->addLhs( { a3 , "mu2" } );
+    auto a3x = form2( _trial=Xh, _test=Xh);
+    a3x =  integrate(_range=markedelements(mesh,"omega3"),
+                     _expr= 2.5*dxt(u)*trans(dx(v)) );
+    this->addLhs( { a3x , "mu2/mu5" } );
+    auto a3y = form2( _trial=Xh, _test=Xh);
+    a3y =  integrate(_range=markedelements(mesh,"omega3"),
+                     _expr= 1./2.5*dyt(u)*trans(dy(v)) );
+    this->addLhs( { a3y , "mu2*mu5" } );
 
-    auto a4 = form2( _trial=Xh, _test=Xh);
-    a4 =  integrate(_range=markedelements(mesh,"omega4"),
-                    _expr= gradt(u)*trans(grad(v)) );
-    this->addLhs( { a4 , "mu3" } );
+    auto a4x = form2( _trial=Xh, _test=Xh);
+    a4x =  integrate(_range=markedelements(mesh,"omega4"),
+                     _expr= 2.5*dxt(u)*trans(dx(v)) );
+    this->addLhs( { a4x , "mu3/mu5" } );
+    auto a4y = form2( _trial=Xh, _test=Xh);
+    a4y =  integrate(_range=markedelements(mesh,"omega4"),
+                     _expr= 1./2.5*dyt(u)*trans(dy(v)) );
+    this->addLhs( { a4y , "mu3*mu5" } );
+
 
     auto a5 = form2( _trial=Xh, _test=Xh  );
     a5 = integrate(_range=markedfaces(mesh,"gamma"),

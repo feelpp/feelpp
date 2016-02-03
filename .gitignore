@@ -103,5 +103,12 @@ build/
 /research/pmp/
 /research/po
 /research/rb4areo/
+/research/feelpp-book/
 /research/tr
 /testsuite/feelcore/t
+/cmake.configure
+/research/chorus/
+/research/solodem
+ginac.pc
+/applications/crb/thermalfin/thermalfinapp.cpp
+/research/hpmortar/

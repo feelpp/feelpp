@@ -29,6 +29,8 @@
 #if !defined(FEELPP_TIMING_NOW_HPP)
 #define FEELPP_TIMING_NOW_HPP 1
 
+#include <chrono>
+
 #include <sys/time.h>
 #include <boost/cstdint.hpp>
 #include <feel/feelcore/feel.hpp>
@@ -36,14 +38,14 @@
 
 namespace Feel
 {
+using time_point = std::chrono::high_resolution_clock::time_point;
 namespace details
 {
 typedef Feel::uint64_type  cycles_t;
-inline double    now()
+
+inline time_point    now()
 {
-    struct timeval tp;
-    gettimeofday( &tp,NULL );
-    return double( tp.tv_sec ) + double( tp.tv_usec )*1e-6;
+    return std::chrono::high_resolution_clock::now();
 }
 
 //inline cycles_t read_cycles();

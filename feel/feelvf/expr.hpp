@@ -92,6 +92,12 @@ public:
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
 
 
@@ -141,9 +147,7 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::NDim, Scalar, false> shape;
 
@@ -270,6 +274,7 @@ public:
     static const bool imIsPoly = ExprT::imIsPoly;
 
 
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -281,9 +286,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-
-
-
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     /** @name Typedefs
      */
@@ -418,14 +426,11 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-        typedef typename tensor_expr_type::shape shape;
+        using expr_type = typename this_type::expression_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using shape = typename tensor_expr_type::shape;
 
         template <class Args> struct sig
         {
@@ -639,7 +644,7 @@ public:
         return M_expr.evaluate( parallel,worldcomm );
     }
     template<typename T, int M, int N=1>
-    std::vector<Eigen::Matrix<T,M,N> >
+    decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
         {
             return M_expr.evaluate( v );
@@ -687,6 +692,13 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
     return os;
 }
 
+template <typename ExprT>
+std::string
+str( Expr<ExprT> && exprt )
+{
+    return str(std::forward<Expr<ExprT>>(exprt).expression());
+}
+
 
 extern Expr<LambdaExpr1> _e1;
 extern Expr<LambdaExpr2> _e2;
@@ -712,7 +724,7 @@ struct ExpressionOrder
 
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
     static const uint16_type nOrderGeo = the_element_type::nOrder;
@@ -970,9 +982,7 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 

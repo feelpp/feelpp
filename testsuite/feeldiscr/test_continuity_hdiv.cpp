@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-20
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_SUITE( continuitysuite )
 BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << T::first::value << "D P" << T::second::value << "\n" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/%2%D/P%3%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%D/P%3%/" )
                                          % Feel::Environment::about().appName()
                                          % T::first::value % T::second::value );
 

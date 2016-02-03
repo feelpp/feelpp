@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-14
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_SUITE( projtangent_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     BOOST_TEST_MESSAGE( "test_circle" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_circle/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_circle/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCircle();
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     BOOST_TEST_MESSAGE( "test_square" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_square/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_square/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitSquare();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
 BOOST_AUTO_TEST_CASE( test_2 )
 {
     BOOST_TEST_MESSAGE( "test_cube" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
@@ -137,7 +137,7 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
 
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % doption(_name="gmsh.hsize") );
     auto mesh = unitCube();

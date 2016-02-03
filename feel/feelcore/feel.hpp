@@ -6,7 +6,7 @@
  Date: 2006-12-30
 
  Copyright (C) 2006,2007,2008,2009,2010 Universite de Grenoble 1
- Copyright (C) 2011-2015 Feel++ Consortium
+ Copyright (C) 2011-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -119,6 +119,7 @@
 #include <feel/feelcore/feelassert.hpp>
 
 #include <feel/feelcore/flags.hpp>
+
 #include <feel/feelcore/serialization.hpp>
 
 #if defined( FEELPP_HAS_TBB )
@@ -154,6 +155,7 @@ using google::WARNING;
 using google::ERROR;
 using google::INFO;
 using google::FATAL;
+using boost::format;
 
 namespace detail
 {
@@ -438,6 +440,19 @@ prefixvm( std::string const& prefix,
           std::string const& opt,
           std::string const& sep="." );
 
+/**
+ * @return a trimmed string removing all leading and trailing spaces and replace
+ * all special characters " ;:," inside the block by a _
+ */
+std::string
+sanitize( std::string const& s );
+
+/**
+ * @return a vector of trimmed strings removing all leading and trailing spaces and replace
+ * all special characters " ;:," inside the block by a _
+ */
+std::vector<std::string>
+sanitize( std::vector<std::string> const& s );
 
 // alias for date_time namespaces
 namespace posix_time = boost::posix_time;
@@ -617,5 +632,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 
 #include <feel/feelcore/ptr.hpp>
+#include <feel/feelcore/range.hpp>
 
 #endif

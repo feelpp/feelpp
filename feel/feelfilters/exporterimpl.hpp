@@ -44,7 +44,7 @@
 #endif
 
 #if defined(FEELPP_HAS_VTK)
-#include <feel/feelfilters/exporterVTK.hpp>
+#include <feel/feelfilters/exportervtk.hpp>
 #endif
 
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)

@@ -36,7 +36,7 @@ FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
     gfortran
     PATHS
-    /usr/local/gcc-4.8.1/lib
+    /usr/local/gcc-4.9.1/lib64
     $ENV{LIBRARY_PATH}
 )
 message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")

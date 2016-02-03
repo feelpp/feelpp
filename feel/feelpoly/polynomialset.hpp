@@ -944,10 +944,20 @@ public:
         {
             return M_hessian[i][0][q]( c1,c2 );
         }
+        // hessian of scalar basis function
+        h_type const& hessian( size_type i, uint16_type q ) const
+            {
+                return M_hessian[i][0][q];
+            }
         // hessian of vectorial basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
             {
                 return M_hessian[i][c1][q]( c2,c3 );
+            }
+        // hessian of vectorial basis function
+        h_type const& hessian( size_type i, uint16_type c1, uint16_type q ) const
+            {
+                return M_hessian[i][c1][q];
             }
 
         void print()
@@ -1162,6 +1172,28 @@ public:
 
         return geopc;
     }
+
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
+    preComputeOnFaces( self_ptrtype p, std::vector<std::map<uint16_type,points_type > > const& P )
+    {
+        typedef typename convex_type::permutation_type permutation_type;
+        std::vector<std::map<permutation_type, precompute_ptrtype> > geopc( convex_type::numTopologicalFaces );
+        CHECK( P.size() == convex_type::numTopologicalFaces ) << "invalid number of face : " << P.size() << " vs " << convex_type::numTopologicalFaces;
+        for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
+        {
+            auto const& ptsOnFace = P[__f];
+            for ( permutation_type __p( permutation_type::IDENTITY );
+                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                auto itFindPerm = ptsOnFace.find( __p.value() );
+                CHECK( itFindPerm != ptsOnFace.end() ) << "permutation not find";
+                geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, itFindPerm->second ) );
+            }
+        }
+
+        return geopc;
+    }
+
     template<typename PAtEdges>
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
     preComputeOnEdges( self_ptrtype gm, PAtEdges const& p )

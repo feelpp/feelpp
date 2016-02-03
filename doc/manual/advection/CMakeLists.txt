@@ -2,7 +2,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-18
 #
-#  Copyright (C) 2013-2015 Feel++ Consortium
+#  Copyright (C) 2013-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,3 +24,6 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application( doc_advection SRCS advection.cpp CFG advection.cfg LABELS doc )
 feelpp_add_application( dar_gals SRCS dar_gals.cpp CFG dar_gals.cfg LABELS doc )
+
+feelpp_add_application(feelpp_advection SRCS feelpp_advection.cpp )
+feelpp_add_application(feelpp_GaLS SRCS feelpp_GaLS.cpp )

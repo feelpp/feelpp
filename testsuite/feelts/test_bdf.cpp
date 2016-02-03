@@ -50,7 +50,7 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    return Feel::feel_options().add( Feel::bdf_options( "test_bdf" ) );
+    return Feel::feel_options().add( Feel::bdf_options( "test_bdf" ) ).add( Feel::ts_options( "test_bdf" ) );
 }
 
 using namespace Feel;

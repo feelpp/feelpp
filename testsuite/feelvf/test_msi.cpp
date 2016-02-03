@@ -39,6 +39,8 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <fftw3.h>
+
 
 using namespace Feel;
 
@@ -86,14 +88,17 @@ class Test
             using Feel::vf::msi;
 
             /// [mesh] 
-            auto pas = pow(2.,level)*doption("msi.pixelsize");
+            auto pas = std::pow(2.,level)*doption("msi.pixelsize");
             std::cout << pas << std::endl;  
             auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,
+                                        _structured=1,
                                         _h=pas, 
                                         _desc=domain(_name="msitest",
                                                      _h=pas,
                                                      _xmax=doption("msi.pixelsize")*(ima.cols()-1),
                                                      _ymax=doption("msi.pixelsize")*(ima.rows()-1)));
+
+         
             std::cout << "h : " << pas << " xmax : " << doption("msi.pixelsize")*(ima.cols()-1) << " ymax :" << doption("msi.pixelsize")*(ima.rows()-1) << " cols : "<< ima.cols()-1 << " rows : " << ima.rows()-1 <<  std::endl;
 
   

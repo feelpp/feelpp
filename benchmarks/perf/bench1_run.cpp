@@ -55,7 +55,7 @@ Bench1::run()
 
     if ( this->vm().count( "nochdir" ) )
     {
-        this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
+        this->changeRepository( boost::format( "benchmarks/perf/%1%/%2$dD/%3$.3f" )
                                 % this->about().appName()
                                 % this->vm()["dim"].as<int>()
                                 % this->vm()["hsize"].as<double>() );

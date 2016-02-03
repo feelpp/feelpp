@@ -237,6 +237,8 @@ public:
 
     using self_type = BilinearForm<FE1, FE2, ElemContType>;
 
+    using pre_solve_type = typename Backend<value_type>::pre_solve_type;
+    using post_solve_type = typename Backend<value_type>::post_solve_type;
 #if 0
     typedef typename space_1_type::component_fespace_type component_space_1_type;
     typedef typename element_1_type::component_type component_1_type;
@@ -1120,9 +1122,10 @@ public:
         if ( this != &form )
         {
             M_pattern = form.M_pattern;
-            M_X1 = form.M_X1;
-            M_X2 = form.M_X2;
-            M_matrix = form.M_matrix;
+            CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
+            CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
+            M_matrix->zero();
+            M_matrix->addMatrix( 1.0, form.M_matrix );
             M_row_startInMatrix = form.M_row_startInMatrix;
             M_col_startInMatrix = form.M_col_startInMatrix;
             M_lb = form.M_lb;
@@ -1153,6 +1156,11 @@ public:
             return *this;
         }
 
+    BilinearForm& add( double alpha, BilinearForm&  a )
+        {
+            M_matrix->addMatrix( alpha, a.M_matrix );
+            return *this;
+        }
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1219,7 +1227,7 @@ public:
     bool isPatternSymmetric() const
     {
         Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::SYMMETRIC );
+        return ctx.test( Pattern::PATTERN_SYMMETRIC );
     }
 
     /**
@@ -1388,7 +1396,8 @@ public:
     void zeroRows( std::vector<int> const& __dofs,
                    Vector<value_type> const& __values,
                    Vector<value_type>& rhs,
-                   Feel::Context const& on_context );
+                   Feel::Context const& on_context,
+                   double value_on_diagonal );
 
     /**
      * add value \p v at position (\p i, \p j) of the matrix
@@ -1456,7 +1465,8 @@ public:
     {
         return M_n_nz[i];
     }
-
+    
+    
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
@@ -1467,11 +1477,17 @@ public:
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
                                        ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                          ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                                                         _solution=solution);
+                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(),
+                                                                         _rhs=rhs.vectorPtr(),
+                                                                         _solution=solution,
+                                                                         _pre=pre,
+                                                                         _post=post
+                                                                         );
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
@@ -1701,9 +1717,10 @@ void
 BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
                                               Vector<value_type> const&__values,
                                               Vector<value_type>& rhs,
-                                              Feel::Context const& on_context )
+                                              Feel::Context const& on_context,
+                                              double value_on_diagonal )
 {
-    M_matrix->zeroRows( __dofs, __values, rhs, on_context );
+    M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 
 

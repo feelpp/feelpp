@@ -24,7 +24,10 @@
 #ifndef FEELPP_VF_MSI_HPP
 #define FEELPP_VF_MSI_HPP 1
 
+#include <feel/feelconfig.h>
 
+
+#if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
 
@@ -71,13 +74,13 @@ public:
     //@{
     static const size_type context = vm::POINT;
 
-    static const size_type Options = _Options;
+    static const int Options = _Options;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
     static const bool is_terminal = true;
 
-    typedef MultiScaleImage<T,Options> msi_type;
+    typedef Feel::MultiScaleImage<T,Options> msi_type;
     using needs_gradient_t = typename msi_type::needs_gradient_t;
     using do_compute_gradient_t = typename msi_type::do_compute_gradient_t;
     using no_compute_gradient_t = typename msi_type::no_compute_gradient_t;
@@ -93,6 +96,14 @@ public:
     {
         static const bool result = false;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
 
     typedef MSI<T,Options> this_type;
     typedef T value_type;
@@ -168,9 +179,7 @@ public:
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename mpl::if_<needs_gradient_t,
@@ -316,4 +325,7 @@ msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, in
 
 } // vf
 } // Feel
+
+#endif // FEELPP_HAS_FFTW
+
 #endif /* __MSI_H */

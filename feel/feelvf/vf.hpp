@@ -95,8 +95,10 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
 #include <feel/feelvf/evaluatorcontext.hpp>
-#include <feel/feelvf/msi.hpp>
 
+#if defined( FEELPP_HAS_FFTW)
+#include <feel/feelvf/msi.hpp>
+#endif
 
 
 #include <feel/feelvf/ginac.hpp>

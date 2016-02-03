@@ -6,6 +6,7 @@
        Date: 2005-12-03
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-12-03
  */
-#ifndef __policy_H
-#define __policy_H 1
+#ifndef FEELPP_FEELPOLY_POLICY_HPP
+#define FEELPP_FEELPOLY_POLICY_HPP 1
 
 
 
@@ -485,4 +486,4 @@ struct StorageUBlas
 
 } // Feel
 
-#endif /* __policy_H */
+#endif /* FEELPP_FEELPOLY_POLICY_HPP */

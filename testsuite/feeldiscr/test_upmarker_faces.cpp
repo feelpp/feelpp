@@ -103,21 +103,28 @@ public:
         auto mark = Xdh0->element();
         int fid = 1;
         double R = doption("radius");
-        auto test_elements = Xdh0->element();
+        auto test_boundary = Xdh0->element();
+        auto test_elements0 = Xdh0->element();
+        auto parts = Xdh0->element();
+        auto test_elements1 = Xh->element();
         auto test_faces = Xh->element();
 
         // Select elements in the circle with radius 0.5 at the center of 4 faces.
-        auto e = chi( ((Px()-0.5)*(Px()-0.5) + (Py()-0.5)*(Py()-0.5)) < R*R );
+        //auto e = chi( ((Px()-0.5)*(Px()-0.5) + (Py()-0.5)*(Py()-0.5)) < R*R );
+        auto e1 = chi( ((Px()-0.5)*(Px()-0.5) + (Py()-0.5)*(Py()-0.5)) < R*R );
+        auto e2 = chi( ((Py()-0.5)*(Py()-0.5) + (Pz()-0.5)*(Pz()-0.5)) < R*R );
 
-        mark.on( boundaryelements( M_mesh ), e );
+        int rank = Environment::worldComm().rank();
+        parts.on( elements(M_mesh), cst(rank) );
+        mark.on( boundaryelements( M_mesh ), chi( (e1 + e2) > 0 ) );
 
         M_mesh->updateMarker2( mark );
         M_mesh->addMarkerName( "select_elements", fid, DIM );
 
         auto range = marked2elements(M_mesh,"select_elements");
 
-        auto it=get<1>(range);
-        auto en=get<2>(range);
+        auto it=begin(range);
+        auto en=end(range);
 
         boost::shared_ptr<cont_range_type> myfaces( new cont_range_type );
 
@@ -125,42 +132,11 @@ public:
         // boundary faces, add them in a vector.
         for(;it!=en;++it)
         {
-            auto entity=(Xh->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-            if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+            for(uint16_type f=0;f<it->numTopologicalFaces; ++f)
             {
-                for(uint16_type f=0;f<it->numTopologicalFaces; ++f)
-                {
-                    auto face = it->face(f);
-                    if( face.isOnBoundary() )
-                    {
-                        myfaces->push_back(boost::cref(face));
-                    }
-                }
-            }
-            if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
-            {
-                    std::cout << "ghost elements\n";
-#if     0
-                    auto face_it = M_mesh->interProcessFaces().first;
-                    auto const face_en = M_mesh->interProcessFaces().second;
-                    for ( ; face_it!=face_en ; ++face_it )
-                    {
-                        auto const& elt0 = face_it->element0();
-                        auto const& elt1 = face_it->element1();
-                        const bool elt0isGhost = elt0.isGhostCell();
-                        auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-
-                        for(uint16_type f=0;f<it->numTopologicalFaces; ++f)
-                        {
-                            auto face = it->face(f);
-                            auto const& faceop = eltOffProc.face(f);
-                            if( faceop.isOnBoundary() && face.isOnBoundary() )
-                                if( faceop.id() == face.id() )
-                                    myfaces->push_back(boost::cref(faceop));
-                        }
-
-                    }
-#endif
+                auto face = it->face(f);
+                if( face.isOnBoundary() )
+                    myfaces->push_back(boost::cref(face));
             }
         }
 
@@ -174,7 +150,9 @@ public:
         M_mesh->updateMarker2WithRangeFaces( myrangefaces, 666 );
         M_mesh->addMarkerName( "select_faces", 666, DIM-1 );
 
-        test_elements.on( marked2elements(M_mesh,"select_elements"), cst(42) );
+        test_boundary.on( boundaryelements(M_mesh), cst(42) );
+        test_elements0.on( marked2elements(M_mesh,"select_elements"), cst(42) );
+        test_elements1.on( marked2elements(M_mesh,"select_elements"), cst(42) );
         test_faces.on( marked2faces(M_mesh,"select_faces"), cst(42) );
 
 #if defined(USE_BOOST_TEST)
@@ -212,10 +190,13 @@ public:
                 }
             }
 
-        auto exp = exporter(_mesh=M_mesh, _name="testsuite_umarker_faces");
+        auto exp = exporter(_mesh=M_mesh, _name="testsuite_upmarker_faces");
         exp->step(0)->setMesh(M_mesh);
+        exp->step(0)->add("test_elements_boundary", test_boundary);
         exp->step(0)->add("mark", mark);
-        exp->step(0)->add("test_elements", test_elements);
+        exp->step(0)->add("partitions", parts);
+        exp->step(0)->add("test_elements_Xdh0", test_elements0);
+        exp->step(0)->add("test_elements_Xh", test_elements1);
         exp->step(0)->add("test_faces", test_faces);
         exp->save();
 #endif

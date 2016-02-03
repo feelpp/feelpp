@@ -2327,7 +2327,9 @@ BOOST_PARAMETER_FUNCTION(
         ) // optionnal
 )
 {
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
     typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
     return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );

@@ -18,7 +18,7 @@ if [ ! -d "$basedir/software/install/cln" ]; then
     mkdir build
     cd build 
     ../configure --prefix=$basedir/software/install/cln --disable-dependency-tracking
-    make -j4 install
+    make -j$NPROCS install
     ls -R $basedir/software/install/cln
 else
     echo "Using cached directory $basedir/software/install/cln";

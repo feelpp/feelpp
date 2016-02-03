@@ -17,8 +17,6 @@ using namespace Feel;
 namespace test_normal3d
 {
 
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -58,7 +56,7 @@ makeAbout()
 
 template <uint32_type orderGeo = 1>
 void
-runtest( Application_ptrtype test_app )
+runtest()
 {
     BOOST_MESSAGE( "================================================================================\n"
                    << "Order: " << orderGeo << "\n" );
@@ -67,21 +65,20 @@ runtest( Application_ptrtype test_app )
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
-    typedef bases<Lagrange<2+orderGeo,Vectorial,Continuous,PointSetFekete> > basis_type;
+    typedef bases<Lagrange</*2*/1+orderGeo,Vectorial,Continuous,PointSetFekete> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     //typedef typename space_type::element_type element_type;
 
     //-----------------------------------------------------------//
 
-    double meshSize = test_app->vm()["hsize"].as<double>();
-    bool exportResults = test_app->vm()["exporter.export"].as<bool>();
-    int straighten = test_app->vm()["straighten"].as<int>();
-    GeomapStrategyType geomap = ( GeomapStrategyType )test_app->vm()["geomap"].as<int>();
+    double meshSize = doption(_name="hsize");
+    int straighten = ioption(_name="straighten");
+    GeomapStrategyType geomap = ( GeomapStrategyType )ioption(_name="geomap");
     GeoTool::Node Centre( 0,0,0 );
     GeoTool::Node Rayon( 1 );
     GeoTool::Node Dir( 1,0,0 );
-    GeoTool::Node Lg( 3,0,0 );
+    GeoTool::Node Lg( 1,0,0 );
     GeoTool::Cylindre C( meshSize,"UnCylindre",Centre,Dir,Rayon,Lg );
     C.setMarker( _type="surface",_name="Inlet",_marker1=true );
     C.setMarker( _type="surface",_name="Outlet",_marker2=true );
@@ -112,13 +109,15 @@ runtest( Application_ptrtype test_app )
 
     BOOST_MESSAGE( "testing Gauss formula on ( cos(M_PI*Px()/5.),cos(M_PI*Py()/5.),cos(M_PI*Py()/5.))\n" );
     u = project( Xh,elements( mesh ),vec( cos( M_PI*Px()/5. ),cos( M_PI*Py()/5. ),cos( M_PI*Py()/5. ) ) );
-    value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
-    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
+    value1 = integrate( _range=elements( mesh ),_expr=divv( u )/*, _quad=_Q<8>(),_quad1=_Q<8>()*/,_geomap=geomap ).evaluate()( 0,0 );
+    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N()/*,_quad=_Q<8>(),_quad1=_Q<8>()*/,_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_CLOSE( value1, value2, 1e-8 );
     //BOOST_CHECK_SMALL( value1-value2,1e-8);
 
 
+#if 0
+    bool exportResults = boption(_name="exporter.export");
     if ( exportResults )
     {
         auto nnn = Xh->element();
@@ -129,6 +128,7 @@ runtest( Application_ptrtype test_app )
         UNexporter->step( 0 )->add( "n", nnn );
         UNexporter->save();
     }
+#endif
 }
 
 }
@@ -142,15 +142,8 @@ BOOST_AUTO_TEST_CASE( normal3d )
 
     using namespace test_normal3d;
 
-    auto test_app = Application_ptrtype( new Application_type );
-
-    test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                                % test_app->about().appName()
-                              );
-
-
-    runtest<1>( test_app );
-    runtest<2>( test_app );
+    runtest<1>();
+    runtest<2>();
     //runtest<3>( test_app );
     //runtest<4>( test_app );
 
