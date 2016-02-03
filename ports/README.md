@@ -5,6 +5,7 @@ Gmsh ne dépend ni de Petsc ni d'openMPI !
 ## OpenMPI 
 ```
 openmpiDir=/data/software/install/openmpi-1.10.0
+# Enable fortran binding: --enable-mpi-fortran=all
 ./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=$openmpiDir
 make -j all install
 export PATH=$openmpiDir/bin:$PATH
