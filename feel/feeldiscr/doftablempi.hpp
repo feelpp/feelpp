@@ -143,6 +143,8 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
             auto const& eltGhost = mesh.element(*iteltghost,theprocGhost);
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
+                if ( !eltGhost.facePtr(f) )
+                    continue;
                 auto const& faceOnGhost = eltGhost.face(f);
                 for ( uint16_type vv = 0; vv < MeshType::face_type::numVertices && !findFace ; ++vv )
                 {
@@ -228,6 +230,8 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
             bool findFace=false;
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
+                if ( !eltGhost.facePtr(f) )
+                    continue;
                 auto const& faceOnGhost = eltGhost.face(f);
                 for ( uint16_type vv = 0; vv < MeshType::face_type::numEdges && !findFace ; ++vv )
                 {
@@ -1125,6 +1129,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
         for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
         {
+            if ( !eltOffProc.facePtr(f) )
+                continue;
             auto const& theface = eltOffProc.face(f);
             if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
             {
@@ -1298,6 +1304,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     //------------------------------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector< std::vector<size_type> > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<int,size_type> > > dataToSendNewNeigbor;
+    for ( rank_type p : this->neighborSubdomains() )
+        dataToSendNewNeigbor[p].clear();
+
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1341,8 +1351,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                 for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
                 {
                     size_type dofGlobAsked = boost::get<0>( localToGlobal( idEltToSearch, locDof, c1 ) );
-                    dataToReSend[idProc][cptElt][cptDof+c1] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
-                    this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
+                    size_type gcdofAsked = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                    dataToReSend[idProc][cptElt][cptDof+c1] = gcdofAsked;
+                    if ( !this->dofGlobalProcessIsGhost( dofGlobAsked ) )
+                        this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
+                    else
+                    {
+                        rank_type activeProcId = this->procOnGlobalCluster( gcdofAsked );
+                        if ( activeProcId != idProc )
+                            dataToSendNewNeigbor[activeProcId].push_back( boost::make_tuple(idProc,gcdofAsked) );
+                    }
                 }
             } // for ( int cptDof=0; itNodes ... )
         }
@@ -1396,6 +1414,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                         const size_type dofGlobRecv = itEltRecv->operator[](myindexDof);
                         //update data map
                         this->M_mapGlobalProcessToGlobalCluster[myGlobProcessDof] = dofGlobRecv;
+                        rank_type activeProcId = this->procOnGlobalCluster( dofGlobRecv );
+                        if ( activeProcId != myRank )
+                            this->addNeighborSubdomain( activeProcId );
                     }
                 }
             }
@@ -1405,6 +1426,42 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             }
         }
     }
+    //------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------//
+    // others isend/irecv between neigboor part : get new neigbor due to the extended part
+    std::map<rank_type, std::vector< boost::tuple<int,size_type> > > dataToRecvNewNeigbor;
+    int nbRequestNewNeigbor = 2*dataToSendNewNeigbor.size();
+    mpi::request * reqsNewNeigbor = new mpi::request[nbRequestNewNeigbor];
+    cptRequest=0;
+    for ( auto const& mydataSend : dataToSendNewNeigbor )
+    {
+        const rank_type idProc = mydataSend.first;
+        reqsNewNeigbor[cptRequest++] = this->worldComm().localComm().isend( idProc, 0, mydataSend.second );
+        reqsNewNeigbor[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, dataToRecvNewNeigbor[idProc] );
+    }
+    // wait all requests
+    mpi::wait_all(reqsNewNeigbor, reqsNewNeigbor + nbRequestNewNeigbor);
+    // delete reqs because finish comm
+    delete [] reqsNewNeigbor;
+    //------------------------------------------------------------------------------//
+    // update info recv about newNeighbor
+    for ( auto const& mydataRecv : dataToRecvNewNeigbor )
+    {
+        for ( auto const& newDofNeigbor : mydataRecv.second )
+        {
+            int idProcGhost = boost::get<0>( newDofNeigbor );
+            if ( idProcGhost != myRank )
+            {
+                size_type gcdof = boost::get<1>( newDofNeigbor );
+                auto resSearchDof = this->searchGlobalProcessDof( gcdof );
+                if ( !boost::get<0>( resSearchDof ) ) { LOG(WARNING) << "ignore gcdof not found : " << gcdof; continue; }
+                size_type gpdof = boost::get<1>( resSearchDof );
+                this->M_activeDofSharedOnCluster[gpdof].insert(idProcGhost);
+                this->addNeighborSubdomain( idProcGhost );
+            }
+        }
+    }
+    //------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------//
     // update M_locglobOnCluster_indices and M_locglobOnCluster_signs
     face_it = mesh.interProcessFaces().first;

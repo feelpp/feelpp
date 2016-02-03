@@ -24,10 +24,16 @@
    \author Thomas Lantz
    \date 2005-07-29
  */
-#define BOOST_TEST_MODULE integration methods test
+/*#define BOOST_TEST_MODULE integration methods test
 // Boost.Test
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
+*/
+#define USE_BOOST_TEST 1
+#if defined(USE_BOOST_TEST)
+#define BOOST_TEST_MODULE test_integrateQuadra
+#include <testsuite/testsuite.hpp>
+#endif
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/im.hpp>
@@ -37,19 +43,21 @@ using boost::unit_test::test_suite;
 
 
 using namespace Feel;
-struct F
-{
-    F() : i( 0 )
-    {
-        BOOST_TEST_MESSAGE( "setup fixture" );
-    }
-    ~F()
-    {
-        BOOST_TEST_MESSAGE( "teardown fixture" );
-    }
 
-    int i;
-};
+inline
+AboutData
+makeAbout()
+{
+    AboutData about( "test_immultiscale" ,
+                     "test_immultiscale" ,
+                     "8.9e-3",
+                     "test integrate Quadra",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2015 Feel++ Consortium" );
+
+    about.addAuthor( "Thomas Lantz", "student", "", "" );
+    return about;
+}
 
 template<typename T>
 T one( typename Feel::node<T>::type const& /*t*/ )
@@ -137,9 +145,11 @@ public:
 
 
 // automatically registered test cases could be organized in test suites
-BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
+//BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 
-
+//#if defined(USE_BOOST_TEST)
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+BOOST_AUTO_TEST_SUITE( immultiscale_suite )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {
     TestImQK<1,1, double> t1( 2.0, one<double> );
@@ -148,67 +158,67 @@ BOOST_AUTO_TEST_CASE( im1d_test1 )
 
 BOOST_AUTO_TEST_CASE( im1d_test2 )
 {
-    TestImQK<1,1, double> t2( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
+    TestImQK<1,1, double> t2( 2.0*sin( double( 1.0 ) )  , cost<double>, 0.1 );
     t2();
 }
 
 BOOST_AUTO_TEST_CASE( im1d_test3 )
 {
-    TestImQK<1,2, double> t3( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.1E-2 );
+    TestImQK<1,2, double> t3( 2.0*sin( double( 1.0 ) )  , cost<double>, 0.1);
     t3();
 }
 
 BOOST_AUTO_TEST_CASE( im1d_test4 )
 {
-    TestImQK<1,3, double> t4( 2.0*sin( double( 1.0 ) )  , cost<double>, 1.0E-4 );
+    TestImQK<1,3, double> t4( 2.0*sin( double( 1.0 ) )  , cost<double>, 0.1 );
     t4();
 }
 
 BOOST_AUTO_TEST_CASE( im1d_test5 )
 {
-    TestImQK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
+    TestImQK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double>, 0.1 );
     t5();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test0 )
 {
-    TestImQK<2,1, double> t1( 0 , sint<double> );
+    TestImQK<2,1, double> t1( 0 , sint<double>, 0.1 );
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test1 )
 {
-    TestImQK<2,1, double> t1( 4.*sin(1.) , cost<double> );
+    TestImQK<2,1, double> t1( 4.*sin(1.) , cost<double> , 0.1 );
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test2 )
 {
-    TestImQK<2,1, double> t1( -2.+exp(2.)+(1/exp(2.)) , exp2<2,double> );
+    TestImQK<2,1, double> t1( -2.+exp(2.)+(1/exp(2.)) , exp2<2,double> , 0.1);
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test3 )
 {
-    TestImQK<2,1, double> t1( 4./3. , xp2<double> );
+    TestImQK<2,1, double> t1( 4./3. , xp2<double> , 0.1 );
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test4 )
 {
-    TestImQK<2,1, double> t1( 0 , xp3<double> );
+    TestImQK<2,1, double> t1( 0 , xp3<double> , 0.1 );
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test5 )
 {
-    TestImQK<2,1, double> t1( 4.*sin(1.)*sin(1.) , coscos<double> );
+    TestImQK<2,1, double> t1( 4.*sin(1.)*sin(1.) , coscos<double> , 0.1);
     t1();
 }
 
 BOOST_AUTO_TEST_CASE( im2d_test6 )
 {
-    TestImQK<2,50,double> t6( 4.0*sin( double( 1.0 ) )  , cost<double> );
+    TestImQK<2,50,double> t6( 4.0*sin( double( 1.0 ) )  , cost<double> , 0.1);
     t6();
 }
 

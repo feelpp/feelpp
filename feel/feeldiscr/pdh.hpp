@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,12 +45,12 @@ using Pdh_ptrtype=boost::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
 */
 template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>>
+Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>::New( _mesh=mesh,
-                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
+                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 }

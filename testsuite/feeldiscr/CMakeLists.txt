@@ -25,7 +25,7 @@ feelpp_add_test( hcurl CFG test_hcurl.cfg )
 feelpp_add_test( hcurl_lag CFG test_hcurl.cfg DEFS HL_DIM=3 HL_ORDER=1)
 feelpp_add_test( hcurl3D_oneelt CFG test_hcurl3D_oneelt.cfg NO_MPI_TEST )
 
-feelpp_add_test( continuity_h1 NO_MPI_TEST )
+feelpp_add_test( continuity_h1 )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
 feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
@@ -42,14 +42,18 @@ feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
-feelpp_add_test( projector )
+feelpp_add_test( projector CLI "--pc-type=gasm" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
-feelpp_add_test( vect_comp )
+feelpp_add_test( element_component )
 feelpp_add_test( matrixfield )
-feelpp_add_test( multiscaleimage )
+
+if ( FEELPP_HAS_FFTW )
+  feelpp_add_test( multiscaleimage)
+endif()
+
 feelpp_add_test( matching NO_MPI_TEST )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
@@ -63,7 +67,7 @@ feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
 feelpp_add_test( project_prodspace )
 
 if ( FEELPP_HAS_SLEPC )
-  feelpp_add_test( eigs )
+  feelpp_add_test( eigs CLI "-st_pc_factor_mat_solver_package mumps" )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
@@ -72,3 +76,6 @@ feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO marke
 feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
 
 feelpp_add_test( upmarker_faces )
+feelpp_add_test( listofrange )
+
+

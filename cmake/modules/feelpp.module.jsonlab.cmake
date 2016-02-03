@@ -28,30 +28,33 @@
 OPTION( FEELPP_ENABLE_JSONLAB "Enable JSONLAB" ON )
 
 if ( FEELPP_ENABLE_JSONLAB )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/jsonlab )
-    if ( GIT_FOUND )
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/contrib/jsonlab )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/jsonlab
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${FEELPP_SOURCE_DIR}
         OUTPUT_FILE git.jsonlab.log
         ERROR_FILE git.jsonlab.log
+        RESULT_VARIABLE ERROR_CODE
         )
-      MESSAGE(STATUS "[feelpp] Git submodule contrib/jsonlab updated.")
+
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "[feelpp] Git submodule contrib/jsonlab updated.")
+      else()
+        MESSAGE(FATAL_ERROR "Git submodule contrib/jsonlab failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/jsonlab/ )
-        message( FATAL_ERROR "Please make sure that git submodule contrib/jsonlab is available")
-        message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/jsonlab`")
+        message( WARNING "Please make sure that git submodule contrib/jsonlab is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/jsonlab`")
       endif()
     endif()
 
   endif()
 
-  FIND_PATH(JSONLAB_INCLUDE_DIR JSONLAB.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{JSONLAB_DIR} ${JSONLAB_INCLUDE_DIR} PATH_SUFFIXES jsonlab/src)
-  if( JSONLAB_INCLUDE_DIR )
-    INCLUDE_DIRECTORIES( ${JSONLAB_INCLUDE_DIR} )
-    SET(FEELPP_HAS_JSONLAB 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} JSONLAB" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_JSONLAB )
-  endif()
+
+  SET(FEELPP_HAS_JSONLAB 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} JSONLAB" )
+  ADD_DEFINITIONS( -DFEELPP_HAS_JSONLAB )
 
 endif()

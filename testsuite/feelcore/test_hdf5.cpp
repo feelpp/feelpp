@@ -241,6 +241,79 @@ void run2()
     delete[] offsetElt;
 }
 
+// Test groups.
+void run3()
+{
+    using namespace Feel;
+
+    auto comm = Environment::worldComm();
+    HDF5 h5;
+
+    bool isLoad = false;
+    h5.openFile( "groups.h5", comm, isLoad );
+    isLoad = true;
+
+    h5.openGroups( "class_1/sub_1" );
+    h5.closeGroups( "class_1/sub_1" );
+
+    h5.openGroups( "class_2" );
+    h5.closeGroups( "class_2" );
+
+    // Check slash.
+    h5.openGroups( "/class_3" );
+    h5.closeGroups( "/class_3" );
+
+    h5.openGroups( "/class_4/" );
+    h5.closeGroups( "/class_4/" );
+
+    h5.openGroups( "class_5/" );
+    h5.closeGroups( "class_5/" );
+
+    // Check slash with sub.
+    h5.openGroups( "class_6/sub_6" );
+    h5.closeGroups( "class_6/sub_6" );
+
+    h5.openGroups( "/class_7/sub_7" );
+    h5.closeGroups( "/class_7/sub_7" );
+
+    h5.openGroups( "/class_8/sub_8/" );
+    h5.closeGroups( "/class_8/sub_8/" );
+
+    h5.openGroups( "class_9/sub_9/" );
+    h5.closeGroups( "class_9/sub_9/" );
+
+    // Check reopen group.
+    h5.openGroups( "class_1" );
+    h5.closeGroups( "class_1" );
+
+    // Check create when top group exist.
+    h5.openGroups( "class_1/sub_2/subsub_1" );
+    h5.closeGroups( "class_1/sub_2/subsub_1" );
+
+    h5.closeFile();
+
+
+    // Check that groups exist in the file.
+    h5.openFile( "groups.h5", comm, isLoad );
+
+    BOOST_CHECK( h5.groupExist( "/class_1" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_2" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_3" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_4" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_5" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_6" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_7" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_8" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_6/sub_6" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_7/sub_7" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_8/sub_8" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_9/sub_9" ) == true );
+    BOOST_CHECK( h5.groupExist( "/class_1/sub_2/subsub_1" ) == true );
+
+    h5.closeFile();
+}
+
+
 } // namespace test_hdf5
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -251,6 +324,7 @@ BOOST_AUTO_TEST_CASE( hdf5 )
 {
     test_hdf5::run1();
     test_hdf5::run2();
+    test_hdf5::run3();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -672,6 +672,15 @@ public:
                      bool checkAndFixRange=true ) const;
 
     /**
+     * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
+     * into row indices given in the "rows" entries.
+     */
+    void
+    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                     std::vector<size_type> const& rows,
+                     bool init=true );
+
+    /**
      * Serialization for PETSc VECSEQ
      */
     template<class Archive>
@@ -713,6 +722,10 @@ public:
         this->M_is_initialized = true;
         this->close();
     }
+
+    void getSubVectorPetsc( std::vector<size_type> const& rows,
+                            Vec &subvec,
+                            bool init=true ) const;
 
 
 protected:
@@ -778,6 +791,12 @@ public:
     void addVector ( const Vector<value_type>& V_in,
                      const MatrixSparse<value_type>& A_in );
 
+    void zero();
+    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    {
+        this->zero();
+    }
+
     void clear();
 
     void localize();
@@ -802,6 +821,24 @@ private :
     VecScatter M_vecScatter;
 
 };
+
+/**
+ * @addtogroup FreeFunctions 
+ * @{
+ */
+
+/**
+ * @brief create a shared pointer VectorPetsc from PETSc Vec \p v
+ */
+#if BOOST_VERSION < 105900
+vector_ptrtype vec( Vec v, datamap_ptrtype d );
+#else
+vector_uptrtype vec( Vec v, datamap_ptrtype d );
+#endif
+/**
+ * @}
+ */
+
 
 } // Feel
 #endif /* FEELPP_HAS_PETSC */

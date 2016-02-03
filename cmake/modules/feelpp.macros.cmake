@@ -15,8 +15,34 @@ macro(feelpp_list_subdirs result curdir)
   SET(${result} ${dirlist})
 endmacro(feelpp_list_subdirs)
 
-macro(feelpp_add_testcase testcase)
-  file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+macro(feelpp_add_testcase )
+  PARSE_ARGUMENTS(FEELPP_CASE
+    "NAME;PREFIX;DEPS"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_CASE_NAME ${FEELPP_CASE_DEFAULT_ARGS})
+  if ( FEELPP_CASE_PREFIX )
+    set( target ${FEELPP_CASE_PREFIX}_add_testcase_${FEELPP_CASE_NAME})
+  else()
+    set( target feelpp_add_testcase_${FEELPP_CASE_NAME})
+  endif()
+  add_custom_target(${target})
+  if ( FEELPP_CASE_DEPS )
+    foreach(case ${FEELPP_CASE_DEPS})
+      add_dependencies(${target} ${FEELPP_CASE_PREFIX}_add_testcase_${case})
+    endforeach()
+  endif()
+  ADD_CUSTOM_COMMAND(
+    TARGET ${target}
+    POST_BUILD
+    COMMAND rsync
+    ARGS -av
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/
+    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
+  #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
+  #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endmacro(feelpp_add_testcase)
 
 
@@ -25,7 +51,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -60,7 +86,11 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_DEFS )
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
-  target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  if ( FEELPP_APP_NO_FEELPP_LIBRARY )
+    target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  else()
+    target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+  endif()
 
   if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
     # add several headers in a list form "one.hpp;two.hpp"
@@ -197,7 +227,7 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS;TIMEOUT;CLI"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
   
@@ -209,10 +239,18 @@ macro(feelpp_add_test)
 
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
-    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+    if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+    else()
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  DEFS ${FEELPP_TEST_DEFS} LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+    endif()
     #add_executable(${targetname} ${filename})
   else()
-    feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+     else()
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} DEFS ${FEELPP_TEST_DEFS}  LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+     endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()
     #target_link_libraries(${targetname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  )
@@ -356,3 +394,58 @@ MACRO(feelpp_list_subdir result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
+#
+# compute the max of two variables
+macro(feelpp_max max var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${max} ${var1})
+  else()
+    set(${max} ${var2})
+  endif()
+endmacro(feelpp_max)
+
+#
+# compute the min of two variables
+macro(feelpp_min min var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${min} ${var2})
+  else()
+    set(${min} ${var1})
+  endif()
+endmacro(feelpp_min)
+
+# This macros cleans up a variable containing a list of paths
+# It:
+# - Removes any reference to the original git source directory used for builds (important for instal with tarball)
+# - Removes any reference to the original build directory (important for instal with tarball)
+function(feelpp_clean_variable old_var new_var)
+    set(tmp_var "")
+    foreach(_entry ${old_var})
+        # Try to find build dir reference
+        set(_found_position "-1")
+        string(FIND ${_entry} ${CMAKE_BINARY_DIR} _found_position)
+        if(NOT (${_found_position} MATCHES "0") )
+            # Try to find source dir reference
+            set(_found_position "-1")
+            string(FIND ${_entry} ${CMAKE_SOURCE_DIR} _found_position)
+            if(NOT (${_found_position} MATCHES "0"))
+                set(tmp_var "${tmp_var};${_entry}")
+            endif()
+        endif()
+    endforeach()
+    set(${new_var} ${tmp_var} PARENT_SCOPE)
+endfunction(feelpp_clean_variable)
+
+function(feelpp_split_libs libs libnames libpaths)
+    set(_paths "")
+    set(_names "")
+    foreach(_lib ${libs})
+        get_filename_component(_path ${_lib} PATH)
+        get_filename_component(_name ${_lib} NAME)
+        set(_paths ${_paths} ${_path})
+        set(_names ${_names} ${_name})
+    endforeach()
+
+    set(${libnames} ${_names} PARENT_SCOPE)
+    set(${libpaths} ${_paths} PARENT_SCOPE)
+endfunction(feelpp_split_libs)

@@ -536,6 +536,10 @@ public:
     // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
     void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
     std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
+    // get process ids of active dof index (in cluster view) used in the input index set
+    std::map<size_type, std::set<rank_type> >
+    activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcessPresent ) const;
+
 
     // build sub data map from an index set
     boost::shared_ptr<DataMap> createSubDataMap( std::vector<size_type> const& idExtract,
@@ -622,6 +626,11 @@ protected:
 private:
 
 };
+
+using datamap_t = DataMap;
+
+using datamap_ptrtype = boost::shared_ptr<datamap_t>;
+using datamap_ptr_t = datamap_ptrtype;
 
 } // Feel
 #endif /* __DataMap_H */

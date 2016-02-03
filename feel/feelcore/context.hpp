@@ -36,22 +36,13 @@ namespace Feel
 {
 
 template<size_type Contextv, size_type Value>
-struct has_value
-{
-    static const bool value = ( Contextv & Value ) != 0;
-};
+using has_value = mpl::bool_<( Contextv & Value ) != 0>;
 
 template<size_type Contextv, size_type Value>
-struct set_value
-{
-    static const bool value = ( Contextv | Value );
-};
+using set_value = mpl::bool_<( Contextv | Value )>;
 
 template<size_type Contextv, size_type Value>
-struct clear_value
-{
-    static const bool value = Contextv & ( ~Value );
-};
+using clear_value = mpl::bool_<Contextv & ( ~Value )>;
 
 /*!
   \class Context

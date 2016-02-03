@@ -373,8 +373,9 @@ Newmark<SpaceType>::init()
 
             } // binary
         } // p
-
-        this->updateFromDisp( *M_previousUnknown[0] );
+        // current vel,acc are same that previous at this time
+        *M_currentVel = *(M_previousVel[0]);
+        *M_currentAcc = *(M_previousAcc[0]);
 
     } // isRestart
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -68,7 +68,7 @@ BOOST_PARAMETER_FUNCTION(
       ( prefix,(std::string), "" )
       ( format,         *, ioption(_prefix=prefix,_name="gmsh.format") )
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
-      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      //( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
       ( in_memory,       *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.in-memory") )
       ( straighten,      *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
@@ -76,15 +76,15 @@ BOOST_PARAMETER_FUNCTION(
       ( structured,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.structured") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,           *,false )
+      ( physical_are_elementary_regions,           *,boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions"))
       ( periodic,        *, PeriodicEntities() )
       ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
       ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
-      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
+      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
         )
     )
 {

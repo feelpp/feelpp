@@ -29,29 +29,36 @@ OPTION( FEELPP_ENABLE_HPDDM "Enable HPDDM" ON )
 
 if ( FEELPP_ENABLE_HPDDM )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/hpddm )
-    if ( GIT_FOUND )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/hpddm
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_FILE git.hpddm.log
         ERROR_FILE git.hpddm.log
+        RESULT_VARIABLE ERROR_CODE
         )
-      MESSAGE(STATUS "[feelpp] Git submodule contrib/hpddm updated.")
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "[feelpp] Git submodule contrib/hpddm updated.")
+      else()
+        MESSAGE(WARNING "Git submodule contrib/hpddm failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
     else()
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/hpddm/ )
-        message( FATAL_ERROR "Please make sure that git submodule contrib/hpddm is available")
-        message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/hpddm`")
+        message( WARNING "Please make sure that git submodule contrib/hpddm is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/hpddm`")
       endif()
     endif()
 
   endif()
 
-  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} ${HPDDM_INCLUDE_DIR} PATH_SUFFIXES hpddm/src)
+  FIND_PATH(HPDDM_INCLUDE_DIR HPDDM.hpp HINTS ${FEELPP_SOURCE_DIR}/contrib $ENV{HPDDM_DIR} PATH_SUFFIXES hpddm/include)
   if( HPDDM_INCLUDE_DIR )
     INCLUDE_DIRECTORIES( ${HPDDM_INCLUDE_DIR} )
     SET(FEELPP_HAS_HPDDM 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HPDDM" )
     ADD_DEFINITIONS( -DFEELPP_HAS_HPDDM )
+  else()
+      MESSAGE(WARNING "HPDDM was not found on your system. Either install it or set FEELPP_ENABLE_HPDDM to OFF.")
   endif()
 
 endif()

@@ -1,22 +1,16 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
  This file is part of the Feel++ library
-
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date     : Tue Feb 25 12:13:15 2014
-
  Copyright (C) 2014-2015 Feel++ Consortium
-
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
-
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -29,33 +23,33 @@ int main(int argc, char**argv )
 {
     constexpr int dim = FEELPP_DIM;
     constexpr int order_p= FEELPP_ORDER_P;
-
+    
     using namespace Feel;
-	po::options_description stokesoptions( "Steady NS options" );
-	stokesoptions.add_options()
-        ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
-		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
-        ( "attach-mass-matrix", po::value<bool>()->default_value( false ), "attach mass matrix at petsc preconditioner" )
-        ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
-        ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )
-        ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
-        ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
-        ( "picard.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
-		( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
-		( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
-        ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
-        ( "newton.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
-        ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
-		( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
-		;
+    po::options_description stokesoptions( "Steady NS options" );
+    stokesoptions.add_options()
+    ( "rho", po::value<double>()->default_value( 1.0 ), "coeff" )
+    ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+    ( "attach-mass-matrix", po::value<bool>()->default_value( false ), "attach mass matrix at petsc preconditioner" )
+    ( "penaldir", po::value<double>()->default_value( 100 ), "coeff" )
+    ( "sym", po::value<bool>()->default_value( 0 ), "use symmetric deformation tensor" )
+    ( "stokes.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
+    ( "picard", po::value<bool>()->default_value( 1 ), "picard" )
+    ( "picard.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
+    ( "picard.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+    ( "picard.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
+    ( "newton", po::value<bool>()->default_value( 1 ), "newton" )
+    ( "newton.preconditioner", po::value<std::string>()->default_value( "petsc" ), "Stokes preconditioner: petsc, PM, Blockns" )
+    ( "newton.tol", po::value<double>()->default_value( 1e-8 ), "tolerance" )
+    ( "newton.maxit", po::value<double>()->default_value( 10 ), "max iteration" )
+    ;
     stokesoptions.add( backend_options( "stokes" ) )
-        .add( backend_options( "newton" ) )
-         .add( backend_options( "picard" ) );
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=stokesoptions,
-                     _about=about(_name=(boost::format("steady_ns_%1%d")%dim).str(),
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
+    .add( backend_options( "newton" ) )
+    .add( backend_options( "picard" ) );
+    Environment env( _argc=argc, _argv=argv,
+                    _desc=stokesoptions,
+                    _about=about(_name=(boost::format("steady_ns_%1%d")%dim).str(),
+                                 _author="Feel++ Consortium",
+                                 _email="feelpp-devel@feelpp.org"));
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<dim>>);
     auto Vh = THch<order_p>( mesh );
     auto U = Vh->element();
@@ -70,9 +64,22 @@ int main(int argc, char**argv )
     double mu = doption(_name="mu");
     double rho = doption(_name="rho");
 
+    size_type nbdyfaces = nelements(boundaryfaces(mesh));
     if ( Environment::isMasterRank() )
     {
         std::cout<<"\n\n\nMesh name: "<<soption("gmsh.filename")<<"\n\n";
+        std::cout << " - mesh entities" << std::endl;
+        std::cout << "      number of elements : " << mesh->numGlobalElements() << std::endl;
+        std::cout << "         number of faces : " << mesh->numGlobalFaces() << std::endl;
+        std::cout << "number of boundary faces : " << nbdyfaces << std::endl;
+        std::cout << "      number of points : " << mesh->numGlobalPoints() << std::endl;
+        std::cout << "    number of vertices : " << mesh->numGlobalVertices() << std::endl;
+        std::cout << " - mesh sizes" << std::endl;
+        std::cout << "                h max : " << mesh->hMax() << std::endl;
+        std::cout << "                h min : " << mesh->hMin() << std::endl;
+        std::cout << "                h avg : " << mesh->hAverage() << std::endl;
+        std::cout << "              measure : " << mesh->measure() << std::endl;
+
         std::cout << "Re\t\tU-order\t\tP-order\t\tHsize\tFunctionSpace\tLocalDOF\tVelocity\tPressure\n";
         std::cout.width(16);
         std::cout << std::left << 2.*rho/mu;
@@ -139,7 +146,7 @@ int main(int argc, char**argv )
         {
             LOG(INFO) << "Setting Dirichlet condition on " << d.first << " with " << d.second;
             a += integrate( _range=markedfaces( mesh, d.first ),
-                            _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+                           _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
         }
     }
     if ( Environment::numberOfProcessors() == 1 )
@@ -147,7 +154,6 @@ int main(int argc, char**argv )
         a.matrix().printMatlab( "A.m" );
     }
     auto e = exporter( _mesh=mesh );
-
 
     auto incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
     auto incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
@@ -158,7 +164,7 @@ int main(int argc, char**argv )
         {
             LOG(INFO) << "Setting Dirichlet condition on " << d.first << " with " << d.second;
             l += integrate( _range=markedfaces( mesh, d.first ),
-                            _expr=trans(d.second)*(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace() ) );
+                           _expr=trans(d.second)*(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace() ) );
         }
     }
     else
@@ -171,14 +177,15 @@ int main(int argc, char**argv )
     }
 
     tic();
-    auto a_blockns = blockns( _space=Vh, _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
+    auto a_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("stokes.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="velocity" );
     toc(" - Setting up Precondition Blockns...");
 
     a_blockns->setMatrix( at.matrixPtr() );
+    auto b = backend(_prefix="picard",_name="picard");
 
-    auto precPetsc = preconditioner( _prefix=backend()->prefix(),_matrix=at.matrixPtr(),_pc=backend()->pcEnumType(),
-                                     _pcfactormatsolverpackage=backend()->matSolverPackageEnumType(), _backend=backend()->shared_from_this(),
-                                     _worldcomm=backend()->comm() );
+    auto precPetsc = preconditioner( _prefix="picard",_matrix=at.matrixPtr(),_pc=b->pcEnumType(),
+                                    _pcfactormatsolverpackage=b->matSolverPackageEnumType(), _backend=b->shared_from_this(),
+                                    _worldcomm=b->comm() );
 
     bool attachMassMatrix = boption(_name="attach-mass-matrix");
     if ( attachMassMatrix )
@@ -194,12 +201,11 @@ int main(int argc, char**argv )
     {
         a_blockns->update( at.matrixPtr(), zero<dim,1>(), m_dirichlet );
 
-
         at.solveb(_rhs=l,_solution=U,_backend=backend(_name="stokes"),_prec=a_blockns);
     }
     else
     {
-        backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
+        b->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=l.vectorPtr(),_prec=precPetsc );
     }
     toc(" - Solving Stokes...");
 
@@ -234,9 +240,9 @@ int main(int argc, char**argv )
                 if ( boption( "blockns.weakdir" ) )
                 {
                     at += integrate( _range=markedfaces( mesh, c.first ),
-                                     _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
+                                    _expr=(trans(-mu*gradt(u)*N()+idt(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idt(v)+doption("penaldir")*trans(idt(u))*id(v)/hFace() );
                     r += integrate( _range=markedfaces( mesh, c.first ),
-                                    _expr=trans(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
+                                   _expr=trans(-mu*grad(u)*N()+id(p)*N()+doption("penaldir")*id(v)/hFace())*c.second );
                 }
                 else
                 {
@@ -265,17 +271,25 @@ int main(int argc, char**argv )
             else
             {
                 //at.solveb(_rhs=r,_solution=U,_backend=backend(_rebuild=true) );
-                backend()->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
+                backend(_name="picard")->solve(_matrix=at.matrixPtr(),_solution=U,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
             toc("Picard::Solve");
             tic();
             incru = normL2( _range=elements(mesh), _expr=idv(u)-idv(un));
             incrp = normL2( _range=elements(mesh), _expr=idv(p)-idv(pn));
-            
+
+            size_type nnz = 0 ;
+            auto nNz = at.matrixPtr()->graph()->nNz() ;
+            for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+                nnz += ( *iter ) ;
+            size_type gnnz=0;
+            LOG(INFO) << "[nnz]       number of nnz: " << nnz << "\n";
+
             fixedpt_iter++;
 
             if ( Environment::isMasterRank() )
             {
+                std::cout << "[nnz]       number of nnz: " << nnz << "\n";
                 std::cout << "Iteration "  << fixedpt_iter << "\n";
                 std::cout << " . ||u-un|| = " << incru << std::endl;
                 std::cout << " . ||p-pn|| = " << incrp << std::endl;
@@ -290,8 +304,8 @@ int main(int argc, char**argv )
             toc("Picard::Export");
             toc("Picard::Iteration Total");
             Environment::saveTimers( true );
-            
-            
+
+
         }
         while ( ( incru > fixPtTol && incrp > fixPtTol ) && ( fixedpt_iter < fixPtMaxIt ) );
     }
@@ -303,7 +317,7 @@ int main(int argc, char**argv )
 
         double res = 0;
         auto deltaU = Vh->element();
-        auto at_blockns = blockns( _space=Vh, _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
+        auto at_blockns = blockns( _space=Vh, _properties_space=Pdh<0>(Vh->mesh()), _type=soption("newton.preconditioner"), _bc=bcs, _matrix= at.matrixPtr(), _prefix="increment" );
         map_vector_field<dim,1,2> m_dirichlet { bcs.getVectorFields<dim> ( "increment", "Dirichlet" ) } ;
         do
         {
@@ -321,13 +335,13 @@ int main(int argc, char**argv )
             r += integrate( _range=elements(mesh),_expr=rho*trans(id(v))*(gradv(u)*idv(u)) );
             if ( Environment::isMasterRank() )
                 std::cout << " - Assemble BC   ...\n";
-            
+
             for( auto const& d : m_dirichlet )
             {
                 if ( boption( "blockns.weakdir" ) )
                 {
                     r += integrate( _range=markedfaces( mesh, d.first ),
-                                    _expr=(trans(-mu*gradv(u)*N()+idv(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idv(v)+doption("penaldir")*trans(idv(u))*id(v)/hFace() );
+                                   _expr=(trans(-mu*gradv(u)*N()+idv(p)*N()))*id(v)+(trans(-mu*grad(u)*N()+id(p)*N()))*idv(v)+doption("penaldir")*trans(idv(u))*id(v)/hFace() );
                 }
                 else
                 {
@@ -353,7 +367,7 @@ int main(int argc, char**argv )
             else
             {
                 //at.solveb(_rhs=r,_solution=deltaU/*U*/,_backend=backend(_rebuild=true) );
-                backend()->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
+                backend(_name="newton",_rebuild=true)->solve(_matrix=at.matrixPtr(),_solution=deltaU,_rhs=r.vectorPtr(),_prec=precPetsc );
             }
 
             U.add(1.,deltaU);

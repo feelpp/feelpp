@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -21,7 +21,7 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ */
 #ifndef FEELPP_IMSIMPLEX_HPP
 #define FEELPP_IMSIMPLEX_HPP 1
 
@@ -48,17 +48,17 @@ template<typename Convex,typename T>
 typename mpl::if_<Feel::is_simplex<Convex>,
                   mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Simplex,T>>>,
                   mpl::identity<boost::shared_ptr<GT_Lagrange<Convex::nDim,1,Convex::nDim,Hypercube,T>>> >::type::type
-makeGeometricTransformation();
+    makeGeometricTransformation();
 
 /**
-  * @brief economical quadratures for simplices
+ * @brief economical quadratures for simplices
  *
  * \ingroup Quadrature
-  */
+ */
 template<int Dim,typename T>
 class IMSimplex
     :
-public PointSetQuadrature<Simplex<Dim,1> , T>
+        public PointSetQuadrature<Simplex<Dim,1> , T>
 {
     typedef PointSetQuadrature<Simplex<Dim,1> , T> super;
 public:
@@ -107,9 +107,9 @@ public:
      **
      */
     T factor() const
-    {
-        return ( Dim==2 )?T( 1 )/T( 2 ):T( 1 )/T( 6 );
-    }
+        {
+            return ( Dim==2 )?T( 1 )/T( 2 ):T( 1 )/T( 6 );
+        }
 
 
     /** @name  Methods
@@ -121,13 +121,13 @@ public:
      * create quadrature rule that integrates exactely up to polynomial order \c p
      */
     void create( uint16_type order ) override
-    {
-         super::create(order);
-         auto gm = makeGeometricTransformation<convex_type,T>();
-         auto face_qr = boost::make_shared<face_quad_type>(order);
+        {
+            super::create(order);
+            auto gm = makeGeometricTransformation<convex_type,T>();
+            auto face_qr = boost::make_shared<face_quad_type>(order);
          
-         this->constructQROnFace( Reference<convex_type,nDim,1,nRealDim>(), gm, face_qr );
-    }
+            this->constructQROnFace( Reference<convex_type,nDim,1,nRealDim>(), gm, face_qr );
+        }
 
     //@}
 

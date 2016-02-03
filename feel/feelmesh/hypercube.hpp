@@ -147,7 +147,12 @@ public:
         typedef Hypercube<shape_dim, O, R> type;
     };
 
-
+    Hypercube() = default;
+    Hypercube( Hypercube const& ) = default;
+    Hypercube( Hypercube && ) = default;
+    Hypercube& operator=( Hypercube const& ) = default;
+    Hypercube& operator=( Hypercube && ) = default;
+    
     /**
      * \return the topological dimension of the simplex
      */
@@ -267,6 +272,12 @@ public:
         return "hypercube";
     }
 };
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Hypercube<Dim, Order, RDim>::topological_dimension;
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Hypercube<Dim, Order, RDim>::nOrder;
 
 }
 #endif /* __Hypercube_H */

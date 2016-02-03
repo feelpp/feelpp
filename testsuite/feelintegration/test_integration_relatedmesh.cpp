@@ -6,7 +6,7 @@
    Date: 2014-09-04
 
    Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
-   Copyright (C) 2011-2015 Feel++ Consortium
+   Copyright (C) 2011-2016 Feel++ Consortium
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

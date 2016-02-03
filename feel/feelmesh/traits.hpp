@@ -57,6 +57,7 @@ struct MeshTraits
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::edge_type edge_type;
+    typedef typename mesh_type::point_type point_type;
 
     // element iterators
     typedef typename mesh_type::element_iterator element_iterator;
@@ -73,9 +74,6 @@ struct MeshTraits
 
     typedef typename mesh_type::location_element_iterator location_element_iterator;
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
-
-    typedef typename mesh_type::pid_element_iterator pid_element_iterator;
-    typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
 
     // face iterators
     typedef typename mesh_type::face_iterator face_iterator;
@@ -151,16 +149,23 @@ template<typename T>
 struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
 
 template<typename T>
-struct is_simplex : std::is_base_of<SimplexBase, T> {};
+struct is_convex : std::is_convertible<T,ConvexBase>::type {};
+template<typename T>
+struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
 template<typename T>
 struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
 template<typename T>
 struct is_tetrahedron : mpl::and_<is_simplex<T>,is_3d<T>> {};
-template<typename T>
-struct is_segment : mpl::and_<is_simplex<T>,is_1d<T>> {};
 
 template<typename T>
 struct is_hypercube : std::is_base_of<HypercubeBase, T>::type {};
+template<typename T>
+struct is_square : mpl::and_<is_hypercube<T>,is_2d<T>> {};
+template<typename T>
+struct is_cube : mpl::and_<is_hypercube<T>,is_3d<T>> {};
+
+template<typename T>
+struct is_segment : mpl::and_<is_convex<T>,is_1d<T>> {};
 
 } // Feel
 #endif /* __Traits_H */

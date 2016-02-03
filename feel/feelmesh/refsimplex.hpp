@@ -381,7 +381,7 @@ public:
     /**
      * \return the barycenter of the reference simplex
      */
-    node_type barycenter() const
+    node_type const& barycenter() const
     {
         return M_barycenter;
     }
@@ -389,7 +389,7 @@ public:
     /**
      * \return the barycenter of the faces of the reference simplex
      */
-    points_type barycenterFaces() const
+    points_type const& barycenterFaces() const
     {
         return M_barycenterfaces;
     }

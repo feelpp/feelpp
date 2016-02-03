@@ -20,11 +20,12 @@
       \begin{center}
         \begin{minipage}{.49\linewidth}
           \begin{tikzpicture}[scale=0.6]
-            \begin{loglogaxis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Relative Error},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$}]
-              \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
-              \addplot table[x=hSize,y={create col/linear regression={y=err}}]{/ssd/huber/clang/testsuite/feelpde/OUT_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt}
+            \begin{loglogaxis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Relative Error},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$,$Block-hypre-hypre$}]
+              \addplot+[color=black,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-lu_cg-lu_cg-lu-\t_res.txt};
+              \addplot+[color=red,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-lu_cg-lu-\t_res.txt};
+              \addplot+[color=blue,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt};
+              \addplot+[color=green,style=solid,very thick] table [x=hSize,y=err] {/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-hypre_cg-hypre-\t_res.txt};
+              \addplot table[x=hSize,y={create col/linear regression={y=err}}]{/ssd/huber/clang/benchmarks/magnetostatic/OUT_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt}
               coordinate [pos=0.25] (A)
               coordinate [pos=0.4]  (B)
               ;
@@ -36,10 +37,15 @@
         \hfill
         \begin{minipage}{.49\linewidth}
           \begin{tikzpicture}[scale=0.6]
-            \begin{axis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Time to Inverse (s)},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$},xmode=log]
-              \addplot+[color=black,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-lu_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=red,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-blockms_gmres-lu_gmres-lu-\t_res.txt};
-              \addplot+[color=blue,style=solid,very thick] table [x=h,y=Total] {/ssd/huber/clang/testsuite/feelpde/ITER_\D D-mu-\m-gmres-blockms_gmres-gamg_gmres-gamg-\t_res.txt};
+            \begin{axis}[title=\D$ D - \mu$ \m - type \t,xlabel={hSize},ylabel={Time to Inverse (s)},grid=major,legend entries={$LU$,$Block-LU-LU$,$Block-Gamg-Gamg$,$Block-hypre-hypre$},xmode=log]
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\ta} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-lu_cg-lu_cg-lu-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\tb} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-lu_cg-lu-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\tc} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-gamg_cg-gamg-\t_res.txt};
+              \pgfplotstablesort[sort key=h,sort cmp={float >} ] {\td} {/ssd/huber/clang/benchmarks/magnetostatic/ITER_\D D-mu-\m-cg-blockms_cg-hypre_cg-hypre-\t_res.txt};
+              \addplot+[color=black,style=solid,very thick] table [x=h,y=Total] {\ta};
+              \addplot+[color=red,style=solid,very thick] table [x=h,y=Total]   {\tb};
+              \addplot+[color=blue,style=solid,very thick] table [x=h,y=Total]  {\tc};
+              \addplot+[color=green,style=solid,very thick] table [x=h,y=Total] {\td};
             \end{axis}
           \end{tikzpicture}
         \end{minipage}

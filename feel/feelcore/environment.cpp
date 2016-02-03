@@ -1,31 +1,27 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-   This file is part of the Feel library
+ This file is part of the Feel library
+ 
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 2010-04-14
+ 
+ Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
+ Copyright (C) 2010-2016 Feel++ Consortium
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-Date: 2010-04-14
-
-Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
-/**
-  \file environment.cpp
-  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-  \date 2010-04-14
- */
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 #include <cstdlib>
 #include <pwd.h>
 #ifdef __cplusplus
@@ -203,7 +199,7 @@ AboutData makeAboutDefault( std::string name )
                      "0.1",
                      name,
                      AboutData::License_GPL,
-                     "Copyright (c) 2012-2015 Feel++ Consortium" );
+                     "Copyright (c) 2012-2016 Feel++ Consortium" );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
@@ -1577,23 +1573,31 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     fs::path p = dirs.front();
 
-    if ( p.relative_path() != "." )
+    if (fs::path(fmtstr).is_absolute())
+    {
+        rep_path=fs::path("/");
+    }
+    else if ( p.relative_path() != "." )
+    {
         rep_path = Environment::rootRepository();
 
-    if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-    {
-        LOG( INFO ) << "Creating directory " << rep_path << "...";
-        fs::create_directory( rep_path );
+        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
+        {
+            LOG( INFO ) << "Creating directory " << rep_path << "...";
+            fs::create_directory( rep_path );
+        }
     }
-
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
-        //VLOG(2)<< " option: " << s << "\n";
-        rep_path = rep_path / dir;
+        if ( !dir.empty() )
+        {
+            //VLOG(2)<< " option: " << s << "\n";
+            rep_path = rep_path / dir;
 
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-            fs::create_directory( rep_path );
+            if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
+                fs::create_directory( rep_path );
+        }
     }
 
     if ( add_subdir_np )
@@ -2029,7 +2033,7 @@ Environment::expand( std::string const& expr )
 }
 
 void
-Environment::addTimer( std::string const& msg, double t )
+Environment::addTimer( std::string const& msg, std::pair<double,int> const& t )
 {
     S_timers.add( msg, t );
 }

@@ -4,7 +4,7 @@ project(METIS)
 set(C_FLAGS "-O3 -Wall -fPIC")
 
 set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/contrib/metis/GKlib CACHE PATH "path to GKlib")
-set(SHARED FALSE CACHE BOOL "build a shared library")
+#set(SHARED FALSE CACHE BOOL "build a shared library")
 
 if(MSVC)
   set(METIS_INSTALL FALSE)
@@ -13,11 +13,11 @@ else()
 endif()
 
 # Configure libmetis library.
-if(SHARED)
+if(BUILD_SHARED_LIBS)
   set(METIS_LIBRARY_TYPE SHARED)
 else()
   set(METIS_LIBRARY_TYPE STATIC)
-endif(SHARED)
+endif()
 
 include(${GKLIB_PATH}/GKlibSystem.cmake)
 # Add include directories.

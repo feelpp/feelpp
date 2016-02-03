@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-03-10
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -156,7 +156,7 @@ void FileIndex::write( MPI_File fh )
         //MPI_File_write_ordered(fh, &flag, size, MPI_INT32_T, &status);
         
         // write position of fileblock for number of steps
-        MPI_File_write_at(fh, offset, &fb_n_step, 1, MPI_INT32_T, &status);
+        MPI_File_write_at(fh, offset, &fb_n_step, 1, MPI_INT64_T, &status);
         offset+=sizeOfInt64_t;
         //MPI_File_write_ordered(fh, &fb_n_step, size, MPI_INT64_T, &status);
         

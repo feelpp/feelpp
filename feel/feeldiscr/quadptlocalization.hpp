@@ -62,25 +62,15 @@ public :
 
 
     typedef typename boost::tuples::template element<1, IteratorRange>::type element_iterator_type;
-    typedef typename element_iterator_type::value_type::GeoShape GeoShape;
+    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type::GeoShape GeoShape;
     //typedef Mesh<GeoShape> mesh_type;
-#if 0
-    typedef typename mesh_type::gm_type gm_type;
-    typedef typename mesh_type::element_type geoelement_type;
-#else
 
-    //typedef typename element_iterator_type::value_type geoelement_type;
-    //typedef typename geoelement_type::gm_type gm_type;
-
-    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
+    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type range_elt_type;
+    typedef typename boost::remove_reference<range_elt_type>::type const_t;
     typedef typename boost::remove_const<const_t>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
     typedef the_element_type geoelement_type;
     typedef typename geoelement_type::gm_type gm_type;
-
-
-
-#endif
 
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
@@ -229,7 +219,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -252,8 +243,9 @@ public :
         }
 
         // create context
-        pc_ptrtype geopc( new pc_type( elt_it->gm(), newquadPtsRef ) );
-        gmc_ptrtype gmc( new gmc_type( elt_it->gm(),*elt_it, geopc ) );
+        auto const& eltCur = boost::unwrap_ref( *elt_it );
+        pc_ptrtype geopc( new pc_type( eltCur.gm(), newquadPtsRef ) );
+        gmc_ptrtype gmc( new gmc_type( eltCur.gm(), eltCur, geopc ) );
 
         return gmc;
     }
@@ -271,7 +263,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -283,11 +276,13 @@ public :
         auto elt_it = this->beginElement();
         for ( size_type i=0; i<theIdElt; ++i ) ++elt_it;
 #endif
+        auto const& faceCur = boost::unwrap_ref( *elt_it );
+
         // get only usefull quad point and reoder
         const uint16_type nContextPt = indexLocalToQuad.size();
-        const uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+        const uint16_type __face_id_in_elt_0 = faceCur.pos_first();
 
-        auto const __perm = elt_it->element( 0 ).permutation( __face_id_in_elt_0 );
+        auto const __perm = faceCur.element( 0 ).permutation( __face_id_in_elt_0 );
         matrix_node_type const& quadPtsRef =  M_ppts[ __face_id_in_elt_0].find( __perm )->second;
         //matrix_node_type quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef( quadPtsRef.size1() , nContextPt );
@@ -305,13 +300,13 @@ public :
             for ( permutation_type __p( permutation_type::IDENTITY );
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element( 0 ).gm(),
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( faceCur.element( 0 ).gm(),
                                                  newquadPtsRef ) );
             }
         }
 
-        gmc_ptrtype gmc( new gmc_type( elt_it->element( 0 ).gm(),
-                                       elt_it->element( 0 ),
+        gmc_ptrtype gmc( new gmc_type( faceCur.element( 0 ).gm(),
+                                       faceCur.element( 0 ),
                                        __geopc,
                                        __face_id_in_elt_0  ) );
 
@@ -433,6 +428,7 @@ public :
     {
 
         auto begin_elt_it = this->beginElement();
+        auto const& faceInit = boost::unwrap_ref( *begin_elt_it );
 
         std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
         //typedef typename im_type::face_quadrature_type face_im_type;
@@ -447,15 +443,15 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( faceInit.element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
             }
         }
 
 
-        uint16_type __face_id_in_elt_0 = begin_elt_it->pos_first();
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-        gmc_ptrtype gmc( new gmc_type( begin_elt_it->element( 0 ).gm(),
-                                       begin_elt_it->element( 0 ),
+        gmc_ptrtype gmc( new gmc_type( faceInit.element( 0 ).gm(),
+                                       faceInit.element( 0 ),
                                        __geopc,
                                        __face_id_in_elt_0 ) );
 
@@ -465,7 +461,7 @@ public :
         bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
         if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
-        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        matrix_node_type ptsReal( faceInit.vertices().size1(), 1 );
         size_type testIdElt=0;
         node_type testNodeRef;
 
@@ -475,13 +471,16 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
-                __face_id_in_elt_0 = elt_it->pos_first();
-                //if ( elt_it->isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
+                auto const& faceCur = boost::unwrap_ref( *elt_it );
 
-                gmc->update( elt_it->element( 0 ), __face_id_in_elt_0 );
+                __face_id_in_elt_0 = faceCur.pos_first();
+                //if ( faceCur.isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
+
+                gmc->update( faceCur.element( 0 ), __face_id_in_elt_0 );
 
                 //std::cout << "\n quad gmc "<< gmc->xReal();
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
@@ -494,7 +493,7 @@ public :
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (notUseOptLocTest) testIdElt=invalid_size_type_value;
-                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
                     testIdElt = resLocalisationTest.template get<1>();
                     testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
 #endif
@@ -518,9 +517,10 @@ public :
 
         auto begin_elt_it = this->beginElement();
         //auto elt_en = this->endElement();
+        auto const& eltInit = boost::unwrap_ref( *begin_elt_it );
 
-        pc_ptrtype geopc( new pc_type( begin_elt_it->gm(), this->im().points() ) );
-        gmc_ptrtype gmc( new gmc_type( begin_elt_it->gm(),*begin_elt_it, geopc ) );
+        pc_ptrtype geopc( new pc_type( eltInit.gm(), this->im().points() ) );
+        gmc_ptrtype gmc( new gmc_type( eltInit.gm(),*begin_elt_it, geopc ) );
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
@@ -528,7 +528,7 @@ public :
         bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
         if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
-        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        matrix_node_type ptsReal( eltInit.vertices().size1(), 1 );
         size_type testIdElt=0;
         node_type testNodeRef;
 
@@ -538,10 +538,12 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
-                gmc->update( *elt_it );
+                auto const& eltCur = boost::unwrap_ref( *elt_it );
+                gmc->update( eltCur );
 
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
@@ -555,7 +557,7 @@ public :
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (notUseOptLocTest) testIdElt=invalid_size_type_value;
-                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
                     testIdElt = resLocalisationTest.template get<1>();
                     testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
 #endif
@@ -583,6 +585,7 @@ public :
         //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form start" << std::endl;
 
         auto begin_elt_it = this->beginElement();
+        auto const& faceInit = boost::unwrap_ref( *begin_elt_it );
 
         std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
 
@@ -592,14 +595,14 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( faceInit.element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
             }
         }
 
-        uint16_type __face_id_in_elt_0 = begin_elt_it->pos_first();
+        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-        gmc_ptrtype gmc( new gmc_type( begin_elt_it->element( 0 ).gm(),
-                                       begin_elt_it->element( 0 ),
+        gmc_ptrtype gmc( new gmc_type( faceInit.element( 0 ).gm(),
+                                       faceInit.element( 0 ),
                                        __geopc,
                                        __face_id_in_elt_0 ) );
 
@@ -617,14 +620,14 @@ public :
         if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
 
-        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        matrix_node_type ptsReal( faceInit.vertices().size1(), 1 );
         size_type trialIdElt = 0, testIdElt=0;
         node_type trialNodeRef,testNodeRef;
 
         bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( begin_elt_it->mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
             quadMeshIsSameThatTrialMesh=true;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( begin_elt_it->mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( faceInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
             quadMeshIsSameThatTestMesh=true;
 
 #if FEELPP_EXPORT_QUADLOCALIZATION
@@ -638,13 +641,15 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
-                __face_id_in_elt_0 = elt_it->pos_first();
-                //if ( elt_it->isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
+                auto const& faceCur = boost::unwrap_ref( *elt_it );
+                __face_id_in_elt_0 = faceCur.pos_first();
+                //if ( faceCur.isConnectedTo1()) std::cout << "\n AIEEEEEE!!!!!!!!!!!\n";
 
-                gmc->update( elt_it->element( 0 ), __face_id_in_elt_0 );
+                gmc->update( faceCur.element( 0 ), __face_id_in_elt_0 );
 
                 //std::cout << "\n quad gmc "<< gmc->xReal();
 
@@ -658,7 +663,7 @@ public :
                     if (!quadMeshIsSameThatTrialMesh)
                     {
                         if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
-                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
+                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,faceCur.vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
                     }
@@ -673,7 +678,7 @@ public :
                     if (!quadMeshIsSameThatTestMesh)
                     {
                         if (notUseOptLocTest) testIdElt=invalid_size_type_value;
-                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
                     }
@@ -727,9 +732,10 @@ public :
         auto begin_elt_it = this->beginElement();
         //auto elt_it = this->beginElement();
         //auto elt_en = this->endElement();
+        auto const& eltInit = boost::unwrap_ref( *begin_elt_it );
 
-        pc_ptrtype geopc( new pc_type( begin_elt_it->gm(), this->im().points() ) );
-        gmc_ptrtype gmc( new gmc_type( begin_elt_it->gm(),*begin_elt_it, geopc ) );
+        pc_ptrtype geopc( new pc_type( eltInit.gm(), this->im().points() ) );
+        gmc_ptrtype gmc( new gmc_type( eltInit.gm(),eltInit, geopc ) );
 
         auto meshTrialLocalization = meshTrial->tool_localization();
         meshTrialLocalization->updateForUse();
@@ -755,14 +761,14 @@ public :
         // auto nEltTrial= meshTrial->numElements();
         //auto nEltTest= meshTest->numElements();
 
-        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        matrix_node_type ptsReal( eltInit.vertices().size1(), 1 );
         size_type trialIdElt = 0, testIdElt=0;
         node_type trialNodeRef,testNodeRef;
 
         bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( begin_elt_it->mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
             quadMeshIsSameThatTrialMesh=true;
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( begin_elt_it->mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( eltInit.mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
             quadMeshIsSameThatTestMesh=true;
 
         element_iterator_type elt_it, elt_en;
@@ -771,10 +777,12 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
+            elt_it = boost::get<1>( *itListRange );
+            elt_en = boost::get<2>( *itListRange );
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
-                gmc->update( *elt_it );
+                auto const& eltCur = boost::unwrap_ref( *elt_it );
+                gmc->update( eltCur );
 
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
@@ -786,7 +794,7 @@ public :
                     if (!quadMeshIsSameThatTrialMesh)
                     {
                         if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
-                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
+                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,eltCur.vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
                     }
@@ -802,7 +810,7 @@ public :
                     if (!quadMeshIsSameThatTestMesh)
                     {
                         if (notUseOptLocTest) testIdElt=invalid_size_type_value;
-                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
                     }
@@ -834,7 +842,7 @@ public :
                         const size_type neighborTrial_id = geoeltTrial.neighbor( ms ).first;
                         if ( neighborTrial_id==invalid_size_type_value ) continue;
 
-                        auto resNeighboor = meshTrialLocalization->isIn( neighborTrial_id,gmc->xReal( q ),elt_it->vertices(),mpl::int_<1>() );
+                        auto resNeighboor = meshTrialLocalization->isIn( neighborTrial_id,gmc->xReal( q ),eltCur.vertices(),mpl::int_<1>() );
                         if (resNeighboor.get<0>())
                         {
                             trialEltToPtsQuad[neighborTrial_id].push_back( boost::make_tuple( idq,q,resNeighboor.get<1>() ) );
@@ -855,7 +863,7 @@ public :
                         const size_type neighborTest_id = geoeltTest.neighbor( ms ).first;
                         if ( neighborTest_id==invalid_size_type_value ) continue;
 
-                        auto resNeighboor = meshTestLocalization->isIn( neighborTest_id,gmc->xReal( q ),elt_it->vertices(),mpl::int_<1>() );
+                        auto resNeighboor = meshTestLocalization->isIn( neighborTest_id,gmc->xReal( q ),eltCur.vertices(),mpl::int_<1>() );
                         if (resNeighboor.get<0>())
                         {
                             testEltToPtsQuad[neighborTest_id].push_back( boost::make_tuple( idq,q,resNeighboor.get<1>() ) );

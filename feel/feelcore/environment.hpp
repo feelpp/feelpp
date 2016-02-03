@@ -48,6 +48,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+#include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -307,6 +308,31 @@ public:
     }
 
     /**
+     * return master rank in mpi communicator
+     */
+    static rank_type masterRank()
+    {
+        return S_worldcomm->masterRank();
+    }
+
+    /**
+     * @return true if number of process is 1, hence the environment is
+     * sequential
+     */
+    static bool isSequential() 
+    {
+        return numberOfProcessors() == 1;
+    }
+
+    /**
+     * @return true if the environment is not sequential, that is if the number
+     * of process is greater than 1
+     */
+    static bool isParallel() 
+    {
+        return !isSequential();
+    }
+    /**
      * rank 0 process is considered the master process
      *
      * the master process can then for example print information in the console
@@ -314,7 +340,7 @@ public:
      */
     static bool isMasterRank()
     {
-        return rank() == 0;
+        return rank() == masterRank();
     }
 
     static po::command_line_parser const& commandLineParser()
@@ -545,7 +571,7 @@ public:
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, double t );
+    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
 
     /**
      * display and save timers

@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -7,7 +6,8 @@
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 UniversitÃ© Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2016 Feel++ Consortium 
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -239,6 +239,15 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
                                                          (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
             };                                                          \
+            template<typename Func>                                     \
+                static const bool has_test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
+                                                                 (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)) ); \
+            template<typename Func>                                     \
+                static const bool has_trial_basis = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
+                                                                  (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
+            using basis_t = typename mpl::if_<mpl::bool_<element_type::is_mortar>,mortar_fe_type,fe_type>::type; \
+            using test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), std::nullptr_t, basis_t); \
+            using trial_basis = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), basis_t, std::nullptr_t ); \
                                                                         \
                                                                         \
             VF_OPERATOR_NAME( O ) ( element_type const& v, bool useInterpWithConfLoc=false ) \
@@ -271,6 +280,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 struct tensor                                           \
             {                                                           \
                 typedef this_type expression_type;                      \
+                static constexpr size_type context = expression_type::context; \
+                                                                        \
                 typedef BOOST_PP_CAT( Basis_,BOOST_PP_CAT(VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ), i ,j ), _t)) map_basis_context_type; \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
@@ -315,7 +326,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
                                                                         \
-                template<typename E>\
+                template<typename E>                                    \
                 struct ttt {                                                            \
                     typedef typename mpl::if_<boost::is_same<E,mpl::int_<0> >, \
                                               mpl::identity<functionspace_type>, \

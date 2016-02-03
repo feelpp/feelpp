@@ -159,6 +159,7 @@ private:
 
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
 private:
@@ -177,6 +178,18 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     element_type __v( M_functionspace );
     FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    __v.setZero();
+    __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
+    return __v;
+}
+
+template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_EDGES> ) const
+{
+    boost::timer __timer;
+
+    element_type __v( M_functionspace );
     __v.setZero();
     __v.on( _range=M_range, _expr=M_expr, _geomap=M_geomap_strategy, _accumulate=sum );
     return __v;
@@ -280,11 +293,15 @@ typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      IteratorRange const& range_it,
      Expr<ExprT> const& __expr,
-     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
+     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
+     bool parallelSync = true )
 {
     typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
-    return p( true );
+    auto res = p( true );
+    if ( parallelSync )
+        sync(res,"+");
+    return res;
 }
 
 /**
@@ -293,9 +310,11 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
  */
 template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
-sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
+sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
+     GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_OPT,
+     bool parallelSync = true )
 {
-    return sum( __functionspace, elements( __functionspace->mesh() ), __expr );
+    return sum( __functionspace, elements( __functionspace->mesh() ), __expr, geomap, parallelSync );
 }
 
 /**

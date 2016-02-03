@@ -30,6 +30,10 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feeltiming/tic.hpp>
+#if BOOST_VERSION < 105900
+#include <boost/smart_ptr/make_shared.hpp>
+#endif
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -656,6 +660,40 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     // build subdatamap row
     datamap_ptrtype subMapRow = this->mapPtr()->createSubDataMap( rows, false );
 
+    // build subvector petsc
+    Vec subVecPetsc = NULL;
+    this->getSubVectorPetsc( rows, subVecPetsc );
+
+    // build vectorsparse object
+    boost::shared_ptr<Vector<T> > subVec;
+    if ( this->comm().size()>1 )
+        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
+    else
+        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
+
+    return subVec;
+}
+
+template <typename T>
+void
+VectorPetsc<T>::updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                                 std::vector<size_type> const& rows,
+                                 bool init )
+{
+    CHECK( subvector ) << "subvector is not init";
+    boost::shared_ptr<VectorPetsc<T> > subvectorPetsc = boost::dynamic_pointer_cast<VectorPetsc<T> >( subvector );
+    this->getSubVectorPetsc( rows, subvectorPetsc->vec(), init );
+}
+
+template <typename T>
+void
+VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
+                                   Vec &subvec,
+                                   bool init ) const
+{
+    int ierr=0;
+    IS isrow;
+    PetscInt *rowMap;
 
     std::set<size_type> rowMapOrdering;
     if ( this->comm().size()>1 )
@@ -675,7 +713,6 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     }
 
     // copying into PetscInt vector
-    PetscInt *rowMap;
     int nrow = rowMapOrdering.size();
     rowMap = new PetscInt[nrow];
     size_type curId=0;
@@ -686,12 +723,6 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     }
 
 
-    // build subvector petsc
-    Vec subVecPetsc = NULL;
-
-    int ierr=0;
-    IS isrow;
-
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
     CHKERRABORT( this->comm(),ierr );
@@ -699,24 +730,32 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
     ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
 #endif
-    ierr = VecGetSubVector(this->vec(), isrow, &subVecPetsc);
-    CHKERRABORT( this->comm(),ierr );
+
+    if( subvec == NULL ) //createSubVector
+    {
+        ierr = VecGetSubVector(this->vec(), isrow, &subvec);
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else //updateSubVector
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 5)
+        //ierr = VecRestoreSubVector(this->vec(), isrow, &subvec);
+        if( init )
+        {
+            ierr = VecISSet(this->vec(), isrow, 0); //re-init isrow indices to zero
+            CHKERRABORT( this->comm(),ierr );
+        }
+        ierr = VecISAXPY(this->vec(), isrow, 1, subvec); //vec[isrow[i]] += alpha*subvec[i] with alpha=1
+        CHKERRABORT( this->comm(),ierr );
+#else
+        std::cerr << "ERROR : update of subvectors requires petsc version >= 3.5" << std::endl;
+#endif
+    }
 
     ierr = PETSc::ISDestroy( isrow );
     CHKERRABORT( this->comm(),ierr );
 
     delete[] rowMap;
-
-    // build vectorsparse object
-    boost::shared_ptr<Vector<T> > subVec;
-    if ( this->comm().size()>1 )
-        subVec.reset( new VectorPetscMPI<T>( subVecPetsc,subMapRow,true ) );
-    else
-        subVec.reset( new VectorPetsc<T>( subVecPetsc,subMapRow,true ) );
-
-    VecRestoreSubVector(this->vec(), isrow, &subVecPetsc);
-
-    return subVec;
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -724,6 +763,7 @@ VectorPetsc<T>::createSubVector( std::vector<size_type> const& _rows,
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
+
 
 template <typename T>
 typename VectorPetscMPI<T>::clone_ptrtype
@@ -761,6 +801,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 
     IS isGlob;
     IS isLoc;
+    ISLocalToGlobalMapping isLocToGlobMap;
 
     // create IS for vecScatter
     PetscInt *idx;
@@ -775,6 +816,12 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 #else
     ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
 #endif
+    CHKERRABORT( this->comm(),ierr );
+
+    // create LocalToGlobalMapping
+    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
 
     ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
@@ -1016,6 +1063,26 @@ VectorPetscMPI<T>::addVector( const Vector<value_type>& V_in,
 
 template <typename T>
 void
+VectorPetscMPI<T>::zero()
+{
+    super::zero();
+
+    int ierr=0;
+    PetscScalar z=0.;
+    // 2.2.x & earlier style
+#if PETSC_VERSION_LESS_THAN(2,2,0)
+    ierr = VecSet ( &z, M_vecLocal );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = VecSet ( M_vecLocal, z );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
 VectorPetscMPI<T>::clear()
 {
     if ( this->isInitialized() )
@@ -1058,12 +1125,13 @@ template <typename T>
 void
 VectorPetscMPI<T>::close()
 {
+    tic();
     //FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
     //std::cout << "\n MPI CLOSE "<<std::endl;;
     super::close();
 
     this->localize();
-
+    toc("VectorPetscMPI::close",FLAGS_v>0);
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1350,6 +1418,20 @@ VectorPetscMPI<T>::localSize() const
     return static_cast<size_type>( petsc_size );
 }
 
+#if BOOST_VERSION < 105900
+vector_ptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+}
+#else
+vector_uptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
+}
+#endif
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;
