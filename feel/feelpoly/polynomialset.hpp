@@ -1520,7 +1520,8 @@ public:
             //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
             {
-                const int ntdof = nDof*nComponents1;
+                //const int ntdof = nDof*nComponents1;
+                const int ntdof = this->nDofs();
                 if ( do_optimization_p1 )
                     M_grad.resize( boost::extents[ntdof][1] );
                 else
