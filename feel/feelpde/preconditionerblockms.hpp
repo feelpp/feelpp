@@ -330,6 +330,7 @@ PreconditionerBlockMS<space_type>::init( void )
     // Is the zero() necessary ?
     M_11->zero();
     this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
+    LOG(INFO) << "Use relax = " << M_relax << std::endl;
     M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
