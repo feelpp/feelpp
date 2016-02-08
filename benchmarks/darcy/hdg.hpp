@@ -24,7 +24,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file darcy.hpp
+   \file hdg.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-03-05
@@ -60,10 +60,10 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "darcy" ,
-                     "darcy" ,
+    AboutData about( "hdg" ,
+                     "hdg" ,
                      "0.1",
-                     "convergence test for Darcy problem (using Hdiv conforming elts)",
+                     "convergence test for Hdg problem (using Hdiv conforming elts)",
                      AboutData::License_GPL,
                      "Copyright (c) 2009 Universite Joseph Fourier" );
     about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
@@ -73,7 +73,7 @@ makeAbout()
 }
 
 template<int Dim, int OrderU, int OrderP>
-class Darcy
+class Hdg
     :
 public Application
 {
@@ -96,11 +96,10 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    typedef bases<RaviartThomas<OrderU> > RT_basis_type; //RT vectorial space
     typedef bases<Lagrange<OrderP,Vectorial> > lagrange_basis_v_type; //Lagrange vectorial space
     typedef bases<Lagrange<OrderP,Scalar> > lagrange_basis_s_type; //Lagrange scalar space
-    typedef bases<Lagrange<0,Scalar> > lagrange_multiplier_basis_type; //P0 scalar space
-    typedef bases< RaviartThomas<OrderU>, Lagrange<OrderP,Scalar> > basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    typedef bases<Lagrange<OrderP,Scalar> > lagrange_multiplier_basis_type; //PK scalar space
+    ``typedef bases< , Lagrange<OrderP,Scalar> > basis_type; //For Hdg : (u,p) (\in H_div x L2)
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -124,7 +123,7 @@ public:
     /**
      * Constructor
      */
-    Darcy()
+    Hdg()
         :
         super(),
         M_backend( backend_type::build( soption("backend") ) ),
@@ -136,7 +135,7 @@ public:
     {
         if(Environment::isMasterRank())
             std::cout << "[TestHDiv]\n";
-        this->changeRepository( boost::format( "benchmark_darcy/%1%/h_%2%/" )
+        this->changeRepository( boost::format( "benchmark_hdg/%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("hsize")
                                 );
@@ -157,11 +156,11 @@ private:
 
     double M_d1, M_d2, M_d3;
 
-}; //Darcy
+}; //Hdg
 
 template<int Dim, int OrderU, int OrderP>
 void
-Darcy<Dim, OrderU, OrderP>::convergence()
+Hdg<Dim, OrderU, OrderP>::convergence()
 {
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -227,7 +226,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             if( !fs::exists(mesh_name+".msh") )
                 {
                     //std::cout << "createGMSHmesh" << std::endl;
-                    LOG(INFO) << "[Darcy] Mesh has been created \n";
+                    LOG(INFO) << "[Hdg] Mesh has been created \n";
                     if( boption("use_hypercube"))
                         mesh = createGMSHMesh( _mesh=new mesh_type,
                                                _desc=domain( _name = mesh_name ,
@@ -244,7 +243,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             else
                 {
                     //std::cout << "loadGMSHmesh" << std::endl;
-                    LOG(INFO) << "[Darcy] Mesh has been loaded (refine level = " << i << ") \n";
+                    LOG(INFO) << "[Hdg] Mesh has been loaded (refine level = " << i << ") \n";
                     mesh = loadGMSHMesh( _mesh=new mesh_type,
                                          _filename=mesh_name+".msh",
                                          _refine=i );
@@ -277,34 +276,54 @@ Darcy<Dim, OrderU, OrderP>::convergence()
 
             tic();
             auto F_rt = M_backend->newVector( Yh );
-            auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
+            auto hdgRT_rhs = form1( _test=Yh, _vector=F_rt );
             // fq
-            darcyRT_rhs += integrate( _range=elements(mesh), _expr = -f*id(q_rt) );
+            hdgRT_rhs += integrate( _range=elements(mesh), _expr = -f*id(q_rt) );
             // GLS(Hdiv) stabilization terms
-            darcyRT_rhs += integrate( _range=elements(mesh)
+            hdgRT_rhs += integrate( _range=elements(mesh)
                                       , _expr = d2*lambda*f*div(v_rt) );
 
+            a11 = form2( _trial=Vh, _test=Vh );
+            a11 = integrate(_range=elements(mesh),_expr=(trans(K*idt(u))*id(v)) );
+            
+            a12 = form2( _trial=Wh, _test=Vh );
+            a12 = integrate(_range=elements(mesh),_expr=(idt(p)*div(v)));
+
+            a13 = form2( _trial=Mh, _test=Vh );
+            a13 = integrate(_range=internalfaces(mesh),
+                            _expr=( idt(l)*leftface(trans(id(v))*N())+
+                                    idt(l)*rightface(trans(id(v))*N())) );
+            a13 += integrate(_range=boundaryfaces(mesh),
+                             _expr=(idt(l)*trans(id(v))*N()));
+
+            a21 = form2( _trial=Vh, _test=Wh );
+            a21 = integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u))); 
+            
+
+
+            
+            
             auto M_rt = M_backend->newMatrix( Yh, Yh );
-            auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
+            auto hdgRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
             // Lambda u v
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = lambda*trans(idt(u_rt))*id(v_rt) );
             // p div(v)
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = -idt(p_rt)*div(v_rt) );
             // div(u) q
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = -divt(u_rt)*id(q_rt) );
             // GLS(Hdiv) stabilization terms
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = d1*k*(trans(lambda*idt(u_rt)+trans(gradt(p_rt)))*(lambda*id(v_rt)+trans(grad(q_rt)))) );
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = d2*( lambda*divt(u_rt)*div(v_rt) ));
             // only homogenous k
-            darcyRT += integrate( _range=elements(mesh),
+            hdgRT += integrate( _range=elements(mesh),
                                   _expr = d3*( lambda*trans(curlt(u_rt))*curl(v_rt) ));
 
-            darcyRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
+            hdgRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
             toc("matrices");
 
             tic();
@@ -312,7 +331,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
             toc("solve");
             if( Environment::isMasterRank())
-                std::cout << "[Darcy] RT solve done" << std::endl;
+                std::cout << "[Hdg] RT solve done" << std::endl;
 
             // ****** Compute error ******
             tic();

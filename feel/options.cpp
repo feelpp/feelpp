@@ -169,24 +169,41 @@ nlopt_options( std::string const& prefix )
 }
 
 po::options_description
+mesh_options( std::string const& prefix )
+{
+    po::options_description _options( "Mesh " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"mesh.filename").c_str(), po::value<std::string>()->default_value( "untitled.geo" ), "mesh filename" )
+        ( prefixvm( prefix,"mesh.partition.enable").c_str(), po::value<bool>()->default_value(0), "partition the mesh using Feel++ partitioners" )
+        ( prefixvm( prefix,"mesh.partition.size").c_str(), po::value<int>()->default_value(1), "number of partitions" )
+        ( prefixvm( prefix,"mesh.partition.type").c_str(), po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" )
+        ( prefixvm( prefix,"mesh.save.enable" ).c_str(), Feel::po::value<bool>()->default_value( true ), "enable saving mesh to disk" )
+        ( prefixvm( prefix,"mesh.save.formats" ).c_str(), Feel::po::value<std::vector<std::string>>()->default_value( {"json+h5","msh"} ), "format of the mesh: json+h5, msh" )
+        ( prefixvm( prefix,"mesh.load.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable loading mesh from disk, overriding file name extension" );
+        ( prefixvm( prefix,"mesh.load.format" ).c_str(), Feel::po::value<std::string>()->default_value( "json+h5" ), "file format to load: msh, json" );
+
+    return _options;
+}
+
+po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
     _options.add_options()
-    // solver options
+    // gmsh options
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.hsize2" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
         ( prefixvm( prefix,"gmsh.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated" )
-        ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated in HDF5 format" )
-        ( prefixvm( prefix,"gmsh.use-json" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use json/hdf5 file if it exists, instead of the Gmsh files (geo or msh)" )
         ( prefixvm( prefix,"gmsh.straighten" ).c_str(), Feel::po::value<bool>()->default_value( true ), "straighten high order mesh" )
         ( prefixvm( prefix,"gmsh.structured" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "generated a structured mesh" )
         ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
         ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
         ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
+        ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated in HDF5 format" )
+        ( prefixvm( prefix,"gmsh.use-json" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use json/hdf5 file if it exists, instead of the Gmsh files (geo or msh)" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
         ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
@@ -797,6 +814,7 @@ feel_options( std::string const& prefix  )
         .add( nlopt_options( prefix ) )
 #endif
 
+        .add( mesh_options( prefix ) )
         /* gmsh options */
         .add( gmsh_options( prefix ) )
 

@@ -1,7 +1,7 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"elastic",
+    "Model":"Elasticity",
     "Materials":
     {
         "Omega":
@@ -65,7 +65,18 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"]
+        "Fields":["displacement","Von-Mises","tresca","principal-stresses"],
+        "Measures":
+        {
+            "Points":
+            {
+                "pointD":
+                {
+                    "coord":"{2,0,0.6}",
+                    "fields":["stress_yy"]
+                }
+            }
+        }
     }
 
 }

@@ -125,7 +125,7 @@ public:
     typedef mesh_type meshparts_type;
     typedef boost::shared_ptr<meshparts_type> meshparts_ptrtype;
     typedef MeshPartitionSet<mesh_type> mesh_partitionset_type;
-    typedef std::shared_ptr<mesh_partitionset_type> mesh_partitionset_ptrtype;
+    typedef std::unique_ptr<mesh_partitionset_type> mesh_partitionset_ptrtype;
 
     using node_type = typename mesh_type::node_type;
     using point_type = typename mesh_type::point_type;
@@ -184,7 +184,7 @@ public:
      *        writing, so the mesh parts can be cleared from memory
      */
     void write ( mesh_ptrtype mesh);
-    void write ( mesh_partitionset_ptrtype mesh);
+    void write ( mesh_partitionset_ptrtype&& mesh);
     //! Read method
     /*!
      * Call this method to read from the HDF5 file the mesh part associated
@@ -291,12 +291,12 @@ template<typename MeshType>
 void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
 {
     //M_meshPartitionSet = std::make_shared<mesh_partitionset_type>( meshParts );
-    this->write( std::make_shared<mesh_partitionset_type>( meshParts ) );
+    this->write( std::make_unique<mesh_partitionset_type>( meshParts ) );
 }
 template<typename MeshType>
-void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype meshpartset )
+void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype&& meshpartset )
 {
-    M_meshPartitionSet = meshpartset;
+    M_meshPartitionSet = std::move(meshpartset);
     M_meshPartsOut = M_meshPartitionSet->mesh();
 
     if ( M_meshPartsOut->worldComm().isMasterRank() )
@@ -332,6 +332,7 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
     pt::ptree pt;
     fs::path p(M_filename);
     pt.put("mesh.h5",p.stem().string()+".h5");
+    pt.put("mesh.partition.n",meshParts->numberOfPartitions());
     for( auto m : meshParts->markerNames() )
     {
         pt.put("mesh.physicals."+m.first, m.second );
@@ -383,8 +384,9 @@ void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
     pt::read_json(M_filename, pt);
     //M_h5_filename = pt.get<std::string>("mesh.h5");
     //if ( fs::exist( fs::path(M_filename).parent_path()/ fs::path(M_h5_filename) ) )
-
+    meshParts->setNumberOfPartitions(pt.get("mesh.partition.n",meshParts->worldComm().globalSize()));
     auto physicals = pt.get_child_optional("mesh.physicals");
+
     if ( physicals )
     {
         for (auto& item : pt.get_child("mesh.physicals"))

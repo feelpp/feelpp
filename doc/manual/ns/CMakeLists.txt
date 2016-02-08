@@ -25,5 +25,6 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 #feelpp_add_application( backwardstep SRCS bs.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_NS_DIM=2)
 feelpp_add_application( nsproj SRCS nsproj.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG nsproj.cfg GEO tubecylinder.geo)
+feelpp_add_application( nsproj_recycling SRCS nsprojRecycling.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG nsproj.cfg GEO tubecylinder.geo)
 
 add_subdirectory( drivencavity )
