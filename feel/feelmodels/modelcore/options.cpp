@@ -225,7 +225,7 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"mechanicalproperties.compressible.volumic-law").c_str(), Feel::po::value< std::string >()->default_value("classic"), "classic, simo1985")
         (prefixvm(prefix,"mechanicalproperties.compressible.neohookean.variant").c_str(),
          Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
-        (prefixvm(prefix,"use-incompressibility-constraint").c_str(), Feel::po::value<bool>()->default_value( false ), "use incompressibility constraint?")
+        (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
         (prefixvm(prefix,"time-schema").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, Generalized-Alpha")
         (prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")

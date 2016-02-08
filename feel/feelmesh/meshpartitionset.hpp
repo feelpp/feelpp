@@ -117,7 +117,11 @@ public:
         }
 
     MeshPartitionSet( MeshPartitionSet const& ) = default;
+    MeshPartitionSet( MeshPartitionSet && ) = default;
     ~MeshPartitionSet() {}
+
+    MeshPartitionSet& operator=( MeshPartitionSet const& ) = default;
+    MeshPartitionSet& operator=( MeshPartitionSet && ) noexcept = default;
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
@@ -553,7 +557,6 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
         }
     }
 }
-
 
 } // namespace Feel
 

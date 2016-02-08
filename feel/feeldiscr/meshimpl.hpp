@@ -347,14 +347,29 @@ Mesh<Shape, T, Tag>::updateMeasures()
     M_local_meas = 0;
     M_local_measbdy = 0;
 
+    typedef typename element_type::quad_meas_type quad_meas_type;
+    typedef typename element_type::quad_meas1_type quad_meas1_type;
+    quad_meas_type thequad;
+    quad_meas1_type thequad1;
     typename gm_type::precompute_ptrtype pc;
     typename gm_type::faces_precompute_type pcf;
+    typename gm1_type::precompute_ptrtype pc1;
+    typename gm1_type::faces_precompute_type pcf1;
+    // assume that a high order mesh is straightened (probably we need to store this info in the mesh)
+    bool meshIsStraightened = (nOrder > 1);
     // not very nice and correct but this function can have a big cost so only do one time
     bool updateMeasureWithPc = !this->isUpdatedForUse();
     if ( updateMeasureWithPc )
     {
-        pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
-        pcf = M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
+        pc = M_gm->preCompute( M_gm, thequad.points() );
+        if ( nDim == nRealDim ) // else not works
+            pcf = M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
+        if ( meshIsStraightened )
+        {
+            pc1 = M_gm1->preCompute( M_gm1, thequad1.points() );
+            if ( nDim == nRealDim )
+                pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
+        }
     }
 
     element_iterator iv,  en;
@@ -363,11 +378,22 @@ Mesh<Shape, T, Tag>::updateMeasures()
     {
         if ( updateMeasureWithPc )
         {
-            this->elements().modify( iv,
-                                     [=,&pc,&pcf]( element_type& e )
-                                     {
-                                         e.updateWithPc(pc, boost::ref( pcf) );
-                                     } );
+            if ( meshIsStraightened && !iv->isOnBoundary() )
+            {
+                this->elements().modify( iv,
+                                         [=,&pc1,&thequad1,&pcf1]( element_type& e )
+                                         {
+                                             e.updateWithPc1(pc1, boost::ref( pcf1), thequad );
+                                         } );
+            }
+            else
+            {
+                this->elements().modify( iv,
+                                         [=,&pc,&thequad,&pcf]( element_type& e )
+                                         {
+                                             e.updateWithPc(pc, boost::ref( pcf), thequad );
+                                         } );
+            }
         }
 
         // only compute meas for active element (no ghost)
@@ -383,7 +409,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                     M_local_measbdy += ( *_faces.first )->measure();
 #else
-        if ( nDim == 1 )
+        if ( nDim == 1 || nDim != nRealDim )
             M_local_measbdy = 0;
         else
             for ( int f = 0; f < iv->numTopologicalFaces; ++f )
@@ -2351,9 +2377,10 @@ updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultgh
 {
     typedef typename ElementType::value_type value_type;
     // get edges id and bary
-    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(0, false, std::vector<double>(ElementType::nRealDim) ));
+    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(invalid_size_type_value, false, std::vector<double>(ElementType::nRealDim) ));
     for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
     {
+        if ( !theelt.edgePtr( j ) ) continue;
         auto const& theedge = theelt.edge( j );
         idEdgesWithBary[j].template get<0>() = theedge.id();
         idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
@@ -2392,6 +2419,8 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
     for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
     {
         auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
+        if ( idEdgeRecv == invalid_size_type_value )
+            continue;
         const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
         auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
 
@@ -2400,6 +2429,7 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
         bool hasFind=false;
         for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
         {
+            if ( !theelt.edgePtr( j2 ) ) continue;
             auto const& theedgej2 = theelt.edge( j2 );
             auto const& theGj2 = theedgej2.vertices();
             //compute edge barycenter
@@ -2774,6 +2804,7 @@ Mesh<Shape, T, Tag>::check() const
     auto iv = this->beginElement();
     auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
+    VLOG(2) << "[Mesh::check] nEltInMesh = " << nEltInMesh;
 
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
@@ -2801,7 +2832,10 @@ Mesh<Shape, T, Tag>::check() const
 
             }
             VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-            FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            if ( __element.nNeighbors() > 0 )
+            {
+                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            }
         }
 
 #if 0
