@@ -108,9 +108,9 @@ public:
 
     //! the basis type of our approximation space
     //    typedef bases<RaviartThomas<OrderU> > RT_basis_type; //RT vectorial space
-    typedef bases<Lagrange<OrderP,Vectorial> > lagrange_basis_v_type; //Lagrange vectorial space
-    typedef bases<Lagrange<OrderP,Scalar> > lagrange_basis_s_type; //Lagrange scalar space
-    typedef bases<Lagrange<OrderP,Scalar> > lagrange_multiplier_basis_type; //PK scalar space
+    typedef bases<Lagrange<OrderP,Vectorial,Discontinuous> > lagrange_basis_v_type; //Lagrange vectorial space
+    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_basis_s_type; //Lagrange scalar space
+    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_multiplier_basis_type; //PK scalar space
 
     // Wh
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
@@ -157,6 +157,17 @@ public:
      * run the application
      */
     void convergence();
+
+    template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,
+             typename ExprP, typename ExprGradP>
+    void
+    assemble_A_and_F( MatrixType A,
+                      VectorType F,
+                      VhType Vh,
+                      WhType Wh,
+                      MhType Mh,
+                      ExprP p_exact,
+                      ExprGradP gradp_exact );
 
 private:
     //! linear algebra backend
@@ -278,16 +289,18 @@ Hdg<Dim, OrderP>::convergence()
 
         toc("spaces",true);
 
-        if( Environment::isMasterRank() )
-            std::cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-                      << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-                      << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
 
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
         CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
         auto Xh = Pdh<0>(face_mesh);
         auto uf = Xh->element(cst(1.));
         CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
+
+        if( Environment::isMasterRank() )
+            std::cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
+                      << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
+                      << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+
         auto up = Vh->elementPtr( "u" );
         auto pp = Wh->elementPtr( "p" );
         auto phatp = Mh->elementPtr( "phat" );
@@ -332,83 +345,7 @@ Hdg<Dim, OrderP>::convergence()
         hdg_sol(2,0) = phatp;
         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
 
-        auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
-        a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
-
-        // Watch out the negative sign!
-        auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A  );
-        a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
-
-        auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A  );
-        a13 += integrate(_range=internalfaces(mesh),
-                         _expr=( idt(phat)*leftface(trans(id(v))*N())+
-                                 idt(phat)*rightface(trans(id(v))*N())) );
-        a13 += integrate(_range=boundaryfaces(mesh),
-                         _expr=(idt(phat)*trans(id(v))*N()));
-
-        auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A  );
-        a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
-        a21 += integrate(_range=internalfaces(mesh),
-                         _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N())+
-                                 rightface(id(w))*rightfacet(trans(idt(u))*N())) );
-        a21 += integrate(_range=boundaryfaces(mesh),
-                         _expr=(id(w)*trans(idt(u))*N()));
-
-        auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A  );
-        a22 += integrate(_range=internalfaces(mesh),
-                         _expr=tau_constant *
-                         ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
-                           rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
-        a22 += integrate(_range=boundaryfaces(mesh),
-                         _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
-
-        auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A  );
-        a23 += integrate(_range=internalfaces(mesh),
-                         _expr=-tau_constant * idt(phat) *
-                         ( leftface( pow(h(),M_tau_order)*id(w) )+
-                           rightface( pow(h(),M_tau_order)*id(w) )));
-        a23 += integrate(_range=boundaryfaces(mesh),
-                         _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
-
-        auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A  );
-        a31 += integrate(_range=internalfaces(mesh),
-                         _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                        rightfacet(trans(idt(u))*N())) ) );
-        // BC
-        a31 += integrate(_range=markedfaces(mesh,"Neumann"),
-                         _expr=( id(l)*(trans(idt(u))*N()) ));
-
-
-        auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A  );
-        a32 += integrate(_range=internalfaces(mesh),
-                         _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
-                                                        rightfacet( pow(h(),M_tau_order)*idt(p) )));
-        a32 += integrate(_range=markedfaces(mesh,"Neumann"),
-                         _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
-
-        auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A );
-        a33 += integrate(_range=internalfaces(mesh),
-                         _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
-                                                                     rightface( pow(h(),M_tau_order) )));
-        a33 += integrate(_range=markedfaces(mesh,"Neumann"),
-                         _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-        a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                         _expr=idt(phat) * id(l) );
-
-        // Building the RHS
-        //
-        // This is only a part of the RHS - how to build the whole RHS? Is it right to
-        // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
-        // How to identify Dirichlet/Neumann boundaries?
-        auto rhs2 = form1( _test=Wh, _vector=F );
-        rhs2 += integrate(_range=elements(mesh),
-                         _expr=-f*id(w));
-        auto rhs3 = form1( _test=Mh, _vector=F );
-
-        rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=( -id(l)*K*gradp_exact*N() ));
-        rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=( id(l)*p_exact) );
+        assemble_A_and_F( A, F, Vh, Wh, Mh, p_exact, gradp_exact );
         toc("matrices",true);
 
         tic();
@@ -507,4 +444,111 @@ Hdg<Dim, OrderP>::convergence()
         cvg_projHDIV.close();
         cvg_inter.close();
     }
+}
+
+template<int Dim, int OrderP>
+template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,
+         typename ExprP, typename ExprGradP>
+void
+Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
+                                    VectorType F,
+                                    VhType Vh,
+                                    WhType Wh,
+                                    MhType Mh,
+                                    ExprP p_exact,
+                                    ExprGradP gradp_exact )
+{
+    auto K = expr(soption("k"));
+    auto lambda = cst(1.)/K;
+    auto tau_constant = cst(M_tau_constant);
+    auto f = -K*laplacian(p_exact);
+    auto mesh = Vh->mesh();
+
+    auto u = Vh->element( "u" );
+    auto v = Vh->element( "v" );
+    auto p = Wh->element( "p" );
+    auto q = Wh->element( "q" );
+    auto w = Wh->element( "w" );
+    auto phat = Mh->element( "phat" );
+    auto l = Mh->element( "lambda" );
+
+
+    auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
+    a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
+    // Watch out the negative sign!
+    auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A  );
+    a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
+
+    auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A  );
+    a13 += integrate(_range=internalfaces(mesh),
+                     _expr=( idt(phat)*leftface(trans(id(v))*N())+
+                             idt(phat)*rightface(trans(id(v))*N())) );
+    a13 += integrate(_range=boundaryfaces(mesh),
+                     _expr=(idt(phat)*trans(id(v))*N()));
+
+    auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A  );
+    a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+    a21 += integrate(_range=internalfaces(mesh),
+                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N())+
+                             rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+    a21 += integrate(_range=boundaryfaces(mesh),
+                     _expr=(id(w)*trans(idt(u))*N()));
+
+    auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A  );
+    a22 += integrate(_range=internalfaces(mesh),
+                     _expr=tau_constant *
+                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
+                       rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+    a22 += integrate(_range=boundaryfaces(mesh),
+                     _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
+
+    auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A  );
+    a23 += integrate(_range=internalfaces(mesh),
+                     _expr=-tau_constant * idt(phat) *
+                     ( leftface( pow(h(),M_tau_order)*id(w) )+
+                       rightface( pow(h(),M_tau_order)*id(w) )));
+    a23 += integrate(_range=boundaryfaces(mesh),
+                     _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+
+    auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A  );
+    a31 += integrate(_range=internalfaces(mesh),
+                     _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
+                                    rightfacet(trans(idt(u))*N())) ) );
+    // BC
+    a31 += integrate(_range=markedfaces(mesh,"Neumann"),
+                     _expr=( id(l)*(trans(idt(u))*N()) ));
+
+
+    auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A  );
+    a32 += integrate(_range=internalfaces(mesh),
+                     _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
+                                                    rightfacet( pow(h(),M_tau_order)*idt(p) )));
+    a32 += integrate(_range=markedfaces(mesh,"Neumann"),
+                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+
+    auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A );
+    a33 += integrate(_range=internalfaces(mesh),
+                     _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
+                                                                 rightface( pow(h(),M_tau_order) )));
+    a33 += integrate(_range=markedfaces(mesh,"Neumann"),
+                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
+    a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                     _expr=idt(phat) * id(l) );
+
+    // Building the RHS
+    //
+    // This is only a part of the RHS - how to build the whole RHS? Is it right to
+    // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
+    // How to identify Dirichlet/Neumann boundaries?
+    auto rhs2 = form1( _test=Wh, _vector=F );
+    rhs2 += integrate(_range=elements(mesh),
+                      _expr=-f*id(w));
+    auto rhs3 = form1( _test=Mh, _vector=F );
+
+    rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
+                      _expr=( -id(l)*K*gradp_exact*N() ));
+    rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                      _expr=( id(l)*p_exact) );
+
 }
