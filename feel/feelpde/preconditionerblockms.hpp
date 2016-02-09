@@ -104,7 +104,8 @@ public:
     PreconditionerBlockMS( space_ptrtype Xh,
                            ModelProperties model,
                            std::string const& s,
-                           sparse_matrix_ptrtype A);
+                           sparse_matrix_ptrtype A,
+                           value_type relax=1);
 
     void init( void );
     void initAMS( void );
@@ -220,13 +221,15 @@ private:
 
     sparse_matrix_ptrtype M_a_alpha;
     sparse_matrix_ptrtype M_a_beta;
+
+    value_type M_relax;
 };
 
     template < typename space_type >
 PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
                                                          ModelProperties model,        // model
                                                          std::string const& p,         // prefix
-                                                         sparse_matrix_ptrtype AA )    // The matrix
+                                                         sparse_matrix_ptrtype AA, value_type relax )    // The matrix
     :
         M_backend(backend()),           // the backend associated to the PC
         M_Xh( Xh ),
@@ -259,7 +262,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_X(M_backend->newVector( M_Qh )),
         M_Y(M_backend->newVector( M_Qh )),
         M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi")
+        phi(M_Qh, "phi"),
+        M_relax(relax)
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
@@ -326,7 +330,8 @@ PreconditionerBlockMS<space_type>::init( void )
     // Is the zero() necessary ?
     M_11->zero();
     this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
-    M_11->addMatrix(1,M_mass);                            // A-k^2 M + M = A+(1-k^2) M
+    LOG(INFO) << "Use relax = " << M_relax << std::endl;
+    M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_dirichlet_u )
