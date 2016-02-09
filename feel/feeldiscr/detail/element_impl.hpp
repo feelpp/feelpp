@@ -34,6 +34,7 @@
 #include <boost/utility/in_place_factory.hpp>
 #endif
 
+#include <feel/feelvf/detail/gmc.hpp>
 
 namespace Feel{
 
@@ -2563,7 +2564,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto const& elt = mesh->element( eid );
     auto geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
     auto ctx = gm->template context<context>( elt, geopc );
-    auto expr_evaluator = ex.evaluator( mapgmc(ctx) );
+    auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
      auto IhLoc = __fe->edgeLocalInterpolant();
     for ( ; entity_it != entity_en; ++entity_it )
@@ -2578,7 +2579,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
         ctx->update( elt, geopc );
 
-        expr_evaluator.update( mapgmc( ctx ) );
+        expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
         if ( accumulate )
             this->plus_assign( curEntity, IhLoc );
@@ -2626,7 +2627,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
     auto ctx = gm->template context<context>( elt, geopc );
     //t_expr_type expr( ex, mapgmc(ctx) );
-    auto expr_evaluator = ex.evaluator( mapgmc(ctx) );
+    auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
     size_type nbVertexDof = fe_type::nDofPerVertex;
     DVLOG(3)  << "[projector::operator(MESH_POINTS)] nbVertexDof = " << nbVertexDof << "\n";
@@ -2642,7 +2643,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
         ctx->update( elt, pt_elt_info->first, geopc, mpl::int_<0>() );
 
-        expr_evaluator.update( mapgmc( ctx ) );
+        expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->vertexInterpolate( expr_evaluator, IhLoc );
         if ( accumulate )
             this->plus_assign( curPt, IhLoc );

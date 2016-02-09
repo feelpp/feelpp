@@ -25,7 +25,7 @@ feelpp_add_test( hcurl CFG test_hcurl.cfg )
 feelpp_add_test( hcurl_lag CFG test_hcurl.cfg DEFS HL_DIM=3 HL_ORDER=1)
 feelpp_add_test( hcurl3D_oneelt CFG test_hcurl3D_oneelt.cfg NO_MPI_TEST )
 
-feelpp_add_test( continuity_h1 NO_MPI_TEST )
+feelpp_add_test( continuity_h1 )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
 feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 
