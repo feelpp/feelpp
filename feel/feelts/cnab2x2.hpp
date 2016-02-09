@@ -154,14 +154,21 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
                 double tstar = t();
                 double kstar = k();
 
-                t() = 0.5*tstar + 0.5*tprev(1);
-                k() = 0.5*kstar;
+                //t() = 0.5*tstar + 0.5*tprev(1);
+                //k() = 0.5*kstar;
 
+                kprev(1)=0.5*(k()+kprev(1));
+                tprev(1) = t()-.5*kprev(1);
+                t() += .5*k();
+                
                 CN(0).averaging(bc1);
                 CN(1).averaging(bc2);
             }
-            CN(0).acceptedStep( ktry.second );
-            CN(1).acceptedStep( ktry.second );
+            else
+            {
+                CN(0).acceptedStep( ktry.second );
+                CN(1).acceptedStep( ktry.second );
+            }
             this->push_back( ktry.second, this->t()+ktry.second );
         }
         else

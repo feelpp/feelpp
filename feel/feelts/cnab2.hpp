@@ -52,12 +52,25 @@ public:
     template<typename FT>
     void addStep( double k1, FT const& f_u, FT const& f_acc )
     {
-        this->push_back( k1, this->size()?t()+k1:k1 );
+        this->push_back( k1, this->size()?t()+k1:k1 );    
+
         up = u;
         accp=acc;
         u = f_u;
         acc = f_acc;
+        if ( this->size() > 1 )
+            dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
     }
+
+    template<typename FT>
+    void addStep( FT const& f_u, FT const& f_acc )
+        {
+            up = u;
+            accp=acc;
+            u = f_u;
+            acc = f_acc;
+            dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/k());
+        }
 
     /**
      * @return the l2 error of the increment relative to the latest solution
@@ -69,7 +82,7 @@ public:
                 return 0;
             else
                 return normL2(_range=elements(mesh), _expr=idv(u)-idv(up) )
-                    /norm_u /k();
+                    /norm_u ;
         }
 
     /**
@@ -86,12 +99,16 @@ public:
                 std::cout << "checking for steady state ||u-up||_2 = "
                           << e << " tolerance: " << steady_tol << std::endl;
         }
-        return steady ? (e<steady_tol && index()>10) : !(t()<T);
+        return steady ? ((e<steady_tol && index()>10)||(t()>=T)) : !(t()<T);
     }
     /**
-     * compute new time step using time \p step and error \p err
-     * @return a pair of bool and double, bool states whether the step is accepted (true)   * or not (false) and the double stores the new timestep in case of acceptance or
-     * rejection
+     * test that during the current time \p step, the error \p err has decreazed
+     * sufficiently.
+     *
+     * @return a pair of bool and double
+     *
+     * bool states whether the step is accepted (true) or not (false) and the
+     * double stores the new timestep in case of acceptance or rejection
      */
     std::pair<bool,double> computeStep( double step, double err )
         {
@@ -100,7 +117,8 @@ public:
 
     void acceptedStep( double k )
         {
-            this->addStep( k, u_try, acc_try );
+            this->addStep( u_try, acc_try );
+            this->push_back( k, this->size()?t()+k:k );       
         }
 
     void eraseStep( double k )
@@ -129,7 +147,7 @@ public:
     int nstar;
 
     mesh_ptr_t mesh;
-    field_t u, up, acc, accp, d, w, uab2;
+    field_t u, up, acc, accp, d, w, ww, uab2, dd;
     field_t u_try, acc_try, accstar, ustar;
 };
 
@@ -149,7 +167,9 @@ CNAB2<FieldType>::CNAB2( FT const& f )
     acc ( f.functionSpace() ),
     accp ( f.functionSpace() ),
     d ( f.functionSpace() ),
+    dd ( f.functionSpace() ),
     w ( f.functionSpace() ),
+    ww ( f.functionSpace() ),
     uab2 ( f.functionSpace() ),
     u_try ( f.functionSpace() ),
     acc_try ( f.functionSpace() ),
@@ -173,13 +193,24 @@ template<typename FT>
 double
 CNAB2<FieldType>::computeError( FT& fd )
 {
+#if 0
     u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
     acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
         //}
     // compute AB2 velocity
     uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
-
     return normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())) ;
+#else
+    ww.on(_range=elements(mesh), _expr=idv(acc)+k()*idv(dd)/2);
+    
+    u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
+    acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
+    //}
+    // compute AB2 velocity
+    uab2.on( _range=elements(mesh), _expr=idv(u)+k()*idv(ww) );
+    return normL2( _range=elements(mesh), _expr=(idv(fd)-idv(ww)))*(k()*k()/(3.*(k()+kprev(1))));
+#endif
+    
 }
 
 template<typename FieldType>
@@ -187,27 +218,48 @@ template<typename BCType >
 void
 CNAB2<FieldType>::averaging( BCType& bc )
 {
+    if ( Environment::isMasterRank() )
+        std::cout << " --> averaging before k=" << k() << " t=" << t()
+                  << " kprev(1)=" << kprev(1) << " tprev(1)=" << tprev(1)
+                  << " norm up =" << up.l2Norm() << " u=" << u.l2Norm()
+                  << " norm accp =" << up.l2Norm() << " acc=" << u.l2Norm()
+                  << std::endl;
     double tstar = t();
-    double kstar = k();
+    double kstar = kprev(1);
 
-    t() = 0.5*tstar + 0.5*tprev(1);
-    k() = 0.5*kstar;
+    kprev(1) = 0.5*(k()+kstar);
+    tprev(1) = t()-.5*kprev(1);
 
-    ustar.on( _range=elements(mesh), _expr=idv(u_try) );
-    accstar.on( _range=elements(mesh), _expr=idv(acc_try) );
+    ustar = up;
+    accstar=accp;
+    up.on( _range=elements(mesh), _expr=.5*(idv(ustar)+idv(u)) );
+    for ( auto const& condition : bc )
+    {
+        auto g1 = expression(condition);
+        g1.setParameterValues( {"t",tprev(1) });
+        up.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+    }
+    accp.on( _range=elements(mesh), _expr=.5*(idv(accstar)+idv(acc)) );
 
-    u_try.on( _range=elements(mesh), _expr=0.5*idv(ustar) + 0.5*idv(u) );
-    acc_try.on( _range=elements(mesh), _expr=0.5*idv(accstar) + 0.5*idv(acc) );
+    ustar=u;
+    accstar=acc;
+    u.on( _range=elements(mesh), _expr=0.5*idv(u_try) + 0.5*idv(ustar) );
+    acc.on( _range=elements(mesh), _expr=(idv(acc_try)+idv(accstar))/2 );
 
+    t() = tstar+.5*k();
     for ( auto const& condition : bc )
     {
         auto g1 = expression(condition);
         g1.setParameterValues( {"t",t() });
-        u_try.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+        u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
     }
-
+    dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
     if ( Environment::isMasterRank() )
-        std::cout << " --> averaging k_{n}=" << k() << " t_{n}=" << t() << std::endl;
+        std::cout << " --> averaging after k=" << k() << " t=" << t()
+                  << " kprev(1)=" << kprev(1) << " tprev(1)=" << tprev(1)
+                  << " norm up =" << up.l2Norm() << " u=" << u.l2Norm()
+                  << " norm accp =" << up.l2Norm() << " acc=" << u.l2Norm()
+                  << std::endl;
 }
 
 
@@ -240,8 +292,18 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
         {
             // accept the tried step and move forward
             if ( (index() > 0) && (index() % nstar == 0) )
+            {
                 averaging( bc );
-            this->addStep( ktry.second, u_try, acc_try );
+            }
+            else
+            {
+                this->addStep( u_try, acc_try );
+                
+            }
+            
+            // get new time step and store it in time set for the next round
+            double k1 = ktry.second;
+            this->push_back( k1, this->size()?t()+k1:k1 );    
         }
         else
         {
