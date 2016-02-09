@@ -2804,6 +2804,7 @@ Mesh<Shape, T, Tag>::check() const
     auto iv = this->beginElement();
     auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
+    VLOG(2) << "[Mesh::check] nEltInMesh = " << nEltInMesh;
 
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
@@ -2831,7 +2832,10 @@ Mesh<Shape, T, Tag>::check() const
 
             }
             VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-            FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            if ( __element.nNeighbors() > 0 )
+            {
+                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            }
         }
 
 #if 0
