@@ -25,7 +25,10 @@
 #define BOOST_TEST_MODULE test_on
 #include <testsuite/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
+//#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 
@@ -70,7 +73,6 @@ public:
     // Check the on keyword for different topological entities.
     void test()
     {
-        //auto Xh = Pch<H_ORDER>(M_mesh);
         auto Xh = Pch<H_ORDER>(M_mesh);
 
         auto p = Xh->element();
@@ -78,23 +80,36 @@ public:
         auto s = Xh->element();
         auto v = Xh->element();
 
-        size_type np = nelements( markedpoints( M_mesh,"P") );
-        LOG_IF(WARNING, np == 0 ) << "no points marked P:"  << np ;
-        //p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42) );
-        p.printMatlab("P.m");
-        size_type ne = nelements( markededges( M_mesh,"L") );
-        LOG_IF(WARNING, ne  == 0 ) << "no edges marked L:"  << ne;
-        l.on( _range=markededges( M_mesh,"L"), _expr=cst(42) );
-        l.printMatlab("L.m");
-        s.on( _range=markedfaces( M_mesh,"S"), _expr=cst(42) );
-        v.on( _range=elements( M_mesh ), _expr=cst(42) );
+        size_type np = nelements( markedpoints( M_mesh,"P"),true );
+        BOOST_CHECK( np > 0 );
+        p.on( _range=markedpoints( M_mesh,"P"), _expr=cst(42.) );
+        sync( p );
+        double sump = p.sum();
+        BOOST_CHECK_SMALL( sump - 42, 1e-12 );
 
+        size_type ne = nelements( markededges( M_mesh,"L"),true );
+        BOOST_CHECK( ne > 0 );
+        l.on( _range=markededges( M_mesh,"L"), _expr=cst(42.) );
+        sync( l );
+        double maxl = l.max();
+        BOOST_CHECK_SMALL( maxl - 42, 1e-12 );
+
+        s.on( _range=markedfaces( M_mesh,"S"), _expr=cst(42.) );
+        double ints = integrate(_range=markedfaces( M_mesh,"S"),_expr=idv(s) ).evaluate()(0,0);
+        BOOST_CHECK_SMALL( ints - 42, 1e-12 );
+
+        v.on( _range=elements( M_mesh ), _expr=cst(42.) );
+        double intv = integrate(_range=elements( M_mesh ),_expr=idv(v) ).evaluate()(0,0);
+        BOOST_CHECK_SMALL( intv - 42*27, 1e-10 );
+
+#if 0
         auto e = exporter( _mesh=M_mesh );
         e->add( "p", p);
         e->add( "l", l);
         e->add( "s", s);
         e->add( "v", v);
         e->save();
+#endif
     }
 
 private:
