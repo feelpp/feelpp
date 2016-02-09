@@ -52,6 +52,13 @@ makeOptions()
         ( "d3", po::value<double>()->default_value( 0.5 ), "d3 (stabilization term)" )
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
+        // begin{dp}
+        /*
+         Stabilization function for hybridized methods.
+         */
+        ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
+        ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        // end{dp}
         ;
     return testhdivoptions.add( Feel::feel_options() );
 }
@@ -72,7 +79,9 @@ makeAbout()
 
 }
 
-template<int Dim, int OrderU, int OrderP>
+// begin{dp}. OrderU dropped
+// end{dp}
+template<int Dim, int OrderP>
 class Hdg
     :
 public Application
@@ -94,24 +103,44 @@ public:
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    // begin{dp}. The Lagrange multiplier lives in R^n-1
+    typedef Simplex<Dim-1,1> convex_type_multiplier;
+    typedef Mesh<convex_type_multiplier> mesh_type_multiplier;
+    typedef boost::shared_ptr<mesh_type_multiplier> mesh_ptrtype_multiplier;
+    // end{dp}
 
     //! the basis type of our approximation space
+    //    typedef bases<RaviartThomas<OrderU> > RT_basis_type; //RT vectorial space
     typedef bases<Lagrange<OrderP,Vectorial> > lagrange_basis_v_type; //Lagrange vectorial space
     typedef bases<Lagrange<OrderP,Scalar> > lagrange_basis_s_type; //Lagrange scalar space
     typedef bases<Lagrange<OrderP,Scalar> > lagrange_multiplier_basis_type; //PK scalar space
-    ``typedef bases< , Lagrange<OrderP,Scalar> > basis_type; //For Hdg : (u,p) (\in H_div x L2)
+    // begin{dp}. How to define this global basis?
+    // The problem is that P^k on tetrahedra is not the same as P^k on a faces.
+    // Should we treat Vh, Wh, Mh separately?
+    typedef bases<Lagrange<OrderP,Vectorial>, Lagrange<OrderP,Scalar>, Lagrange<OrderP,Scalar> > basis_type; //For Hdg : (u,p,phat) (\in [L2]^n x L2)
+    // end{dp}
 
     //! the approximation function space type
+    // begin{dp}. Do FunctionSpace objects support two meshes (Elements/Faces)?
+    // If not, we definitely need to work with Vh, Wh, Mh separately (or Vh x Wh, Mh, at least)
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+    // end{dp}
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
     typedef FunctionSpace<mesh_type, RT_basis_type> RT_space_type;
+    // begin{dp}. To deal with Mh separately
+    typedef FunctionSpace<mesh_ptrtype_multiplier, lagrange_multiplier_basis_type> lagrange_space_multiplier_type;
+    // end{dp}
 
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
     typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
     typedef boost::shared_ptr<RT_space_type> RT_space_ptrtype;
+    // begin{dp}. To deal with Mh separately
+    typedef boost::shared_ptr<lagrange_space_multiplier_type> lagrange_space_multiplier_ptrtype;
+    // end{dp}
+
     //! an element type of the approximation function space
     typedef typename space_type::element_type element_type;
 
@@ -131,7 +160,11 @@ public:
         exporter( Exporter<mesh_type>::New( Environment::about().appName() ) ),
         M_d1( doption("d1") ),
         M_d2( doption("d2") ),
-        M_d3( doption("d3") )
+        M_d3( doption("d3") ),
+        // begin{dp}
+        M_tau_constant( doption("tau_constant") ),
+        M_tau_order( ioption("tau_order") )
+        // end{dp}
     {
         if(Environment::isMasterRank())
             std::cout << "[TestHDiv]\n";
@@ -156,11 +189,15 @@ private:
 
     double M_d1, M_d2, M_d3;
 
+    // begin{dp}
+    double M_tau_constant;
+    int    M_tau_order;
+    // end{dp}
 }; //Hdg
 
-template<int Dim, int OrderU, int OrderP>
+template<int Dim, int OrderP>
 void
-Hdg<Dim, OrderU, OrderP>::convergence()
+Hdg<Dim, OrderP>::convergence()
 {
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -184,9 +221,10 @@ Hdg<Dim, OrderU, OrderP>::convergence()
 
 
     // Coeff for stabilization terms
-    auto d1 = cst(M_d1);
-    auto d2 = cst(M_d2);
-    auto d3 = cst(M_d3);
+    // auto d1 = cst(M_d1);
+    // auto d2 = cst(M_d2);
+    // auto d3 = cst(M_d3);
+    auto tau_constant = cst(M_tau_constant);
 
     std::ofstream cvg_p, cvg_u, cvg_divu, cvg_projL2, cvg_projHDIV, cvg_inter;
     if( proc_rank == 0 )
@@ -250,88 +288,166 @@ Hdg<Dim, OrderU, OrderP>::convergence()
                 }
             toc("mesh");
 
-            // ****** Dual-mixed formulation - Hdiv ******
+            // ****** Hybrid-mixed formulation ******
+            // We try to treat Vh, Wh, and Mh separately
             tic();
-            space_ptrtype Yh = space_type::New( mesh );
-            RT_space_ptrtype RTh = RT_space_type::New( mesh ); //Dh<OrderU>( mesh );
-            lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
-            lagrange_space_v_ptrtype Xhvec = lagrange_space_v_type::New( mesh );
+            // Stuff from darcy.hpp:
+            //
+            // space_ptrtype Yh = space_type::New( mesh );
+            // RT_space_ptrtype RTh = RT_space_type::New( mesh ); //Dh<OrderU>( mesh );
+            // lagrange_space_s_ptrtype Xh = lagrange_space_s_type::New( mesh );
+            // lagrange_space_v_ptrtype Xhvec = lagrange_space_v_type::New( mesh );
+
+            // begin{dp}.
+            lagrange_space_v_ptrtype Vh = lagrange_space_v_type::New( mesh );
+            lagrange_space_s_ptrtype Wh = lagrange_space_s_type::New( mesh );
+            // >>>>>>>>>>> CRITICAL QUESTION: is faces(mesh) a mesh in R^{n-1}????? <<<<<<<<<<<
+            lagrange_space_multiplier_ptrtype Mh = lagrange_space_multiplier_type::New( faces(mesh) );
+            // end{dp}
+
             toc("spaces");
             if( Environment::isMasterRank() )
-                std::cout << "RT<" << OrderU << "> : " << RTh->nDof() << std::endl
-                          << "Xh<" << OrderP << "> : " << Xh->nDof() << std::endl
-                          << "Xhvec<" << OrderP << "> : " << Xhvec->nDof() << std::endl;
+                // begin{dp}
+                std::cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
+                          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
+                          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+                // end{dp}
 
-            auto U_rt = Yh->element( "(u,p)" ); //trial
-            auto V_rt = Yh->element( "(v,q)" ); //test
+            // auto U_rt = Yh->element( "(u,p)" ); //trial
+            // auto V_rt = Yh->element( "(v,q)" ); //test
 
-            auto u_rt = U_rt.template element<0>( "u" ); // velocity field
-            auto v_rt = V_rt.template element<0>( "v" );
-            auto p_rt = U_rt.template element<1>( "p" ); // potential field
-            auto q_rt = V_rt.template element<1>( "q" );
+            // auto u_rt = U_rt.template element<0>( "u" ); // velocity field
+            // auto v_rt = V_rt.template element<0>( "v" );
+            // auto p_rt = U_rt.template element<1>( "p" ); // potential field
+            // auto q_rt = V_rt.template element<1>( "q" );
+
+            // begin{dp}
+            auto u_rt = Vh->element( "u" );
+            auto v_rt = Vh->element( "v" );
+            auto p_rt = Wh->element( "p" );
+            auto q_rt = Wh->element( "q" );
+            auto phat_rt = Mh->element( "phat" );
+            auto lambda_rt = Mh->element( "lambda" );
+            // end{dp}
 
             // Number of dofs associated with each space U and P
             auto nDofu = u_rt.functionSpace()->nDof();
             auto nDofp = p_rt.functionSpace()->nDof();
+            // begin{dp}. This should be different from nDofp
+            auto nDofphat = phat_rt.functionSpace()->nDof();
+            // end{dp}
 
             tic();
-            auto F_rt = M_backend->newVector( Yh );
-            auto hdgRT_rhs = form1( _test=Yh, _vector=F_rt );
-            // fq
-            hdgRT_rhs += integrate( _range=elements(mesh), _expr = -f*id(q_rt) );
-            // GLS(Hdiv) stabilization terms
-            hdgRT_rhs += integrate( _range=elements(mesh)
-                                      , _expr = d2*lambda*f*div(v_rt) );
+            // begin{dp}. Question: Is there a way to create the cartesian product
+            // Vh x Wh x M at this point? Or do we need to create it from
+            // the beginning of the program (but remember initial remarks)?
+            //
+            // Stuff from darcy.hpp:
+            //
+            // auto F_rt = M_backend->newVector( Yh );
+            // auto hdgRT_rhs = form1( _test=Yh, _vector=F_rt );
+            // // fq
+            // hdgRT_rhs += integrate( _range=elements(mesh), _expr = -f*id(q_rt) );
+            // // GLS(Hdiv) stabilization terms
+            // hdgRT_rhs += integrate( _range=elements(mesh)
+            //                           , _expr = d2*lambda*f*div(v_rt) );
+            //
+            // end{dp}
+
 
             a11 = form2( _trial=Vh, _test=Vh );
-            a11 = integrate(_range=elements(mesh),_expr=(trans(K*idt(u))*id(v)) );
-            
+            a11 += integrate(_range=elements(mesh),_expr=(trans(K*idt(u))*id(v)) );
+
+            // begin{dp}
+            // Watch out the negative sign!
             a12 = form2( _trial=Wh, _test=Vh );
-            a12 = integrate(_range=elements(mesh),_expr=(idt(p)*div(v)));
+            a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
             a13 = form2( _trial=Mh, _test=Vh );
-            a13 = integrate(_range=internalfaces(mesh),
-                            _expr=( idt(l)*leftface(trans(id(v))*N())+
-                                    idt(l)*rightface(trans(id(v))*N())) );
+            a13 += integrate(_range=internalfaces(mesh),
+                            _expr=( idt(phat)*leftface(trans(id(v))*N())+
+                                    idt(phat)*rightface(trans(id(v))*N())) );
             a13 += integrate(_range=boundaryfaces(mesh),
-                             _expr=(idt(l)*trans(id(v))*N()));
+                             _expr=(idt(phat)*trans(id(v))*N()));
 
             a21 = form2( _trial=Vh, _test=Wh );
-            a21 = integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u))); 
-            
+            a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+            a21 += integrate(_range=internalfaces(mesh),
+                             _expr=( leftface(id(w)*trans(idt(u))*N())+
+                                     rightface(id(w)*trans(idt(u))*N())) );
+            a21 += integrate(_range=boundaryfaces(mesh),
+                             _expr=(id(w)*trans(idt(u))*N()));
+
+            a22 = form2( _trial=Wh, _test=Wh );
+            a22 += integrate(_range=internalfaces(mesh),
+                            _expr=tau_constant * ( leftface( pow(h(),M_tau_order)*idt(p)*id(w) )+
+                                                   rightface( pow(h(),M_tau_order)*idt(p)*id(w) )));
+            a22 += integrate(_range=boundaryfaces(mesh),
+                             _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
+
+            a23 = form2( _trial=Mh, _test=Wh );
+            a23 += integrate(_range=internalfaces(mesh),
+                            _expr=-tau_constant * idt(phat) * ( leftface( pow(h(),M_tau_order)*id(w) )+
+                                                   rightface( pow(h(),M_tau_order)*id(w) )));
+            a23 += integrate(_range=boundaryfaces(mesh),
+                             _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+
+            a31 = form2( _trial=Vh, _test=Mh );
+            a31 += integrate(_range=internalfaces(mesh),
+                             _expr=( id(l)*leftface(trans(idt(u))*N())+
+
+            a32 = form2( _trial=Wh, _test=Mh );
+            a32 += integrate(_range=internalfaces(mesh),
+                             _expr=tau_constant * id(l) * ( leftface( pow(h(),M_tau_order)*idt(p) )+
+                                                   rightface( pow(h(),M_tau_order)*idt(p) )));
+
+            a33 = form2(_trial=Mh, _test=Mh);
+            a23 += integrate(_range=internalfaces(mesh),
+                             _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
+                                                   rightface( pow(h(),M_tau_order) )));
 
 
-            
-            
-            auto M_rt = M_backend->newMatrix( Yh, Yh );
-            auto hdgRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
-            // Lambda u v
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = lambda*trans(idt(u_rt))*id(v_rt) );
-            // p div(v)
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = -idt(p_rt)*div(v_rt) );
-            // div(u) q
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = -divt(u_rt)*id(q_rt) );
-            // GLS(Hdiv) stabilization terms
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = d1*k*(trans(lambda*idt(u_rt)+trans(gradt(p_rt)))*(lambda*id(v_rt)+trans(grad(q_rt)))) );
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = d2*( lambda*divt(u_rt)*div(v_rt) ));
-            // only homogenous k
-            hdgRT += integrate( _range=elements(mesh),
-                                  _expr = d3*( lambda*trans(curlt(u_rt))*curl(v_rt) ));
+            // Building the RHS
+            //
+            // This is only a part of the RHS - how to build the whole RHS? Is it right to
+            // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
+            // How to identify Dirichlet/Neumann boundaries?
+            auto rhs2 = form1( _test=Wh );
+            rhs2 += integrate(_range=elements(mesh),
+                              _expr=-f*id(w));
 
-            hdgRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
+            // auto M_rt = M_backend->newMatrix( Yh, Yh );
+            // auto hdgRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
+            // // Lambda u v
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = lambda*trans(idt(u_rt))*id(v_rt) );
+            // // p div(v)
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = -idt(p_rt)*div(v_rt) );
+            // // div(u) q
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = -divt(u_rt)*id(q_rt) );
+            // // GLS(Hdiv) stabilization terms
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = d1*k*(trans(lambda*idt(u_rt)+trans(gradt(p_rt)))*(lambda*id(v_rt)+trans(grad(q_rt)))) );
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = d2*( lambda*divt(u_rt)*div(v_rt) ));
+            // // only homogenous k
+            // hdgRT += integrate( _range=elements(mesh),
+            //                       _expr = d3*( lambda*trans(curlt(u_rt))*curl(v_rt) ));
+
+            // hdgRT += on( _range=boundaryfaces(mesh), _rhs=F_rt,  _element=u_rt,  _expr=u_exact );
+
+            // end{dprada}
             toc("matrices");
 
             tic();
-            // Solve problem
-            backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
+            // begin{dp}. Solve problem: how to build the global entities?
+            //            backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
+            // end{dp}
             toc("solve");
             if( Environment::isMasterRank())
-                std::cout << "[Hdg] RT solve done" << std::endl;
+                std::cout << "[Hdg] solve done" << std::endl;
 
             // ****** Compute error ******
             tic();
@@ -346,18 +462,18 @@ Hdg<Dim, OrderU, OrderP>::convergence()
             auto h1err_p = normH1( elements(mesh),
                                    (p_exact - cst(mean_p_exact)) - (idv(p_rt) - cst(mean_p)),
                                    _grad_expr=trans(gradp_exact) - trans(gradv(p_rt)) );
-            auto divu_rt = vf::project(Xh, elements(mesh), divv(u_rt) ); //TODO : Raviart-Thomas interpolant !
+            auto divu_h = vf::project(Wh, elements(mesh), divv(u_rt) ); 
 
             // ****** Projection Operators (L2 - HDIV) : check proj( div u ) = proj( f ) ******
             // L2 projection
-            auto l2_v = opProjection( _domainSpace=Xhvec, _imageSpace=Xhvec, _type=L2 ); //l2 vectorial proj
-            auto l2_s = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 ); //l2 scalar proj
+            auto l2_v = opProjection( _domainSpace=Vh, _imageSpace=Vh, _type=L2 ); //l2 vectorial proj
+            auto l2_s = opProjection( _domainSpace=Wh, _imageSpace=Wh, _type=L2 ); //l2 scalar proj
             auto E_l2 = l2_v->project( _expr= u_exact );
             auto l2error_L2 = normL2( _range=elements(mesh), _expr=divv(E_l2) - f );
 
-            auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
-            auto E_hdiv = hdiv->project( _expr= (u_exact), _div_expr=f );
-            auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
+            // auto hdiv = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=HDIV ); //hdiv proj (RT elts)
+            // auto E_hdiv = hdiv->project( _expr= (u_exact), _div_expr=f );
+            // auto l2error_HDIV = normL2( _range=elements(mesh), _expr=divv(E_hdiv) - f );
 
             // interpolant
             v_rt.on( elements(mesh), u_exact);
@@ -376,9 +492,9 @@ Hdg<Dim, OrderU, OrderP>::convergence()
                     cvg_u << current_hsize << "\t" << nDofu << "\t" << l2err_u << "\n";
                     cvg_p << current_hsize << "\t" << nDofp << "\t" << l2err_p << "\t" << h1err_p << "\n";
                     cvg_divu << current_hsize << "\t" << nDofu << "\t" << l2err_divu << "\n";
-                    cvg_projL2 << current_hsize << "\t" << Xhvec->nDof() << "\t" << l2error_L2 << "\n";
-                    cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
-                    cvg_inter << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_inter << "\n";
+                    cvg_projL2 << current_hsize << "\t" << Vh->nDof() << "\t" << l2error_L2 << "\n";
+                    // cvg_projHDIV << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_HDIV << "\n";
+                    // cvg_inter << current_hsize << "\t" << RTh->nDof() << "\t" << l2error_inter << "\n";
                 }
 
             // ****** Export results ******
