@@ -1,13 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  This file is part of the Feel++ library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-  Author(s): Cecile Daversin  <cecile.daversin@lncmi.cnrs.fr>
-       Date: 2011-12-07
+             Daniele Prada <daniele.prada85@gmail.com>
+       Date: 2016-02-10
 
-  Copyright (C) 2011 UJF
-  Copyright (C) 2011 CNRS
+  Copyright (C) 2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,12 +22,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file hdg.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
-   \date 2014-03-05
- */
 #include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -266,7 +259,7 @@ Hdg<Dim, OrderP>::convergence()
                                                      _ymin=0,_ymax=2,
                                                      _zmin=0,_zmax=2 ) );
             else
-                mesh = loadMesh( new mesh_type );
+                mesh = loadMesh( new mesh_type);
         }
         else
         {
@@ -274,7 +267,8 @@ Hdg<Dim, OrderP>::convergence()
             LOG(INFO) << "[Hdg] Mesh has been loaded (refine level = " << i << ") \n";
             mesh = loadGMSHMesh( _mesh=new mesh_type,
                                  _filename=mesh_name+".msh",
-                                 _refine=i );
+                                 _refine=i,
+                                 _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         }
         toc("mesh",true);
 
