@@ -29,11 +29,11 @@ namespace Feel
 namespace vf
 {
 /// \cond detail
-namespace detail
+namespace details
 {
 /**
  * \class Function2
- * \brief allow runtime function in expression
+ * \brief Helper class to allow functors in expressions
  *
  * @author Christophe Prud'homme
  * @see
@@ -242,10 +242,10 @@ private:
  */
 template<typename Func>
 inline
-Expr< Function2<Func> >
+Expr< Feel::vf::details::Function2<Func> >
 idf2( Func f )
 {
-    typedef Function2<Func> func_t;
+    typedef Feel::vf::details::Function2<Func> func_t;
     return Expr< func_t >(  func_t( f ) );
 }
 
