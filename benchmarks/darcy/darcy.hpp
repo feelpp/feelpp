@@ -44,12 +44,12 @@ makeOptions()
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "k", po::value<std::string>()->default_value( "-1" ), "k" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "k" )
         ( "p_exact", po::value<std::string>()->default_value( "(1/(2*Pi*Pi))*sin(Pi*x)*sin(Pi*y):x:y" ), "p exact" )
         // ( "p_exacts", po::value<std::vector<std::string> >(), "p exact to test" )
         ( "d1", po::value<double>()->default_value( 0.5 ), "d1 (stabilization term)" )
         ( "d2", po::value<double>()->default_value( 0.5 ), "d2 (stabilization term)" )
-        ( "d3", po::value<double>()->default_value( 0.5 ), "d3 (stabilization term)" )
+        ( "d3", po::value<double>()->default_value( 0. ), "d3 (stabilization term)" )
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
         ;
@@ -236,7 +236,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
                                                              _shape = "hypercube",
                                                              _usenames = true,
                                                              _dim = Dim,
-                                                             _h = meshSize,
+                                                             _h = current_hsize,
                                                              _xmin=0,_xmax=2,
                                                              _ymin=0,_ymax=2,
                                                              _zmin=0,_zmax=2 ) );
@@ -245,11 +245,26 @@ Darcy<Dim, OrderU, OrderP>::convergence()
                 }
             else
                 {
-                    //std::cout << "loadGMSHmesh" << std::endl;
-                    LOG(INFO) << "[Darcy] Mesh has been loaded (refine level = " << i << ") \n";
-                    mesh = loadGMSHMesh( _mesh=new mesh_type,
-                                         _filename=mesh_name+".msh",
-                                         _refine=i );
+                    if( Dim == 2 )
+                    {
+                        //std::cout << "loadGMSHmesh" << std::endl;
+                        LOG(INFO) << "[Darcy] Mesh has been loaded (refine level = " << i << ") \n";
+                        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                             _filename=mesh_name+".msh",
+                                             _refine=i );
+                    }
+                    else
+                    {
+                        mesh = createGMSHMesh( _mesh=new mesh_type,
+                                               _desc=domain( _name = mesh_name ,
+                                                             _shape = "hypercube",
+                                                             _usenames = true,
+                                                             _dim = Dim,
+                                                             _h = current_hsize,
+                                                             _xmin=0,_xmax=2,
+                                                             _ymin=0,_ymax=2,
+                                                             _zmin=0,_zmax=2 ) );
+                    }
                 }
             toc("mesh");
 
