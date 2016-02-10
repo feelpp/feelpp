@@ -339,7 +339,7 @@ Hdg<Dim, OrderP>::convergence()
         hdg_vec(2,0) = backend()->newVector( Mh );
         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-        BlocksBaseVector<double> hdg_sol(2);
+        BlocksBaseVector<double> hdg_sol(3);
         hdg_sol(0,0) = up;
         hdg_sol(1,0) = pp;
         hdg_sol(2,0) = phatp;
@@ -472,22 +472,42 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto phat = Mh->element( "phat" );
     auto l = Mh->element( "lambda" );
 
+    // Building the RHS
+    //
+    // This is only a part of the RHS - how to build the whole RHS? Is it right to
+    // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
+    // How to identify Dirichlet/Neumann boundaries?
+    auto rhs2 = form1( _test=Wh, _vector=F,
+                       _rowstart=Vh->nLocalDofWithGhost() );
+
+    rhs2 += integrate(_range=elements(mesh),
+                      _expr=-f*id(w));
+    auto rhs3 = form1( _test=Mh, _vector=F,
+                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
+
+    rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
+                      _expr=( -id(l)*K*gradp_exact*N() ));
+    rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                      _expr=( id(l)*p_exact) );
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
     a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
 
     // Watch out the negative sign!
-    auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A  );
+    auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
+                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
-    auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A  );
+    auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
+                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=( idt(phat)*leftface(trans(id(v))*N())+
                              idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=(idt(phat)*trans(id(v))*N()));
 
-    auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A  );
+    auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
+                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=0 );
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
     a21 += integrate(_range=internalfaces(mesh),
                      _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N())+
@@ -495,7 +515,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a21 += integrate(_range=boundaryfaces(mesh),
                      _expr=(id(w)*trans(idt(u))*N()));
 
-    auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A  );
+    auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
+                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost() );
     a22 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant *
                      ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
@@ -503,7 +524,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
-    auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A  );
+    auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
+                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost() );
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) *
                      ( leftface( pow(h(),M_tau_order)*id(w) )+
@@ -511,7 +533,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
-    auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A  );
+    auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
+                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0 );
     a31 += integrate(_range=internalfaces(mesh),
                      _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
                                     rightfacet(trans(idt(u))*N())) ) );
@@ -520,14 +543,16 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=( id(l)*(trans(idt(u))*N()) ));
 
 
-    auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A  );
+    auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
+                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost());
     a32 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
                                                     rightfacet( pow(h(),M_tau_order)*idt(p) )));
     a32 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
 
-    auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A );
+    auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
+                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
                                                                  rightface( pow(h(),M_tau_order) )));
@@ -536,19 +561,5 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
                      _expr=idt(phat) * id(l) );
 
-    // Building the RHS
-    //
-    // This is only a part of the RHS - how to build the whole RHS? Is it right to
-    // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
-    // How to identify Dirichlet/Neumann boundaries?
-    auto rhs2 = form1( _test=Wh, _vector=F );
-    rhs2 += integrate(_range=elements(mesh),
-                      _expr=-f*id(w));
-    auto rhs3 = form1( _test=Mh, _vector=F );
-
-    rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                      _expr=( -id(l)*K*gradp_exact*N() ));
-    rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=( id(l)*p_exact) );
 
 }
