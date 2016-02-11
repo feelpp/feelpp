@@ -365,7 +365,8 @@ Environment::Environment( int argc, char** argv,
                           po::options_description const& desc,
                           po::options_description const& desc_lib,
                           AboutData const& about,
-                          std::string directory )
+                          std::string directory,
+                          bool add_subdir_np )
 {
     if ( argc == 0 )
     {
@@ -502,7 +503,8 @@ Environment::Environment( int argc, char** argv,
 
         LOG( INFO ) << "change directory to " << directory << "\n";
         boost::format f( directory );
-        changeRepository( _directory=f );
+        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        changeRepository( _directory=f,_subdir=createSubdir );
     }
 
     freeargv( envargv );
