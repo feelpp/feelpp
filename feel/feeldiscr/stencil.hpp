@@ -520,7 +520,8 @@ private:
             const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
+                size_type face_id = _M_X1->mesh()->subMeshToMesh( test_eid );
+                auto const& theface = _M_X2->mesh()->face(face_id);
                 size_type domain_eid = invalid_size_type_value;
                 if ( !theface.element0().isGhostCell() )
                     domain_eid = theface.element0().id();
