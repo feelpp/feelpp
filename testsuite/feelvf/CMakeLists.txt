@@ -18,3 +18,4 @@ feelpp_add_test( convolve CFG test_convolve.cfg )
 feelpp_add_test( pow CFG test_pow.cfg)
 
 feelpp_add_test( projtangent )
+feelpp_add_test( forms )
