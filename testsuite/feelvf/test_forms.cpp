@@ -81,21 +81,30 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));
 
+    // all the 4 integrals below should be the same
+    // compute \int 1 over internalfaces
     auto I = integrate( _range=internalfaces(meshnd), _expr=cst(1.)).evaluate()(0,0);
+    // compute \int 1 over d-1 mesh
     auto I1 = integrate( _range=elements(mesh), _expr=cst(1.)).evaluate()(0,0);
+    // compute \int 1 over internalfaces using left element
     auto I2 = integrate( _range=internalfaces(meshnd), _expr=leftfacev(cst(1.))).evaluate()(0,0);
+    // compute \int 1 over internalfaces using right element
     auto I3 = integrate( _range=internalfaces(meshnd), _expr=rightfacev(cst(1.))).evaluate()(0,0);
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "I=" << I << " I1=" << I1 << " I2=" << I2 << " I3=" << I3 );
+    BOOST_CHECK_CLOSE( I, I1, 1e-10 );
+    BOOST_CHECK_CLOSE( I, I2, 1e-10 );
+    BOOST_CHECK_CLOSE( I, I3, 1e-10 );
+
     auto a = form2(_test=Mh, _trial=Wh );
-    a = integrate( _range=internalfaces(meshnd), _expr=id(l)*(leftfacet(idt(p))+rightfacet(idt(p))));
+    a = integrate( _range=internalfaces(meshnd), _expr=(id(l)/2)*(leftfacet(idt(p))));//+rightfacet(idt(p))));
     a.close();
 
     if ( Environment::isMasterRank() )
         std::cout << "a(1,1) = " << a(l,p) << std::endl;
 
     auto a1 = form2(_test=Mh, _trial=Mh );
-    a1 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l));
+    a1 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l)/4);
     a1.close();
     auto a1en = a1(l,l);
     if ( Environment::isMasterRank() )
