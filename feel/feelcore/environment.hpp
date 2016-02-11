@@ -182,8 +182,8 @@ public:
                  po::options_description const& desc,
                  po::options_description const& desc_lib,
                  AboutData const& about,
-                 std::string directory );
-    
+                 std::string directory,
+                 bool add_subdir_np = true );
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
@@ -194,15 +194,16 @@ public:
         :
         Environment( args[_argc],
                      args[_argv],
-#if BOOST_VERSION >= 105500                     
+#if BOOST_VERSION >= 105500
                      args[_threading|mpi::threading::single],
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
                      args[_about| makeAboutDefault( args[_argv][0] )],
-                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()] )
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
+                     args[_subdir| true ] )
         {}
-#if BOOST_VERSION >= 105500                     
+#if BOOST_VERSION >= 105500
     BOOST_PARAMETER_CONSTRUCTOR(
         Environment, ( Environment ), tag,
         ( required
@@ -214,6 +215,7 @@ public:
           ( about,* )
           ( threading,(mpi::threading::level) )
           ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #else
     BOOST_PARAMETER_CONSTRUCTOR(
@@ -226,6 +228,7 @@ public:
           ( desc_lib,* )
           ( about,* )
           ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #endif
     
