@@ -650,6 +650,16 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        template<typename IM2,typename IMTest,typename IMTrial>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2, IMTest const& imTest, IMTrial const& imTrial,
+                 mpl::int_<2> );
+
 
         void initDynamicEigenMatrix()
         {
@@ -1063,7 +1073,7 @@ public:
      */
     //@{
 
-    
+
     BilinearForm(){}
     /**
 
@@ -1465,8 +1475,8 @@ public:
     {
         return M_n_nz[i];
     }
-    
-    
+
+
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
