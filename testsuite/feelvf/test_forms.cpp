@@ -28,6 +28,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -77,14 +78,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     p.on(_range=elements(meshnd),_expr=cst(1.));
     auto Mh=Pdh<1>(mesh);
     auto l=Mh->element();
-    l.on(_range=elements(meshnd),_expr=cst(1.));
+    l.on(_range=elements(mesh),_expr=cst(1.));
 
     auto a = form2(_test=Mh, _trial=Wh );
     a = integrate( _range=internalfaces(mesh), _expr=id(l)*(leftfacet(idt(p))+rightfacet(idt(p))));
     a.close();
 
     if ( Environment::isMasterRank() )
-        std::cout << "a(1,1) = " << a.energy(l,p) << std::endl;
+        std::cout << "a(1,1) = " << a(l,p) << std::endl;
 
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
