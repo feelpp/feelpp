@@ -3907,6 +3907,36 @@ public:
             return X;
         }
 
+#if 1
+    /**
+     * copy shared_ptr pointers of a FunctionSpace
+     * but not totally a view : must be use we caution
+     */
+    template<typename SimilarSpaceType>
+    void shallowCopy( boost::shared_ptr<SimilarSpaceType> const& simSpace )
+        {
+            BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename SimilarSpaceType::mesh_type, mesh_type>::value ),
+                                  INVALID_MESH_TYPE_COMPATIBILITY, (typename SimilarSpaceType::mesh_type, mesh_type ) );
+            BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename SimilarSpaceType::basis_type, basis_type>::value ),
+                                  INVALID_BASIS_TYPE_COMPATIBILITY, (typename SimilarSpaceType::basis_type, basis_type ) );
+
+            M_worldsComm = simSpace->worldsComm();
+            M_worldComm = simSpace->worldCommPtr();
+            M_mesh = simSpace->mesh();
+            M_periodicity = simSpace->periodicity();
+            M_ref_fe=simSpace->fe();
+            if ( simSpace->hasCompSpace() )
+                M_comp_space = simSpace->compSpace();
+            M_dof = simSpace->dof();
+            M_dofOnOff = simSpace->dofOnOff();
+            M_extendedDofTableComposite = simSpace->extendedDofTableComposite();
+            M_extendedDofTable = simSpace->extendedDofTable();
+            M_functionspaces = simSpace->functionSpaces();
+            if ( simSpace->hasRegionTree() )
+                M_rt = simSpace->regionTree();
+        }
+#endif
+
 
     /**
      * initialize the function space
@@ -3975,6 +4005,10 @@ public:
     {
         return *M_worldComm;
     }
+    boost::shared_ptr<WorldComm> const& worldCommPtr() const
+    {
+        return M_worldComm;
+    }
 
     bool hasEntriesForAllSpaces()
     {
@@ -4035,6 +4069,7 @@ public:
         return __c_interp->xReal();
     }
 
+    periodicity_type const& periodicity() const { return M_periodicity; }
 
     /**
      * return 1 if scalar space or the number of components if vectorial space
@@ -4083,6 +4118,7 @@ public:
     /**
      * \return the distribution of the dofs among the processors
      */
+    FEELPP_DEPRECATED
     proc_dist_map_type getProcDistMap() const
     {
         return procDistMap;
@@ -4340,7 +4376,7 @@ public:
     /**
      * \return true if need to build extended DofTable
      */
-    std::vector<bool> extendedDofTableComposite() const { return M_extendedDofTableComposite; }
+    std::vector<bool> const& extendedDofTableComposite() const { return M_extendedDofTableComposite; }
     bool extendedDofTable() const { return M_extendedDofTable; }
 
 
@@ -4486,6 +4522,15 @@ public:
     functionSpace()
     {
         return fusion::at_c<i>( M_functionspaces );
+    }
+
+
+    /**
+     * \return true if component Space was built
+    */
+    bool hasCompSpace() const
+    {
+        return ( M_comp_space )? true : false;
     }
 
     /**
@@ -5063,7 +5108,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
         M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
                                                                                           MESH_COMPONENTS_DEFAULTS,
                                                                                           M_periodicity,
-                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ),
+                                                                                          std::vector<bool>( 1,this->extendedDofTable() ) ) );
+
         VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
         VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
         VLOG(2) << " - component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
