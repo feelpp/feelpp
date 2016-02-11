@@ -3613,6 +3613,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
     typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
 
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_expr_ptrtype> > map2_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTrial_ptrtype> > map2_gmc_formTrial_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTest_ptrtype> > map2_gmc_formTest_type;
+    typedef typename FormType::template Context<map2_gmc_formTest_type, expression_type, face_im_type, map2_gmc_expr_type, map2_gmc_formTrial_type> form2_context_type;
+    typedef boost::shared_ptr<form2_context_type> form2_context_ptrtype;
+    form2_context_ptrtype form2;
+
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
@@ -3670,6 +3677,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
         gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        gmc_expr_ptrtype gmcExpr1;
         //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
         auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
@@ -3680,6 +3688,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                            gmc_formTrial_type,gmc_expr_type>( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
                                                                                                               idEltTrialInit, gmcExpr0, mpl::int_<gmTrialRangeRelation>() );
 
+        gmc_formTest_ptrtype gmcFormTest1;
+        gmc_formTrial_ptrtype gmcFormTrial1;
         //-----------------------------------------------//
 
         map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
@@ -3695,21 +3705,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         // true if connected to another element, false otherwise
         if ( faceInit.isConnectedTo1() )
         {
-            LOG( WARNING ) << "CP : TODO!!!!\n";
-#if 0
-            uint16_type __face_id_in_elt_1 = it->pos_second();
+            uint16_type __face_id_in_elt_1 = faceInit.pos_second();
+            gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
+            gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
+                                                                           gmc_formTest_type,gmc_expr_type>
+                ( __form.testSpace(), __form.testSpace()->gm(), imTest,
+                  idEltTestInit, gmcExpr1, mpl::int_<gmTestRangeRelation>() );
+            gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
+                                                                            gmc_formTrial_type,gmc_expr_type>
+                ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
+                  idEltTrialInit, gmcExpr1, mpl::int_<gmTrialRangeRelation>() );
 
-            __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
-            __c11 = gmc1_ptrtype( new gmc1_type( __gm1, it->element( 1 ), __geopc1, __face_id_in_elt_1 ) );
-            map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                   fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-            map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
-                                     fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
+            auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
+            auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
+            auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
 
-            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
-            form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
+            form2 = form2_context_ptrtype( new form2_context_type( __form,
+                                                                   mapgmctest2, mapgmctrial2, mapgmcexpr2,
+                                                                   this->expression(),
+                                                                   face_ims[__face_id_in_elt_0],
+                                                                   imRange, imTest, imTrial,
+                                                                   mpl::int_<2>() ) );
             isInitConnectionTo1=true;
-#endif
         }
         else
         {
@@ -3749,7 +3766,32 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             if ( faceCur.isConnectedTo1() )
             {
-                LOG ( WARNING ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
+                __face_id_in_elt_0 = faceCur.pos_first();
+                uint16_type __face_id_in_elt_1 = faceCur.pos_second();
+
+                // update gmc
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
+                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
+
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
+                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
+
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
+                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
+                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+
+                DLOG(INFO) << "internal face " << faceCur.id();
+                auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
+                auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
+                auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
+                form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
+                form2->integrate();
+                form2->assemble( mpl::int_<2>() );
             }
             else
             {
@@ -4095,13 +4137,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                    DLOG(INFO) << "internal element";
-                    auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
-                    auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
-                    auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
-                    form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
-                    form2->integrate();
-                    form2->assemble( mpl::int_<2>() );
+                DLOG(INFO) << "internal face " << faceCur.id();
+                auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
+                auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
+                auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
+                form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
+                form2->integrate();
+                form2->assemble( mpl::int_<2>() );
 
             }
             else
@@ -4316,6 +4358,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         // true if connected to another element, false otherwise
         if ( faceInit.isConnectedTo1() )
         {
+
             LOG( WARNING ) << "CP: TODO!!!!\n";
         }
         else

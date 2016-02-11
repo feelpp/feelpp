@@ -70,22 +70,49 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto meshnd = unitHypercube<T::value>();
     auto mesh = createSubmesh( meshnd, faces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
     size_type nFaceInParallelMeshnd = nelements(faces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
+    size_type nInternalFaceInParallelMeshnd = nelements(internalfaces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
     BOOST_CHECK_EQUAL( nelements(elements(mesh),true), nFaceInParallelMeshnd  );
-    auto Vh=Pdhv<1>(meshnd);
+    auto Vh=Pdhv<1>(meshnd,true);
     auto u = Vh->element();
-    auto Wh=Pdh<1>(meshnd);
+    auto Wh=Pdh<1>(meshnd,true);
     auto p = Wh->element();
     p.on(_range=elements(meshnd),_expr=cst(1.));
     auto Mh=Pdh<1>(mesh);
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));
 
+    auto I = integrate( _range=internalfaces(meshnd), _expr=cst(1.));
+    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.));
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "I=" << I << " I1=" << I1 );
     auto a = form2(_test=Mh, _trial=Wh );
-    a = integrate( _range=internalfaces(mesh), _expr=id(l)*(leftfacet(idt(p))+rightfacet(idt(p))));
+    a = integrate( _range=internalfaces(meshnd), _expr=id(l)*(leftfacet(idt(p))+rightfacet(idt(p))));
     a.close();
 
     if ( Environment::isMasterRank() )
         std::cout << "a(1,1) = " << a(l,p) << std::endl;
+
+    auto a1 = form2(_test=Mh, _trial=Mh );
+    a1 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l));
+    a1.close();
+    auto a1en = a1(l,l);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a1(1,1)=" << a1en );
+
+    auto a11 = form2(_test=Mh, _trial=Mh );
+    a11 = integrate( _range=elements(mesh), _expr=id(l)*idt(l));
+    a11.close();
+    auto a11en = a11(l,l);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a11(1,1)=" << a11en << " int =" << I1 );
+
+    auto a2 = form2(_test=Wh, _trial=Wh );
+    a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
+    a2.close();
+    auto a2en = a2(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
+
 
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
