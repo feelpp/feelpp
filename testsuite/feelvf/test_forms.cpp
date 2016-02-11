@@ -68,8 +68,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
 {
     BOOST_MESSAGE( "test_form2_faces starts for dim=" << T::value);
     auto meshnd = unitHypercube<T::value>();
-    auto mesh = createSubmesh( meshnd, faces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
-    size_type nFaceInParallelMeshnd = nelements(faces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
+    auto mesh = createSubmesh( meshnd, internalfaces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    size_type nFaceInParallelMeshnd = nelements(internalfaces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
     size_type nInternalFaceInParallelMeshnd = nelements(internalfaces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
     BOOST_CHECK_EQUAL( nelements(elements(mesh),true), nFaceInParallelMeshnd  );
     auto Vh=Pdhv<1>(meshnd,true);
@@ -81,10 +81,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));
 
-    auto I = integrate( _range=internalfaces(meshnd), _expr=cst(1.));
-    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.));
+    auto I = integrate( _range=internalfaces(meshnd), _expr=cst(1.)).evaluate()(0,0);
+    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.)).evaluate()(0,0);
+    auto I2 = integrate( _range=internalfaces(meshnd), _expr=leftfacev(cst(1.))).evaluate()(0,0);
+    auto I3 = integrate( _range=internalfaces(meshnd), _expr=rightfacev(cst(1.))).evaluate()(0,0);
     if ( Environment::isMasterRank() )
-        BOOST_TEST_MESSAGE( "I=" << I << " I1=" << I1 );
+        BOOST_TEST_MESSAGE( "I=" << I << " I1=" << I1 << " I2=" << I2 << " I3=" << I3 );
     auto a = form2(_test=Mh, _trial=Wh );
     a = integrate( _range=internalfaces(meshnd), _expr=id(l)*(leftfacet(idt(p))+rightfacet(idt(p))));
     a.close();
