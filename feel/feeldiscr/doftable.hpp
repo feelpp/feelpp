@@ -1176,6 +1176,7 @@ public:
     void rebuildDofPoints( mesh_type& M )
         {
             M_dof_points.clear();
+            M_hasBuiltDofPoints = false;
             this->generateDofPoints(M);
 
             if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
