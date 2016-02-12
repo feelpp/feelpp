@@ -110,12 +110,12 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
     typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
     typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -150,12 +150,12 @@ public:
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -608,11 +608,19 @@ public:
 
                 if ( !M_ts->M_scalar_p1 )
                 {
-                    M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
-                                                                                   MESH_RENUMBER | MESH_CHECK,
-                                                                                   typename scalar_p1_space_type::periodicity_type(),
-                                                                                   func.worldsComm(),
-                                                                                   std::vector<bool>(1,extendeddof) );
+                    if ( M_ts->M_vector_p1 && M_ts->M_vector_p1->hasCompSpace() )
+                    {
+                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type>();
+                        M_ts->M_scalar_p1->shallowCopy( M_ts->M_vector_p1->compSpace() );
+                    }
+                    else
+                    {
+                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                       MESH_RENUMBER | MESH_CHECK,
+                                                                                       typename scalar_p1_space_type::periodicity_type(),
+                                                                                       func.worldsComm(),
+                                                                                       std::vector<bool>(1,extendeddof) );
+                    }
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
