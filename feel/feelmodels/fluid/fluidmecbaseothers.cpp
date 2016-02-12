@@ -1082,7 +1082,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
 #else
     auto InvFa = det(Fa)*inv(Fa);
 #endif
-    this->meshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh( false );
 
     M_fieldNormalStressRefMesh->zero();
     if ( listMarkers.empty() )
@@ -1094,7 +1094,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
                                        _expr=val(Sigmav*trans(InvFa)*N()),
                                        _geomap=this->geomap() );
 
-    this->meshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh( false );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
@@ -1148,7 +1148,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
 
     if (!M_saveALEPartNormalStress) M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
-    this->meshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh( false );
 
 
     M_saveALEPartNormalStress->zero();
@@ -1167,7 +1167,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
                                              _geomap=this->geomap() );
 #endif
 
-    this->meshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh( false );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "finish" );
 #endif
