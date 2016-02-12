@@ -3,6 +3,8 @@
 #undef EIGEN_USE_MKL_ALL
 #endif
 #include <feel/feel.hpp>
+#include <feel/feelalg/preconditionerpetsc.hpp>
+#include <feel/feelalg/topetsc.hpp>
 #ifdef FEELPP_HAS_HPDDM
 #include <HPDDM.hpp>
 #endif
@@ -10,10 +12,11 @@
 using namespace Feel;
 
 struct CustomOperator {
-    Mat _A;
-    Vec _rhs;
-    Vec _x;
-    CustomOperator(Mat A, Vec rhs, Vec x) : _A(A), _rhs(rhs), _x(x) { }
+    Mat                                            _A;
+    boost::shared_ptr<PreconditionerPetsc<double>> _P;
+    Vec                                          _rhs;
+    Vec                                            _x;
+    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P, Vec rhs, Vec x) : _A(A), _P(P), _rhs(rhs), _x(x) { }
     bool setBuffer(const int&, double* = nullptr, const int& = 0) const { return false; }
     template<bool = true> void start(const double* const, double* const, const unsigned short& = 1) const { }
     void clearBuffer(const bool) const { }
@@ -36,16 +39,13 @@ struct CustomOperator {
     template<bool = true>
     void apply(const double* const in, double* const out, const unsigned short& mu = 1, double* = nullptr, const unsigned short& = 0) const {
         int n = getDof();
-        std::copy_n(in, mu * n, out);
-        /*
         for(unsigned short nu = 0; nu < mu; ++nu) {
             VecPlaceArray(_rhs, in + nu * n);
             VecPlaceArray(_x, out + nu * n);
-            P->apply(_rhs, _x);
+            _P->apply(_rhs, _x);
             VecResetArray(_x);
             VecResetArray(_rhs);
         }
-        */
     }
 };
 
@@ -147,10 +147,9 @@ int main(int argc, char**argv )
 #ifdef FEELPP_HAS_HPDDM
         {
             Mat A = dynamic_cast<MatrixPetsc<double> const*> ( &(*aVit.matrixPtr()) )->mat();
-            // auto P = aVit.backend()->preconditioner();
             Vec rhs = dynamic_cast<VectorPetscMPI<double> const*> ( &(*lVit.vectorPtr()) )->vec();
             // Vec x = dynamic_cast<VectorPetscMPI<double> const*> ( &(*UTn1.vectorPtr()) )->vec();
-            CustomOperator op(A, rhs, rhs);
+            CustomOperator op(A, toPETSc(backend()->preconditioner()), rhs, rhs);
             double* ptr_rhs;
             VecGetArray(rhs, &ptr_rhs);
             double* ptr_x;
