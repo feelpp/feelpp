@@ -181,9 +181,11 @@ public:
         super( v.mapPtr() ),
         M_destroy_vec_on_exit( false )
         {
-            VecCreateMPIWithArray( v.map().worldComm().globalComm(),
-                                   1, v.map().nLocalDofWithoutGhost(), v.map().nDof(),
-                                   std::addressof( v[0] ), &M_vec );
+            VecCreateGhostWithArray( v.map().worldComm().globalComm(),
+                                     v.map().nLocalDofWithoutGhost(), v.map().nDof(),
+                                     v.map().nLocalGhosts(),
+                                     (PetscInt*)0,
+                                     std::addressof( v[0] ), &M_vec );
             this->M_is_initialized = true;
         }
 
