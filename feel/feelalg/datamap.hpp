@@ -207,6 +207,14 @@ public:
     }
 
     /**
+     * @return the number of local ghosts
+     */
+    size_type nLocalGhosts() const
+    {
+        return nLocalDofWithGhost()-nLocalDofWithoutGhost();
+    }
+
+    /**
      * @return the number of degrees of freedom on this processor without ghosts.
      */
     size_type nLocalDofWithoutGhost( const rank_type proc ) const
