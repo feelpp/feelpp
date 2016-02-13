@@ -15,24 +15,35 @@ struct CustomOperator {
     Mat                                            _A;
     boost::shared_ptr<PreconditionerPetsc<double>> _P;
     Vec                                          _rhs;
-    Vec                                            _x;
-    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P, Vec rhs, Vec x) : _A(A), _P(P), _rhs(rhs), _x(x) { }
-    bool setBuffer(const int&, double* = nullptr, const int& = 0) const { return false; }
+    mutable Vec                                 _work;
+    double* const                                  _x;
+    CustomOperator(Mat A, boost::shared_ptr<PreconditionerPetsc<double>> P, Vec rhs, double* const x) : _A(A), _P(P), _rhs(rhs), _x(x) { }
+    bool setBuffer(const int&, double* = nullptr, const int& = 0) const {
+        int N;
+        MatGetSize(_A, &N, NULL);
+        if(Environment::worldComm().size() > 1)
+            VecCreateMPIWithArray(Environment::worldComm(), 1, getDof(), N, _x, &_work);
+        else
+            VecCreateSeqWithArray(Environment::worldComm(), 1, N, _x, &_work);
+        return false;
+    }
+    void clearBuffer(const bool) const {
+        VecDestroy(&_work);
+    }
     template<bool = true> void start(const double* const, double* const, const unsigned short& = 1) const { }
-    void clearBuffer(const bool) const { }
 
     int getDof() const {
-        int n, m;
-        MatGetLocalSize(_A, &n, &m);
+        int n;
+        MatGetLocalSize(_A, &n, NULL);
         return n;
     }
     void GMV(const double* const in, double* const out, const int& mu = 1) const {
         int n = getDof();
         for(unsigned short nu = 0; nu < mu; ++nu) {
             VecPlaceArray(_rhs, in + nu * n);
-            VecPlaceArray(_x, out + nu * n);
-            MatMult(_A, _rhs, _x);
-            VecResetArray(_x);
+            VecPlaceArray(_work, out + nu * n);
+            MatMult(_A, _rhs, _work);
+            VecResetArray(_work);
             VecResetArray(_rhs);
         }
     }
@@ -41,9 +52,9 @@ struct CustomOperator {
         int n = getDof();
         for(unsigned short nu = 0; nu < mu; ++nu) {
             VecPlaceArray(_rhs, in + nu * n);
-            VecPlaceArray(_x, out + nu * n);
-            _P->apply(_rhs, _x);
-            VecResetArray(_x);
+            VecPlaceArray(_work, out + nu * n);
+            _P->apply(_rhs, _work);
+            VecResetArray(_work);
             VecResetArray(_rhs);
         }
     }
@@ -69,11 +80,13 @@ int main(int argc, char**argv )
 
     typedef Mesh<Simplex<2> > mesh_type;
 
-    Environment env(_argc = argc, _argv = argv,
-                    _about = about(_name = "geneo",
+    Environment env(_argc = argc, _argv = argv, _desc = makeOptions(),
+                    _about = about(_name = "nsproj_recycling",
                                    _author = "Feel++ Consortium",
                                    _email = "feelpp-devel@feelpp.org"));
     HPDDM::Option::get()->parse(argc, argv, Environment::isMasterRank());
+    if(!Environment::isMasterRank())
+        HPDDM::Option::get()->remove("verbosity");
 
     auto mu = option(_name="mu").as<double>() ;
     auto dt = option(_name="dt").as<double>() ;
@@ -98,6 +111,8 @@ int main(int argc, char**argv )
     auto pn  = Ph->element( "p" );
     auto pnm1  = Ph->element( "p" );
     auto q   = Ph->element( "q" );
+
+    boost::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build("petsc");
 
     auto poiseuille = vec( 4*0.3*Py()*(0.41-Py())/(0.41*0.41),cst(0.) );
 
@@ -128,6 +143,8 @@ int main(int argc, char**argv )
                          + dt* inner(trans(gradv(pnm1)),id(V))
             );
 
+        Backend<double>::sparse_matrix_ptrtype A = ptr_backend->newMatrix(Vh, Vh);
+        auto aVit = form2( _trial=Vh, _test=Vh, _matrix=A );
         aVit = integrate(_range=elements(mesh),
                          _expr=
                          inner(idt(UTn1),id(V))
@@ -145,22 +162,26 @@ int main(int argc, char**argv )
         //            aVit+=on(_range=markedfaces(mesh,"outlet"), _rhs=lVit, _element=UTn1,
         //                   _expr=vec(cst(0.),cst(0.)) );
 #ifdef FEELPP_HAS_HPDDM
-        {
-            Mat A = dynamic_cast<MatrixPetsc<double> const*> ( &(*aVit.matrixPtr()) )->mat();
-            Vec rhs = dynamic_cast<VectorPetscMPI<double> const*> ( &(*lVit.vectorPtr()) )->vec();
-            // Vec x = dynamic_cast<VectorPetscMPI<double> const*> ( &(*UTn1.vectorPtr()) )->vec();
-            CustomOperator op(A, toPETSc(backend()->preconditioner()), rhs, rhs);
+        if(HPDDM::Option::get()->set("krylov_method")) {
+            Mat PetscA = static_cast<MatrixPetsc<double>*> ( &*A )->mat();
+            Vec rhs;
+            if(Environment::worldComm().size() > 1)
+                rhs = dynamic_cast<VectorPetscMPI<double> const*> ( &(*lVit.vectorPtr()) )->vec();
+            else
+                rhs = dynamic_cast<VectorPetsc<double> const*> ( &(*lVit.vectorPtr()) )->vec();
+            double* const sol = &(UTn1.vec()[0]);
+            auto P = ptr_backend->preconditioner();
+            P->setMatrix(A);
+            P->init();
+            CustomOperator op(PetscA, toPETSc(P), rhs, sol);
             double* ptr_rhs;
             VecGetArray(rhs, &ptr_rhs);
-            double* ptr_x;
-            VecGetArray(rhs, &ptr_x);
-            HPDDM::IterativeMethod::GCRODR(op, ptr_rhs, ptr_x, 1, Environment::worldComm());
-            VecRestoreArray(rhs, &ptr_x);
+            HPDDM::IterativeMethod::GCRODR(op, ptr_rhs, sol, 1, Environment::worldComm());
             VecRestoreArray(rhs, &ptr_rhs);
         }
-#else
-        aVit.solve( _solution=UTn1, _rhs=lVit, _name="velocity" );
+        else
 #endif
+            aVit.solve( _solution=UTn1, _rhs=lVit, _name="velocity" );
         LOG(INFO) << "Velocity problem done.";
         // Pressure
         LOG(INFO) << "Pressure...";
