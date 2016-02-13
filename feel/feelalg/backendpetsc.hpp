@@ -429,4 +429,6 @@ extern template class BackendPetsc<std::complex<double>>;
 #endif // FEELPP_HAS_PETSC_H
 } // Feel
 
+#include <feel/feelalg/topetsc.hpp>
+
 #endif /* _BACKENDPETSC_HPP_ */

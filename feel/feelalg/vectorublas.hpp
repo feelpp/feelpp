@@ -905,7 +905,7 @@ private:
             #endif
         }
 
-    
+
 private:
     vector_type M_vec;
     mutable bool M_global_values_updated;
@@ -965,6 +965,76 @@ extern template class VectorUblas<double,ublas::vector<double> >;
 extern template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
 extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
 #endif
+
+}
+#include <feel/feelalg/vectorpetsc.hpp>
+
+namespace Feel
+{
+/**
+ * returns a VectorPetsc from a VectorUblas
+ *
+ * here is a sample code:
+ * @code
+ * auto Xh = Pch<1>( mesh );
+ * auto v = Xh->element();
+ * auto b = backend(); // default backend is petsc type
+ * auto vp = toPETSc( v ); // get the VectorPetsc
+ * @endcode
+ *
+ * \warning one must be careful that the VectorUblas will provide contiguous
+ * data access.
+ */
+template<typename T,typename Storage>
+inline VectorPetsc<T>
+toPETSc( VectorUblas<T,Storage> & v )
+{
+    return VectorPetsc<T>( v );
+}
+
+/**
+ * returns a VectorPetsc shared_ptr from a VectorUblas
+ *
+ * here is a sample code:
+ * @code
+ * auto Xh = Pch<1>( mesh );
+ * auto v = Xh->element();
+ * auto b = backend(); // default backend is petsc type
+ * auto vp = toPETScPtr( v ); // get the shared_ptr<VectorPetsc<>>
+ * @endcode
+ *
+ * \warning one must be careful that the VectorUblas will provide contiguous
+ * data access.
+ */
+template<typename T,typename Storage>
+inline boost::shared_ptr<VectorPetsc<T>>
+toPETScPtr( VectorUblas<T,Storage> & v )
+{
+    return boost::make_shared<VectorPetsc<T>>( v );
+}
+
+/**
+ * returns a VectorPetsc shared_ptr from a VectorUblas
+ *
+ * here is a sample code:
+ * @code
+ * auto Xh = Pch<1>( mesh );
+ * auto v = Xh->elementPtr();
+ * auto b = backend(); // default backend is petsc type
+ * auto vp = toPETSc( v ); // get the shared_ptr<VectorPetsc<>>
+ * @endcode
+ *
+ * \warning one must be careful that the VectorUblas will provide contiguous
+ * data access.
+ */
+template<typename T,typename Storage>
+inline boost::shared_ptr<VectorPetsc<T>>
+toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
+{
+    return boost::make_shared<VectorPetsc<T>>( v );
+}
+
+
 
 } // Feel
 
