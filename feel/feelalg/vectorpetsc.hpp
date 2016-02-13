@@ -34,6 +34,7 @@
 
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/vectorublas.hpp>
 
 #if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
@@ -168,6 +169,23 @@ public:
             this->M_vec = v;
         this->M_is_initialized = true;
     }
+
+    /**
+     * @brief creates a VectorPetsc out of a VectorUblas
+     *
+     * there is no copy, PETSc will use the storage of the VectorUblas
+     */
+    template<typename Storage>
+    VectorPetsc( VectorUblas<T,Storage>& v )
+        :
+        super( dm ),
+        M_destroy_vec_on_exit( duplicate )
+        {
+            VecCreateMPIWithArray( v.map().worldComm().globalComm(),
+                                   1, v.map().nLocalDofWithoutGhost(), v.map().nDof(),
+                                   std::addressof( v[0] ), &M_vec );
+            this->M_is_initialized = true;
+        }
 
     /**
      * Constructor,  extracts a subvector from 'v' using mapping 'is'
@@ -823,7 +841,7 @@ private :
 };
 
 /**
- * @addtogroup FreeFunctions 
+ * @addtogroup FreeFunctions
  * @{
  */
 

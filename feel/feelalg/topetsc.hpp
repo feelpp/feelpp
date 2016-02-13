@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 31 Jan 2016
- 
+
  Copyright (C) 2016 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -34,21 +34,21 @@
 namespace Feel {
 
 /**
- * returns a BackendPetsc shared_ptr from a Backend. 
+ * returns a BackendPetsc shared_ptr from a Backend.
  * if the cast fails then it is a null shared_ptr
- * 
+ *
  * here is a sample code:
  * @code
  * auto b = backend(); // default backend is petsc type
  * if ( auto bp = toPETSc( b ) ) // bp is BackendPetsc
  * {
  *   // use BackendPetsc interface
- * } 
+ * }
  * else // bp is a null shared_ptr and evaluates to false in the if above
  * {
  *   // it was not a BackendPetsc
  * }
- * 
+ *
  * @endcode
  */
 template<typename T>
@@ -61,7 +61,7 @@ toPETSc( boost::shared_ptr<Backend<T>> const& b )
 /**
  * returns a VectorPetsc shared_ptr from a Vector if it was a VectorPetsc
  * if the cast fails then it is a null shared_ptr
- * 
+ *
  * here is a sample code:
  * @code
  * auto b = backend(); // default backend is petsc type
@@ -69,12 +69,12 @@ toPETSc( boost::shared_ptr<Backend<T>> const& b )
  * if ( auto vp = toPETSc( v ) ) // bp is VectorPetsc
  * {
  *   // use VectorPetsc interface
- * } 
+ * }
  * else // bp is a null shared_ptr and evaluates to false in the if above
  * {
  *   // it was not a VectorPetsc
  * }
- * 
+ *
  * @endcode
  */
 template<typename T>
@@ -84,10 +84,11 @@ toPETSc( boost::shared_ptr<Vector<T>> const& v )
     return boost::dynamic_pointer_cast<VectorPetsc<T>>( v );
 }
 
+
 /**
  * returns a MatrixPetsc shared_ptr from a Matrix if it was a MatrixPetsc
  * if the cast fails then it is a null shared_ptr
- * 
+ *
  * here is a sample code:
  * @code
  * auto b = backend(); // default backend is petsc type
@@ -95,12 +96,12 @@ toPETSc( boost::shared_ptr<Vector<T>> const& v )
  * if ( auto vp = toPETSc( v ) ) // bp is MatrixPetsc
  * {
  *   // use MatrixPetsc interface
- * } 
+ * }
  * else // bp is a null shared_ptr and evaluates to false in the if above
  * {
  *   // it was not a MatrixPetsc
  * }
- * 
+ *
  * @endcode
  */
 template<typename T>
@@ -113,19 +114,19 @@ toPETSc( boost::shared_ptr<MatrixSparse<T>> const& m )
 /**
  * returns a PreconditionerPetsc shared_ptr from a Preconditioner if it was a PreconditionerPetsc
  * if the cast fails then it is a null shared_ptr
- * 
+ *
  * here is a sample code:
  * @code
  * auto b = backend(); // default backend is petsc type
   * if ( auto vp = toPETSc( b->preconditioner() ) ) // vp is PreconditionerPetsc
  * {
  *   // use PreconditionerPetsc interface
- * } 
+ * }
  * else // bp is a null shared_ptr and evaluates to false in the if above
  * {
  *   // it was not a PreconditionerPetsc
  * }
- * 
+ *
  * @endcode
  */
 template<typename T>
