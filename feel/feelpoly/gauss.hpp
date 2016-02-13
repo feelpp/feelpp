@@ -6,6 +6,7 @@
        Date: 2006-12-30
 
   Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
  */
-#ifndef __Gauss_H
-#define __Gauss_H 1
+#ifndef FEELPP_GAUSS_HPP
+#define FEELPP_GAUSS_HPP 1
 
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
@@ -35,6 +36,7 @@
 namespace Feel
 {
 template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<class Convex, typename T> class PointSetQuadrature;
 
 /*!
  * \class Gauss
