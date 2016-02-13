@@ -178,8 +178,8 @@ public:
     template<typename Storage>
     VectorPetsc( VectorUblas<T,Storage>& v )
         :
-        super( dm ),
-        M_destroy_vec_on_exit( duplicate )
+        super( v.mapPtr() ),
+        M_destroy_vec_on_exit( false )
         {
             VecCreateMPIWithArray( v.map().worldComm().globalComm(),
                                    1, v.map().nLocalDofWithoutGhost(), v.map().nDof(),

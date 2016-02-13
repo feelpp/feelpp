@@ -6,7 +6,8 @@
        Date: 2006-11-13
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2010 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +42,8 @@
 
 namespace Feel
 {
+template<typename T> class VectorPetsc;
+
 namespace ublas = boost::numeric::ublas;
 /*!
  * \class VectorUblas
