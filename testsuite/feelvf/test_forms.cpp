@@ -117,13 +117,45 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a11(1,1)=" << a11en << " int =" << I1 );
 
-    auto a2 = form2(_test=Wh, _trial=Wh );
-    a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
-    a2.close();
-    auto a2en = a2(p,p);
-    if ( Environment::isMasterRank() )
-        BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
+    // - Tests A22 = <ph, w> with ph, w \in Wh
+    // - >>> FAILS <<<
+    //
+    // auto a2 = form2(_test=Wh, _trial=Wh );
+    // a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
+    // a2.close();
+    // auto a2en = a2(p,p);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
 
+    // - Same as a2, but with rightface instead of leftface.
+    // - >>> FAILS <<<
+    //
+    // auto a3 = form2(_test=Wh, _trial=Wh);
+    // a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*rightfacet(idt(p)));
+    // a3.close();
+
+    // - Tests A23 = <phat, w>, with phat \in Mh, w \in Wh
+    // - >>> FAILS BUT IT RETURNS A TODO MESSAGE <<<
+    //
+    // auto a4 = form2(_test=Wh, _trial=Mh);
+    // a4 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*idt(l) );
+    // a4.close();
+
+    // - Tests A32 = <ph, \mu>, with ph \in Wh, \mu \in Mh
+    auto a5 = form2(_test=Mh, _trial=Wh);
+    a5 = integrate(_range=internalfaces(meshnd), _expr=0.5*leftfacet(idt(p))*id(l) );
+    a5.close();
+    auto a5en = a5(l, p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a5(1,1)=" << a5en );
+
+    // - Tests (p, p)_Omega. Should give the measure of the domain
+    auto a6 = form2(_test=Wh, _trial=Wh);
+    a6 = integrate(_range=elements(meshnd), _expr=idt(p)*id(p));
+    a6.close();
+    auto a6en = a6(p, p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a6(1,1)=" << a6en );
 
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
