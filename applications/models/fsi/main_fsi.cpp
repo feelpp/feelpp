@@ -6,17 +6,17 @@
 namespace Feel
 {
 
-template <uint16_type OrderVelocity,uint16_type OrderPressure>
+template <uint16_type OrderVelocity,uint16_type OrderPressure, uint16_type OrderDisp=FEELPP_GEO_ORDER>
 void
 runApplicationFSI()
 {
     using namespace Feel;
 
-    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
+    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,FEELPP_GEO_ORDER>,
                                         Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_fluid_type;
-    typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,1>,
-                                        Lagrange<1, Vectorial,Continuous,PointSetFekete> > model_solid_type;
+    typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,FEELPP_GEO_ORDER>,
+                                        Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_solid_type;
     typedef FeelModels::FSI< model_fluid_type,model_solid_type> model_fsi_type;
     boost::shared_ptr<model_fsi_type> FSImodel( new model_fsi_type("fsi") );
 
