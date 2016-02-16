@@ -126,7 +126,8 @@ int main( int argc, char** argv )
                      _desc=meshpartoptions,
                      _about=about( _name="mesh_partitioner" ,
                                    _author="Feel++ Consortium",
-                                   _email="feelpp-devel@feelpp.org" ) );
+                                   _email="feelpp-devel@feelpp.org" ),
+                     _directory=".",_subdir=false );
 
     int dim = ioption(_name="dim");
     std::string shape = soption(_name="shape");
@@ -153,7 +154,7 @@ int main( int argc, char** argv )
     if ( !fs::exists( pathInputMesh ) )
     {
         if ( Environment::isMasterRank() )
-            std::cout << "do nothing because --ifile : " << pathInputMesh.string() << "not exist\n";
+            std::cout << "do nothing because --ifile : " << pathInputMesh.string() << " does not exist\n";
         return 0;
     }
 

@@ -147,8 +147,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->isMoveDomain() )
     *_ostr << this->getInfoALEMeshBC();
 #endif
-    *_ostr << "\n   Space Discretization"
-           << "\n     -- msh file name   : " << this->mshfileStr()
+    *_ostr << "\n   Space Discretization";
+    if ( this->hasGeofileStr() )
+        *_ostr << "\n     -- geo file name   : " << this->geofileStr();
+    *_ostr << "\n     -- mesh file name   : " << this->mshfileStr()
            << "\n     -- nb elt in mesh  : " << M_mesh->numGlobalElements()//numElements()
         // << "\n     -- nb elt in mesh  : " << M_mesh->numElements()
         // << "\n     -- nb face in mesh : " << M_mesh->numFaces()
@@ -1080,7 +1082,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
 #else
     auto InvFa = det(Fa)*inv(Fa);
 #endif
-    this->meshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh( false );
 
     M_fieldNormalStressRefMesh->zero();
     if ( listMarkers.empty() )
@@ -1092,7 +1094,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
                                        _expr=val(Sigmav*trans(InvFa)*N()),
                                        _geomap=this->geomap() );
 
-    this->meshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh( false );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshStandard", "finish" );
 #endif
@@ -1146,7 +1148,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
 
     if (!M_saveALEPartNormalStress) M_saveALEPartNormalStress = M_XhMeshALEmapDisc->elementPtr();
 
-    this->meshALE()->revertReferenceMesh();
+    this->meshALE()->revertReferenceMesh( false );
 
 
     M_saveALEPartNormalStress->zero();
@@ -1165,7 +1167,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
                                              _geomap=this->geomap() );
 #endif
 
-    this->meshALE()->revertMovingMesh();
+    this->meshALE()->revertMovingMesh( false );
 
     this->log("FluidMechanics","updateNormalStressOnReferenceMeshOptPrecompute", "finish" );
 #endif
