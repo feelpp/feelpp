@@ -4,3 +4,5 @@ foreach(DIM 2 3)
 endforeach()
 
 add_subdirectory( regul )
+add_subdirectory( saddle )
+
