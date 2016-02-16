@@ -120,19 +120,29 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     // - Tests A22 = <ph, w> with ph, w \in Wh
     // - >>> FAILS <<<
     //
-    // auto a2 = form2(_test=Wh, _trial=Wh );
-    // a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
-    // a2.close();
-    // auto a2en = a2(p,p);
-    // if ( Environment::isMasterRank() )
-    //     BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
+    auto a2 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
+    a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
+    a2.close();
+    auto a2en = a2(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
 
     // - Same as a2, but with rightface instead of leftface.
     // - >>> FAILS <<<
     //
-    // auto a3 = form2(_test=Wh, _trial=Wh);
-    // a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*rightfacet(idt(p)));
-    // a3.close();
+    auto a3 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
+    a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*rightfacet(idt(p)));
+    a3.close();
+    auto a3en = a3(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a3(1,1)=" << a3en );
+
+    auto a23 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
+    a23 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*leftfacet(idt(p)));
+    a23.close();
+    auto a23en = a23(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a23(1,1)=" << a23en );
 
     // - Tests A23 = <phat, w>, with phat \in Mh, w \in Wh
     // - >>> FAILS BUT IT RETURNS A TODO MESSAGE <<<
