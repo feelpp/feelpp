@@ -99,15 +99,16 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     BOOST_CHECK_CLOSE( I, I2, 1e-10 );
     BOOST_CHECK_CLOSE( I, I3, 1e-10 );
 
+    auto e=Px()+Py();
     auto a = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)   );
-    a = integrate( _range=internalfaces(meshnd), _expr=(id(l)/2)*(leftfacet(idt(p))));//+rightfacet(idt(p))));
+    a = integrate( _range=internalfaces(meshnd), _expr=(e*id(l)/2)*(leftfacet(idt(p)/e)));//+rightfacet(idt(p))));
     a.close();
 
     if ( Environment::isMasterRank() )
         std::cout << "a(1,1) = " << a(l,p) << std::endl;
 
     auto a1 = form2(_test=Mh, _trial=Mh );
-    a1 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l)/4);
+    a1 = integrate( _range=internalfaces(meshnd), _expr=e*id(l)*idt(l)/(4*e));
     a1.close();
     auto a1en = a1(l,l);
     if ( Environment::isMasterRank() )
@@ -131,7 +132,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     // - >>> FAILS <<<
     //
     auto a2 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
-    a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(id(p))*leftfacet(idt(p)));
+    a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(e*id(p))*leftfacet(idt(p)/e));
     a2.close();
     auto a2en = a2(p,p);
     if ( Environment::isMasterRank() )
@@ -141,14 +142,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     // - >>> FAILS <<<
     //
     auto a3 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
-    a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*rightfacet(idt(p)));
+    a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(e*id(p))*rightfacet(idt(p)/e));
     a3.close();
     auto a3en = a3(p,p);
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a3(1,1)=" << a3en );
 
     auto a23 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
-    a23 = integrate(_range=internalfaces(meshnd), _expr=rightface(id(p))*leftfacet(idt(p)));
+    a23 = integrate(_range=internalfaces(meshnd), _expr=rightface(e*id(p))*leftfacet(idt(p)/e));
     a23.close();
     auto a23en = a23(p,p);
     if ( Environment::isMasterRank() )
@@ -158,7 +159,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     //
     //auto a4 = form2(_test=Wh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED)  );
     auto a4 = form2(_test=Wh, _trial=Mh );
-    a4 = integrate( _range=internalfaces(meshnd), _expr=0.5*leftface(id(p))*idt(l) );
+    a4 = integrate( _range=internalfaces(meshnd), _expr=0.5*leftface(e*id(p))*idt(l)/e );
     a4.close();
     auto a4en = a4(p, l);
     if ( Environment::isMasterRank() )
@@ -166,7 +167,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
 
     // - Tests A32 = <ph, \mu>, with ph \in Wh, \mu \in Mh
     auto a5 = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
-    a5 = integrate(_range=internalfaces(meshnd), _expr=0.5*leftfacet(idt(p))*id(l) );
+    a5 = integrate(_range=internalfaces(meshnd), _expr=0.5*leftfacet(e*idt(p))*id(l)/e );
     a5.close();
     auto a5en = a5(l, p);
     if ( Environment::isMasterRank() )
