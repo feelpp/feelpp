@@ -177,6 +177,109 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a6(1,1)=" << a6en );
 
+    // The five following tests should all provide the (n-1)-Lebesgue
+    // measure of the boundary of the domain.
+    // The goal is to check whether we need to multiply by 0.5 or 0.25 or nothing in
+    // boundary integrals. Also
+    auto a7 = form2( _test=Wh, _trial=Wh);
+    a7 = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(p));
+    a7.close();
+    auto a7eval = a7(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a7(1,1)=" << a7eval );
+
+    // FAILS:
+    //
+    // Returned message:
+    // unknown location(0): fatal error: in "forms_suite/test_form2_faces<N4mpl_4int_ILi2EEE>": memory access violation at address: 0x00000000: no mapping at fault address
+    // /data/atlas_dprada/codes/feelpp/testsuite/feelvf/test_forms.cpp(97): last checkpoint
+    //
+    // auto a8 = form2( _test=Mh, _trial=Mh);
+    // a8 = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
+    // a8.close();
+    // auto a8eval = a8(l,l);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a8(1,1)=" << a8eval );
+
+    // FAILS:
+    //
+    // Just like a8
+    // auto a9 = form2(_test=Mh, _trial=Wh);
+    // a9 = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
+    // a9.close();
+    // auto a9eval = a9(l,p);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a9(1,1)=" << a9eval );
+
+    // FAILS:
+    //
+    // Just like a8
+    // auto a10 = form1(_test=Mh);
+    // a10 = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
+    // a10.close();
+    // auto a10eval = a10(l);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a10(1)=" << a10eval );
+
+    auto a12 = form1(_test=Wh);
+    a12 = integrate(_range=boundaryfaces(meshnd), _expr=id(p));
+    a12.close();
+    auto a12eval = a12(p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a12(1)=" << a12eval );
+
+
+
+    // ------------------------------------------------------------------------------------
+
+    // The following tests help to understand what we have to do when mixing
+    // integrals that require the extended pattern with others that do not
+
+    // Works fine
+    auto a7b = form2( _test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED));
+    a7b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(p));
+    a7b.close();
+    auto a7beval = a7b(p,p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a7b(1,1)=" << a7beval );
+
+    // FAILS
+    //
+    // Just like a8
+    // auto a8b = form2( _test=Mh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED));
+    // a8b = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
+    // a8b.close();
+    // auto a8beval = a8b(l,l);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a8b(1,1)=" << a8beval );
+
+    // FAILS
+    //
+    // Just like a8
+    // auto a9b = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED));
+    // a9b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
+    // a9b.close();
+    // auto a9beval = a9b(l,p);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a9b(1,1)=" << a9beval );
+
+    // FAILS
+    //
+    // Just like a8
+    // auto a10b = form1(_test=Mh, _pattern=size_type(Pattern::EXTENDED));
+    // a10b = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
+    // a10b.close();
+    // auto a10beval = a10b(l);
+    // if ( Environment::isMasterRank() )
+    //     BOOST_TEST_MESSAGE( "a10b(1)=" << a10beval );
+
+    auto a12b = form1(_test=Wh, _pattern=size_type(Pattern::EXTENDED));
+    a12b = integrate(_range=boundaryfaces(meshnd), _expr=id(p));
+    a12b.close();
+    auto a12beval = a12b(p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a12b(1)=" << a12beval );
+
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
 
