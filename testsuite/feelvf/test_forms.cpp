@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
         BOOST_TEST_MESSAGE( "a11(1,1)=" << a11en << " int =" << I1 );
 
     auto a111 = form2(_test=Mh, _trial=Mh );
-    a111 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l));
+    a111 = integrate( _range=internalfaces(meshnd), _expr=id(l)*idt(l)/4);
     a111.close();
     auto a111en = a111(l,l);
     if ( Environment::isMasterRank() )
@@ -154,17 +154,16 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a23(1,1)=" << a23en );
 
-#if 0
     // - Tests A23 = <phat, w>, with phat \in Mh, w \in Wh
-    // - >>> FAILS BUT IT RETURNS A TODO MESSAGE <<<
     //
-    auto a4 = form2(_test=Wh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED)  );
+    //auto a4 = form2(_test=Wh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED)  );
+    auto a4 = form2(_test=Wh, _trial=Mh );
     a4 = integrate( _range=internalfaces(meshnd), _expr=0.5*leftface(id(p))*idt(l) );
     a4.close();
     auto a4en = a4(p, l);
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a4(1,1)=" << a4en );
-#endif
+
     // - Tests A32 = <ph, \mu>, with ph \in Wh, \mu \in Mh
     auto a5 = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
     a5 = integrate(_range=internalfaces(meshnd), _expr=0.5*leftfacet(idt(p))*id(l) );
