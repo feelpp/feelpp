@@ -60,8 +60,8 @@ makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( forms_suite )
 
-using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
-//using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
+//using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
+using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
 
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     BOOST_CHECK_CLOSE( I, I2, 1e-10 );
     BOOST_CHECK_CLOSE( I, I3, 1e-10 );
 
-    auto a = form2(_test=Mh, _trial=Wh );
+    auto a = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)   );
     a = integrate( _range=internalfaces(meshnd), _expr=(id(l)/2)*(leftfacet(idt(p))));//+rightfacet(idt(p))));
     a.close();
 
