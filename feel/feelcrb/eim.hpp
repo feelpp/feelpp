@@ -186,7 +186,8 @@ public:
         M_offline_step( false ),
         M_tol( 1e-8 ),
         M_index_max(),
-        M_model( 0 )
+        M_model( 0 ),
+        M_correct_RB_SER( false )
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
@@ -201,7 +202,8 @@ public:
         M_offline_step( false ),
         M_tol( __tol ),
         M_index_max(),
-        M_model( model )
+        M_model( model ),
+        M_correct_RB_SER( false )
         {
 
             int user_max = ioption(_name="eim.dimension-max");
@@ -260,7 +262,8 @@ public:
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
         M_index_max( __bbf.M_index_max ),
-        M_model( __bbf.M_model )
+        M_model( __bbf.M_model ),
+        M_correct_RB_SER( __bbf.M_correct_RB_SER )
         {}
     ~EIM()
         {}
@@ -316,7 +319,14 @@ public:
         {
             return M_adapt_SER;
         }
-
+    void setRbCorrection( bool b )
+        {
+            M_correct_RB_SER = b;
+        }
+    bool getRbCorrection()
+        {
+            return M_correct_RB_SER;
+        }
     void setRestart( bool b )
         {
             M_restart = b;
@@ -405,6 +415,7 @@ protected:
 
     model_type* M_model;
 
+    mutable bool M_correct_RB_SER;
     bool M_restart;
     double M_greedy_maxerr;
 
@@ -768,16 +779,26 @@ EIM<ModelType>::offline()
         Mmax++;
 
     if( Environment::worldComm().isMasterRank() )
+    {
         std::cout << "M_M = " << M_M << ", Mmax = " << Mmax << std::endl;
+        std::cout << "RB correction = " << this->getRbCorrection() << std::endl;
+    }
 
     // Print maxerror (greedy) to file
     std::string eim_greedy_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error.dat";
-    std::ofstream greedy_maxerr;
+    std::string eim_greedy_inc_file_name = "cvg-eim-"+M_model->name()+"-Greedy-max-error-inc.dat";
+    std::ofstream greedy_maxerr, greedy_maxerr_inc;
     if( Environment::worldComm().isMasterRank() )
     {
         greedy_maxerr.open(eim_greedy_file_name, std::ios::app);
+        if( doption(_name="ser.radapt-eim-rtol") != 0 )
+            greedy_maxerr_inc.open(eim_greedy_inc_file_name, std::ios::app);
         if( M_M == 2 )
+        {
             greedy_maxerr << "M" << "\t" << "maxErr" <<"\n";
+            if( doption(_name="ser.radapt-eim-rtol") != 0 )
+                greedy_maxerr_inc << "M" << "\t" << "Increment" <<"\n";
+        }
     }
 
     LOG(INFO) << "start greedy algorithm...\n";
@@ -816,28 +837,40 @@ EIM<ModelType>::offline()
 
         if( ioption(_name="ser.eim-frequency") != 0  ) // SER
         {
-            if( M_M > 2 ) // Ensure M_greedy_maxerr (error for previous EIM approx.) is initialized
-            {
-                // Need adapt group size (r-adaptation) ?
-                double increment = math::abs( error - M_greedy_maxerr );
-                double inc_relative = increment/math::abs( M_greedy_maxerr );
-                if( Environment::worldComm().isMasterRank() )
-                    std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
-                              << ", rtol = " << doption(_name="ser.radapt-rtol") << std::endl;
-
-                // Adapt only if user has given tol in option (default : 0)
-                // increment > 1e-10 and inc_relative > 0 avoid to take into account EIM used for constants
-                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-rtol") )
-                    this->setAdaptationSER( true );
-            }
-
-            M_greedy_maxerr = error; // Store error to compute next increment
-
             // SER : choose between RB and PFEM approx
             if( boption(_name="ser.use-rb-in-eim-basis-build") )
                 solution = M_model->computeRbExpansion( mu ); // Use current RB approx
             else
                 solution = M_model->computePfem( mu ); // Use parametric FE with current affine decomposition
+
+            if( M_M > 2 ) // Ensure M_greedy_maxerr (error for previous EIM approx.) is initialized
+            {
+                // Need adapt group size (r-adaptation) ?
+                double increment = math::abs( error - M_greedy_maxerr );
+                double inc_relative = increment/math::abs( M_greedy_maxerr );
+                if( Environment::worldComm().isMasterRank() && doption(_name="ser.radapt-eim-rtol")!=0 )
+                {
+                    std::cout << " -- Absolute error (Greedy) relative increment = " << inc_relative
+                              << ", rtol = " << doption(_name="ser.radapt-eim-rtol") << std::endl;
+                    greedy_maxerr_inc << M_M << "\t" << inc_relative <<"\n";
+                }
+
+                // Adapt only if user has given tol in option (default : 0)
+                // increment > 1e-10 and inc_relative > 0 avoid to take into account EIM used for constants
+                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-eim-rtol") )
+                    this->setAdaptationSER( true );
+
+                // Use corrected RB if increment is not sufficient
+                this->setRbCorrection( false ); //Re-init to false
+                if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.corrected-rb-rtol") )
+                {
+                    if( Environment::worldComm().isMasterRank() )
+                        std::cout << " -- Relative increment < tol : RB approx used for next EIM will be corrected " << std::endl;
+                    this->setRbCorrection( true );
+                }
+            }
+
+            M_greedy_maxerr = error; // Store error to compute next increment
         }
         else
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
@@ -954,7 +987,11 @@ EIM<ModelType>::offline()
 
     }
     if( Environment::worldComm().isMasterRank() )
+    {
         greedy_maxerr.close();
+        if( doption(_name="ser.radapt-eim-rtol") != 0 )
+            greedy_maxerr_inc.close();
+    }
 
     time=timer.elapsed();
     if( Environment::worldComm().isMasterRank() )
@@ -1281,6 +1318,8 @@ public:
     virtual bool getOfflineStep()=0;
     virtual bool getAdaptationSER()=0;
     virtual void setAdaptationSER(bool b)=0;
+    virtual bool getRbCorrection()=0;
+    virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( boost::any rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
@@ -1308,7 +1347,7 @@ public:
 
     virtual vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)=0;
     virtual vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)=0;
-    virtual model_solution_type computeRbExpansion( parameter_type const& mu )=0;
+    virtual model_solution_type computeRbExpansion( parameter_type const& mu)=0;
     virtual model_solution_type computePfem( parameter_type const& mu )=0;
     virtual double RieszResidualNorm( parameter_type const& mu )=0;
     virtual sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )=0;
@@ -2001,6 +2040,10 @@ public:
 
     }//fillInterpolationMatrix
 
+    /*
+     computeRbExpansion returns RB solution expansion to be used with SER (return FE solution is RB space is not available)
+     If option ser.corrected-rb=true, return the RB solution corrected with Riesz representation of RB residual
+     */
     model_solution_type computeRbExpansion( parameter_type const& mu )
     {
         if( this->RBbuilt() )
@@ -2008,19 +2051,56 @@ public:
         else
             return M_model->solve( mu );
     }
-
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
         return M_model->functionSpace()->element();
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<true>)
     {
-        //return M_crb->expansion( mu, M_crb->dimension() );
-        auto sol = M_crb->expansion( mu, M_crb->dimension() );
+        //Compute RB approx (online)
+        std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
+        auto o = M_crb->lb( M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+        int size = uN.size();
+
+        // Compute RB expansion from uN
+        model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
+
+#if 0 // RB correction is not yet available
+        // Correct RB from Riesz representation of RB residual is asked
+        if( this->getRbCorrection() )
+        {
+            if( !boption(_name="ser.use-greedy-in-rb") && Environment::worldComm().isMasterRank() )
+                std::cout << "Correction terms are not appliable on RB expansion."
+                          << "Please check that error estimation is used (option ser.corrected-rb) has to be set to true." << std::endl;
+
+            // Compute correction terms
+            auto correction = M_crb->computeRieszResidual( mu, uN );
+            auto min_correction = correction->min();
+            auto max_correction = correction->max();
+            if( Environment::worldComm().isMasterRank() )
+                std::cout << "Correction min = " << min_correction
+                          << ", max = " << max_correction << std::endl;
+
+            // Add correction term to RB expansion
+            size_type s = sol.localSize();
+            size_type start = sol.firstLocalIndex();
+            for ( size_type i = 0; i < s; ++i )
+            {
+                if ( !sol.localIndexIsGhost( start + i ) )
+                {
+                    double correction_value = correction->operator()(start + i);
+                    sol.add( start + i, correction_value );
+                }
+            }
+        }
+#endif
+
         this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
         this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
         return sol;
     }
+
+    /* computePfem returns PFEM solution (FE with affine decomposition) */
     model_solution_type computePfem( parameter_type const& mu )
     {
         if( this->modelBuilt() )
@@ -2274,6 +2354,8 @@ public:
     bool getOfflineStep(){return M_eim->getOfflineStep();}
     bool getAdaptationSER(){return M_eim->getAdaptationSER();}
     void setAdaptationSER(bool b){M_eim->setAdaptationSER(b);}
+    bool getRbCorrection(){return M_eim->getRbCorrection();}
+    void setRbCorrection(bool b){M_eim->setRbCorrection(b);}
 
     void offline(){M_eim->offline();}
     void setRestart(bool b){ M_eim->setRestart(b);}
