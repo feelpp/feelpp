@@ -289,7 +289,8 @@ public:
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         exporter( Exporter<mesh_type>::New( "ensight" ) ),
         M_rebuild( this->rebuildDB() ),
-        M_SER_groupsize()
+        M_SER_adapt( false ),
+        M_SER_maxerr( 0 )
     {
     }
 
@@ -371,7 +372,8 @@ public:
         exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
         M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>()),
         M_rebuild( this->rebuildDB() ),
-        M_SER_groupsize( ioption(_name="ser.rb-frequency") )
+        M_SER_adapt( false ),
+        M_SER_maxerr( 0 )
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -462,7 +464,8 @@ public:
         M_coeff_pr_ini_online( o.M_coeff_pr_ini_online ),
         M_coeff_du_ini_online( o.M_coeff_du_ini_online ),
         M_rebuild( o.M_rebuild ),
-        M_SER_groupsize( o.M_SER_groupsize )
+        M_SER_adapt( o.M_SER_adapt ),
+        M_SER_maxerr( o.M_SER_maxerr )
     {}
 
     //! destructor
@@ -1013,6 +1016,8 @@ public:
         return ub( K, *mu, uN, uNdu );
     }
 
+
+    vector_ptrtype computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
     double computeRieszResidualNorm( parameter_type const& mu ) const;
     double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
 
@@ -1185,8 +1190,8 @@ public:
     void setRebuild( bool b ){ M_rebuild = b; } ;
     bool getRebuild(){ return M_rebuild; } ;
 
-    void setGroupSizeSER( int s ){ M_SER_groupsize = s; } ;
-    int getGroupSizeSER(){ return M_SER_groupsize; } ;
+    void setAdaptationSER( bool b ) const {M_SER_adapt = b;} ;
+    bool getAdaptationSER() const {return M_SER_adapt;} ;
     /**
      * if true, show the mu selected during the offline stage
      */
@@ -1471,7 +1476,9 @@ protected:
     bool M_offline_step;
 
     bool M_rebuild;
-    int M_SER_groupsize;
+    //int M_SER_groupsize;
+    mutable bool M_SER_adapt;
+    mutable double M_SER_maxerr;
 
     preconditioner_ptrtype M_preconditioner;
     preconditioner_ptrtype M_preconditioner_primal;
@@ -1985,22 +1992,9 @@ CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrt
 }
 
 template<typename TruthModelType>
-double
-CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu ) const
+typename CRB<TruthModelType>::vector_ptrtype
+CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
 {
-    std::vector<vectorN_type> uN;
-    std::vector<vectorN_type> uNdu;
-    std::vector<vectorN_type> uNold;
-    std::vector<vectorN_type> uNduold;
-    auto o = lb( M_N, mu, uN, uNdu, uNold, uNduold  );
-    return this->computeRieszResidualNorm( mu, uN );
-}
-
-template<typename TruthModelType>
-double
-CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
-{
-    element_type u_approx = M_model->functionSpace()->element();
 
     auto all_beta = M_model->computeBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     auto beta_A = all_beta.template get<1>();
@@ -2034,9 +2028,33 @@ CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::ve
     }
 
     YR->close();
-    YR->printMatlab( "YR.m" );
+    return YR;
+}
 
-    double dual_norm = math::sqrt( M_model->scalarProduct( YR,YR ) );
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu ) const
+{
+    std::vector<vectorN_type> uN;
+    std::vector<vectorN_type> uNdu;
+    std::vector<vectorN_type> uNold;
+    std::vector<vectorN_type> uNduold;
+    auto o = lb( M_N, mu, uN, uNdu, uNold, uNduold  );
+    return this->computeRieszResidualNorm( mu, uN );
+}
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
+{
+    element_type u_approx = M_model->functionSpace()->element();
+
+    auto all_beta = M_model->computeBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    auto beta_A = all_beta.template get<1>();
+    auto beta_F = all_beta.template get<2>();
+
+    vector_ptrtype YR( this->computeRieszResidual( mu, uN ) );
+    double dual_norm = math::sqrt( M_model->scalarProduct(YR,YR) );
     return dual_norm;
 }
 
@@ -2370,12 +2388,13 @@ CRB<TruthModelType>::offline()
     bool write_memory_evolution = all_procs || only_one_proc ;
 
     int user_max = ioption(_name="crb.dimension-max");
-    if( ioption(_name="ser.rb-frequency") != 0 ) // SER
+    int rb_frequency = ioption(_name="ser.rb-frequency");
+    if( rb_frequency != 0 ) // SER
     {
-        if( M_N == 0 )
-            M_iter_max = Nold + 1; //Initialization step
-        else if( Nold + this->getGroupSizeSER() <= user_max )
-            M_iter_max = Nold + this->getGroupSizeSER();
+        if( M_N == 0 || (this->getAdaptationSER() && Nold < user_max) )
+            M_iter_max = Nold + 1; //Initialization step || add a suppl. basis is needed
+        else if( Nold + rb_frequency <= user_max )
+            M_iter_max = Nold + rb_frequency;
         else
             M_iter_max = user_max;
         // if( proc_number == this->worldComm().masterRank() )
@@ -2389,9 +2408,11 @@ CRB<TruthModelType>::offline()
         M_mode_number=1;
 
         std::string pslogname = (boost::format("N-%1%") %M_N ).str();
-
         if( write_memory_evolution )
             ps.log(pslogname);
+
+        if( proc_number == this->worldComm().masterRank() )
+            std::cout << "N = " << M_N << "/"  << M_iter_max << "( max = " << user_max << ")\n";
 
         boost::mpi::timer timer, timer2, timer3;
         LOG(INFO) <<"========================================"<<"\n";
@@ -5916,9 +5937,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double output;
     int time_index=0;
 
-    // init by 1, the model could provide better init
-    //uN[0].setOnes(M_N);
-
     double conditioning=0;
     double determinant=0;
     uN[0].setOnes(N);
@@ -6406,6 +6424,19 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     //now all proc have same maxerr
     maxerr = *it_max;
 
+    // SER : criterion for RB r-adaptation
+    if( ser_error_estimation )
+    {
+        double increment = math::abs( maxerr - M_SER_maxerr );
+        double inc_relative = increment/math::abs( M_SER_maxerr );
+        // Increase size of next RB group if necessary
+        if( increment > 1e-10 && inc_relative > 0 && inc_relative < doption(_name="ser.radapt-rb-rtol") )
+            this->setAdaptationSER( true );
+
+        if( Environment::worldComm().isMasterRank() )
+            std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
+        M_SER_maxerr = maxerr;
+    }
 
     if( proc == master_proc )
         std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du<<" -- output error : "<<maxerr<<std::endl;
@@ -9035,7 +9066,9 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N , int time_inde
 
     element_type ucrb;
     if( time_index == -1 )
+    {
         ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[size-1] , Nwn);
+    }
     else
     {
         CHECK( time_index < size )<<" call crb::expansion with a wrong value of time index : "<<time_index<<" or size of uN vector is only "<<size;

@@ -311,10 +311,16 @@ public:
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
                 {
-                    if( proc_number == Environment::worldComm().masterRank() )
+                    if( proc_number == Environment::worldComm().masterRank() && !ioption(_name="ser.rb-frequency") )
                         std::cout << "No CRB DB available, do crb offline computations...\n";
                     crb->setOfflineStep( true );
-                    crb->offline();
+                    do  // SER r-adaptation for RB
+                    {
+                        crb->setAdaptationSER( false ); //re-init to false
+                        crb->offline();
+                    }
+                    while(crb->getAdaptationSER());
+
                     if( write_memory_evolution )
                         this->generateMemoryEvolution(pslogfile);
                 }
@@ -381,7 +387,6 @@ public:
     void SER()
         {
             bool do_offline_eim = false;
-            bool do_r_adaptation = false;
             // Identifiy is offline eim still needs to be done
             auto eim_sc_vector = model->scalarContinuousEim();
             auto eim_sd_vector = model->scalarDiscontinuousEim();
@@ -400,64 +405,48 @@ public:
                     this->loadDB(); // update AffineDecomposition and enrich RB database
                 }
                 crb->setRebuild( false ); //do not rebuild since co-build is not finished
-                crb->setGroupSizeSER( ioption(_name="ser.rb-frequency") ); //re-init to initial value
                 int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
-                if( do_offline_eim )
+                if( do_offline_eim && crb->getOfflineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
                 {
                     do_offline_eim = false; //re-init
-                    do
+                    for( auto eim_sc : eim_sc_vector )
                     {
-                        do_r_adaptation = false;
-                        for( auto eim_sc : eim_sc_vector )
+                        eim_sc->setRestart( false ); //do not restart since co-build is not finished
+
+                        if( use_rb )
                         {
-                            eim_sc->setRestart( false ); //do not restart since co-build is not finished
+                            eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+                            eim_sc->setModel( model );
+                        }
+                        do //r-adaptation for EIM
+                        {
                             eim_sc->setAdaptationSER( false ); //re-init to false
-
-                            if( use_rb )
-                            {
-                                // TODO : if !RBbuilt() ?
-                                eim_sc->setRB( crb ); //update rb model member to be used in eim offline
-                                if( !eim_sc->modelBuilt() )
-                                    eim_sc->setModel( model );
-                            }
-
                             eim_sc->offline();
-                            do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
-                            do_r_adaptation = do_r_adaptation || eim_sc->getAdaptationSER();
                         }
-                        for( auto eim_sd : eim_sd_vector )
+                        while( eim_sc->getAdaptationSER() );
+
+                        do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                    }
+                    for( auto eim_sd : eim_sd_vector )
+                    {
+                        eim_sd->setRestart( false ); //do not restart since co-build is not finished
+                        //eim_sd->setAdaptationSER( false ); //re-init to false
+
+                        if( use_rb )
                         {
-                            eim_sd->setRestart( false ); //do not restart since co-build is not finished
+                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+                            eim_sd->setModel( model );
+                        }
+                        do //r-adaptation for EIM
+                        {
                             eim_sd->setAdaptationSER( false ); //re-init to false
-
-                            if( use_rb )
-                            {
-                                // TODO : if !RBbuilt() ?
-                                eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                                if( !eim_sd->modelBuilt() )
-                                    eim_sd->setModel( model );
-                            }
-
                             eim_sd->offline();
-                            do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
-                            do_r_adaptation = do_r_adaptation || eim_sd->getAdaptationSER();
                         }
-                        // Check criterion for r-adaptation
-                        if( do_r_adaptation ) // At least one EIM doesn't statisfy the criterion
-                        {
-                            // All EIM has to be adapted
-                            for( auto eim_sc : eim_sc_vector )
-                                eim_sc->setAdaptationSER( true );
-                            for( auto eim_sd : eim_sd_vector )
-                                eim_sd->setAdaptationSER( true );
+                        while( eim_sd->getAdaptationSER() );
 
-                            // Update counter for number of RB basis functions to build
-                            int group_size = crb->getGroupSizeSER();
-                            group_size++;
-                            crb->setGroupSizeSER( group_size );
-                        }
-                    }while( do_r_adaptation );
+                        do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+                    }
 
                     model->assemble(); //Affine decomposition has changed since eim has changed
                 }
