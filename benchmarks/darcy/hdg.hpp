@@ -477,6 +477,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     rhs2 += integrate(_range=elements(mesh),
                       _expr=-f*id(w));
 
+    if(Environment::isMasterRank())
+        std::cout << "rhs2 works fine" << std::endl;
+
     // begin dp: changed signs (to move terms to the left)
     auto rhs3 = form1( _test=Mh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
@@ -486,23 +489,35 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                       _expr=-id(l)*p_exact);
     // end dp
 
+    if(Environment::isMasterRank())
+        std::cout << "rhs3 works fine" << std::endl;
+
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
     a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
+    if(Environment::isMasterRank())
+        std::cout << "a11 works fine" << std::endl;
 
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
+    if(Environment::isMasterRank())
+        std::cout << "a12 works fine" << std::endl;
+
     // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(),
-                      _pattern=size_type(Pattern::EXTENDED) );
+                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());//,
+    //                      _pattern=size_type(Pattern::EXTENDED) );
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=0.5*( idt(phat)*leftface(trans(id(v))*N())+
                                  idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=idt(phat)*trans(id(v))*N());
     // end dp
+
+    if(Environment::isMasterRank())
+        std::cout << "a13 works fine" << std::endl;
 
     // begin dp: added extended pattern
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
@@ -516,6 +531,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a21 += integrate(_range=boundaryfaces(mesh),
                      _expr=(id(w)*trans(idt(u))*N()));
 
+    if(Environment::isMasterRank())
+        std::cout << "a21 works fine" << std::endl;
+
     // begin dp: added extended pattern
     auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost(),
@@ -528,6 +546,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
+    if(Environment::isMasterRank())
+        std::cout << "a22 works fine" << std::endl;
+
     // begin dp: added extended pattern, multiplied by 0.5
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(),
@@ -539,6 +560,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     // end dp
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+
+    if(Environment::isMasterRank())
+        std::cout << "a23 works fine" << std::endl;
 
     // begin dp: added extended pattern, multiplied by 0.5
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
@@ -553,6 +577,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a31 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=( id(l)*(trans(idt(u))*N()) ));
 
+    if(Environment::isMasterRank())
+        std::cout << "a31 works fine" << std::endl;
 
     // begin dp: added extended pattern, mulitplied by 0.5
     auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
@@ -564,6 +590,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     // end do
     a32 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+
+    if(Environment::isMasterRank())
+        std::cout << "a32 works fine" << std::endl;
 
     auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
@@ -577,5 +606,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
                      _expr=idt(phat) * id(l) );
 
+    if(Environment::isMasterRank())
+        std::cout << "a33 works fine" << std::endl;
 
 }
