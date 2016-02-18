@@ -110,12 +110,12 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
-    typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
     typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
     typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -150,12 +150,12 @@ public:
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
 
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
-        typedef FunctionSpace<MeshType, bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
@@ -315,14 +315,14 @@ public:
          */
         scalar_type scalar( std::string const& __n ) const
         {
-            if ( M_scalar.find( __n ) == M_scalar.end() )
+            if ( M_scalar.find( sanitize(__n) ) == M_scalar.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid scalar value name " << __n;
+                __err << "invalid scalar value name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_scalar.find( __n )->second.first;
+            return M_scalar.find( sanitize(__n) )->second.first;
         }
 
 
@@ -333,14 +333,14 @@ public:
          */
         nodal_scalar_type nodalScalar( std::string const& __n ) const
         {
-            if ( M_nodal_scalar.find( __n ) == M_nodal_scalar.end() )
+            if ( M_nodal_scalar.find( sanitize(__n) ) == M_nodal_scalar.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid nodal scalar field name " << __n;
+                __err << "invalid nodal scalar field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_nodal_scalar.find( __n )->second.first;
+            return M_nodal_scalar.find( sanitize(__n) )->second.first;
         }
 
         /**
@@ -350,14 +350,14 @@ public:
          */
         nodal_vector_type nodalVector( std::string const& __n ) const
         {
-            if ( M_nodal_vector.find( __n ) == M_nodal_vector.end() )
+            if ( M_nodal_vector.find( sanitize(__n) ) == M_nodal_vector.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid nodal vector field name " << __n;
+                __err << "invalid nodal vector field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_nodal_vector.find( __n )->second;
+            return M_nodal_vector.find( sanitize(__n) )->second;
         }
 
         /**
@@ -367,14 +367,14 @@ public:
          */
         nodal_tensor2_type nodalTensor2( std::string const& __n ) const
         {
-            if ( M_nodal_tensor2.find( __n ) == M_nodal_tensor2.end() )
+            if ( M_nodal_tensor2.find( sanitize(__n) ) == M_nodal_tensor2.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid nodal tensor2 field name " << __n;
+                __err << "invalid nodal tensor2 field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_nodal_tensor2.find( __n )->second;
+            return M_nodal_tensor2.find( sanitize(__n) )->second;
         }
 
         /**
@@ -384,14 +384,14 @@ public:
          */
         element_scalar_type elementScalar( std::string const& __n ) const
         {
-            if ( M_element_scalar.find( __n ) == M_element_scalar.end() )
+            if ( M_element_scalar.find( sanitize(__n) ) == M_element_scalar.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid element scalar field name " << __n;
+                __err << "invalid element scalar field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_element_scalar.find( __n )->second;
+            return M_element_scalar.find( sanitize(__n) )->second;
         }
 
         /**
@@ -401,14 +401,14 @@ public:
          */
         element_vector_type elementVector( std::string const& __n ) const
         {
-            if ( M_element_vector.find( __n ) == M_element_vector.end() )
+            if ( M_element_vector.find( sanitize(__n) ) == M_element_vector.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid element vector field name " << __n;
+                __err << "invalid element vector field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_element_vector.find( __n )->second;
+            return M_element_vector.find( sanitize(__n) )->second;
         }
 
         /**
@@ -418,14 +418,14 @@ public:
          */
         element_tensor2_type elementTensor2( std::string const& __n ) const
         {
-            if ( M_element_tensor2.find( __n ) == M_element_tensor2.end() )
+            if ( M_element_tensor2.find( sanitize(__n) ) == M_element_tensor2.end() )
             {
                 std::ostringstream __err;
-                __err << "invalid element tensor2 field name " << __n;
+                __err << "invalid element tensor2 field name " << sanitize(__n);
                 throw std::logic_error( __err.str() );
             }
 
-            return M_element_tensor2.find( __n )->second;
+            return M_element_tensor2.find( sanitize(__n) )->second;
         }
 
         //@}
@@ -451,28 +451,28 @@ public:
 
         void addScalar( std::string const& name, scalar_type const& __s, bool cst = false )
         {
-            M_scalar[name] =  std::make_pair( __s, cst );
+            M_scalar[sanitize(name)] =  std::make_pair( __s, cst );
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
 
         void addComplex( std::string const& name, complex_type const& __s )
         {
-            M_complex[name] =  __s;
+            M_complex[sanitize(name)] =  __s;
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
 
         void addNodal( nodal_scalar_type const& __s )
         {
-            M_nodal_scalar[__s.name()] =  __s;
+            M_nodal_scalar[sanitize(__s.name())] =  __s;
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
 
         void addNodal( nodal_vector_type const& __s )
         {
-            M_nodal_vector[__s.name()] =  __s;
+            M_nodal_vector[sanitize(__s.name())] =  __s;
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
@@ -485,29 +485,22 @@ public:
          * @param  prefix prefix string for the region
          */
         void
-        addRegions( std::string prefix = "" )
+        addRegions( std::string const& prefix = "" )
+        {
+            this->addRegions( prefix,prefix );
+        }
+        void
+        addRegions( std::string const& prefix, std::string const& prefixfname )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
-            if ( !M_ts->M_scalar_p0 )
-            {
-                VLOG(1) << "[timeset] creating space... " << M_mesh.get()->worldComm().numberOfSubWorlds();
-                if ( M_mesh.get()->worldComm().numberOfSubWorlds() > 1 )
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                else
-                {
-                    auto wc = std::vector<WorldComm>( 1, M_mesh.get()->worldComm() );
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New ( _mesh=M_mesh.get(), _worldscomm=wc );
-                }
-                M_scalar_p0 = M_ts->M_scalar_p0;
-            }
+            WorldComm const& meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
+                M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) :
+                M_mesh.get()->worldComm();
+            this->updateScalarP0( std::vector<WorldComm>(1,meshComm) );
+
             VLOG(1) << "[timeset] adding pid...\n";
-            if ( prefix.empty() )
-                add( "pid", regionProcess( M_scalar_p0 ) );
-            else
-                add( prefix + "." + "pid", regionProcess( M_scalar_p0 ) );
+            this->add( prefixvm(prefix,"pid"), prefixvm(prefixfname,"pid"),  regionProcess( M_scalar_p0 ) );
+
             //add( "marker", regionMarker( M_scalar_p0 ) );
             //add( "marker2", regionMarker2( M_scalar_p0 ) );
             //add( "marker3", regionMarker3( M_scalar_p0 ) );
@@ -516,7 +509,7 @@ public:
         template<typename FunctionType>
         void add( std::initializer_list<std::string>  __n, FunctionType const& func )
         {
-            std::vector<std::string> str( __n );
+            std::vector<std::string> str( sanitize( __n ) );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
 
@@ -529,7 +522,7 @@ public:
         void add( std::string const& __n, FunctionType const& func )
         {
             tic();
-            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            add_( sanitize(__n), func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
             toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
@@ -544,7 +537,7 @@ public:
             operator()( T const& fun ) const
                 {
                     LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
+                    M_tset.add_( sanitize(fun.name()), fun, mpl::bool_<false>() );
                 }
         };
         template<typename FunctionType>
@@ -580,7 +573,7 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func )
         {
             typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
-            add( __n,__fname,func,is_ptr_or_shared_ptr() );
+            add( sanitize(__n),__fname,func,is_ptr_or_shared_ptr() );
         }
 
         template<typename FunctionType>
@@ -615,11 +608,19 @@ public:
 
                 if ( !M_ts->M_scalar_p1 )
                 {
-                    M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
-                                                                                   MESH_RENUMBER | MESH_CHECK,
-                                                                                   typename scalar_p1_space_type::periodicity_type(),
-                                                                                   func.worldsComm(),
-                                                                                   std::vector<bool>(1,extendeddof) );
+                    if ( M_ts->M_vector_p1 && M_ts->M_vector_p1->hasCompSpace() )
+                    {
+                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type>();
+                        M_ts->M_scalar_p1->shallowCopy( M_ts->M_vector_p1->compSpace() );
+                    }
+                    else
+                    {
+                        M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                       MESH_RENUMBER | MESH_CHECK,
+                                                                                       typename scalar_p1_space_type::periodicity_type(),
+                                                                                       func.worldsComm(),
+                                                                                       std::vector<bool>(1,extendeddof) );
+                    }
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -647,6 +648,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_scalar_p1, func, M_nodal_scalar[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to local min value for these ghosts dofs (else can disturbe visualisation range)
                     if ( M_scalar_p1->dof()->buildDofTableMPIExtended() && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
@@ -657,6 +659,7 @@ public:
                         for ( int k=0;k<nGhostDofAddedInExtendedDofTable;++k )
                             M_nodal_scalar[__fname].set( startDof+k, thelocalmin );
                     }
+#endif
                 }
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
@@ -709,6 +712,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_vector_p1, func, M_nodal_vector[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_vector_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -742,6 +746,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -795,6 +800,7 @@ public:
                 {
                     // interpolate field on visualisation space
                     interpolate( M_tensor2_p1, func, M_nodal_tensor2[__fname] );
+#if 0
                     // if exporter use extended dof table but the field to export is not define on this part
                     // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
                     size_type nGhostDofAddedInExtendedDofTable = M_tensor2_p1->dof()->nGhostDofAddedInExtendedDofTable();
@@ -828,6 +834,7 @@ public:
                                 }
                         }
                     } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
                 } // if ( func.worldComm().isActive() )
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
@@ -841,34 +848,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
-                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
-                if ( !M_ts->M_scalar_p0 )
-                {
-                    M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                                   MESH_RENUMBER | MESH_CHECK,
-                                                                                   typename scalar_p0_space_type::periodicity_type(),
-                                                                                   func.worldsComm(),
-                                                                                   std::vector<bool>(1,extendeddof) );
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
-
-                else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
-                {
-                    M_scalar_p0 = M_ts->M_scalar_p0;
-                }
-
-                if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
-                {
-                    M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
-                                                                             MESH_RENUMBER | MESH_CHECK,
-                                                                             typename scalar_p0_space_type::periodicity_type(),
-                                                                             func.worldsComm(),
-                                                                             std::vector<bool>(1,extendeddof) );
-                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
-                }
+                this->updateScalarP0( func.worldsComm() );
 
                 // interpolate field on visualisation space
                 // If user asks for P0 visu [exporter.element-spaces options contains P0]
@@ -884,6 +866,7 @@ public:
                 {
                     if ( !M_ts->M_scalar_p1 )
                     {
+                        bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename scalar_p1_space_type::periodicity_type(),
@@ -1112,6 +1095,37 @@ public:
         Step& operator=( Step const& );
 
         //@}
+
+        void updateScalarP0( std::vector<WorldComm> const& worldsComm )
+        {
+            if ( !M_ts->M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                               MESH_RENUMBER | MESH_CHECK,
+                                                                               typename scalar_p0_space_type::periodicity_type(),
+                                                                               worldsComm,
+                                                                               std::vector<bool>(1,extendeddof) );
+                M_scalar_p0 = M_ts->M_scalar_p0;
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+            else if ( M_mesh.get() == M_ts->M_scalar_p0->mesh() )
+            {
+                M_scalar_p0 = M_ts->M_scalar_p0;
+            }
+
+            if ( M_mesh.get() != M_ts->M_scalar_p0->mesh() && !M_scalar_p0 )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                         MESH_RENUMBER | MESH_CHECK,
+                                                                         typename scalar_p0_space_type::periodicity_type(),
+                                                                         worldsComm,
+                                                                         std::vector<bool>(1,extendeddof) );
+                DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
+            }
+
+        }
 
         friend class boost::serialization::access;
 
@@ -1509,6 +1523,14 @@ public:
     }
 
     /**
+       \return the name of the time set
+    */
+    void setName( std::string const& name ) const
+    {
+        M_name = name;
+    }
+
+    /**
        \return the index of the time set
     */
     uint32_type index() const
@@ -1734,7 +1756,7 @@ protected:
     /**
        name of the time set
     */
-    std::string M_name;
+    mutable std::string M_name;
 
     /**
        index of the time set

@@ -21,6 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-foreach( DIR poiseuille kovasznay2 turek stokes nozzle steps)
+foreach( DIR poiseuille kovasznay2 turek stokes nozzle steps phantom)
   add_subdirectory( ${DIR} )
 endforeach()

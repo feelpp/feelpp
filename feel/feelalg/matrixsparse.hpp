@@ -256,6 +256,22 @@ public:
         checkProperties();
     }
     /**
+     * \return true is matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric( bool check = false ) const
+        {
+            checkProperties();
+            return M_mprop.test( SYMMETRIC );
+        }
+    /**
+     * \return true is matrix is symmetric struturally, false otherwise
+     */
+    bool isStructurallySymmetric() const
+        {
+            checkProperties();
+            return M_mprop.test( STRUCTURALLY_SYMMETRIC );
+        }
+    /**
      * \return true if matrix is hermitian, false otherwise
      */
     bool isHermitian() const
@@ -272,6 +288,15 @@ public:
         checkProperties();
         return M_mprop.test( NON_HERMITIAN );
     }
+
+    /**
+     * \return true if matrix is symmetric positive definite(SPD), false otherwise
+     */
+    bool isSPD() const
+        {
+            checkProperties();
+            return M_mprop.test( SYMMETRIC | POSITIVE_DEFINITE );
+        }
 
     /**
      * \return true if matrix is positive definite, false otherwise
@@ -292,7 +317,7 @@ public:
     }
 
     /**
-     * \return true if matrix is singular, false otherwise
+     * \return true if matrix is positive definite, false otherwise
      */
     bool isPositiveDefinite() const
     {
@@ -300,21 +325,38 @@ public:
         return M_mprop.test( POSITIVE_DEFINITE );
     }
 
+    /**
+     * \return true if matrix is negative definite, false otherwise
+     */
+    bool isNegativeDefinite() const
+    {
+        checkProperties();
+        return M_mprop.test( NEGATIVE_DEFINITE );
+    }
+
+    /**
+     * \return true if matrix is negative definite, false otherwise
+     */
+    bool isIndefinite() const
+        {
+            checkProperties();
+            return M_mprop.test( INDEFINITE );
+        }
+    
     bool haveConsistentProperties() const
     {
         bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
         bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
-        return ( p1 == false ) && ( p2 == false );
+        bool p3 = M_mprop.test( SYMMETRIC ) && M_mprop.test( STRUCTURALLY_SYMMETRIC );
+        bool p4 = ( M_mprop.test( INDEFINITE ) &&
+                    ( M_mprop.test( POSITIVE_DEFINITE ) ||
+                      M_mprop.test( NEGATIVE_DEFINITE ) ) );
+        return ( p1 == false ) && ( p2 == false ) && ( p3 == false ) && ( p4 == false );
     }
     bool isDense() const
     {
         return M_mprop.test( DENSE );
     }
-
-    /**
-     * \return true if matrix is symmetric, false otherwise
-     */
-    virtual bool isSymmetric() const;
 
     /**
      * \return true if \p this is the transpose of Trans, false otherwise
@@ -328,11 +370,16 @@ public:
         {
             std::ostringstream ostr;
             ostr << "Invalid matrix properties:\n"
-                 << "           HERMITIAN: " << isHermitian() << "\n"
-                 << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
-                 << "            SINGULAR: " << isSingular() << "\n"
-                 << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
-                 << "               DENSE: " << isDense() << "\n";
+                 << "                   SPD: " << isSPD() << "\n"                
+                 << "             SYMMETRIC: " << this->isSymmetric() << "\n"
+                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"                
+                 << "             HERMITIAN: " << isHermitian() << "\n"
+                 << "         NON_HERMITIAN: " << isNonHermitian() << "\n"
+                 << "              SINGULAR: " << isSingular() << "\n"
+                 << "     POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
+                 << "     NEGATIVE_DEFINITE: " << isNegativeDefinite() << "\n"
+                 << "            INDEFINITE: " << isIndefinite() << "\n"
+                 << "                 DENSE: " << isDense() << "\n";
             throw std::logic_error( ostr.str() );
         }
     }
@@ -675,7 +722,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols )
+                     std::vector<size_type> const& cols, bool doClose = true )
     {
         CHECK( false ) << "invalid call : Not Implemented in base class";
     }
@@ -778,6 +825,11 @@ public:
      * Implemented in MatrixPetsc
      */
     virtual void getMatInfo( std::vector<double> &) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
+    virtual void threshold( void ) 
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
@@ -975,16 +1027,6 @@ void MatrixSparse<T>::applyInverseSqrt( Vector<value_type>& vec_in, Vector<value
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;
     FEELPP_ASSERT( 0 ).error( "invalid call" );
-}
-
-template <typename T>
-bool MatrixSparse<T>::isSymmetric () const
-{
-    std::cerr << "Error! This function is not yet implemented in the base class!"
-              << std::endl;
-    FEELPP_ASSERT( 0 ).error( "invalid call" );
-
-    return 0;
 }
 
 template <typename T>

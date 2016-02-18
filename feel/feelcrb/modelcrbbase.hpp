@@ -274,6 +274,7 @@ public :
         M_is_initialized( false )
     {
     }
+    virtual ~ModelCrbBase() {}
 
     virtual std::string modelName() { return "generic-model-name"; }
 

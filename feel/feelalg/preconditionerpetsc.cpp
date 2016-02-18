@@ -517,18 +517,31 @@ static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, 
     CHKERRQ(ierr);
     PetscFunctionReturn(0.);
 }
-static PetscErrorCode PCHYPRE_AMSSetDiscreteGradient_HYPRE(PC pc, Mat G)
+static PetscErrorCode PCHYPRE_AMSSetCoordinateVectors(PC pc,Vec x, Vec y, Vec z)
 {
     PetscErrorCode ierr;
-    ierr = PCHYPRESetDiscreteGradient(pc, G);
+    PetscScalar *x_v;
+    PetscScalar *y_v;
+    PetscScalar *z_v;
+    ierr = VecGetArray(x, &x_v); CHKERRQ(ierr);
+    ierr = VecGetArray(y, &y_v); CHKERRQ(ierr);
+    ierr = VecGetArray(z, &z_v); CHKERRQ(ierr);
+    PetscReal *coord;
+    PetscInt nloc;
+    ierr = VecGetLocalSize(x, &nloc);
     CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetEdgeConstantVectors(PC pc,Vec ozz, Vec zoz, Vec zzo)
-{
-    PetscErrorCode ierr;
-    ierr = PCHYPRESetEdgeConstantVectors(pc, ozz, zoz, zzo);
-    CHKERRQ(ierr);
+    coord = new PetscReal[3*nloc];
+    for(int i = 0; i < 3*nloc; i++)
+    {
+      coord[i+0] = x_v[i];
+      coord[i+1] = y_v[i];
+      coord[i+2] = z_v[i];
+    }
+    ierr = PCSetCoordinates(pc,3, nloc, coord); CHKERRQ(ierr);
+    ierr = VecRestoreArray(x, &x_v); CHKERRQ(ierr);
+    ierr = VecRestoreArray(y, &y_v); CHKERRQ(ierr);
+    ierr = VecRestoreArray(z, &z_v); CHKERRQ(ierr);
+    delete [] coord;
     PetscFunctionReturn(0);
 }
 static PetscErrorCode PCHYPRE_AMSSetAlphaPoissonMatrix_HYPRE(PC pc, Mat G)
@@ -1139,6 +1152,7 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
     case CHOLESKY_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCCHOLESKY );
         CHKERRABORT( worldComm.globalComm(),ierr );
+        PetscPCFactorSetMatSolverPackage( pc, matSolverPackage_type );
         break;
 
     case ICC_PRECOND:
@@ -1465,7 +1479,8 @@ ConfigurePC::run( PC& pc )
     {
         ConfigureSubPC( pc, this->precFeel(), this->worldComm().subWorldCommSeq(), this->prefix(), this->prefixOverwrite() );
     }
-    else if ( std::string(pctype) == "lu" )
+    else if ( ( std::string(pctype) == "lu" ) ||
+              ( std::string(pctype) == "cholesky" ) )
     {
         ConfigurePCLU( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), this->prefixOverwrite() );
     }
@@ -1542,7 +1557,7 @@ ConfigurePC::run( PC& pc )
 
 void
 updateOptionsDescKSP( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     std::string kspctx = (sub.empty())? "" : sub+"-";
 
@@ -1588,7 +1603,7 @@ updateOptionsDescKSP( po::options_description & _options, std::string const& pre
 }
 po::options_description
 getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDefaultValue=true,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, useDefaultValue, kspType, rtol, maxit );
@@ -1596,17 +1611,17 @@ getOptionsDescKSP( std::string const& prefix, std::string const& sub, bool useDe
 }
 
 po::options_description
-getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite,
-                   std::string const& kspType = "gmres", double rtol = 1e-13, size_type maxit=1000 )
+getOptionsDescKSP( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+                   std::string const& kspType = "gmres", double rtol = 1e-8, size_type maxit=1000 )
 {
     po::options_description _options( "options KSP",200);
     updateOptionsDescKSP( _options, prefix, sub, true, kspType, rtol, maxit );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescKSP( _options, prefixOver, sub, false );
     return _options;
 }
 po::options_description
-updateOptionsDescPrecBase( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+updateOptionsDescPrecBase( po::options_description & _options, std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string const& pcType = "lu" )
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
     //po::options_description _options( "options PC", 200);
@@ -1614,7 +1629,7 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
     _options.add_options()
         ( prefixvm( prefix,pcctx+"pc-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( pcType ):Feel::po::value<std::string>(),
-          "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+          "type of preconditioners (lu, cholesky, icc, ilut, ilutp, diag, id,...)" )
         ( prefixvm( prefix,pcctx+"pc-view" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "display preconditioner information" )
@@ -1639,12 +1654,23 @@ updateOptionsDescPrecBase( po::options_description & _options, std::string const
     return _options;
 }
 po::options_description
-getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string pcType = "lu" )
+getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, bool useDefaultValue=true, std::string const& pcType = "lu" )
 {
     po::options_description _options( "options PC", 200);
     updateOptionsDescPrecBase( _options,prefix,sub,useDefaultValue,pcType );
     //for ( std::string prefixOver : prefixOverwrite )
     //    updateOptionsDescPrecBase( _options,prefixOver,sub );
+    return _options;
+
+}
+po::options_description
+getOptionsDescPrecBase( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+                        std::string const& pcType = "lu" )
+{
+    po::options_description _options( "options PC", 200);
+    updateOptionsDescPrecBase( _options,prefix,sub,true,pcType );
+    for ( std::string const& prefixOver : prefixOverwrite )
+        updateOptionsDescPrecBase( _options,prefixOver,sub,false );
     return _options;
 
 }
@@ -1670,11 +1696,11 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
 #endif
 }
 po::options_description
-getOptionsDescLU( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescLU( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC LU", 200);
     updateOptionsDescLU( _options,prefix,sub );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescLU( _options,prefixOver,sub );
     return _options;
 }
@@ -1693,11 +1719,11 @@ updateOptionsDescILU( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescILU( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescILU( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC ILU", 200);
     updateOptionsDescILU( _options,prefix,sub,true );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescILU( _options,prefixOver,sub,false );
     return _options;
 }
@@ -1722,11 +1748,11 @@ updateOptionsDescSOR( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescSOR( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescSOR( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC SOR", 200);
     updateOptionsDescSOR( _options,prefix,sub,true );
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescSOR( _options,prefixOver,sub,false );
     return _options;
 }
@@ -1742,11 +1768,11 @@ updateOptionsDescGASM( po::options_description & _options, std::string const& pr
         ;
 }
 po::options_description
-getOptionsDescGASM( std::string const& prefix, std::vector<std::string> prefixOverwrite )
+getOptionsDescGASM( std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC GASM", 100);
     updateOptionsDescGASM( _options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescGASM( _options,prefixOver,false);
     return _options;
 }
@@ -1856,11 +1882,11 @@ updateOptionsDescBOOMERAMG( po::options_description & _options, std::string cons
         ;
 }
 po::options_description
-getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescBOOMERAMG( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC BOOMERAMG", 100);
     updateOptionsDescBOOMERAMG(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescBOOMERAMG( _options,prefixOver,false);
     return _options;
 }
@@ -1887,11 +1913,11 @@ updateOptionsDescAMS( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescAMS( std::string const& prefix, std::string const& sub, std::vector<std::string> prefixOverwrite )
+getOptionsDescAMS( std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC AMS", 100);
     updateOptionsDescAMS(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescAMS( _options,prefixOver,false);
     return _options;
 }
@@ -1907,11 +1933,11 @@ updateOptionsDescASM( po::options_description & _options, std::string const& pre
         ;
 }
 po::options_description
-getOptionsDescASM( std::string const& prefix, std::vector<std::string> prefixOverwrite )
+getOptionsDescASM( std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
 {
     po::options_description _options( "options PC ASM", 100);
     updateOptionsDescASM(_options,prefix,true);
-    for ( std::string prefixOver : prefixOverwrite )
+    for ( std::string const& prefixOver : prefixOverwrite )
         updateOptionsDescASM( _options,prefixOver,false);
     return _options;
 }
@@ -2446,28 +2472,47 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     this->check( PetscImpl::PCHYPRE_AMSSetCycleType(pc, M_cycle_type));
     this->check( PetscImpl::PCHYPRE_AMSSetTol(pc, M_tol));
     this->check( PetscImpl::PCHYPRE_AMSSetSmoothingOptions(pc, M_relax_type, M_relax_times, M_relax_weight, M_omega));
-    
-    if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
+
+
+    if (!pc->setupcalled)
     {
-        auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
-        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
-        this->check( PetscImpl::PCHYPRE_AMSSetDiscreteGradient_HYPRE(pc, gPetsc->mat()));
-    }
-    else
-      std::cerr << "G for hypre AMS has not been provided\n";
-    if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
-    {
-        auto pxVec = this->precFeel()->auxiliaryVector("Px");
-        auto pyVec = this->precFeel()->auxiliaryVector("Py");
-        auto pzVec = this->precFeel()->auxiliaryVector("Pz");
-        VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
-        VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
-        VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
-      //TODO - correct that
-        this->check( PetscImpl::PCHYPRE_AMSSetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
-    }
-    else
-      std::cerr << "Px, Py or Pz has not been provided\n";
+        // from hypre doc, this function should be called before HYPRE AMSSetup(), so must be init once
+        if ( this->precFeel()->hasAuxiliarySparseMatrix("G") )
+        {
+            auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
+            CHECK(gMat) << "The pointer gMat is not initialized\n";
+            MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+            CHECK( gPetsc && gPetsc->mat() ) << "gPetsc->mat() is not initialized\n";
+            this->check( PCHYPRESetDiscreteGradient( pc, gPetsc->mat() ) );
+        }
+        else
+            std::cerr << "G for hypre AMS has not been provided\n";
+
+        if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
+        {
+            auto pxVec = this->precFeel()->auxiliaryVector("Px");
+            auto pyVec = this->precFeel()->auxiliaryVector("Py");
+            auto pzVec = this->precFeel()->auxiliaryVector("Pz");
+            VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+            VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+            VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+            this->check( PCHYPRESetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()) );
+        }
+        else if ( this->precFeel()->hasAuxiliaryVector("X") && this->precFeel()->hasAuxiliaryVector("Y") && this->precFeel()->hasAuxiliaryVector("Z")  )
+        {
+            auto pxVec = this->precFeel()->auxiliaryVector("X");
+            auto pyVec = this->precFeel()->auxiliaryVector("Y");
+            auto pzVec = this->precFeel()->auxiliaryVector("Z");
+            VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
+            VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
+            VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+            this->check( PetscImpl::PCHYPRE_AMSSetCoordinateVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()));
+        }
+        else
+            std::cerr << "Nor (Px, Py, Pz), nor (X, Y, Z) has been provided\n";
+    } // !pc->setupcalled
+
+
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_alpha");
@@ -2477,8 +2522,15 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_beta") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_beta");
-        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
-        this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+        if(!gMat)
+        {
+          this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, NULL));
+        }
+        else
+        {
+          MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+          this->check( PetscImpl::PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(pc, gPetsc->mat()));
+        }
     }
 #endif
 }
@@ -2589,7 +2641,7 @@ ConfigurePCASM::run( PC& pc )
 ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
                                 std::string const& prefix, std::vector<std::string> const& prefixOverwrite )
     :
-    ConfigurePCBase( precFeel, worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub") ),
+    ConfigurePCBase( precFeel, worldComm,"",prefix, prefixOverwrite, getOptionsDescPrecBase(prefix,"sub", prefixOverwrite ) ),
     M_subPCtype( getOption<std::string>("pc-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subMatSolverPackage( getOption<std::string>("pc-factor-mat-solver-package-type",prefix,"sub",prefixOverwrite,this->vm() ) ),
     M_subPCview( getOption<bool>("pc-view",prefix,"sub",prefixOverwrite,this->vm() ) ),
@@ -3063,6 +3115,9 @@ ConfigurePCFieldSplit::run( PC& pc )
 
         PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
         /**/ if ( M_schurPrecond == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
+        else if ( M_schurPrecond == "selfp")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELFP;
+#endif
         else if ( M_schurPrecond == "user")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_USER;
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
         else if ( M_schurPrecond == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
@@ -3115,25 +3170,22 @@ ConfigurePCFieldSplit::run( PC& pc )
             //MatView(schurMatPrecond,PETSC_VIEWER_STDOUT_WORLD);
 
             if ( D != NULL )
+            {
+#if 0
                 this->check( MatAYPX( schurMatPrecond,-1,D,MatStructure::DIFFERENT_NONZERO_PATTERN ) );
-            else
+#else
                 this->check( MatScale( schurMatPrecond, -1 ) );
+                this->check( MatAYPX( schurMatPrecond,1,D,MatStructure::DIFFERENT_NONZERO_PATTERN ) );
+#endif
+            }
+            else
+              this->check( MatScale( schurMatPrecond, -1 ) );
 
-            // this function do this
-            //jac->schur_user = schurMatPrecond;ierr = KSPSetOperators(jac->kspschur,jac->schur,schurMatPrecond,DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
+            // update KSPSetOperators of jac->kspschur
             this->check( PetscImpl::PCFieldSplit_UpdateMatPrecondSchurComplement( pc, schurMatPrecond ) );
             // clean temporary mat and vec
             this->check( MatDestroy( &Bcopy ) );
             this->check( VecDestroy( &scaleDiag ) );
-
-            //ierr = KSPSetOperators(jac->kspschur,jac->schur,FieldSplitSchurPre(jac),DIFFERENT_NONZERO_PATTERN);CHKERRQ(ierr);
-#if 0
-            if (!lsc->L) {
-                ierr = MatMatMult(C,B,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
-            } else {
-                ierr = MatMatMult(C,B,MAT_REUSE_MATRIX,PETSC_DEFAULT,&lsc->L);CHKERRQ(ierr);
-            }
-#endif
         }
 #endif
 #if PETSC_VERSION_LESS_THAN(3,5,0)
@@ -3305,24 +3357,11 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     this->check( KSPSetNormType( ksp, KSP_NORM_NONE ) );*/
     // setup ksp
-#if PETSC_VERSION_LESS_THAN(3,5,0)
+#if PETSC_VERSION_LESS_THAN(3,5,0) || PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
     this->check( KSPSetUp( ksp ) );
 #else
-    // error if setup ksp for schur complement ( to understand! )
     if( M_typeFieldSplit != "schur" || splitId == 0 )
         this->check( KSPSetUp( ksp ) );
-
-    /*if( M_typeFieldSplit == "schur" && splitId == 1 )
-    {
-        DM dm;
-        this->check( KSPGetDM(ksp,&dm) );
-        if ( dm != NULL )
-        {
-            this->check( KSPSetDMActive(ksp,PETSC_FALSE) );
-        }
-        this->check( KSPSetUp( ksp ) );
-     }*/
-
 #endif
     PC subpc;
     // get sub-pc
@@ -3555,7 +3594,7 @@ configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string p
         ierr = PetscOptionsClearValue( option_sub_pc_type.c_str() );
         ierr = PetscOptionsInsertString( (option_sub_pc_type+" "+subpctype).c_str() );
 
-        if (subpctype=="lu")
+        if ((subpctype=="lu") || (subpctype=="cholesky"))
         {
             std::string option_sub_pc_factor_mat_solver_package = "-"+prefixPetscBase+"_sub_pc_factor_mat_solver_package";
             std::string t = option(_name="pc-factor-mat-solver-package-type",_sub="sub",_prefix=prefixFeelBase).as<std::string>();

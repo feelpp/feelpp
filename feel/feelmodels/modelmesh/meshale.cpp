@@ -37,11 +37,11 @@ namespace FeelModels
 
 template< class Convex >
 MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
-                         std::string prefix, WorldComm const& worldcomm,
+                         std::string const& prefix, WorldComm const& worldcomm,
                          bool moveGhostEltFromExtendedStencil,
-                         std::string appliShortRepository )
+                         std::string const& rootRepository )
     :
-    super_type( prefixvm(prefix,"alemesh"),worldcomm,"",appliShortRepository ),
+    super_type( prefixvm(prefix,"alemesh"),worldcomm,"",rootRepository ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
     M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
@@ -106,7 +106,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                               _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
     M_bdf_ale_identity->setfileFormat( myFileFormat );
-    M_bdf_ale_identity->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdf_ale_identity->setPathSave( (fs::path(this->rootRepository()) /
                                       fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_identity->bdfOrder()).str() ) ) ).string() );
 
     M_bdf_ale_velocity = bdf( _vm=Environment::vm(), _space=M_Xhmove,
@@ -121,7 +121,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                               _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                               );
     M_bdf_ale_velocity->setfileFormat( myFileFormat );
-    M_bdf_ale_velocity->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdf_ale_velocity->setPathSave( (fs::path(this->rootRepository()) /
                                       fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_velocity->bdfOrder()).str() ) ) ).string() );
 
     M_bdf_ale_displacement_ref = bdf( _vm=Environment::vm(), _space=M_Xhref,
@@ -136,7 +136,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                                       _save=boption(_name="ts.save"),_freq=ioption(_name="ts.save.freq")
                                       );
     M_bdf_ale_displacement_ref->setfileFormat( myFileFormat );
-    M_bdf_ale_displacement_ref->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdf_ale_displacement_ref->setPathSave( (fs::path(this->rootRepository()) /
                                               fs::path( prefixvm(this->prefix(), (boost::format("alemesh.bdf_o_%1%_dt_%2%")%timestep %M_bdf_ale_displacement_ref->bdfOrder()).str() ) ) ).string() );
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "finish");
@@ -433,7 +433,7 @@ MeshALE<Convex>::updateIdentityMap()
 
 template< class Convex >
 void
-MeshALE<Convex>::revertReferenceMesh()
+MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnReferenceMesh() )
     {
@@ -446,9 +446,9 @@ MeshALE<Convex>::revertReferenceMesh()
             temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
 #endif
         temporaryDisp.scale(-1.);
-
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
-
+        M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
     }
@@ -458,7 +458,7 @@ MeshALE<Convex>::revertReferenceMesh()
 
 template< class Convex >
 void
-MeshALE<Convex>::revertMovingMesh()
+MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnMovingMesh() )
     {
@@ -469,8 +469,9 @@ MeshALE<Convex>::revertMovingMesh()
         for (size_type i=0;i<temporaryDisp.nLocalDof();++i)
             temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
 #endif
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
-
+        M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = false;
         M_isOnMovingMesh = true;
     }

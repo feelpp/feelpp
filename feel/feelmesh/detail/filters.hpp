@@ -31,6 +31,15 @@ namespace Feel {
 namespace detail
 {
 
+template <typename RangeType>
+struct submeshrangetype
+{
+    typedef typename mpl::if_< boost::is_std_list<RangeType>,
+                               mpl::identity<RangeType>,
+                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+};
+
+
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,

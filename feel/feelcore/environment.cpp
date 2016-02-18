@@ -6,7 +6,7 @@
  Date: 2010-04-14
  
  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
- Copyright (C) 2010-2015 Feel++ Consortium
+ Copyright (C) 2010-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -199,7 +199,7 @@ AboutData makeAboutDefault( std::string name )
                      "0.1",
                      name,
                      AboutData::License_GPL,
-                     "Copyright (c) 2012-2015 Feel++ Consortium" );
+                     "Copyright (c) 2012-2016 Feel++ Consortium" );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
@@ -365,7 +365,8 @@ Environment::Environment( int argc, char** argv,
                           po::options_description const& desc,
                           po::options_description const& desc_lib,
                           AboutData const& about,
-                          std::string directory )
+                          std::string directory,
+                          bool add_subdir_np )
 {
     if ( argc == 0 )
     {
@@ -502,7 +503,8 @@ Environment::Environment( int argc, char** argv,
 
         LOG( INFO ) << "change directory to " << directory << "\n";
         boost::format f( directory );
-        changeRepository( _directory=f );
+        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        changeRepository( _directory=f,_subdir=createSubdir );
     }
 
     freeargv( envargv );

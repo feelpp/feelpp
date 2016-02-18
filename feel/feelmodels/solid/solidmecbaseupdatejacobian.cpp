@@ -32,23 +32,23 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    mesh_ptrtype mesh = M_Xh->mesh();
+    mesh_ptrtype mesh = M_XhDisplacement->mesh();
 
     size_type rowStartInVector = this->rowStartInVector();
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    auto bilinearForm_PatternDefault = form2( _test=M_Xh,_trial=M_Xh,_matrix=J,
+    auto bilinearForm_PatternDefault = form2( _test=M_XhDisplacement,_trial=M_XhDisplacement,_matrix=J,
                                               _pattern=size_type(Pattern::DEFAULT),
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
-    auto bilinearForm_PatternCoupled = form2( _test=M_Xh,_trial=M_Xh,_matrix=J,
+    auto bilinearForm_PatternCoupled = form2( _test=M_XhDisplacement,_trial=M_XhDisplacement,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
 
-    auto u = M_Xh->element(); //u = *X;
+    auto u = M_XhDisplacement->element(); //u = *X;
     // copy vector values in fluid element
-    for ( size_type k=0;k<M_Xh->nLocalDofWithGhost();++k )
+    for ( size_type k=0;k<M_XhDisplacement->nLocalDofWithGhost();++k )
         u(k) = X->operator()(rowStartInVector+k);
     auto v = u;//M_Xh->element("v");
 
@@ -150,7 +150,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     {
         bilinearForm_PatternDefault +=
             integrate( _range=elements(mesh),
-                       _expr= M_newmark_displ_struct->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
+                       _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
                        _geomap=this->geomap() );
     }
     //--------------------------------------------------------------------------------------------------//
@@ -244,7 +244,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     boost::mpi::timer thetimer;
     this->log("SolidMechanics","updateJacobianIncompressibilityTerms", "start " );
 
-    auto mesh = M_Xh->mesh();
+    auto mesh = M_XhDisplacement->mesh();
     auto v = u;
     auto q = p;
 
@@ -266,7 +266,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     if (M_pdeType=="Hyper-Elasticity")
     {
         auto pFmtNLa = Feel::vf::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
-        form2( _test=M_Xh, _trial=M_XhPressure, _matrix=J,
+        form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix+startDofIndexPressure ) +=
             integrate ( _range=elements(mesh),
@@ -275,7 +275,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
 
         // -dF*idv(p) or -d(F*C^{-1})*idv(p)
         auto pFmtNLb = /*-idv(p)**/Feel::vf::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialDisp(u,p,*this->mechanicalProperties());
-        form2( _test=M_Xh, _trial=M_Xh, _matrix=J,
+        form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix ) +=
             integrate ( _range=elements(mesh),
@@ -284,7 +284,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
     }
     else if (M_pdeType=="Elasticity-Large-Deformation" || M_pdeType=="Elasticity")
     {
-        form2( _test=M_Xh, _trial=M_XhPressure, _matrix=J,
+        form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                _rowstart=rowStartInMatrix,
                _colstart=colStartInMatrix+startDofIndexPressure ) +=
             integrate ( _range=elements(mesh),
@@ -297,7 +297,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
 
     auto detJm1 = Feel::vf::FeelModels::solidMecPressureFormulationConstraintJacobian(u,/*p,*/  *this->mechanicalProperties());
 
-    form2( _test=M_XhPressure, _trial=M_Xh, _matrix=J,
+    form2( _test=M_XhPressure, _trial=M_XhDisplacement, _matrix=J,
            _rowstart=rowStartInMatrix+startDofIndexPressure,
            _colstart=colStartInMatrix ) +=
         integrate( _range=elements(mesh),
@@ -346,7 +346,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( elem
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateJacobianViscoElasticityTerms start\n";
 
-    auto mesh = M_Xh->mesh();
+    auto mesh = M_XhDisplacement->mesh();
 
     auto v=u;
 
@@ -354,7 +354,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( elem
 
     double gammav=0.01;
 
-    form2( M_Xh, M_Xh, J)  +=
+    form2( M_XhDisplacement, M_XhDisplacement, J)  +=
         integrate (_range=elements(mesh),
                    _expr=gammav*M_bdf_displ_struct->polyDerivCoefficient(0)*trace( Et2*trans(grad(v)) ),
                    _geomap=this->geomap() );

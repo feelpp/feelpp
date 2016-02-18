@@ -459,7 +459,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols );
+                     std::vector<size_type> const& cols, bool doClose = true );
 
 
     /**
@@ -503,7 +503,7 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
-    bool isSymmetric () const;
+    bool isSymmetric ( bool check = false ) const;
 
     bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
@@ -515,6 +515,7 @@ public:
     void zeroEntriesDiagonal();
 
     virtual void getMatInfo(std::vector<double> &);
+    virtual void threshold( void );
 
 private:
 
@@ -523,7 +524,7 @@ private:
 
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
-                            Mat &submat ) const;
+                            Mat &submat, bool doClose = true ) const;
 protected:
 
     /**

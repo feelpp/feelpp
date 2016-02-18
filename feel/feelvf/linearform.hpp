@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -536,6 +536,7 @@ public:
 
     LinearForm( ) {}
     LinearForm( LinearForm const & __vf );
+    LinearForm( LinearForm      && __vf ) = default;
 
     LinearForm( space_ptrtype const& __X,
                 vector_ptrtype __F,
@@ -562,12 +563,18 @@ public:
      */
     //@{
 
+    /**
+     * copy assignment operator
+     */
     LinearForm& operator=( LinearForm const& lf )
         {
             if ( this != &lf )
             {
                 M_X = lf.M_X;
-                M_F = lf.M_F;
+                // clone the shared pointer vector, the clone is set to 0
+                M_F = lf.M_F->clone();
+                // add the vector contrib
+                *M_F += *lf.M_F;
                 M_lb = lf.M_lb;
                 M_row_startInVector = lf.M_row_startInVector;
                 M_do_threshold = lf.M_do_threshold;
@@ -575,6 +582,12 @@ public:
             }
             return *this;
         }
+
+    /**
+     * move assignment operator
+     */
+    LinearForm& operator=( LinearForm && lf ) = default;
+
     /**
      * Construct the linear form given by the expression \p expr
      *
@@ -851,13 +864,16 @@ template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & __vf )
     :
     M_X( __vf.M_X ),
-    M_F( __vf.M_F ),
+    M_F( __vf.M_F->clone() ),
     M_lb( __vf.M_lb ),
     M_row_startInVector( __vf.M_row_startInVector ),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold )
 
 {
+    // add the vector contrib
+    *M_F += *__vf.M_F;
+    
     DVLOG(2) << "LinearForm copy constructor\n";
     DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
     DVLOG(2) << "    F size : " << M_F->size() << "\n";
@@ -1087,10 +1103,31 @@ struct LinearForm
     typedef Feel::vf::detail::LinearForm<SpaceType,VectorType,ElemContType> type;
 };
 }
+
+/**
+ * @brief provide the type of the linear form 
+ */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
          typename ElemContType = VectorType>
 using form1_type = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>;
+
+/**
+ * @brief provide the type of the linear form 
+ */
+template<typename FE1,
+         typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
+         typename ElemContType = VectorType>
+using form1_t = form1_type<FE1,VectorType,ElemContType>;
+
+/**
+ * @brief provide the type of the space associated to the linear form 
+ */
+template<typename FE1,
+         typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
+         typename ElemContType = VectorType>
+using form1_space_t = typename form1_t<FE1,VectorType,ElemContType>::space_type;
+
 
 } // feel
 

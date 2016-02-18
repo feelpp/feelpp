@@ -30,6 +30,10 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feeltiming/tic.hpp>
+#if BOOST_VERSION < 105900
+#include <boost/smart_ptr/make_shared.hpp>
+#endif
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -1121,12 +1125,13 @@ template <typename T>
 void
 VectorPetscMPI<T>::close()
 {
+    tic();
     //FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
     //std::cout << "\n MPI CLOSE "<<std::endl;;
     super::close();
 
     this->localize();
-
+    toc("VectorPetscMPI::close",FLAGS_v>0);
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1413,6 +1418,20 @@ VectorPetscMPI<T>::localSize() const
     return static_cast<size_type>( petsc_size );
 }
 
+#if BOOST_VERSION < 105900
+vector_ptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+}
+#else
+vector_uptrtype
+vec( Vec v, datamap_ptrtype datamap )
+{
+    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
+}
+#endif
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;

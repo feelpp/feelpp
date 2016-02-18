@@ -67,15 +67,15 @@ public :
         :
         M_Xh1(__Xh1),
         M_Xh2(__Xh2),
-        M_geoElementMap(M_Xh1->mesh()->numElements(),std::make_pair(invalid_size_type_value,0)),
         M_dofRelMapRefToHo( M_Xh1->nLocalDof() ),
-        M_dofRelMapHoToRef(M_Xh2->nLocalDof() )
+        M_dofRelMapHoToRef( M_Xh2->nLocalDof() )
         {
             buidGeoElementMap();
             buildDofRelMap();
         }
 
-    std::vector<std::pair<size_type,rank_type> > const & geoElementMap() const { return M_geoElementMap; }
+    //std::vector<std::pair<size_type,rank_type> > const & geoElementMap() const { return M_geoElementMap; }
+    std::map<size_type, std::pair<size_type,rank_type> > const & geoElementMap() const { return M_geoElementMap; }
 
     std::vector<size_type> const & dofRelMap() const { return this->dofRelMapRefToHo(); }
 
@@ -86,7 +86,8 @@ public :
 private :
 
     bool isIdenticalPoints(typename mesh1_type::point_type const & pt1,
-                           typename mesh1_type::point_type const & pt2);
+                           typename mesh1_type::point_type const & pt2,
+                           double tol = 1e-9 ) const;
 
     void buidGeoElementMap();
 
@@ -148,7 +149,8 @@ private :
     functionspace1_ptrtype M_Xh1;
     functionspace2_ptrtype M_Xh2;
 
-    std::vector< std::pair<size_type,rank_type> > M_geoElementMap;
+    //std::vector< std::pair<size_type,rank_type> > M_geoElementMap;
+    std::map<size_type, std::pair<size_type,rank_type> > M_geoElementMap;
 
     std::vector<size_type> M_dofRelMapRefToHo;
     std::vector<size_type> M_dofRelMapHoToRef;
@@ -160,18 +162,19 @@ private :
 
 template< class SpaceType1,class SpaceType2 >
 bool
-DofRelationshipMap<SpaceType1,SpaceType2>::isIdenticalPoints(typename mesh1_type::point_type const & pt1,
-                                                             typename mesh1_type::point_type const & pt2)
+DofRelationshipMap<SpaceType1,SpaceType2>::isIdenticalPoints( typename mesh1_type::point_type const & pt1,
+                                                              typename mesh1_type::point_type const & pt2,
+                                                              double tol ) const
 {
     bool res;
     if (mesh1_type::nRealDim==1)
-        if ( std::abs( pt1(0)-pt2(0) ) < 1e-9) res=true;
+        if ( std::abs( pt1(0)-pt2(0) ) < tol) res=true;
         else res=false;
     else if (mesh1_type::nRealDim==2)
-        if ( std::abs( pt1(0)-pt2(0) ) < 1e-9 && std::abs( pt1(1)-pt2(1) ) < 1e-9 ) res=true;
+        if ( std::abs( pt1(0)-pt2(0) ) < tol && std::abs( pt1(1)-pt2(1) ) < tol ) res=true;
         else res=false;
     else // if (mesh1_type::nRealDim==3)
-        if ( std::abs( pt1(0)-pt2(0) ) < 1e-9 && std::abs( pt1(1)-pt2(1) ) < 1e-9 && std::abs( pt1(2)-pt2(2) ) < 1e-9 ) res=true;
+        if ( std::abs( pt1(0)-pt2(0) ) < tol && std::abs( pt1(1)-pt2(1) ) < tol && std::abs( pt1(2)-pt2(2) ) < tol ) res=true;
         else res=false;
 
     return res;
@@ -184,44 +187,65 @@ void
 DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
 {
     std::vector<bool> findPtInElem(mesh1_type::element_type::numVertices);
-
-    std::fill ( M_geoElementMap.begin(),
-                M_geoElementMap.end(),
-                std::make_pair(invalid_size_type_value,0) );
+    std::set<size_type> elt1Done;
 
     CHECK ( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
 
-    auto it2 = M_Xh2->mesh()->beginElementWithProcessId( M_Xh2->mesh()->worldComm().localRank() );
-    auto en2 = M_Xh2->mesh()->endElementWithProcessId( M_Xh2->mesh()->worldComm().localRank() );
-    for ( ; it2 != en2; ++it2 )
+    bool upExtendedElt = M_Xh1->dof()->buildDofTableMPIExtended();
+    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
+    auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
+
+    M_geoElementMap.clear();
+
+    bool useSubMeshRelation = M_Xh1->mesh()->isSubMeshFrom( M_Xh2->mesh() );
+
+    for ( auto const& elt2RefWrapper : rangeElt2 )
     {
-        auto it1 = M_Xh1->mesh()->beginElementWithProcessId( M_Xh1->mesh()->worldComm().localRank() );
-        auto en1 = M_Xh1->mesh()->endElementWithProcessId( M_Xh1->mesh()->worldComm().localRank() );
-        bool find=false;
-        while (it1!=en1 && !find )
+        auto const& elt2 = boost::unwrap_ref( elt2RefWrapper );
+
+        if ( useSubMeshRelation )
         {
-            std::fill ( findPtInElem.begin(), findPtInElem.end(),false);
-
-            for (uint16_type n=0 ; n<numVertices ; ++n)
-                for (uint16_type m=0 ; m<numVertices ; ++m)
-                    if (isIdenticalPoints(it1->point(n),it2->point(m))) findPtInElem[n]=true;
-
-            // All points of faces are the same?
-            find=true;
-            auto itbool=findPtInElem.begin();
-            auto itbool_end=findPtInElem.end();
-            for (  ; itbool != itbool_end; ++itbool )
-                find = (find && *itbool);
-
-            if (find) M_geoElementMap[it1->id()]=std::make_pair(it2->id(),it2->processId());
-            //if (find) M_geoElementMap[it->id()]=itP1->id();
-            ++it1;
-
+            size_type elt1Id = M_Xh1->mesh()->meshToSubMesh( elt2.id() );
+            M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
         }
-        CHECK( find ) <<"\nProbleme!!!!!!!!!\n";
+        else
+        {
+            bool find=false;
+            for ( auto const& elt1RefWrapper : rangeElt1 )
+            {
+                auto const& elt1 = boost::unwrap_ref( elt1RefWrapper );
 
+                size_type elt1Id = elt1.id();
+                if ( M_geoElementMap.find( elt1Id ) != M_geoElementMap.end() )
+                    continue;
+
+                bool findSameElt = true;
+                for (uint16_type n=0 ; n<numVertices && findSameElt ; ++n)
+                {
+                    auto const& pt2 = elt2.point(n);
+                    bool findSamePt = false;
+                    for (uint16_type m=0 ; m<numVertices && !findSamePt ; ++m)
+                        if ( this->isIdenticalPoints(elt1.point(m),pt2) )
+                            findSamePt = true;
+                    if ( !findSamePt )
+                        findSameElt = false;
+                }
+
+                if ( !findSameElt )
+                    continue;
+
+
+                find=true;
+                M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
+                break;
+            }
+            CHECK( find ) <<"not found a relation betwwen elt";
+        }
     } // end for it
 
+
+#if 0
     // add also some ghost elt if has extended dof table
     if ( M_Xh1->dof()->buildDofTableMPIExtended() )
     {
@@ -259,14 +283,9 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
 
             }
             CHECK( find ) <<"\nProbleme!!!!!!!!!\n";
-
-
-
-
-
-
         }
     }
+#endif
 
 
 }
@@ -290,10 +309,16 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
         {
             for ( uint16_type comp = 0;comp < functionspace1_type::basis_type::nComponents;++comp )
             {
-                if ( M_geoElementMap[it1->id()].first == invalid_size_type_value ) continue;
+                auto itFindGeoElt = M_geoElementMap.find( it1->id() );
+                if ( itFindGeoElt == M_geoElementMap.end() )
+                    continue;
 
-                auto elem1 = *it1;
-                auto elem2 = M_Xh2->mesh()->element( M_geoElementMap[elem1.id()].first, M_geoElementMap[elem1.id()].second );
+                size_type eltIdRelated = itFindGeoElt->second.first;
+                rank_type procIdRelated = itFindGeoElt->second.second;
+                //if ( M_geoElementMap[it1->id()].first == invalid_size_type_value ) continue;
+
+                auto const& elem1 = *it1;
+                auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated, procIdRelated );
 
                 auto mapPoint=buildElementaryMapPoints(elem1,elem2);
                 auto mapEdge=buildElementaryMapEdges(mapPoint);
@@ -332,9 +357,8 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
                     iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
 
 
-
-                auto i1 = boost::get<0>(dof1->localToGlobal( elem1.id(), iloc1 , comp ));
-                auto i2 = boost::get<0>(dof2->localToGlobal( M_geoElementMap[it1->id()].first , iloc2 , comp ));
+                size_type i1 = dof1->localToGlobal( elem1.id(), iloc1 , comp ).index();
+                size_type i2 = dof2->localToGlobal( eltIdRelated , iloc2 , comp ).index();
 
                 M_dofRelMapRefToHo[i1]=i2;
                 M_dofRelMapHoToRef[i2]=i1;

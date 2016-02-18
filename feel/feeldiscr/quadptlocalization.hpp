@@ -64,23 +64,13 @@ public :
     typedef typename boost::tuples::template element<1, IteratorRange>::type element_iterator_type;
     typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type::GeoShape GeoShape;
     //typedef Mesh<GeoShape> mesh_type;
-#if 0
-    typedef typename mesh_type::gm_type gm_type;
-    typedef typename mesh_type::element_type geoelement_type;
-#else
 
-    //typedef typename element_iterator_type::value_type geoelement_type;
-    //typedef typename geoelement_type::gm_type gm_type;
-
-    typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
-    typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
+    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type range_elt_type;
+    typedef typename boost::remove_reference<range_elt_type>::type const_t;
+    typedef typename boost::remove_const<const_t>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
     typedef the_element_type geoelement_type;
     typedef typename geoelement_type::gm_type gm_type;
-
-
-
-#endif
 
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;

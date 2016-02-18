@@ -156,7 +156,7 @@ if (CLN_INCLUDE_DIR)
 	# are installed)
 	if (_cln_FOUND AND NOT CLN_VERSION VERSION_EQUAL _cln_VERSION)
 		if (NOT CLN_FIND_QUIETLY)
-			message(ERROR "pkg-config and version.h disagree, "
+            message(FATAL_ERROR "pkg-config and version.h disagree, "
 				      "${_cln_VERSION} vs ${CLN_VERSION}, "
 				      "please check your installation")
 		endif()

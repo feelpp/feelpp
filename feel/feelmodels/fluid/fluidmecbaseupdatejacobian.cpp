@@ -166,6 +166,59 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     }
 
     //--------------------------------------------------------------------------------------------------//
+    //transients terms
+    bool Build_TransientTerm = !BuildCstPart;
+    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
+
+    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    {
+        bilinearForm_PatternDefault +=
+            integrate( _range=elements(mesh),
+                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                       _geomap=this->geomap() );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+    // define pressure cst
+    if ( this->definePressureCst() )
+    {
+        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
+        {
+            double beta = this->definePressureCstPenalisationBeta();
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(Xh->mesh()),
+                           _expr=beta*idt(p)*id(q),
+                           _geomap=this->geomap() );
+        }
+        if ( this->definePressureCstMethod() == "lagrange-multiplier" && BuildCstPart )
+        {
+            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
+                << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
+            auto therange=boundaryfaces(mesh);
+#else
+            auto therange=elements(mesh);
+#endif
+            auto lambda = M_XhMeanPressureLM->element();
+            form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
+                   _rowstart=this->rowStartInMatrix(),
+                   _colstart=this->colStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
+                integrate( _range=therange,//elements(mesh),
+                           _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
+                           _geomap=this->geomap() );
+
+            form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
+                   _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM,
+                   _colstart=this->colStartInMatrix() ) +=
+                integrate( _range=therange,//elements(mesh),
+                           _expr= + idt(p)*id(lambda),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------//
 
     this->updateJacobianStabilisation(U, J, RBis, _BuildCstPart);
 
@@ -278,60 +331,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             }
         }
     }
-
-    //--------------------------------------------------------------------------------------------------//
-    //transients terms
-    bool Build_TransientTerm = !BuildCstPart;
-    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
-
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
-    {
-        bilinearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
-                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
-                       _geomap=this->geomap() );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    // define pressure cst
-    if ( this->definePressureCst() )
-    {
-        if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
-        {
-            double beta = this->definePressureCstPenalisationBeta();
-            bilinearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
-                           _expr=beta*idt(p)*id(q),
-                           _geomap=this->geomap() );
-        }
-        if ( this->definePressureCstMethod() == "lagrange-multiplier" && BuildCstPart )
-        {
-            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
-                << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
-
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-            auto therange=boundaryfaces(mesh);
-#else
-            auto therange=elements(mesh);
-#endif
-            auto lambda = M_XhMeanPressureLM->element();
-            form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
-                   _rowstart=this->rowStartInMatrix(),
-                   _colstart=this->colStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
-                integrate( _range=therange,//elements(mesh),
-                           _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
-                           _geomap=this->geomap() );
-
-            form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
-                   _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM,
-                   _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=therange,//elements(mesh),
-                           _expr= + idt(p)*id(lambda),
-                           _geomap=this->geomap() );
-        }
-    }
-
 
     //--------------------------------------------------------------------------------------------------//
 

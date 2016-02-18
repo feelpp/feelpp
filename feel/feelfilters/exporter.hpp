@@ -7,7 +7,7 @@
 
   Copyright (C) 2004 EPFL
   Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -318,6 +318,12 @@ public:
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
         M_prefix = __prefix;
+
+        if(M_ts_set.size() > 0)
+        {
+            M_ts_set.back()->setName( M_prefix );
+        }
+
         return this;
     }
 

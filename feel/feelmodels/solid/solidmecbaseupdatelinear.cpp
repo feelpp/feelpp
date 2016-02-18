@@ -60,14 +60,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
         BuildNonCstPart_SourceTerm=BuildCstPart;
         BuildNonCstPart_BoundaryNeumannTerm=BuildCstPart;
     }
-    if (M_newmark_displ_struct->strategy()==TS_STRATEGY_DT_CONSTANT)
+    if (M_timeStepNewmark->strategy()==TS_STRATEGY_DT_CONSTANT)
     {
         BuildNonCstPart_TransientForm2Term = BuildCstPart;
     }
     //---------------------------------------------------------------------------------------//
 
-    auto mesh = M_Xh->mesh();
-    auto Xh = M_Xh;
+    auto mesh = M_XhDisplacement->mesh();
+    auto Xh = M_XhDisplacement;
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
@@ -82,7 +82,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
     auto const& v = this->fieldDisplacement();
 #endif
 
-    //auto buzz1 = M_newmark_displ_struct->previousUnknown();
+    //auto buzz1 = M_timeStepNewmark->previousUnknown();
     //---------------------------------------------------------------------------------------//
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
     auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
@@ -159,7 +159,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
     {
         form2( _test=Xh, _trial=Xh, _matrix=A )  +=
             integrate( _range=elements(mesh),
-                       _expr= M_newmark_displ_struct->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                       _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
                        _geomap=this->geomap() );
     }
     //---------------------------------------------------------------------------------------//
@@ -168,7 +168,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
     {
         form1( _test=Xh, _vector=F ) +=
             integrate( _range=elements(mesh),
-                       _expr= idv(rho)*trans(idv(M_newmark_displ_struct->polyDeriv()))*id(v),
+                       _expr= idv(rho)*inner(idv(this->timeStepNewmark()->polyDeriv()),id(v)),
                        _geomap=this->geomap() );
     }
     //---------------------------------------------------------------------------------------//
@@ -192,7 +192,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
         {
             form1( _test=Xh, _vector=F) +=
                 integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= -alpha_f*trans(idv(*M_normalStressFromFluid))*id(v),
+                           _expr= -alpha_f*trans(idv(*M_fieldNormalStressFromFluid))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -233,7 +233,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
                                _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                                _geomap=this->geomap() );
 
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid());
                 form1( _test=Xh, _vector=F) +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),

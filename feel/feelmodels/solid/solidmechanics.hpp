@@ -50,17 +50,17 @@ public:
 
     using element_displacement_type = typename super_type::element_displacement_type;
 
-    SolidMechanics( std::string _prefix,
-                    bool _buildMesh=true,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string _subPrefix="",
-                    std::string _appliShortRepository=soption(_name="exporter.directory") );
+    SolidMechanics( std::string const& prefix,
+                    bool buildMesh = true,
+                    WorldComm const& worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    static self_ptrtype New( std::string _prefix,
-                             bool _buildMesh=true,
-                             WorldComm const& _worldComm=Environment::worldComm(),
-                             std::string _subPrefix="",
-                             std::string _appliShortRepository=soption(_name="exporter.directory") );
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     //___________________________________________________________________________________//
     // load config files

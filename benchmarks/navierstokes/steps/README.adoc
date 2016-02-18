@@ -71,7 +71,8 @@ u^{\mathrm{norm}}_z = \frac{u_z}{\bar{u}_i} \text{ with } \bar{u}_i=\frac{Q}{\pi
 \]
 
 The geometry was retrieved by extruding the 2D section  (see figure <<2Dsection>>) 4 times.
-image::2Dsection.png[FDA Sections, 300]
+
+image::2Dsection.png[FDA Sections, 700, align="center"]
 
 Regarding $Re_t=500$, we shall consider the meshes described in Table <<TableMeshesRe500>>.
 

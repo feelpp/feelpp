@@ -38,7 +38,7 @@ foreach( debian_arches linux kfreebsd )
   ENDIF()
 endforeach()
 
-set(PETSC_VERSIONS 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+set(PETSC_VERSIONS 3.6.2 3.6.1 3.6.0 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
 
 if ( NOT SLEPC_DIR )
   foreach( version ${PETSC_VERSIONS} )
@@ -78,9 +78,11 @@ find_path (SLEPC_DIR include/slepc.h
   DOC "SLEPc Directory")
 
 
-
-SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
-CHECK_INCLUDE_FILE( ${SLEPC_INCLUDE_DIR}/slepc.h FEELPP_HAS_SLEPC_H )
+if(SLEPC_DIR)
+    SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
+    message(STATUS "Found slepc.h in ${SLEPC_INCLUDE_DIR}")
+    SET(FEELPP_HAS_SLEPC_H 1)
+endif()
 
 if (SLEPC_DIR AND NOT PETSC_ARCH)
   set (_slepc_arches
@@ -123,6 +125,10 @@ if ( SLEPC_FOUND )
   MESSAGE( STATUS "SLepc found: ${SLEPC_DIR}" )
   set(FEELPP_HAS_SLEPC 1)
   set(SLEPC_INCLUDES ${SLEPC_INCLUDE_DIR} CACHE STRING "SLEPc include path" FORCE)
+else()
+    if( SLEPc_FIND_REQUIRED )
+        message(FATAL_ERROR "CMake was not about able to find SLEPc, but it is marked as REQUIRED (SLEPC_DIR=${SLEPC_DIR}, SLEPC_LIBRARIES=${SLEPC_LIBRARIES}).")
+    endif()
 endif()
 
 MARK_AS_ADVANCED( SLEPC_DIR SLEPC_LIB_SLEPC SLEPC_INCLUDES SLEPC_LIBRARIES )

@@ -125,7 +125,7 @@ extern "C"
         if ( reusePrec )
             preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_PRECONDITIONER );
 #endif
-        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec\n";
+        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec " << preconditioner->name() << "\n";
         return 0;
     }
 

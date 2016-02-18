@@ -237,6 +237,8 @@ public:
 
     using self_type = BilinearForm<FE1, FE2, ElemContType>;
 
+    using pre_solve_type = typename Backend<value_type>::pre_solve_type;
+    using post_solve_type = typename Backend<value_type>::post_solve_type;
 #if 0
     typedef typename space_1_type::component_fespace_type component_space_1_type;
     typedef typename element_1_type::component_type component_1_type;
@@ -1225,7 +1227,7 @@ public:
     bool isPatternSymmetric() const
     {
         Feel::Context ctx( M_pattern );
-        return ctx.test( Pattern::SYMMETRIC );
+        return ctx.test( Pattern::PATTERN_SYMMETRIC );
     }
 
     /**
@@ -1463,7 +1465,8 @@ public:
     {
         return M_n_nz[i];
     }
-
+    
+    
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
@@ -1474,11 +1477,17 @@ public:
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
                                        ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
+                                       ( pre, (pre_solve_type), pre_solve_type() )
+                                       ( post, (post_solve_type), post_solve_type() )
                                          ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild,
-                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                                                         _solution=solution);
+                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(),
+                                                                         _rhs=rhs.vectorPtr(),
+                                                                         _solution=solution,
+                                                                         _pre=pre,
+                                                                         _post=post
+                                                                         );
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),

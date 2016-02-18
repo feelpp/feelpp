@@ -58,7 +58,7 @@ makeAbout()
                            "0.2",
                            "Environment class tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2013-2015 Feel++ Consortium" );
+                           "Copyright (C) 2013-2016 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;

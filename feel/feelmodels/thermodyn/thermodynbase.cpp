@@ -14,13 +14,14 @@ namespace FeelModels
 {
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::ThermoDynamicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix,__appliShortRepository)
+    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    M_thermalProperties( new thermalproperties_type( prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoDynamicsSolve.data";
@@ -75,10 +76,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_thermalConductivity = doption(_name="thermal-conductivity",_prefix=this->prefix()); // [ W/(m*K) ]
-    M_rho = doption(_name="rho",_prefix=this->prefix()); // density [ kg/(m^3) ]
-    M_heatCapacity = doption(_name="heat-capacity",_prefix=this->prefix()); // [ J/(kg*K) ]
-
     M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
         Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
     M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
@@ -136,13 +133,30 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvec
         // load the field velocity convection from a math expr
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
-            std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/velocity-convection";
-            auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                        this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
-            M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=myexpr);
+            std::string pathGinacExpr = this->directoryLibSymbExpr() + "/velocity-convection";
+            M_exprVelocityConvection /*auto myexpr*/ = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
+                                                                     this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+            this->updateFieldVelocityConvection();
+            //M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=*M_exprVelocityConvection/*myexpr*/);
         }
     }
 }
+
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
+{
+    if ( M_exprVelocityConvection.get_ptr() == 0 )
+        return;
+
+    if ( onlyExprWithTimeSymbol && !M_exprVelocityConvection->expression().hasSymbol("t") )
+        return;
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_exprVelocityConvection->setParameterValues( paramValues );
+    M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=*M_exprVelocityConvection);
+}
+
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -164,7 +178,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                             _restart_at_last_save=this->restartAtLastSave(),
                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
                                     fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
 
     double tElpased = this->timerTool("Constructor").stop("createSpaces");
@@ -216,13 +230,17 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     this->log("ThermoDynamics","init", "start" );
     this->timerTool("Constructor").start();
 
+    M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    M_thermalProperties->initFromSpace( M_XhScalarP0 );
+    M_thermalProperties->updateFromModelMaterials( this->modelProperties().materials() );
+
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
     // load an initial solution from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
     {
-        std::string pathGinacExpr = this->ginacExprCompilationDirectory() + "/initial-solution.temperature";
+        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                             this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         this->fieldTemperature()->on(_range=elements(this->mesh()),_expr=myexpr);
@@ -249,11 +267,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
         *this->fieldTemperature() = M_bdfTemperature->unknown(0);
         // up initial time
         this->setTimeInitial( M_bdfTemperature->timeInitial() );
-        // restart exporter
-        this->restartExporters();
         // up current time
         this->updateTime( M_bdfTemperature->time() );
     }
+
+    // post-process
+    this->initPostProcess();
+
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
@@ -267,6 +287,98 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("ThermoDynamics","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    // restart exporter
+    if (this->doRestart() )
+        this->restartExporters();
+
+    bool hasMeasure = false;
+
+    //  heat flux measures
+    auto const& ptree = this->modelProperties().postProcess().pTree();
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
+    {
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "Normal-Heat-Flux" )
+            {
+                // get list of marker
+                std::set<std::string> markerSet;
+                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
+                if ( markerUnique.empty() )
+                {
+                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    {
+                        std::string marker = ptreeMarker.second.template get_value<std::string>();
+                        markerSet.insert( marker );
+                    }
+                }
+                else
+                {
+                    markerSet.insert( markerUnique );
+                }
+                // save forces measure for each marker
+                for ( std::string const& marker : markerSet )
+                {
+                    ModelMeasuresForces myPpForces;
+                    myPpForces.addMarker( marker );
+                    myPpForces.setName( marker );
+                    //std::cout << "add ppHeatFlux with name " << marker<<"\n";
+                    std::string name = myPpForces.name();
+                    M_postProcessMeasuresForces.push_back( myPpForces );
+                    this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,0.);
+                    hasMeasure = true;
+                }
+            }
+        }
+    }
+
+    // point measures
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "temperature" )
+            {
+                if ( !M_postProcessMeasuresContextTemperature )
+                    M_postProcessMeasuresContextTemperature.reset( new context_temperature_type( spaceTemperature()->context() ) );
+                int ctxId = M_postProcessMeasuresContextTemperature->nPoints();
+                M_postProcessMeasuresContextTemperature->add( ptCoord );
+                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("temperature", ctxId, ptNameExport );
+                this->postProcessMeasuresIO().setMeasure( ptNameExport, 0. );
+                hasMeasure = true;
+            }
+        }
+    }
+
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
+
 }
 
 
@@ -295,17 +407,15 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Appli Repository : " << this->appliRepository();
+           << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
            << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC();
-    *_ostr << "\n   Physical Parameters"
-           << "\n     -- thermal conductivity : " << this->thermalConductivity()
-           << "\n     -- heat capacity        : " << this->heatCapacity()
-           << "\n     -- density              : "  << this->rho();
+           << this->getInfoNeumannBC()
+           << this->getInfoRobinBC();
+    *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- msh filename      : " << this->mshfileStr()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
@@ -369,6 +479,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     }
     M_exporter->save();
 
+    this->exportMeasures( time );
+
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
@@ -377,6 +489,72 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("ThermoDynamics","exportResults", "finish");
+}
+
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+    bool hasMeasure = false;
+
+    // compute measures
+    for ( auto const& ppForces : M_postProcessMeasuresForces )
+    {
+        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
+        auto const& u = this->fieldTemperature();
+        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppForces.meshMarkers() ),
+                                    _expr=kappa*gradv(u)*N() ).evaluate()(0,0);
+        std::string name = ppForces.name();
+        this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
+        hasMeasure = true;
+    }
+
+    // point measures
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        if ( !ptPos.hasExpression() )
+            continue;
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "temperature" )
+            {
+                std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("temperature",ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextTemperature->replace( ptIdInCtx, ptCoord );
+            }
+        }
+    }
+    if ( M_postProcessMeasuresContextTemperature && this->postProcessMeasuresEvaluatorContext().has("temperature") )
+    {
+        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextTemperature,
+                                                _expr=idv(this->fieldTemperature()) );
+        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextTemperature->nPoints();++ctxId )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has( "temperature", ctxId ) ) continue;
+            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "temperature",ctxId );
+            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
+            hasMeasure = true;
+        }
+    }
+
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setParameter( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
 }
 
 
@@ -395,6 +573,9 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
     int currentTimeOrder = this->timeStepBdfTemperature()->timeOrder();
 
     this->updateTime( this->timeStepBdfTemperature()->time() );
+
+    // update velocity convection id symbolic expr exist and  depend only of time
+    this->updateFieldVelocityConvection( true );
 
     // maybe rebuild cst jacobian or linear
     if ( M_algebraicFactory &&
@@ -451,15 +632,18 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
     if ( buildCstPart )
     {
+        //double kappa = this->thermalProperties()->cstThermalConductivity();
+        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= this->thermalConductivity()*inner(gradt(u),grad(v)),
+                       _expr= kappa*inner(gradt(u),grad(v)),
                        _geomap=this->geomap() );
     }
 
     if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
     {
-        double thecoeff = this->rho()*this->heatCapacity();
+        //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
+        auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
                        _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
@@ -509,7 +693,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
         if (BuildNonCstPart_Form2TransientTerm)
         {
-            double thecoeff = this->rho()*this->heatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             bilinearForm_PatternCoupled +=
                 integrate( _range=elements(mesh),
                            _expr= thecoeff*idt(u)*id(v),
@@ -518,7 +703,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
         if (BuildNonCstPart_Form1TransientTerm)
         {
-            double thecoeff = this->rho()*this->heatCapacity();
+            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
+            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
             auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
             myLinearForm +=
                 integrate( _range=elements(mesh),

@@ -26,13 +26,13 @@
 
 /* declared in error.c */
 #ifdef LIBMESH_TLS
-extern LIBMESH_TLS int gk_cur_jbufs;
-extern LIBMESH_TLS jmp_buf gk_jbufs[];
-extern LIBMESH_TLS jmp_buf gk_jbuf;
+extern LIBMESH_TLS int feel_gk_cur_jbufs;
+extern LIBMESH_TLS jmp_buf feel_gk_jbufs[];
+extern LIBMESH_TLS jmp_buf feel_gk_jbuf;
 #else
-extern int gk_cur_jbufs;
-extern jmp_buf gk_jbufs[];
-extern jmp_buf gk_jbuf;
+extern int feel_gk_cur_jbufs;
+extern jmp_buf feel_gk_jbufs[];
+extern jmp_buf feel_gk_jbuf;
 #endif // LIBMESH_TLS
 
 #endif

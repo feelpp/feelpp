@@ -157,6 +157,7 @@ class TestPrecAFP : public Application
         auto M_mesh = loadMesh(_mesh=new mesh_type);
         auto Xh = comp_space_type::New(M_mesh); // curl x lag
         auto Mh = lag_0_space_type::New(M_mesh); // lag_0
+        auto MVh= lag_v_space_type::New(M_mesh); // lag_v
         auto M_mu_r = Mh->element();
         auto model = ModelProperties(Environment::expand(soption("myModel")));
         /*
@@ -181,6 +182,7 @@ class TestPrecAFP : public Application
         p.first = "m";
         p.second = std::stod(soption("functions.m"));
         rhs.setParameterValues(p);
+        auto M_rhs = vf::project(_space=MVh, _range=elements(M_mesh), _expr=(rhs));
 
         //auto c_M_a = expr(soption("functions.c"));
         auto U = Xh->element();
@@ -199,7 +201,7 @@ class TestPrecAFP : public Application
         map_scalar_field<2> m_dirichlet_phi {model.boundaryConditions().getScalarFields<2>("phi","Dirichlet")};
         
         f1 = integrate(_range=elements(M_mesh),
-                       _expr = inner(rhs,id(v)));    // rhs
+                       _expr = inner(idv(M_rhs),id(v)));    // rhs
         f2 = integrate(_range=elements(M_mesh),
                        _expr = 
                          inner(trans(id(v)),gradt(phi)) // grad(phi)
@@ -207,15 +209,21 @@ class TestPrecAFP : public Application
                        + (1./idv(M_mu_r))*(trans(curlt_op(u))*curl_op(v)) // curl curl 
                        );
         for(auto const & it : m_dirichlet)
+        {
+            LOG(INFO) << "Setting " << it.second << " on " << it.first << std::endl;
             f2 += on(_range=markedfaces(M_mesh,it.first),
                      _rhs=f1,
                      _element=u,
                      _expr=it.second);
+        }
         for(auto const & it : m_dirichlet_phi)
+        {
+            LOG(INFO) << "Setting " << it.second << " on " << it.first << std::endl;
             f2 += on(_range=markedfaces(M_mesh,it.first),
                      _rhs=f1,
                      _element=phi,
                      _expr=it.second);
+        }
 
         solve_ret_type ret;
         if(soption("ms.pc-type") == "blockms" ){
@@ -245,10 +253,10 @@ class TestPrecAFP : public Application
                       _backend=backend(_name="ms"));
             toc("Inverse",FLAGS_v>0);
         }
+#if 0
         Environment::saveTimers(boption("saveTimers")); 
         auto e21 = normL2(_range=elements(M_mesh), _expr=(f_M_a-idv(u)));
         auto e22 = normL2(_range=elements(M_mesh), _expr=f_M_a);
-#if 0
         auto e21_curl = integrate(_range=elements(M_mesh),
                                   _expr = inner(idv(u)-f_M_a,
                                                 idv(u)-f_M_a)
@@ -259,7 +267,6 @@ class TestPrecAFP : public Application
                                   _expr = inner(idv(u),idv(u))
                                   + inner(curlv(u),curlv(u))
                                  ).evaluate()(0,0);
-#endif
         auto nnzVec = f2.matrixPtr()->graph()->nNz();
         int nnz = std::accumulate(nnzVec.begin(),nnzVec.end(),0);
         M_prec->iterMinMaxMean();
@@ -377,10 +384,12 @@ class TestPrecAFP : public Application
             }
         }
         /* end of report */
+#endif
         // export
         if(boption("exporter.export")){
             auto ex = exporter(_mesh=M_mesh);
             ex->add("relativPermeability",M_mu_r  );
+            ex->add("rhs"                ,M_rhs  );
             ex->add("potential"          ,u  );
             ex->add("lagrange_multiplier",phi);
             ex->save();

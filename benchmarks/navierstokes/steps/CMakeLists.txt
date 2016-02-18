@@ -23,24 +23,33 @@
 #
 
 
-feelpp_add_application( steady_ns_2d SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_2d.cfg steady_ns_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=2)
+feelpp_add_application( steady_ns_2d_P2P1 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_2d.cfg steady_ns_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=1)
+feelpp_add_application( steady_ns_2d_P3P2 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_2d.cfg steady_ns_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=2)
+feelpp_add_application( steady_ns_2d_P4P3 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_2d.cfg steady_ns_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=3)
+
 feelpp_add_application( steady_ns_3d_P2P1 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_3d.cfg steady_ns_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
 feelpp_add_application( steady_ns_3d_P3P2 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_3d.cfg steady_ns_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=2)
+feelpp_add_application( steady_ns_3d_P4P3 SRCS steady_ns.cpp INCLUDE_IN_ALL CFG steady_ns_3d.cfg steady_ns_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=3)
 
 
 feelpp_add_application( unsteady_fda_3D_P2P1 SRCS unsteady_fda.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG fda_3d.cfg fda_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
 feelpp_add_application( unsteady_fda_3D_P3P2 SRCS unsteady_fda.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG fda_3d.cfg fda_3d.bc DEFS FEELPP_DIM=3 FEELPP_ORDER_P=2)
+
 feelpp_add_application( unsteady_fda_2D_P2P1 SRCS unsteady_fda.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG fda_2d.cfg fda_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=1)
 feelpp_add_application( unsteady_fda_2D_P3P2 SRCS unsteady_fda.cpp display_flowrates.cpp INCLUDE_IN_ALL CFG fda_2d.cfg fda_2d.bc DEFS FEELPP_DIM=2 FEELPP_ORDER_P=2)
+
 install(TARGETS feelpp_unsteady_fda_3D_P2P1 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_unsteady_fda_3D_P3P2 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_unsteady_fda_2D_P2P1 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_unsteady_fda_2D_P3P2 DESTINATION bin/ COMPONENT Bin )
 
-install(TARGETS feelpp_steady_ns_2d DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_steady_ns_2d_P2P1 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_steady_ns_2d_P3P2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_steady_ns_2d_P4P3 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_steady_ns_3d_P2P1 DESTINATION bin/ COMPONENT Bin )
 install(TARGETS feelpp_steady_ns_3d_P3P2 DESTINATION bin/ COMPONENT Bin )
+install(TARGETS feelpp_steady_ns_3d_P4P3 DESTINATION bin/ COMPONENT Bin )
 
-feelpp_add_testcase( TurekHronExt3d )
+# feelpp_add_testcase( TurekHronExt3d )
 
 ##add_subdirectory(qslapla)

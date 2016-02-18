@@ -14,19 +14,15 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( //bool __isStationary,
-                                                            std::string __prefix,
-                                                            bool __buildMesh,
-                                                            WorldComm const& __worldComm,
-                                                            std::string __subPrefix,
-                                                            std::string __appliShortRepository )
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( std::string const& prefix,
+                                                            bool buildMesh,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& subPrefix,
+                                                            std::string const& rootRepository )
     :
-    super_type( __prefix,__worldComm,__subPrefix, self_type::expandStringFromSpec(__appliShortRepository) ),
+    super_type( prefix,worldComm,subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
-    M_densityViscosityModel( new densityviscosity_model_type(  __prefix ) ),
-    M_doExportVelocity( false), M_doExportPressure( false ), M_doExportVorticity( false ),
-    M_doExportNormalStress( false), M_doExportWallShearStress( false ), M_doExportViscosity( false ),
-    M_doExportMeshDisplacement( false )
+    M_densityViscosityModel( new densityviscosity_model_type( prefix ) )
 {
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".FluidMechanicsSolve.data";
@@ -50,6 +46,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const&
     boost::replace_all( res, "$fluid_tag", fluidTag );
     return res;
 }
+
 // add members instatantiations need by static function expandStringFromSpec
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderVelocity;
@@ -57,6 +54,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderPressure;
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
+
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -140,33 +138,45 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
                         this->worldComm(),this->verboseAllProc());
 #endif
 
+    // overwrite export field options in json if given in cfg
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
-        M_doExportVelocity = boption(_name="do_export_velocity",_prefix=this->prefix());
+        if ( boption(_name="do_export_velocity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
-        M_doExportPressure = boption(_name="do_export_pressure",_prefix=this->prefix());
+        if ( boption(_name="do_export_pressure",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
-        M_doExportMeshDisplacement = boption(_name="do_export_displacement",_prefix=this->prefix());
+        if ( boption(_name="do_export_displacement",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_vorticity").c_str()) )
-        M_doExportVorticity = boption(_name="do_export_vorticity",_prefix=this->prefix());
+        if ( boption(_name="do_export_vorticity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
-        M_doExportNormalStress = boption(_name="do_export_normalstress",_prefix=this->prefix());
+        if ( boption(_name="do_export_normalstress",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_wallshearstress").c_str()) )
-        M_doExportWallShearStress = boption(_name="do_export_wallshearstress",_prefix=this->prefix());
+        if ( boption(_name="do_export_wallshearstress",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_viscosity").c_str()) )
-        M_doExportViscosity = boption(_name="do_export_viscosity",_prefix=this->prefix());
+        if ( boption(_name="do_export_viscosity",_prefix=this->prefix()) )
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
 
-    M_doExportMeshALE = boption(_name="do_export_meshale",_prefix=this->prefix());
-    M_doExportMeshDisplacementOnInterface = boption(_name="do_export_meshdisplacementoninterface",_prefix=this->prefix());
+    if ( boption(_name="do_export_meshale",_prefix=this->prefix()) )
+        this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
-    {
         if ( boption(_name="do_export_all",_prefix=this->prefix()) )
         {
-            M_doExportVelocity = true; M_doExportPressure = true; M_doExportVorticity = true;
-            M_doExportNormalStress = true; M_doExportWallShearStress = true; M_doExportViscosity = true;
-            M_doExportMeshDisplacement = true; M_doExportMeshALE = true; M_doExportMeshDisplacementOnInterface=true;
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
         }
-    }
 
     //--------------------------------------------------------------//
     M_haveSourceAdded=false;//true when update
@@ -177,11 +187,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     std::string theFluidModel = this->modelProperties().model();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         theFluidModel = soption(_name="model",_prefix=this->prefix());
-    this->pdeType( theFluidModel );
+    this->setModelName( theFluidModel );
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
-        M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
-    //M_stressTensorLaw = soption(_name="stress_tensor_law",_prefix=this->prefix());
+        this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
     //--------------------------------------------------------------//
     // fsi options
@@ -284,8 +293,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
-    double timeElapsedCreateMesh = this->timerTool("Constructor").stop("createMesh");
-    this->log("FluidMechanics","createMesh", (boost::format("finish in %1% s") % timeElapsedCreateMesh).str() );
+    double tElapsed = this->timerTool("Constructor").stop("createMesh");
+    this->log("FluidMechanics","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -388,8 +397,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
     }
 
-    this->timerTool("Constructor").stop("createSpaces");
-    this->log("FluidMechanics","createFunctionSpaces", "finish" );
+    double tElapsed = this->timerTool("Constructor").stop("createSpaces");
+    this->log("FluidMechanics","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -417,11 +426,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
                        _restart_at_last_save=this->restartAtLastSave(),
                        _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
     M_bdf_fluid->setfileFormat( myFileFormat );
-    M_bdf_fluid->setPathSave( (fs::path(this->appliRepository()) /
+    M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
 
-    this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("FluidMechanics","createTimeDiscretisation", "finish" );
+    double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
+    this->log("FluidMechanics","createTimeDiscretisation", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -455,14 +464,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
                                            this->prefix(),
                                            this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
-                                           this->appliShortRepository() ));
+                                           this->rootRepositoryWithoutNumProc() ));
+        this->log("FluidMechanics","createALE", "--1--" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
+        this->log("FluidMechanics","createALE", "--2--" );
         // mesh velocity only on moving interface
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
 
-        this->timerTool("Constructor").stop("createALE");
-        this->log("FluidMechanics","createALE", "finish");
+        double tElapsed = this->timerTool("Constructor").stop("createALE");
+        this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );
     }
 #endif
 
@@ -474,10 +485,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcess()
 {
+    this->log("FluidMechanics","createPostProcess", "start" );
     this->timerTool("Constructor").start();
     this->createPostProcessExporters();
     //this->createPostProcessMeasures();
-    this->timerTool("Constructor").stop("createPostProcess");
+    double tElapsed = this->timerTool("Constructor").stop("createPostProcess");
+    this->log("FluidMechanics","createPostProcess", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -535,7 +548,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
                                        _backend=M_backend,
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
-                                       _path=this->appliRepository(),
+                                       _path=this->rootRepository(),
                                        _prefix=this->prefix(),
                                        _rebuild=!this->doRestart(),
                                        _parallel=doLagP1parallel );
@@ -548,7 +561,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
                                        _backend=M_backend,
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
-                                       _path=this->appliRepository(),
+                                       _path=this->rootRepository(),
                                        _prefix=this->prefix(),
                                        _rebuild=!this->doRestart(),
                                        _parallel=doLagP1parallel );
@@ -578,14 +591,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
         M_XhVectorialVisuHO = space_vectorial_visu_ho_type::New(_mesh=meshVisuHO/*opLagP1->mesh()*/, _worldscomm=this->localNonCompositeWorldsComm());
         //M_XhScalarVisuHO = space_scalar_visu_ho_type::New(_mesh=opLagP1->mesh(),_worldscomm=this->localNonCompositeWorldsComm());
         M_XhScalarVisuHO = M_XhVectorialVisuHO->compSpace();
-        if (M_doExportNormalStress || M_doExportWallShearStress )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) ||
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
             M_XhVectorialDiscVisuHO = space_vectorialdisc_visu_ho_type::New(_mesh=meshVisuHO/*opLagP1->mesh()*/,_worldscomm=this->localNonCompositeWorldsComm());
 
         M_velocityVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"u_visuHO"));
         M_pressureVisuHO.reset( new element_scalar_visu_ho_type(M_XhScalarVisuHO,"p_visuHO"));
         if (M_isMoveDomain) M_meshdispVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"meshdisp_visuHO"));
-        if (M_doExportNormalStress) M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
-        if (M_doExportWallShearStress) M_fieldWallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) )
+            M_normalStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"normalstress_visuHO") );
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
+            M_fieldWallShearStressVisuHO.reset( new element_vectorialdisc_visu_ho_type(M_XhVectorialDiscVisuHO,"wallshearstress_visuHO") );
 
         this->log("FluidMechanics","createPostProcessExporters", "start opInterpolation" );
         boost::mpi::timer timerOpI;
@@ -604,7 +620,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
 
-        if (M_doExportNormalStress || M_doExportWallShearStress )
+        if ( this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::NormalStress ) ||
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::WallShearStress ) )
         {
             M_opIstress = opInterpolation(_domainSpace=M_XhNormalBoundaryStress,
                                           _imageSpace=M_XhVectorialDiscVisuHO,
@@ -972,13 +989,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if (buildMethodNum)
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend()) );
-#if 0
+#if 1
         bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
         if ( attachMassMatrix )
         {
             auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
             auto const& u = this->fieldVelocity();
             double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            if ( this->isStationary() ) coeff=1.;
             massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
             massbf.matrixPtr()->close();
             M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
@@ -1107,7 +1125,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
             M_fluidOutletWindkesselPressureDistal_old[k].resize( Feel::BDF_MAX_ORDER, 0 );
         }
 
-        std::string nameFile = this->appliRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
+        std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
 
         if (!this->doRestart())
         {
@@ -1234,12 +1252,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    // update post-process expression
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    bool hasMeasure = false;
+
     // clean doExport with fields not available
     if ( !this->isMoveDomain() )
     {
-        M_doExportMeshDisplacement = false;
-        M_doExportMeshALE = false;
-        M_doExportMeshDisplacementOnInterface = false;
+        M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::Displacement );
+        M_postProcessFieldExported.erase( FluidMechanicsPostProcessFieldExported::ALEMesh );
     }
     // restart exporters if restart is activated
     if (this->doRestart() && this->restartPath().empty() )
@@ -1264,23 +1288,126 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    //-----------------------------------------------------//
-    // Forces evaluation
-    std::set<std::string> markers;
-    if ( this->modelProperties().postProcess().find("Force") != this->modelProperties().postProcess().end() )
-        for ( std::string const& o : this->modelProperties().postProcess().find("Force")->second )
-            markers.insert( o );
-
-    this->postProcessMeasures().setParameter( "time", this->timeInitial() );
-    for ( std::string marker : markers )
+    // forces (lift, drag) and flow rate measures
+    auto const& ptree = this->modelProperties().postProcess().pTree();
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
     {
-        this->postProcessMeasures().setMeasure(marker+"_drag",0.);
-        this->postProcessMeasures().setMeasure(marker+"_lift",0.);
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "Forces" )
+            {
+                // get list of marker
+                std::set<std::string> markerSet;
+                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
+                if ( markerUnique.empty() )
+                {
+                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    {
+                        std::string marker = ptreeMarker.second.template get_value<std::string>();
+                        markerSet.insert( marker );
+                    }
+                }
+                else
+                {
+                    markerSet.insert( markerUnique );
+                }
+                // save forces measure for each marker
+                for ( std::string const& marker : markerSet )
+                {
+                    ModelMeasuresForces myPpForces;
+                    myPpForces.addMarker( marker );
+                    myPpForces.setName( marker );
+                    std::string name = myPpForces.name();
+                    M_postProcessMeasuresForces.push_back( myPpForces );
+                    this->postProcessMeasuresIO().setMeasure("drag_"+name,0.);
+                    this->postProcessMeasuresIO().setMeasure("lift_"+name,0.);
+                    hasMeasure = true;
+                }
+            }
+            else if ( ptreeLevel1Name == "FlowRate" )
+            {
+                for( auto const& ptreeLevel2 : ptreeLevel1.second )
+                {
+                    ModelMeasuresFlowRate myPpFlowRate;
+                    std::string name = ptreeLevel2.first;
+                    myPpFlowRate.setup( ptreeLevel2.second, name );
+                    M_postProcessMeasuresFlowRate.push_back( myPpFlowRate );
+                    this->postProcessMeasuresIO().setMeasure("flowrate_"+name,0.);
+                    hasMeasure = true;
+                }
+            }
+            else if ( ptreeLevel1Name == "Pressure" )
+            {
+                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
+                this->postProcessMeasuresIO().setMeasure("pressure_sum",0.);
+                this->postProcessMeasuresIO().setMeasure("pressure_mean",0.);
+                hasMeasure = true;
+            }
+            else if ( ptreeLevel1Name == "VelocityDivergence" )
+            {
+                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "VelocityDivergence" );
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",0.);
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",0.);
+                this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",0.);
+                hasMeasure = true;
+            }
+        }
     }
-    if (!this->doRestart())
-        this->postProcessMeasures().start();
-    else if ( !this->isStationary() )
-        this->postProcessMeasures().restart( "time", this->timeInitial() );
+
+    // point measures
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    {
+        auto const& ptPos = evalPoints.pointPosition();
+        node_type ptCoord(3);
+        for ( int c=0;c<3;++c )
+            ptCoord[c]=ptPos.value()(c);
+
+        auto const& fields = evalPoints.fields();
+        for ( std::string const& field : fields )
+        {
+            if ( field == "velocity" )
+            {
+                if ( !M_postProcessMeasuresContextVelocity )
+                    M_postProcessMeasuresContextVelocity.reset( new context_velocity_type( functionSpaceVelocity()->context() ) );
+                int ctxId = M_postProcessMeasuresContextVelocity->nPoints();
+                M_postProcessMeasuresContextVelocity->add( ptCoord );
+                std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("velocity", ctxId, ptNameExport );
+
+                std::vector<double> vecValues = { 0. };
+                if ( nDim > 1 ) vecValues.push_back( 0. );
+                if ( nDim > 2 ) vecValues.push_back( 0. );
+                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
+                hasMeasure = true;
+            }
+            else if ( field == "pressure" )
+            {
+                if ( !M_postProcessMeasuresContextPressure )
+                    M_postProcessMeasuresContextPressure.reset( new context_pressure_type( functionSpacePressure()->context() ) );
+                int ctxId = M_postProcessMeasuresContextPressure->nPoints();
+                M_postProcessMeasuresContextPressure->add( ptCoord );
+                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
+                this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
+
+                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
+                hasMeasure = true;
+            }
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
+        // start or restart measure file
+        if (!this->doRestart())
+            this->postProcessMeasuresIO().start();
+        else if ( !this->isStationary() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    }
 }
 
 
