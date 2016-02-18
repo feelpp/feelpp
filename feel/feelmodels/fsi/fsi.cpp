@@ -36,9 +36,9 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-FSI<FluidType,SolidType>::FSI(std::string prefix,WorldComm const& worldComm, std::string const& appliShortRepository )
+FSI<FluidType,SolidType>::FSI(std::string const& prefix,WorldComm const& worldComm, std::string const& rootRepository )
     :
-    super_type( prefix, worldComm, "", self_type::expandStringFromSpec( appliShortRepository )  ),
+    super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
@@ -120,7 +120,7 @@ FSI<FluidType,SolidType>::createMesh()
             meshesdirectories = meshesdirgiven;
     }
     else
-        meshesdirectories = fs::path(this->appliRepositoryWithoutNumProc()) / fs::path("meshes");
+        meshesdirectories = fs::path(this->rootRepositoryWithoutNumProc()) / fs::path("meshes");
 
     fs::path gp;
     if (this->hasMshfileStr())
@@ -131,19 +131,24 @@ FSI<FluidType,SolidType>::createMesh()
     std::string nameMeshFile = gp.stem().string();
     fs::path mshFileNameFluidPart1, mshFileNameSolidPart1,mshFileNameFluidPartN,mshFileNameSolidPartN;
     fs::path mshFileNameFSI;
+#ifdef FEELPP_HAS_HDF5
+    std::string meshFileExtension = "json";
+#else
+    std::string meshFileExtension = "msh";
+#endif
     if ( !M_tagFileNameMeshGenerated.empty() )
     {
-        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_%3%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_%3%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_%3%_p%4%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
-        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_%3%_p%4%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
+        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_%3%_p1.%4%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %meshFileExtension ).str();
+        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_%3%_p1.%4%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %meshFileExtension ).str();
+        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_%3%_p%4%.%5%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart %meshFileExtension ).str();
+        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_%3%_p%4%.%5%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart %meshFileExtension ).str();
     }
     else
     {
-        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
-        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() ).str();
-        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_p%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %nPart ).str();
-        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_p%3%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %nPart ).str();
+        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_p1.%3%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %meshFileExtension ).str();
+        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_p1.%3%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %meshFileExtension ).str();
+        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_p%3%.%4%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %nPart %meshFileExtension ).str();
+        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_p%3%.%4%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %nPart %meshFileExtension ).str();
     }
     M_mshfilepathFluidPart1 = meshesdirectories / mshFileNameFluidPart1;
     M_mshfilepathSolidPart1 = meshesdirectories / mshFileNameSolidPart1;
@@ -203,7 +208,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     for ( auto const& e : elements(submeshStruct) )
       {
         auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
-        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap()[ theface.element0().id() ].first;
+        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
         auto const& theface2 = FM->mesh()->element(idElt2,e.processId()).face(theface.pos_first());
         smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
@@ -263,7 +268,7 @@ FSI<FluidType,SolidType>::init()
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->appliShortRepository() ) );
+        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMshfileStr(M_mshfilepathFluidPartN.string());
         M_fluidModel->build();
@@ -272,7 +277,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->appliShortRepository() ) );
+        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
@@ -353,14 +358,22 @@ FSI<FluidType,SolidType>::init()
 
     //-------------------------------------------------------------------------//
     // build interface operator for generalized robin-neumann
-    if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized")
+    if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
         auto fieldInit = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1( fieldInit );
     }
     if ( M_solidModel->is1dReducedModel() )
         M_couplingRNG_useInterfaceOperator = false;
-    if ( M_solidModel->isStandardModel() && this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" && M_couplingRNG_useInterfaceOperator )
+    if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+        if ( !M_couplingRNG_useInterfaceOperator )
+        {
+            M_fluidModel->setCouplingFSI_RNG_useInterfaceOperator( false );
+            if ( boption(_name="coupling-robin-neumann-generalized.without-interface-operator.precompute-mass-matrix",_prefix=this->prefix() ) )
+                M_fluidModel->couplingFSI_RNG_updateForUse();
+        }
+        else if ( M_solidModel->isStandardModel() && M_couplingRNG_useInterfaceOperator )
     {
         auto fieldInitBis = M_fluidModel->functionSpaceVelocity()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1Bis( fieldInitBis );
@@ -481,6 +494,7 @@ FSI<FluidType,SolidType>::init()
         M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
         M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
     }
+    } // if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     //-------------------------------------------------------------------------//
 
     this->log("FSI","init","finish");

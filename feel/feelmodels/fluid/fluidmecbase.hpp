@@ -59,6 +59,11 @@ namespace Feel
 {
 namespace FeelModels
 {
+enum class FluidMechanicsPostProcessFieldExported
+{
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Viscosity, ALEMesh
+};
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
 class FluidMechanicsBase : public ModelNumerical,
                            public MarkerManagementDirichletBC,
@@ -313,23 +318,28 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef boost::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
+
+    // context for evaluation
+    typedef typename space_fluid_velocity_type::Context context_velocity_type;
+    typedef boost::shared_ptr<context_velocity_type> context_velocity_ptrtype;
+    typedef typename space_fluid_pressure_type::Context context_pressure_type;
+    typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanicsBase( //bool __isStationary,
-                        std::string prefix,
-                        bool __buildMesh=true,
-                        WorldComm const& _worldComm=Environment::worldComm(),
-                        std::string subPrefix="",
-                        std::string appliShortRepository=soption(_name="exporter.directory") );
+    FluidMechanicsBase( std::string const& prefix,
+                        bool __buildMesh = true,
+                        WorldComm const& _worldComm = Environment::worldComm(),
+                        std::string const& subPrefix = "",
+                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FluidMechanicsBase( self_type const & M ) = default;
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
-
 
     void build();
     void init( bool buildMethodNum, typename model_algebraic_factory_type::appli_ptrtype const& app );
@@ -420,6 +430,7 @@ public:
     // export post process results
     void initPostProcess();
     //void restartPostProcess();
+    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -452,12 +463,13 @@ public :
 
     bool isMoveDomain() const { return M_isMoveDomain; }
 
-    void pdeType(std::string __type);
-    std::string pdeType() const;
-    void pdeSolver(std::string __type);
-    std::string pdeSolver() const;
-    void stressTensorLawType(std::string __type);
-    //std::string stressTensorLawType() const;
+    std::string const& modelName() const;
+    void setModelName( std::string const& type );
+    std::string const& solverName() const;
+    void setSolverName( std::string const& type );
+
+    void setDynamicViscosityLaw( std::string const& type);
+    std::string const& dynamicViscosityLaw() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -675,16 +687,18 @@ public :
 #endif
     //___________________________________________________________________________________//
 
-    // save in file value of pressure at point __listPt
-    void savePressureAtPoints(const std::list<boost::tuple<std::string,typename mesh_type::node_type> > & __listPt, bool extrapolate=false);
+    double computeMeshArea( std::string const& marker = "" ) const;
+    double computeMeshArea( std::list<std::string> const& markers ) const;
 
-    // compute drag and lift on a markedfaces called markerName
-    Eigen::Matrix<value_type,nDim,1> computeForce(std::string const& markerName);
-
-    double computeFlowRate(std::string const& marker);
-    double computeMeanPressure();
-    double computeMeanDivergence();
-    double computeNormL2Divergence();
+    // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
+    Eigen::Matrix<value_type,nDim,1> computeForce( std::string const& markerName ) const;
+    double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
+    double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
+    double computePressureSum() const;
+    double computePressureMean() const;
+    double computeVelocityDivergenceSum() const;
+    double computeVelocityDivergenceMean() const;
+    double computeVelocityDivergenceNormL2() const;
 
 #if 0
     // Averaged Preassure computed on a set of slice (false for compute on actual mesh)
@@ -767,10 +781,8 @@ public :
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
-
-    void updateOseen( DataUpdateLinear & data ) const;
-    void updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
-    void updateOseenStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
+    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
+    void updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
                                    sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const;
 
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
@@ -780,19 +792,8 @@ public :
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
     virtual void updateBCPressureLinearPDE( vector_ptrtype& F ) const = 0;
 
-
-#if 0
-    void updatePreconditioner(const vector_ptrtype& X,
-                              sparse_matrix_ptrtype& A,
-                              sparse_matrix_ptrtype& A_extended,
-                              sparse_matrix_ptrtype& Prec) const;
-#endif
-    // non linear (fixed point)
-    void updatePtFixe(const vector_ptrtype& Xold, sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                      bool _buildCstPart,
-                      bool _doClose=true, bool _doBCStrongDirichlet=true ) const;
-
-    double computeDiff(const vector_ptrtype& X1,const vector_ptrtype& X2);
+    void updatePicard( DataUpdateLinear & data ) const;
+    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //___________________________________________________________________________________//
 
@@ -850,8 +851,8 @@ protected:
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
-    std::string M_pdeType;
-    std::string M_pdeSolver;
+    std::string M_modelName;
+    std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
@@ -901,13 +902,10 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    // post-process field exported
+    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
     bool M_isHOVisu;
-    bool M_doExportVelocity, M_doExportPressure, M_doExportVorticity, M_doExportNormalStress, M_doExportWallShearStress, M_doExportViscosity;
-    bool M_doExportMeshDisplacement;
-    bool M_doExportMeshALE;
-    bool M_doExportMeshDisplacementOnInterface;
-
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
@@ -932,13 +930,17 @@ protected:
 #endif
     op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
 #endif
+    // post-process measure at point
+    context_velocity_ptrtype M_postProcessMeasuresContextVelocity;
+    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
+    // post-process measure forces (lift,drag) and flow rate
+    std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
+    std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)
     std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
-    //----------------------------------------------------
-    std::set<std::string> M_nameFilesPressureAtPoints;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

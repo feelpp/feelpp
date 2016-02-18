@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-30
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,13 @@ using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <
 
 template<int Order,typename MeshType>
 using dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
+
+
+template<typename MeshType, int Order>
+using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+
+template<typename MeshType, int Order>
+using Dh_ptrtype = boost::shared_ptr<dh_type<Order,MeshType>>;
 
 /**
  * \fn Dh<k,MeshType>

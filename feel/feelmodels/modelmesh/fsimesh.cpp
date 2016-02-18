@@ -31,6 +31,7 @@
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelmesh/partitionmesh.hpp>
 
 
 namespace Feel
@@ -69,7 +70,8 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
                                  _filename=this->mshPathFSI().string(),
                                  _straighten=false,
                                  _worldcomm=this->worldComm().subWorldCommSeq(),
-                                 _rebuild_partitions=false
+                                 _rebuild_partitions=false,
+                                 _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES)
                                  );
         std::cout << "[FSIMesh] : load fsi mesh finish\n";
 
@@ -124,34 +126,18 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 #elif BOOST_FILESYSTEM_VERSION == 2
         fs::copy_file( this->geoPathFSI(), geoPathFSIcopy, fs::copy_option::overwrite_if_exists );
 #endif
-#if 0
-        // go in output path directory for launch loadMesh
-        fs::path curPath=fs::current_path();
-        bool hasChangedRep=false;
-        if ( curPath != meshesdirectories )
-        {
-            std::cout << "[FSIMesh] change repository (temporary) for build mesh from geo : " << meshesdirectories.string() << "\n";
-            bool hasChangedRep=true;
-            Environment::changeRepository( _directory=boost::format(meshesdirectories.string()), _subdir=false,
-                                           _worldcomm=this->worldComm().subWorldCommSeq() );
-        }
-#endif
         std::cout << "[FSIMesh] : build fsi mesh ....\n";
         auto meshFSI = loadMesh( _mesh=new mesh_type(this->worldComm().subWorldCommSeq()),
                                  _filename=geoPathFSIcopy.string(),
                                  _h=this->meshSize(),
                                  _straighten=false,
                                  _worldcomm=this->worldComm().subWorldCommSeq(),
-                                 _rebuild_partitions=false
+                                 _rebuild_partitions=false,
+                                 _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES)
                                  );
         std::cout << "[FSIMesh] : build fsi mesh finish\n";
         CHECK( fs::exists( this->mshPathFSI() ) ) << "mesh file not exist : " << this->mshPathFSI();
-#if 0
-        // go back to previous repository
-        if ( hasChangedRep )
-            Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false,
-                                           _worldcomm=this->worldComm().subWorldCommSeq() );
-#endif
+
         this->buildSubMesh( meshFSI );
     }
 
@@ -183,21 +169,30 @@ FSIMesh<ConvexType>::buildSubMesh( mesh_ptrtype const& fsimesh )
 
     // create fluid submesh
     std::list<std::string> myFluidMarkers( this->markersNameFluidVolume().begin(),this->markersNameFluidVolume().end() );
-    auto fluidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,myFluidMarkers));
+    auto fluidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,myFluidMarkers),0,size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
     std::cout << "fluid mesh -> numGlobalElements : " << fluidMesh_temp->numGlobalElements() << "\n";
     std::cout << "fluid mesh -> save sequential mesh in : " << this->mshPathFluidPart1() << "\n";
     fs::path meshesdirectoriesFluid = this->mshPathFluidPart1().parent_path();
     if ( !fs::exists( meshesdirectoriesFluid ) ) fs::create_directories( meshesdirectoriesFluid );
+#ifdef FEELPP_HAS_HDF5
+    PartitionIO<mesh_fluid_type> iofluid( this->mshPathFluidPart1().string() );
+    iofluid.write( fluidMesh_temp );
+#else
     saveGMSHMesh(_mesh=fluidMesh_temp,_filename=this->mshPathFluidPart1().string());
+#endif
     // create struct submesh
     std::list<std::string> mySolidMarkers( this->markersNameSolidVolume().begin(),this->markersNameSolidVolume().end() );
-    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers));
+    auto solidMesh_temp = createSubmesh(fsimesh,markedelements(fsimesh,mySolidMarkers),0,size_type(MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES));
     std::cout << "solid mesh -> numGlobalElements : " << solidMesh_temp->numGlobalElements()<<"\n";
     std::cout << "solid mesh -> save sequential mesh in : " << this->mshPathSolidPart1() << "\n";
     fs::path meshesdirectoriesSolid = this->mshPathSolidPart1().parent_path();
     if ( !fs::exists( meshesdirectoriesSolid ) ) fs::create_directories( meshesdirectoriesSolid );
+#ifdef FEELPP_HAS_HDF5
+    PartitionIO<mesh_solid_type> iosolid( this->mshPathSolidPart1().string() );
+    iosolid.write( solidMesh_temp );
+#else
     saveGMSHMesh(_mesh=solidMesh_temp,_filename=this->mshPathSolidPart1().string());
-
+#endif
     std::cout << "[FSIMesh] : build fluid and structure submesh finish\n";
 }
 
@@ -207,6 +202,35 @@ template< class ConvexType >
 void
 FSIMesh<ConvexType>::buildMeshesPartitioning()
 {
+#ifdef FEELPP_HAS_HDF5
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( this->mshPathFluidPartN() ) || this->forceRebuild() )
+        {
+            std::cout << "partitioning fluid submesh in " << this->nPartitions() << " part......\n"
+                      << "From : " << this->mshPathFluidPart1() << "\n"
+                      << "Write : " << this->mshPathFluidPartN() <<"\n";
+            auto fluidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()), _savehdf5=0,
+                                         _filename=this->mshPathFluidPart1().string(),
+                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+            PartitionIO<mesh_fluid_type> iofluid( this->mshPathFluidPartN().string() );
+            iofluid.write( partitionMesh( fluidmeshSeq,  this->nPartitions() ) );
+        }
+
+        if ( !fs::exists( this->mshPathSolidPartN() ) || this->forceRebuild() )
+        {
+            std::cout << "partitioning structure submesh in " << this->nPartitions() << " part......\n"
+                      << "From : " << this->mshPathSolidPart1() << "\n"
+                      << "Write : " << this->mshPathSolidPartN() <<"\n";
+            auto solidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeq()), _savehdf5=0,
+                                         _filename=this->mshPathSolidPart1().string(),
+                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+            PartitionIO<mesh_solid_type> iosolid( this->mshPathSolidPartN().string() );
+            iosolid.write( partitionMesh( solidmeshSeq,  this->nPartitions() ) );
+        }
+    }
+    this->worldComm().globalComm().barrier();
+#else
     // partitioning if no exist
     if ( !fs::exists( this->mshPathFluidPartN() ) || this->forceRebuild() )
     {
@@ -216,6 +240,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
             std::cout << "partitioning fluid submesh in " << this->nPartitions() << " part......\n"
                       << "From : " << this->mshPathFluidPart1() << "\n"
                       << "Write : " << this->mshPathFluidPartN() <<"\n";
+
         // partioning mesh base
         Gmsh gmsh( mesh_type::nDim,
                    mesh_type::nOrder,
@@ -239,7 +264,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
         gmsh.setPartitioner( (GMSH_PARTITIONER)this->partitioner() );
         gmsh.rebuildPartitionMsh( this->mshPathSolidPart1().string(), this->mshPathSolidPartN().string() );
     }
-
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------//

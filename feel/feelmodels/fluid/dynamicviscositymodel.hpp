@@ -50,7 +50,7 @@ public :
 
     DynamicViscosityModel( std::string prefix )
         :
-        M_viscosityModelName( soption(_name="stress_tensor_law",_prefix=prefix ) ),
+        M_viscosityModelName( soption(_name="viscosity.law",_prefix=prefix ) ),
         M_cstDynamicViscosity( doption(_name="mu",_prefix=prefix) ),
         M_powerLaw_n( doption(_name="power_law.n",_prefix=prefix) ),
         M_powerLaw_k( doption(_name="power_law.k",_prefix=prefix) ),

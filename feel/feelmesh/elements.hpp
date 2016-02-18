@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -61,7 +62,8 @@ namespace detail
     void
     updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<3> /**/)
     {
-        e.edge( i ).addElementGhost( e.processId(),e.id() );
+        if ( e.edgePtr(i) )
+            e.edge( i ).addElementGhost( e.processId(),e.id() );
     }
 }
 

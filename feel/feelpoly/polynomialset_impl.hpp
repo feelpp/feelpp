@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date     : Tue Feb 25 11:18:41 2014
 
-   Copyright (C) 2014-2015 Feel++ Consortium
+   Copyright (C) 2014-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,8 @@ update( geometric_mapping_context_ptrtype const& __gmc,
                 //std::cout << "gmc->npoints = "  << M_gmc->nPoints() << "\n";
                 M_npoints = __pc->nPoints();
 
-                const int ntdof = nDof*nComponents1;
+                //const int ntdof = nDof*nComponents1;
+                const int ntdof = this->nDofs();
                 M_phi.resize( boost::extents[ntdof][M_npoints] );
                 //M_gradphi.resize( boost::extents[ntdof][M_npoints] );
 
@@ -163,7 +164,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
         //precompute_type* __pc = M_pc.get().get();
         geometric_mapping_context_type* thegmc = __gmc.get();
 
-        if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+        if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  ||
+             vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
         {
                 const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
                 const uint16_type I = nDof; //M_ref_ele->nbDof();
@@ -226,28 +228,13 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
         boost::multi_array<value_type,4> const& B3 = thegmc->B3();
 
         std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
-
+        matrix_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
         //#pragma omp for
         for ( uint16_type i = 0; i < I; ++i )
         {
-            for ( uint16_type l = 0; l < NDim; ++l )
-            {
-                //for ( uint16_type j = l; j < NDim; ++j )
-                for ( uint16_type j = 0; j < NDim; ++j )
-                {
-                    for ( uint16_type p = 0; p < PDim; ++p )
-                    {
-                        // deal with _extra_ diagonal contributions
-                        //for ( uint16_type r = p+1; r < PDim; ++r )
-                        for ( uint16_type r = 0; r < PDim; ++r )
-                        {
-                            // we have twice the same contibution thanks to the symmetry
-                            value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, 0 );
-                            M_hessian[i][0]( l,j )  += h;
-                        } // r
-                    } // p
-                } // j
-            } // l
+            M_hessian[i][0] = B*__pc->hessian(i,0)*B.transpose();
+            for( uint16_type q = 1; q < Q; ++q )
+                M_hessian[i][q] = M_hessian[i][0];
             if ( vm::has_laplacian<context>::value  )
             {
                 auto lap = M_hessian[i][0].trace();
@@ -267,43 +254,32 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
 {
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
+        
         geometric_mapping_context_type* thegmc = __gmc.get();
+        LOG(INFO) << "use no_optimization_p2_t element " << thegmc->id();
         precompute_type* __pc = M_pc.get().get();
+        auto* __gmc_pc = thegmc->pc().get();
         const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = nDof; //M_ref_ele->nbDof();
-
-        // hessian only for P1 geometric mappings
-        boost::multi_array<value_type,4> const& B3 = thegmc->B3();
-
-        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
-        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
-
-        //#pragma omp for
-        for ( uint16_type i = 0; i < I; ++i )
+        hess_type L;
+        for ( uint16_type q = 0; q < Q; ++q )
         {
-            for ( uint16_type q = 0; q < Q; ++q )
+            matrix_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+            for ( uint16_type i = 0; i < I; ++i )
             {
-                for ( uint16_type l = 0; l < NDim; ++l )
+#if 0
+                //L = __pc->hessian(i,q);
+                //LOG(INFO) << "elt " << thegmc->id() << " L 1=" << L;
+                for (int c1 = 0; c1 < gmc_type::NDim; ++c1 )
                 {
-                    //for ( uint16_type j = l; j < NDim; ++j )
-                    for ( uint16_type j = 0; j < NDim; ++j )
-                    {
-                        for ( uint16_type p = 0; p < PDim; ++p )
-                        {
-                            // deal with _extra_ diagonal contributions
-                            //for ( uint16_type r = p+1; r < PDim; ++r )
-                            for ( uint16_type r = 0; r < PDim; ++r )
-                            {
-                                // we have twice the same contibution thanks to the symmetry
-                                value_type h = B3[l][j][p][r] * __pc->hessian( i, p, r, q );
-                                M_hessian[i][q]( l,j )  += h;
-                            } // r
-                        } // p
-                    } // j
-                } // l
+                    //L -= __gmc_pc->hessian(i,c1,q)*M_grad[i][q](0,c1);
+                    //LOG(INFO) << "elt " << thegmc->id() << " L c1 " << c1 << "="<< L;
+                }
+#endif
+                M_hessian[i][q] = B*__pc->hessian(i,q)*B.transpose();
                 if ( vm::has_laplacian<context>::value  )
                     M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
-            } // l
+            } // q
         } // i
     }
 }
@@ -406,6 +382,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
         precompute_type* __pc = M_pc.get().get();
+        auto* __gmc_pc = thegmc->pc().get();
         const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = nDof; //M_ref_ele->nbDof();
 
@@ -423,24 +400,16 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
                 uint16_type i = I*c + ii;
                 for ( uint16_type q = 0; q < Q; ++q )
                 {
+                    matrix_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                     for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
                     {
-                        L =hess_type::Zero();
-                        for ( uint16_type l = 0; l < NDim; ++l )
-                        {
-                            for ( uint16_type ll = 0; ll < NDim; ++ll )
-                            {
-                                for ( uint16_type j = 0; j < NDim; ++j )
-                                {
-                                    for ( uint16_type k = 0; k < NDim; ++k )
-                                    {
-                                        L(l,ll) += B3[l][ll][j][k]*__pc->hessian(i,c1, j,k, q);
-                                    }
-                                }
-                            }
-                        }
+                        //L = __pc->hessian(i,c1,q);
+                        //for (int c2 = 0; c2 < gmc_type::NDim; ++c2 )
+                        //L -= __gmc_pc->hessian(i,c2,q)*M_grad[i][q](c1,c2);
+                        L = B*__pc->hessian(i,c1,q)*B.transpose();
                         M_laplacian[i][q](c1,0) = L.trace();
-                    }
+                    } // c1 component of vector field
+                    
                 } // q
             } // c
         } //ii
@@ -463,6 +432,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
         boost::multi_array<value_type,4> const& B3 = thegmc->B3();
         std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
         hess_type L;
+        matrix_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
         //#pragma omp for
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
@@ -473,24 +443,11 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
                 uint16_type i = I*c + ii;
                 for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
                 {
-                    L =hess_type::Zero();
-                    for ( uint16_type l = 0; l < NDim; ++l )
-                    {
-                        for ( uint16_type ll = 0; ll < NDim; ++ll )
-                        {
-                            for ( uint16_type j = 0; j < NDim; ++j )
-                            {
-                                for ( uint16_type k = 0; k < NDim; ++k )
-                                {
-                                    L(l,ll) += B3[l][ll][j][k]*__pc->hessian(i,c1, j,k, 0);
-                                }
-                            }
-                        }
-                    }
-                    auto lap = L.trace();
-                    for (uint16_type q = 0; q < Q; ++q )
+                    L = B*__pc->hessian(i,c1,0)*B.transpose();
+                    auto lap =  L.trace();
+                    for( int q = 0; q < Q; ++q )
                         M_laplacian[i][q](c1,0) = lap;
-                }
+                }// c1 component of vector field
             } // c
         } //ii
     }

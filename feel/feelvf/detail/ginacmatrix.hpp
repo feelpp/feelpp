@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-13
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -91,7 +91,7 @@ public:
 
     GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
         :
         super( syms ),
         M_fun( fun.evalm() ),
@@ -109,14 +109,14 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
         :
         super(syms),
         M_fun(fun.evalm()),
@@ -134,7 +134,7 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary

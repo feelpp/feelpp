@@ -378,7 +378,6 @@ public:
         else
             this->countAffineDecompositionTerms(); //already called in computeAffineDecomposition() if stock
 
-        M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
         {
             CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
@@ -387,8 +386,7 @@ public:
             //as the inner product
             auto muref = this->refParameter();
             auto betaqm = computeBetaLinearDecompositionA( muref );
-
-
+            M_inner_product_matrix = this->newMatrix();
             M_inner_product_matrix->zero();
             for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
             {
@@ -2775,7 +2773,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
 
-    auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
+    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( u ),id( v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -2830,7 +2828,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     auto mesh = Xh->mesh();
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
+        integrate( _range=elements( mesh ), _expr=inner(idt( u ),id( v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -2919,7 +2917,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=elements( mesh ), _expr=idv( initial_guess[q][m] )*id( v )  );
+                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }
