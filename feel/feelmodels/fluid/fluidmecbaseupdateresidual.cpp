@@ -622,12 +622,49 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     }
 
     //------------------------------------------------------------------------------------//
+    if ( M_useThermodynModel )
+    {
+        DataUpdateResidual dataThermo( data );
+        dataThermo.setDoBCStrongDirichlet( false );
+        M_thermodynModel->updateResidual( dataThermo );
 
+        if ( !BuildCstPart )
+        {
+            //auto const& t = M_thermodynModel->fieldTemperature();
+            auto XhT = M_thermodynModel->spaceTemperature();
+            auto t = XhT->element("t");//U = *XVec;
+            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+            // copy vector values in fluid element
+            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
+                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
+
+            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
+            form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
+                   _pattern=size_type(Pattern::COUPLED),
+                   _rowstart=M_thermodynModel->rowStartInVector() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradv(t)*idv(u))*id(t),
+                           _geomap=this->geomap() );
+
+            double g=9.80665;
+            auto gravity = -g*oneY();
+            double T0 = 293.15;
+            double betaFluid = 0.00006900;
+            linearForm_PatternCoupled +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= -idv(thermalProperties->fieldRho())*betaFluid*((idv(t)-T0)/*/T0*/)*inner(gravity,id(u)),
+                           _geomap=this->geomap() );
+        }
+    }
+    //------------------------------------------------------------------------------------//
 
     bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
+    if ( M_useThermodynModel )
+        hasStrongDirichletBC = hasStrongDirichletBC || M_thermodynModel->hasMarkerDirichletBCelimination();
+
     if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
     {
         R->close();
@@ -652,6 +689,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         if ( !markerDirichletEliminationOthers.empty() )
             modifVec(markedfaces(mesh,markerDirichletEliminationOthers), u, R, vf::zero<nDim,1>(),rowStartInVector );
 
+        if ( M_useThermodynModel )
+            M_thermodynModel->updateBCDirichletStrongResidual( R );
     }
 
     //------------------------------------------------------------------------------------//
@@ -692,6 +731,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
         modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
     }
 
+    if ( M_useThermodynModel )
+    {
+        M_thermodynModel->updateNewtonInitialGuess( U );
+    }
 
     U->close();
 
