@@ -58,6 +58,7 @@ foreach( dim 2 3)
     #include<hdg.hpp>\n\n
     int main( int argc, char** argv )
     {
+      using namespace Feel;
       Feel::Assert::setLog( \"${BENCH}.assert\");
       Feel::Environment env( argc, argv, makeOptions() );
       Hdg<${dim}, ${orderP}> hdg;
