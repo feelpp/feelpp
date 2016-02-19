@@ -1752,6 +1752,39 @@ class Context
                 n /= ublas::norm_2(n);
         }
 
+    /**
+     * update the geomap through a neighbor matching face.
+     *
+     * Matching means that the points coordinates from both geomap are the same
+     * up to a permutation. We compute here the permutation that ensures this
+     * and update the geomap accordingly
+     *
+     * @return true if the permutation has been found and the geomap updated,
+     * false otherwise.
+     */
+    template<typename EltType, typename NeighborGeoType>
+    bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, boost::shared_ptr<NeighborGeoType> const& gmc )
+        {
+            auto gmcptr = gmc.get();
+            bool found_permutation=false;
+            for ( permutation_type __p( permutation_type::IDENTITY );
+                  __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
+            {
+                // update only xReal in current geomap
+                this->update( elt, face_in_elt, __p, false );
+
+                bool check=true;
+                for ( uint16_type i=0;i<gmc->nPoints() && check;++i )
+                {
+                    for (uint16_type d=0;d < NDim;++d)
+                        check = check && ( std::abs(gmcptr->xReal(i)[d] - this->xReal(i)[d])<1e-8 );
+                }
+                // if check update full gmc context with the good permutation
+                if (check) { this->update( elt, face_in_elt, __p ); found_permutation=true; }
+            }
+            return found_permutation;
+        }
+
     //@}
 private:
 
@@ -2054,6 +2087,7 @@ private:
         }
 
     Context();
+
 
 private:
 
