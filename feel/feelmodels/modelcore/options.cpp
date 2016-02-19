@@ -200,16 +200,18 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
         (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
         ;
-#if 0
-        for (uint16_type nBFO=0;nBFO<=5;++nBFO)
-            fluidOptions.add_options()
-                ((boost::format("%1%fluid-outlet.windkessel.Rd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
-                ((boost::format("%1%fluid-outlet.windkessel.Rp%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
-                ((boost::format("%1%fluid-outlet.windkessel.Cd%2%") %prefixvm(prefix,"") %nBFO).str().c_str(), Feel::po::value<double>()->default_value( 1.0 ), " a parameter")
-                ;
-#endif
-    return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
+
+    fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
         add( alemesh_options( prefix ) ).add( backend_options( prefixvm(prefix,"fluidinlet") ) );
+
+
+    fluidOptions.add_options()
+        (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation");
+    fluidOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+
+    return fluidOptions;
+    //return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
+    //add( alemesh_options( prefix ) ).add( backend_options( prefixvm(prefix,"fluidinlet") ) );
 }
 
 Feel::po::options_description
