@@ -60,13 +60,14 @@ makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( forms_suite )
 
-using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
-//using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
+//using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
+using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
 //using dim_t = boost::mpl::list<boost::mpl::int_<3>>;
 
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
 {
+    using Feel::cout;
     BOOST_MESSAGE( "test_form2_faces starts for dim=" << T::value);
     auto meshnd = unitHypercube<T::value>();
     auto mesh = createSubmesh( meshnd, faces(meshnd), EXTRACTION_KEEP_MESH_RELATION, 0 );
@@ -78,7 +79,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto Wh=Pdh<1>(meshnd,true);
     auto p = Wh->element();
     p.on(_range=elements(meshnd),_expr=cst(1.));
-    auto Mh=Pdh<1>(mesh);
+    auto Mh=Pdh<1>(mesh,true);
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));
 
@@ -104,9 +105,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto a = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)   );
     a = integrate( _range=internalfaces(meshnd), _expr=(e*id(l)/2)*(leftfacet(idt(p)/e)));//+rightfacet(idt(p))));
     a.close();
-
-    if ( Environment::isMasterRank() )
-        std::cout << "a(1,1) = " << a(l,p) << std::endl;
+    cout << "a(1,1) = " << a(l,p) << std::endl;
 
     auto a1 = form2(_test=Mh, _trial=Mh );
     a1 = integrate( _range=internalfaces(meshnd), _expr=e*id(l)*idt(l)/(4*e));
@@ -130,8 +129,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
         BOOST_TEST_MESSAGE( "a111(1,1)=" << a111en << " int =" << I1 );
 
     // - Tests A22 = <ph, w> with ph, w \in Wh
-    // - >>> FAILS <<<
-    //
     auto a2 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
     a2 = integrate( _range=internalfaces(meshnd), _expr=leftface(e*id(p))*leftfacet(idt(p)/e));
     a2.close();
@@ -140,8 +137,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
         BOOST_TEST_MESSAGE( "a2(1,1)=" << a2en );
 
     // - Same as a2, but with rightface instead of leftface.
-    // - >>> FAILS <<<
-    //
     auto a3 = form2(_test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
     a3 = integrate(_range=internalfaces(meshnd), _expr=rightface(e*id(p))*rightfacet(idt(p)/e));
     a3.close();
@@ -158,13 +153,23 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
 
     // - Tests A23 = <phat, w>, with phat \in Mh, w \in Wh
     //
-    //auto a4 = form2(_test=Wh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED)  );
-    auto a4 = form2(_test=Wh, _trial=Mh );
+    auto a4 = form2(_test=Wh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED)  );
+    //auto a4 = form2(_test=Wh, _trial=Mh );
     a4 = integrate( _range=internalfaces(meshnd), _expr=0.5*leftface(e*id(p))*idt(l)/e );
     a4.close();
     auto a4en = a4(p, l);
     if ( Environment::isMasterRank() )
-        BOOST_TEST_MESSAGE( "a4(1,1)=" << a4en );
+        BOOST_TEST_MESSAGE( "a4l(1,1)=" << a4en );
+    a4 = integrate( _range=internalfaces(meshnd), _expr=0.5*rightface(e*id(p))*idt(l)/e );
+    a4.close();
+    a4en = a4(p, l);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a4r(1,1)=" << a4en );
+    a4 = integrate( _range=internalfaces(meshnd), _expr=0.25*(leftface(e*id(p))+rightface(e*id(p)))*idt(l)/e );
+    a4.close();
+    a4en = a4(p, l);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a4lr(1,1)=" << a4en );
 
     // - Tests A32 = <ph, \mu>, with ph \in Wh, \mu \in Mh
     auto a5 = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED)  );
@@ -172,7 +177,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a5.close();
     auto a5en = a5(l, p);
     if ( Environment::isMasterRank() )
-        BOOST_TEST_MESSAGE( "a5(1,1)=" << a5en );
+        BOOST_TEST_MESSAGE( "a5l(1,1)=" << a5en );
+    a5 = integrate(_range=internalfaces(meshnd), _expr=0.5*rightfacet(e*idt(p))*id(l)/e );
+    a5.close();
+    a5en = a5(l, p);
+    if ( Environment::isMasterRank() )
+        BOOST_TEST_MESSAGE( "a5r(1,1)=" << a5en );
 
     // - Tests (p, p)_Omega. Should give the measure of the domain
     auto a6 = form2(_test=Wh, _trial=Wh);
@@ -193,12 +203,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a7(1,1)=" << a7eval );
 
-    // FAILS:
-    //
-    // Returned message:
-    // unknown location(0): fatal error: in "forms_suite/test_form2_faces<N4mpl_4int_ILi2EEE>": memory access violation at address: 0x00000000: no mapping at fault address
-    // /data/atlas_dprada/codes/feelpp/testsuite/feelvf/test_forms.cpp(97): last checkpoint
-    //
+    // a8
     auto a8 = form2( _test=Mh, _trial=Mh);
     a8 = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
     a8.close();
@@ -206,9 +211,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a8(1,1)=" << a8eval );
 
-    // FAILS:
-    //
-    // Just like a8
     auto a9 = form2(_test=Mh, _trial=Wh);
     a9 = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
     a9.close();
@@ -216,9 +218,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a9(1,1)=" << a9eval );
 
-    // FAILS:
-    //
-    // Just like a8
     auto a10 = form1(_test=Mh);
     a10 = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
     a10.close();
@@ -241,26 +240,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     // integrals that require the extended pattern with others that do not
 
     // Works fine
-    auto a7b = form2( _test=Wh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED));
+    auto a7b = form2( _test=Wh, _trial=Wh);
     a7b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(p));
     a7b.close();
     auto a7beval = a7b(p,p);
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a7b(1,1)=" << a7beval );
 
-    // FAILS
-    //
-    // Just like a8
-    auto a8b = form2( _test=Mh, _trial=Mh, _pattern=size_type(Pattern::EXTENDED));
+    auto a8b = form2( _test=Mh, _trial=Mh);
     a8b = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
     a8b.close();
     auto a8beval = a8b(l,l);
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a8b(1,1)=" << a8beval );
 
-    // FAILS
-    //
-    // Just like a8
     auto a9b = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED));
     a9b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
     a9b.close();
@@ -268,9 +261,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a9b(1,1)=" << a9beval );
 
-    // FAILS
-    //
-    // Just like a8
     auto a10b = form1(_test=Mh, _pattern=size_type(Pattern::EXTENDED));
     a10b = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
     a10b.close();
