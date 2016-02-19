@@ -229,6 +229,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
 
+    M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -894,6 +895,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
         this->updateMarkedZonesInMesh();
 
+    if ( M_useThermodynModel )
+    {
+        M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
+                                                         this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
+        M_thermodynModel->setFieldVelocityConvectionIsUsed( false );
+        M_thermodynModel->loadMesh( this->mesh() );
+        M_thermodynModel->init( false );
+    }
     //-------------------------------------------------//
     // add ALE markers
     if (this->isMoveDomain())
@@ -955,7 +964,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
         currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
     }
-
+    if ( M_useThermodynModel )
+    {
+        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
+        M_thermodynModel->setColStartInMatrix( currentStartIndex );
+        M_thermodynModel->setRowStartInVector( currentStartIndex );
+        currentStartIndex += M_thermodynModel->nLocalDof();
+    }
     //-------------------------------------------------//
     // prepare block vector
     int nBlock = this->nBlockMatrixGraph();
@@ -983,6 +998,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             ++cptBlock;
         }
     }
+    // thermodynamics model
+    if ( M_useThermodynModel )
+    {
+        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
+    }
+
     // init vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
     //-------------------------------------------------//
