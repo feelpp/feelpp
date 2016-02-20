@@ -1675,7 +1675,7 @@ updateGmcWithRelationDifferentMeshType( boost::shared_ptr<SpaceType> const& spac
         // if check compute full gmc context with the good permutation
         if (check) { gmc->update( theface.element0(), theface.pos_first(), __p ); findPermutation=true; }
     }
-    CHECK(findPermutation) << "the permutation of quad point is not find\n";
+    CHECK(findPermutation) << "the permutation of quad point was not found\n";
 
 }
 
@@ -1724,40 +1724,53 @@ buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& spac
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-void
+size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_ptr<SpaceType> const& /*space*/,
                                          boost::shared_ptr<GmcType> /*gmc*/, boost::shared_ptr<GmcExprType> /*gmcExpr*/,
-                                         size_type /*idElt*/, mpl::int_<0> /**/ )
+                                         size_type idElt, mpl::int_<0> /**/ )
 {
     // nothing to do!
+    return invalid_size_type_value;
 }
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
-void
+size_type
+updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared_ptr<SpaceType> const& /*space*/,
+                                          boost::shared_ptr<GmcType> /*gmc*/, boost::shared_ptr<GmcExprType> /*gmcExpr*/,
+                                          size_type /*idElt*/, mpl::int_<0> /**/ )
+{
+    // nothing to do!
+    return invalid_size_type_value;
+}
+
+template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_ptr<SpaceType> const& space,
-                                         boost::shared_ptr<GmcType> gmc, boost::shared_ptr<GmcExprType> gmcExpr,
+                                         boost::shared_ptr<GmcType>& gmc, boost::shared_ptr<GmcExprType>& gmcExpr,
                                          size_type idElt, mpl::int_<1> /**/ )
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
     auto const& theelt = space->mesh()->element( idElt );
     gmc->update(theelt);
+    bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
+    CHECK(found) << "the permutation of quad point was not found\n";
+    return idElt;
+}
 
-    bool findPermutation=false;
-    for ( permutation_type __p( permutation_type::IDENTITY );
-          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !findPermutation; ++__p )
-    {
-        // update only xReal in gmc
-        gmcExpr->update( theface.element0(), theface.pos_first(), __p, false );
+template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+size_type
+updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared_ptr<SpaceType> const& space,
+                                          boost::shared_ptr<GmcType> gmc, boost::shared_ptr<GmcExprType> gmcExpr,
+                                          size_type idElt, mpl::int_<1> /**/ )
+{
+    typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
-        bool check=true;
-        for ( uint16_type i=0;i<gmc->nPoints() && check;++i )
-            for (uint16_type d=0;d<GmcType::NDim;++d)
-                check = check && ( std::abs(gmc->xReal(i)[d]-gmcExpr->xReal(i)[d])<1e-8 );
-
-        // if check compute full gmc context with the good permutation
-        if (check) { gmcExpr->update( theface.element0(), theface.pos_first(), __p ); findPermutation=true; }
-    }
-    CHECK(findPermutation) << "the permutation of quad point is not find\n";
+    auto const& theelt = space->mesh()->element( idElt );
+    gmc->update(theelt);
+    bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element1(), theface.idInElement1(), gmc );
+    //bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
+    CHECK(found) << "the permutation of quad point was not found\n";
+    return idElt;
 }
 
 } // namespace detail
@@ -3333,34 +3346,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c0->update( elt0Test, __face_id_in_elt_0 );
-#if 0
-                    __c1->update( elt1Test, __face_id_in_elt_1 );
-                    bool check=true;
-                    for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
-                        for (uint16_type d=0;d<gmc1_type::NDim;++d)
-                            check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
-                    CHECK( check ) << "quad points in each sides are not connected";
-#else
-                    bool findPermutation=false;
-                    for ( permutation_type __p( permutation_type::IDENTITY );
-                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !findPermutation; ++__p )
-                        {
-                            // update only xReal in gmc
-                            __c1->update( elt1Test, __face_id_in_elt_1, __p, false );
-
-                            bool check=true;
-                            for ( uint16_type i=0;i<__c0->nPoints() && check;++i )
-                            {
-                                //LOG(INFO) << "c0.xreal = " << __c0->xReal(i);
-                                //LOG(INFO) << "c1.xreal(" << __p << ") = " << __c1->xReal(i);
-                                for (uint16_type d=0;d<gmc1_type::NDim;++d)
-                                    check = check && ( std::abs(__c0->xReal(i)[d] - __c1->xReal(i)[d])<1e-8 );
-                            }
-                            // if check compute full gmc context with the good permutation
-                            if (check) { __c1->update( elt1Test, __face_id_in_elt_1, __p ); findPermutation=true; }
-                         }
-                    CHECK(findPermutation) << "the permutation of quad point is not find\n";
-#endif
+                    bool found_permutation = __c1->updateFromNeighborMatchingFace( elt1Test, __face_id_in_elt_1, __c0 );
+                    CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
@@ -3386,31 +3373,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
                     __c01->update( elt0Test, __face_id_in_elt_0 );
-#if 0
-                    __c11->update( elt1Test, __face_id_in_elt_1 );
-#else
+                    bool found_permutation = __c11->updateFromNeighborMatchingFace( elt1Test, __face_id_in_elt_1, __c01 );
+                    CHECK(found_permutation) << "the permutation of quadrature points was not found\n";
 
-                    bool findPermutation=false;
-                    for ( permutation_type __p( permutation_type::IDENTITY );
-                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !findPermutation; ++__p )
-                        {
-                            // update only xReal in gmc
-                            __c11->update( elt1Test, __face_id_in_elt_1, __p, false );
-
-                            bool check=true;
-                            for ( uint16_type i=0;i<__c01->nPoints() && check;++i )
-                            {
-                                //LOG(INFO) << "c0.xreal = " << __c01->xReal(i);
-                                //LOG(INFO) << "c1.xreal(" << __p << ") = " << __c11->xReal(i);
-                                for (uint16_type d=0;d<gmc1_type::NDim;++d)
-                                    check = check && ( std::abs(__c01->xReal(i)[d] - __c11->xReal(i)[d])<1e-8 );
-                            }
-
-                            // if check compute full gmc context with the good permutation
-                            if (check) { __c11->update( elt1Test, __face_id_in_elt_1, __p ); findPermutation=true; }
-                         }
-                    CHECK(findPermutation) << "the permutation of quad point is not find\n";
-#endif
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
@@ -3768,30 +3733,43 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             {
                 __face_id_in_elt_0 = faceCur.pos_first();
                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-
+                size_type test_elt_0 = invalid_size_type_value;
+                size_type test_elt_1 = invalid_size_type_value;
+                size_type trial_elt_0 = invalid_size_type_value;
+                size_type trial_elt_1 = invalid_size_type_value;
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
-                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
+                test_elt_1 = detail::updateGmcWithRelationDifferentMeshType21<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
+                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType21<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                DLOG(INFO) << "internal face " << faceCur.id();
+                if ( test_elt_0 == invalid_size_type_value )
+                {
+                    test_elt_0 = gmcExpr0->id();
+                    test_elt_1 = gmcExpr1->id();
+                }
+                if ( trial_elt_0 == invalid_size_type_value )
+                {
+                    trial_elt_0 = gmcExpr0->id();
+                    trial_elt_1 = gmcExpr1->id();
+                }
                 auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
                 auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
                 auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
                 form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
                 form2->integrate();
-                form2->assemble( mpl::int_<2>() );
+                form2->assemble( std::make_pair(test_elt_0, trial_elt_0),
+                                 std::make_pair(test_elt_1, trial_elt_1)  );
             }
             else
             {
@@ -3805,18 +3783,28 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     isInitConnectionTo0=true;
                 }
 
+                size_type test_elt_0 = invalid_size_type_value;
+                size_type trial_elt_0 = invalid_size_type_value;
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
+                if ( test_elt_0 == invalid_size_type_value )
+                {
+                    test_elt_0 = gmcExpr0->id();
+                }
+                if ( trial_elt_0 == invalid_size_type_value )
+                {
+                    trial_elt_0 = gmcExpr0->id();
+                }
                 form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
                 form->integrate();
-                form->assemble( /*faceCur.element( 0 ).id()*/ );
+                form->assemble( std::make_pair(test_elt_0, trial_elt_0) );
             }
 
         }
@@ -4120,30 +4108,33 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             {
                 __face_id_in_elt_0 = faceCur.pos_first();
                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-
+                size_type test_elt_0 = invalid_size_type_value;
+                size_type test_elt_1 = invalid_size_type_value;
+                size_type trial_elt_0 = invalid_size_type_value;
+                size_type trial_elt_1 = invalid_size_type_value;
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
-                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                                                                              gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
+                                                                                                                 idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+                trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
-                DLOG(INFO) << "internal face " << faceCur.id();
+
                 auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
                 auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
                 auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
                 form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
                 form2->integrate();
-                form2->assemble( mpl::int_<2>() );
+                form2->assemble( test_elt_0, test_elt_1, trial_elt_0, trial_elt_1 );
 
             }
             else
