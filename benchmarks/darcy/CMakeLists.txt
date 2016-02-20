@@ -49,7 +49,7 @@ endforeach() # dim
 
 
 foreach( dim 2 3)
-  foreach( orderP 1 2 )
+  foreach( orderP 1 2 3 4)
     set(modulename "hdg")
     set(BENCH "${modulename}_${dim}D_P${orderP}" )
     set(targetname feelpp_bench_${BENCH})
