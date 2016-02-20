@@ -826,6 +826,23 @@ public:
         }
         void assemble( size_type elt_0, size_type elt_1  );
 
+        /**
+         * local to global assembly given a pair of test and trial element ids
+         *  - \p elt.first provides the test element
+         *  - \p elt.second provides the trial element
+         */
+        void assemble( std::pair<size_type,size_type> const& elt );
+
+        /**
+         * local to global assembly associated to internal faces given a pair of
+         * test and trial element ids
+         *
+         *  - \p elt.first provides the test element
+         *  - \p elt.second provides the trial element
+         */
+        void assemble( std::pair<size_type,size_type> const& elt_0,
+                       std::pair<size_type,size_type> const& elt_1 );
+
         void assembleInCaseOfInterpolate();
 
 
