@@ -99,6 +99,19 @@ public:
      */
     boost::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
 
+    template<typename... Args>
+    void open(Args... args)
+        {
+            auto* o = dynamic_cast<std::ofstream*>( &out );
+            if ( o && wc->isMasterRank() )
+                o->open( args... );
+        }
+    void close()
+        {
+            auto* o = dynamic_cast<std::ofstream*>( &out );
+            if ( o && wc->isMasterRank() )
+                o->close();
+        }
 protected:
     std::ostream& out;
     boost::shared_ptr<WorldComm> wc;
