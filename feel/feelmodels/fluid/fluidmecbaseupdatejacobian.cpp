@@ -433,6 +433,49 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 #endif // FEELPP_MODELS_HAS_MESHALE
 
     //--------------------------------------------------------------------------------------------------//
+    if ( M_useThermodynModel )
+    {
+        DataUpdateJacobian dataThermo( data );
+        dataThermo.setDoBCStrongDirichlet( false );
+        M_thermodynModel->updateJacobian( dataThermo );
+
+        if ( BuildNonCstPart )
+        {
+            auto XhT = M_thermodynModel->spaceTemperature();
+            auto t = XhT->element("t");
+            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
+                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
+            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+
+            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
+            form2( _test=XhT,_trial=XhT,_matrix=J,
+                   _rowstart=M_thermodynModel->rowStartInMatrix(),
+                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradt(t)*idv(u))*id(t),
+                       _geomap=this->geomap() );
+            form2( _test=XhT,_trial=Xh,_matrix=J,
+                   _rowstart=M_thermodynModel->rowStartInMatrix(),
+                   _colstart=this->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradv(t)*idt(u))*id(t),
+                           _geomap=this->geomap() );
+
+            double g=9.80665;
+            auto gravity = -g*oneY();
+            double T0 = 293.15;
+            double betaFluid = 0.00006900; // coefficient de dilatation thermique volumétrique
+            form2( _test=Xh,_trial=XhT,_matrix=J,
+                   _rowstart=this->rowStartInMatrix(),
+                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= -idv(thermalProperties->fieldRho())*betaFluid*((idt(t)/*-T0*/)/*/T0*/)*inner(gravity,id(u)),
+                           _geomap=this->geomap() );
+        }
+
+
+    }
+    //--------------------------------------------------------------------------------------------------//
 
     if ( BuildNonCstPart && _doBCStrongDirichlet )
     {
@@ -458,6 +501,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                 on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
                     _element=u,_rhs=RBis,
                     _expr= vf::zero<nDim,1>() );
+
+        if ( M_useThermodynModel )
+        {
+            M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
+        }
+
     }
 
     //--------------------------------------------------------------------------------------------------//

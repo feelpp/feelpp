@@ -99,6 +99,9 @@ public:
      */
     boost::shared_ptr<WorldComm> worldCommPtr() const { return wc; }
 
+    /**
+     * variadic template function to provide open() from std::ofstream
+     */
     template<typename... Args>
     void open(Args... args)
         {
@@ -106,12 +109,17 @@ public:
             if ( o && wc->isMasterRank() )
                 o->open( args... );
         }
+
+    /**
+     * provides close() from std::ofstream
+     */
     void close()
         {
             auto* o = dynamic_cast<std::ofstream*>( &out );
             if ( o && wc->isMasterRank() )
                 o->close();
         }
+
 protected:
     std::ostream& out;
     boost::shared_ptr<WorldComm> wc;
