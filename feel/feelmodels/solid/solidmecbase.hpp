@@ -502,6 +502,8 @@ public :
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
 
+    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
 
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
