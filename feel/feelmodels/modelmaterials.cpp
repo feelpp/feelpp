@@ -105,6 +105,14 @@ ModelMaterials::getMaterial( pt::ptree const& v )
     m.setNu( v.get( "nu", 1.f ) );
     m.setSigma( v.get( "sigma", 1.f ) );
     m.setC( v.get( "C", 1.f ) );
+    
+    m.setCs(    v.get("Cs",0.f) );
+    m.setCl(    v.get("Cl",0.f) );
+    m.setL(     v.get("L",0.f) );
+    m.setKs( v.get("Ks",0.f) );
+    m.setKl( v.get("Kl",0.f) );
+    m.setTsol(   v.get("Tsol",0.f) );
+    m.setTliq(   v.get("Tliq",0.f) );
 
     LOG(INFO) << "adding material " << m;
     return m;
