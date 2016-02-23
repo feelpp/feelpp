@@ -103,6 +103,22 @@ struct ModelMaterial
     // heat capacity
     double C() const {  return M_C; }
     void setC( double const& t) { M_C = t; }
+
+
+    double Cs()    const { return M_Cs   ;}
+    double Cl()    const { return M_Cl   ;}
+    double L()     const { return M_L    ;}
+    double Ks() const { return M_Ks;}
+    double Kl() const { return M_Kl;}
+    double Tsol()   const { return M_Tsol  ;}
+    double Tliq()   const { return M_Tliq  ;}
+    void setCs( double const &v )     { M_Cs    = v;}
+    void setCl( double const &v )     { M_Cl    = v;}
+    void setL( double const &v )      { M_L     = v;}
+    void setKs( double const &v )  { M_Ks = v;}
+    void setKl( double const &v )  { M_Kl = v;}
+    void setTsol( double const &v )    { M_Tsol   = v;}
+    void setTliq( double const &v )    { M_Tliq   = v;}
     
     // Mechanical properties
     // Young's Modulus
@@ -131,6 +147,13 @@ private:
     double M_Tref;
     double M_beta;
     double M_C;
+    double M_Cs; //Specific Heat (solid)
+    double M_Cl; //Specific Heat (liquid)
+    double M_L;  //Latent heat
+    double M_Ks; // Conductivity (solid)
+    double M_Kl; // Conductivity (liquid)
+    double M_Tsol; // Solidus temperature
+    double M_Tliq; // Liquidus temperature
     
     // Mechanical Properties
     // Young's Modulus
