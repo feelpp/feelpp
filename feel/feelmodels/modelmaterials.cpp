@@ -50,6 +50,13 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
        << ", E: " << m.E()
        << ", nu: " << m.nu()
        << ", sigma: " << m.sigma()
+       << ", Cs: " <<  m.Cs()
+       << ", Cl: " <<  m.Cl()
+       << ", L: " <<  m.L()
+       << ", Ks: " <<  m.Ks()
+       << ", Kl: " <<  m.Kl()
+       << ", Tsol: " <<  m.Tsol()
+       << ", Tliq: " <<  m.Tliq()
        << "]";
     return os;
 }
@@ -121,7 +128,7 @@ void
 ModelMaterials::saveMD(std::ostream &os)
 {
   os << "### Materials\n";
-  os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|\n";
+  os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|Cs|Cl|L|Ks|Kl|Tsol|Tliq|\n";
   os << "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n";
   for(auto it = this->begin(); it!= this->end(); it++ )
     os << "|" << it->first
@@ -141,6 +148,13 @@ ModelMaterials::saveMD(std::ostream &os)
        << "|" << it->second.E()
        << "|" << it->second.nu()
        << "|" << it->second.sigma()
+       << "|" << it->second.Cs()
+       << "|" << it->second.Cl()
+       << "|" << it->second.L()
+       << "|" << it->second.Ks()
+       << "|" << it->second.Kl()
+       << "|" << it->second.Tsol()
+       << "|" << it->second.Tliq()
        << "|\n";
   os << "\n";
 }

@@ -56,29 +56,43 @@ struct ModelMaterial
         M_Tref( 0 ),
         M_beta( 0 ),
         M_C( 1 ),
+        M_Cs( 0. ),
+        M_Cl( 0. ),
+        M_L( 0. ),
+        M_Ks( 0. ),
+        M_Kl( 0. ),
+        M_Tsol( 0. ),
+        M_Tliq( 0. ),
         M_young_modulus( 1 ),
         M_nu( 1 ),
         M_sigma( 1 )
         {}
     std::string const& name() const { return M_name; }
+    /*! Set Name
+     */
     void setName( std::string const& name ) { M_name = name; }
 
-    // material mass density
+    /*! Material mass density
+     */
     double rho() const { return M_rho; }
     void setRho( double v ) { M_rho = v; }
 
-    // Molecular(dynamic) viscosity
+    /*! Molecular(dynamic) viscosity
+     */
     double mu() const { return M_mu; }
     void setMu( double v ) { M_mu = v; }
     
-    //Specify the constant-pressure specific heat Cp.
+    /*! Specify the constant-pressure specific heat Cp.
+     */
     double Cp() const {  return M_Cp; }
     void setCp( double t) { M_Cp = t; }
-    //Specify the constant-volume specific heat Cv.
+    /*! Specify the constant-volume specific heat Cv.
+     */
     double Cv() const {  return M_Cv; }
     void setCv( double t) { M_Cv = t; }
 
-    // heat diffusion coefficients
+    /*! heat diffusion coefficients
+     */
     double k11() const {  return M_k11; }
     void setK11( double t) { M_k11 = t; }
     double k12() const {  return M_k12; }
@@ -92,18 +106,20 @@ struct ModelMaterial
     double k33() const {  return M_k33; }
     void setK33( double t) { M_k33 = t; }
     
-    // Material Reference temperature
+    /*! Material Reference temperature
+     */
     double Tref() const {  return M_Tref; }
     void setTref( double t) { M_Tref = t; }
     
-    // Material coefficient for thermal expansion
+    /*! Material coefficient for thermal expansion
+     */
     double beta() const {  return M_beta; }
     void setBeta( double t) { M_beta = t; }
 
-    // heat capacity
+    /*! heat capacity
+     */
     double C() const {  return M_C; }
     void setC( double const& t) { M_C = t; }
-
 
     double Cs()    const { return M_Cs   ;}
     double Cl()    const { return M_Cl   ;}
@@ -121,48 +137,83 @@ struct ModelMaterial
     void setTliq( double const &v )    { M_Tliq   = v;}
     
     // Mechanical properties
-    // Young's Modulus
+    /*! Young's Modulus
+     */
     double E() const {  return M_young_modulus; }
     void setE( double const& t) { M_young_modulus = t; }
 
-    // Poisson's ratio
+    /*! Poisson's ratio
+     */
     double nu() const {  return M_nu; }
     void setNu( double const& t) { M_nu = t; }
-    // electrical conductivity
+    /*! Electrical conductivity
+     */
     double sigma() const {  return M_sigma; }
     void setSigma( double const& t) { M_sigma = t; }
     
-
     void load( std::string const& );
-private:
-    std::string M_name;
-    double M_rho;
-    double M_mu;
     
-    double M_Cp;
-    double M_Cv;
+    std::map<std::string, double> 
+    materialToMap( void ) const
+        {
+            std::map<std::string, double> _map;
+            _map["rho"]   = rho();
+            _map["mu"]    = mu();
+            _map["C"]     = C();
+            _map["Cp"]    = Cp();
+            _map["Cv"]    = Cv();
+            _map["Tref"]  = Tref();
+            _map["beta"]  = beta();
+            _map["k11"]   = k11();
+            _map["k12"]   = k12();
+            _map["k13"]   = k13();
+            _map["k22"]   = k22();
+            _map["k23"]   = k23();
+            _map["k33"]   = k33();
+            _map["E"]     = E();
+            _map["nu"]    = nu();
+            _map["sigma"] = sigma();
+            _map["Cs"]    = Cs();
+            _map["Cl"]    = Cl();
+            _map["L"]     = L();
+            _map["Ks"]    = Ks();
+            _map["Kl"]    = Kl();
+            _map["Tsol"]  = Tsol();
+            _map["Tliq"]  = Tliq();
+            return _map;
+        }
+private:
+    std::string M_name; /*!< Material name*/
+    double M_rho; /*!< Density */
+    double M_mu;  /*!< Molecular(dynamic) viscosity */
+    
+    double M_Cp; /*!< Constant-pressure specific heat Cp */
+    double M_Cv; /*!< Constant-volume specific heat Cv */
 
     // Thermal properties
-    double M_k11, M_k12, M_k13, M_k22, M_k23, M_k33;
-    double M_Tref;
-    double M_beta;
-    double M_C;
-    double M_Cs; //Specific Heat (solid)
-    double M_Cl; //Specific Heat (liquid)
-    double M_L;  //Latent heat
-    double M_Ks; // Conductivity (solid)
-    double M_Kl; // Conductivity (liquid)
-    double M_Tsol; // Solidus temperature
-    double M_Tliq; // Liquidus temperature
+    double M_k11;  /*!< Diffusivity coefficient (1,1) */
+    double M_k12;  /*!< Diffusivity coefficient (1,2)  */
+    double M_k13;  /*!< Diffusivity coefficient (1,3)  */
+    double M_k22;  /*!< Diffusivity coefficient (2,2)  */
+    double M_k23;  /*!< Diffusivity coefficient (2,3)  */
+    double M_k33;  /*!< Diffusivity coefficient (3,3)  */
+    double M_Tref; /*!< Reference temperature  */
+    double M_beta; /*!< \f$ \beta \f$  */
+    double M_C;    /*!< Heat capacity  */
+    double M_Cs;   /*!< Specific Heat (solid)  */
+    double M_Cl;   /*!< Specific Heat (liquid) */
+    double M_L;    /*!< Latent heat            */
+    double M_Ks;   /*!< Conductivity (solid)   */
+    double M_Kl;   /*!< Conductivity (liquid)  */
+    double M_Tsol; /*!< Solidus temperature    */
+    double M_Tliq; /*!< Liquidus temperature   */
     
     // Mechanical Properties
-    // Young's Modulus
-    double M_young_modulus;
-    // Poisson's Ratio
-    double M_nu;
+    double M_young_modulus; /*!< Young's modulus */
+    double M_nu; /*!< Poisson's Ration */
 
     // Electrical conductivity
-    double M_sigma;
+    double M_sigma; /*!< Electrical conductivity */
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
