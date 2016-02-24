@@ -149,27 +149,29 @@ CNAB2x2<Element1,Element2>::next( ElementType1& element1, ElementType2& element2
 
         if ( ktry.first )
         {
+            double k1 = ktry.second;
             if ( (index() > 0) && (index() % nstar == 0) )
             {
                 double tstar = t();
                 double kstar = k();
 
-                //t() = 0.5*tstar + 0.5*tprev(1);
-                //k() = 0.5*kstar;
+                t() = 0.5*tstar + 0.5*tprev(1);
+                k() = 0.5*( kstar+kprev(1) );
 
-                kprev(1)=0.5*(k()+kprev(1));
-                tprev(1) = t()-.5*kprev(1);
-                t() += .5*k();
-                
-                CN(0).averaging(bc1);
-                CN(1).averaging(bc2);
+                tstar = tprev(1);
+                kstar = kprev(1);
+                tprev(1) = 0.5*( tstar+tprev(2) );
+                kprev(1) = 0.5*( kstar+kprev(2) );
+
+                CN(0).averaging(bc1, k1 );
+                CN(1).averaging(bc2, k1 );
             }
             else
             {
-                CN(0).acceptedStep( ktry.second );
-                CN(1).acceptedStep( ktry.second );
+                CN(0).acceptedStep( k1 );
+                CN(1).acceptedStep( k1 );
             }
-            this->push_back( ktry.second, this->t()+ktry.second );
+            this->push_back( k1, this->t()+k1 );
         }
         else
         {

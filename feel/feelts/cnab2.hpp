@@ -52,7 +52,7 @@ public:
     template<typename FT>
     void addStep( double k1, FT const& f_u, FT const& f_acc )
     {
-        this->push_back( k1, this->size()?t()+k1:k1 );    
+        this->push_back( k1, this->size()?t()+k1:k1 );
 
         up = u;
         accp=acc;
@@ -118,7 +118,7 @@ public:
     void acceptedStep( double k )
         {
             this->addStep( u_try, acc_try );
-            this->push_back( k, this->size()?t()+k:k );       
+            this->push_back( k, this->size()?t()+k:k );
         }
 
     void eraseStep( double k )
@@ -137,7 +137,7 @@ public:
     double computeError( FT& fd );
 
     template<typename BCType >
-    void averaging( BCType& bc );
+    void averaging( BCType& bc, double k1 );
 
 
     field_t const& extrapolateVelocity();
@@ -167,10 +167,10 @@ CNAB2<FieldType>::CNAB2( FT const& f )
     acc ( f.functionSpace() ),
     accp ( f.functionSpace() ),
     d ( f.functionSpace() ),
-    dd ( f.functionSpace() ),
     w ( f.functionSpace() ),
     ww ( f.functionSpace() ),
     uab2 ( f.functionSpace() ),
+    dd ( f.functionSpace() ),
     u_try ( f.functionSpace() ),
     acc_try ( f.functionSpace() ),
     accstar( f.functionSpace() ),
@@ -202,7 +202,7 @@ CNAB2<FieldType>::computeError( FT& fd )
     return normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())) ;
 #else
     ww.on(_range=elements(mesh), _expr=idv(acc)+k()*idv(dd)/2);
-    
+
     u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
     acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
     //}
@@ -210,25 +210,24 @@ CNAB2<FieldType>::computeError( FT& fd )
     uab2.on( _range=elements(mesh), _expr=idv(u)+k()*idv(ww) );
     return normL2( _range=elements(mesh), _expr=(idv(fd)-idv(ww)))*(k()*k()/(3.*(k()+kprev(1))));
 #endif
-    
+
 }
 
 template<typename FieldType>
 template<typename BCType >
 void
-CNAB2<FieldType>::averaging( BCType& bc )
+CNAB2<FieldType>::averaging( BCType& bc, double k1 )
 {
-    if ( Environment::isMasterRank() )
-        std::cout << " --> averaging before k=" << k() << " t=" << t()
-                  << " kprev(1)=" << kprev(1) << " tprev(1)=" << tprev(1)
-                  << " norm up =" << up.l2Norm() << " u=" << u.l2Norm()
-                  << " norm accp =" << up.l2Norm() << " acc=" << u.l2Norm()
-                  << std::endl;
     double tstar = t();
-    double kstar = kprev(1);
+    double kstar = k();
+    t() = 0.5*tstar + 0.5*tprev(1);
+    k() = 0.5*( kstar+kprev(1) );
 
-    kprev(1) = 0.5*(k()+kstar);
-    tprev(1) = t()-.5*kprev(1);
+    tstar = tprev(1);
+    kstar = kprev(1);
+    tprev(1) = 0.5*( tstar+tprev(2) );
+    kprev(1) = 0.5*( kstar+kprev(2) );
+
 
     ustar = up;
     accstar=accp;
@@ -241,25 +240,22 @@ CNAB2<FieldType>::averaging( BCType& bc )
     }
     accp.on( _range=elements(mesh), _expr=.5*(idv(accstar)+idv(acc)) );
 
-    ustar=u;
-    accstar=acc;
+    ustar = u;
+    accstar = acc;
+
     u.on( _range=elements(mesh), _expr=0.5*idv(u_try) + 0.5*idv(ustar) );
     acc.on( _range=elements(mesh), _expr=(idv(acc_try)+idv(accstar))/2 );
-
-    t() = tstar+.5*k();
     for ( auto const& condition : bc )
     {
         auto g1 = expression(condition);
         g1.setParameterValues( {"t",t() });
         u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
     }
+
     dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
-    if ( Environment::isMasterRank() )
-        std::cout << " --> averaging after k=" << k() << " t=" << t()
-                  << " kprev(1)=" << kprev(1) << " tprev(1)=" << tprev(1)
-                  << " norm up =" << up.l2Norm() << " u=" << u.l2Norm()
-                  << " norm accp =" << up.l2Norm() << " acc=" << u.l2Norm()
-                  << std::endl;
+
+
+    this->push_back( k1, this->size()?t()+k1:k1 );
 }
 
 
@@ -290,20 +286,16 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
 
         if ( ktry.first )
         {
+            double k1 = ktry.second;
             // accept the tried step and move forward
             if ( (index() > 0) && (index() % nstar == 0) )
             {
-                averaging( bc );
+                averaging( bc, k1 );
             }
             else
             {
-                this->addStep( u_try, acc_try );
-                
+                acceptedStep( k1 );
             }
-            
-            // get new time step and store it in time set for the next round
-            double k1 = ktry.second;
-            this->push_back( k1, this->size()?t()+k1:k1 );    
         }
         else
         {
