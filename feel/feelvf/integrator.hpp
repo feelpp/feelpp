@@ -3089,7 +3089,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         auto it = lit->template get<1>();
         auto en = lit->template get<2>();
 
-        DLOG(INFO) << "integrating over "
+        DLOG(INFO) << "Standard integration over "
                    << std::distance( it, en )  << " faces\n";
 
         // check that we have elements to iterate over
@@ -3590,15 +3590,22 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     {
         auto elt_it = lit->template get<1>();
         auto const elt_en = lit->template get<2>();
-        DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
+        DLOG(INFO) << "face/element integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
             continue;
-        auto const& faceInit = boost::unwrap_ref( *elt_it );
-        if ( faceInit.isConnectedTo0() == false )
+        auto const& faceInit0 = boost::unwrap_ref( *elt_it );
+        if ( faceInit0.isConnectedTo0() == false )
             continue;
-
+        auto it = elt_it;
+        for( ; it != elt_en; ++it )
+        {
+            auto const& faceInit1 = boost::unwrap_ref( *it );
+            if ( !faceInit1.isGhostFace() )
+                break;
+        }
+        auto const& faceInit = boost::unwrap_ref( *it );
         //-----------------------------------------------//
 
         if (!hasInitGeoPc)
@@ -3642,8 +3649,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
         gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
-        gmc_expr_ptrtype gmcExpr1;
-        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+        gmc_expr_ptrtype gmcExpr1( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
         auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
@@ -3672,36 +3678,35 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         {
             uint16_type __face_id_in_elt_1 = faceInit.pos_second();
             gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
-            gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
-                                                                           gmc_formTest_type,gmc_expr_type>
-                ( __form.testSpace(), __form.testSpace()->gm(), imTest,
-                  idEltTestInit, gmcExpr1, mpl::int_<gmTestRangeRelation>() );
-            gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
-                                                                            gmc_formTrial_type,gmc_expr_type>
-                ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
-                  idEltTrialInit, gmcExpr1, mpl::int_<gmTrialRangeRelation>() );
-
-            auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
-            auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
-            auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
-
-            form2 = form2_context_ptrtype( new form2_context_type( __form,
-                                                                   mapgmctest2, mapgmctrial2, mapgmcexpr2,
-                                                                   this->expression(),
-                                                                   face_ims[__face_id_in_elt_0],
-                                                                   imRange, imTest, imTrial,
-                                                                   mpl::int_<2>() ) );
-            isInitConnectionTo1=true;
         }
         else
-        {
-            form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
-                                                                this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest,imTrial ) );
-            //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
-            isInitConnectionTo0=true;
-        }
+            gmcExpr1 = boost::make_shared<gmc_expr_type>( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 );
 
+        gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
+                                                                       gmc_formTest_type,gmc_expr_type>
+            ( __form.testSpace(), __form.testSpace()->gm(), imTest,
+              idEltTestInit, gmcExpr1, mpl::int_<gmTestRangeRelation>() );
+        gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
+                                                                        gmc_formTrial_type,gmc_expr_type>
+            ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
+              idEltTrialInit, gmcExpr1, mpl::int_<gmTrialRangeRelation>() );
 
+        auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
+        auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
+        auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
+
+        form2 = form2_context_ptrtype( new form2_context_type( __form,
+                                                               mapgmctest2, mapgmctrial2, mapgmcexpr2,
+                                                               this->expression(),
+                                                               face_ims[__face_id_in_elt_0],
+                                                               imRange, imTest, imTrial,
+                                                               mpl::int_<2>() ) );
+        isInitConnectionTo1=true;
+
+        form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
+                                                            this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest,imTrial ) );
+        //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+        isInitConnectionTo0=true;
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
@@ -3709,12 +3714,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             if ( faceCur.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face";
+                LOG(INFO) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
-            // if is a interprocess faces, only integrate in one process
-            if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                continue;
 
             const size_type idEltRange = faceCur.id();
             size_type idEltTest = idEltRange;
@@ -4134,7 +4136,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
                 form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
                 form2->integrate();
-                form2->assemble( test_elt_0, test_elt_1, trial_elt_0, trial_elt_1 );
+                form2->assemble( std::make_pair(test_elt_0, trial_elt_1),
+                                 std::make_pair(test_elt_1, trial_elt_1) );
 
             }
             else
