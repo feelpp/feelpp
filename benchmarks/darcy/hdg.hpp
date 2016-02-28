@@ -440,22 +440,35 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     cout << "a12 works fine" << std::endl;
 
+    // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=( idt(phat)*leftface(trans(id(v))*N())+
                              idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=idt(phat)*trans(id(v))*N());
+    // end dp
 
     cout << "a13 works fine" << std::endl;
 
+    // begin dp: added extended pattern
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=0);
 
-
+    // end dp
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
-    a21 += integrate(_range=faces(mesh), _expr=( id(w)*trans(idt(u))*N()) );
+    cout << " . a211 ok" << std::endl;
+    a21 += integrate(_range=internalfaces(mesh),
+                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
+    cout << " . a212l ok" << std::endl;
+    a21 += integrate(_range=internalfaces(mesh),
+                     _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+    cout << " . a212r ok" << std::endl;
+    a21 += integrate(_range=boundaryfaces(mesh),
+                     _expr=(id(w)*trans(idt(u))*N()));
+    cout << " . a213 ok" << std::endl;
     cout << "a21 works fine" << std::endl;
 
     // begin dp: added extended pattern
@@ -463,16 +476,25 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost() );
 
     // end dp
-    a22 += integrate(_range=faces(mesh),
-                     _expr=tau_constant * pow(h(),M_tau_order)*idt(p)*id(w));
+    a22 += integrate(_range=internalfaces(mesh),
+                     _expr=tau_constant *
+                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
+                       rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+    a22 += integrate(_range=boundaryfaces(mesh),
+                     _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
     cout << "a22 works fine" << std::endl;
 
     // begin dp: added extended pattern, multiplied by 0.5
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
-    a23 += integrate(_range=faces(mesh),
-                     _expr=-tau_constant*idt(phat)*pow(h(),M_tau_order)*id(w));
+    a23 += integrate(_range=internalfaces(mesh),
+                     _expr=-tau_constant * idt(phat) *
+                     ( leftface( pow(h(),M_tau_order)*id(w) )+
+                       rightface( pow(h(),M_tau_order)*id(w) )));
+    // end dp
+    a23 += integrate(_range=boundaryfaces(mesh),
+                     _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
     cout << "a23 works fine" << std::endl;
 
@@ -480,7 +502,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
-                     _expr= id(l)*trans(idt(u))*N());
+                     _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
+                                    rightfacet(trans(idt(u))*N())) ) );
     // end dp
 
     // BC
@@ -493,7 +516,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost());
     a32 += integrate(_range=internalfaces(mesh),
-                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+                     _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
+                                                    rightfacet( pow(h(),M_tau_order)*idt(p) )));
     // end do
     a32 += integrate(_range=markedfaces(mesh,"Neumann"),
                      _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
