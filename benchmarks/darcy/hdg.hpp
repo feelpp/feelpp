@@ -101,23 +101,12 @@ public:
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
-    //! the basis type of our approximation space
-    //    typedef bases<RaviartThomas<OrderU> > RT_basis_type; //RT vectorial space
-    typedef bases<Lagrange<OrderP,Vectorial,Discontinuous> > lagrange_basis_v_type; //Lagrange vectorial space
-    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_basis_s_type; //Lagrange scalar space
-    typedef bases<Lagrange<OrderP,Scalar,Discontinuous> > lagrange_multiplier_basis_type; //PK scalar space
-
-    // Wh
-    typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
-    // Vh
-    typedef FunctionSpace<mesh_type, lagrange_basis_v_type> lagrange_space_v_type;
-    // Mh
-    typedef FunctionSpace<face_mesh_type, lagrange_multiplier_basis_type> lagrange_space_multiplier_type;
-
-    //! the approximation function space type (shared_ptr<> type)
-    typedef boost::shared_ptr<lagrange_space_s_type> lagrange_space_s_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_v_type> lagrange_space_v_ptrtype;
-    typedef boost::shared_ptr<lagrange_space_multiplier_type> lagrange_space_multiplier_ptrtype;
+    using Vh_t =  Pdhv_type<mesh_type,OrderP>;
+    using Vh_ptr_t =  Pdhv_ptrtype<mesh_type,OrderP>;
+    using Wh_t =  Pdh_type<mesh_type,OrderP>;
+    using Wh_ptr_t =  Pdh_ptrtype<mesh_type,OrderP>;
+    using Mh_t =  Pdh_type<face_mesh_type,OrderP>;
+    using Mh_ptr_t =  Pdh_ptrtype<face_mesh_type,OrderP>;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -261,10 +250,10 @@ Hdg<Dim, OrderP>::convergence()
         // We treat Vh, Wh, and Mh separately
         tic();
 
-        lagrange_space_v_ptrtype Vh = lagrange_space_v_type::New( mesh );
-        lagrange_space_s_ptrtype Wh = lagrange_space_s_type::New( mesh );
+        Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
+        Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
         auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
-        lagrange_space_multiplier_ptrtype Mh = lagrange_space_multiplier_type::New( face_mesh );
+        Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
 
         toc("spaces",true);
 
@@ -451,19 +440,20 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     cout << "a12 works fine" << std::endl;
 
-    // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
-    a13 += integrate(_range=faces(mesh), _expr=idt(phat)*trans(id(v))*N());
-    // end dp
+    a13 += integrate(_range=internalfaces(mesh),
+                     _expr=( idt(phat)*leftface(trans(id(v))*N())+
+                             idt(phat)*rightface(trans(id(v))*N())) );
+    a13 += integrate(_range=boundaryfaces(mesh),
+                     _expr=idt(phat)*trans(id(v))*N());
 
     cout << "a13 works fine" << std::endl;
 
-    // begin dp: added extended pattern
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=0);
 
-    // end dp
+
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
     a21 += integrate(_range=faces(mesh), _expr=( id(w)*trans(idt(u))*N()) );
     cout << "a21 works fine" << std::endl;

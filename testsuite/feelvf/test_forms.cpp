@@ -60,8 +60,8 @@ makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( forms_suite )
 
-//using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
-using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
+using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
+//using dim_t = boost::mpl::list<boost::mpl::int_<2>>;
 //using dim_t = boost::mpl::list<boost::mpl::int_<3>>;
 
 
@@ -109,6 +109,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     cout << "a(1,1) = " << a(l,p) << std::endl;
     BOOST_CHECK_CLOSE( a(l,p), I1, 1e-10 );
     LOG(INFO) << "a done";
+
+    LOG(INFO) << "ai start";
+    a = integrate( _range=internalfaces(meshnd), _expr=(e*id(l))*(leftfacet(idt(p)/e)));
+    a.close();
+    cout << "ai(1,1) = " << a(l,p) << std::endl;
+    LOG(INFO) << "ai done";
+
+    LOG(INFO) << "ab start";
+    a = integrate( _range=boundaryfaces(meshnd), _expr=(e*id(l))*(leftfacet(idt(p)/e)));
+    a.close();
+    cout << "ab(1,1) = " << a(l,p) << std::endl;
+    LOG(INFO) << "ab done";
 
     LOG(INFO) << "a1 start";
     auto a1 = form2(_test=Mh, _trial=Mh );
@@ -209,6 +221,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a6(1,1)=" << a6en );
 
+    double Ib = integrate(_range=boundaryfaces(meshnd), _expr=cst(1.)).evaluate()(0,0);
+
     // The five following tests should all provide the (n-1)-Lebesgue
     // measure of the boundary of the domain.
     // The goal is to check whether we need to multiply by 0.5 or 0.25 or nothing in
@@ -217,6 +231,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a7 = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(p));
     a7.close();
     auto a7eval = a7(p,p);
+    BOOST_CHECK_CLOSE( a7eval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a7(1,1)=" << a7eval );
 
@@ -225,6 +240,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a8 = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
     a8.close();
     auto a8eval = a8(l,l);
+    BOOST_CHECK_CLOSE( a8eval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a8(1,1)=" << a8eval );
 
@@ -232,6 +248,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a9 = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
     a9.close();
     auto a9eval = a9(l,p);
+    BOOST_CHECK_CLOSE( a9eval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a9(1,1)=" << a9eval );
 
@@ -239,6 +256,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a10 = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
     a10.close();
     auto a10eval = a10(l);
+    BOOST_CHECK_CLOSE( a10eval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a10(1)=" << a10eval );
 
@@ -246,6 +264,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     a12 = integrate(_range=boundaryfaces(meshnd), _expr=id(p));
     a12.close();
     auto a12eval = a12(p);
+    BOOST_CHECK_CLOSE( a12eval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a12(1)=" << a12eval );
 
@@ -256,42 +275,52 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     // The following tests help to understand what we have to do when mixing
     // integrals that require the extended pattern with others that do not
 
+    LOG(INFO) << "a7b starts";
     // Works fine
     auto a7b = form2( _test=Wh, _trial=Wh);
     a7b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(p));
     a7b.close();
     auto a7beval = a7b(p,p);
+    BOOST_CHECK_CLOSE( a7beval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a7b(1,1)=" << a7beval );
+    LOG(INFO) << "a7b ends";
 
     auto a8b = form2( _test=Mh, _trial=Mh);
     a8b = integrate(_range=boundaryfaces(meshnd), _expr=idt(l)*id(l));
     a8b.close();
     auto a8beval = a8b(l,l);
+    BOOST_CHECK_CLOSE( a8beval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a8b(1,1)=" << a8beval );
 
+    LOG(INFO) << "a9b starts";
     auto a9b = form2(_test=Mh, _trial=Wh, _pattern=size_type(Pattern::EXTENDED));
     a9b = integrate(_range=boundaryfaces(meshnd), _expr=idt(p)*id(l));
     a9b.close();
     auto a9beval = a9b(l,p);
+    BOOST_CHECK_CLOSE( a9beval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a9b(1,1)=" << a9beval );
+    LOG(INFO) << "a9b ends";
 
     auto a10b = form1(_test=Mh, _pattern=size_type(Pattern::EXTENDED));
     a10b = integrate(_range=boundaryfaces(meshnd), _expr=id(l));
     a10b.close();
     auto a10beval = a10b(l);
+    BOOST_CHECK_CLOSE( a10beval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a10b(1)=" << a10beval );
 
+    LOG(INFO) << "a12b starts";
     auto a12b = form1(_test=Wh, _pattern=size_type(Pattern::EXTENDED));
     a12b = integrate(_range=boundaryfaces(meshnd), _expr=id(p));
     a12b.close();
     auto a12beval = a12b(p);
+    BOOST_CHECK_CLOSE( a12beval, Ib, 1e-10 );
     if ( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( "a12b(1)=" << a12beval );
-
+    LOG(INFO) << "a12b ends";
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
 
