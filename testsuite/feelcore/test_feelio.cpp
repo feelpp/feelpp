@@ -75,7 +75,11 @@ BOOST_AUTO_TEST_CASE( test_stringstream )
     MasterStream fs( os ) ;
     fs << "Hello World from process " << Environment::rank();
     BOOST_TEST_MESSAGE( "str:: " << fs.str() );
-    BOOST_CHECK_EQUAL( fs.str(), "Hello World from process 0" );
+    Environment::worldComm().barrier();
+    if(Environment::rank() != Environment::masterRank() )
+      BOOST_CHECK_EQUAL( fs.str().empty(), true);
+    else
+      BOOST_CHECK_EQUAL( fs.str(), "Hello World from process 0");
 
     BOOST_MESSAGE( "test_fstream done." );
 }
