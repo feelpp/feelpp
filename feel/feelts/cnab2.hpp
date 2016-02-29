@@ -51,16 +51,16 @@ public:
 
     template<typename FT>
     void addStep( double k1, FT const& f_u, FT const& f_acc )
-    {
-        this->push_back( k1, this->size()?t()+k1:k1 );
+        {
+            this->push_back( k1, this->size()?t()+k1:k1 );
 
-        up = u;
-        accp=acc;
-        u = f_u;
-        acc = f_acc;
-        if ( this->size() > 1 )
-            dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
-    }
+            up = u;
+            accp=acc;
+            u = f_u;
+            acc = f_acc;
+            if ( this->size() > 1 )
+                dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
+        }
 
     template<typename FT>
     void addStep( FT const& f_u, FT const& f_acc )
@@ -89,18 +89,18 @@ public:
      * @return true if the adaptive algorithm is finished, false otherwise
      */
     bool isFinished() const
-    {
-        double e = 1;
-        if ( steady )
-            e = l2Error();
-        if ( Environment::isMasterRank() )
         {
+            double e = 1;
             if ( steady )
-                std::cout << "checking for steady state ||u-up||_2 = "
-                          << e << " tolerance: " << steady_tol << std::endl;
+                e = l2Error();
+            if ( Environment::isMasterRank() )
+            {
+                if ( steady )
+                    std::cout << "checking for steady state ||u-up||_2 = "
+                              << e << " tolerance: " << steady_tol << std::endl;
+            }
+            return steady ? ((e<steady_tol && index()>10)||(t()>=T)) : !(t()<T);
         }
-        return steady ? ((e<steady_tol && index()>10)||(t()>=T)) : !(t()<T);
-    }
     /**
      * test that during the current time \p step, the error \p err has decreazed
      * sufficiently.
@@ -127,8 +127,8 @@ public:
             this->t() = tprev(1)+this->k();
         }
 
-    template<typename FT>
-    void start( FT& d );
+    template<typename FT,typename BCType>
+    void start( FT& d, BCType& bc );
 
     template<typename FT, typename BCType>
     bool next( FT& d, BCType& bc, bool is_converged=true );
@@ -137,8 +137,7 @@ public:
     double computeError( FT& fd );
 
     template<typename BCType >
-    void averaging( BCType& bc, double k1 );
-
+    void averaging( BCType& bc );
 
     field_t const& extrapolateVelocity();
 
@@ -174,18 +173,18 @@ CNAB2<FieldType>::CNAB2( FT const& f )
     u_try ( f.functionSpace() ),
     acc_try ( f.functionSpace() ),
     accstar( f.functionSpace() ),
-                             ustar( f.functionSpace() )
+    ustar( f.functionSpace() )
 {
     if ( Environment::isMasterRank() )
         std::cout << "--> k0=" << k0 << " T=" << T << " n*=" << nstar << " keps=" << keps  << std::endl;
 
 }
 template<typename FieldType>
-template<typename FT>
+template<typename FT, typename BCType >
 void
-CNAB2<FieldType>::start( FT& f_d )
+CNAB2<FieldType>::start( FT& f_d, BCType& bc )
 {
-    next( f_d );
+    next( f_d, bc );
 }
 
 template<typename FieldType>
@@ -196,7 +195,7 @@ CNAB2<FieldType>::computeError( FT& fd )
 #if 0
     u_try.on(_range=elements(mesh), _expr=idv(u)+k()*idv(fd));
     acc_try.on(_range=elements(mesh), _expr=2*idv(fd)-idv(acc));
-        //}
+    //}
     // compute AB2 velocity
     uab2.on( _range=elements(mesh), _expr=idv(u)+(k()/2.)*( (2+k()/kprev(1))*idv(acc)-(k()/kprev(1))*idv(accp) ) );
     return normL2( _range=elements(mesh), _expr=(idv(u_try)-idv(uab2)))/(3.*(1+kprev(1)/k())) ;
@@ -213,49 +212,46 @@ CNAB2<FieldType>::computeError( FT& fd )
 
 }
 
+
 template<typename FieldType>
 template<typename BCType >
 void
-CNAB2<FieldType>::averaging( BCType& bc, double k1 )
+CNAB2<FieldType>::averaging( BCType& bc )
 {
-    double tstar = t();
-    double kstar = k();
-    t() = 0.5*tstar + 0.5*tprev(1);
-    k() = 0.5*( kstar+kprev(1) );
+    double tstar = tprev(1);
+    double kstar = kprev(1);
 
-    tstar = tprev(1);
-    kstar = kprev(1);
-    tprev(1) = 0.5*( tstar+tprev(2) );
-    kprev(1) = 0.5*( kstar+kprev(2) );
-
+    kprev(1) = 0.5*kstar;
+    tprev(1) = tstar-kprev(1);
 
     ustar = up;
     accstar=accp;
     up.on( _range=elements(mesh), _expr=.5*(idv(ustar)+idv(u)) );
-    for ( auto const& condition : bc )
+    /*for ( auto const& condition : bc )
     {
         auto g1 = expression(condition);
         g1.setParameterValues( {"t",tprev(1) });
         up.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
-    }
+     }*/
     accp.on( _range=elements(mesh), _expr=.5*(idv(accstar)+idv(acc)) );
 
-    ustar = u;
-    accstar = acc;
-
+    ustar=u;
+    accstar=acc;
     u.on( _range=elements(mesh), _expr=0.5*idv(u_try) + 0.5*idv(ustar) );
-    acc.on( _range=elements(mesh), _expr=(idv(acc_try)+idv(accstar))/2 );
-    for ( auto const& condition : bc )
+    acc.on( _range=elements(mesh), _expr=0.5*(idv(acc_try)+idv(accstar)) );
+
+    kstar = k();
+    t() = tstar+.5*k();
+    k() = kprev(1) + 0.5*kstar;
+    /*for ( auto const& condition : bc )
     {
         auto g1 = expression(condition);
         g1.setParameterValues( {"t",t() });
         u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
-    }
+     }*/
+    dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/k());
 
-    dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/kprev(1));
 
-
-    this->push_back( k1, this->size()?t()+k1:k1 );
 }
 
 
@@ -286,16 +282,20 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
 
         if ( ktry.first )
         {
-            double k1 = ktry.second;
             // accept the tried step and move forward
             if ( (index() > 0) && (index() % nstar == 0) )
             {
-                averaging( bc, k1 );
+                averaging( bc );
             }
             else
             {
-                acceptedStep( k1 );
+                this->addStep( u_try, acc_try );
             }
+
+            // get new time step and store it in time set for the next round
+            double k1 = ktry.second;
+            this->push_back( k1, this->size()?t()+k1:k1 );
+
         }
         else
         {
