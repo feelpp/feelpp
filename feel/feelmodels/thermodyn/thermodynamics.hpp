@@ -75,12 +75,6 @@ public:
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
 
-private :
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
-
 };
 
 } // namespace FeelModels

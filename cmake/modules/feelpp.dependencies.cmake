@@ -16,7 +16,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp -Wno-deprecated-declarations" )
   # require at least gcc 4.9
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-      message(FATAL_ERROR "GCC version must be at least 4.9!")
+      message(WARNING "GCC version must be at least 4.9. it is currently version ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   # require at least clang 3.4
