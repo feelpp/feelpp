@@ -26,6 +26,8 @@
 
 
 #include <vector>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/ginac.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -40,9 +42,10 @@ struct ModelMaterial
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
-    ModelMaterial( std::string name )
+    ModelMaterial( std::string name, pt::ptree p )
         :
         M_name( name ),
+        M_p( p ),
         M_rho( 1. ),
         M_mu(1. ),
         M_Cp( 1 ),
@@ -182,8 +185,36 @@ struct ModelMaterial
             _map["Tliq"]  = Tliq();
             return _map;
         }
+
+    Expr<GinacEx<2>> getScalar( std::string const& key )
+        {
+            return expr( M_p.get( key, "0" ) );
+        }
+
+    template<int T>
+    Expr<GinacMatrix<T,1,2>> getVector( std::string const& key )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T-1) )
+                s += ",0";
+            s += "}";
+            return expr<T,1>( M_p.get( key, s ) );
+        }
+
+    template<int T>
+    Expr<GinacMatrix<T,T,2>> getTensor( std::string const& key )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T*T-1) )
+                s += ",0";
+            s += "}";
+            return expr<T,T>( M_p.get( key, s ) );
+        }
+
 private:
     std::string M_name; /*!< Material name*/
+    pt::ptree M_p;
+
     double M_rho; /*!< Density */
     double M_mu;  /*!< Molecular(dynamic) viscosity */
     
