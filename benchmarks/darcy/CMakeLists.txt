@@ -72,3 +72,5 @@ foreach( dim 2 3)
   endforeach() # order
 endforeach() # dim
 
+
+feelpp_add_application( et SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
