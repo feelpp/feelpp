@@ -841,6 +841,46 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    if( M_Newton_fix_mean_pressure >= 0 )
+    {
+        if ( Environment::isMasterRank() )
+            std::cout << "Call postsolve: remove mean value to Newton pressure increment\n";
+
+        std::vector<size_type> indices_p(this->functionSpacePressure()->nLocalDofWithGhost());
+        size_type indexStart_p = this->functionSpaceVelocity()->nLocalDofWithGhost();
+        std::iota( indices_p.begin(), indices_p.end(), indexStart_p );
+        auto Up_vec = sol->createSubVector(indices_p);
+        auto Up = this->functionSpacePressure()->element();
+        Up = *Up_vec;
+        Up.close();
+        double mean_pressure = mean( _range=elements(this->mesh()), _expr=idv(Up) )(0,0);
+        Up.add( -mean_pressure );
+        *Up_vec = Up;
+        sol->updateSubVector( Up_vec, indices_p );
+        sol->close();
+    }
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{}
+
+//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void

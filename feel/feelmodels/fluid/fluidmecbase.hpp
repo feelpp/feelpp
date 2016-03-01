@@ -748,6 +748,12 @@ public :
     //___________________________________________________________________________________//
 
     virtual void solve();
+    //___________________________________________________________________________________//
+    void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    //___________________________________________________________________________________//
 
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     virtual void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const = 0;
@@ -879,6 +885,8 @@ protected:
     bool M_definePressureCst;
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
+    //----------------------------------------------------
+    double M_Newton_fix_mean_pressure;
     //----------------------------------------------------
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
