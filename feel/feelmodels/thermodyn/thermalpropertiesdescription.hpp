@@ -25,6 +25,7 @@ namespace FeelModels
                 M_cstThermalConductivity[self_type::defaultMaterialName()] = doption(_name="thermal-conductivity",_prefix=prefix);
                 M_cstHeatCapacity[self_type::defaultMaterialName()] = doption(_name="heat-capacity",_prefix=prefix);
                 M_cstRho[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);
+                M_cstThermalExpansion[self_type::defaultMaterialName()] = doption(_name="thermal-expansion",_prefix=prefix);
                 this->initFromSpace( space );
             }
 
@@ -33,6 +34,7 @@ namespace FeelModels
                 M_cstThermalConductivity[self_type::defaultMaterialName()] = doption(_name="thermal-conductivity",_prefix=prefix);
                 M_cstHeatCapacity[self_type::defaultMaterialName()] = doption(_name="heat-capacity",_prefix=prefix);
                 M_cstRho[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);
+                M_cstThermalExpansion[self_type::defaultMaterialName()] = doption(_name="thermal-expansion",_prefix=prefix);
             }
 
         ThermalPropertiesDescription( ThermalPropertiesDescription const& app  ) = default;
@@ -43,6 +45,7 @@ namespace FeelModels
             M_fieldThermalConductivity = space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
             M_fieldHeatCapacity = space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
             M_fieldRho = space->elementPtr( vf::cst( this->cstRho() ) );
+            M_fieldThermalExpansion = space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
         }
 
         double cstThermalConductivity( std::string const& marker = "" ) const
@@ -66,15 +69,24 @@ namespace FeelModels
             CHECK( itFindMarker != M_cstRho.end() ) << "invalid marker not registered " << markerUsed;
             return itFindMarker->second;
         }
+        double cstThermalExpansion( std::string const& marker = "" ) const
+        {
+            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+            auto itFindMarker = M_cstThermalExpansion.find( markerUsed );
+            CHECK( itFindMarker != M_cstThermalExpansion.end() ) << "invalid marker not registered " << markerUsed;
+            return itFindMarker->second;
+        }
 
         std::set<std::string> const& markers() const { return M_markers; }
 
         element_type const& fieldThermalConductivity() const { return *M_fieldThermalConductivity; }
         element_type const& fieldHeatCapacity() const { return *M_fieldHeatCapacity; }
         element_type const& fieldRho() const { return *M_fieldRho; }
+        element_type const& fieldThermalExpansion() const { return *M_fieldThermalExpansion; }
         element_ptrtype const& fieldThermalConductivityPtr() const { return M_fieldThermalConductivity; }
         element_ptrtype const& fieldHeatCapacityPtr() const { return M_fieldHeatCapacity; }
         element_ptrtype const& fieldRhoPtr() const { return M_fieldRho; }
+        element_ptrtype const& fieldThermalExpansionPtr() const { return M_fieldThermalExpansion; }
 
         void setCstThermalConductivity( double val, std::string const& marker = "" )
         {
@@ -93,6 +105,12 @@ namespace FeelModels
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstRho[markerUsed]=val;
             this->updateRho( vf::cst(val), marker );
+        }
+        void setCstThermalExpansion( double val, std::string const& marker = "" )
+        {
+            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+            M_cstThermalExpansion[markerUsed]=val;
+            this->updateThermalExpansion( vf::cst(val), marker );
         }
 
         template < typename ExprT >
@@ -124,6 +142,16 @@ namespace FeelModels
                 M_fieldRho->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
         }
 
+        template < typename ExprT >
+        void updateThermalExpansion(vf::Expr<ExprT> const& __expr, std::string const& marker = "")
+        {
+            if ( !M_fieldThermalExpansion ) return;
+            if ( marker.empty() )
+                M_fieldThermalExpansion->on(_range=elements( M_space->mesh()),_expr=__expr);
+            else
+                M_fieldThermalExpansion->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
+        }
+
         void updateFromModelMaterials( ModelMaterials const& mat )
         {
             if ( mat.empty() ) return;
@@ -137,6 +165,7 @@ namespace FeelModels
                 this->setCstRho( mat.rho(), matmarker );
                 this->setCstThermalConductivity( mat.k11(), matmarker );
                 this->setCstHeatCapacity( mat.Cp(), matmarker );
+                this->setCstThermalExpansion( mat.beta(), matmarker );
             }
         }
 
@@ -153,7 +182,8 @@ namespace FeelModels
                 std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
                 *ostr << "\n     -- " << matmarkertag << "rho : " << this->cstRho(matmarker)
                       << "\n     -- " << matmarkertag << "thermal conductivity : " << this->cstThermalConductivity(matmarker)
-                      << "\n     -- " << matmarkertag << "heat capacity : " << this->cstHeatCapacity(matmarker);
+                      << "\n     -- " << matmarkertag << "heat capacity : " << this->cstHeatCapacity(matmarker)
+                      << "\n     -- " << matmarkertag << "thermal expansion : " << this->cstThermalExpansion(matmarker);
             }
             return ostr;
         }
@@ -162,9 +192,11 @@ namespace FeelModels
         std::map<std::string,double> M_cstThermalConductivity;// [ W/(m*K) ]
         std::map<std::string,double> M_cstHeatCapacity;// [ J/(kg*K) ]
         std::map<std::string,double> M_cstRho;
+        std::map<std::string,double> M_cstThermalExpansion;// [ 1/K ]
         std::set<std::string> M_markers;
         space_ptrtype M_space;
         element_ptrtype M_fieldThermalConductivity, M_fieldHeatCapacity, M_fieldRho;
+        element_ptrtype M_fieldThermalExpansion;
     };
 
 
