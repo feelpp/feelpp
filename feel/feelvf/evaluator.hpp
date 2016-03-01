@@ -584,6 +584,11 @@ struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
 {
     typedef boost::tuple<double, Eigen::Matrix<double, Dim,1> > super;
     normLinfData( double v, Eigen::Matrix<double, Dim,1> const& x  ) : super( v, x ) {}
+    normLinfData() = default;
+    normLinfData( normLinfData const&  ) = default;
+    normLinfData( normLinfData &&  ) = default;
+    normLinfData& operator=( normLinfData const&  ) = default;
+    normLinfData& operator=( normLinfData &&  ) = default;
 
     /**
      * \return the maximum absolute value
@@ -600,6 +605,15 @@ struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
      */
     Eigen::Matrix<double, Dim,1> const& arg() const { return this->template get<1>(); }
 
+    /**
+     * Serialization for minmaxData
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & this->template get<0>();
+            ar & this->template get<1>();
+        }
 };
 /**
  *
@@ -634,26 +648,27 @@ BOOST_PARAMETER_FUNCTION(
     LOG(INFO) << "evaluate expression..." << std::endl;
 
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int index;
-    double maxe = e.template get<0>().array().abs().maxCoeff(&index);
+    int index=0;
+    double maxe = e.template get<0>().size()?e.template get<0>().array().abs().maxCoeff(&index):-1e30;
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> n = e.template get<1>().col(index);
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+    Eigen::Matrix<double, nRealDim,1> n;
+    if ( e.template get<1>().size() )
+        n = e.template get<1>().col(index);
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
     int world_size = worldcomm.size();
-    std::vector<double> maxe_world( world_size );
+    std::vector<normLinfData<nRealDim>> D_world( world_size );
+    normLinfData<nRealDim> D( maxe, n );
     mpi::all_gather( worldcomm.globalComm(),
-                     maxe,
-                     maxe_world );
+                     D,
+                     D_world );
 
-    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> > n_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),
-                     n,
-                     n_world );
-
-    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
-    int position = it_max - maxe_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
+    auto it_max = std::max_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.value() < d2.value(); } );
+    int position = it_max - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->value()<<" at position "<<position<<" with coord : \n "<<it_max->arg()<<"\n";
 
     // some extra check
     if (VLOG_IS_ON(2))
@@ -671,8 +686,7 @@ BOOST_PARAMETER_FUNCTION(
         LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
     LOG(INFO) << "evaluate expression done." << std::endl;
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,1> x = n_world[position];
-    return normLinfData<vf::detail::evaluate<Args>::nRealDim> (*it_max, x);
+    return normLinfData<nRealDim>( it_max->value(), it_max->arg() );
 }
 
 
@@ -684,6 +698,12 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
 {
     typedef boost::tuple<double,double, Eigen::Matrix<double, Dim,2> > super;
     minmaxData( super const& s ) : super( s ) {}
+    minmaxData() = default;
+    minmaxData( minmaxData const& ) = default;
+    minmaxData( minmaxData && ) = default;
+    minmaxData& operator=( minmaxData const& ) = default;
+    minmaxData& operator=( minmaxData && ) = default;
+
     /**
      * \return the minimum absolute value
      */
@@ -704,6 +724,22 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
      * \return the point at which the expression is maximal
      */
     Eigen::Matrix<double, Dim,1> argmax() const { return this->template get<2>().col(1); }
+
+    /**
+     * coordinates of the points where  min and max are attained
+     */
+    Eigen::Matrix<double, Dim,1> const& coords() const { return this->template get<2>(); }
+
+    /**
+     * Serialization for minmaxData
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+        {
+            ar & this->template get<0>();
+            ar & this->template get<1>();
+            ar & this->template get<2>();
+        }
 
 };
 
@@ -739,42 +775,44 @@ BOOST_PARAMETER_FUNCTION(
     int proc_number = worldcomm.globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
-
+    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
     auto e = evaluate_impl( range, pset, expr, geomap );
-    int indexmin;
-    int indexmax;
-    double mine = e.template get<0>().array().minCoeff(&indexmin);
-    double maxe = e.template get<0>().array().maxCoeff(&indexmax);
+    int indexmin=0;
+    int indexmax=0;
+    double mine = e.template get<0>().size()?e.template get<0>().array().minCoeff(&indexmin):1e30;
+    double maxe = e.template get<0>().size()?e.template get<0>().array().maxCoeff(&indexmax):-1e30;
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> n;
-    n.col(0) = e.template get<1>().col(indexmin);
-    n.col(1) = e.template get<1>().col(indexmax);
+    Eigen::Matrix<double, nRealDim,2> n;
+    Eigen::Matrix<double, nRealDim,1> z = Eigen::Matrix<double, nRealDim,1>::Zero();
+    n.col(0) = e.template get<1>().size()?e.template get<1>().col(indexmin):z;
+    n.col(1) = e.template get<1>().size()?e.template get<1>().col(indexmax):z;
     LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is minimal: "<< indexmin << " coord = \n"<<n.col(0)<<"\n";
     LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< indexmax << " coord = \n"<<n.col(1)<<"\n";
 
     int world_size = worldcomm.size();
-    std::vector<double> mine_world( world_size );
-    std::vector<double> maxe_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),mine,mine_world );
-    mpi::all_gather( worldcomm.globalComm(),maxe,maxe_world );
+    minmaxData<nRealDim> D( boost::make_tuple( mine, maxe, n) );
+    std::vector<minmaxData<nRealDim>> D_world( world_size );
+    mpi::all_gather( worldcomm.globalComm(),D,D_world );
 
-    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> > n_world( world_size );
-    mpi::all_gather( worldcomm.globalComm(),n,n_world );
+    auto it_min = std::min_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.min() < d2.min(); } );
 
-    auto it_min = std::min_element( mine_world.begin() , mine_world.end() );
-    int positionmin = it_min - mine_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<*it_min<<" at position "<<positionmin<<" with coord : \n "<<n_world[positionmin]<<"\n";
-    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
-    int positionmax = it_max - maxe_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<positionmax<<" with coord : \n "<<n_world[positionmax]<<"\n";
+    int positionmin = it_min - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<it_min->min()<<" at position "<<positionmin<<" with coord : \n "<<D_world[positionmin].argmin()<<"\n";
+    auto it_max = std::max_element( D_world.begin() , D_world.end(),
+                                    []( auto const& d1, auto const& d2 )
+                                    { return d1.max() < d2.max(); } );
+    int positionmax = it_max - D_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->max()<<" at position "<<positionmax<<" with coord : \n "<<D_world[positionmax].argmax()<<"\n";
 
-    Eigen::Matrix<double, vf::detail::evaluate<Args>::nRealDim,2> coords;
-    coords.col(0) = n_world[positionmin].col(0);
-    coords.col(1) = n_world[positionmax].col(1);
+    Eigen::Matrix<double, nRealDim,2> coords;
+    coords.col(0) = D_world[positionmin].argmin();
+    coords.col(1) = D_world[positionmax].argmax();
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
-    return minmaxData<vf::detail::evaluate<Args>::nRealDim> (boost::make_tuple( *it_min, *it_max, coords ));
+    return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
 }
 
 } // vf
