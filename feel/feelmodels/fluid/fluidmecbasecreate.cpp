@@ -228,8 +228,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
+    // gravity
+    std::string gravityStr;
+    if ( Environment::vm().count(prefixvm(this->prefix(),"gravity-force").c_str()) )
+        gravityStr = soption(_name="gravity-force",_prefix=this->prefix());
+    else if (nDim == 2 )
+        gravityStr = "{0,-9.80665}";
+    else if (nDim == 3 )
+        gravityStr = "{0,0,-9.80665}";
+    M_gravityForce = expr<nDim,1,2>( gravityStr );
+    M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
 
+    // thermodynamics coupling
     M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
+    M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
+
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -899,9 +912,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
                                                          this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
-        M_thermodynModel->setFieldVelocityConvectionIsUsed( false );
+        M_thermodynModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
         M_thermodynModel->loadMesh( this->mesh() );
-        M_thermodynModel->init( false );
+        M_thermodynModel->init( !M_useGravityForce/*false*/ );
     }
     //-------------------------------------------------//
     // add ALE markers
@@ -964,7 +977,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
         currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
     }
-    if ( M_useThermodynModel )
+    if ( M_useThermodynModel && M_useGravityForce )
     {
         M_thermodynModel->setRowStartInMatrix( currentStartIndex );
         M_thermodynModel->setColStartInMatrix( currentStartIndex );
@@ -999,7 +1012,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         }
     }
     // thermodynamics model
-    if ( M_useThermodynModel )
+    if ( M_useThermodynModel && M_useGravityForce )
     {
         M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
     }
