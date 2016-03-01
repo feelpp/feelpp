@@ -116,8 +116,11 @@ class ThermoDynamicsBase : public ModelNumerical,
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
-        element_temperature_ptrtype const& fieldTemperature() const { return M_fieldTemperature; }
-        element_velocityconvection_ptrtype const& fieldVelocityConvection() const { return M_fieldVelocityConvection; }
+        element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
+        element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
+        element_velocityconvection_ptrtype const& fieldVelocityConvectionPtr() const { return M_fieldVelocityConvection; }
+        element_velocityconvection_ptrtype & fieldVelocityConvectionPtr() { return M_fieldVelocityConvection; }
+        element_velocityconvection_type const& fieldVelocityConvection() const { return *M_fieldVelocityConvection; }
         bool fieldVelocityConvectionIsUsed() const { return M_fieldVelocityConvectionIsUsed; }
         bool fieldVelocityConvectionIsIncompressible() const { return M_fieldVelocityConvectionIsIncompressible; }
         void setFieldVelocityConvectionIsUsed(bool b) { M_fieldVelocityConvectionIsUsed=b; }
@@ -181,6 +184,17 @@ class ThermoDynamicsBase : public ModelNumerical,
         virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
         virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
 
+        // non linear (newton)
+        void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+        void updateJacobian( DataUpdateJacobian & data ) const;
+        void updateResidual( DataUpdateResidual & data ) const;
+        void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
+        void updateBCNeumannResidual( vector_ptrtype& R, bool buildCstPart ) const;
+        void updateBCRobinResidual( element_temperature_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
+        void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
+        void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+        void updateBCRobinJacobian( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // update field from expr
@@ -214,6 +228,12 @@ class ThermoDynamicsBase : public ModelNumerical,
         // physical parameter
         space_scalar_P0_ptrtype M_XhScalarP0;
         thermalproperties_ptrtype M_thermalProperties;
+
+        // boundary conditions
+        map_scalar_field<2> M_bcDirichlet;
+        map_scalar_field<2> M_bcNeumann;
+        map_scalar_fields<2> M_bcRobin;
+        map_scalar_field<2> M_volumicForcesProperties;
 
         // algebraic data/tools
         backend_ptrtype M_backend;
