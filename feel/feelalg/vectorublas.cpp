@@ -916,7 +916,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
 #endif
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName ) const
+VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName, bool appendTable ) const
 {
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
@@ -950,7 +950,16 @@ VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string table
     offsetElt[dimsComp1] = 0;
 
     HDF5 hdf5;
-    hdf5.openFile( filename, this->comm().localComm(), false );
+    /* If appendTable is true, then we want to append the table to the hdf5 file */
+    /* To do so we open the hdf5 as existing and allow read/write in it */
+    if(appendTable)
+    {
+        hdf5.openFile( filename, this->comm().localComm(), true, true );
+    }
+    else
+    {
+        hdf5.openFile( filename, this->comm().localComm(), false );
+    }
 
     if ( false )
     {

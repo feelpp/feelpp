@@ -301,11 +301,11 @@ CRBElementsDB<ModelType>::saveHDF5DB()
         std::ostringstream tableName;
         LOG( INFO ) << hdf5File.str();
         tableName << "M_WN[" << i << "]";
-        M_WN[i].saveHDF5(hdf5File.str(), tableName.str());
+        M_WN[i].saveHDF5(hdf5File.str(), tableName.str(), true);
 
         tableName.str("");
         tableName << "M_WNdu[" << i << "]";
-        M_WNdu[i].saveHDF5(hdf5File.str(), tableName.str());
+        M_WNdu[i].saveHDF5(hdf5File.str(), tableName.str(), true);
     }
     LOG( INFO ) << "Elements DB saved in hdf5";
 }
@@ -415,13 +415,13 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     for(int i=0; i<M_N; i++)
     {
         std::ostringstream tableName;
-        tableName << "M_WM[" << i << "]";
+        tableName << "M_WN[" << i << "]";
         temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
         temp.loadHDF5(hdf5File.str(), tableName.str());
         M_WN[i] = temp;
 
         tableName.str("");
-        tableName << "M_WMdu[" << i << "]";
+        tableName << "M_WNdu[" << i << "]";
         temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
         temp.loadHDF5(hdf5File.str(), tableName.str());
         M_WNdu[i] = temp;
