@@ -62,7 +62,7 @@ bool Feel::HDF5::groupExist( const std::string& groupName )
 
 void Feel::HDF5::openFile( const std::string& fileName,
                            const comm_type& comm,
-                           const bool& existing )
+                           const bool& existing, const bool& rdwr )
 {
     hid_t plistId;
     MPI_Comm mpiComm = comm.comm();
@@ -75,7 +75,20 @@ void Feel::HDF5::openFile( const std::string& fileName,
     // Create/open a file collectively and release property list identifier.
     if (existing)
     {
-        M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDONLY, plistId);
+        /* if the file does not already exists
+         * this is an error case: The user marked the file as existing
+         * and it does not exists. Create the file so we don't get this error
+         */
+        if( !boost::filesystem::exists( fileName ) )
+        { M_fileId = H5Fcreate (fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plistId); }
+        /* Case where the file exists */
+        else
+        {
+            if(rdwr)
+            { M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDWR, plistId); }
+            else
+            { M_fileId = H5Fopen (fileName.c_str(), H5F_ACC_RDONLY, plistId); }
+        }
     }
     else
     {

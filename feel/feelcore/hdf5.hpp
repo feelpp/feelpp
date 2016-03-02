@@ -112,9 +112,11 @@ public:
      * \param comm pointer to Epetra_Comm
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
+     * \param rdwr when opening an existing file, specifies whether to open it 
+     *        in read-only or read/write mode.
      */
     void openFile( const std::string& fileName, const comm_type& comm,
-                   const bool& existing );
+                   const bool& existing, const bool& rdwr = false );
 
     //! Create a new group
     /*!
