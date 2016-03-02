@@ -228,6 +228,9 @@ public:
 
         }
 
+    crb_ptrtype & crbPtr() { return crb; }
+    crb_ptrtype const& crbPtr() const { return crb; }
+
     void setMode( std::string const& mode )
         {
             if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
