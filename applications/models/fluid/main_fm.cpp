@@ -14,7 +14,7 @@ runApplicationFluid()
     typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
                                         Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> FM( new model_type("fluid") );
+    auto FM = model_type::New("fluid");
 
     FM->init();
     FM->printAndSaveInfo();
@@ -63,8 +63,10 @@ main( int argc, char** argv )
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P2P1" )
         runApplicationFluid<2,1>();
+#if 0//FEELPP_DIM == 2
     else if ( feapprox == "P1P1" )
         runApplicationFluid<1,1>();
+#endif
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;

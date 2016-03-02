@@ -131,6 +131,40 @@ HarmonicExtension<MeshType,Order>::setflagSet( flagSet_type const & fl )
     M_flagSet=fl;
 }
 
+#if 0 // code for implement near null space
+namespace detail
+{
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+#if 1
+    auto mode3 = space->element( vec(Py(),-Px()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+#else
+    NullSpace<double> userNullSpace( { mode1,mode2 } );
+#endif
+    return userNullSpace;
+}
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( oneZ() );
+#if 1
+    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+#else
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+#endif
+    return userNullSpace;
+}
+} // namespace detail
+#endif
 
 template< typename MeshType, int Order >
 void
@@ -147,6 +181,16 @@ HarmonicExtension<MeshType,Order>::init()
     // A bug to fix with this code ( probably block pattern )
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
     M_algebraicFactory->initFromFunctionSpace( this->functionSpace() );
+#endif
+
+#if 0 // code for implement near null space
+    if ( true )
+    {
+        NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpace(), mpl::int_<mesh_type::nDim>() ) ;
+        //if ( boption(_name="use-null-space",_prefix=this->prefix() ) )
+        //M_algebraicFactory->attachNullSpace( userNullSpace );
+        M_algebraicFactory->attachNearNullSpace( userNullSpace );
+    }
 #endif
 
     M_vectorSolution = this->backend()->newVector( this->functionSpace() );
@@ -170,11 +214,13 @@ HarmonicExtension<MeshType,Order>::getInfo() const
 
 template< typename MeshType, int Order >
 void
-HarmonicExtension<MeshType,Order>::updateLinearPDE(const vector_ptrtype& X,sparse_matrix_ptrtype& A , vector_ptrtype& F,
-                                                   bool buildCstPart,
-                                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                   bool _doClose, bool _doBCStrongDirichlet ) const
+HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
+    //const vector_ptrtype& X = data.currentSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+
     auto u = this->displacement();
     auto v = this->displacement();
 

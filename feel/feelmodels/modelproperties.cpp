@@ -21,18 +21,41 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/utility.hpp>
+
 #include <feel/feelmodels/modelproperties.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 namespace Feel {
 
 
-ModelProperties::ModelProperties( std::string const& filename )
-{
-    if ( !fs::exists( filename ) ) return;
 
-    pt::read_json(filename, M_p);
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world )
+    :
+    M_worldComm( world ),
+    M_params( world ),
+    M_bc( world ),
+    M_postproc( world )
+{
+    if ( !fs::exists( filename ) ) 
+    {
+      LOG(INFO) << "Could not find " << filename << std::endl;
+      return;
+    }
+    else
+    {
+        LOG(INFO) << "Loading " << filename << std::endl;
+    }
+
+
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }
@@ -61,15 +84,25 @@ ModelProperties::ModelProperties( std::string const& filename )
     if ( par )
     {
         LOG(INFO) << "Model with parameters\n";
+        if ( !directoryLibExpr.empty() )
+            M_params.setDirectoryLibExpr( directoryLibExpr );
         M_params.setPTree( *par );
-        
+    }
+    auto func = M_p.get_child_optional("Functions");
+    if ( func )
+    {
+        LOG(INFO) << "Model with functions\n";
+        if ( !directoryLibExpr.empty() )
+            M_functions.setDirectoryLibExpr( directoryLibExpr );
+        M_functions.setPTree( *func );
     }
     auto bc = M_p.get_child_optional("BoundaryConditions");
     if ( bc )
     {
         LOG(INFO) << "Model with boundary conditions\n";
+        if ( !directoryLibExpr.empty() )
+            M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
-        
     }
     else
     {
@@ -90,6 +123,8 @@ ModelProperties::ModelProperties( std::string const& filename )
     if ( pp )
     {
         LOG(INFO) << "Model with PostProcess\n";
+        if ( !directoryLibExpr.empty() )
+            M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
         
     }

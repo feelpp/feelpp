@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 18 Apr 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( interp_matrixfield )
 
     auto test_app = Application_ptrtype( new Application_type );
 
-    test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
+    test_app->changeRepository( boost::format( "testsuite/feeldiscr/%1%/" )
                                 % test_app->about().appName()
                               );
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv )
                      _about=about(_name="test_matrixfield",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
-    
+
     typedef Mesh<Simplex<2,1,2> > mesh_type;
     typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
@@ -144,7 +144,7 @@ int main(int argc, char** argv )
     std::cout << "i0 = " << i0 << std::endl;
     std::cout << "i0_res = " << i0_res << std::endl;
     CHECK( (i0-i0_res).norm() < 1e-13 ) << "Invalid integral i0: expected " << i0_res << " got " << i0;
-    
+
     auto M = mat<2,2>( cst(1.), cst(2.), cst(3.), cst(4.)  );
     v.on(_range=elements(mesh), _expr=M ) ;
     v.printMatlab("v.m");
@@ -156,4 +156,3 @@ int main(int argc, char** argv )
 }
 
 #endif
-

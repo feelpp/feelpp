@@ -39,7 +39,7 @@ struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std:
 {
     typedef std::tuple<std::string,std::string,std::string> super;
 
-    ExpressionStringAtMarker( super && s ) : super( s ) {}
+    ExpressionStringAtMarker( super && s ) : super( s ) { M_meshMarkers.push_back( this->marker() ); }
     
     /**
      * @return the marker
@@ -63,7 +63,14 @@ struct ExpressionStringAtMarker : public std::tuple<std::string,std::string,std:
 
     bool hasExpression() const { return !std::get<1>( *this ).empty(); } 
     bool hasExpression1() const { return !std::get<1>( *this ).empty(); } 
-    bool hasExpression2() const { return !std::get<2>( *this ).empty(); } 
+    bool hasExpression2() const { return !std::get<2>( *this ).empty(); }
+
+    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+
+    void setMeshMarkers( std::list<std::string> const& s ) { M_meshMarkers=s; }
+
+private :
+    std::list<std::string> M_meshMarkers;
 };
 /**
  * Defines boundary conditions dictionary
@@ -77,15 +84,19 @@ class BoundaryConditions
   public:
     using value_type = typename super::value_type;
 
-    BoundaryConditions();
+    BoundaryConditions( WorldComm const& world = Environment::worldComm() );
     
     /**
      * constructor from an \c initializer_list<>
      */
-    BoundaryConditions( std::initializer_list<value_type> l )
-        : super(l),M_prefix() {}
+    BoundaryConditions( std::initializer_list<value_type> l, WorldComm const& world = Environment::worldComm() )
+        :
+        super(l),
+        M_worldComm( world ),
+        M_prefix()
+        {}
     
-    BoundaryConditions( std::string const& prefix );
+    BoundaryConditions( std::string const& prefix, WorldComm const& world = Environment::worldComm() );
     BoundaryConditions( BoundaryConditions const& b ) = default;
     BoundaryConditions( BoundaryConditions && b ) = default;
     BoundaryConditions& operator=( BoundaryConditions const& bc ) = default;
@@ -100,19 +111,41 @@ class BoundaryConditions
     /**
      * \param p prefix to be set
      */
-    void setPrefix( std::string p ) { M_prefix = p; }
+    void setPrefix( std::string const& p ) { M_prefix = p; }
 
     void setPTree( pt::ptree const& p );
-        
+
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+
     /**
      * load property tree from file \p filename 
      */
     void load(const std::string &filename);
 
     void saveMD(std::ostream &os);
+
+    std::pair<bool,int> iparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+    std::pair<bool,double> dparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+    std::pair<bool,std::string> sparam( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param ) const;
+
+    std::list<std::string> markers( std::string const& field, std::string const& type ) const;
+    std::list<std::string> markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const;
+
     /**
      * retrieve scalar field \p field with boundary conditions of type \p type
      */
+    template<int Order=2> map_scalar_field<Order> getScalarFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_scalar_field<Order> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getScalarFields<Order>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
+        }
+        return std::move(m_f);
+    }
     template<int Order=2> map_scalar_field<Order> getScalarFields( std::string && field, std::string && type ) const
     {
         using namespace Feel::vf;
@@ -124,13 +157,26 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << f.marker();
-            m_f[std::get<0>(f)] = expr<Order>( f.expression() );
+            m_f[std::get<0>(f)] = expr<Order>( f.expression(), "", M_worldComm, M_directoryLibExpr );
         }
         return std::move(m_f);
     }
     /**
      * retrieve scalar field pair \p field with boundary conditions of type \p type
      */
+    template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_scalar_fields<Order> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFieldsList = getScalarFieldsList<Order>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curFieldList : curFieldsList )
+                for ( auto const& curField : curFieldList.second )
+                    m_f[curFieldList.first].push_back( std::move(curField) );
+        }
+        return std::move(m_f);
+    }
     template<int Order=2> map_scalar_fields<Order> getScalarFieldsList( std::string && field, std::string && type ) const
         {
             using namespace Feel::vf;
@@ -143,12 +189,24 @@ class BoundaryConditions
             {
                 CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
                 LOG(INFO) << "Building expr1 " << f.expression1() << " for " << f.marker();
-                m_f[f.marker()].push_back( expr<Order>( f.expression1() ) );
+                m_f[f.marker()].push_back( expr<Order>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
                 LOG(INFO) << "Building expr2 " << f.expression2() << " for " << f.marker();
-                m_f[f.marker()].push_back( expr<Order>( f.expression2() ) );
+                m_f[f.marker()].push_back( expr<Order>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
             }
             return std::move(m_f);
         }
+    template<int d> map_vector_field<d> getVectorFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_vector_field<d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getVectorFields<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
+        }
+        return std::move(m_f);
+    }
     template<int d> map_vector_field<d> getVectorFields( std::string && field, std::string && type )  const
     {
         using namespace Feel::vf;
@@ -160,7 +218,20 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)] = expr<d,1,2>( f.expression() );
+            m_f[std::get<0>(f)] = expr<d,1,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_vector_fields<d> getVectorFieldsList( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_vector_fields<d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFieldsList = getVectorFieldsList<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curFieldList : curFieldsList )
+                for ( auto const& curField : curFieldList.second )
+                    m_f[curFieldList.first].push_back( std::move(curField) );
         }
         return std::move(m_f);
     }
@@ -176,8 +247,20 @@ class BoundaryConditions
         {
             CHECK( f.hasExpression1() && f.hasExpression2() ) << "Invalid call";
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression1() ) );
-            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression2() ) );
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression1(), "", M_worldComm, M_directoryLibExpr ) );
+            m_f[std::get<0>(f)].push_back( expr<d,1,2>( f.expression2(), "", M_worldComm, M_directoryLibExpr ) );
+        }
+        return std::move(m_f);
+    }
+    template<int d> map_matrix_field<d,d> getMatrixFields( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+    {
+        using namespace Feel::vf;
+        map_matrix_field<d,d> m_f;
+        for ( auto const& it : listKeys )
+        {
+            auto curFields = getMatrixFields<d>( std::string(it.first), std::string(it.second) );
+            for ( auto const& curField : curFields )
+                m_f[curField.first] = std::move(curField.second);
         }
         return std::move(m_f);
     }
@@ -192,16 +275,22 @@ class BoundaryConditions
         for ( auto f : itFindType->second )
         {
             LOG(INFO) << "Building expr " << f.expression() << " for " << std::get<0>(f);
-            m_f[std::get<0>(f)] = expr<d,d,2>( f.expression() );
+            m_f[std::get<0>(f)] = expr<d,d,2>( f.expression(), "", M_worldComm, M_directoryLibExpr );
         }
         return std::move(m_f);
     }
   private:
     void setup();
-  private:
 
+    template <typename CastType>
+    std::pair<bool,CastType> param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const;
+
+  private:
+    WorldComm const& M_worldComm;
     std::string M_prefix;
     pt::ptree M_pt;
+    std::string M_directoryLibExpr;
+
 };
 
 using BoundaryConditionFactory = Singleton<BoundaryConditions>;

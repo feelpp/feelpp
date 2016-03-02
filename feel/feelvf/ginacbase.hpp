@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-03-31
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -88,6 +88,15 @@ public:
             return M_syms;
         }
 
+    bool hasSymbol( std::string const& symb ) const
+        {
+            for ( auto const& s : M_syms )
+                if ( s.get_name() == symb)
+                    return true;
+            return false;
+        }
+
+
     vec_type const& parameterValue() const { return M_params; }
     value_type parameterValue( int p ) const { return M_params[p]; }
 
@@ -149,12 +158,12 @@ public:
                 if ( it != M_syms.end() )
                 {
                     M_params[it-M_syms.begin()] = p.second;
-                    LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
-                    LOG(INFO) << "parameter: \n" << M_params;
+                    VLOG(2) << "setting parameter : " << p.first << " with value: " << p.second;
+                    VLOG(2) << "parameter: \n" << M_params;
                 }
                 else
                 {
-                    LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
+                    VLOG(1) << "Invalid parameters : " << p.first << " with value: " << p.second;
                 }
             }
         }

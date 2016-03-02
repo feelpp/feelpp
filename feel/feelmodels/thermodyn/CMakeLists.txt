@@ -9,6 +9,7 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER 1
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMODYNAMICS  ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS} ${LIBBASE_NAME}  )
   endforeach()
@@ -17,13 +18,14 @@ endforeach()
 # isoparametric
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
-  feelpp_max( MAX_ORDER 2 ${_T_ORDER})
+  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_T_ORDER})
   message(STATUS "[feelpp] THERMODYN ${_DIM}D PNGN N=2..${MAX_ORDER}")
   foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
     genLibThermoDynamics(
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMODYNAMICS  ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS} ${LIBBASE_NAME} )
   endforeach()

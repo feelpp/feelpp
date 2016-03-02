@@ -65,7 +65,8 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string prefix, WorldComm const& _worldComm = Environment::worldComm(), std::string const& appliShortRepository=soption(_name="exporter.directory") );
+    FSI( std::string const& prefix, WorldComm const& _worldComm = Environment::worldComm(),
+         std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     FSI( self_type const & M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );

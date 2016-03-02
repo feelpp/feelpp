@@ -5,7 +5,7 @@
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
        Date: 2014-10-09
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string 
  * @brief get a filename for ginac lib define by use a singleton counter
  */
 std::string
-ginacGetDefaultFileName( std::string const& exprDesc );
+ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = "" );
 
 
 } // namespace detail

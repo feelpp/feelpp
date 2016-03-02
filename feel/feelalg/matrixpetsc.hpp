@@ -384,7 +384,7 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix ( const T a, MatrixSparse<T> &X );
+    void addMatrix ( const T a, MatrixSparse<T> const&X );
 
     /**
      * Multiply this by a Sparse matrix \p In,
@@ -459,7 +459,7 @@ public:
     void
     updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols );
+                     std::vector<size_type> const& cols, bool doClose = true );
 
 
     /**
@@ -486,7 +486,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     /**
      * update a block matrix
@@ -503,7 +503,7 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
-    bool isSymmetric () const;
+    bool isSymmetric ( bool check = false ) const;
 
     bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
@@ -514,6 +514,9 @@ public:
      */
     void zeroEntriesDiagonal();
 
+    virtual void getMatInfo(std::vector<double> &);
+    virtual void threshold( void );
+
 private:
 
     // disable
@@ -521,7 +524,7 @@ private:
 
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
-                            Mat &submat ) const;
+                            Mat &submat, bool doClose = true ) const;
 protected:
 
     /**
@@ -542,6 +545,8 @@ private:
      */
     const bool M_destroy_mat_on_exit;
     std::vector<PetscInt> M_ia,M_ja;
+
+    MatInfo M_info;
 };
 
 
@@ -612,7 +617,7 @@ public :
                     int* cols, int ncols,
                     value_type* data );
 
-    void addMatrix( const T a, MatrixSparse<T> &X );
+    void addMatrix( const T a, MatrixSparse<T> const&X );
 
 
     void zero();
@@ -621,7 +626,8 @@ public :
     void zeroRows( std::vector<int> const& rows,
                    Vector<value_type> const& values,
                    Vector<value_type>& rhs,
-                   Context const& on_context );
+                   Context const& on_context,
+                   value_type value_on_diagonal );
 
     real_type energy( Vector<value_type> const& __v,
                       Vector<value_type> const& __u,

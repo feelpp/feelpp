@@ -77,7 +77,7 @@ private :
 class MarkerManagementNeumannBC
 {
 public :
-    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1 };
+    enum NeumannBCShape { SCALAR = 0, VECTORIAL = 1, TENSOR2 = 2 };
 
     MarkerManagementNeumannBC();
     MarkerManagementNeumannBC( MarkerManagementNeumannBC const& op ) = default;
@@ -94,6 +94,28 @@ public :
 
 private :
     std::map<NeumannBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
+    std::list<std::string> M_listMarkerEmpty;
+};
+
+class MarkerManagementNeumannEulerianFrameBC
+{
+public :
+    enum NeumannEulerianFrameBCShape { SCALAR = 0, VECTORIAL = 1, TENSOR2 = 2 };
+
+    MarkerManagementNeumannEulerianFrameBC();
+    MarkerManagementNeumannEulerianFrameBC( MarkerManagementNeumannEulerianFrameBC const& op ) = default;
+
+    void clearMarkerNeumannEulerianFrameBC();
+
+    void setMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId,std::list<std::string> const& markers );
+    void addMarkerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId);
+
+    std::map<std::string,std::list<std::string> > const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape ) const;
+    std::list<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string markerNameId ) const;
+
+    std::string getInfoNeumannEulerianFrameBC() const;
+private :
+    std::map<NeumannEulerianFrameBCShape,std::map<std::string,std::list<std::string> > > M_containerMarkers;
     std::list<std::string> M_listMarkerEmpty;
 };
 
@@ -183,6 +205,64 @@ private :
     std::list<std::string> M_containerMarkers;
     std::list<std::string> M_listMarkerEmpty;
 };
+
+
+namespace detail
+{
+
+template <typename MeshType>
+std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
+distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
+{
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    for ( std::string const& marker : listMarker )
+    {
+        if ( !mesh->hasMarker( marker ) ) continue;
+
+        if ( mesh->hasFaceMarker( marker ) )
+        {
+            std::get<0>( res ).push_back( marker );
+            //std::cout << "has face marker " << marker << "\n";
+        }
+        else if ( mesh->hasEdgeMarker( marker ) )
+        {
+            std::get<1>( res ).push_back( marker );
+            //std::cout << "has edge marker " << marker << "\n";
+        }
+        else if ( mesh->hasPointMarker( marker ) )
+        {
+            std::get<2>( res ).push_back( marker );
+            //std::cout << "has point marker " << marker << "\n";
+        }
+        else
+        {
+            //std::cout << "unknow marker " << marker << " with dim " << mesh->markerDim( marker ) << "\n";
+        }
+    }
+    return res;
+}
+
+template <typename MeshType>
+std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
+distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::initializer_list< std::list<std::string> > const& listOflistMarker )
+{
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    for ( auto const& listMarker : listOflistMarker )
+    {
+        auto localres = distributeMarkerListOnSubEntity( mesh,listMarker );
+        for ( std::string const& mark : std::get<0>( localres ) )
+            std::get<0>( res ).push_back( mark );
+        for ( std::string const& mark : std::get<1>( localres ) )
+            std::get<1>( res ).push_back( mark );
+        for ( std::string const& mark : std::get<2>( localres ) )
+            std::get<2>( res ).push_back( mark );
+    }
+    return res;
+}
+
+
+} // namespace detail
+
 
 } // namespace FeelModels
 } // namespace Feel

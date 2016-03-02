@@ -39,13 +39,13 @@ namespace FeelModels
 {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
-                                                    bool __buildMesh,
-                                                    WorldComm const& __worldComm,
-                                                    std::string __subPrefix,
-                                                    std::string __appliShortRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    std::string const& rootRepository )
     :
-    super_type( __prefix, __buildMesh,__worldComm, __subPrefix,__appliShortRepository)
+    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -63,13 +63,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string __prefix,
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     // build  mesh, space,exporter,...
-    if (__buildMesh) this->build();
+    if ( buildMesh ) this->build();
     //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         std::string const& rootRepository )
+{
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
+
+}
+
+namespace detailbc
+{
+std::list<std::string>
+generateMarkerBCList(BoundaryConditions const bc,std::string const& field,std::string const& bcname, std::string const& marker, std::string const& param="number" )
+{
+    std::list<std::string> markerList;
+
+    std::pair<bool,int> numberOfMarkerRead = bc.iparam( field/*"velocity"*/, bcname/*"Dirichlet"*/, marker/*(d)*/, param/*"number"*/ );
+    int numberOfMarker = ( numberOfMarkerRead.first )? numberOfMarkerRead.second : 1;
+    for (int k=0 ; k<numberOfMarker ; ++k )
+    {
+        std::string currentMarker = ( numberOfMarker == 1 )? marker : (boost::format("%1%%2%")%marker %k).str();
+        markerList.push_back( currentMarker );
+    }
+
+    return markerList;
+}
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
@@ -82,67 +110,178 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerPressureBC();
     this->M_fluidOutletsBCType.clear();
 
-    // change path
-    fs::path curPath=fs::current_path();
-    bool hasChangedRep=false;
-    if ( curPath != fs::path(this->ginacExprCompilationDirectory()) )
-    {
-        this->log("FluidMechanics","loadConfigBCFile", "change repository (temporary) for build ginac expr with default name : "+ this->appliRepository() );
-        bool hasChangedRep=true;
-        Environment::changeRepository( _directory=boost::format(this->ginacExprCompilationDirectory()), _subdir=false );
-    }
-
     // boundary conditions
     this->M_isMoveDomain = false;
-    std::string dirichletbcType = soption(_name="dirichletbc.type",_prefix=this->prefix());
-    CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
     M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Dirichlet" );
     for( auto const& d : M_bcDirichlet )
     {
-        this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "type" );
+        std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
+        CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
+
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Dirichlet", marker(d) );
+        this->setMarkerDirichletBCByNameId( dirichletbcType, marker(d), markerList,ComponentType::NO_COMPONENT );
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
-    M_bcMovingBoundary = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "interface_fsi"/*"moving_boundary"*/ );
-    for( auto const& d : M_bcMovingBoundary )
+    for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
-        //this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT ); // ??
-        this->addMarkerALEMeshBC("moving",marker(d));
+        std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
+        std::string bcDirichletCompField = (boost::format("velocity_%1%")%compTag).str();
+        std::string bcDirichletCompKeyword = "Dirichlet";
+        M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( { { bcDirichletCompField, bcDirichletCompKeyword } } );
+        for( auto const& d : M_bcDirichletComponents.find(comp)->second )
+        {
+            std::pair<bool,std::string> dirichletbcTypeRead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, marker(d), "type" );
+            std::string dirichletbcType = ( dirichletbcTypeRead.first )? dirichletbcTypeRead.second : soption(_name="dirichletbc.type",_prefix=this->prefix());
+            CHECK( dirichletbcType=="elimination" || dirichletbcType=="nitsche" || dirichletbcType=="lm" ) << "invalid dirichletbc.type " << dirichletbcType;
+
+            std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), bcDirichletCompField, bcDirichletCompKeyword, marker(d) );
+            this->setMarkerDirichletBCByNameId( dirichletbcType, marker(d), markerList, comp );
+
+            std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, marker(d), "alemesh_bc" );
+            std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+            for (std::string const& currentMarker : markerList )
+                this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        }
+    }
+
+    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers( { { "velocity", "interface_fsi" }, { "velocity","moving_boundary"} } ) )
+    {
+        this->addMarkerALEMeshBC("moving",bcMarker);
         this->M_isMoveDomain=true;
     }
+
     M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "Neumann_scalar" );
     for( auto const& d : M_bcNeumannScalar )
     {
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_scalar", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_scalar", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
     }
+    M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "velocity", "Neumann_vectorial" );
+    for( auto const& d : M_bcNeumannVectorial )
+    {
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_vectorial", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_vectorial", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+    }
+    M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "velocity", "Neumann_tensor2" );
+    for( auto const& d : M_bcNeumannTensor2 )
+    {
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "velocity", "Neumann_tensor2", marker(d) );
+        this->setMarkerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d),markerList);
+
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Neumann_tensor2", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        for (std::string const& currentMarker : markerList )
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+    }
+
     M_bcPressure = this->modelProperties().boundaryConditions().getScalarFields( "pressure", "weak" );
     for( auto const& d : M_bcPressure )
     {
         this->addMarkerPressureBC(marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "pressure", "weak", marker(d), "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,marker(d));
     }
-    M_bcSlip = this->modelProperties().boundaryConditions().getScalarFields( "velocity", "slip" );
-    for( auto const& d : M_bcSlip )
+    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "slip") )
     {
-        this->addMarkerSlipBC(marker(d));
-        this->addMarkerALEMeshBC("fixed",marker(d));
+        this->addMarkerSlipBC( bcMarker );
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "slip", bcMarker, "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+        this->addMarkerALEMeshBC(bcTypeMeshALE,bcMarker);
     }
+    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "outlet") )
+    {
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
 
-    this->M_hasFluidOutlet=false;
-    this->M_fluidOutletType = soption(_name="fluid-outlet.type", _prefix=this->prefix());
-    CHECK( this->M_fluidOutletType == "free" || this->M_fluidOutletType == "windkessel" ) << "invalid fluid-outlet.type " << this->M_fluidOutletType;
-    M_bcFluidOutlets = this->modelProperties().boundaryConditions().getScalarFields( "fluid", "outlet" );
-    for( auto const& d : M_bcFluidOutlets )
+        std::string typeOutlet = soption(_name="fluid-outlet.type", _prefix=this->prefix());//"free";
+        std::pair<bool,std::string> typeOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "type" );
+        if ( typeOutletRead.first )
+        {
+            typeOutlet = typeOutletRead.second;
+            CHECK( typeOutlet == "free" || typeOutlet == "windkessel" ) << "invalid outlet type " << typeOutlet;
+        }
+        std::string typeCouplingWindkesselOutlet = soption(_name="fluid-outlet.windkessel.coupling", _prefix=this->prefix());
+        std::pair<bool,std::string> typeCouplingWindkesselOutletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "outlet", bcMarker, "windkessel_coupling" );
+        if ( typeCouplingWindkesselOutletRead.first )
+        {
+            typeCouplingWindkesselOutlet = typeCouplingWindkesselOutletRead.second;
+            CHECK( typeCouplingWindkesselOutlet == "implicit" || typeCouplingWindkesselOutlet == "explicit" ) << "invalid windkessel coupling type " << typeCouplingWindkesselOutlet;
+        }
+        std::pair<bool,double> WindkesselRdRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", bcMarker, "windkessel_Rd" );
+        std::pair<bool,double> WindkesselRpRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", bcMarker, "windkessel_Rp" );
+        std::pair<bool,double> WindkesselCdRead = this->modelProperties().boundaryConditions().dparam( "fluid", "outlet", bcMarker, "windkessel_Cd" );
+        double WindkesselRd = ( WindkesselRdRead.first )? WindkesselRdRead.second : 1.;
+        double WindkesselRp = ( WindkesselRpRead.first )? WindkesselRpRead.second : 1.;
+        double WindkesselCd = ( WindkesselCdRead.first )? WindkesselCdRead.second : 1.;
+
+        std::tuple<std::string,double,double,double> windkesselParam = std::make_tuple(typeCouplingWindkesselOutlet,WindkesselRd,WindkesselRp,WindkesselCd);
+
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "outlet", bcMarker );
+        for (std::string const& currentMarker : markerList )
+        {
+            this->M_fluidOutletsBCType.push_back(std::make_tuple(currentMarker,typeOutlet, windkesselParam ));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        }
+    }
+    for( std::string const& bcMarker : this->modelProperties().boundaryConditions().markers("fluid", "inlet") )
     {
-        this->M_fluidOutletsBCType[this->M_fluidOutletType].push_back(marker(d));
-        this->M_hasFluidOutlet=true;
+        std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", bcMarker, "alemesh_bc" );
+        std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
+
+        std::string shapeInlet;
+        std::pair<bool,std::string> shapeInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", bcMarker, "shape" );
+        if ( shapeInletRead.first )
+        {
+            shapeInlet = shapeInletRead.second;
+            CHECK( shapeInlet == "constant" || shapeInlet == "parabolic" ) << "invalid inlet shape " << shapeInlet;
+        }
+        else
+            CHECK( false ) << "inlet shape not given";
+
+        std::string constraintInlet;
+        std::pair<bool,std::string> constraintInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", bcMarker, "constraint" );
+        if ( constraintInletRead.first )
+        {
+            constraintInlet = constraintInletRead.second;
+            CHECK( constraintInlet == "velocity_max" || constraintInlet == "flow_rate" ) << "invalid inlet constraint " << constraintInlet;
+        }
+        else
+            CHECK( false ) << "inlet constraint not given";
+
+        std::string fullTypeInlet = (boost::format("%1%_%2%")%constraintInlet %shapeInlet).str();
+
+        std::string exprFluidInlet;
+        std::pair<bool,std::string> exprFluidInletRead = this->modelProperties().boundaryConditions().sparam( "fluid", "inlet", bcMarker, "expr" );
+        if ( exprFluidInletRead.first )
+            exprFluidInlet = exprFluidInletRead.second;
+        else
+            CHECK( false ) << "inlet expr not given";
+
+        std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", bcMarker );
+        for (std::string const& currentMarker : markerList )
+        {
+            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->directoryLibSymbExpr() )) );
+            this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
+        }
     }
 
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "fluid", "VolumicForces" );
-
-    // go back to previous repository
-    if ( hasChangedRep )
-        Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
 
 }
 
@@ -153,13 +292,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
-            if ( o == "velocity" || o == "all" ) this->M_doExportVelocity = true;
-            if ( o == "pressure" || o == "all" ) this->M_doExportPressure = true;
-            if ( o == "displacement" || o == "all" ) this->M_doExportMeshDisplacement = true;
-            if ( o == "vorticity" || o == "all" ) this->M_doExportVorticity = true;
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_doExportNormalStress = true;
-            if ( o == "wall-shear-stress" || o == "all" ) this->M_doExportWallShearStress = true;
-            if ( o == "viscosity" || o == "all" ) this->M_doExportViscosity = true;
+            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+            if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+            if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+            if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+
+            if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
         }
 }
 
@@ -190,15 +332,55 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             if ( itFindDirichletType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindDirichletType->second )
-                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc );
+                {
+                    auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",myBcDesc.marker() ) );
+                    auto const& listMarkerFaces = std::get<0>( ret );
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( listMarkerFaces );
+                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc2 );
+                }
             }
+            // For weak Dirichlet (Nitche,Magrange Multiplier ) ???
+            // TODO Dirchlet component
+
             auto itFindNeumannScalType = itFindFieldVelocity->second.find("Neumann_scalar");
             if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
             {
                 for ( auto const& myBcDesc : itFindNeumannScalType->second )
-                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::SCALAR,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
+            }
+            auto itFindNeumannVecType = itFindFieldVelocity->second.find("Neumann_vectorial");
+            if ( itFindNeumannVecType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannVecType->second )
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::VECTORIAL,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
+            }
+            auto itFindNeumannTensor2Type = itFindFieldVelocity->second.find("Neumann_tensor2");
+            if ( itFindNeumannTensor2Type != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannTensor2Type->second )
+                {
+                    auto markList = this->markerNeumannBC( super_type::NeumannBCShape::TENSOR2,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
             }
         }
+#if 0
         auto itFindFieldFluid = this->modelProperties().boundaryConditions().find("fluid");
         if ( itFindFieldFluid != this->modelProperties().boundaryConditions().end() )
         {
@@ -209,6 +391,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                     bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
             }
         }
+#else
+        if ( !this->M_fluidOutletsBCType.empty() )
+        {
+            std::list<std::string> markList;
+            for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
+                markList.push_back( std::get<0>(bcOutlet) );
+            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "wind","0","" ) );
+            myBcDesc2.setMeshMarkers( markList );
+            bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+        }
+#endif
+
         // TODO other bc (fsi,...)
 #if 1
         if ( Environment::isMasterRank() )
@@ -221,24 +415,35 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                     std::cout << " - type " << t.first << "\n";
                     for( auto const& c : t.second )
                     {
+                        std::ostringstream ostrMarkers;
+                        ostrMarkers << "(";
+                        for ( std::string const& mark : c.meshMarkers() )
+                            ostrMarkers << mark << " ";
+                        ostrMarkers << ")";
                         if ( c.hasExpression2() )
-                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
                         else
-                            std::cout << "  . boundary  " << c.marker() << " expr : " << c.expression() << "\n";
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression() << "\n";
                     }
                 }
             }
         }
 #endif
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-        double myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        auto a_blockns = Feel::blockns( _space=this->functionSpace(),
+        // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
+                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
                                         _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
                                         _bc=bcPrecPCD,
                                         _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
                                         _prefix="velocity",
-                                        _mu=this->densityViscosityModel()->cstMu(),
-                                        _rho=this->densityViscosityModel()->cstRho(),
+                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
+                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
                                         _alpha=myalpha );
         this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
     }
@@ -253,19 +458,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
     {
         this->log("FluidMechanics","updateInHousePreconditionerPCD", "start");
 
-        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
 
-        if ( this->isStationary() )
-            myPrecBlockNs->setAlpha( 0. );
-        else
-            myPrecBlockNs->setAlpha( this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0) );
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        if ( this->pdeType() == "Stokes" )
+        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+        myPrecBlockNs->setAlpha( myalpha );
+        myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
+        myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
+
+        if ( this->modelName() == "Stokes" )
         {
             myPrecBlockNs->update( mat );
         }
-        else if ( this->pdeType() == "Oseen" )
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
         {
             auto BetaU = this->timeStepBDF()->poly();
             auto betaU = BetaU.template element<0>();
@@ -282,7 +490,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
             }
         }
-        else if ( this->pdeType() == "Navier-Stokes" )
+        else if ( this->modelName() == "Navier-Stokes" )
         {
             auto U = this->functionSpace()->element();
             // copy vector values in fluid element
@@ -312,15 +520,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
-    M_bcDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_bcNeumannScalar.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-    M_volumicForcesProperties.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : M_bcDirichletComponents )
+        bcDirComp.second.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
+    this->updateFluidInletVelocity();
 
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
-        boost::shared_ptr< PreconditionerBlockNS<typename super_type::space_fluid_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<typename super_type::space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
-        myPrecBlockNs->setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        typedef typename super_type::space_fluid_type space_type;
+        typedef typename super_type::space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        myPrecBlockNs->setParameterValues( paramValues );
     }
 
     super_type::solve();
@@ -343,16 +562,93 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
 
-    if (Xh->worldsComm()[0].isActive()) // only on Velocity Proc
+    if (!Xh->worldsComm()[0].isActive()) // only on Velocity Proc
+        return;
+
+    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+    for( auto const& d : M_bcDirichlet )
     {
-        // modif vector with BC
-        for( auto const& d : M_bcDirichlet )
+        mapMarkerBCToEntitiesMeshMarker[marker(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,{
+                    /**/this->markerDirichletBCByNameId( "elimination",marker(d) ),
+                        this->markerDirichletBCByNameId( "lm",marker(d) ) } );
+    }
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
         {
-            modifVec(markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ), u, U, expression(d), rowStartInVector );
-            modifVec(markedfaces(mesh, this->markerDirichletBCByNameId( "lm",marker(d) ) ), u, U, expression(d), rowStartInVector );
+            mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
+                detail::distributeMarkerListOnSubEntity(mesh, {
+                        /**/this->markerDirichletBCByNameId( "elimination",marker(d), comp ),
+                            this->markerDirichletBCByNameId( "lm", marker(d), comp )  } );
         }
     }
-    //U->close();
+
+    // modif vector with bc define on topological faces
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerFaces = std::get<0>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerFaces.empty() )
+            modifVec(markedfaces(mesh,listMarkerFaces ),
+                     u, U, expression(d), rowStartInVector );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerFaces = std::get<0>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces ),
+                         this->M_Solution->template element<0>()[comp], //u[comp]
+                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+        }
+    }
+
+    // modif vector with bc define on edges (only 3d)
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerEdges = std::get<1>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerEdges.empty() )
+            modifVec(markededges(mesh,listMarkerEdges ),
+                     u, U, expression(d), rowStartInVector );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerEdges = std::get<1>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markedfaces(mesh,listMarkerEdges ),
+                         this->M_Solution->template element<0>()[comp], //u[comp]
+                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+        }
+    }
+
+    // modif vector with bc define on points
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerPoints.empty() )
+            modifVec(markedfaces(mesh,listMarkerPoints ),
+                     u, U, expression(d), rowStartInVector );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedfaces(mesh,listMarkerPoints ),
+                         this->M_Solution->template element<0>()[comp], //u[comp]
+                         U, expression(d), rowStartInVector, element_velocity_type::nComponents );
+        }
+    }
 
     double t1=timerBCnewton.elapsed();
     this->log("FluidMechanics","updateInitialNewtonSolutionBCDirichlet","finish in "+(boost::format("%1% s") % t1).str() );
@@ -366,21 +662,111 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
 {
     using namespace Feel::vf;
 
+    if ( !this->hasDirichletBC() ) return;
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE", "start",
                                                this->worldComm(),this->verboseAllProc());
     boost::mpi::timer timerBClinear;
 
     auto Xh = this->functionSpace();
+    auto mesh = this->mesh();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    // special hack : use bilinearform only on velocity
+    // use operotor on(..) doesnt work on composite space (velocity+pressure) ( see bilinearform.hpp l731 no support component)
+    auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=A,
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldVelocity();
 
+    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : M_bcDirichlet )
-        form2( _test=Xh, _trial=Xh, _matrix=A,
-               _rowstart=this->rowStartInMatrix(),
-               _colstart=this->colStartInMatrix() ) +=
-            on( _range=markedfaces(this->mesh(), this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                _element=u,
-                _rhs=F,
-                _expr=expression(d) );
+    {
+        mapMarkerBCToEntitiesMeshMarker[marker(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+    }
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
+                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+        }
+    }
+
+    // apply on() with bc define on topological faces
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerFaces = std::get<0>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerFaces.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerFaces ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerFaces = std::get<0>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerFaces.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces( mesh, listMarkerFaces ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+        }
+    }
+
+    // apply on() with bc define on edges (only 3d)
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerEdges = std::get<1>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerEdges ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerEdges = std::get<1>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerEdges.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces( this->mesh(), listMarkerEdges ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+        }
+    }
+
+    // apply on() with bc define on points
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerPoints ),
+                    _element=u,
+                    _rhs=F, _expr=expression(d) );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            if ( !listMarkerPoints.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces( mesh, listMarkerPoints ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+        }
+    }
+
 
     double t1=timerBClinear.elapsed();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE",
@@ -394,6 +780,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const
 {
+    if ( !this->hasDirichletBC() ) return;
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletJacobian", "start",
                                                this->worldComm(),this->verboseAllProc());
     using namespace Feel::vf;
@@ -402,19 +789,62 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matri
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldVelocity();
     //auto RBis = this->backend()->newVector( J->mapRowPtr() );
 
     for( auto const& d : M_bcDirichlet )
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                _element=u,
-                _rhs=RBis,
-                _expr= 0*one()/*Expression-idv(u)*/ );
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
+        auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
+        if ( !listMarkerFaces.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerFaces ),
+                    _element=u, _rhs=RBis, _expr=exprUsed );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm +=
+                on( _range=markededges(mesh, listMarkerEdges),
+                    _element=u,_rhs=RBis,_expr=exprUsed );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm +=
+                on( _range=markedpoints(mesh, listMarkerPoints),
+                    _element=u,_rhs=RBis,_expr=exprUsed );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=J,
+                                           _rowstart=this->rowStartInMatrix(),
+                                           _colstart=this->colStartInMatrix() );
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            auto exprUsed = cst(0.);
+            if ( !listMarkerFaces.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=RBis,_expr=exprUsed );
+            if ( !listMarkerEdges.empty() )
+                bilinearFormComp +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=RBis,_expr=exprUsed );
+            if ( !listMarkerPoints.empty() )
+                bilinearFormComp +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=RBis,_expr=exprUsed );
+        }
+    }
 
     std::ostringstream ostr3;ostr3<<btimeStrongCL.elapsed()<<"s";
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletJacobian", "finish in "+ostr3.str(),
@@ -427,6 +857,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrtype& R) const
 {
+    if ( !this->hasDirichletBC() ) return;
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletResidual", "start",
                                                this->worldComm(),this->verboseAllProc());
     boost::mpi::timer timerBCresidu;
@@ -437,12 +868,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
     auto const& u = this->fieldVelocity();
 
     //R->close();
-    if (Xh->worldsComm()[0].isActive()) // only on Velocity Proc
+    if (!Xh->worldsComm()[0].isActive()) // only on Velocity Proc
+        return;
+
+
+    // Zero because is know
+    for( auto const& d : M_bcDirichlet )
     {
-        // Zero because is know
-        for( auto const& d : M_bcDirichlet )
-            modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) )),
-                     u, R, 0.*vf::one(),rowStartInVector );
+        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
+        auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
+        if ( !listMarkerFaces.empty() )
+            modifVec(markedfaces(mesh,listMarkerFaces ),
+                     u, R, exprUsed, rowStartInVector );
+        if ( !listMarkerEdges.empty() )
+            modifVec(markededges(mesh,listMarkerEdges),
+                     u, R, exprUsed, rowStartInVector );
+        if ( !listMarkerPoints.empty() )
+            modifVec(markedpoints(mesh,listMarkerPoints),
+                     u, R, exprUsed, rowStartInVector );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            auto exprUsed = vf::zero<1,1>();// cst(0.);
+            if ( !listMarkerFaces.empty() )
+                modifVec(markedfaces(mesh,listMarkerFaces ),
+                         this->M_Solution->template element<0>()[comp], //u[comp]
+                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+            if ( !listMarkerEdges.empty() )
+                modifVec(markededges(mesh,listMarkerEdges),
+                         this->M_Solution->template element<0>()[comp], //u[comp],
+                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+            if ( !listMarkerPoints.empty() )
+                modifVec(markedpoints(mesh,listMarkerPoints),
+                         this->M_Solution->template element<0>()[comp], //u[comp],
+                         R, exprUsed, rowStartInVector, element_velocity_type::nComponents );
+        }
     }
 
     double t1=timerBCresidu.elapsed();
@@ -522,7 +992,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
-    if ( M_bcNeumannScalar.empty() ) return;
+    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
                                _rowstart=this->rowStartInVector() );
@@ -532,13 +1002,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= expression(d)*inner( N(),id(v) ),
                        _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= inner( expression(d)*N(),id(v) ),
+                       _geomap=this->geomap() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R ) const
 {
-    if ( M_bcNeumannScalar.empty() ) return;
+    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpace(), _vector=R,
                                _rowstart=this->rowStartInVector() );
@@ -547,6 +1027,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype& R )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= -expression(d)*inner( N(),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= -inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= -inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 

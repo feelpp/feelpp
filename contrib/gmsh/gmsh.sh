@@ -4,6 +4,7 @@ wget -c http://geuz.org/gmsh/src/gmsh-svn-source.tgz
 tar xzf gmsh-svn-source.tgz
 
 cd `tar -tvf gmsh-svn-source.tgz | head -n 1 | sed "s/\// /g" | awk '{print $7}'`
+patch -p1 < ../*patch
 mkdir build
 cd build
 

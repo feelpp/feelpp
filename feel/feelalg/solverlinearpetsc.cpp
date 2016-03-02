@@ -125,7 +125,7 @@ extern "C"
         if ( reusePrec )
             preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_PRECONDITIONER );
 #endif
-        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec\n";
+        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec " << preconditioner->name() << "\n";
         return 0;
     }
 
@@ -406,6 +406,10 @@ void SolverLinearPetsc<T>::init ()
             KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
 
+        // The value can be checked with --(prefix.)ksp-view=1
+        this->check( KSPSetNormType(M_ksp,
+                   kspNormTypeConvertStrToEnum(Environment::vm(_name="ksp-norm-type",_prefix=this->prefix()).template as<std::string>())) );
+
     }
 }
 
@@ -446,10 +450,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     PetscReal final_resid=0.;
 
     // Close the matrices and vectors in case this wasn't already done.
-    matrix->close ();
-    precond->close ();
+    if ( false ) // close already done in backend::solve()
+    {
+        matrix->close ();
+        precond->close ();
+        rhs->close ();
+    }
     solution->close ();
-    rhs->close ();
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
@@ -468,6 +475,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     //       this->set_petsc_preconditioner_type ();
     //     }
 
+    
     // 2.1.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 

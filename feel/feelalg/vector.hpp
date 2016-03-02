@@ -21,6 +21,7 @@
 #define __numeric_vector_h__
 
 #include <vector>
+#include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
@@ -615,6 +616,7 @@ protected:
 
 typedef Vector<double> vector_type;
 typedef boost::shared_ptr<vector_type> vector_ptrtype;
+typedef std::unique_ptr<vector_type> vector_uptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
 
@@ -706,7 +708,41 @@ struct is_vector_ptr<boost::shared_ptr<VectorType> >
         VectorType>
 {};
 
-}
+template <typename T>
+struct syncOperator
+{
+    typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
+    syncOperator() {}
+    syncOperator( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        M_activeDofClusterUsedByProc( m )
+        {}
+    syncOperator( syncOperator const& obj ) = default;
+
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const = 0;
+    virtual bool hasOperator() const = 0;
+    std::map<size_type, std::set<rank_type> > const& activeDofClusterUsedByProc() const { return M_activeDofClusterUsedByProc; }
+    void setActiveDofClusterUsedByProc( std::map<size_type, std::set<rank_type> > const& m ) { M_activeDofClusterUsedByProc = m; }
+private :
+    std::map<size_type, std::set<rank_type> > M_activeDofClusterUsedByProc;
+
+};
+
+} // namespace detail
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr = "=" );
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+
+template <typename T>
+void
+sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
+
+
 
 } // Feel
 

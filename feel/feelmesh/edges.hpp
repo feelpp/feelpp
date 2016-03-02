@@ -186,6 +186,15 @@ public:
         return M_edges.find( edge_type( id ) )->isOnBoundary();
     }
 
+    /**
+     * \return \c true if element with id \p i is found, \c false otherwise
+     */
+    bool hasEdge( size_type i ) const
+    {
+        return M_edges.template get<0>().find( edge_type( i ) ) !=
+               M_edges.template get<0>().end();
+    }
+
     edge_type const& edge( size_type i ) const
     {
         return *M_edges.find( edge_type( i ) );

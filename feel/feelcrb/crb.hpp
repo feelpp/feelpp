@@ -275,7 +275,7 @@ public:
         :
         super(),
         M_elements_database(),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2 ),
@@ -307,7 +307,7 @@ public:
                             name,
                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                             vm ),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
         M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
@@ -348,7 +348,7 @@ public:
                             ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                             vm ,
                             model ),
-        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_nlsolver( SolverNonLinear<double>::build( "petsc", "", Environment::worldComm() ) ),
         M_model(),
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),
@@ -366,7 +366,7 @@ public:
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
+        exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
         M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
     {
         this->setTruthModel( model );

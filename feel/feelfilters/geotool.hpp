@@ -198,16 +198,19 @@ public :
     {}
 
     Node( double __x ) :
-        M_node( new node_type( 1 ) )
+        M_node( new node_type( 3 ) )
     {
         ( *M_node )( 0 )=__x;
+        ( *M_node )( 1 ) = 0;
+        ( *M_node )( 2 ) = 0;
     }
 
     Node( double __x, double __y ) :
-        M_node( new node_type( 2 ) )
+        M_node( new node_type( 3 ) )
     {
         ( *M_node )( 0 )=__x;
         ( *M_node )( 1 )=__y;
+        ( *M_node )( 2 ) = 0;
     }
 
     Node( double __x, double __y, double __z ) :
@@ -236,6 +239,7 @@ public :
 
     double & operator()( uint16_type n )
     {
+        CHECK( n < 3 ) << "node dim max is 3 : " << n;
         return ( *M_node )( n );
     }
 
@@ -251,7 +255,7 @@ public :
         return *M_node;
     }
 
-    boost::shared_ptr<node_type> M_node;
+    std::shared_ptr<node_type> M_node;
 };
 
 /*_________________________________________________*/
@@ -1220,6 +1224,7 @@ public :
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
           ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
+          ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
         ) //optional
     )
     {
@@ -1268,8 +1273,17 @@ public :
 
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             _mesh->accept( import );
-            _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-            _mesh->updateForUse();
+
+            if ( update )
+            {
+                _mesh->components().reset();
+                _mesh->components().set( update );
+                _mesh->updateForUse();
+            }
+            else
+            {
+                _mesh->components().reset();
+            }
 
             if ( straighten && _mesh_type::nOrder > 1 )
                 return straightenMesh( _mesh, worldcomm.subWorldComm(), false, false );
@@ -1522,6 +1536,8 @@ node_type
 param( data_geo_ptrtype __dg );
 
 
+void
+writePoint( uint16_type __numLoc, data_geo_ptrtype __dg , node_type const& _node );
 void
 writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
 

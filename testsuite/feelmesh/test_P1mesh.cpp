@@ -100,8 +100,7 @@ test2dP1mesh()
              _expr=cst(0.) );
     mybackend->solve(_matrix=A,_solution=u,_rhs=F);
 
-    auto myexporter = Exporter<mesh_P1_type>::New( Environment::vm(), "test2dP1mesh_MyExport" );
-    myexporter->step(0)->setMesh( meshP1 );
+    auto myexporter = exporter( _mesh=meshP1, _name="test2dP1mesh_MyExport" );
     myexporter->step(0)->add( "test2dP1mesh_uP1", u );
     myexporter->save();
 }

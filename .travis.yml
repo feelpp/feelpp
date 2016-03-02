@@ -5,6 +5,10 @@ git:
   submodules: false
 language: cpp
 compiler: clang
+env:
+  global:
+    FEELPP_STD_CPP=14
+
 addons:
   apt:
     packages:
@@ -20,13 +24,14 @@ addons:
       - flex
       - doxygen
       - imagemagick
+      - g++-4.9
     - clang-3.5
     sources:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.5
 matrix:
   include:
-  - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.5
+  - env: BUILD="llvm-3.5-debug" COMPILER_VERSION="clang-3.5" FEELPP_CXX=clang++-3.5
       FEELPP_CC=clang-3.5 BUILDTYPE=Debug TARGET=quickstart
     addons:
       apt:
@@ -36,7 +41,7 @@ matrix:
         packages:
         - *1
         - clang-3.5
-  - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=11 FEELPP_CXX=clang++-3.6
+  - env: BUILD="llvm-3.6" COMPILER_VERSION="clang-3.6" FEELPP_CXX=clang++-3.6
       FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
     addons:
       apt:
@@ -46,18 +51,17 @@ matrix:
         packages:
         - *1
         - clang-3.6
-  - env: BUILD="llvm-3.6-stdc++14" COMPILER_VERSION="clang-3.6" FEELPP_STD_CPP=14
-      FEELPP_CXX=clang++-3.6 FEELPP_CC=clang-3.6 BUILDTYPE=Release TARGET=quickstart
-      CXXFLAGS="-O2 -DNDEBUG"
+  - env: BUILD="llvm-3.7" COMPILER_VERSION="clang-3.7" FEELPP_CXX=clang++-3.7
+      FEELPP_CC=clang-3.7 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
     addons:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.6
+        - llvm-toolchain-precise-3.7
         packages:
         - *1
-        - clang-3.6
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5
+        - clang-3.7
+  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
     addons:
       apt:
@@ -66,17 +70,27 @@ matrix:
         packages:
         - *1
         - g++-5
+  - env: BUILD="gcc-6" COMPILER_VERSION="g++-6" FEELPP_CXX=g++-6
+      FEELPP_CC=gcc-6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - *1
+        - g++-6
   allow_failures:
   - os: osx
-  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_STD_CPP=11 FEELPP_CXX=g++-5
+  - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
+  - env: BUILD="gcc-6" COMPILER_VERSION="g++-6" FEELPP_CXX=g++-6
+      FEELPP_CC=gcc-6 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then apt-cache search clang; fi
 - if test "x$TRAVIS_OS_NAME" = "xlinux"; then if test "x$FEELPP_CC" != "x"; then export
-  CC=$FEELPP_CC; export CXX=$FEELPP_CXX; else export CC=clang-3.5; export CXX=clang++-3.5;
-  export FEELPP_STD_CPP=11; fi; fi
+  CC=$FEELPP_CC; export CXX=$FEELPP_CXX; else export CC=clang-3.5; export CXX=clang++-3.5; fi; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew update; fi
 - if test "x$TRAVIS_OS_NAME" = "xosx"; then brew outdated xctool || brew upgrade xctool;
   fi
@@ -87,9 +101,9 @@ before_install:
 - export NPROCS=3
 - bash ports/travis/boost.sh; export BOOSTROOT=$HOME/software/install/boost; echo
   $BOOSTROOT
-- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh-2.9.3; echo
+- bash ports/travis/gmsh.sh; export GMSH_DIR=$HOME/software/install/gmsh; echo
   $GMSH_DIR
-- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc-3.6.0;
+- bash ports/travis/petsc.sh; export PETSC_DIR=$HOME/software/install/petsc;
   echo $PETSC_DIR
 - bash ports/travis/cln.sh; export CLN_DIR=$HOME/software/install/cln; echo $CLN_DIR
 install:
@@ -101,8 +115,8 @@ script:
 - make -j16 feelpp_nlopt
 - make -j16 feelpp_ginac
 - make -j1 feelpp
-- make -j1 feelpp_model_algebra
-- make install-feelpp
+- make -j1 feelpp-models-algebra
+- make install-feelpp-lib
 - ls $HOME/software/install/feelpp/include/feel
 
 branches:
@@ -134,6 +148,7 @@ deploy:
   skip_cleanup: true
   acl: public_read
   on:
+    all_branches: true
     repo: feelpp/feelpp
   secret_access_key:
     secure: k/25KvWW4jC/04SL4oLROtUfUVmeBT3yxtX0S7jPT0Gtw+gnqvAx9CaNjJ2U6IQ04vsu/P7ngQmKOu18Ns/1fAPpW4sgswPAiHz/lEeoej/yshA1ikBuBxxbCtgMPQfzva2jo2dnXvwDMEfWkucBy4wIipaYkeAUTfk/V3RNyHg=

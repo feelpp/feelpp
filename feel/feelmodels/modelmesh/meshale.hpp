@@ -119,11 +119,11 @@ public :
 
     MeshALE(mesh_ptrtype mesh_moving,
             //po::variables_map const& vm=Environment::vm(),
-            std::string prefix="",
+            std::string const& prefix="",
             //std::string exportName="ExportMeshALE",
             WorldComm const& worldcomm=Environment::worldComm(),
             bool moveGhostEltFromExtendedStencil=false,
-            std::string appliShortRepository=soption(_name="exporter.directory") );
+            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
     void init();
 
@@ -229,12 +229,12 @@ public :
     /**
      * \Revert mesh_ho in reference state
      */
-    void revertReferenceMesh();
+    void revertReferenceMesh( bool updateMeshMeasures = true );
 
     /**
      * \Revert mesh_ho in reference state
      */
-    void revertMovingMesh();
+    void revertMovingMesh( bool updateMeshMeasures = true );
 
     /**
      * \Revert mesh_ho in moving state
@@ -368,8 +368,6 @@ BOOST_PARAMETER_FUNCTION(
       ) // optionnal
                          )
 {
-    Feel::detail::ignore_unused_variable_warning( args );
-
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
     return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,extended_doftable,directory) );

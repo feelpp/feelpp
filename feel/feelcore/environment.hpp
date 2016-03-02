@@ -97,7 +97,7 @@ struct MemoryUsage
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
 #endif
-    
+
 };
 /**
  * default \c makeAbout function to define the \c AboutData structure of the Feel++
@@ -182,8 +182,8 @@ public:
                  po::options_description const& desc,
                  po::options_description const& desc_lib,
                  AboutData const& about,
-                 std::string directory );
-    
+                 std::string directory,
+                 bool add_subdir_np = true );
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
@@ -194,15 +194,16 @@ public:
         :
         Environment( args[_argc],
                      args[_argv],
-#if BOOST_VERSION >= 105500                     
+#if BOOST_VERSION >= 105500
                      args[_threading|mpi::threading::single],
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
                      args[_about| makeAboutDefault( args[_argv][0] )],
-                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()] )
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
+                     args[_subdir| true ] )
         {}
-#if BOOST_VERSION >= 105500                     
+#if BOOST_VERSION >= 105500
     BOOST_PARAMETER_CONSTRUCTOR(
         Environment, ( Environment ), tag,
         ( required
@@ -214,6 +215,7 @@ public:
           ( about,* )
           ( threading,(mpi::threading::level) )
           ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #else
     BOOST_PARAMETER_CONSTRUCTOR(
@@ -226,9 +228,10 @@ public:
           ( desc_lib,* )
           ( about,* )
           ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #endif
-    
+
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -267,12 +270,20 @@ public:
     static bool finalized();
 
     /**
+     * @return the shared_ptr WorldComm
+     */
+    static boost::shared_ptr<WorldComm> worldCommPtr()
+        {
+            return S_worldcomm;
+        }
+
+    /**
      * return the worldcomm (static)
      */
     static WorldComm& worldComm()
-    {
-        return *S_worldcomm;
-    }
+        {
+            return *S_worldcomm;
+        }
     static WorldComm& worldCommSeq()
     {
         return *S_worldcommSeq;
@@ -308,6 +319,31 @@ public:
     }
 
     /**
+     * return master rank in mpi communicator
+     */
+    static rank_type masterRank()
+    {
+        return S_worldcomm->masterRank();
+    }
+
+    /**
+     * @return true if number of process is 1, hence the environment is
+     * sequential
+     */
+    static bool isSequential()
+    {
+        return numberOfProcessors() == 1;
+    }
+
+    /**
+     * @return true if the environment is not sequential, that is if the number
+     * of process is greater than 1
+     */
+    static bool isParallel()
+    {
+        return !isSequential();
+    }
+    /**
      * rank 0 process is considered the master process
      *
      * the master process can then for example print information in the console
@@ -315,7 +351,7 @@ public:
      */
     static bool isMasterRank()
     {
-        return rank() == 0;
+        return rank() == masterRank();
     }
 
     static po::command_line_parser const& commandLineParser()
@@ -334,14 +370,14 @@ public:
     {
         return S_vm;
     }
-  
+
     template<typename T>
     static void setOptionValue(std::string s,T val)
     {
         auto it = S_vm.find( s );
         CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
         S_vm.at(s).value() = val;
-    } 
+    }
 
     static AboutData const& about()
     {
@@ -546,7 +582,7 @@ public:
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, double t );
+    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
 
     /**
      * display and save timers
@@ -622,7 +658,7 @@ private:
     void initPetsc( int * argc = 0, char *** argv = NULL );
 #endif
 
-    
+
 
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
@@ -869,5 +905,8 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
-}
+} // Feel
+
+#include <feel/feelcore/feelio.hpp>
+
 #endif /* FEELPP_ENVIRONMENT_HPP */
