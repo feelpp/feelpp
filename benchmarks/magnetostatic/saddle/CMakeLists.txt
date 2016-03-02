@@ -21,11 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 SET(FileToCopy 
-  cv.cfg
-  cv.geo
-  cv.mod
-  torus_quart.cfg
-  torus_quart.mod
+  backend_saddle.cfg
+  torus_quart_saddle.cfg
+  torus_quart_saddle.mod
   )
 
 foreach(_file ${FileToCopy} )
