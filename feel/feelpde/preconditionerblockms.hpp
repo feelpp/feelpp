@@ -193,6 +193,7 @@ private:
     sparse_matrix_ptrtype M_mass;
     sparse_matrix_ptrtype M_L;
 
+    /// Warning: at this point the permittivity is set to one for the domain
     value_type M_er; // permittivity
 
     ModelProperties M_model;
@@ -293,10 +294,16 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+#if 0
+    //If you want to manage the relative permittivity materials per material,
+    //here is the entry to deal with.
     for(auto it : M_model.materials() )
     { 
         f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=M_er*inner(gradt(phi), grad(phi)));
     }
+#else
+    f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
+#endif
     auto f1LQ = form1(_test=M_Qh);
 
     for(auto const & it : m_dirichlet_p)

@@ -131,19 +131,24 @@ FSI<FluidType,SolidType>::createMesh()
     std::string nameMeshFile = gp.stem().string();
     fs::path mshFileNameFluidPart1, mshFileNameSolidPart1,mshFileNameFluidPartN,mshFileNameSolidPartN;
     fs::path mshFileNameFSI;
+#ifdef FEELPP_HAS_HDF5
+    std::string meshFileExtension = "json";
+#else
+    std::string meshFileExtension = "msh";
+#endif
     if ( !M_tagFileNameMeshGenerated.empty() )
     {
-        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_%3%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_%3%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_%3%_p%4%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
-        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_%3%_p%4%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart ).str();
+        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_%3%_p1.%4%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %meshFileExtension ).str();
+        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_%3%_p1.%4%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %meshFileExtension ).str();
+        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_%3%_p%4%.%5%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart %meshFileExtension ).str();
+        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_%3%_p%4%.%5%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated %nPart %meshFileExtension ).str();
     }
     else
     {
-        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_p1.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
-        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_p1.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() ).str();
-        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_p%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %nPart ).str();
-        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_p%3%.msh") %nameMeshFile %solid_type::mesh_type::shape_type::name() %nPart ).str();
+        mshFileNameFluidPart1 = (boost::format("%1%_fluid_%2%_p1.%3%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %meshFileExtension ).str();
+        mshFileNameSolidPart1 = (boost::format("%1%_solid_%2%_p1.%3%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %meshFileExtension ).str();
+        mshFileNameFluidPartN = (boost::format("%1%_fluid_%2%_p%3%.%4%") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %nPart %meshFileExtension ).str();
+        mshFileNameSolidPartN = (boost::format("%1%_solid_%2%_p%3%.%4%") %nameMeshFile %solid_type::mesh_type::shape_type::name() %nPart %meshFileExtension ).str();
     }
     M_mshfilepathFluidPart1 = meshesdirectories / mshFileNameFluidPart1;
     M_mshfilepathSolidPart1 = meshesdirectories / mshFileNameSolidPart1;

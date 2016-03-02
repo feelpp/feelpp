@@ -931,8 +931,8 @@ namespace Feel
 
         for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
             {
-                auto dofptCoordP1 = boost::get<0>(*dofptItP1); //dofptItP1->get<0>();
-                auto dofptIdP1 = boost::get<1>(*dofptItP1); //dofptItP1->get<1>();
+                auto dofptCoordP1 = boost::get<0>(dofptItP1->second); //dofptItP1->get<0>();
+                auto dofptIdP1 = boost::get<1>(dofptItP1->second); //dofptItP1->get<1>();
 
                 matrixN_type hessianMatrix;
                 Eigen::EigenSolver< matrixN_type > eigenSolver;
@@ -1084,8 +1084,8 @@ namespace Feel
 
         for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
             {
-                auto dofptCoordP1 = boost::get<0>(*dofptItP1); //dofptItP1->get<0>();
-                auto dofptIdP1 = boost::get<1>(*dofptItP1); //dofptItP1->get<1>();
+                auto dofptCoordP1 = boost::get<0>(dofptItP1->second); //dofptItP1->get<0>();
+                auto dofptIdP1 = boost::get<1>(dofptItP1->second); //dofptItP1->get<1>();
 
                 matrixN_type hessianMatrix;
 
