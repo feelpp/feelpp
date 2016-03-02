@@ -387,6 +387,7 @@ po::options_description stabilization_options( std::string const& prefix )
         ( prefixvm( prefix, "stab.type" ).c_str(), po::value<std::string>()->default_value( "douglas-wang"), "douglas-wang, gls or supg" )
         ( prefixvm( prefix, "stab.force" ).c_str(), po::value<bool>()->default_value( true ), "force the computation of stabilization terms at first iteration" )
         ( "stab.starting-Re", po::value<double>()->default_value( 0.9 ), "maximal value of local Reynolds number before the stabilization starts" )
+        ( prefixvm( prefix, "stab.penal-lambdaK" ), po::value<double>()->default_value( 1e-6 ), "value of the penalisation used in the computation of lambdaK" )
 
         ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
 
