@@ -799,16 +799,16 @@ BOOST_PARAMETER_FUNCTION(
                                     { return d1.min() < d2.min(); } );
 
     int positionmin = it_min - D_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<it_min->min()<<" at position "<<positionmin<<" with coord : \n "<<D_world[positionmin].argmin()<<"\n";
+    LOG(INFO)<<"proc "<<proc_number<<" : global min = "<<it_min->min()<<" at position "<<positionmin<<" with coord : \n "<< it_min->argmin()<<"\n";
     auto it_max = std::max_element( D_world.begin() , D_world.end(),
                                     []( auto const& d1, auto const& d2 )
                                     { return d1.max() < d2.max(); } );
     int positionmax = it_max - D_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->max()<<" at position "<<positionmax<<" with coord : \n "<<D_world[positionmax].argmax()<<"\n";
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<it_max->max()<<" at position "<<positionmax<<" with coord : \n "<< it_max->argmax()<<"\n";
 
     Eigen::Matrix<double, nRealDim,2> coords;
-    coords.col(0) = D_world[positionmin].argmin();
-    coords.col(1) = D_world[positionmax].argmax();
+    coords.col(0) = it_min->argmin();
+    coords.col(1) = it_max->argmax();
 
     LOG(INFO) << "evaluate minmax(expression) done." << std::endl;
 
