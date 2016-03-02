@@ -636,6 +636,8 @@ public:
                                                        mpl::bool_<false> >::type::value;
         static const bool result = (SpecificExprType::value == ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP)? result_disp : result_pressure;
     };
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     SolidMecPressureFormulationMultiplier( element_disp_type const& disp, element_pressure_type const& p, mechprop_type const& mechprop )
         :
@@ -1156,6 +1158,9 @@ public:
                                                                 mpl::bool_<true>, mpl::bool_<false> >::type,
                                               mpl::bool_<false> >::type::value;
     };
+
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
 
     SolidMecPressureFormulationConstraint( element_disp_type const& disp, mechprop_type const& mechprop )

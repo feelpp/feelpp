@@ -27,6 +27,7 @@
 namespace Feel {
 
 enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
+using entity_process_t = EntityProcessType;
 
 template<size_t S, class ITERATOR>
 ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )

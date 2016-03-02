@@ -69,7 +69,7 @@ template<typename T>
 std::vector<T>
 range( T && end )
 {
-    return range( 0, std::forward<T>(end) );
+    return range( static_cast<T>(0), std::forward<T>(end) );
 }
 
 

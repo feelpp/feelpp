@@ -35,6 +35,19 @@
 
 namespace GiNaC
 {
+std::string str( ex && f )
+{
+    std::ostringstream ostr;
+    ostr << f;
+    return ostr.str();
+}
+std::string str( ex const& f )
+{
+    std::ostringstream ostr;
+    ostr << f;
+    return ostr.str();
+}
+
 ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
 {
     using namespace Feel;

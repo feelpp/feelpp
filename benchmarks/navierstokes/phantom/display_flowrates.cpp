@@ -42,7 +42,7 @@ display_flowrates( std::ostream& os, double t, std::map<std::string, double> con
 {
     os << "| " << t << " | ";
     for( auto & f : flowrates )
-        os<< std::setw(11) << std::scientific << std::setprecision( 2 ) << std::abs(f.second)<< " | ";
+        os<< std::setw(11) << std::scientific << std::setprecision( 4 ) << std::abs(f.second)<< " | ";
     os << "|\n";
     return true;
 }

@@ -17,7 +17,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_type 
                                                              sparse_matrix_ptrtype& J, vector_ptrtype& R,
                                                              bool _BuildCstPart ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateJacobianModel", "start" );
@@ -117,7 +116,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_type 
     double timeElapsed=t1.elapsed();
     this->log("FluidMechanics","updateJacobianModel","finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
-#endif // defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
 } // updateJacobian
 
 } // namespace FeelModels

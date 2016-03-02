@@ -570,30 +570,39 @@ public:
 
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
     {
-        BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+        using shape = typename std::decay_t<ExprType>::shape;
+        /*
+        BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-        BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                              (mpl::int_<nComponents1>,mpl::int_<shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==shape::N,
                               INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-
+                              (mpl::int_<nComponents2>,mpl::int_<shape::N>));
+         */
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
 
-        for( int q = 0; q <expr.geom()->nPoints(); ++q )
-            for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
-                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                    {
-                        int ldof = (c2+fe_expr_type::nComponents2*c1)*fe_expr_type::nLocalDof + i;
-                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
-                        Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
-                    }
+        for( int q = 0; q < nLocalDof; ++q )
+        {
+            for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+            {
+                int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+                
+                for ( uint16_type c = 0; c < ncomp1; ++c )
+                {
+                    uint16_type I = expr_basis_t::nLocalDof*c + i;
+                    for( int c1 = 0; c1 < shape::M; ++c1 )
+                        for( int c2 = 0; c2 < shape::N; ++c2 )
+                        {
+                            int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                        }
+                }
+            }
+        }
     }
-
-
     //@}
 
 private:

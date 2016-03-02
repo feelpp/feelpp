@@ -11,8 +11,7 @@ runApplicationSolid()
 {
     typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,1>,
                                         Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> SM( new model_type("solid") );
-
+    auto SM = model_type::New("solid");
 
     if ( SM->isStationary() )
     {
@@ -37,7 +36,9 @@ runApplicationSolid()
             int cptNeed = std::abs(valueFinal-valueInitial)/valueStep;
             double currentParam = valueInitial;
 
-            std::string namefileVariableParameters = (fs::path(SM->appliRepository()) / fs::path("paramters-done.data")).string();
+            std::string namefileVariableParameters = (fs::path(SM->rootRepository()) / fs::path("paramters-done.data")).string();
+
+            std::string saveType = soption(_name="solve-quasi-static.save.file-format");
 
             int cptCurrent=1;
             if ( SM->doRestart() )
@@ -46,9 +47,11 @@ runApplicationSolid()
                 while ( ! fileParameter.eof() ) { fileParameter >> cptCurrent >> currentParam; }
                 fileParameter.close();
 
-                SM->fieldDisplacement().load(_path=SM->appliRepository()+(boost::format("uSol.field-%1%") %cptCurrent ).str() );
+                SM->fieldDisplacement().load(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") %cptCurrent ).str(),
+                                             _type=saveType );
                 if ( SM->useDisplacementPressureFormulation() )
-                    SM->fieldPressure().load(_path=SM->appliRepository()+(boost::format("pSol.field-%1%") %cptCurrent ).str() );
+                    SM->fieldPressure().load(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") %cptCurrent ).str(),
+                                             _type=saveType );
 
                 SM->restartExporters(cptCurrent);
                 ++cptCurrent;
@@ -69,13 +72,19 @@ runApplicationSolid()
                     std::cout << "============================================================\n";
                 }
 
+                SM->timerTool("Solve").setAdditionalParameter(variableSymbol,currentParam);
+                SM->timerTool("PostProcessing").setAdditionalParameter(variableSymbol,currentParam);
+                SM->timerTool("TimeStepping").setAdditionalParameter(variableSymbol,currentParam);
+
                 SM->addParameterInModelProperties(variableSymbol,currentParam);
                 SM->solve();
                 SM->exportResults(cptCurrent);
 
-                SM->fieldDisplacement().save(_path=SM->appliRepository()+(boost::format("uSol.field-%1%") % cptCurrent ).str() );
+                SM->fieldDisplacement().save(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") % cptCurrent ).str(),
+                                             _type=saveType );
                 if ( SM->useDisplacementPressureFormulation() )
-                    SM->fieldPressure().save(_path=SM->appliRepository()+(boost::format("pSol.field-%1%") % cptCurrent ).str() );
+                    SM->fieldPressure().save(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") % cptCurrent ).str(),
+                                             _type=saveType );
 
                 if (Environment::isMasterRank())
                 {
@@ -120,6 +129,11 @@ main( int argc, char** argv )
         ("solve-quasi-static.variable-initial", Feel::po::value<double>()->default_value(0.0), "solve-quasi-static.variable-initial")
         ("solve-quasi-static.variable-step", Feel::po::value<double>()->default_value(0.1), "solve-quasi-static.variable-step")
         ("solve-quasi-static.variable-symbol", Feel::po::value<std::string>()->default_value(""), "solve-quasi-static.variable-symbol")
+#ifdef FEELPP_HAS_HDF5
+        ("solve-quasi-static.save.file-format", Feel::po::value<std::string>()->default_value("hdf5"), "solve-quasi-static.save.file-format")
+#else
+        ("solve-quasi-static.save.file-format", Feel::po::value<std::string>()->default_value("binary"), "solve-quasi-static.save.file-format")
+#endif
         ;
 
 	Environment env( _argc=argc, _argv=argv,

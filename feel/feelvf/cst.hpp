@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,13 @@ public:
         static const bool result = false;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,
             mpl::identity<mpl::identity<T> > >::type::type::type value_type;
@@ -73,6 +80,12 @@ public:
         M_constant( value )
     {
     }
+    constexpr explicit Cst( T&& value )
+        :
+        M_constant( std::move(value) )
+        {
+        }
+
     Cst( Cst && c ) = default;
     Cst( Cst const& c ) = default;
     Cst& operator=( Cst const& c ) = default;
@@ -120,9 +133,9 @@ public:
         typedef typename Cst<T>::expression_type expression_type;
         typedef typename Cst<T>::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
 

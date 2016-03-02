@@ -992,6 +992,7 @@ namespace FeelModels
                 M_pcMechPropField->update(this->gmc()->pc()->nodes() );
             updateImpl( geom );
         }
+#if 1
         void updateImpl( Geo_t const& geom )
         {
             M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
@@ -1005,10 +1006,19 @@ namespace FeelModels
             //updateImpl( /*mpl::int_<expr_type::nRealDim>()*/ );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
-#if 0
+#else
         // generic update but seems more slow
-        void updateImpl()
+        void updateImpl( Geo_t const& geom )
         {
+            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
+            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), super_type::loc_scalar_type::Zero() );
+            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
+
+            if ( !useDispPresForm )
+                M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
+
+            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
@@ -1038,6 +1048,9 @@ namespace FeelModels
                     M_locEvalPrecomputeDetF3[q](0,0) = factorWithDetFv3;
                     M_locEvalPrecomputeTraceC[q](0,0) = traceCv;
                     //TODO here
+                    const value_type factorTrialDetF = (1./expr_type::nRealDim)*traceCv;
+                    typename super_type::loc_tensor2_type & matLocTrialDetF = M_locEvalPrecomputeTrialDetF[q];
+                    matLocTrialDetF = factorWithDetFv2*(F - factorTrialDetF*F.inverse().transpose() );
                 }
             }
         }
@@ -1105,6 +1118,16 @@ namespace FeelModels
                 const value_type Fv31 =    gradDisplacementEval(2,0), Fv32 =    gradDisplacementEval(2,1), Fv33 = 1.+gradDisplacementEval(2,2);
 
                 const value_type detFv = Fv11*(Fv22*Fv33-Fv23*Fv32) - Fv21*(Fv12*Fv33-Fv13*Fv32) + Fv31*(Fv12*Fv23 - Fv13*Fv22);
+#if 0
+                //const value_type detFv = Fv11*(Fv22*Fv33-Fv23*Fv32) - Fv12*(Fv21*Fv33-Fv31*Fv23) + Fv13*(Fv21*Fv32 - Fv31*Fv22);
+                if ( detFv < 0 )
+                {
+                    std::cout << "Negative : " << detFv << "\n"
+                              << Fv11 << " " << Fv12 << " " << Fv13 << "\n"
+                              << Fv21 << " " << Fv22 << " " << Fv23 << "\n"
+                              << Fv31 << " " << Fv32 << " " << Fv33 << "\n";
+                }
+#endif
                 const value_type traceCv = math::pow(Fv11,2) + math::pow(Fv21,2) + math::pow(Fv31,2) + math::pow(Fv12,2) +
                     math::pow(Fv22,2) + math::pow(Fv32,2) + math::pow(Fv13,2) + math::pow(Fv23,2) + math::pow(Fv33,2);
 
@@ -2164,6 +2187,8 @@ public:
                                                               mpl::bool_<false> >::type,
                                             mpl::bool_<false> >::type::value;
     };
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     SolidMecStressTensorImpl( element_displacement_type const & u,
                               Feel::FeelModels::MechanicalPropertiesDescription<element_mechprop_type> const& mechanicalPropertiesDesc )

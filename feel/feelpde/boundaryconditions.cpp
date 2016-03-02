@@ -31,14 +31,15 @@
 namespace Feel
 {
 
-BoundaryConditions::BoundaryConditions()
+BoundaryConditions::BoundaryConditions( WorldComm const& world )
     :
     BoundaryConditions( "" )
 {}
 
-BoundaryConditions::BoundaryConditions( std::string const& p )
+BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
     :
     super(),
+    M_worldComm( world ),
     M_prefix( p )
 {
     fs::path bc( Environment::expand( soption("bc-file") ) );
@@ -155,6 +156,80 @@ BoundaryConditions::saveMD(std::ostream &os)
     os << "</ul>|\n";
   }
   os << "\n";
+}
+
+
+std::pair<bool,int>
+BoundaryConditions::iparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<int>( field,bc,marker,param, int(0) );
+}
+std::pair<bool,double>
+BoundaryConditions::dparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<double>( field,bc,marker,param, double(0) );
+}
+std::pair<bool,std::string>
+BoundaryConditions::sparam( std::string const& field, std::string const& bc, std::string const& marker, std::string const& param ) const
+{
+    return this->param<std::string>( field,bc,marker,param, std::string("") );
+}
+template <typename CastType>
+std::pair<bool,CastType>
+BoundaryConditions::param( std::string const& field,std::string const& bc, std::string const& marker, std::string const& param, CastType const& defaultValue ) const
+{
+    for( auto const& v : M_pt )
+    {
+        std::string t = v.first; // field name
+        if ( t != field ) continue;
+        for( auto const& f : v.second )
+        {
+            std::string k = t+"."+f.first; // condition type
+            if ( f.first != bc ) continue;
+            for( auto const& c : f.second ) // marker
+            {
+                if ( c.first != marker ) continue;
+                try
+                {
+                    CastType e= c.second.get<CastType>( param );
+                    return std::make_pair(true,e);
+                }
+                catch( ... )
+                {
+                    continue;
+                }
+            }
+        }
+    }
+    return std::make_pair(false,defaultValue);
+}
+
+std::list<std::string>
+BoundaryConditions::markers( std::string const& field, std::string const& type ) const
+{
+    return this->markers( { { field,type } } );
+}
+
+std::list<std::string>
+BoundaryConditions::markers( std::initializer_list< std::pair<std::string,std::string > > const& listKeys ) const
+{
+    std::list<std::string> res;
+    for ( auto const& key : listKeys )
+    {
+        std::string const& field = key.first;
+        std::string const& type = key.second;
+        auto const& itFindField = this->find(field);
+        if ( itFindField == this->end() )
+            continue;
+        auto const& itFindType = itFindField->second.find(type);
+        if ( itFindType == itFindField->second.end() )
+            continue;
+        for ( auto const& f : itFindType->second )
+        {
+            res.push_back( f.marker() );
+        }
+    }
+    return res;
 }
 
 }//Feel

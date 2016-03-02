@@ -1,0 +1,2604 @@
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/CMakeLists.txt metis/CMakeLists.txt
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/CMakeLists.txt	2015-05-28 10:41:14.000000000 +0200
++++ metis/CMakeLists.txt	2016-01-23 16:51:40.000000000 +0100
+@@ -4,7 +4,7 @@ project(METIS)
+ set(C_FLAGS "-O3 -Wall -fPIC")
+ 
+ set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/contrib/metis/GKlib CACHE PATH "path to GKlib")
+-set(SHARED FALSE CACHE BOOL "build a shared library")
++#set(SHARED FALSE CACHE BOOL "build a shared library")
+ 
+ if(MSVC)
+   set(METIS_INSTALL FALSE)
+@@ -13,7 +13,7 @@ else()
+ endif()
+ 
+ # Configure libmetis library.
+-if(SHARED)
++if(BUILD_SHARED_LIBS)
+   set(METIS_LIBRARY_TYPE SHARED)
+ else()
+   set(METIS_LIBRARY_TYPE STATIC)
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/error.c metis/GKlib/error.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/error.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/GKlib/error.c	2016-01-24 10:39:02.000000000 +0100
+@@ -28,13 +28,13 @@ This file contains functions dealing wit
+    Multiple buffers are defined to allow for recursive invokation. */
+ #define MAX_JBUFS 128
+ #ifdef LIBMESH_TLS
+-LIBMESH_TLS int gk_cur_jbufs=-1;
+-LIBMESH_TLS jmp_buf gk_jbufs[MAX_JBUFS];
+-LIBMESH_TLS jmp_buf gk_jbuf;
++LIBMESH_TLS int feel_gk_cur_jbufs=-1;
++LIBMESH_TLS jmp_buf feel_gk_jbufs[MAX_JBUFS];
++LIBMESH_TLS jmp_buf feel_gk_jbuf;
+ #else
+-int gk_cur_jbufs=-1;
+-jmp_buf gk_jbufs[MAX_JBUFS];
+-jmp_buf gk_jbuf;
++int feel_gk_cur_jbufs=-1;
++jmp_buf feel_gk_jbufs[MAX_JBUFS];
++jmp_buf feel_gk_jbuf;
+ #endif
+ 
+ typedef void (*gksighandler_t)(int);
+@@ -118,13 +118,13 @@ void gk_errexit(int signum, char *f_str,
+ /***************************************************************************/
+ int gk_sigtrap()
+ {
+-  if (gk_cur_jbufs+1 >= MAX_JBUFS)
++  if (feel_gk_cur_jbufs+1 >= MAX_JBUFS)
+     return 0;
+ 
+-  gk_cur_jbufs++;
++  feel_gk_cur_jbufs++;
+ 
+-  old_SIGMEM_handlers[gk_cur_jbufs]  = signal(SIGMEM,  gk_sigthrow);
+-  old_SIGERR_handlers[gk_cur_jbufs]  = signal(SIGERR,  gk_sigthrow);
++  old_SIGMEM_handlers[feel_gk_cur_jbufs]  = signal(SIGMEM,  gk_sigthrow);
++  old_SIGERR_handlers[feel_gk_cur_jbufs]  = signal(SIGERR,  gk_sigthrow);
+ 
+   return 1;
+ }
+@@ -136,13 +136,13 @@ int gk_sigtrap()
+ /***************************************************************************/
+ int gk_siguntrap()
+ {
+-  if (gk_cur_jbufs == -1)
++  if (feel_gk_cur_jbufs == -1)
+     return 0;
+ 
+-  signal(SIGMEM,  old_SIGMEM_handlers[gk_cur_jbufs]);
+-  signal(SIGERR,  old_SIGERR_handlers[gk_cur_jbufs]);
++  signal(SIGMEM,  old_SIGMEM_handlers[feel_gk_cur_jbufs]);
++  signal(SIGERR,  old_SIGERR_handlers[feel_gk_cur_jbufs]);
+ 
+-  gk_cur_jbufs--;
++  feel_gk_cur_jbufs--;
+ 
+   return 1;
+ }
+@@ -155,7 +155,7 @@ int gk_siguntrap()
+ /*************************************************************************/
+ void gk_sigthrow(int signum)
+ {
+-  longjmp(gk_jbufs[gk_cur_jbufs], signum);
++  longjmp(feel_gk_jbufs[feel_gk_cur_jbufs], signum);
+ }
+ 
+ 
+@@ -186,7 +186,7 @@ void gk_UnsetSignalHandlers()
+ **************************************************************************/
+ void gk_NonLocalExit_Handler(int signum)
+ {
+-  longjmp(gk_jbuf, signum);
++  longjmp(feel_gk_jbuf, signum);
+ }
+ 
+ 
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/gk_externs.h metis/GKlib/gk_externs.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/gk_externs.h	2015-05-22 07:41:18.000000000 +0200
++++ metis/GKlib/gk_externs.h	2016-01-24 10:38:09.000000000 +0100
+@@ -26,13 +26,13 @@
+ 
+ /* declared in error.c */
+ #ifdef LIBMESH_TLS
+-extern LIBMESH_TLS int gk_cur_jbufs;
+-extern LIBMESH_TLS jmp_buf gk_jbufs[];
+-extern LIBMESH_TLS jmp_buf gk_jbuf;
++extern LIBMESH_TLS int feel_gk_cur_jbufs;
++extern LIBMESH_TLS jmp_buf feel_gk_jbufs[];
++extern LIBMESH_TLS jmp_buf feel_gk_jbuf;
+ #else
+-extern int gk_cur_jbufs;
+-extern jmp_buf gk_jbufs[];
+-extern jmp_buf gk_jbuf;
++extern int feel_gk_cur_jbufs;
++extern jmp_buf feel_gk_jbufs[];
++extern jmp_buf feel_gk_jbuf;
+ #endif // LIBMESH_TLS
+ 
+ #endif
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/gk_macros.h metis/GKlib/gk_macros.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/GKlib/gk_macros.h	2015-05-22 07:41:18.000000000 +0200
++++ metis/GKlib/gk_macros.h	2016-01-24 10:37:23.000000000 +0100
+@@ -49,7 +49,7 @@
+  * gracefull library exit macro
+  *-------------------------------------------------------------*/
+ #define GKSETJMP() (setjmp(gk_return_to_entry))
+-#define gk_sigcatch() (setjmp(gk_jbufs[gk_cur_jbufs]))
++#define gk_sigcatch() (setjmp(feel_gk_jbufs[feel_gk_cur_jbufs]))
+  
+ 
+ /*-------------------------------------------------------------
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/feelpp.metis.patch metis/feelpp.metis.patch
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/feelpp.metis.patch	1970-01-01 01:00:00.000000000 +0100
++++ metis/feelpp.metis.patch	2016-01-23 18:14:46.000000000 +0100
+@@ -0,0 +1,1140 @@
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/CMakeLists.txt metis/CMakeLists.txt
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/CMakeLists.txt	2015-05-28 10:41:14.000000000 +0200
+++++ metis/CMakeLists.txt	2016-01-23 16:51:40.000000000 +0100
++@@ -4,7 +4,7 @@ project(METIS)
++ set(C_FLAGS "-O3 -Wall -fPIC")
++ 
++ set(GKLIB_PATH ${FEELPP_SOURCE_DIR}/contrib/metis/GKlib CACHE PATH "path to GKlib")
++-set(SHARED FALSE CACHE BOOL "build a shared library")
+++#set(SHARED FALSE CACHE BOOL "build a shared library")
++ 
++ if(MSVC)
++   set(METIS_INSTALL FALSE)
++@@ -13,7 +13,7 @@ else()
++ endif()
++ 
++ # Configure libmetis library.
++-if(SHARED)
+++if(BUILD_SHARED_LIBS)
++   set(METIS_LIBRARY_TYPE SHARED)
++ else()
++   set(METIS_LIBRARY_TYPE STATIC)
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/include/CMakeLists.txt metis/include/CMakeLists.txt
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/include/CMakeLists.txt	2015-05-22 07:41:18.000000000 +0200
+++++ metis/include/CMakeLists.txt	2016-01-23 16:41:00.000000000 +0100
++@@ -1,3 +1,3 @@
++ if(METIS_INSTALL)
++-  install(FILES metis.h DESTINATION include)
+++  install(FILES feelmetis.h DESTINATION include)
++ endif()
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/include/feelmetis.h metis/include/feelmetis.h
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/include/feelmetis.h	1970-01-01 01:00:00.000000000 +0100
+++++ metis/include/feelmetis.h	2016-01-23 16:23:15.000000000 +0100
++@@ -0,0 +1,360 @@
+++/*!
+++\file metis.h
+++\brief This file contains function prototypes and constant definitions for METIS
+++ *
+++\author George
+++\date   Started 8/9/02
+++\version\verbatim $Id$\endverbatim
+++*/
+++
+++#ifndef _METIS_H_
+++#define _METIS_H_
+++
+++/****************************************************************************
+++* A set of defines that can be modified by the user
+++*****************************************************************************/
+++
+++//#include <feel/feelcore/feel.hpp>
+++
+++/*--------------------------------------------------------------------------
+++ Specifies the width of the elementary data type that will hold information
+++ about vertices and their adjacency lists.
+++
+++ Possible values:
+++   32 : Use 32 bit signed integers
+++   64 : Use 64 bit signed integers
+++
+++ A width of 64 should be specified if the number of vertices or the total
+++ number of edges in the graph exceed the limits of a 32 bit signed integer
+++ i.e., 2^31-1.
+++ Proper use of 64 bit integers requires that the c99 standard datatypes
+++ int32_t and int64_t are supported by the compiler.
+++ GCC does provides these definitions in stdint.h, but it may require some
+++ modifications on other architectures.
+++--------------------------------------------------------------------------*/
+++#if 1 //FEELPP_DOF_ID_BYTES == 8
+++#  define IDXTYPEWIDTH 64
+++#else
+++#  define IDXTYPEWIDTH 32
+++#endif
+++
+++
+++/*--------------------------------------------------------------------------
+++ Specifies the data type that will hold floating-point style information.
+++
+++ Possible values:
+++   32 : single precission floating point (float)
+++   64 : double precission floating point (double)
+++--------------------------------------------------------------------------*/
+++#if 1 // defined(FEELPP_DEFAULT_DOUBLE_PRECISION)
+++#  define REALTYPEWIDTH 64
+++#else
+++#  define REALTYPEWIDTH 32
+++#endif
+++
+++
+++/****************************************************************************
+++* In principle, nothing needs to be changed beyond this point, unless the
+++* int32_t and int64_t cannot be found in the normal places.
+++*****************************************************************************/
+++
+++/* Uniform definitions for various compilers */
+++#if defined(_MSC_VER)
+++  #define COMPILER_MSC
+++#endif
+++#if defined(__ICC)
+++  #define COMPILER_ICC
+++#endif
+++#if defined(__GNUC__)
+++  #define COMPILER_GCC
+++#endif
+++
+++/* Include c99 int definitions and need constants. When building the library,
+++ * these are already defined by GKlib; hence the test for _GKLIB_H_ */
+++#ifndef _GKLIB_H_
+++#ifdef COMPILER_MSC
+++#include <limits.h>
+++
+++typedef __int32 int32_t;
+++typedef __int64 int64_t;
+++#define PRId32       "I32d"
+++#define PRId64       "I64d"
+++#define SCNd32       "ld"
+++#define SCNd64       "I64d"
+++#define INT32_MIN    ((int32_t)_I32_MIN)
+++#define INT32_MAX    _I32_MAX
+++#define INT64_MIN    ((int64_t)_I64_MIN)
+++#define INT64_MAX    _I64_MAX
+++#else
+++#include <inttypes.h>
+++#endif
+++#endif
+++
+++
+++/*------------------------------------------------------------------------
+++* Setup the basic datatypes
+++*-------------------------------------------------------------------------*/
+++#if IDXTYPEWIDTH == 32
+++  typedef int32_t idx_t;
+++
+++  #define IDX_MAX   INT32_MAX
+++  #define IDX_MIN   INT32_MIN
+++
+++  #define SCIDX  SCNd32
+++  #define PRIDX  PRId32
+++
+++  #define strtoidx      strtol
+++  #define iabs          abs
+++#elif IDXTYPEWIDTH == 64
+++  typedef int64_t idx_t;
+++
+++  #define IDX_MAX   INT64_MAX
+++  #define IDX_MIN   INT64_MIN
+++
+++  #define SCIDX  SCNd64
+++  #define PRIDX  PRId64
+++
+++#ifdef COMPILER_MSC
+++  #define strtoidx      _strtoi64
+++#else
+++  #define strtoidx      strtoll
+++#endif
+++  #define iabs          labs
+++#else
+++  #error "Incorrect user-supplied value fo IDXTYPEWIDTH"
+++#endif
+++
+++
+++#if REALTYPEWIDTH == 32
+++  typedef float real_t;
+++
+++  #define SCREAL         "f"
+++  #define PRREAL         "f"
+++  #define REAL_MAX       FLT_MAX
+++  #define REAL_MIN       FLT_MIN
+++  #define REAL_EPSILON   FLT_EPSILON
+++
+++  #define rabs          fabsf
+++  #define REALEQ(x,y) ((rabs((x)-(y)) <= FLT_EPSILON))
+++
+++#ifdef COMPILER_MSC
+++  #define strtoreal     (float)strtod
+++#else
+++  #define strtoreal     strtof
+++#endif
+++#elif REALTYPEWIDTH == 64
+++  typedef double real_t;
+++
+++  #define SCREAL         "lf"
+++  #define PRREAL         "lf"
+++  #define REAL_MAX       DBL_MAX
+++  #define REAL_MIN       DBL_MIN
+++  #define REAL_EPSILON   DBL_EPSILON
+++
+++  #define rabs          fabs
+++  #define REALEQ(x,y) ((rabs((x)-(y)) <= DBL_EPSILON))
+++
+++  #define strtoreal     strtod
+++#else
+++  #error "Incorrect user-supplied value for REALTYPEWIDTH"
+++#endif
+++
+++
+++/*------------------------------------------------------------------------
+++* Constant definitions
+++*-------------------------------------------------------------------------*/
+++/* Metis's version number */
+++#define METIS_VER_MAJOR         5
+++#define METIS_VER_MINOR         1
+++#define METIS_VER_SUBMINOR      0
+++
+++/* The maximum length of the options[] array */
+++#define METIS_NOPTIONS          40
+++
+++
+++
+++/*------------------------------------------------------------------------
+++* Function prototypes
+++*-------------------------------------------------------------------------*/
+++
+++#ifdef _WINDLL
+++#define METIS_API(type) __declspec(dllexport) type __cdecl
+++#elif defined(__cdecl)
+++#define METIS_API(type) type __cdecl
+++#else
+++#define METIS_API(type) type
+++#endif
+++
+++
+++
+++#ifdef __cplusplus
+++extern "C" {
+++#endif
+++
+++
+++METIS_API(int) Feel_METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj,
+++                  idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt,
+++                  idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options,
+++                  idx_t *edgecut, idx_t *part);
+++
+++METIS_API(int) Feel_METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj,
+++                  idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt,
+++                  idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options,
+++                  idx_t *edgecut, idx_t *part);
+++
+++METIS_API(int) Feel_METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
+++                  idx_t *ncommon, idx_t *numflag, idx_t **r_xadj, idx_t **r_adjncy);
+++
+++METIS_API(int) Feel_METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
+++                  idx_t *numflag, idx_t **r_xadj, idx_t **r_adjncy);
+++
+++METIS_API(int) Feel_METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
+++                  idx_t *vwgt, idx_t *vsize, idx_t *nparts, real_t *tpwgts,
+++                  idx_t *options, idx_t *objval, idx_t *epart, idx_t *npart);
+++
+++METIS_API(int) Feel_METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
+++                  idx_t *vwgt, idx_t *vsize, idx_t *ncommon, idx_t *nparts,
+++                  real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart,
+++                  idx_t *npart);
+++
+++METIS_API(int) Feel_METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+++                  idx_t *options, idx_t *perm, idx_t *iperm);
+++
+++METIS_API(int) Feel_METIS_Free(void *ptr);
+++
+++METIS_API(int) Feel_METIS_SetDefaultOptions(idx_t *options);
+++
+++
+++/* These functions are used by ParMETIS */
+++
+++METIS_API(int) Feel_METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+++                   idx_t npes, idx_t *options, idx_t *perm, idx_t *iperm,
+++                   idx_t *sizes);
+++
+++METIS_API(int) Feel_METIS_ComputeVertexSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy,
+++                   idx_t *vwgt, idx_t *options, idx_t *sepsize, idx_t *part);
+++
+++METIS_API(int) Feel_METIS_NodeRefine(idx_t nvtxs, idx_t *xadj, idx_t *vwgt, idx_t *adjncy,
+++                   idx_t *where, idx_t *hmarker, real_t ubfactor);
+++
+++
+++#ifdef __cplusplus
+++}
+++#endif
+++
+++
+++
+++/*------------------------------------------------------------------------
+++* Enum type definitions
+++*-------------------------------------------------------------------------*/
+++/*! Return codes */
+++typedef enum {
+++  METIS_OK              = 1,    /*!< Returned normally */
+++  METIS_ERROR_INPUT     = -2,   /*!< Returned due to erroneous inputs and/or options */
+++  METIS_ERROR_MEMORY    = -3,   /*!< Returned due to insufficient memory */
+++  METIS_ERROR           = -4    /*!< Some other errors */
+++} rstatus_et;
+++
+++
+++/*! Operation type codes */
+++typedef enum {
+++  METIS_OP_PMETIS,
+++  METIS_OP_KMETIS,
+++  METIS_OP_OMETIS
+++} moptype_et;
+++
+++
+++/*! Options codes (i.e., options[]) */
+++typedef enum {
+++  METIS_OPTION_PTYPE,
+++  METIS_OPTION_OBJTYPE,
+++  METIS_OPTION_CTYPE,
+++  METIS_OPTION_IPTYPE,
+++  METIS_OPTION_RTYPE,
+++  METIS_OPTION_DBGLVL,
+++  METIS_OPTION_NITER,
+++  METIS_OPTION_NCUTS,
+++  METIS_OPTION_SEED,
+++  METIS_OPTION_NO2HOP,
+++  METIS_OPTION_MINCONN,
+++  METIS_OPTION_CONTIG,
+++  METIS_OPTION_COMPRESS,
+++  METIS_OPTION_CCORDER,
+++  METIS_OPTION_PFACTOR,
+++  METIS_OPTION_NSEPS,
+++  METIS_OPTION_UFACTOR,
+++  METIS_OPTION_NUMBERING,
+++
+++  /* Used for command-line parameter purposes */
+++  METIS_OPTION_HELP,
+++  METIS_OPTION_TPWGTS,
+++  METIS_OPTION_NCOMMON,
+++  METIS_OPTION_NOOUTPUT,
+++  METIS_OPTION_BALANCE,
+++  METIS_OPTION_GTYPE,
+++  METIS_OPTION_UBVEC
+++} moptions_et;
+++
+++
+++/*! Partitioning Schemes */
+++typedef enum {
+++  METIS_PTYPE_RB,
+++  METIS_PTYPE_KWAY
+++} mptype_et;
+++
+++/*! Graph types for meshes */
+++typedef enum {
+++  METIS_GTYPE_DUAL,
+++  METIS_GTYPE_NODAL
+++} mgtype_et;
+++
+++/*! Coarsening Schemes */
+++typedef enum {
+++  METIS_CTYPE_RM,
+++  METIS_CTYPE_SHEM
+++} mctype_et;
+++
+++/*! Initial partitioning schemes */
+++typedef enum {
+++  METIS_IPTYPE_GROW,
+++  METIS_IPTYPE_RANDOM,
+++  METIS_IPTYPE_EDGE,
+++  METIS_IPTYPE_NODE,
+++  METIS_IPTYPE_METISRB
+++} miptype_et;
+++
+++
+++/*! Refinement schemes */
+++typedef enum {
+++  METIS_RTYPE_FM,
+++  METIS_RTYPE_GREEDY,
+++  METIS_RTYPE_SEP2SIDED,
+++  METIS_RTYPE_SEP1SIDED
+++} mrtype_et;
+++
+++
+++/*! Debug Levels */
+++typedef enum {
+++  METIS_DBG_INFO       = 1,       /*!< Shows various diagnostic messages */
+++  METIS_DBG_TIME       = 2,       /*!< Perform timing analysis */
+++  METIS_DBG_COARSEN    = 4,	  /*!< Show the coarsening progress */
+++  METIS_DBG_REFINE     = 8,	  /*!< Show the refinement progress */
+++  METIS_DBG_IPART      = 16, 	  /*!< Show info on initial partitioning */
+++  METIS_DBG_MOVEINFO   = 32, 	  /*!< Show info on vertex moves during refinement */
+++  METIS_DBG_SEPINFO    = 64, 	  /*!< Show info on vertex moves during sep refinement */
+++  METIS_DBG_CONNINFO   = 128,     /*!< Show info on minimization of subdomain connectivity */
+++  METIS_DBG_CONTIGINFO = 256,     /*!< Show info on elimination of connected components */
+++  METIS_DBG_MEMORY     = 2048     /*!< Show info related to wspace allocation */
+++} mdbglvl_et;
+++
+++
+++/* Types of objectives */
+++typedef enum {
+++  METIS_OBJTYPE_CUT,
+++  METIS_OBJTYPE_VOL,
+++  METIS_OBJTYPE_NODE
+++} mobjtype_et;
+++
+++
+++
+++#endif  /* _METIS_H_ */
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/CMakeLists.txt metis/libmetis/CMakeLists.txt
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/CMakeLists.txt	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/CMakeLists.txt	2016-01-23 17:14:48.000000000 +0100
++@@ -13,13 +13,13 @@ foreach(file ${metis_sources})
++ endforeach()
++ 
++ # Build libmetis.
++-add_library(metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
+++add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
++ if(UNIX)
++-  target_link_libraries(metis m)
+++  target_link_libraries(feelpp_metis m)
++ endif()
++ 
++ if(METIS_INSTALL)
++-  install(TARGETS metis
+++  install(TARGETS feelpp_metis
++     LIBRARY DESTINATION lib
++     RUNTIME DESTINATION lib
++     ARCHIVE DESTINATION lib)
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/auxapi.c metis/libmetis/auxapi.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/auxapi.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/auxapi.c	2016-01-23 15:49:34.000000000 +0100
++@@ -20,7 +20,7 @@
++            METIS.
++ */
++ /*************************************************************************/
++-int METIS_Free(void *ptr)
+++int Feel_METIS_Free(void *ptr)
++ {
++   if (ptr != NULL) free(ptr);
++   return METIS_OK;
++@@ -33,7 +33,7 @@ int METIS_Free(void *ptr)
++     \param options points to an array of size at least METIS_NOPTIONS.
++ */
++ /*************************************************************************/
++-int METIS_SetDefaultOptions(idx_t *options)
+++int Feel_METIS_SetDefaultOptions(idx_t *options)
++ {
++   iset(METIS_NOPTIONS, -1, options);
++ 
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/frename.c metis/libmetis/frename.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/frename.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/frename.c	2016-01-23 09:54:21.000000000 +0100
++@@ -21,7 +21,7 @@
++ 
++ 
++ FRENAME(
++-    METIS_PartGraphRecursive, 
+++    Feel_METIS_PartGraphRecursive, 
++     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
++      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
++      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
++@@ -36,7 +36,7 @@ FRENAME(
++     
++ 
++ FRENAME(
++-    METIS_PartGraphKway,
+++    Feel_METIS_PartGraphKway,
++     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
++      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
++      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
++@@ -50,7 +50,7 @@ FRENAME(
++ )
++ 
++ FRENAME(
++-  METIS_MeshToDual,
+++  Feel_METIS_MeshToDual,
++   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *ncommon, idx_t *numflag, 
++    idx_t **r_xadj, idx_t **r_adjncy),
++   (ne, nn, eptr, eind, ncommon, numflag, r_xadj, r_adjncy),
++@@ -62,7 +62,7 @@ FRENAME(
++ 
++ 
++ FRENAME(
++-  METIS_MeshToNodal,
+++  Feel_METIS_MeshToNodal,
++   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *numflag, idx_t **r_xadj, 
++    idx_t **r_adjncy),
++   (ne, nn, eptr, eind, numflag, r_xadj, r_adjncy),
++@@ -74,7 +74,7 @@ FRENAME(
++   
++ 
++ FRENAME(
++-  METIS_PartMeshNodal,
+++  Feel_METIS_PartMeshNodal,
++   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
++    idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
++    idx_t *npart),
++@@ -87,7 +87,7 @@ FRENAME(
++ 
++ 
++ FRENAME(
++-  METIS_PartMeshDual,
+++  Feel_METIS_PartMeshDual,
++   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
++    idx_t *ncommon, idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, 
++    idx_t *epart, idx_t *npart),
++@@ -100,7 +100,7 @@ FRENAME(
++ 
++ 
++ FRENAME(
++-  METIS_NodeND,
+++  Feel_METIS_NodeND,
++   (idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, idx_t *options, idx_t *perm, 
++    idx_t *iperm),
++   (nvtxs, xadj, adjncy, vwgt, options, perm, iperm),
++@@ -112,7 +112,7 @@ FRENAME(
++ 
++ 
++ FRENAME(
++-  METIS_Free,
+++  Feel_METIS_Free,
++   (void *ptr),
++   (ptr),
++   METIS_FREE,
++@@ -123,7 +123,7 @@ FRENAME(
++ 
++ 
++ FRENAME(
++-  METIS_SetDefaultOptions,
+++  Feel_METIS_SetDefaultOptions,
++   (idx_t *options),
++   (options),
++   METIS_SETDEFAULTOPTIONS,
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/kmetis.c metis/libmetis/kmetis.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/kmetis.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/kmetis.c	2016-01-23 13:19:39.000000000 +0100
++@@ -15,7 +15,7 @@
++ /*************************************************************************/
++ /*! This function is the entry point for MCKMETIS */
++ /*************************************************************************/
++-int METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
+++int Feel_METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
++           idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, idx_t *nparts, 
++           real_t *tpwgts, real_t *ubvec, idx_t *options, idx_t *objval, 
++           idx_t *part)
++@@ -176,7 +176,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
++   real_t *ubvec=NULL;
++   int status;
++ 
++-  METIS_SetDefaultOptions(options);
+++  Feel_METIS_SetDefaultOptions(options);
++   options[METIS_OPTION_NITER]   = 10;
++   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
++   options[METIS_OPTION_NO2HOP]  = ctrl->no2hop;
++@@ -191,7 +191,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
++     case METIS_OBJTYPE_CUT:
++     case METIS_OBJTYPE_VOL:
++       options[METIS_OPTION_NCUTS] = ctrl->nIparts;
++-      status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+++      status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
++                    graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
++                    graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
++                    options, &curobj, graph->where);
++@@ -208,7 +208,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
++ 
++       ntrials = (ctrl->nIparts+1)/2;
++       for (i=0; i<ntrials; i++) {
++-        status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+++        status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
++                      graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
++                      graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
++                      options, &curobj, graph->where);
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/mesh.c metis/libmetis/mesh.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/mesh.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/mesh.c	2016-01-23 13:14:27.000000000 +0100
++@@ -41,7 +41,7 @@
++ 
++ */
++ /*****************************************************************************/
++-int METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+++int Feel_METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++           idx_t *ncommon, idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
++ {
++   int sigrval=0, renumber=0;
++@@ -111,7 +111,7 @@ SIGTHROW:
++ 
++ */
++ /*****************************************************************************/
++-int METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+++int Feel_METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++           idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
++ {
++   int sigrval=0, renumber=0;
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/meshpart.c metis/libmetis/meshpart.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/meshpart.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/meshpart.c	2016-01-23 13:11:42.000000000 +0100
++@@ -19,7 +19,7 @@
++ * This function partitions a finite element mesh by partitioning its nodal
++ * graph using KMETIS and then assigning elements in a load balanced fashion.
++ **************************************************************************/
++-int METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+++int Feel_METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++           idx_t *vwgt, idx_t *vsize, idx_t *nparts, real_t *tpwgts, 
++           idx_t *options, idx_t *objval, idx_t *epart, idx_t *npart)
++ {
++@@ -47,16 +47,16 @@ int METIS_PartMeshNodal(idx_t *ne, idx_t
++   }
++ 
++   /* get the nodal graph */
++-  rstatus = METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
+++  rstatus = Feel_METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
++   if (rstatus != METIS_OK)
++     raise(SIGERR);
++ 
++   /* partition the graph */
++   if (ptype == METIS_PTYPE_KWAY) 
++-    rstatus = METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+++    rstatus = Feel_METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++                   nparts, tpwgts, NULL, options, objval, npart);
++   else 
++-    rstatus = METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+++    rstatus = Feel_METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++                   nparts, tpwgts, NULL, options, objval, npart);
++ 
++   if (rstatus != METIS_OK)
++@@ -72,8 +72,8 @@ SIGTHROW:
++     options[METIS_OPTION_NUMBERING] = 1;
++   }
++ 
++-  METIS_Free(xadj);
++-  METIS_Free(adjncy);
+++  Feel_METIS_Free(xadj);
+++  Feel_METIS_Free(adjncy);
++ 
++   gk_siguntrap();
++   gk_malloc_cleanup(0);
++@@ -87,7 +87,7 @@ SIGTHROW:
++ * This function partitions a finite element mesh by partitioning its dual
++ * graph using KMETIS and then assigning nodes in a load balanced fashion.
++ **************************************************************************/
++-int METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+++int Feel_METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++           idx_t *vwgt, idx_t *vsize, idx_t *ncommon, idx_t *nparts, 
++           real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
++           idx_t *npart) 
++@@ -117,16 +117,16 @@ int METIS_PartMeshDual(idx_t *ne, idx_t 
++   }
++ 
++   /* get the dual graph */
++-  rstatus = METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
+++  rstatus = Feel_METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
++   if (rstatus != METIS_OK)
++     raise(SIGERR);
++ 
++   /* partition the graph */
++   if (ptype == METIS_PTYPE_KWAY) 
++-    rstatus = METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+++    rstatus = Feel_METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++                   nparts, tpwgts, NULL, options, objval, epart);
++   else 
++-    rstatus = METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+++    rstatus = Feel_METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++                   nparts, tpwgts, NULL, options, objval, epart);
++ 
++   if (rstatus != METIS_OK)
++@@ -161,8 +161,8 @@ SIGTHROW:
++     options[METIS_OPTION_NUMBERING] = 1;
++   }
++ 
++-  METIS_Free(xadj);
++-  METIS_Free(adjncy);
+++  Feel_METIS_Free(xadj);
+++  Feel_METIS_Free(adjncy);
++ 
++   gk_siguntrap();
++   gk_malloc_cleanup(0);
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/metislib.h metis/libmetis/metislib.h
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/metislib.h	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/metislib.h	2016-01-23 16:35:24.000000000 +0100
++@@ -21,7 +21,7 @@
++ #endif
++ 
++ 
++-#include <metis.h>
+++#include <feelmetis.h>
++ #include <rename.h>
++ #include <gklib_defs.h>
++ 
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/ometis.c metis/libmetis/ometis.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/ometis.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/ometis.c	2016-01-23 13:15:24.000000000 +0100
++@@ -40,7 +40,7 @@
++            the original and permuted matrices, then A[i] = A'[iperm[i]].
++ */
++ /*************************************************************************/
++-int METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+++int Feel_METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++           idx_t *options, idx_t *perm, idx_t *iperm) 
++ {
++   int sigrval=0, renumber=0;
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/parmetis.c metis/libmetis/parmetis.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/parmetis.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/parmetis.c	2016-01-23 13:21:26.000000000 +0100
++@@ -25,7 +25,7 @@
++       sizes array.
++ */
++ /*************************************************************************/
++-int METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+++int Feel_METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++            idx_t npes, idx_t *options, idx_t *perm, idx_t *iperm, idx_t *sizes) 
++ {
++   idx_t i, ii, j, l, nnvtxs=0;
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/pmetis.c metis/libmetis/pmetis.c
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/pmetis.c	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/pmetis.c	2016-01-23 13:18:48.000000000 +0100
++@@ -88,7 +88,7 @@
++            
++ */
++ /*************************************************************************/
++-int METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
+++int Feel_METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
++           idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, 
++           idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options, 
++           idx_t *objval, idx_t *part)
++diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/rename.h metis/libmetis/rename.h
++--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/rename.h	2015-05-22 07:41:18.000000000 +0200
+++++ metis/libmetis/rename.h	2016-01-23 15:56:33.000000000 +0100
++@@ -18,248 +18,248 @@
++ 
++ 
++ /* balance.c */
++-#define Balance2Way			libmetis__Balance2Way
++-#define Bnd2WayBalance			libmetis__Bnd2WayBalance
++-#define General2WayBalance		libmetis__General2WayBalance
++-#define McGeneral2WayBalance            libmetis__McGeneral2WayBalance
+++#define Balance2Way			feel__libmetis__Balance2Way
+++#define Bnd2WayBalance			feel__libmetis__Bnd2WayBalance
+++#define General2WayBalance		feel__libmetis__General2WayBalance
+++#define McGeneral2WayBalance            feel__libmetis__McGeneral2WayBalance
++ 
++ /* bucketsort.c */
++-#define BucketSortKeysInc		libmetis__BucketSortKeysInc
+++#define BucketSortKeysInc		feel__libmetis__BucketSortKeysInc
++ 
++ /* checkgraph.c */
++-#define CheckGraph                      libmetis__CheckGraph
++-#define CheckInputGraphWeights          libmetis__CheckInputGraphWeights
++-#define FixGraph                        libmetis__FixGraph
+++#define CheckGraph                      feel__libmetis__CheckGraph
+++#define CheckInputGraphWeights          feel__libmetis__CheckInputGraphWeights
+++#define FixGraph                        feel__libmetis__FixGraph
++ 
++ /* coarsen.c */
++-#define CoarsenGraph			libmetis__CoarsenGraph
++-#define Match_RM                        libmetis__Match_RM
++-#define Match_SHEM                      libmetis__Match_SHEM
++-#define Match_2Hop                      libmetis__Match_2Hop
++-#define Match_2HopAny                   libmetis__Match_2HopAny
++-#define Match_2HopAll                   libmetis__Match_2HopAll
++-#define PrintCGraphStats                libmetis__PrintCGraphStats
++-#define CreateCoarseGraph		libmetis__CreateCoarseGraph
++-#define CreateCoarseGraphNoMask		libmetis__CreateCoarseGraphNoMask
++-#define CreateCoarseGraphPerm		libmetis__CreateCoarseGraphPerm
++-#define SetupCoarseGraph		libmetis__SetupCoarseGraph
++-#define ReAdjustMemory			libmetis__ReAdjustMemory
+++#define CoarsenGraph			feel__libmetis__CoarsenGraph
+++#define Match_RM                        feel__libmetis__Match_RM
+++#define Match_SHEM                      feel__libmetis__Match_SHEM
+++#define Match_2Hop                      feel__libmetis__Match_2Hop
+++#define Match_2HopAny                   feel__libmetis__Match_2HopAny
+++#define Match_2HopAll                   feel__libmetis__Match_2HopAll
+++#define PrintCGraphStats                feel__libmetis__PrintCGraphStats
+++#define CreateCoarseGraph		feel__libmetis__CreateCoarseGraph
+++#define CreateCoarseGraphNoMask		feel__libmetis__CreateCoarseGraphNoMask
+++#define CreateCoarseGraphPerm		feel__libmetis__CreateCoarseGraphPerm
+++#define SetupCoarseGraph		feel__libmetis__SetupCoarseGraph
+++#define ReAdjustMemory			feel__libmetis__ReAdjustMemory
++ 
++ /* compress.c */
++-#define CompressGraph			libmetis__CompressGraph
++-#define PruneGraph			libmetis__PruneGraph
+++#define CompressGraph			feel__libmetis__CompressGraph
+++#define PruneGraph			feel__libmetis__PruneGraph
++ 
++ /* contig.c */
++-#define FindPartitionInducedComponents  libmetis__FindPartitionInducedComponents   
++-#define IsConnected                     libmetis__IsConnected
++-#define IsConnectedSubdomain            libmetis__IsConnectedSubdomain
++-#define FindSepInducedComponents        libmetis__FindSepInducedComponents
++-#define EliminateComponents             libmetis__EliminateComponents
++-#define MoveGroupContigForCut           libmetis__MoveGroupContigForCut
++-#define MoveGroupContigForVol           libmetis__MoveGroupContigForVol
+++#define FindPartitionInducedComponents  feel__libmetis__FindPartitionInducedComponents   
+++#define IsConnected                     feel__libmetis__IsConnected
+++#define IsConnectedSubdomain            feel__libmetis__IsConnectedSubdomain
+++#define FindSepInducedComponents        feel__libmetis__FindSepInducedComponents
+++#define EliminateComponents             feel__libmetis__EliminateComponents
+++#define MoveGroupContigForCut           feel__libmetis__MoveGroupContigForCut
+++#define MoveGroupContigForVol           feel__libmetis__MoveGroupContigForVol
++ 
++ /* debug.c */
++-#define ComputeCut			libmetis__ComputeCut
++-#define ComputeVolume			libmetis__ComputeVolume
++-#define ComputeMaxCut			libmetis__ComputeMaxCut
++-#define CheckBnd			libmetis__CheckBnd
++-#define CheckBnd2			libmetis__CheckBnd2
++-#define CheckNodeBnd			libmetis__CheckNodeBnd
++-#define CheckRInfo			libmetis__CheckRInfo
++-#define CheckNodePartitionParams	libmetis__CheckNodePartitionParams
++-#define IsSeparable			libmetis__IsSeparable
++-#define CheckKWayVolPartitionParams     libmetis__CheckKWayVolPartitionParams
+++#define ComputeCut			feel__libmetis__ComputeCut
+++#define ComputeVolume			feel__libmetis__ComputeVolume
+++#define ComputeMaxCut			feel__libmetis__ComputeMaxCut
+++#define CheckBnd			feel__libmetis__CheckBnd
+++#define CheckBnd2			feel__libmetis__CheckBnd2
+++#define CheckNodeBnd			feel__libmetis__CheckNodeBnd
+++#define CheckRInfo			feel__libmetis__CheckRInfo
+++#define CheckNodePartitionParams	feel__libmetis__CheckNodePartitionParams
+++#define IsSeparable			feel__libmetis__IsSeparable
+++#define CheckKWayVolPartitionParams     feel__libmetis__CheckKWayVolPartitionParams
++ 
++ /* fm.c */
++-#define FM_2WayRefine                   libmetis__FM_2WayRefine
++-#define FM_2WayCutRefine                libmetis__FM_2WayCutRefine
++-#define FM_Mc2WayCutRefine              libmetis__FM_Mc2WayCutRefine
++-#define SelectQueue                     libmetis__SelectQueue
++-#define Print2WayRefineStats            libmetis__Print2WayRefineStats
+++#define FM_2WayRefine                   feel__libmetis__FM_2WayRefine
+++#define FM_2WayCutRefine                feel__libmetis__FM_2WayCutRefine
+++#define FM_Mc2WayCutRefine              feel__libmetis__FM_Mc2WayCutRefine
+++#define SelectQueue                     feel__libmetis__SelectQueue
+++#define Print2WayRefineStats            feel__libmetis__Print2WayRefineStats
++ 
++ /* fortran.c */
++-#define Change2CNumbering		libmetis__Change2CNumbering
++-#define Change2FNumbering		libmetis__Change2FNumbering
++-#define Change2FNumbering2		libmetis__Change2FNumbering2
++-#define Change2FNumberingOrder		libmetis__Change2FNumberingOrder
++-#define ChangeMesh2CNumbering		libmetis__ChangeMesh2CNumbering
++-#define ChangeMesh2FNumbering		libmetis__ChangeMesh2FNumbering
++-#define ChangeMesh2FNumbering2		libmetis__ChangeMesh2FNumbering2
+++#define Change2CNumbering		feel__libmetis__Change2CNumbering
+++#define Change2FNumbering		feel__libmetis__Change2FNumbering
+++#define Change2FNumbering2		feel__libmetis__Change2FNumbering2
+++#define Change2FNumberingOrder		feel__libmetis__Change2FNumberingOrder
+++#define ChangeMesh2CNumbering		feel__libmetis__ChangeMesh2CNumbering
+++#define ChangeMesh2FNumbering		feel__libmetis__ChangeMesh2FNumbering
+++#define ChangeMesh2FNumbering2		feel__libmetis__ChangeMesh2FNumbering2
++ 
++ /* graph.c */
++-#define SetupGraph			libmetis__SetupGraph
++-#define SetupGraph_adjrsum              libmetis__SetupGraph_adjrsum
++-#define SetupGraph_tvwgt                libmetis__SetupGraph_tvwgt
++-#define SetupGraph_label                libmetis__SetupGraph_label
++-#define SetupSplitGraph                 libmetis__SetupSplitGraph
++-#define CreateGraph                     libmetis__CreateGraph
++-#define InitGraph                       libmetis__InitGraph
++-#define FreeRData                       libmetis__FreeRData
++-#define FreeGraph                       libmetis__FreeGraph
+++#define SetupGraph			feel__libmetis__SetupGraph
+++#define SetupGraph_adjrsum              feel__libmetis__SetupGraph_adjrsum
+++#define SetupGraph_tvwgt                feel__libmetis__SetupGraph_tvwgt
+++#define SetupGraph_label                feel__libmetis__SetupGraph_label
+++#define SetupSplitGraph                 feel__libmetis__SetupSplitGraph
+++#define CreateGraph                     feel__libmetis__CreateGraph
+++#define InitGraph                       feel__libmetis__InitGraph
+++#define FreeRData                       feel__libmetis__FreeRData
+++#define FreeGraph                       feel__libmetis__FreeGraph
++ 
++ /* initpart.c */
++-#define Init2WayPartition		libmetis__Init2WayPartition
++-#define InitSeparator			libmetis__InitSeparator
++-#define RandomBisection			libmetis__RandomBisection
++-#define GrowBisection			libmetis__GrowBisection
++-#define McRandomBisection               libmetis__McRandomBisection
++-#define McGrowBisection                 libmetis__McGrowBisection
++-#define GrowBisectionNode		libmetis__GrowBisectionNode
+++#define Init2WayPartition		feel__libmetis__Init2WayPartition
+++#define InitSeparator			feel__libmetis__InitSeparator
+++#define RandomBisection			feel__libmetis__RandomBisection
+++#define GrowBisection			feel__libmetis__GrowBisection
+++#define McRandomBisection               feel__libmetis__McRandomBisection
+++#define McGrowBisection                 feel__libmetis__McGrowBisection
+++#define GrowBisectionNode		feel__libmetis__GrowBisectionNode
++ 
++ /* kmetis.c */
++-#define MlevelKWayPartitioning		libmetis__MlevelKWayPartitioning
++-#define InitKWayPartitioning            libmetis__InitKWayPartitioning
+++#define MlevelKWayPartitioning		feel__libmetis__MlevelKWayPartitioning
+++#define InitKWayPartitioning            feel__libmetis__InitKWayPartitioning
++ 
++ /* kwayfm.c */
++-#define Greedy_KWayOptimize		libmetis__Greedy_KWayOptimize
++-#define Greedy_KWayCutOptimize		libmetis__Greedy_KWayCutOptimize
++-#define Greedy_KWayVolOptimize          libmetis__Greedy_KWayVolOptimize
++-#define Greedy_McKWayCutOptimize        libmetis__Greedy_McKWayCutOptimize
++-#define Greedy_McKWayVolOptimize        libmetis__Greedy_McKWayVolOptimize
++-#define IsArticulationNode              libmetis__IsArticulationNode
++-#define KWayVolUpdate                   libmetis__KWayVolUpdate
+++#define Greedy_KWayOptimize		feel__libmetis__Greedy_KWayOptimize
+++#define Greedy_KWayCutOptimize		feel__libmetis__Greedy_KWayCutOptimize
+++#define Greedy_KWayVolOptimize          feel__libmetis__Greedy_KWayVolOptimize
+++#define Greedy_McKWayCutOptimize        feel__libmetis__Greedy_McKWayCutOptimize
+++#define Greedy_McKWayVolOptimize        feel__libmetis__Greedy_McKWayVolOptimize
+++#define IsArticulationNode              feel__libmetis__IsArticulationNode
+++#define KWayVolUpdate                   feel__libmetis__KWayVolUpdate
++ 
++ /* kwayrefine.c */
++-#define RefineKWay			libmetis__RefineKWay
++-#define AllocateKWayPartitionMemory	libmetis__AllocateKWayPartitionMemory
++-#define ComputeKWayPartitionParams	libmetis__ComputeKWayPartitionParams
++-#define ProjectKWayPartition		libmetis__ProjectKWayPartition
++-#define ComputeKWayBoundary		libmetis__ComputeKWayBoundary
++-#define ComputeKWayVolGains             libmetis__ComputeKWayVolGains
++-#define IsBalanced			libmetis__IsBalanced
+++#define RefineKWay			feel__libmetis__RefineKWay
+++#define AllocateKWayPartitionMemory	feel__libmetis__AllocateKWayPartitionMemory
+++#define ComputeKWayPartitionParams	feel__libmetis__ComputeKWayPartitionParams
+++#define ProjectKWayPartition		feel__libmetis__ProjectKWayPartition
+++#define ComputeKWayBoundary		feel__libmetis__ComputeKWayBoundary
+++#define ComputeKWayVolGains             feel__libmetis__ComputeKWayVolGains
+++#define IsBalanced			feel__libmetis__IsBalanced
++ 
++ /* mcutil */
++-#define rvecle                          libmetis__rvecle
++-#define rvecge                          libmetis__rvecge
++-#define rvecsumle                       libmetis__rvecsumle
++-#define rvecmaxdiff                     libmetis__rvecmaxdiff
++-#define ivecle                          libmetis__ivecle
++-#define ivecge                          libmetis__ivecge
++-#define ivecaxpylez                     libmetis__ivecaxpylez
++-#define ivecaxpygez                     libmetis__ivecaxpygez
++-#define BetterVBalance                  libmetis__BetterVBalance
++-#define BetterBalance2Way               libmetis__BetterBalance2Way
++-#define BetterBalanceKWay               libmetis__BetterBalanceKWay
++-#define ComputeLoadImbalance            libmetis__ComputeLoadImbalance
++-#define ComputeLoadImbalanceDiff        libmetis__ComputeLoadImbalanceDiff
++-#define ComputeLoadImbalanceDiffVec     libmetis__ComputeLoadImbalanceDiffVec
++-#define ComputeLoadImbalanceVec         libmetis__ComputeLoadImbalanceVec
+++#define rvecle                          feel__libmetis__rvecle
+++#define rvecge                          feel__libmetis__rvecge
+++#define rvecsumle                       feel__libmetis__rvecsumle
+++#define rvecmaxdiff                     feel__libmetis__rvecmaxdiff
+++#define ivecle                          feel__libmetis__ivecle
+++#define ivecge                          feel__libmetis__ivecge
+++#define ivecaxpylez                     feel__libmetis__ivecaxpylez
+++#define ivecaxpygez                     feel__libmetis__ivecaxpygez
+++#define BetterVBalance                  feel__libmetis__BetterVBalance
+++#define BetterBalance2Way               feel__libmetis__BetterBalance2Way
+++#define BetterBalanceKWay               feel__libmetis__BetterBalanceKWay
+++#define ComputeLoadImbalance            feel__libmetis__ComputeLoadImbalance
+++#define ComputeLoadImbalanceDiff        feel__libmetis__ComputeLoadImbalanceDiff
+++#define ComputeLoadImbalanceDiffVec     feel__libmetis__ComputeLoadImbalanceDiffVec
+++#define ComputeLoadImbalanceVec         feel__libmetis__ComputeLoadImbalanceVec
++ 
++ /* mesh.c */
++-#define CreateGraphDual                 libmetis__CreateGraphDual
++-#define FindCommonElements              libmetis__FindCommonElements
++-#define CreateGraphNodal                libmetis__CreateGraphNodal
++-#define FindCommonNodes                 libmetis__FindCommonNodes
++-#define CreateMesh                      libmetis__CreateMesh
++-#define InitMesh                        libmetis__InitMesh
++-#define FreeMesh                        libmetis__FreeMesh
+++#define CreateGraphDual                 feel__libmetis__CreateGraphDual
+++#define FindCommonElements              feel__libmetis__FindCommonElements
+++#define CreateGraphNodal                feel__libmetis__CreateGraphNodal
+++#define FindCommonNodes                 feel__libmetis__FindCommonNodes
+++#define CreateMesh                      feel__libmetis__CreateMesh
+++#define InitMesh                        feel__libmetis__InitMesh
+++#define FreeMesh                        feel__libmetis__FreeMesh
++ 
++ /* meshpart.c */
++-#define InduceRowPartFromColumnPart     libmetis__InduceRowPartFromColumnPart
+++#define InduceRowPartFromColumnPart     feel__libmetis__InduceRowPartFromColumnPart
++ 
++ /* minconn.c */
++-#define ComputeSubDomainGraph           libmetis__ComputeSubDomainGraph
++-#define UpdateEdgeSubDomainGraph        libmetis__UpdateEdgeSubDomainGraph
++-#define PrintSubDomainGraph             libmetis__PrintSubDomainGraph
++-#define EliminateSubDomainEdges         libmetis__EliminateSubDomainEdges
++-#define MoveGroupMinConnForCut          libmetis__MoveGroupMinConnForCut
++-#define MoveGroupMinConnForVol          libmetis__MoveGroupMinConnForVol
+++#define ComputeSubDomainGraph           feel__libmetis__ComputeSubDomainGraph
+++#define UpdateEdgeSubDomainGraph        feel__libmetis__UpdateEdgeSubDomainGraph
+++#define PrintSubDomainGraph             feel__libmetis__PrintSubDomainGraph
+++#define EliminateSubDomainEdges         feel__libmetis__EliminateSubDomainEdges
+++#define MoveGroupMinConnForCut          feel__libmetis__MoveGroupMinConnForCut
+++#define MoveGroupMinConnForVol          feel__libmetis__MoveGroupMinConnForVol
++ 
++ /* mincover.c */
++-#define MinCover			libmetis__MinCover
++-#define MinCover_Augment		libmetis__MinCover_Augment
++-#define MinCover_Decompose		libmetis__MinCover_Decompose
++-#define MinCover_ColDFS			libmetis__MinCover_ColDFS
++-#define MinCover_RowDFS			libmetis__MinCover_RowDFS
+++#define MinCover			feel__libmetis__MinCover
+++#define MinCover_Augment		feel__libmetis__MinCover_Augment
+++#define MinCover_Decompose		feel__libmetis__MinCover_Decompose
+++#define MinCover_ColDFS			feel__libmetis__MinCover_ColDFS
+++#define MinCover_RowDFS			feel__libmetis__MinCover_RowDFS
++ 
++ /* mmd.c */
++-#define genmmd				libmetis__genmmd
++-#define mmdelm				libmetis__mmdelm
++-#define mmdint				libmetis__mmdint
++-#define mmdnum				libmetis__mmdnum
++-#define mmdupd				libmetis__mmdupd
+++#define genmmd				feel__libmetis__genmmd
+++#define mmdelm				feel__libmetis__mmdelm
+++#define mmdint				feel__libmetis__mmdint
+++#define mmdnum				feel__libmetis__mmdnum
+++#define mmdupd				feel__libmetis__mmdupd
++ 
++ 
++ /* ometis.c */
++-#define MlevelNestedDissection		libmetis__MlevelNestedDissection
++-#define MlevelNestedDissectionCC	libmetis__MlevelNestedDissectionCC
++-#define MlevelNodeBisectionMultiple	libmetis__MlevelNodeBisectionMultiple
++-#define MlevelNodeBisectionL2		libmetis__MlevelNodeBisectionL2
++-#define MlevelNodeBisectionL1		libmetis__MlevelNodeBisectionL1
++-#define SplitGraphOrder			libmetis__SplitGraphOrder
++-#define SplitGraphOrderCC		libmetis__SplitGraphOrderCC
++-#define MMDOrder			libmetis__MMDOrder
+++#define MlevelNestedDissection		feel__libmetis__MlevelNestedDissection
+++#define MlevelNestedDissectionCC	feel__libmetis__MlevelNestedDissectionCC
+++#define MlevelNodeBisectionMultiple	feel__libmetis__MlevelNodeBisectionMultiple
+++#define MlevelNodeBisectionL2		feel__libmetis__MlevelNodeBisectionL2
+++#define MlevelNodeBisectionL1		feel__libmetis__MlevelNodeBisectionL1
+++#define SplitGraphOrder			feel__libmetis__SplitGraphOrder
+++#define SplitGraphOrderCC		feel__libmetis__SplitGraphOrderCC
+++#define MMDOrder			feel__libmetis__MMDOrder
++ 
++ /* options.c */
++-#define SetupCtrl                       libmetis__SetupCtrl
++-#define SetupKWayBalMultipliers         libmetis__SetupKWayBalMultipliers
++-#define Setup2WayBalMultipliers         libmetis__Setup2WayBalMultipliers
++-#define PrintCtrl                       libmetis__PrintCtrl
++-#define FreeCtrl                        libmetis__FreeCtrl
++-#define CheckParams                     libmetis__CheckParams
+++#define SetupCtrl                       feel__libmetis__SetupCtrl
+++#define SetupKWayBalMultipliers         feel__libmetis__SetupKWayBalMultipliers
+++#define Setup2WayBalMultipliers         feel__libmetis__Setup2WayBalMultipliers
+++#define PrintCtrl                       feel__libmetis__PrintCtrl
+++#define FreeCtrl                        feel__libmetis__FreeCtrl
+++#define CheckParams                     feel__libmetis__CheckParams
++ 
++ /* parmetis.c */
++-#define MlevelNestedDissectionP		libmetis__MlevelNestedDissectionP
++-#define FM_2WayNodeRefine1SidedP        libmetis__FM_2WayNodeRefine1SidedP
++-#define FM_2WayNodeRefine2SidedP        libmetis__FM_2WayNodeRefine2SidedP
+++#define MlevelNestedDissectionP		feel__libmetis__MlevelNestedDissectionP
+++#define FM_2WayNodeRefine1SidedP        feel__libmetis__FM_2WayNodeRefine1SidedP
+++#define FM_2WayNodeRefine2SidedP        feel__libmetis__FM_2WayNodeRefine2SidedP
++ 
++ /* pmetis.c */
++-#define MlevelRecursiveBisection	libmetis__MlevelRecursiveBisection
++-#define MultilevelBisect		libmetis__MultilevelBisect
++-#define SplitGraphPart			libmetis__SplitGraphPart
+++#define MlevelRecursiveBisection	feel__libmetis__MlevelRecursiveBisection
+++#define MultilevelBisect		feel__libmetis__MultilevelBisect
+++#define SplitGraphPart			feel__libmetis__SplitGraphPart
++ 
++ /* refine.c */
++-#define Refine2Way			libmetis__Refine2Way
++-#define Allocate2WayPartitionMemory	libmetis__Allocate2WayPartitionMemory
++-#define Compute2WayPartitionParams	libmetis__Compute2WayPartitionParams
++-#define Project2WayPartition		libmetis__Project2WayPartition
+++#define Refine2Way			feel__libmetis__Refine2Way
+++#define Allocate2WayPartitionMemory	feel__libmetis__Allocate2WayPartitionMemory
+++#define Compute2WayPartitionParams	feel__libmetis__Compute2WayPartitionParams
+++#define Project2WayPartition		feel__libmetis__Project2WayPartition
++ 
++ /* separator.c */
++-#define ConstructSeparator		libmetis__ConstructSeparator
++-#define ConstructMinCoverSeparator	libmetis__ConstructMinCoverSeparator
+++#define ConstructSeparator		feel__libmetis__ConstructSeparator
+++#define ConstructMinCoverSeparator	feel__libmetis__ConstructMinCoverSeparator
++ 
++ /* sfm.c */
++-#define FM_2WayNodeRefine2Sided         libmetis__FM_2WayNodeRefine2Sided 
++-#define FM_2WayNodeRefine1Sided         libmetis__FM_2WayNodeRefine1Sided
++-#define FM_2WayNodeBalance              libmetis__FM_2WayNodeBalance
+++#define FM_2WayNodeRefine2Sided         feel__libmetis__FM_2WayNodeRefine2Sided 
+++#define FM_2WayNodeRefine1Sided         feel__libmetis__FM_2WayNodeRefine1Sided
+++#define FM_2WayNodeBalance              feel__libmetis__FM_2WayNodeBalance
++ 
++ /* srefine.c */
++-#define Refine2WayNode			libmetis__Refine2WayNode
++-#define Allocate2WayNodePartitionMemory	libmetis__Allocate2WayNodePartitionMemory
++-#define Compute2WayNodePartitionParams	libmetis__Compute2WayNodePartitionParams
++-#define Project2WayNodePartition	libmetis__Project2WayNodePartition
+++#define Refine2WayNode			feel__libmetis__Refine2WayNode
+++#define Allocate2WayNodePartitionMemory	feel__libmetis__Allocate2WayNodePartitionMemory
+++#define Compute2WayNodePartitionParams	feel__libmetis__Compute2WayNodePartitionParams
+++#define Project2WayNodePartition	feel__libmetis__Project2WayNodePartition
++ 
++ /* stat.c */
++-#define ComputePartitionInfoBipartite   libmetis__ComputePartitionInfoBipartite
++-#define ComputePartitionBalance		libmetis__ComputePartitionBalance
++-#define ComputeElementBalance		libmetis__ComputeElementBalance
+++#define ComputePartitionInfoBipartite   feel__libmetis__ComputePartitionInfoBipartite
+++#define ComputePartitionBalance		feel__libmetis__ComputePartitionBalance
+++#define ComputeElementBalance		feel__libmetis__ComputeElementBalance
++ 
++ /* timing.c */
++-#define InitTimers			libmetis__InitTimers
++-#define PrintTimers			libmetis__PrintTimers
+++#define InitTimers			feel__libmetis__InitTimers
+++#define PrintTimers			feel__libmetis__PrintTimers
++ 
++ /* util.c */
++-#define iargmax_strd                    libmetis__iargmax_strd 
++-#define iargmax_nrm                     libmetis__iargmax_nrm
++-#define iargmax2_nrm                    libmetis__iargmax2_nrm
++-#define rargmax2                        libmetis__rargmax2
++-#define InitRandom                      libmetis__InitRandom
++-#define metis_rcode                     libmetis__metis_rcode
+++#define iargmax_strd                    feel__libmetis__iargmax_strd 
+++#define iargmax_nrm                     feel__libmetis__iargmax_nrm
+++#define iargmax2_nrm                    feel__libmetis__iargmax2_nrm
+++#define rargmax2                        feel__libmetis__rargmax2
+++#define InitRandom                      feel__libmetis__InitRandom
+++#define metis_rcode                     feel__libmetis__metis_rcode
++ 
++ /* wspace.c */
++-#define AllocateWorkSpace               libmetis__AllocateWorkSpace                  
++-#define AllocateRefinementWorkSpace     libmetis__AllocateRefinementWorkSpace
++-#define FreeWorkSpace                   libmetis__FreeWorkSpace
++-#define wspacemalloc                    libmetis__wspacemalloc
++-#define wspacepush                      libmetis__wspacepush
++-#define wspacepop                       libmetis__wspacepop
++-#define iwspacemalloc                   libmetis__iwspacemalloc
++-#define rwspacemalloc                   libmetis__rwspacemalloc
++-#define ikvwspacemalloc                 libmetis__ikvwspacemalloc
++-#define cnbrpoolReset                   libmetis__cnbrpoolReset
++-#define cnbrpoolGetNext                 libmetis__cnbrpoolGetNext
++-#define vnbrpoolReset                   libmetis__vnbrpoolReset
++-#define vnbrpoolGetNext                 libmetis__vnbrpoolGetNext
+++#define AllocateWorkSpace               feel__libmetis__AllocateWorkSpace                  
+++#define AllocateRefinementWorkSpace     feel__libmetis__AllocateRefinementWorkSpace
+++#define FreeWorkSpace                   feel__libmetis__FreeWorkSpace
+++#define wspacemalloc                    feel__libmetis__wspacemalloc
+++#define wspacepush                      feel__libmetis__wspacepush
+++#define wspacepop                       feel__libmetis__wspacepop
+++#define iwspacemalloc                   feel__libmetis__iwspacemalloc
+++#define rwspacemalloc                   feel__libmetis__rwspacemalloc
+++#define ikvwspacemalloc                 feel__libmetis__ikvwspacemalloc
+++#define cnbrpoolReset                   feel__libmetis__cnbrpoolReset
+++#define cnbrpoolGetNext                 feel__libmetis__cnbrpoolGetNext
+++#define vnbrpoolReset                   feel__libmetis__vnbrpoolReset
+++#define vnbrpoolGetNext                 feel__libmetis__vnbrpoolGetNext
++ 
++ #endif
++ 
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/include/CMakeLists.txt metis/include/CMakeLists.txt
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/include/CMakeLists.txt	2015-05-22 07:41:18.000000000 +0200
++++ metis/include/CMakeLists.txt	2016-01-23 16:41:00.000000000 +0100
+@@ -1,3 +1,3 @@
+ if(METIS_INSTALL)
+-  install(FILES metis.h DESTINATION include)
++  install(FILES feelmetis.h DESTINATION include)
+ endif()
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/include/feelmetis.h metis/include/feelmetis.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/include/feelmetis.h	1970-01-01 01:00:00.000000000 +0100
++++ metis/include/feelmetis.h	2016-01-23 16:23:15.000000000 +0100
+@@ -0,0 +1,360 @@
++/*!
++\file metis.h
++\brief This file contains function prototypes and constant definitions for METIS
++ *
++\author George
++\date   Started 8/9/02
++\version\verbatim $Id$\endverbatim
++*/
++
++#ifndef _METIS_H_
++#define _METIS_H_
++
++/****************************************************************************
++* A set of defines that can be modified by the user
++*****************************************************************************/
++
++//#include <feel/feelcore/feel.hpp>
++
++/*--------------------------------------------------------------------------
++ Specifies the width of the elementary data type that will hold information
++ about vertices and their adjacency lists.
++
++ Possible values:
++   32 : Use 32 bit signed integers
++   64 : Use 64 bit signed integers
++
++ A width of 64 should be specified if the number of vertices or the total
++ number of edges in the graph exceed the limits of a 32 bit signed integer
++ i.e., 2^31-1.
++ Proper use of 64 bit integers requires that the c99 standard datatypes
++ int32_t and int64_t are supported by the compiler.
++ GCC does provides these definitions in stdint.h, but it may require some
++ modifications on other architectures.
++--------------------------------------------------------------------------*/
++#if 1 //FEELPP_DOF_ID_BYTES == 8
++#  define IDXTYPEWIDTH 64
++#else
++#  define IDXTYPEWIDTH 32
++#endif
++
++
++/*--------------------------------------------------------------------------
++ Specifies the data type that will hold floating-point style information.
++
++ Possible values:
++   32 : single precission floating point (float)
++   64 : double precission floating point (double)
++--------------------------------------------------------------------------*/
++#if 1 // defined(FEELPP_DEFAULT_DOUBLE_PRECISION)
++#  define REALTYPEWIDTH 64
++#else
++#  define REALTYPEWIDTH 32
++#endif
++
++
++/****************************************************************************
++* In principle, nothing needs to be changed beyond this point, unless the
++* int32_t and int64_t cannot be found in the normal places.
++*****************************************************************************/
++
++/* Uniform definitions for various compilers */
++#if defined(_MSC_VER)
++  #define COMPILER_MSC
++#endif
++#if defined(__ICC)
++  #define COMPILER_ICC
++#endif
++#if defined(__GNUC__)
++  #define COMPILER_GCC
++#endif
++
++/* Include c99 int definitions and need constants. When building the library,
++ * these are already defined by GKlib; hence the test for _GKLIB_H_ */
++#ifndef _GKLIB_H_
++#ifdef COMPILER_MSC
++#include <limits.h>
++
++typedef __int32 int32_t;
++typedef __int64 int64_t;
++#define PRId32       "I32d"
++#define PRId64       "I64d"
++#define SCNd32       "ld"
++#define SCNd64       "I64d"
++#define INT32_MIN    ((int32_t)_I32_MIN)
++#define INT32_MAX    _I32_MAX
++#define INT64_MIN    ((int64_t)_I64_MIN)
++#define INT64_MAX    _I64_MAX
++#else
++#include <inttypes.h>
++#endif
++#endif
++
++
++/*------------------------------------------------------------------------
++* Setup the basic datatypes
++*-------------------------------------------------------------------------*/
++#if IDXTYPEWIDTH == 32
++  typedef int32_t idx_t;
++
++  #define IDX_MAX   INT32_MAX
++  #define IDX_MIN   INT32_MIN
++
++  #define SCIDX  SCNd32
++  #define PRIDX  PRId32
++
++  #define strtoidx      strtol
++  #define iabs          abs
++#elif IDXTYPEWIDTH == 64
++  typedef int64_t idx_t;
++
++  #define IDX_MAX   INT64_MAX
++  #define IDX_MIN   INT64_MIN
++
++  #define SCIDX  SCNd64
++  #define PRIDX  PRId64
++
++#ifdef COMPILER_MSC
++  #define strtoidx      _strtoi64
++#else
++  #define strtoidx      strtoll
++#endif
++  #define iabs          labs
++#else
++  #error "Incorrect user-supplied value fo IDXTYPEWIDTH"
++#endif
++
++
++#if REALTYPEWIDTH == 32
++  typedef float real_t;
++
++  #define SCREAL         "f"
++  #define PRREAL         "f"
++  #define REAL_MAX       FLT_MAX
++  #define REAL_MIN       FLT_MIN
++  #define REAL_EPSILON   FLT_EPSILON
++
++  #define rabs          fabsf
++  #define REALEQ(x,y) ((rabs((x)-(y)) <= FLT_EPSILON))
++
++#ifdef COMPILER_MSC
++  #define strtoreal     (float)strtod
++#else
++  #define strtoreal     strtof
++#endif
++#elif REALTYPEWIDTH == 64
++  typedef double real_t;
++
++  #define SCREAL         "lf"
++  #define PRREAL         "lf"
++  #define REAL_MAX       DBL_MAX
++  #define REAL_MIN       DBL_MIN
++  #define REAL_EPSILON   DBL_EPSILON
++
++  #define rabs          fabs
++  #define REALEQ(x,y) ((rabs((x)-(y)) <= DBL_EPSILON))
++
++  #define strtoreal     strtod
++#else
++  #error "Incorrect user-supplied value for REALTYPEWIDTH"
++#endif
++
++
++/*------------------------------------------------------------------------
++* Constant definitions
++*-------------------------------------------------------------------------*/
++/* Metis's version number */
++#define METIS_VER_MAJOR         5
++#define METIS_VER_MINOR         1
++#define METIS_VER_SUBMINOR      0
++
++/* The maximum length of the options[] array */
++#define METIS_NOPTIONS          40
++
++
++
++/*------------------------------------------------------------------------
++* Function prototypes
++*-------------------------------------------------------------------------*/
++
++#ifdef _WINDLL
++#define METIS_API(type) __declspec(dllexport) type __cdecl
++#elif defined(__cdecl)
++#define METIS_API(type) type __cdecl
++#else
++#define METIS_API(type) type
++#endif
++
++
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++
++METIS_API(int) Feel_METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj,
++                  idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt,
++                  idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options,
++                  idx_t *edgecut, idx_t *part);
++
++METIS_API(int) Feel_METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj,
++                  idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt,
++                  idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options,
++                  idx_t *edgecut, idx_t *part);
++
++METIS_API(int) Feel_METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
++                  idx_t *ncommon, idx_t *numflag, idx_t **r_xadj, idx_t **r_adjncy);
++
++METIS_API(int) Feel_METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
++                  idx_t *numflag, idx_t **r_xadj, idx_t **r_adjncy);
++
++METIS_API(int) Feel_METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
++                  idx_t *vwgt, idx_t *vsize, idx_t *nparts, real_t *tpwgts,
++                  idx_t *options, idx_t *objval, idx_t *epart, idx_t *npart);
++
++METIS_API(int) Feel_METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind,
++                  idx_t *vwgt, idx_t *vsize, idx_t *ncommon, idx_t *nparts,
++                  real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart,
++                  idx_t *npart);
++
++METIS_API(int) Feel_METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++                  idx_t *options, idx_t *perm, idx_t *iperm);
++
++METIS_API(int) Feel_METIS_Free(void *ptr);
++
++METIS_API(int) Feel_METIS_SetDefaultOptions(idx_t *options);
++
++
++/* These functions are used by ParMETIS */
++
++METIS_API(int) Feel_METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++                   idx_t npes, idx_t *options, idx_t *perm, idx_t *iperm,
++                   idx_t *sizes);
++
++METIS_API(int) Feel_METIS_ComputeVertexSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy,
++                   idx_t *vwgt, idx_t *options, idx_t *sepsize, idx_t *part);
++
++METIS_API(int) Feel_METIS_NodeRefine(idx_t nvtxs, idx_t *xadj, idx_t *vwgt, idx_t *adjncy,
++                   idx_t *where, idx_t *hmarker, real_t ubfactor);
++
++
++#ifdef __cplusplus
++}
++#endif
++
++
++
++/*------------------------------------------------------------------------
++* Enum type definitions
++*-------------------------------------------------------------------------*/
++/*! Return codes */
++typedef enum {
++  METIS_OK              = 1,    /*!< Returned normally */
++  METIS_ERROR_INPUT     = -2,   /*!< Returned due to erroneous inputs and/or options */
++  METIS_ERROR_MEMORY    = -3,   /*!< Returned due to insufficient memory */
++  METIS_ERROR           = -4    /*!< Some other errors */
++} rstatus_et;
++
++
++/*! Operation type codes */
++typedef enum {
++  METIS_OP_PMETIS,
++  METIS_OP_KMETIS,
++  METIS_OP_OMETIS
++} moptype_et;
++
++
++/*! Options codes (i.e., options[]) */
++typedef enum {
++  METIS_OPTION_PTYPE,
++  METIS_OPTION_OBJTYPE,
++  METIS_OPTION_CTYPE,
++  METIS_OPTION_IPTYPE,
++  METIS_OPTION_RTYPE,
++  METIS_OPTION_DBGLVL,
++  METIS_OPTION_NITER,
++  METIS_OPTION_NCUTS,
++  METIS_OPTION_SEED,
++  METIS_OPTION_NO2HOP,
++  METIS_OPTION_MINCONN,
++  METIS_OPTION_CONTIG,
++  METIS_OPTION_COMPRESS,
++  METIS_OPTION_CCORDER,
++  METIS_OPTION_PFACTOR,
++  METIS_OPTION_NSEPS,
++  METIS_OPTION_UFACTOR,
++  METIS_OPTION_NUMBERING,
++
++  /* Used for command-line parameter purposes */
++  METIS_OPTION_HELP,
++  METIS_OPTION_TPWGTS,
++  METIS_OPTION_NCOMMON,
++  METIS_OPTION_NOOUTPUT,
++  METIS_OPTION_BALANCE,
++  METIS_OPTION_GTYPE,
++  METIS_OPTION_UBVEC
++} moptions_et;
++
++
++/*! Partitioning Schemes */
++typedef enum {
++  METIS_PTYPE_RB,
++  METIS_PTYPE_KWAY
++} mptype_et;
++
++/*! Graph types for meshes */
++typedef enum {
++  METIS_GTYPE_DUAL,
++  METIS_GTYPE_NODAL
++} mgtype_et;
++
++/*! Coarsening Schemes */
++typedef enum {
++  METIS_CTYPE_RM,
++  METIS_CTYPE_SHEM
++} mctype_et;
++
++/*! Initial partitioning schemes */
++typedef enum {
++  METIS_IPTYPE_GROW,
++  METIS_IPTYPE_RANDOM,
++  METIS_IPTYPE_EDGE,
++  METIS_IPTYPE_NODE,
++  METIS_IPTYPE_METISRB
++} miptype_et;
++
++
++/*! Refinement schemes */
++typedef enum {
++  METIS_RTYPE_FM,
++  METIS_RTYPE_GREEDY,
++  METIS_RTYPE_SEP2SIDED,
++  METIS_RTYPE_SEP1SIDED
++} mrtype_et;
++
++
++/*! Debug Levels */
++typedef enum {
++  METIS_DBG_INFO       = 1,       /*!< Shows various diagnostic messages */
++  METIS_DBG_TIME       = 2,       /*!< Perform timing analysis */
++  METIS_DBG_COARSEN    = 4,	  /*!< Show the coarsening progress */
++  METIS_DBG_REFINE     = 8,	  /*!< Show the refinement progress */
++  METIS_DBG_IPART      = 16, 	  /*!< Show info on initial partitioning */
++  METIS_DBG_MOVEINFO   = 32, 	  /*!< Show info on vertex moves during refinement */
++  METIS_DBG_SEPINFO    = 64, 	  /*!< Show info on vertex moves during sep refinement */
++  METIS_DBG_CONNINFO   = 128,     /*!< Show info on minimization of subdomain connectivity */
++  METIS_DBG_CONTIGINFO = 256,     /*!< Show info on elimination of connected components */
++  METIS_DBG_MEMORY     = 2048     /*!< Show info related to wspace allocation */
++} mdbglvl_et;
++
++
++/* Types of objectives */
++typedef enum {
++  METIS_OBJTYPE_CUT,
++  METIS_OBJTYPE_VOL,
++  METIS_OBJTYPE_NODE
++} mobjtype_et;
++
++
++
++#endif  /* _METIS_H_ */
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/CMakeLists.txt metis/libmetis/CMakeLists.txt
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/CMakeLists.txt	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/CMakeLists.txt	2016-01-23 17:14:48.000000000 +0100
+@@ -13,13 +13,13 @@ foreach(file ${metis_sources})
+ endforeach()
+ 
+ # Build libmetis.
+-add_library(metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
++add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
+ if(UNIX)
+-  target_link_libraries(metis m)
++  target_link_libraries(feelpp_metis m)
+ endif()
+ 
+ if(METIS_INSTALL)
+-  install(TARGETS metis
++  install(TARGETS feelpp_metis
+     LIBRARY DESTINATION lib
+     RUNTIME DESTINATION lib
+     ARCHIVE DESTINATION lib)
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/auxapi.c metis/libmetis/auxapi.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/auxapi.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/auxapi.c	2016-01-23 15:49:34.000000000 +0100
+@@ -20,7 +20,7 @@
+            METIS.
+ */
+ /*************************************************************************/
+-int METIS_Free(void *ptr)
++int Feel_METIS_Free(void *ptr)
+ {
+   if (ptr != NULL) free(ptr);
+   return METIS_OK;
+@@ -33,7 +33,7 @@ int METIS_Free(void *ptr)
+     \param options points to an array of size at least METIS_NOPTIONS.
+ */
+ /*************************************************************************/
+-int METIS_SetDefaultOptions(idx_t *options)
++int Feel_METIS_SetDefaultOptions(idx_t *options)
+ {
+   iset(METIS_NOPTIONS, -1, options);
+ 
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/frename.c metis/libmetis/frename.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/frename.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/frename.c	2016-01-23 09:54:21.000000000 +0100
+@@ -21,7 +21,7 @@
+ 
+ 
+ FRENAME(
+-    METIS_PartGraphRecursive, 
++    Feel_METIS_PartGraphRecursive, 
+     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
+      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
+      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
+@@ -36,7 +36,7 @@ FRENAME(
+     
+ 
+ FRENAME(
+-    METIS_PartGraphKway,
++    Feel_METIS_PartGraphKway,
+     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
+      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
+      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
+@@ -50,7 +50,7 @@ FRENAME(
+ )
+ 
+ FRENAME(
+-  METIS_MeshToDual,
++  Feel_METIS_MeshToDual,
+   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *ncommon, idx_t *numflag, 
+    idx_t **r_xadj, idx_t **r_adjncy),
+   (ne, nn, eptr, eind, ncommon, numflag, r_xadj, r_adjncy),
+@@ -62,7 +62,7 @@ FRENAME(
+ 
+ 
+ FRENAME(
+-  METIS_MeshToNodal,
++  Feel_METIS_MeshToNodal,
+   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *numflag, idx_t **r_xadj, 
+    idx_t **r_adjncy),
+   (ne, nn, eptr, eind, numflag, r_xadj, r_adjncy),
+@@ -74,7 +74,7 @@ FRENAME(
+   
+ 
+ FRENAME(
+-  METIS_PartMeshNodal,
++  Feel_METIS_PartMeshNodal,
+   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
+    idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
+    idx_t *npart),
+@@ -87,7 +87,7 @@ FRENAME(
+ 
+ 
+ FRENAME(
+-  METIS_PartMeshDual,
++  Feel_METIS_PartMeshDual,
+   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
+    idx_t *ncommon, idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, 
+    idx_t *epart, idx_t *npart),
+@@ -100,7 +100,7 @@ FRENAME(
+ 
+ 
+ FRENAME(
+-  METIS_NodeND,
++  Feel_METIS_NodeND,
+   (idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, idx_t *options, idx_t *perm, 
+    idx_t *iperm),
+   (nvtxs, xadj, adjncy, vwgt, options, perm, iperm),
+@@ -112,7 +112,7 @@ FRENAME(
+ 
+ 
+ FRENAME(
+-  METIS_Free,
++  Feel_METIS_Free,
+   (void *ptr),
+   (ptr),
+   METIS_FREE,
+@@ -123,7 +123,7 @@ FRENAME(
+ 
+ 
+ FRENAME(
+-  METIS_SetDefaultOptions,
++  Feel_METIS_SetDefaultOptions,
+   (idx_t *options),
+   (options),
+   METIS_SETDEFAULTOPTIONS,
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/gklib_rename.h metis/libmetis/gklib_rename.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/gklib_rename.h	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/gklib_rename.h	2016-01-24 10:19:51.000000000 +0100
+@@ -17,105 +17,105 @@
+ #define _LIBMETIS_GKLIB_RENAME_H_
+ 
+ /* gklib.c - generated from the .o files using the ./utils/listundescapedsumbols.csh */
+-#define iAllocMatrix libmetis__iAllocMatrix
+-#define iFreeMatrix libmetis__iFreeMatrix
+-#define iSetMatrix libmetis__iSetMatrix
+-#define iargmax libmetis__iargmax
+-#define iargmax_n libmetis__iargmax_n
+-#define iargmin libmetis__iargmin
+-#define iarray2csr libmetis__iarray2csr
+-#define iaxpy libmetis__iaxpy
+-#define icopy libmetis__icopy
+-#define idot libmetis__idot
+-#define iincset libmetis__iincset
+-#define ikvAllocMatrix libmetis__ikvAllocMatrix
+-#define ikvFreeMatrix libmetis__ikvFreeMatrix
+-#define ikvSetMatrix libmetis__ikvSetMatrix
+-#define ikvcopy libmetis__ikvcopy
+-#define ikvmalloc libmetis__ikvmalloc
+-#define ikvrealloc libmetis__ikvrealloc
+-#define ikvset libmetis__ikvset
+-#define ikvsmalloc libmetis__ikvsmalloc
+-#define ikvsortd libmetis__ikvsortd
+-#define ikvsorti libmetis__ikvsorti
+-#define ikvsortii libmetis__ikvsortii
+-#define imalloc libmetis__imalloc
+-#define imax libmetis__imax
+-#define imin libmetis__imin
+-#define inorm2 libmetis__inorm2
+-#define ipqCheckHeap libmetis__ipqCheckHeap
+-#define ipqCreate libmetis__ipqCreate
+-#define ipqDelete libmetis__ipqDelete
+-#define ipqDestroy libmetis__ipqDestroy
+-#define ipqFree libmetis__ipqFree
+-#define ipqGetTop libmetis__ipqGetTop
+-#define ipqInit libmetis__ipqInit
+-#define ipqInsert libmetis__ipqInsert
+-#define ipqLength libmetis__ipqLength
+-#define ipqReset libmetis__ipqReset
+-#define ipqSeeKey libmetis__ipqSeeKey
+-#define ipqSeeTopKey libmetis__ipqSeeTopKey
+-#define ipqSeeTopVal libmetis__ipqSeeTopVal
+-#define ipqUpdate libmetis__ipqUpdate
+-#define isrand libmetis__isrand
+-#define irand libmetis__irand
+-#define irandArrayPermute libmetis__irandArrayPermute
+-#define irandArrayPermuteFine libmetis__irandArrayPermuteFine
+-#define irandInRange libmetis__irandInRange
+-#define irealloc libmetis__irealloc
+-#define iscale libmetis__iscale
+-#define iset libmetis__iset
+-#define ismalloc libmetis__ismalloc
+-#define isortd libmetis__isortd
+-#define isorti libmetis__isorti
+-#define isrand libmetis__isrand
+-#define isum libmetis__isum
+-#define rAllocMatrix libmetis__rAllocMatrix
+-#define rFreeMatrix libmetis__rFreeMatrix
+-#define rSetMatrix libmetis__rSetMatrix
+-#define rargmax libmetis__rargmax
+-#define rargmax_n libmetis__rargmax_n
+-#define rargmin libmetis__rargmin
+-#define raxpy libmetis__raxpy
+-#define rcopy libmetis__rcopy
+-#define rdot libmetis__rdot
+-#define rincset libmetis__rincset
+-#define rkvAllocMatrix libmetis__rkvAllocMatrix
+-#define rkvFreeMatrix libmetis__rkvFreeMatrix
+-#define rkvSetMatrix libmetis__rkvSetMatrix
+-#define rkvcopy libmetis__rkvcopy
+-#define rkvmalloc libmetis__rkvmalloc
+-#define rkvrealloc libmetis__rkvrealloc
+-#define rkvset libmetis__rkvset
+-#define rkvsmalloc libmetis__rkvsmalloc
+-#define rkvsortd libmetis__rkvsortd
+-#define rkvsorti libmetis__rkvsorti
+-#define rmalloc libmetis__rmalloc
+-#define rmax libmetis__rmax
+-#define rmin libmetis__rmin
+-#define rnorm2 libmetis__rnorm2
+-#define rpqCheckHeap libmetis__rpqCheckHeap
+-#define rpqCreate libmetis__rpqCreate
+-#define rpqDelete libmetis__rpqDelete
+-#define rpqDestroy libmetis__rpqDestroy
+-#define rpqFree libmetis__rpqFree
+-#define rpqGetTop libmetis__rpqGetTop
+-#define rpqInit libmetis__rpqInit
+-#define rpqInsert libmetis__rpqInsert
+-#define rpqLength libmetis__rpqLength
+-#define rpqReset libmetis__rpqReset
+-#define rpqSeeKey libmetis__rpqSeeKey
+-#define rpqSeeTopKey libmetis__rpqSeeTopKey
+-#define rpqSeeTopVal libmetis__rpqSeeTopVal
+-#define rpqUpdate libmetis__rpqUpdate
+-#define rrealloc libmetis__rrealloc
+-#define rscale libmetis__rscale
+-#define rset libmetis__rset
+-#define rsmalloc libmetis__rsmalloc
+-#define rsortd libmetis__rsortd
+-#define rsorti libmetis__rsorti
+-#define rsum libmetis__rsum
+-#define uvwsorti libmetis__uvwsorti
++#define iAllocMatrix feel__libmetis__iAllocMatrix
++#define iFreeMatrix feel__libmetis__iFreeMatrix
++#define iSetMatrix feel__libmetis__iSetMatrix
++#define iargmax feel__libmetis__iargmax
++#define iargmax_n feel__libmetis__iargmax_n
++#define iargmin feel__libmetis__iargmin
++#define iarray2csr feel__libmetis__iarray2csr
++#define iaxpy feel__libmetis__iaxpy
++#define icopy feel__libmetis__icopy
++#define idot feel__libmetis__idot
++#define iincset feel__libmetis__iincset
++#define ikvAllocMatrix feel__libmetis__ikvAllocMatrix
++#define ikvFreeMatrix feel__libmetis__ikvFreeMatrix
++#define ikvSetMatrix feel__libmetis__ikvSetMatrix
++#define ikvcopy feel__libmetis__ikvcopy
++#define ikvmalloc feel__libmetis__ikvmalloc
++#define ikvrealloc feel__libmetis__ikvrealloc
++#define ikvset feel__libmetis__ikvset
++#define ikvsmalloc feel__libmetis__ikvsmalloc
++#define ikvsortd feel__libmetis__ikvsortd
++#define ikvsorti feel__libmetis__ikvsorti
++#define ikvsortii feel__libmetis__ikvsortii
++#define imalloc feel__libmetis__imalloc
++#define imax feel__libmetis__imax
++#define imin feel__libmetis__imin
++#define inorm2 feel__libmetis__inorm2
++#define ipqCheckHeap feel__libmetis__ipqCheckHeap
++#define ipqCreate feel__libmetis__ipqCreate
++#define ipqDelete feel__libmetis__ipqDelete
++#define ipqDestroy feel__libmetis__ipqDestroy
++#define ipqFree feel__libmetis__ipqFree
++#define ipqGetTop feel__libmetis__ipqGetTop
++#define ipqInit feel__libmetis__ipqInit
++#define ipqInsert feel__libmetis__ipqInsert
++#define ipqLength feel__libmetis__ipqLength
++#define ipqReset feel__libmetis__ipqReset
++#define ipqSeeKey feel__libmetis__ipqSeeKey
++#define ipqSeeTopKey feel__libmetis__ipqSeeTopKey
++#define ipqSeeTopVal feel__libmetis__ipqSeeTopVal
++#define ipqUpdate feel__libmetis__ipqUpdate
++#define isrand feel__libmetis__isrand
++#define irand feel__libmetis__irand
++#define irandArrayPermute feel__libmetis__irandArrayPermute
++#define irandArrayPermuteFine feel__libmetis__irandArrayPermuteFine
++#define irandInRange feel__libmetis__irandInRange
++#define irealloc feel__libmetis__irealloc
++#define iscale feel__libmetis__iscale
++#define iset feel__libmetis__iset
++#define ismalloc feel__libmetis__ismalloc
++#define isortd feel__libmetis__isortd
++#define isorti feel__libmetis__isorti
++#define isrand feel__libmetis__isrand
++#define isum feel__libmetis__isum
++#define rAllocMatrix feel__libmetis__rAllocMatrix
++#define rFreeMatrix feel__libmetis__rFreeMatrix
++#define rSetMatrix feel__libmetis__rSetMatrix
++#define rargmax feel__libmetis__rargmax
++#define rargmax_n feel__libmetis__rargmax_n
++#define rargmin feel__libmetis__rargmin
++#define raxpy feel__libmetis__raxpy
++#define rcopy feel__libmetis__rcopy
++#define rdot feel__libmetis__rdot
++#define rincset feel__libmetis__rincset
++#define rkvAllocMatrix feel__libmetis__rkvAllocMatrix
++#define rkvFreeMatrix feel__libmetis__rkvFreeMatrix
++#define rkvSetMatrix feel__libmetis__rkvSetMatrix
++#define rkvcopy feel__libmetis__rkvcopy
++#define rkvmalloc feel__libmetis__rkvmalloc
++#define rkvrealloc feel__libmetis__rkvrealloc
++#define rkvset feel__libmetis__rkvset
++#define rkvsmalloc feel__libmetis__rkvsmalloc
++#define rkvsortd feel__libmetis__rkvsortd
++#define rkvsorti feel__libmetis__rkvsorti
++#define rmalloc feel__libmetis__rmalloc
++#define rmax feel__libmetis__rmax
++#define rmin feel__libmetis__rmin
++#define rnorm2 feel__libmetis__rnorm2
++#define rpqCheckHeap feel__libmetis__rpqCheckHeap
++#define rpqCreate feel__libmetis__rpqCreate
++#define rpqDelete feel__libmetis__rpqDelete
++#define rpqDestroy feel__libmetis__rpqDestroy
++#define rpqFree feel__libmetis__rpqFree
++#define rpqGetTop feel__libmetis__rpqGetTop
++#define rpqInit feel__libmetis__rpqInit
++#define rpqInsert feel__libmetis__rpqInsert
++#define rpqLength feel__libmetis__rpqLength
++#define rpqReset feel__libmetis__rpqReset
++#define rpqSeeKey feel__libmetis__rpqSeeKey
++#define rpqSeeTopKey feel__libmetis__rpqSeeTopKey
++#define rpqSeeTopVal feel__libmetis__rpqSeeTopVal
++#define rpqUpdate feel__libmetis__rpqUpdate
++#define rrealloc feel__libmetis__rrealloc
++#define rscale feel__libmetis__rscale
++#define rset feel__libmetis__rset
++#define rsmalloc feel__libmetis__rsmalloc
++#define rsortd feel__libmetis__rsortd
++#define rsorti feel__libmetis__rsorti
++#define rsum feel__libmetis__rsum
++#define uvwsorti feel__libmetis__uvwsorti
+ 
+ #endif
+ 
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/kmetis.c metis/libmetis/kmetis.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/kmetis.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/kmetis.c	2016-01-23 13:19:39.000000000 +0100
+@@ -15,7 +15,7 @@
+ /*************************************************************************/
+ /*! This function is the entry point for MCKMETIS */
+ /*************************************************************************/
+-int METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
++int Feel_METIS_PartGraphKway(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, 
+           idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, idx_t *nparts, 
+           real_t *tpwgts, real_t *ubvec, idx_t *options, idx_t *objval, 
+           idx_t *part)
+@@ -176,7 +176,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
+   real_t *ubvec=NULL;
+   int status;
+ 
+-  METIS_SetDefaultOptions(options);
++  Feel_METIS_SetDefaultOptions(options);
+   options[METIS_OPTION_NITER]   = 10;
+   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+   options[METIS_OPTION_NO2HOP]  = ctrl->no2hop;
+@@ -191,7 +191,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
+     case METIS_OBJTYPE_CUT:
+     case METIS_OBJTYPE_VOL:
+       options[METIS_OPTION_NCUTS] = ctrl->nIparts;
+-      status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
++      status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+                    graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
+                    graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
+                    options, &curobj, graph->where);
+@@ -208,7 +208,7 @@ void InitKWayPartitioning(ctrl_t *ctrl, 
+ 
+       ntrials = (ctrl->nIparts+1)/2;
+       for (i=0; i<ntrials; i++) {
+-        status = METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
++        status = Feel_METIS_PartGraphRecursive(&graph->nvtxs, &graph->ncon, 
+                      graph->xadj, graph->adjncy, graph->vwgt, graph->vsize, 
+                      graph->adjwgt, &ctrl->nparts, ctrl->tpwgts, ubvec, 
+                      options, &curobj, graph->where);
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/mesh.c metis/libmetis/mesh.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/mesh.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/mesh.c	2016-01-23 13:14:27.000000000 +0100
+@@ -41,7 +41,7 @@
+ 
+ */
+ /*****************************************************************************/
+-int METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++int Feel_METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+           idx_t *ncommon, idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
+ {
+   int sigrval=0, renumber=0;
+@@ -111,7 +111,7 @@ SIGTHROW:
+ 
+ */
+ /*****************************************************************************/
+-int METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++int Feel_METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+           idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
+ {
+   int sigrval=0, renumber=0;
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/meshpart.c metis/libmetis/meshpart.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/meshpart.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/meshpart.c	2016-01-23 13:11:42.000000000 +0100
+@@ -19,7 +19,7 @@
+ * This function partitions a finite element mesh by partitioning its nodal
+ * graph using KMETIS and then assigning elements in a load balanced fashion.
+ **************************************************************************/
+-int METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++int Feel_METIS_PartMeshNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+           idx_t *vwgt, idx_t *vsize, idx_t *nparts, real_t *tpwgts, 
+           idx_t *options, idx_t *objval, idx_t *epart, idx_t *npart)
+ {
+@@ -47,16 +47,16 @@ int METIS_PartMeshNodal(idx_t *ne, idx_t
+   }
+ 
+   /* get the nodal graph */
+-  rstatus = METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
++  rstatus = Feel_METIS_MeshToNodal(ne, nn, eptr, eind, &pnumflag, &xadj, &adjncy);
+   if (rstatus != METIS_OK)
+     raise(SIGERR);
+ 
+   /* partition the graph */
+   if (ptype == METIS_PTYPE_KWAY) 
+-    rstatus = METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++    rstatus = Feel_METIS_PartGraphKway(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+                   nparts, tpwgts, NULL, options, objval, npart);
+   else 
+-    rstatus = METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++    rstatus = Feel_METIS_PartGraphRecursive(nn, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+                   nparts, tpwgts, NULL, options, objval, npart);
+ 
+   if (rstatus != METIS_OK)
+@@ -72,8 +72,8 @@ SIGTHROW:
+     options[METIS_OPTION_NUMBERING] = 1;
+   }
+ 
+-  METIS_Free(xadj);
+-  METIS_Free(adjncy);
++  Feel_METIS_Free(xadj);
++  Feel_METIS_Free(adjncy);
+ 
+   gk_siguntrap();
+   gk_malloc_cleanup(0);
+@@ -87,7 +87,7 @@ SIGTHROW:
+ * This function partitions a finite element mesh by partitioning its dual
+ * graph using KMETIS and then assigning nodes in a load balanced fashion.
+ **************************************************************************/
+-int METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
++int Feel_METIS_PartMeshDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+           idx_t *vwgt, idx_t *vsize, idx_t *ncommon, idx_t *nparts, 
+           real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
+           idx_t *npart) 
+@@ -117,16 +117,16 @@ int METIS_PartMeshDual(idx_t *ne, idx_t 
+   }
+ 
+   /* get the dual graph */
+-  rstatus = METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
++  rstatus = Feel_METIS_MeshToDual(ne, nn, eptr, eind, ncommon, &pnumflag, &xadj, &adjncy);
+   if (rstatus != METIS_OK)
+     raise(SIGERR);
+ 
+   /* partition the graph */
+   if (ptype == METIS_PTYPE_KWAY) 
+-    rstatus = METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++    rstatus = Feel_METIS_PartGraphKway(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+                   nparts, tpwgts, NULL, options, objval, epart);
+   else 
+-    rstatus = METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
++    rstatus = Feel_METIS_PartGraphRecursive(ne, &ncon, xadj, adjncy, vwgt, vsize, NULL, 
+                   nparts, tpwgts, NULL, options, objval, epart);
+ 
+   if (rstatus != METIS_OK)
+@@ -161,8 +161,8 @@ SIGTHROW:
+     options[METIS_OPTION_NUMBERING] = 1;
+   }
+ 
+-  METIS_Free(xadj);
+-  METIS_Free(adjncy);
++  Feel_METIS_Free(xadj);
++  Feel_METIS_Free(adjncy);
+ 
+   gk_siguntrap();
+   gk_malloc_cleanup(0);
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/metislib.h metis/libmetis/metislib.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/metislib.h	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/metislib.h	2016-01-24 10:20:32.000000000 +0100
+@@ -21,7 +21,7 @@
+ #endif
+ 
+ 
+-#include <metis.h>
++#include <feelmetis.h>
+ #include <rename.h>
+ #include <gklib_defs.h>
+ 
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/ometis.c metis/libmetis/ometis.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/ometis.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/ometis.c	2016-01-23 13:15:24.000000000 +0100
+@@ -40,7 +40,7 @@
+            the original and permuted matrices, then A[i] = A'[iperm[i]].
+ */
+ /*************************************************************************/
+-int METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++int Feel_METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+           idx_t *options, idx_t *perm, idx_t *iperm) 
+ {
+   int sigrval=0, renumber=0;
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/parmetis.c metis/libmetis/parmetis.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/parmetis.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/parmetis.c	2016-01-23 13:21:26.000000000 +0100
+@@ -25,7 +25,7 @@
+       sizes array.
+ */
+ /*************************************************************************/
+-int METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
++int Feel_METIS_NodeNDP(idx_t nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+            idx_t npes, idx_t *options, idx_t *perm, idx_t *iperm, idx_t *sizes) 
+ {
+   idx_t i, ii, j, l, nnvtxs=0;
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/pmetis.c metis/libmetis/pmetis.c
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/pmetis.c	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/pmetis.c	2016-01-23 13:18:48.000000000 +0100
+@@ -88,7 +88,7 @@
+            
+ */
+ /*************************************************************************/
+-int METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
++int Feel_METIS_PartGraphRecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj, 
+           idx_t *adjncy, idx_t *vwgt, idx_t *vsize, idx_t *adjwgt, 
+           idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options, 
+           idx_t *objval, idx_t *part)
+diff -rupN /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/rename.h metis/libmetis/rename.h
+--- /Users/vincentchabannes/github/feelpp/contrib/metis/libmetis/rename.h	2015-05-22 07:41:18.000000000 +0200
++++ metis/libmetis/rename.h	2016-01-23 15:56:33.000000000 +0100
+@@ -18,248 +18,248 @@
+ 
+ 
+ /* balance.c */
+-#define Balance2Way			libmetis__Balance2Way
+-#define Bnd2WayBalance			libmetis__Bnd2WayBalance
+-#define General2WayBalance		libmetis__General2WayBalance
+-#define McGeneral2WayBalance            libmetis__McGeneral2WayBalance
++#define Balance2Way			feel__libmetis__Balance2Way
++#define Bnd2WayBalance			feel__libmetis__Bnd2WayBalance
++#define General2WayBalance		feel__libmetis__General2WayBalance
++#define McGeneral2WayBalance            feel__libmetis__McGeneral2WayBalance
+ 
+ /* bucketsort.c */
+-#define BucketSortKeysInc		libmetis__BucketSortKeysInc
++#define BucketSortKeysInc		feel__libmetis__BucketSortKeysInc
+ 
+ /* checkgraph.c */
+-#define CheckGraph                      libmetis__CheckGraph
+-#define CheckInputGraphWeights          libmetis__CheckInputGraphWeights
+-#define FixGraph                        libmetis__FixGraph
++#define CheckGraph                      feel__libmetis__CheckGraph
++#define CheckInputGraphWeights          feel__libmetis__CheckInputGraphWeights
++#define FixGraph                        feel__libmetis__FixGraph
+ 
+ /* coarsen.c */
+-#define CoarsenGraph			libmetis__CoarsenGraph
+-#define Match_RM                        libmetis__Match_RM
+-#define Match_SHEM                      libmetis__Match_SHEM
+-#define Match_2Hop                      libmetis__Match_2Hop
+-#define Match_2HopAny                   libmetis__Match_2HopAny
+-#define Match_2HopAll                   libmetis__Match_2HopAll
+-#define PrintCGraphStats                libmetis__PrintCGraphStats
+-#define CreateCoarseGraph		libmetis__CreateCoarseGraph
+-#define CreateCoarseGraphNoMask		libmetis__CreateCoarseGraphNoMask
+-#define CreateCoarseGraphPerm		libmetis__CreateCoarseGraphPerm
+-#define SetupCoarseGraph		libmetis__SetupCoarseGraph
+-#define ReAdjustMemory			libmetis__ReAdjustMemory
++#define CoarsenGraph			feel__libmetis__CoarsenGraph
++#define Match_RM                        feel__libmetis__Match_RM
++#define Match_SHEM                      feel__libmetis__Match_SHEM
++#define Match_2Hop                      feel__libmetis__Match_2Hop
++#define Match_2HopAny                   feel__libmetis__Match_2HopAny
++#define Match_2HopAll                   feel__libmetis__Match_2HopAll
++#define PrintCGraphStats                feel__libmetis__PrintCGraphStats
++#define CreateCoarseGraph		feel__libmetis__CreateCoarseGraph
++#define CreateCoarseGraphNoMask		feel__libmetis__CreateCoarseGraphNoMask
++#define CreateCoarseGraphPerm		feel__libmetis__CreateCoarseGraphPerm
++#define SetupCoarseGraph		feel__libmetis__SetupCoarseGraph
++#define ReAdjustMemory			feel__libmetis__ReAdjustMemory
+ 
+ /* compress.c */
+-#define CompressGraph			libmetis__CompressGraph
+-#define PruneGraph			libmetis__PruneGraph
++#define CompressGraph			feel__libmetis__CompressGraph
++#define PruneGraph			feel__libmetis__PruneGraph
+ 
+ /* contig.c */
+-#define FindPartitionInducedComponents  libmetis__FindPartitionInducedComponents   
+-#define IsConnected                     libmetis__IsConnected
+-#define IsConnectedSubdomain            libmetis__IsConnectedSubdomain
+-#define FindSepInducedComponents        libmetis__FindSepInducedComponents
+-#define EliminateComponents             libmetis__EliminateComponents
+-#define MoveGroupContigForCut           libmetis__MoveGroupContigForCut
+-#define MoveGroupContigForVol           libmetis__MoveGroupContigForVol
++#define FindPartitionInducedComponents  feel__libmetis__FindPartitionInducedComponents   
++#define IsConnected                     feel__libmetis__IsConnected
++#define IsConnectedSubdomain            feel__libmetis__IsConnectedSubdomain
++#define FindSepInducedComponents        feel__libmetis__FindSepInducedComponents
++#define EliminateComponents             feel__libmetis__EliminateComponents
++#define MoveGroupContigForCut           feel__libmetis__MoveGroupContigForCut
++#define MoveGroupContigForVol           feel__libmetis__MoveGroupContigForVol
+ 
+ /* debug.c */
+-#define ComputeCut			libmetis__ComputeCut
+-#define ComputeVolume			libmetis__ComputeVolume
+-#define ComputeMaxCut			libmetis__ComputeMaxCut
+-#define CheckBnd			libmetis__CheckBnd
+-#define CheckBnd2			libmetis__CheckBnd2
+-#define CheckNodeBnd			libmetis__CheckNodeBnd
+-#define CheckRInfo			libmetis__CheckRInfo
+-#define CheckNodePartitionParams	libmetis__CheckNodePartitionParams
+-#define IsSeparable			libmetis__IsSeparable
+-#define CheckKWayVolPartitionParams     libmetis__CheckKWayVolPartitionParams
++#define ComputeCut			feel__libmetis__ComputeCut
++#define ComputeVolume			feel__libmetis__ComputeVolume
++#define ComputeMaxCut			feel__libmetis__ComputeMaxCut
++#define CheckBnd			feel__libmetis__CheckBnd
++#define CheckBnd2			feel__libmetis__CheckBnd2
++#define CheckNodeBnd			feel__libmetis__CheckNodeBnd
++#define CheckRInfo			feel__libmetis__CheckRInfo
++#define CheckNodePartitionParams	feel__libmetis__CheckNodePartitionParams
++#define IsSeparable			feel__libmetis__IsSeparable
++#define CheckKWayVolPartitionParams     feel__libmetis__CheckKWayVolPartitionParams
+ 
+ /* fm.c */
+-#define FM_2WayRefine                   libmetis__FM_2WayRefine
+-#define FM_2WayCutRefine                libmetis__FM_2WayCutRefine
+-#define FM_Mc2WayCutRefine              libmetis__FM_Mc2WayCutRefine
+-#define SelectQueue                     libmetis__SelectQueue
+-#define Print2WayRefineStats            libmetis__Print2WayRefineStats
++#define FM_2WayRefine                   feel__libmetis__FM_2WayRefine
++#define FM_2WayCutRefine                feel__libmetis__FM_2WayCutRefine
++#define FM_Mc2WayCutRefine              feel__libmetis__FM_Mc2WayCutRefine
++#define SelectQueue                     feel__libmetis__SelectQueue
++#define Print2WayRefineStats            feel__libmetis__Print2WayRefineStats
+ 
+ /* fortran.c */
+-#define Change2CNumbering		libmetis__Change2CNumbering
+-#define Change2FNumbering		libmetis__Change2FNumbering
+-#define Change2FNumbering2		libmetis__Change2FNumbering2
+-#define Change2FNumberingOrder		libmetis__Change2FNumberingOrder
+-#define ChangeMesh2CNumbering		libmetis__ChangeMesh2CNumbering
+-#define ChangeMesh2FNumbering		libmetis__ChangeMesh2FNumbering
+-#define ChangeMesh2FNumbering2		libmetis__ChangeMesh2FNumbering2
++#define Change2CNumbering		feel__libmetis__Change2CNumbering
++#define Change2FNumbering		feel__libmetis__Change2FNumbering
++#define Change2FNumbering2		feel__libmetis__Change2FNumbering2
++#define Change2FNumberingOrder		feel__libmetis__Change2FNumberingOrder
++#define ChangeMesh2CNumbering		feel__libmetis__ChangeMesh2CNumbering
++#define ChangeMesh2FNumbering		feel__libmetis__ChangeMesh2FNumbering
++#define ChangeMesh2FNumbering2		feel__libmetis__ChangeMesh2FNumbering2
+ 
+ /* graph.c */
+-#define SetupGraph			libmetis__SetupGraph
+-#define SetupGraph_adjrsum              libmetis__SetupGraph_adjrsum
+-#define SetupGraph_tvwgt                libmetis__SetupGraph_tvwgt
+-#define SetupGraph_label                libmetis__SetupGraph_label
+-#define SetupSplitGraph                 libmetis__SetupSplitGraph
+-#define CreateGraph                     libmetis__CreateGraph
+-#define InitGraph                       libmetis__InitGraph
+-#define FreeRData                       libmetis__FreeRData
+-#define FreeGraph                       libmetis__FreeGraph
++#define SetupGraph			feel__libmetis__SetupGraph
++#define SetupGraph_adjrsum              feel__libmetis__SetupGraph_adjrsum
++#define SetupGraph_tvwgt                feel__libmetis__SetupGraph_tvwgt
++#define SetupGraph_label                feel__libmetis__SetupGraph_label
++#define SetupSplitGraph                 feel__libmetis__SetupSplitGraph
++#define CreateGraph                     feel__libmetis__CreateGraph
++#define InitGraph                       feel__libmetis__InitGraph
++#define FreeRData                       feel__libmetis__FreeRData
++#define FreeGraph                       feel__libmetis__FreeGraph
+ 
+ /* initpart.c */
+-#define Init2WayPartition		libmetis__Init2WayPartition
+-#define InitSeparator			libmetis__InitSeparator
+-#define RandomBisection			libmetis__RandomBisection
+-#define GrowBisection			libmetis__GrowBisection
+-#define McRandomBisection               libmetis__McRandomBisection
+-#define McGrowBisection                 libmetis__McGrowBisection
+-#define GrowBisectionNode		libmetis__GrowBisectionNode
++#define Init2WayPartition		feel__libmetis__Init2WayPartition
++#define InitSeparator			feel__libmetis__InitSeparator
++#define RandomBisection			feel__libmetis__RandomBisection
++#define GrowBisection			feel__libmetis__GrowBisection
++#define McRandomBisection               feel__libmetis__McRandomBisection
++#define McGrowBisection                 feel__libmetis__McGrowBisection
++#define GrowBisectionNode		feel__libmetis__GrowBisectionNode
+ 
+ /* kmetis.c */
+-#define MlevelKWayPartitioning		libmetis__MlevelKWayPartitioning
+-#define InitKWayPartitioning            libmetis__InitKWayPartitioning
++#define MlevelKWayPartitioning		feel__libmetis__MlevelKWayPartitioning
++#define InitKWayPartitioning            feel__libmetis__InitKWayPartitioning
+ 
+ /* kwayfm.c */
+-#define Greedy_KWayOptimize		libmetis__Greedy_KWayOptimize
+-#define Greedy_KWayCutOptimize		libmetis__Greedy_KWayCutOptimize
+-#define Greedy_KWayVolOptimize          libmetis__Greedy_KWayVolOptimize
+-#define Greedy_McKWayCutOptimize        libmetis__Greedy_McKWayCutOptimize
+-#define Greedy_McKWayVolOptimize        libmetis__Greedy_McKWayVolOptimize
+-#define IsArticulationNode              libmetis__IsArticulationNode
+-#define KWayVolUpdate                   libmetis__KWayVolUpdate
++#define Greedy_KWayOptimize		feel__libmetis__Greedy_KWayOptimize
++#define Greedy_KWayCutOptimize		feel__libmetis__Greedy_KWayCutOptimize
++#define Greedy_KWayVolOptimize          feel__libmetis__Greedy_KWayVolOptimize
++#define Greedy_McKWayCutOptimize        feel__libmetis__Greedy_McKWayCutOptimize
++#define Greedy_McKWayVolOptimize        feel__libmetis__Greedy_McKWayVolOptimize
++#define IsArticulationNode              feel__libmetis__IsArticulationNode
++#define KWayVolUpdate                   feel__libmetis__KWayVolUpdate
+ 
+ /* kwayrefine.c */
+-#define RefineKWay			libmetis__RefineKWay
+-#define AllocateKWayPartitionMemory	libmetis__AllocateKWayPartitionMemory
+-#define ComputeKWayPartitionParams	libmetis__ComputeKWayPartitionParams
+-#define ProjectKWayPartition		libmetis__ProjectKWayPartition
+-#define ComputeKWayBoundary		libmetis__ComputeKWayBoundary
+-#define ComputeKWayVolGains             libmetis__ComputeKWayVolGains
+-#define IsBalanced			libmetis__IsBalanced
++#define RefineKWay			feel__libmetis__RefineKWay
++#define AllocateKWayPartitionMemory	feel__libmetis__AllocateKWayPartitionMemory
++#define ComputeKWayPartitionParams	feel__libmetis__ComputeKWayPartitionParams
++#define ProjectKWayPartition		feel__libmetis__ProjectKWayPartition
++#define ComputeKWayBoundary		feel__libmetis__ComputeKWayBoundary
++#define ComputeKWayVolGains             feel__libmetis__ComputeKWayVolGains
++#define IsBalanced			feel__libmetis__IsBalanced
+ 
+ /* mcutil */
+-#define rvecle                          libmetis__rvecle
+-#define rvecge                          libmetis__rvecge
+-#define rvecsumle                       libmetis__rvecsumle
+-#define rvecmaxdiff                     libmetis__rvecmaxdiff
+-#define ivecle                          libmetis__ivecle
+-#define ivecge                          libmetis__ivecge
+-#define ivecaxpylez                     libmetis__ivecaxpylez
+-#define ivecaxpygez                     libmetis__ivecaxpygez
+-#define BetterVBalance                  libmetis__BetterVBalance
+-#define BetterBalance2Way               libmetis__BetterBalance2Way
+-#define BetterBalanceKWay               libmetis__BetterBalanceKWay
+-#define ComputeLoadImbalance            libmetis__ComputeLoadImbalance
+-#define ComputeLoadImbalanceDiff        libmetis__ComputeLoadImbalanceDiff
+-#define ComputeLoadImbalanceDiffVec     libmetis__ComputeLoadImbalanceDiffVec
+-#define ComputeLoadImbalanceVec         libmetis__ComputeLoadImbalanceVec
++#define rvecle                          feel__libmetis__rvecle
++#define rvecge                          feel__libmetis__rvecge
++#define rvecsumle                       feel__libmetis__rvecsumle
++#define rvecmaxdiff                     feel__libmetis__rvecmaxdiff
++#define ivecle                          feel__libmetis__ivecle
++#define ivecge                          feel__libmetis__ivecge
++#define ivecaxpylez                     feel__libmetis__ivecaxpylez
++#define ivecaxpygez                     feel__libmetis__ivecaxpygez
++#define BetterVBalance                  feel__libmetis__BetterVBalance
++#define BetterBalance2Way               feel__libmetis__BetterBalance2Way
++#define BetterBalanceKWay               feel__libmetis__BetterBalanceKWay
++#define ComputeLoadImbalance            feel__libmetis__ComputeLoadImbalance
++#define ComputeLoadImbalanceDiff        feel__libmetis__ComputeLoadImbalanceDiff
++#define ComputeLoadImbalanceDiffVec     feel__libmetis__ComputeLoadImbalanceDiffVec
++#define ComputeLoadImbalanceVec         feel__libmetis__ComputeLoadImbalanceVec
+ 
+ /* mesh.c */
+-#define CreateGraphDual                 libmetis__CreateGraphDual
+-#define FindCommonElements              libmetis__FindCommonElements
+-#define CreateGraphNodal                libmetis__CreateGraphNodal
+-#define FindCommonNodes                 libmetis__FindCommonNodes
+-#define CreateMesh                      libmetis__CreateMesh
+-#define InitMesh                        libmetis__InitMesh
+-#define FreeMesh                        libmetis__FreeMesh
++#define CreateGraphDual                 feel__libmetis__CreateGraphDual
++#define FindCommonElements              feel__libmetis__FindCommonElements
++#define CreateGraphNodal                feel__libmetis__CreateGraphNodal
++#define FindCommonNodes                 feel__libmetis__FindCommonNodes
++#define CreateMesh                      feel__libmetis__CreateMesh
++#define InitMesh                        feel__libmetis__InitMesh
++#define FreeMesh                        feel__libmetis__FreeMesh
+ 
+ /* meshpart.c */
+-#define InduceRowPartFromColumnPart     libmetis__InduceRowPartFromColumnPart
++#define InduceRowPartFromColumnPart     feel__libmetis__InduceRowPartFromColumnPart
+ 
+ /* minconn.c */
+-#define ComputeSubDomainGraph           libmetis__ComputeSubDomainGraph
+-#define UpdateEdgeSubDomainGraph        libmetis__UpdateEdgeSubDomainGraph
+-#define PrintSubDomainGraph             libmetis__PrintSubDomainGraph
+-#define EliminateSubDomainEdges         libmetis__EliminateSubDomainEdges
+-#define MoveGroupMinConnForCut          libmetis__MoveGroupMinConnForCut
+-#define MoveGroupMinConnForVol          libmetis__MoveGroupMinConnForVol
++#define ComputeSubDomainGraph           feel__libmetis__ComputeSubDomainGraph
++#define UpdateEdgeSubDomainGraph        feel__libmetis__UpdateEdgeSubDomainGraph
++#define PrintSubDomainGraph             feel__libmetis__PrintSubDomainGraph
++#define EliminateSubDomainEdges         feel__libmetis__EliminateSubDomainEdges
++#define MoveGroupMinConnForCut          feel__libmetis__MoveGroupMinConnForCut
++#define MoveGroupMinConnForVol          feel__libmetis__MoveGroupMinConnForVol
+ 
+ /* mincover.c */
+-#define MinCover			libmetis__MinCover
+-#define MinCover_Augment		libmetis__MinCover_Augment
+-#define MinCover_Decompose		libmetis__MinCover_Decompose
+-#define MinCover_ColDFS			libmetis__MinCover_ColDFS
+-#define MinCover_RowDFS			libmetis__MinCover_RowDFS
++#define MinCover			feel__libmetis__MinCover
++#define MinCover_Augment		feel__libmetis__MinCover_Augment
++#define MinCover_Decompose		feel__libmetis__MinCover_Decompose
++#define MinCover_ColDFS			feel__libmetis__MinCover_ColDFS
++#define MinCover_RowDFS			feel__libmetis__MinCover_RowDFS
+ 
+ /* mmd.c */
+-#define genmmd				libmetis__genmmd
+-#define mmdelm				libmetis__mmdelm
+-#define mmdint				libmetis__mmdint
+-#define mmdnum				libmetis__mmdnum
+-#define mmdupd				libmetis__mmdupd
++#define genmmd				feel__libmetis__genmmd
++#define mmdelm				feel__libmetis__mmdelm
++#define mmdint				feel__libmetis__mmdint
++#define mmdnum				feel__libmetis__mmdnum
++#define mmdupd				feel__libmetis__mmdupd
+ 
+ 
+ /* ometis.c */
+-#define MlevelNestedDissection		libmetis__MlevelNestedDissection
+-#define MlevelNestedDissectionCC	libmetis__MlevelNestedDissectionCC
+-#define MlevelNodeBisectionMultiple	libmetis__MlevelNodeBisectionMultiple
+-#define MlevelNodeBisectionL2		libmetis__MlevelNodeBisectionL2
+-#define MlevelNodeBisectionL1		libmetis__MlevelNodeBisectionL1
+-#define SplitGraphOrder			libmetis__SplitGraphOrder
+-#define SplitGraphOrderCC		libmetis__SplitGraphOrderCC
+-#define MMDOrder			libmetis__MMDOrder
++#define MlevelNestedDissection		feel__libmetis__MlevelNestedDissection
++#define MlevelNestedDissectionCC	feel__libmetis__MlevelNestedDissectionCC
++#define MlevelNodeBisectionMultiple	feel__libmetis__MlevelNodeBisectionMultiple
++#define MlevelNodeBisectionL2		feel__libmetis__MlevelNodeBisectionL2
++#define MlevelNodeBisectionL1		feel__libmetis__MlevelNodeBisectionL1
++#define SplitGraphOrder			feel__libmetis__SplitGraphOrder
++#define SplitGraphOrderCC		feel__libmetis__SplitGraphOrderCC
++#define MMDOrder			feel__libmetis__MMDOrder
+ 
+ /* options.c */
+-#define SetupCtrl                       libmetis__SetupCtrl
+-#define SetupKWayBalMultipliers         libmetis__SetupKWayBalMultipliers
+-#define Setup2WayBalMultipliers         libmetis__Setup2WayBalMultipliers
+-#define PrintCtrl                       libmetis__PrintCtrl
+-#define FreeCtrl                        libmetis__FreeCtrl
+-#define CheckParams                     libmetis__CheckParams
++#define SetupCtrl                       feel__libmetis__SetupCtrl
++#define SetupKWayBalMultipliers         feel__libmetis__SetupKWayBalMultipliers
++#define Setup2WayBalMultipliers         feel__libmetis__Setup2WayBalMultipliers
++#define PrintCtrl                       feel__libmetis__PrintCtrl
++#define FreeCtrl                        feel__libmetis__FreeCtrl
++#define CheckParams                     feel__libmetis__CheckParams
+ 
+ /* parmetis.c */
+-#define MlevelNestedDissectionP		libmetis__MlevelNestedDissectionP
+-#define FM_2WayNodeRefine1SidedP        libmetis__FM_2WayNodeRefine1SidedP
+-#define FM_2WayNodeRefine2SidedP        libmetis__FM_2WayNodeRefine2SidedP
++#define MlevelNestedDissectionP		feel__libmetis__MlevelNestedDissectionP
++#define FM_2WayNodeRefine1SidedP        feel__libmetis__FM_2WayNodeRefine1SidedP
++#define FM_2WayNodeRefine2SidedP        feel__libmetis__FM_2WayNodeRefine2SidedP
+ 
+ /* pmetis.c */
+-#define MlevelRecursiveBisection	libmetis__MlevelRecursiveBisection
+-#define MultilevelBisect		libmetis__MultilevelBisect
+-#define SplitGraphPart			libmetis__SplitGraphPart
++#define MlevelRecursiveBisection	feel__libmetis__MlevelRecursiveBisection
++#define MultilevelBisect		feel__libmetis__MultilevelBisect
++#define SplitGraphPart			feel__libmetis__SplitGraphPart
+ 
+ /* refine.c */
+-#define Refine2Way			libmetis__Refine2Way
+-#define Allocate2WayPartitionMemory	libmetis__Allocate2WayPartitionMemory
+-#define Compute2WayPartitionParams	libmetis__Compute2WayPartitionParams
+-#define Project2WayPartition		libmetis__Project2WayPartition
++#define Refine2Way			feel__libmetis__Refine2Way
++#define Allocate2WayPartitionMemory	feel__libmetis__Allocate2WayPartitionMemory
++#define Compute2WayPartitionParams	feel__libmetis__Compute2WayPartitionParams
++#define Project2WayPartition		feel__libmetis__Project2WayPartition
+ 
+ /* separator.c */
+-#define ConstructSeparator		libmetis__ConstructSeparator
+-#define ConstructMinCoverSeparator	libmetis__ConstructMinCoverSeparator
++#define ConstructSeparator		feel__libmetis__ConstructSeparator
++#define ConstructMinCoverSeparator	feel__libmetis__ConstructMinCoverSeparator
+ 
+ /* sfm.c */
+-#define FM_2WayNodeRefine2Sided         libmetis__FM_2WayNodeRefine2Sided 
+-#define FM_2WayNodeRefine1Sided         libmetis__FM_2WayNodeRefine1Sided
+-#define FM_2WayNodeBalance              libmetis__FM_2WayNodeBalance
++#define FM_2WayNodeRefine2Sided         feel__libmetis__FM_2WayNodeRefine2Sided 
++#define FM_2WayNodeRefine1Sided         feel__libmetis__FM_2WayNodeRefine1Sided
++#define FM_2WayNodeBalance              feel__libmetis__FM_2WayNodeBalance
+ 
+ /* srefine.c */
+-#define Refine2WayNode			libmetis__Refine2WayNode
+-#define Allocate2WayNodePartitionMemory	libmetis__Allocate2WayNodePartitionMemory
+-#define Compute2WayNodePartitionParams	libmetis__Compute2WayNodePartitionParams
+-#define Project2WayNodePartition	libmetis__Project2WayNodePartition
++#define Refine2WayNode			feel__libmetis__Refine2WayNode
++#define Allocate2WayNodePartitionMemory	feel__libmetis__Allocate2WayNodePartitionMemory
++#define Compute2WayNodePartitionParams	feel__libmetis__Compute2WayNodePartitionParams
++#define Project2WayNodePartition	feel__libmetis__Project2WayNodePartition
+ 
+ /* stat.c */
+-#define ComputePartitionInfoBipartite   libmetis__ComputePartitionInfoBipartite
+-#define ComputePartitionBalance		libmetis__ComputePartitionBalance
+-#define ComputeElementBalance		libmetis__ComputeElementBalance
++#define ComputePartitionInfoBipartite   feel__libmetis__ComputePartitionInfoBipartite
++#define ComputePartitionBalance		feel__libmetis__ComputePartitionBalance
++#define ComputeElementBalance		feel__libmetis__ComputeElementBalance
+ 
+ /* timing.c */
+-#define InitTimers			libmetis__InitTimers
+-#define PrintTimers			libmetis__PrintTimers
++#define InitTimers			feel__libmetis__InitTimers
++#define PrintTimers			feel__libmetis__PrintTimers
+ 
+ /* util.c */
+-#define iargmax_strd                    libmetis__iargmax_strd 
+-#define iargmax_nrm                     libmetis__iargmax_nrm
+-#define iargmax2_nrm                    libmetis__iargmax2_nrm
+-#define rargmax2                        libmetis__rargmax2
+-#define InitRandom                      libmetis__InitRandom
+-#define metis_rcode                     libmetis__metis_rcode
++#define iargmax_strd                    feel__libmetis__iargmax_strd 
++#define iargmax_nrm                     feel__libmetis__iargmax_nrm
++#define iargmax2_nrm                    feel__libmetis__iargmax2_nrm
++#define rargmax2                        feel__libmetis__rargmax2
++#define InitRandom                      feel__libmetis__InitRandom
++#define metis_rcode                     feel__libmetis__metis_rcode
+ 
+ /* wspace.c */
+-#define AllocateWorkSpace               libmetis__AllocateWorkSpace                  
+-#define AllocateRefinementWorkSpace     libmetis__AllocateRefinementWorkSpace
+-#define FreeWorkSpace                   libmetis__FreeWorkSpace
+-#define wspacemalloc                    libmetis__wspacemalloc
+-#define wspacepush                      libmetis__wspacepush
+-#define wspacepop                       libmetis__wspacepop
+-#define iwspacemalloc                   libmetis__iwspacemalloc
+-#define rwspacemalloc                   libmetis__rwspacemalloc
+-#define ikvwspacemalloc                 libmetis__ikvwspacemalloc
+-#define cnbrpoolReset                   libmetis__cnbrpoolReset
+-#define cnbrpoolGetNext                 libmetis__cnbrpoolGetNext
+-#define vnbrpoolReset                   libmetis__vnbrpoolReset
+-#define vnbrpoolGetNext                 libmetis__vnbrpoolGetNext
++#define AllocateWorkSpace               feel__libmetis__AllocateWorkSpace                  
++#define AllocateRefinementWorkSpace     feel__libmetis__AllocateRefinementWorkSpace
++#define FreeWorkSpace                   feel__libmetis__FreeWorkSpace
++#define wspacemalloc                    feel__libmetis__wspacemalloc
++#define wspacepush                      feel__libmetis__wspacepush
++#define wspacepop                       feel__libmetis__wspacepop
++#define iwspacemalloc                   feel__libmetis__iwspacemalloc
++#define rwspacemalloc                   feel__libmetis__rwspacemalloc
++#define ikvwspacemalloc                 feel__libmetis__ikvwspacemalloc
++#define cnbrpoolReset                   feel__libmetis__cnbrpoolReset
++#define cnbrpoolGetNext                 feel__libmetis__cnbrpoolGetNext
++#define vnbrpoolReset                   feel__libmetis__vnbrpoolReset
++#define vnbrpoolGetNext                 feel__libmetis__vnbrpoolGetNext
+ 
+ #endif
+ 

@@ -57,6 +57,52 @@ extern "C"
     typedef int PetscInt;
 #endif
 
+    PetscErrorCode feel_petsc_post_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double>* b =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        LOG(INFO) << "call feel_petsc_post_nlsolve";
+    
+        if ( b->postSolve() )
+        {
+            Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
+            Feel::vector_ptrtype vy( vec( y, b->mapRowPtr() ) );
+            b->postSolve( vx, vy );
+        }
+        else
+        {
+            LOG(WARNING) << "call feel_petsc_post_nlsolve without post solve function, we duplicate the input into the output";
+            auto e = VecDuplicate(x, &y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+            e = VecCopy(x, y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+        }
+        LOG(INFO) << "call feel_petsc_post_nlsolve done";
+        return 0;
+    }
+    PetscErrorCode feel_petsc_pre_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
+    {
+        Feel::SolverNonLinearPetsc<double>* b =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        
+        if ( b->preSolve() )
+        {
+            Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
+            Feel::vector_ptrtype vy( vec( y, b->mapRowPtr() ) );
+            b->preSolve( vx, vy );
+        }
+        else
+        {
+            LOG(WARNING) << "call feel_petsc_pre_nlsolve without pre solve function, we duplicate the input into the output";
+            auto e = VecDuplicate(x, &y);
+            CHKERRABORT( b->worldComm().globalComm(), e );
+            e = VecCopy( x, y );
+            CHKERRABORT( b->worldComm().globalComm(), e );
+        }
+        LOG(INFO) << "call feel_petsc_pre_nlsolve";
+        return 0;
+    }
+
     //-------------------------------------------------------------------
     // this function is called by PETSc at the end of each nonlinear step
     PetscErrorCode
@@ -855,6 +901,21 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                               this->maxitKSP() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+    if ( this->preSolve() )
+    {
+        LOG(INFO) << "set Pre solve" ;
+        int e;
+        e = KSPSetPreSolve( M_ksp, feel_petsc_pre_nlsolve, this );
+        CHKERRABORT( this->worldComm().globalComm(), e);
+    }
+    
+    if ( this->postSolve() )
+    {
+        LOG(INFO) << "set Post solve" ;
+        int e;
+        e = KSPSetPostSolve( M_ksp, feel_petsc_post_nlsolve, this );
+        CHKERRABORT( this->worldComm().globalComm(), e);
+    }
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
     {

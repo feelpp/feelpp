@@ -20,7 +20,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
                                                              bool BuildCstPart,
                                                              bool UseJacobianLinearTerms ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
 
     //if (this->stressTensorLawType() == "newtonian" && UseJacobianLinearTerms ) return;
@@ -136,7 +135,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
     {
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -idv(this->velocityDiv())*id(q),
+                       _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
@@ -151,7 +150,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type 
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateResidualModel","finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
-#endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
 

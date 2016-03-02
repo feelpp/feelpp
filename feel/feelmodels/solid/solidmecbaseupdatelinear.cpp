@@ -14,25 +14,15 @@ namespace FeelModels
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,
-                                                                         sparse_matrix_ptrtype& A ,
-                                                                         vector_ptrtype& F,
-                                                                         bool _buildCstPart,
-                                                                         sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                                         bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if (M_pdeType=="Elasticity")
+    if ( M_pdeType=="Elasticity" )
     {
-        //this->updateLinearElasticity(X,A,F);
-        this->updateLinearElasticityGeneralisedAlpha(X,A,F,
-                                                     _buildCstPart,
-                                                     _doClose, _doBCStrongDirichlet );
+        this->updateLinearElasticityGeneralisedAlpha( data );
     }
-    else if (M_pdeType=="Generalised-String")
+    else if ( M_pdeType=="Generalised-String" )
     {
-        this->updateLinearGeneralisedStringGeneralisedAlpha(X,A,F,
-                                                            _buildCstPart,
-                                                            _doClose, _doBCStrongDirichlet );
+        this->updateLinearGeneralisedStringGeneralisedAlpha( data );
     }
 }
 
@@ -40,15 +30,16 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE(const vector_ptrtype& X,
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(const vector_ptrtype& X,
-                                                                                                sparse_matrix_ptrtype& A,
-                                                                                                vector_ptrtype& F,
-                                                                                                bool _buildCstPart,
-                                                                                                bool _doClose, bool _doBCStrongDirichlet ) const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const
 {
-#if defined(FEELMODELS_SOLID_BUILD_LINEAR_CODE)
-
     using namespace Feel::vf;
+
+    //const vector_ptrtype& X = data.
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _buildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
 
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
     this->timerTool("Solve").start();
@@ -69,24 +60,29 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
         BuildNonCstPart_SourceTerm=BuildCstPart;
         BuildNonCstPart_BoundaryNeumannTerm=BuildCstPart;
     }
-    if (M_newmark_displ_struct->strategy()==TS_STRATEGY_DT_CONSTANT)
+    if (M_timeStepNewmark->strategy()==TS_STRATEGY_DT_CONSTANT)
     {
         BuildNonCstPart_TransientForm2Term = BuildCstPart;
     }
     //---------------------------------------------------------------------------------------//
 
-    auto mesh = M_Xh->mesh();
-    auto Xh = M_Xh;
+    auto mesh = M_XhDisplacement->mesh();
+    auto Xh = M_XhDisplacement;
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
     size_type rowStartInVector = this->rowStartInVector();
+#if 0
     auto u = Xh->element("u");//u = *X;
     auto v = Xh->element("v");
     for ( size_type k=0;k<M_Xh->nLocalDofWithGhost();++k )
         u(k) = X->operator()(rowStartInVector+k);
+#else
+    auto const& u = this->fieldDisplacement();
+    auto const& v = this->fieldDisplacement();
+#endif
 
-    //auto buzz1 = M_newmark_displ_struct->previousUnknown();
+    //auto buzz1 = M_timeStepNewmark->previousUnknown();
     //---------------------------------------------------------------------------------------//
     auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
     auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
@@ -163,7 +159,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     {
         form2( _test=Xh, _trial=Xh, _matrix=A )  +=
             integrate( _range=elements(mesh),
-                       _expr= M_newmark_displ_struct->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                       _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
                        _geomap=this->geomap() );
     }
     //---------------------------------------------------------------------------------------//
@@ -172,7 +168,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     {
         form1( _test=Xh, _vector=F ) +=
             integrate( _range=elements(mesh),
-                       _expr= idv(rho)*trans(idv(M_newmark_displ_struct->polyDeriv()))*id(v),
+                       _expr= idv(rho)*inner(idv(this->timeStepNewmark()->polyDeriv()),id(v)),
                        _geomap=this->geomap() );
     }
     //---------------------------------------------------------------------------------------//
@@ -196,7 +192,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
         {
             form1( _test=Xh, _vector=F) +=
                 integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= -alpha_f*trans(idv(*M_normalStressFromFluid))*id(v),
+                           _expr= -alpha_f*trans(idv(*M_fieldNormalStressFromFluid))*id(v),
                            _geomap=this->geomap() );
         }
 
@@ -237,7 +233,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
                                _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
                                _geomap=this->geomap() );
 
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
+                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid());
                 form1( _test=Xh, _vector=F) +=
                     integrate( _range=markedfaces(mesh,this->markerNameFSI()),
                                _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
@@ -271,7 +267,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha(c
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha",
               (boost::format("finish in %1% s") % timeElapsed).str() );
 
-#endif // FEELMODELS_SOLID_BUILD_LINEAR_CODE
 } // updateLinearElasticityGeneralisedAlpha
 
 

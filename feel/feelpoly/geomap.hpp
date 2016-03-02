@@ -704,10 +704,10 @@ class Context
         M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
         M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
         M_face_id( invalid_uint16_type_value ),
-        M_h( __e.h() ),
-        M_h_min( __e.hMin() ),
+        M_h( 0 ),
+        M_h_min( 0 ),
         M_h_face( 0 ),
-        M_meas( __e.measure() ),
+        M_meas( 0 ),
         M_measface( 0 ),
         M_Jt(),
         M_Bt(),
@@ -773,11 +773,11 @@ Context( gm_ptrtype __gm,
     M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
     M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
     M_face_id( __f ),
-    M_h( __e.h() ),
-    M_h_min( __e.hMin() ),
+    M_h( 0 ),
+    M_h_min( 0 ),
     M_h_face( 0 ),
-    M_meas( __e.measure() ),
-    M_measface( __e.faceMeasure( __f ) ),
+    M_meas( 0 ),
+    M_measface( 0 ),
     M_Jt(),
     M_Bt(),
     M_perm( )
@@ -912,9 +912,6 @@ void update( element_type const& __e, uint16_type __f )
 
     M_perm = __e.permutation( M_face_id );
 
-    M_h_face = __e.hFace( M_face_id );
-    //M_h_edge = __e.hEdge( M_face_id );
-
     M_pc = M_pc_faces[__f][M_perm];
     //M_G = __e.G();
     M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
@@ -922,14 +919,24 @@ void update( element_type const& __e, uint16_type __f )
     M_e_marker = __e.marker();
     M_e_marker2 = __e.marker2();
     M_e_marker3 = __e.marker3();
-    M_h = __e.h();
-    M_h_min = __e.hMin();
-    M_meas = __e.measure();
-    M_measface = __e.faceMeasure( __f );
     M_xrefq = M_pc->nodes();
 
     FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
     FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_measure<context>::value )
+    {
+        M_h = __e.h();
+        M_h_min = __e.hMin();
+        M_meas = __e.measure();
+        M_measface = __e.faceMeasure( M_face_id );
+        M_h_face = __e.hFace( M_face_id );
+        //M_h_edge = __e.hEdge( M_face_id );
+    }
+    else if ( vm::has_tangent<context>::value  && ( NDim == 2 ) )
+    {
+        M_h_face = __e.hFace( M_face_id );
+    }
 
     if ( vm::has_point<context>::value )
     {
@@ -974,9 +981,6 @@ void update( element_type const& __e, uint16_type __f, permutation_type __perm, 
 
     M_perm = __perm;
 
-    M_h_face = __e.hFace( M_face_id );
-    //M_h_edge = __e.hEdge( M_face_id );
-
     M_pc = M_pc_faces[__f][M_perm];
     //M_G = __e.G();
     M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
@@ -984,14 +988,25 @@ void update( element_type const& __e, uint16_type __f, permutation_type __perm, 
     M_e_marker = __e.marker();
     M_e_marker2 = __e.marker2();
     M_e_marker3 = __e.marker3();
-    M_h = __e.h();
-    M_h_min = __e.hMin();
-    M_meas = __e.measure();
-    M_measface = __e.faceMeasure( __f );
     M_xrefq = M_pc->nodes();
 
     FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
     FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_measure<context>::value )
+    {
+        M_h = __e.h();
+        M_h_min = __e.hMin();
+        M_meas = __e.measure();
+        M_measface = __e.faceMeasure( M_face_id );
+        M_h_face = __e.hFace( M_face_id );
+        //M_h_edge = __e.hEdge( M_face_id );
+    }
+    else if ( vm::has_tangent<context>::value  && ( NDim == 2 ) )
+    {
+        M_h_face = __e.hFace( M_face_id );
+    }
+
 
     if ( vm::has_point<context>::value )
     {
@@ -1072,13 +1087,17 @@ void update( element_type const& __e )
     M_e_marker2 = __e.marker2();
     M_e_marker3 = __e.marker3();
     M_face_id = invalid_uint16_type_value;
-    M_h = __e.h();
-    M_h_min = __e.hMin();
-    M_meas = __e.measure();
     M_xrefq = M_pc->nodes();
 
     FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
     FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_measure<context>::value )
+    {
+        M_h = __e.h();
+        M_h_min = __e.hMin();
+        M_meas = __e.measure();
+    }
 
     if ( vm::has_point<context>::value )
     {
@@ -1701,6 +1720,37 @@ void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > co
 {
     M_pc_faces = __pcfaces;
 }
+    
+    void
+    edgeTangent(int edgeId, ublas::vector<value_type>& t, bool scaled = false) const
+        {
+            auto const& K = this->K(0);
+
+            ublas::axpy_prod( K,
+                              this->geometricMapping()->referenceConvex().tangent( edgeId ),
+                              t,
+                              true );
+            if( scaled )
+                t *= this->element().hEdge( edgeId )/ublas::norm_2(t);
+            else
+                t /= ublas::norm_2(t);
+        }
+
+    void
+    faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
+        {
+            auto const& K = this->K(0);
+            auto const& B = this->B(0);
+
+            ublas::axpy_prod( B,
+                              this->geometricMapping()->referenceConvex().normal( faceId ),
+                              n,
+                              true );
+            if ( scaled )
+                n *= this->element().faceMeasure(faceId)/ublas::norm_2(n);
+            else
+                n /= ublas::norm_2(n);
+        }
 
 //@}
 private:
@@ -2960,7 +3010,7 @@ struct GT_QK
                                                                         \
         BOOST_PP_CAT(GT_,GEOM)()                                        \
             :                                                           \
-            super( boost::shared_ptr<element_gm_type>(new element_gm_type()), boost::shared_ptr<face_gm_type>(new face_gm_type() )) \
+            super( boost::make_shared<element_gm_type>(), boost::make_shared<face_gm_type>()) \
             {}                                                          \
     };                                                                  \
     /**/

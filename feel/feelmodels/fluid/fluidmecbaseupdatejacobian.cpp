@@ -14,13 +14,15 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XVec, sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                        bool _BuildCstPart,
-                                                        sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                        bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
     using namespace Feel::vf;
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
+    bool _BuildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
@@ -151,7 +153,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    this->updateJacobianModel(U, J, R, _BuildCstPart);
+    this->updateJacobianModel(U, J, RBis, _BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
@@ -159,116 +161,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-
-    this->updateJacobianStabilisation(U, J, R, _BuildCstPart);
-
-    //--------------------------------------------------------------------------------------------------//
-
-    if (BuildCstPart && !this->markerSlipBC().empty() )
-    {
-        // slip condition :
-        auto P = Id-N()*trans(N());
-        double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
-        double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
-        auto Beta = M_bdf_fluid->poly();
-        //auto beta = Beta.element<0>();
-        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
-                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
-        auto Cn = val(gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h()));
-        auto Ctau = val(gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
-
-        bilinearForm_PatternCoupled +=
-            integrate( _range= markedfaces(mesh,this->markerSlipBC()),
-                       _expr= Cn*(trans(idt(u))*N())*(trans(id(v))*N())+
-                       Ctau*trans(idt(u))*id(v),
-                       //+ trans(idt(p)*Id*N())*id(v)
-                       //- trans(id(v))*N()* trans(2*idv(mu)*deft*N())*N()
-                       _geomap=this->geomap()
-                       );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    // weak formulation of the boundaries conditions
-    if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart)
-    {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
-                       _expr= -trans(Sigmat*N())*id(v)
-                       /**/   + this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
-                       _geomap=this->geomap() );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    // windkessel implicit
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" && this->fluidOutletWindkesselCoupling() == "implicit" )
-    {
-        CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
-            << " start dof index for windkessel is not present\n";
-        size_type startDofIndexWindkessel = this->startDofIndexFieldsInMatrix().find("windkessel")->second;
-
-        if (BuildCstPart)
-        {
-            auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
-            auto presDistal = presDistalProximal.template element<0>();
-            auto presProximal = presDistalProximal.template element<1>();
-
-            for (int k=0;k<this->nFluidOutlet();++k)
-            {
-                // Windkessel model
-                double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
-                double Deltat = this->timeStepBDF()->timeStep();
-                std::string markerOutlet = this->fluidOutletMarkerName(k);
-
-                const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*k;
-                const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*k;
-                //--------------------//
-                // 1ere ligne
-                if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
-                {
-                    J->add( rowStartInMatrixWindkessel,colStartInMatrixWindkessel,
-                            Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
-                }
-
-                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
-                       _rowstart=rowStartInMatrixWindkessel,
-                       _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces(mesh,markerOutlet),
-                               _expr=-(trans(idt(u))*N())*id(presDistal),
-                               _geomap=this->geomap() );
-
-                //--------------------//
-                // 2eme ligne
-                if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
-                {
-                    J->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel+1,  1.);
-
-                    J->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel  , -1.);
-                }
-
-                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
-                       _rowstart=rowStartInMatrixWindkessel,
-                       _colstart=colStartInMatrix )+=
-                    integrate( _range=markedfaces(mesh,markerOutlet),
-                               _expr=-Rp*(trans(idt(u))*N())*id(presProximal),
-                               _geomap=this->geomap() );
-                //--------------------//
-                // coupling with fluid model
-                form2( _test=Xh, _trial=M_fluidOutletWindkesselSpace, _matrix=J,
-                       _rowstart=rowStartInMatrix,
-                       _colstart=colStartInMatrixWindkessel ) +=
-                    integrate( _range=markedfaces(mesh,markerOutlet),
-                               _expr= idt(presProximal)*trans(N())*id(v),
-                               _geomap=this->geomap() );
-            }
-        }
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -324,6 +218,119 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
         }
     }
 
+    //--------------------------------------------------------------------------------------------------//
+
+    this->updateJacobianStabilisation(U, J, RBis, _BuildCstPart);
+
+    //--------------------------------------------------------------------------------------------------//
+
+    if (BuildCstPart && !this->markerSlipBC().empty() )
+    {
+        // slip condition :
+        auto P = Id-N()*trans(N());
+        double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
+        double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
+        auto Beta = M_bdf_fluid->poly();
+        //auto beta = Beta.element<0>();
+        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
+                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
+                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto Cn = val(gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h()));
+        auto Ctau = val(gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
+
+        bilinearForm_PatternCoupled +=
+            integrate( _range= markedfaces(mesh,this->markerSlipBC()),
+                       _expr= Cn*(trans(idt(u))*N())*(trans(id(v))*N())+
+                       Ctau*trans(idt(u))*id(v),
+                       //+ trans(idt(p)*Id*N())*id(v)
+                       //- trans(id(v))*N()* trans(2*idv(mu)*deft*N())*N()
+                       _geomap=this->geomap()
+                       );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+    // weak formulation of the boundaries conditions
+    if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart)
+    {
+        bilinearForm_PatternCoupled +=
+            integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
+                       _expr= -trans(Sigmat*N())*id(v)
+                       /**/   + this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
+                       _geomap=this->geomap() );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+    // windkessel implicit
+    if ( this->hasFluidOutletWindkesselImplicit() )
+    {
+        CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
+            << " start dof index for windkessel is not present\n";
+        size_type startDofIndexWindkessel = this->startDofIndexFieldsInMatrix().find("windkessel")->second;
+
+        if (BuildCstPart)
+        {
+            auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
+            auto presDistal = presDistalProximal.template element<0>();
+            auto presProximal = presDistalProximal.template element<1>();
+
+            int cptOutletUsed = 0;
+            for (int k=0;k<this->nFluidOutlet();++k)
+            {
+                if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                    continue;
+
+                // Windkessel model
+                std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                double Rd=std::get<1>(windkesselParam);
+                double Rp=std::get<2>(windkesselParam);
+                double Cd=std::get<3>(windkesselParam);
+                double Deltat = this->timeStepBDF()->timeStep();
+
+                const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                ++cptOutletUsed;
+                //--------------------//
+                // 1ere ligne
+                if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                {
+                    J->add( rowStartInMatrixWindkessel,colStartInMatrixWindkessel,
+                            Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
+                }
+
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
+                       _rowstart=rowStartInMatrixWindkessel,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=markedfaces(mesh,markerOutlet),
+                               _expr=-(trans(idt(u))*N())*id(presDistal),
+                               _geomap=this->geomap() );
+
+                //--------------------//
+                // 2eme ligne
+                if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                {
+                    J->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel+1,  1.);
+
+                    J->add( rowStartInMatrixWindkessel+1, colStartInMatrixWindkessel  , -1.);
+                }
+
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
+                       _rowstart=rowStartInMatrixWindkessel,
+                       _colstart=colStartInMatrix )+=
+                    integrate( _range=markedfaces(mesh,markerOutlet),
+                               _expr=-Rp*(trans(idt(u))*N())*id(presProximal),
+                               _geomap=this->geomap() );
+                //--------------------//
+                // coupling with fluid model
+                form2( _test=Xh, _trial=M_fluidOutletWindkesselSpace, _matrix=J,
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrixWindkessel ) +=
+                    integrate( _range=markedfaces(mesh,markerOutlet),
+                               _expr= idt(presProximal)*trans(N())*id(v),
+                               _geomap=this->geomap() );
+            }
+        }
+    }
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -426,31 +433,77 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
 #endif // FEELPP_MODELS_HAS_MESHALE
 
     //--------------------------------------------------------------------------------------------------//
-
-    //if (_doClose ) J->close();
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( BuildNonCstPart && _doBCStrongDirichlet && hasStrongDirichletBC )
+    if ( M_useThermodynModel && M_useGravityForce )
     {
-        auto RBis = this->backend()->newVector( J->mapRowPtr() );
+        DataUpdateJacobian dataThermo( data );
+        dataThermo.setDoBCStrongDirichlet( false );
+        M_thermodynModel->updateJacobian( dataThermo );
 
+        if ( BuildNonCstPart )
+        {
+            auto XhT = M_thermodynModel->spaceTemperature();
+            auto t = XhT->element("t");
+            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
+                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
+            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+
+            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
+            form2( _test=XhT,_trial=XhT,_matrix=J,
+                   _rowstart=M_thermodynModel->rowStartInMatrix(),
+                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradt(t)*idv(u))*id(t),
+                       _geomap=this->geomap() );
+            form2( _test=XhT,_trial=Xh,_matrix=J,
+                   _rowstart=M_thermodynModel->rowStartInMatrix(),
+                   _colstart=this->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradv(t)*idt(u))*id(t),
+                           _geomap=this->geomap() );
+
+            auto betaFluid = idv(thermalProperties->fieldThermalExpansion() );
+            form2( _test=Xh,_trial=XhT,_matrix=J,
+                   _rowstart=this->rowStartInMatrix(),
+                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+        }
+
+
+    }
+    //--------------------------------------------------------------------------------------------------//
+
+    if ( BuildNonCstPart && _doBCStrongDirichlet )
+    {
         if ( this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletJacobian(J,RBis);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateJacobian","update moving boundary with strong Dirichlet");
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(mesh, this->markersNameMovingBoundary()),
-                    _element=u,
-                    _rhs=RBis,
-                    _expr= 0*one()/*idv(this->meshVelocity2()) - idv(u)*/ );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
+
+        if ( !markerDirichletEliminationOthers.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
+                    _element=u,_rhs=RBis,
+                    _expr= vf::zero<nDim,1>() );
+
+        if ( M_useThermodynModel && M_useGravityForce )
+        {
+            M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
+        }
+
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -461,7 +514,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_JACOBIAN_CODE)
 } // updateJacobian
 
 } // namespace FeelModels

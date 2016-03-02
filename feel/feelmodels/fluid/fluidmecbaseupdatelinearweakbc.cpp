@@ -11,13 +11,12 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
     using namespace Feel::vf;
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseenWeakBC", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "start"+sc );
 
     boost::timer thetimer;
 
@@ -151,9 +150,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" )
+    if ( this->hasFluidOutletWindkessel() )
     {
-        if ( this->fluidOutletWindkesselCoupling() == "explicit" )
+        this->timerTool("Solve").start();
+        if ( this->hasFluidOutletWindkesselExplicit() )
         {
             if (BuildNonCstPart)
             {
@@ -161,10 +161,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
 
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "explicit" )
+                        continue;
+
                     // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);// 6.2e3;
+                    double Rp=std::get<2>(windkesselParam);//400;
+                    double Cd=std::get<3>(windkesselParam);//2.72e-4;
+
                     double Deltat = this->timeStepBDF()->timeStep();
 
                     double xiBF = Rd*Cd*this->timeStepBDF()->polyDerivCoefficient(0)*Deltat+Deltat;
@@ -172,13 +178,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                     double gammaBF = Rd*Deltat/xiBF;
                     double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
-                    std::string markerOutlet= this->fluidOutletMarkerName(k);//"Sortie";
                     auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
                                              _expr=trans(idv(Beta.template element<0>()))*N() ).evaluate()(0,0);
 
                     double pressureDistalOld  = 0;
                     for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
 
                     M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
                     M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
@@ -191,7 +196,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                 }
             }
         }
-        else if ( this->fluidOutletWindkesselCoupling() == "implicit" )
+        if ( this->hasFluidOutletWindkesselImplicit() )
         {
             CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
                 << " start dof index for windkessel is not present\n";
@@ -203,18 +208,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                 auto presDistal = presDistalProximal.template element<0>();
                 auto presProximal = presDistalProximal.template element<1>();
 
+                int cptOutletUsed = 0;
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
-                    // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
-                    double Deltat = this->timeStepBDF()->timeStep();
-                    std::string markerOutlet = this->fluidOutletMarkerName(k);
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                        continue;
 
-                    const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*k;
-                    const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*k;
-                    const size_type rowStartInVectorWindkessel = rowStartInVector + startDofIndexWindkessel + 2*k;
+                    // Windkessel model
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);
+                    double Rp=std::get<2>(windkesselParam);
+                    double Cd=std::get<3>(windkesselParam);
+                    double Deltat = this->timeStepBDF()->timeStep();
+
+                    const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    const size_type rowStartInVectorWindkessel = rowStartInVector + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    ++cptOutletUsed;
                     //--------------------//
                     // 1ere ligne
                     if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
@@ -233,7 +244,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
                         // add in vector
                         F->add( rowStartInVectorWindkessel, Cd*pressureDistalOld);
                     }
@@ -266,6 +277,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
             }
 
         }
+        double timeElapsedBC = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly windkessel bc in "+(boost::format("%1% s") %timeElapsedBC).str() );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -372,26 +385,52 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
         else if ( this->couplingFSIcondition() == "robin-neumann-generalized" )
         //---------------------------------------------------------------------------//
         {
+            this->timerTool("Solve").start();
+
             bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
 
             if ( !useInterfaceOperator )
             {
                 if ( BuildNonCstPart_robinFSI )
                 {
-                    this->meshALE()->revertReferenceMesh();
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
-                                   _geomap=this->geomap() );
+                    if ( this->couplingFSI_RNG_matrix() )
+                    {
+                        A->addMatrix( this->couplingFSI_RNG_coeffForm2(), this->couplingFSI_RNG_matrix() );
+                    }
+                    else
+                    {
+                        this->meshALE()->revertReferenceMesh();
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                                       _geomap=this->geomap() );
+                    }
                 }
                 if ( BuildNonCstPart )
                 {
-                    this->meshALE()->revertReferenceMesh();
-                    form1( _test=Xh, _vector=F,
-                           _rowstart=rowStartInVector ) +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
-                                   _geomap=this->geomap() );
+                    if ( this->couplingFSI_RNG_matrix() )
+                    {
+                        auto tempVec = M_backend->newVector( F->mapPtr() );
+                        *tempVec = *this->couplingFSI_RNG_evalForm1();
+                        tempVec->close();
+                        tempVec->scale(-1);
+                        tempVec->close();
+                        //tempVec->add( -1.,*this->couplingFSI_RNG_evalForm1() );
+                        //tempVec->close();
+                        //tempVec->addVector(*this->couplingFSI_RNG_evalForm1(), *A );
+                        F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
+                        //F->add( -1., tempVec );
+                        F->close();
+                    }
+                    else
+                    {
+                        this->meshALE()->revertReferenceMesh();
+                        form1( _test=Xh, _vector=F,
+                               _rowstart=rowStartInVector ) +=
+                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                       _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
+                                       _geomap=this->geomap() );
+                    }
                 }
                 this->meshALE()->revertMovingMesh();
             }
@@ -414,6 +453,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
                     this->couplingFSI_RNG_updateLinearPDE( F );
                 }
             }
+            double timeElapsedBC = this->timerTool("Solve").stop();
+            this->log("FluidMechanics","updateLinearPDE","assembly fsi bc robin-neumann-generalized in "+(boost::format("%1% s") %timeElapsedBC ).str() );
         }
 #endif // FEELPP_MODELS_HAS_MESHALE
     }
@@ -431,11 +472,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseenWeakBC( sparse_matrix_ptrtype
     //--------------------------------------------------------------------------------------------------//
 
     std::ostringstream ostr;ostr<<thetimer.elapsed()<<"s";
-    this->log("FluidMechanics","updateOseenWeakBC", "finish in "+ostr.str() );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "finish in "+ostr.str() );
 
 
-#endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
-} // updateOseenWeakBC
+} // updateLinearPDEWeakBC
 
 } // end namespace FeelModels
 } // end namespace Feel

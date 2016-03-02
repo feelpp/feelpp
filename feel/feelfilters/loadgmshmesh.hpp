@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -56,16 +56,17 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( straighten,          *( boost::is_integral<mpl::_> ), boption(_name="gmsh.straighten") )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.refine") )
+      ( prefix,(std::string), "" )
+      ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,		   *, boption(_name="gmsh.physical_are_elementary_regions") )
+      ( physical_are_elementary_regions,		   *, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
       ( worldcomm,       *, Environment::worldComm() )
-      ( respect_partition,	(bool), boption(_name="gmsh.respect_partition") )
-      ( rebuild_partitions,	(bool), boption(_name="gmsh.partition") )
+      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename,	*, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_name="gmsh.partitioner") )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )

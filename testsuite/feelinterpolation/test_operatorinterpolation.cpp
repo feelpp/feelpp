@@ -541,7 +541,7 @@ test2dOpLagrangeP1()
  * main code
  */
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(),
-                                 test_operatorinterpolation::makeOptions() )
+                                 test_operatorinterpolation::makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
 

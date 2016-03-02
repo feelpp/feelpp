@@ -1,22 +1,35 @@
-lc = 0.1;
-Point(1) = {-1,-1,-1,lc};
-Point(2) = { 1,-1,-1,lc};
-Point(3) = { 1, 1,-1,lc};
-Point(4) = {-1, 1,-1,lc};
-Line(1) = {4,3};
-Line(2) = {3,2};
-Line(3) = {2,1};
-Line(4) = {1,4};
-Line Loop(5) = {2,3,4,1};
-Plane Surface(6) = {5};
-tmp[] += Extrude {0,0.0,2} {
-    Surface{6};
+h = 0.019;
+xmin = -1;
+xmax =  1;
+ymin = -1;
+ymax =  1;
+zmin = -1;
+zmax =  1;
+Point(1) = {xmin,ymin,zmin,h};
+Point(2) = {xmax,ymin,zmin,h};
+Line(1) = {1,2};
+
+Extrude Line {1, {0,ymax-ymin,0} } {
+  Layers { (ymax-ymin)/h};
 };
-Physical Surface("Border") = {27,19,23,15,28,6};
-//Physical Surface("Top") = {27};
-//Physical Surface("Bottom") = {19};
-//Physical Surface("Left") = {23};
-//Physical Surface("Right") = {15};
-//Physical Surface("Front") = {28};
-//Physical Surface("Back") = {6};
-Physical Volume("firstMat") = tmp[1];
+
+Extrude Surface {5, {0,0,zmax-zmin} } {
+  Layers { (zmax-zmin)/h};
+};
+
+Physical Line(1) = {1};
+Physical Line(2) = {2};
+Physical Line(3) = {3};
+Physical Line(4) = {4};
+
+Physical Line( 7) = { 7};
+Physical Line( 8) = { 8};
+Physical Line( 9) = { 9};
+Physical Line(10) = {10};
+
+Physical Line(12) = {12};
+Physical Line(13) = {13};
+Physical Line(17) = {17};
+Physical Line(21) = {21};
+Physical Surface("Border") = { 5,22,27,14,26,18};
+Physical Volume("firstMat") = {1};

@@ -12,7 +12,12 @@ target_link_libraries(feelpp_test_msi fftw3)
 feelpp_add_test( inner_curl )
 feelpp_add_test( inner_laplacian )
 feelpp_add_test( vf_integrals )
-feelpp_add_test( vf_val )
+#feelpp_add_test( vf_val )
 feelpp_add_test( vf_chi )
+feelpp_add_test( convolve CFG test_convolve.cfg )
+feelpp_add_test( pow CFG test_pow.cfg)
 
 feelpp_add_test( projtangent )
+feelpp_add_test( idf_functor )
+feelpp_add_test( idf2_functor )
+

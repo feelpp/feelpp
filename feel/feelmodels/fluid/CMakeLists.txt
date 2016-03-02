@@ -11,6 +11,7 @@ foreach( _DIM 2 3)
       U_ORDER ${_U_ORDER}
       P_ORDER ${_P_ORDER}
       P_CONTINUITY Continuous
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
   endforeach()
@@ -18,16 +19,17 @@ endforeach()
 
 # Taylor Hood iso-parametric with pressure
 foreach( _DIM 2 3)
-  feelpp_max( MAX_ORDER 3 ${FEELPP_INSTANTIATION_ORDER_MAX})
-  message(STATUS "[feelpp] FLUID ${_DIM}D PNPN-1GN-1 N=3..${MAX_ORDER}")
-  foreach( _U_ORDER RANGE 3 ${MAX_ORDER} )
-    math(EXPR _P_ORDER '${_U_ORDER}-1')
+  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${FEELPP_INSTANTIATION_ORDER_MAX})
+  message(STATUS "[feelpp] FLUID ${_DIM}D PN+1PNGN N=2..${MAX_ORDER}")
+  foreach( _P_ORDER RANGE 2 ${MAX_ORDER} )
+    math(EXPR _U_ORDER '${_P_ORDER}+1')
     genLibFluidMechanics(
       DIM ${_DIM}
       GEO_ORDER ${_P_ORDER}
       U_ORDER ${_U_ORDER}
       P_ORDER ${_P_ORDER}
       P_CONTINUITY Continuous
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
   endforeach()
@@ -44,6 +46,7 @@ foreach( _DIM 2 3)
       U_ORDER ${_U_ORDER}
       P_ORDER ${_U_ORDER}
       P_CONTINUITY Continuous
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
   endforeach()

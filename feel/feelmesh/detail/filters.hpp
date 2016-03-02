@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 29 juil. 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -30,6 +30,15 @@ namespace Feel {
 /// \cond detail
 namespace detail
 {
+
+template <typename RangeType>
+struct submeshrangetype
+{
+    typedef typename mpl::if_< boost::is_std_list<RangeType>,
+                               mpl::identity<RangeType>,
+                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+};
+
 
 
 template<typename MeshType>
@@ -422,21 +431,15 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::pid_edge_const_iterator,
-      typename MeshTraits<MeshType>::pid_edge_const_iterator>
-      edges( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+decltype(auto)
+edges( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
 {
-    typedef typename MeshTraits<MeshType>::pid_edge_const_iterator pid_edge_const_iterator;
-    pid_edge_const_iterator it,en;
-    boost::tie( it, en ) = mesh.edgesWithProcessId( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), it, en );
+    auto r = mesh.edgesWithProcessId( __pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), r.first, r.second );
 }
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::pid_edge_const_iterator,
-      typename MeshTraits<MeshType>::pid_edge_const_iterator>
-      edges( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
+decltype(auto)
+edges( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
 {
     return edges( *mesh, __pid, mpl::bool_<false>() );
 }
@@ -581,5 +584,3 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 }
 #endif
-
-

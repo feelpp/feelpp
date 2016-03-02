@@ -31,7 +31,7 @@ public:
     typedef typename functionspace_disp_type::reference_element_type fe_disp_type;
 
     typedef typename functionspace_disp_type::geoelement_type geoelement_type;
-    typedef typename functionspace_disp_type::gm_type gm_type;
+    //typedef typename functionspace_disp_type::gm_type gm_type;
     typedef typename functionspace_disp_type::value_type value_type;
     typedef value_type evaluate_type;
     static const bool is_terminal = true;
@@ -54,6 +54,8 @@ public:
                                                                      mpl::bool_<true>, mpl::bool_<false> >::type,
                                                    mpl::bool_<false> >::type::value;
     };
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     SolidMecGeomapEulerian( element_disp_type const& disp )
         :
@@ -78,6 +80,7 @@ public:
         //typedef typename expr_type::spec_expr_type SpecificExprType;
         //typedef typename expr_type::value_type value_type;
         //typedef typename expr_type::gm_type gm_type;
+        typedef typename super_type::gm_type gm_type;
         //typedef typename expr_type::geoelement_type geoelement_type;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         typedef typename super_type::gmc_type gmc_type;

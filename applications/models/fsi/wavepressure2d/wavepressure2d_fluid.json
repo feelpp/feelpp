@@ -1,8 +1,8 @@
 // -*- mode: javascript -*-
 {
-    "Name": "fluidfsi 2D beam ",
-    "ShortName":"fluidfsibeam2d",
-    "Model":"fluidfsihyperelastic",
+    "Name": "fluid fsi",
+    "ShortName":"Fluidfsi",
+    "Model":"Navier-Stokes",
     "Parameters":
     {
         "pIn":
@@ -14,10 +14,10 @@
             "value":"0.005"
         }
     },
-    "Materials":
-    {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
     "BoundaryConditions":
     {
         "velocity":
@@ -26,15 +26,13 @@
             {
                 "fluid-inlet":
                 {
-                    "expr": "-(pIn/2.)*(1-cos(pi*t/(pTimeMax/2.)))*(t<pTimeMax):pIn:pTimeMax:t"
+                    "expr": "-(pIn/2.)*(1-cos(pi*t/(pTimeMax/2.)))*(t<pTimeMax):pIn:pTimeMax:t",
+                    "alemesh_bc":"fixed"              // fixed,free [default=fixed]
                 }
             },
             "interface_fsi":
             {
-                "fsi-wall":
-                {
-                    "expr":"0"
-                }
+                "fsi-wall":{}
             }
         },
         "fluid":
@@ -43,7 +41,13 @@
             {
                 "fluid-outlet":
                 {
-                    "expr":"0" 
+                    "number":1,                       // number of outlet [default=1]
+                    "alemesh_bc":"fixed",             // fixed,free [default=fixed]
+                    "type":"windkessel",              // free,windkessel [default=free]
+                    "windkessel_coupling":"implicit", // explicit, implicit [default=implicit]
+                    "windkessel_Rd":6.2e3,            // resistance distal [default=1.0]
+                    "windkessel_Rp":400,              // resistance proximal [default=1.0]
+                    "windkessel_Cd":2.72e-4           // capacitance [default=1.0]
                 }
             }
         }

@@ -42,7 +42,7 @@ namespace FeelModels
 template < class Convex, int Order >
 ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil )
     :
-    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",/*appliShortRepository*/"" )
+    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"","" )
     //super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
 {
     M_flagSet["fixed"].clear();

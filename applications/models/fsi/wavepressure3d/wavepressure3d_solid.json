@@ -5,7 +5,12 @@
     "Model":"Elasticity",
     "Materials":
     {
-        "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+        "ArterialWall":{
+            "name":"solid",
+            "E":"3e6",
+            "nu":"0.3",
+            "rho":"1.2"
+        }
     },
     "BoundaryConditions":
     {
@@ -44,7 +49,18 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"]
+        "Fields":["displacement","pid"],
+        "Measures":
+        {
+            "Maximum":
+            {
+                "fsiWall":
+                {
+                    "markers":"fsiWall",
+                    "fields":["displacement"]
+                }
+            }
+        }
     }
 
 }

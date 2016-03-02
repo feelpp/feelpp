@@ -33,8 +33,10 @@
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 
 
-namespace Feel {
-
+namespace Feel
+{
+namespace FeelModels
+{
 
     class ModelAlgebraicFactory
     {
@@ -156,7 +158,7 @@ namespace Feel {
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
-
+        void solve( std::string const& type,vector_ptrtype& sol );
         void linearSolver( vector_ptrtype &U );
         void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ );
         void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
@@ -168,7 +170,7 @@ namespace Feel {
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         // fonctions obseletes
-        void AlgoPtFixe(vector_ptrtype U);
+        void AlgoPicard(vector_ptrtype U);
         //OLD version (without petsc) : not up
         void AlgoNewton(vector_ptrtype U);
 
@@ -208,7 +210,8 @@ namespace Feel {
     };
 
 
-} // end namespace Feel
+} // namespace FeelModels
+} // namespace Feel
 
 
 #endif //FEELPP_MODELSALGEBRAICFACTORY_HPP

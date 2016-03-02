@@ -14,12 +14,14 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XVec, vector_ptrtype& R, bool BuildCstPart,
-                                                        bool UseJacobianLinearTerms,
-                                                        bool _doClose, bool _doBCStrongDirichlet) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
     using namespace Feel::vf;
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool BuildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
@@ -134,7 +136,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     {
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= divv(u)*id(q),
+                       _expr= -divv(u)*id(q),
                        _geomap=this->geomap() );
     }
 
@@ -150,9 +152,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->hasFluidOutlet() && this->fluidOutletType()=="windkessel" )
+    if ( this->hasFluidOutletWindkessel() )
     {
-        if ( this->fluidOutletWindkesselCoupling() == "explicit" )
+        if ( this->hasFluidOutletWindkesselExplicit() )
         {
             if ( BuildCstPart )
             {
@@ -160,10 +162,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
 
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "explicit" )
+                        continue;
+
                     // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);
+                    double Rp=std::get<2>(windkesselParam);
+                    double Cd=std::get<3>(windkesselParam);
                     double Deltat = this->timeStepBDF()->timeStep();
 
                     double xiBF = Rd*Cd*this->timeStepBDF()->polyDerivCoefficient(0)*Deltat+Deltat;
@@ -171,17 +178,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                     double gammaBF = Rd*Deltat/xiBF;
                     double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
-                    std::string markerOutlet=this->fluidOutletMarkerName(k);
                     auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
                                              _expr=trans(idv(Beta.template element<0>()))*N() ).evaluate()(0,0);
 
                     double pressureDistalOld  = 0;
                     for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
 
                     M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
                     M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
-
 
                     linearForm_PatternCoupled +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
@@ -190,7 +195,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                 }
             }
         } // explicit
-        else if ( this->fluidOutletWindkesselCoupling() == "implicit" )
+        if ( this->hasFluidOutletWindkesselImplicit() )
         {
             CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
                 << " start dof index for windkessel is not present\n";
@@ -202,23 +207,29 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                 auto presDistal = presDistalProximal.template element<0>();
                 auto presProximal = presDistalProximal.template element<1>();
 
+                int cptOutletUsed = 0;
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
-                    // Windkessel model
-                    double Rd=this->fluidOutletWindkesselCoeffRd()[k];// 6.2e3;
-                    double Rp=this->fluidOutletWindkesselCoeffRp()[k];//400;
-                    double Cd=this->fluidOutletWindkesselCoeffCd()[k];//2.72e-4;
-                    double Deltat = this->timeStepBDF()->timeStep();
-                    std::string markerOutlet = this->fluidOutletMarkerName(k);
+                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
+                        continue;
 
-                    const size_type rowStartWindkessel = startDofIndexWindkessel + 2*k;
+                    // Windkessel model
+                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
+                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
+                    double Rd=std::get<1>(windkesselParam);
+                    double Rp=std::get<2>(windkesselParam);
+                    double Cd=std::get<3>(windkesselParam);
+                    double Deltat = this->timeStepBDF()->timeStep();
+
+                    const size_type rowStartWindkessel = startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
                     const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
+                    ++cptOutletUsed;
                     //----------------------------------------------------//
                     if ( BuildCstPart  && M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld()[k][i];
+                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
                         // add in vector
                         R->add( rowStartInVectorWindkessel, -Cd*pressureDistalOld);
                     }
@@ -342,6 +353,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
             linearForm_PatternCoupled +=
                 integrate( _range=elements(mesh),
                            _expr= -trans(idv(*M_SourceAdded))*id(v),
+                           _geomap=this->geomap() );
+        }
+        if ( M_useGravityForce )
+        {
+            linearForm_PatternCoupled +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= -idv(rho)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
     }
@@ -611,14 +629,47 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
     }
 
     //------------------------------------------------------------------------------------//
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        DataUpdateResidual dataThermo( data );
+        dataThermo.setDoBCStrongDirichlet( false );
+        M_thermodynModel->updateResidual( dataThermo );
 
+        if ( !BuildCstPart )
+        {
+            //auto const& t = M_thermodynModel->fieldTemperature();
+            auto XhT = M_thermodynModel->spaceTemperature();
+            auto t = XhT->element("t");//U = *XVec;
+            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+            // copy vector values in fluid element
+            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
+                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
 
-    //if ( _doClose ) R->close();
+            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
+            form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
+                   _pattern=size_type(Pattern::COUPLED),
+                   _rowstart=M_thermodynModel->rowStartInVector() ) +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= thecoeff*(gradv(t)*idv(u))*id(t),
+                           _geomap=this->geomap() );
 
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination();
+            double T0 = M_BoussinesqRefTemperature;
+            auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
+            linearForm_PatternCoupled +=
+                integrate( _range=elements(this->mesh() ),
+                           _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+        }
+    }
+    //------------------------------------------------------------------------------------//
+
+    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
+    if ( M_useThermodynModel && M_useGravityForce )
+        hasStrongDirichletBC = hasStrongDirichletBC || M_thermodynModel->hasMarkerDirichletBCelimination();
+
     if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
     {
         R->close();
@@ -626,16 +677,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletResidual(R);
 
+        std::list<std::string> markerDirichletEliminationOthers;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
-            this->log("FluidMechanics","updateResidual","update moving boundary with strong Dirichlet");
-            modifVec(markedfaces(mesh,this->markersNameMovingBoundary()), u, R, 0*vf::one(),rowStartInVector );
+            for (std::string const& marker : this->markersNameMovingBoundary() )
+                markerDirichletEliminationOthers.push_back( marker );
         }
 #endif
-    }
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            markerDirichletEliminationOthers.push_back( marker );
+        }
 
-    //if ( _doClose ) R->close();
+        if ( !markerDirichletEliminationOthers.empty() )
+            modifVec(markedfaces(mesh,markerDirichletEliminationOthers), u, R, vf::zero<nDim,1>(),rowStartInVector );
+
+        if ( M_useThermodynModel && M_useGravityForce )
+            M_thermodynModel->updateBCDirichletStrongResidual( R );
+    }
 
     //------------------------------------------------------------------------------------//
 
@@ -645,7 +706,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( const vector_ptrtype& XV
                                                "\n--------------------------------------------------",
                                                this->worldComm(),this->verboseAllProc());
 
-#endif // defined(FEELMODELS_FLUID_BUILD_RESIDUAL_CODE)
 
 } // updateResidual
 
@@ -667,6 +727,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     }
 #endif
     this->updateInitialNewtonSolutionBCDirichlet(U);
+
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+        modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
+    }
+
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_thermodynModel->updateNewtonInitialGuess( U );
+    }
 
     U->close();
 

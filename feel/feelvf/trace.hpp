@@ -6,6 +6,7 @@
        Date: 2007-02-10
 
   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -64,6 +65,12 @@ public:
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     /** @name Typedefs
      */

@@ -86,6 +86,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,

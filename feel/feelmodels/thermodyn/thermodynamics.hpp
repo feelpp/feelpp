@@ -54,11 +54,11 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    ThermoDynamics( std::string prefix,
-                    bool __buildMesh=true,
-                    WorldComm const& _worldComm=Environment::worldComm(),
-                    std::string subPrefix="",
-                    std::string appliShortRepository=soption(_name="exporter.directory") );
+    ThermoDynamics( std::string const& prefix,
+                    bool buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    std::string const& appliShortRepository = ModelBase::rootRepositoryByDefault() );
 
     // load config files
     void loadConfigBCFile();
@@ -74,11 +74,6 @@ public:
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
-
-private :
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_field<2> M_volumicForcesProperties;
 
 };
 

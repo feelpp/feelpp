@@ -10,6 +10,7 @@ foreach( _DIM 2 3)
       DISP_ORDER ${_DISP_ORDER}
       GEO_ORDER 1
       DENSITY_COEFFLAME_TYPE P0d
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
   endforeach()
@@ -18,7 +19,7 @@ endforeach()
 # iso-parametric
 foreach( _DIM 2 3)
   math(EXPR _D_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}-1')
-  feelpp_max( MAX_ORDER 2 ${_D_ORDER})
+  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_D_ORDER})
   message(STATUS "[feelpp] SOLID ${_DIM}D PNGN N=2..${MAX_ORDER}")
   foreach( _DISP_ORDER RANGE 2 ${MAX_ORDER} )
     genLibSolidMechanics(
@@ -26,6 +27,7 @@ foreach( _DIM 2 3)
       DISP_ORDER ${_DISP_ORDER}
       GEO_ORDER ${_DISP_ORDER}
       DENSITY_COEFFLAME_TYPE P0d
+      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
   endforeach()

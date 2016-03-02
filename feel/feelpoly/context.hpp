@@ -67,30 +67,20 @@ typedef mpl::vector_c<size_type,
                       MASS, STIFFNESS> contexts;
 
 template<size_type Context>
-struct has_jacobian
-{
-    static const bool value = has_value<Context, JACOBIAN>::value;
-};
+using has_jacobian = has_value<Context, JACOBIAN>;
+
 template<size_type Context>
-struct has_kb
-{
-    static const bool value = has_value<Context, KB>::value;
-};
+using has_kb = has_value<Context, KB>;
+
 template<size_type Context>
-struct has_kb2
-{
-    static const bool value = has_value<Context, KB2>::value;
-};
+using has_kb2 = has_value<Context, KB2>;
+
 template<size_type Context>
-struct has_first_derivative
-{
-    static const bool value = has_value<Context, FIRST_DERIVATIVE>::value;
-};
+using has_first_derivative = has_value<Context, FIRST_DERIVATIVE>;
+
 template<size_type Context>
-struct has_grad
-{
-    static const bool value = has_value<Context, GRAD>::value;
-};
+using has_grad = has_value<Context, GRAD>;
+
 template<size_type Context>
 struct has_second_derivative
 {
@@ -140,15 +130,10 @@ struct has_unsymm
     static const bool value = has_value<Context, UNSYMM>::value;
 };
 template<size_type Context>
-struct has_div
-{
-    static const bool value = has_value<Context, DIV>::value;
-};
+using has_div = has_value<Context, DIV>;
+
 template<size_type Context>
-struct has_curl
-{
-    static const bool value = has_value<Context, CURL>::value;
-};
+using has_curl = has_value<Context, CURL>;
 
 template<size_type Context>
 struct has_mass
@@ -161,6 +146,16 @@ struct has_stifness
     static const bool value = has_value<Context, STIFFNESS>::value;
 };
 
+template<size_type Context>
+struct has_measure
+{
+    static const bool value = has_value<Context, MEASURE>::value;
+};
+
+
 } // vm
+
+using namespace vm;
+
 } // Feel
 #endif /* __FEM_Context_HPP */

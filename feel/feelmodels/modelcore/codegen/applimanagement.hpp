@@ -21,7 +21,7 @@
 #if defined( FLUIDMECHANICS )
 #undef APPLICATION_TYPE_NAME
 #define APPLICATION_TYPE_NAME "fluid"
-#if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#if defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
 #include "fluid/codegen_fluidmec.hpp"
 #define APPLI_FLUID_UORDER FLUIDMECHANICS_ORDER_VELOCITY
 #define APPLI_FLUID_PORDER FLUIDMECHANICS_ORDER_PRESSURE
@@ -70,7 +70,7 @@
 //-----------------------------//
 // multi-fluid
 //-----------------------------//
-#if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#if defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
 // fluid0
 #undef FLUIDMECHANICS
 #undef FLUIDMECHANICS0
@@ -104,7 +104,7 @@
 #include "fluidmec2/fluidmec.hpp"
 #endif
 
-#endif // if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#endif // if defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
 
 //-----------------------------//
 // multi-solid
@@ -278,7 +278,7 @@ namespace Feel
 
         //-------------------------------------------------------------------------------------//
         //-------------------------------------------------------------------------------------//
-#if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#if defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
 #if defined( FLUIDMECHANICS )
         typedef Feel::FeelModels::FluidMechanics FluidMechanics_type;
         typedef boost::shared_ptr<FluidMechanics_type> FluidMechanics_ptrtype;
@@ -335,7 +335,7 @@ namespace Feel
 #endif
         //-------------------------------------------------------------------------------------//
 #if defined( FBMTOOL )
-#if defined( FLUIDMECHANICS0 ) && defined( FLUIDMECHANICS1 ) && defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#if defined( FLUIDMECHANICS0 ) && defined( FLUIDMECHANICS1 ) && defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
         typedef Feel::FeelModels::FBM FBM_type;
         typedef boost::shared_ptr<FBM_type> FBM_ptrtype;
 #endif
@@ -411,7 +411,7 @@ namespace Feel
         //-------------------------------------------------------------------------------------//
         //-------------------------------------------------------------------------------------//
         //-------------------------------------------------------------------------------------//
-#if defined( FEELMODELS_ENABLE_FLUID_MECHANICS )
+#if defined( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
 #if defined( FLUIDMECHANICS )
         BOOST_PARAMETER_MEMBER_FUNCTION( (FluidMechanics_ptrtype), // return type
                                          FluidMechanics, //name function

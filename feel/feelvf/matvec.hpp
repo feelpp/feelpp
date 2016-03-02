@@ -259,7 +259,7 @@ struct initialize_expression_gij
     const Basis_i_t& M_fev;
     const Basis_j_t& M_feu;
 };
-template<typename Geo_t, typename Basis_i_t>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_gi
 {
     template<typename Sig>
@@ -268,7 +268,7 @@ struct initialize_expression_gi
     template<typename ExprT>
     struct result<initialize_expression_gi( ExprT )>
     {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t> type;
+        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
     };
     initialize_expression_gi( Geo_t const& geom , Basis_i_t const& fev )
         :
@@ -277,17 +277,17 @@ struct initialize_expression_gi
     {}
 
     template <typename ExprT>
-    typename ExprT::template tensor<Geo_t, Basis_i_t>
+    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
     operator()( ExprT& expr ) const
     {
-        return typename ExprT::template tensor<Geo_t, Basis_i_t>( expr, M_geom, M_fev );
+        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom, M_fev );
     }
 
     const Geo_t& M_geom;
     const Basis_i_t& M_fev;
 };
 
-template<typename Geo_t>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_g
 {
     template<typename Sig>
@@ -296,7 +296,7 @@ struct initialize_expression_g
     template<typename ExprT>
     struct result<initialize_expression_g( ExprT )>
     {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t> type;
+        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
     };
     initialize_expression_g( Geo_t const& geom )
         :
@@ -304,10 +304,10 @@ struct initialize_expression_g
     {}
 
     template <typename ExprT>
-    typename ExprT::template tensor<Geo_t>
+    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
     operator()( ExprT& expr ) const
     {
-        return typename ExprT::template tensor<Geo_t>( expr, M_geom );
+        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom );
         //return typename ExprT::template tensor<Geo_t>( expr, M_geom );
     }
 
@@ -633,6 +633,14 @@ public:
         static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+    template<typename Func>
+    static const bool has_trial_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
+
+
     typedef VectorExpr expression_vector_type;
     typedef Vec<expression_vector_type> this_type;
 
@@ -738,14 +746,14 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
         {
             update( geom, fev );
         }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
         {
             update( geom );
         }
@@ -888,6 +896,12 @@ public:
     {
         static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
     };
+    template<typename Func>
+    static const bool has_test_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+    template<typename Func>
+    static const bool has_trial_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef MatrixExpr expression_matrix_type;
     typedef Mat<M, N, expression_matrix_type> this_type;
@@ -1009,14 +1023,14 @@ public:
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
         {
             update( geom, fev );
         }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
+            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
         {
             update( geom );
         }

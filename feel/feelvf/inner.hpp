@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-13
 
-  Copyright (C) 2014-2015 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,15 @@ public:
             ExprL::template HasTrialFunction<Func>::result||
         ExprR::template HasTrialFunction<Func>::result ;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+        ExprR::template HasTestFunction<Func>::result ;
+    template<typename Func>
+        static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result||
+        ExprR::template HasTrialFunction<Func>::result ;
+    using test_basis = typename ExprL::test_basis;
+    using trial_basis = typename ExprL::trial_basis;
 
     template<typename... TheExpr>
     struct Lambda
@@ -419,10 +428,10 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
  */
 template<typename ExprL>
 inline
-Expr< Product<ExprL, ExprL,1,NONE> >
+Expr< Product<ExprL, ExprL,1,InnerProperties::IS_SAME> >
 inner( ExprL l )
 {
-    typedef Product<ExprL, ExprL,1,NONE> product_t;
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME> product_t;
     return Expr< product_t >(  product_t( l, l ) );
 }
 
@@ -431,7 +440,7 @@ inline
 Expr< Product<ExprL, ExprL,1,Props> >
 inner( ExprL l, mpl::int_<Props> )
 {
-    typedef Product<ExprL, ExprL,1,Props> product_t;
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> product_t;
     return Expr< product_t >(  product_t( l, l ) );
 }
 

@@ -19,7 +19,7 @@ endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_NAME;LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;ADD_CMAKE_INSTALL"
     ""
     ${ARGN}
     )
@@ -102,6 +102,17 @@ macro(genLibBase)
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
 
+  # install process
+  if ( FEELMODELS_GENLIB_BASE_ADD_CMAKE_INSTALL )
+    INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT LibsFeelppModels-${LIB_APPLICATION_NAME})
+    add_custom_target(install-${LIBBASE_NAME}
+      DEPENDS ${LIBBASE_NAME}
+      COMMAND
+      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=LibsFeelppModels-${LIB_APPLICATION_NAME}
+      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+      )
+  endif()
+
 endmacro(genLibBase)
 #############################################################################
 
@@ -163,7 +174,7 @@ endmacro(genExecutableBase)
 macro( genLibThermoDynamics )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER;BC_MARKERS;BC_DESC;GEO_DESC;LIB_NAME;LIB_DIR;"
-    "NO_UPDATE_MODEL_DEF"
+    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
 
@@ -193,7 +204,7 @@ macro( genLibThermoDynamics )
   set(FEELMODELS_MODEL_SPECIFIC_NAME thermodyn${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/thermodyn/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
   set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
@@ -208,7 +219,13 @@ macro( genLibThermoDynamics )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/thermodynbase_inst.cpp
       ${LIBBASE_DIR}/thermodynamics_inst.cpp )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+    else()
+      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+    endif()
 
     # generate libmodelbase
     genLibBase(
@@ -219,7 +236,9 @@ macro( genLibThermoDynamics )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
+
   endif()
 
   ############################
@@ -369,8 +388,8 @@ endmacro(feelpp_add_thermo_application)
 
 macro( genLibSolidMechanics )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;DISP_ORDER;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;DENSITY_COEFFLAME_TYPE;LIB_NAME;LIB_DIR;"
-    "NO_UPDATE_MODEL_DEF"
+    "DIM;DISP_ORDER;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;DENSITY_COEFFLAME_TYPE;LIB_NAME;LIB_DIR;ADD_CMAKE_INSTALL_BIS"
+    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
 
@@ -407,7 +426,7 @@ macro( genLibSolidMechanics )
   set(FEELMODELS_MODEL_SPECIFIC_NAME solidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/solid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
   set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
@@ -433,7 +452,17 @@ macro( genLibSolidMechanics )
       ${LIBBASE_DIR}/solidmecbaseupdateresidual_inst.cpp
       ${LIBBASE_DIR}/solidmechanics_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+    else()
+      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+    endif()
+    # overwrite options
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
+      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
+    endif()
 
     # generate libmodelbase
     genLibBase(
@@ -444,7 +473,9 @@ macro( genLibSolidMechanics )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
+
   endif()
 
   ############################
@@ -609,8 +640,8 @@ endmacro(feelpp_add_solid_application)
 # #############################################################################
 macro(genLibFluidMechanics)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS;LIB_NAME;LIB_DIR;"
-    "USE_PERIODICITY;NO_UPDATE_MODEL_DEF"
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;GEO_DESC;BC_MARKERS;BC_DESC;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS;LIB_NAME;LIB_DIR;ADD_CMAKE_INSTALL_BIS"
+    "USE_PERIODICITY;NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
 
@@ -695,7 +726,7 @@ macro(genLibFluidMechanics)
   set(FEELMODELS_MODEL_SPECIFIC_NAME fluidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/fluid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
   set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
@@ -728,9 +759,22 @@ macro(genLibFluidMechanics)
       ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
       ${LIBBASE_DIR}/fluidmechanics_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
-    if (FEELMODELS_ENABLE_MESHALE )
-      set(LIB_DEPENDS feelpp_modelmesh ${LIB_DEPENDS})
+    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+    if (FEELPP_MODELS_ENABLE_MESHALE )
+      set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
+    endif()
+    # thermodynamcis depend
+    set(LIB_DEPENDS feelpp_model_thermodyn${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
+
+
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+    else()
+      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
+    endif()
+    # overwrite options
+    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
+      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
     endif()
 
     # generate libmodelbase
@@ -742,7 +786,9 @@ macro(genLibFluidMechanics)
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
+
   endif()
 
   ############################
@@ -949,13 +995,20 @@ endmacro(feelpp_add_fluid_application)
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC;SOLID_DENSITY_COEFFLAME_TYPE"
-    "FLUID_USE_PERIODICITY"
+    "FLUID_USE_PERIODICITY;ADD_CMAKE_INSTALL"
     ${ARGN}
     )
 
   if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_FLUID_GEO_ORDER OR FEELMODELS_APP_FLUID_U_ORDER OR FEELMODELS_APP_FLUID_P_ORDER OR
         FEELMODELS_APP_SOLID_DISP_ORDER OR FEELMODELS_APP_SOLID_GEO_ORDER ) )
     message(FATAL_ERROR "miss argument!")
+  endif()
+
+  ###############################################################
+  if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
+    set( LIBBASE_ADD_CMAKE_INSTALL 1 )
+  else()
+    set( LIBBASE_ADD_CMAKE_INSTALL 0 )
   endif()
   ###############################################################
   # fluid lib
@@ -973,8 +1026,9 @@ macro(genLibFSI)
     DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
     DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     USE_PERIODICITY_BIS ${FEELMODELS_FLUID_USE_PERIODICITY}
+    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
-  set(FLUID_LIB_DEPENDS ${LIBBASE_NAME})
+  set(FLUID_LIB_NAME ${LIBBASE_NAME})
   set(FLUID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
   ###############################################################
   # solid lib
@@ -983,8 +1037,9 @@ macro(genLibFSI)
     DISP_ORDER ${FEELMODELS_APP_SOLID_DISP_ORDER}
     GEO_ORDER ${FEELMODELS_APP_SOLID_GEO_ORDER}
     DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_SOLID_DENSITY_COEFFLAME_TYPE}
+    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
-  set(SOLID_LIB_DEPENDS ${LIBBASE_NAME})
+  set(SOLID_LIB_NAME ${LIBBASE_NAME})
   set(SOLID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
   ###############################################################
   # fsi lib base
@@ -992,10 +1047,10 @@ macro(genLibFSI)
   set(FEELMODELS_MODEL_SPECIFIC_NAME fsi_${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/fsi/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELMODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
+  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
   set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
-  set(LIB_DEPENDS ${FLUID_LIB_DEPENDS} ${SOLID_LIB_DEPENDS})
+  set(LIB_DEPENDS ${FLUID_LIB_NAME} ${SOLID_LIB_NAME})
 
   if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
     #write empty file in orter to check if this lib has already define
@@ -1018,7 +1073,13 @@ macro(genLibFSI)
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fsi/fsiconfig.h.in
+      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
+
+    # fluid and solid dependencies in install process
+    if ( ${LIBBASE_ADD_CMAKE_INSTALL} )
+      add_dependencies(install-${LIBBASE_NAME} install-${FLUID_LIB_NAME} install-${SOLID_LIB_NAME} )
+    endif()
 
   endif()
 

@@ -4,6 +4,8 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+
 
 namespace Feel
 {
@@ -12,39 +14,63 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                     sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart,
-                                                     bool _doClose, bool _doBCStrongDirichlet ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicard( DataUpdateLinear & data ) const
 {
-#if defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
+    this->updateLinearPDE( data );
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+{
     using namespace Feel::vf;
 
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateOseen", "start"+sc );
-    boost::mpi::timer thetimer;
+    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _BuildCstPart = data.buildCstPart();
+    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
+    bool _BuildExtendedPart = data.buildExtendedPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
-    bool BuildNonCstPart_ConvectiveTerm = BuildNonCstPart;
-    bool BuildNonCstPart_Form2TransientTerm = BuildNonCstPart;
-    bool BuildNonCstPart_Form1TransientTerm = BuildNonCstPart;
-    //bool BuildNonCstPart_SourceTerm = BuildNonCstPart;
-    bool BuildNonCstPart_BoundaryNeumannTerm = BuildNonCstPart;
+
+    bool build_ConvectiveTerm = BuildNonCstPart;
+    bool build_Form2TransientTerm = BuildNonCstPart;
+    bool build_Form1TransientTerm = BuildNonCstPart;
+    //bool build_SourceTerm = BuildNonCstPart;
+    bool build_BoundaryNeumannTerm = BuildNonCstPart;
+    bool build_StressTensorNonNewtonian = BuildNonCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
-        BuildNonCstPart_Form2TransientTerm=BuildCstPart;
+        build_Form2TransientTerm=BuildCstPart;
     }
     if (this->useFSISemiImplicitScheme())
     {
-        BuildNonCstPart_ConvectiveTerm=BuildCstPart;
-        BuildNonCstPart_Form2TransientTerm=BuildCstPart;
-        BuildNonCstPart_Form1TransientTerm=BuildCstPart;
-        //BuildNonCstPart_SourceTerm=BuildCstPart;
-        BuildNonCstPart_BoundaryNeumannTerm=BuildCstPart;
+        build_StressTensorNonNewtonian = BuildCstPart;
+        if ( this->solverName() == "Oseen" )
+            build_ConvectiveTerm=BuildCstPart;
+        build_Form2TransientTerm=BuildCstPart;
+        build_Form1TransientTerm=BuildCstPart;
+        //build_SourceTerm=BuildCstPart;
+        build_BoundaryNeumannTerm=BuildCstPart;
     }
+
+    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("FluidMechanics","updateLinearPDE", "start"+sc );
+    this->timerTool("Solve").start();
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
+
+    element_fluid_ptrtype fielCurrentPicardSolution;
+    if ( this->solverName() == "Picard" )
+    {
+        fielCurrentPicardSolution = Xh->elementPtr();
+        for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
+            fielCurrentPicardSolution->set( k,vecCurrentPicardSolution->operator()(/*rowStartInVector+*/k) );
+    }
 
     auto const& U = this->fieldVelocityPressure();
     auto u = U.template element<0>();
@@ -52,15 +78,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
     auto p = U.template element<1>();
     auto q = U.template element<1>();
 
-    //Deformations tensor (trial)
+    // strain tensor (trial)
     auto deft = sym(gradt(u));
-    //Deformations tensor (test)
-    //auto def = sym(gradv(u));
+    // density
     auto const& rho = this->densityViscosityModel()->fieldRho();
-    //Identity Matrix
+    // identity matrix
     auto const Id = eye<nDim,nDim>();
-    // Strain tensor (trial)
-    auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -80,44 +103,52 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
                               _rowstart=rowStartInVector );
 
     //--------------------------------------------------------------------------------------------------//
-    // sigma : grad(v) sur Omega
-#if 1
-    if (BuildCstPart)
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= trace(Sigmat*trans(grad(v))),
-                       _geomap=this->geomap() );
-#else
-    form2( Xh, Xh, A ) +=
-        integrate( _range=elements(mesh),
-                   _expr= 2*idv(*M_P0Mu)*trace(trans(deft)*grad(v)),
-                   _geomap=this->geomap() );
-    form2( Xh, Xh, A ) +=
-        integrate( _range=elements(mesh),
-                   _expr= -div(v)*idt(p),
-                   _geomap=this->geomap() );
-#endif
+    this->timerTool("Solve").start();
 
-    //--------------------------------------------------------------------------------------------------//
-    // incompressibility term
-    if (BuildCstPart)
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
-                       _expr= divt(u)*id(q),
-                       _geomap=this->geomap() );
-
-    //--------------------------------------------------------------------------------------------------//
-    // volume force
-    //if (BuildNonCstPart_SourceTerm)
-    this->updateSourceTermLinearPDE(F,BuildCstPart);
-
-    if (M_haveSourceAdded && BuildNonCstPart)
+    // stress tensor sigma : grad(v)
+    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
     {
-        myLinearForm +=
+        if ( BuildCstPart )
+        {
+            auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= inner(Sigmat,grad(v)),
+                           _geomap=this->geomap() );
+        }
+    }
+    else
+    {
+        if ( build_StressTensorNonNewtonian )
+        {
+            auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
+            auto betaU = BetaU.template element<0>();
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel());
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= 2*myViscosity*inner(deft,grad(v)),
+                           _geomap=this->geomap() );
+        }
+        if ( BuildCstPart )
+        {
+            bilinearForm_PatternCoupled +=
+                integrate( _range=elements(mesh),
+                           _expr= -div(v)*idt(p),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    // incompressibility term
+    if ( BuildCstPart )
+    {
+        bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= trans(idv(*M_SourceAdded))*id(v),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
     }
+
+    double timeElapsedStressTensor = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
 
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst
@@ -163,7 +194,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
             if (BuildNonCstPart)
             {
-                this->log("FluidMechanics","updateOseen", "also add nonzero MEANPRESSURE" );
+                this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
                 form1( _test=M_XhMeanPressureLM, _vector=F,
                        _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
                     integrate( _range=therange,//elements(mesh),
@@ -174,34 +205,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
         } // if ( this->definePressureCstMethod() == "lagrange-multiplier" )
     } // if ( this->definePressureCst() )
 
+    //--------------------------------------------------------------------------------------------------//
+    // convection
+    if ( this->modelName() == "Navier-Stokes" && build_ConvectiveTerm )
+    {
+        this->timerTool("Solve").start();
 
-    //--------------------------------------------------------------------------------------------------//
-    // neumann condition
-    if (BuildNonCstPart_BoundaryNeumannTerm)
-    {
-        this->updateBCNeumannLinearPDE( F );
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    //pressure fix condition
-    if (BuildCstPart && !this->markerPressureBC().empty() )
-    {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
-                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
-                       _geomap=this->geomap() );
-    }
-    if (BuildNonCstPart)
-    {
-        this->updateBCPressureLinearPDE( F );
-    }
-    //--------------------------------------------------------------------------------------------------//
-    // Todo : BuildNonCstPart ?
-    if (M_pdeType == "Oseen" && BuildNonCstPart_ConvectiveTerm)
-    {
-        auto BetaU = M_bdf_fluid->poly();
+        CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
+        auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
         auto betaU = BetaU.template element<0>();
-        if (M_isMoveDomain)
+        if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearForm_PatternDefault +=
@@ -225,8 +238,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
                            _expr= 0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
+
+        double timeElapsedConvection = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
     }
-    else if (M_pdeType == "Stokes" && BuildNonCstPart_ConvectiveTerm && M_isMoveDomain)
+    else if ( this->modelName() == "Stokes" && build_ConvectiveTerm && this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         bilinearForm_PatternDefault +=
@@ -236,19 +252,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 #endif
     }
 
-    //--------------------------------------------------------------------------------------------------//
 
-    this->updateOseenStabilisation(A,F,_BuildCstPart,A_extended,_BuildExtendedPart);
-
-    //--------------------------------------------------------------------------------------------------//
-
-    this->updateOseenWeakBC(A,F,_BuildCstPart);
 
     //--------------------------------------------------------------------------------------------------//
     //transients terms
     if (!this->isStationary())
     {
-        if (BuildNonCstPart_Form2TransientTerm)
+        if (build_Form2TransientTerm)
         {
             bilinearForm_PatternDefault +=
                 integrate( _range=elements(mesh),
@@ -256,7 +266,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
                            _geomap=this->geomap() );
         }
 
-        if (BuildNonCstPart_Form1TransientTerm)
+        if (build_Form1TransientTerm)
         {
             auto Buzz = M_bdf_fluid->polyDeriv();
             auto buzz = Buzz.template element<0>();
@@ -267,14 +277,31 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
         }
     }
 
-
     //--------------------------------------------------------------------------------------------------//
-
+    // volume force
+    this->updateSourceTermLinearPDE(F,BuildCstPart);
+    // source given by user
+    if ( M_haveSourceAdded && BuildNonCstPart)
+    {
+        myLinearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= trans(idv(*M_SourceAdded))*id(v),
+                       _geomap=this->geomap() );
+    }
+    if ( M_useGravityForce && BuildCstPart )
+    {
+        myLinearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= idv(rho)*inner(M_gravityForce,id(v)),
+                       _geomap=this->geomap() );
+    }
+    //--------------------------------------------------------------------------------------------------//
+    // div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
     {
         myLinearForm +=
             integrate( _range=elements(mesh),
-                       _expr= idv(this->velocityDiv())*id(q),
+                       _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
@@ -296,35 +323,67 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateOseen( sparse_matrix_ptrtype& A , 
 
     //--------------------------------------------------------------------------------------------------//
 
-    /*if (_doClose)
-     {
-     A->close();
-     F->close();
-     }*/
+    this->updateLinearPDEStabilisation(A,F,_BuildCstPart,A_extended,_BuildExtendedPart);
 
-    // strong formulation of the boundaries conditions
+    //--------------------------------------------------------------------------------------------------//
+    // neumann condition
+    if (build_BoundaryNeumannTerm)
+    {
+        this->updateBCNeumannLinearPDE( F );
+    }
+    //pressure fix condition
+    if (BuildCstPart && !this->markerPressureBC().empty() )
+    {
+        bilinearForm_PatternCoupled +=
+            integrate( _range=markedfaces(mesh,this->markerPressureBC() ),
+                       _expr= -trans(2*idv(this->densityViscosityModel()->fieldMu())*deft*N())*id(v),
+                       _geomap=this->geomap() );
+    }
+    if (BuildNonCstPart)
+    {
+        this->updateBCPressureLinearPDE( F );
+    }
+    // others bc
+    this->updateLinearPDEWeakBC(A,F,_BuildCstPart);
+
+    //--------------------------------------------------------------------------------------------------//
+    // strong Dirichlet bc
     if ( BuildNonCstPart && _doBCStrongDirichlet)
     {
+        this->timerTool("Solve").start();
+
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletLinearPDE(A,F);
 
-#if defined( FEELPP_MODELS_HAS_MESHALE ) // must be move in base class
+#if defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             bilinearForm_PatternCoupled +=
                 on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                    _element=u,
-                    _rhs=F,
+                    _element=u, _rhs=F,
                     _expr=idv(this->meshVelocity2()) );
         }
 #endif
+
+        for ( auto const& inletbc : M_fluidInletDesc )
+        {
+            std::string const& marker = std::get<0>( inletbc );
+            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(),marker),
+                    _element=u, _rhs=F,
+                    _expr=-idv(inletVel)*N() );
+        }
+
+        double timeElapsedDirichletBC = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly strong DirichletBC in "+(boost::format("%1% s") %timeElapsedDirichletBC).str() );
     }
 
-    double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateOseen","finish in "+(boost::format("%1% s") % timeElapsed).str() );
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 
-#endif // defined(FEELMODELS_FLUID_BUILD_LINEAR_CODE)
-} // updateOseen
+} // updateLinearPDE
 
 } // end namespace FeelModels
 } // end namespace Feel

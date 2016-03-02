@@ -39,7 +39,7 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 namespace std
 {
 // make_unique is defined for c++14 and beyond
-#if __cplusplus < 201402L
+#if __cplusplus <= 201200L
 /**
  * provide the c++14 implementation of std::make_unique
  */
