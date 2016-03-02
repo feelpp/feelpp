@@ -398,13 +398,13 @@ public:
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                  _worldcomm=M_backend_primal->comm(),
                                                  _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=true);
+                                                 _rebuild=false/*true*/);
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=true);
+                                               _rebuild=false/*true*/);
     }
 
 
@@ -482,6 +482,8 @@ public:
      */
     //@{
 
+    truth_model_ptrtype & model() { return M_model; }
+    truth_model_ptrtype const& model() const { return M_model; }
 
     //! return factor
     int factor() const
@@ -2991,12 +2993,9 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type j = 0; j < M_N; ++j )
                         {
-                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );//energy
+                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );//energy
                             M_Aqm_du[q][m]( i, j ) = M_model->Aqm( q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j), true );
-                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
-                            //M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_WN[i], M_WN[j] );//energy
-                            //M_Aqm_du[q][m]( i, j ) = M_model->Aqm( q , m , M_WNdu[i], M_WNdu[j], true );
-                            //M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WN[j] );
+                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
                         }
                     }
 
@@ -3004,12 +3003,9 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type i = 0; i < M_N; ++i )
                         {
-                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
+                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->primalBasisElement(i) );
                             M_Aqm_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->dualBasisElement(j) , true );
-                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->dualBasisElement(i), M_model->rBFunctionSpace()->primalBasisElement(j) );
-                            //M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_WN[i], M_WN[j] );
-                            //M_Aqm_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WNdu[j], true );
-                            //M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WN[j] );
+                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_model->rBFunctionSpace()->primalBasisElement(j), M_model->rBFunctionSpace()->dualBasisElement(i) );
                         }
                     }
                 }//loop over m
@@ -4089,6 +4085,8 @@ CRB<TruthModelType>::check( size_type N ) const
         int size=vector_err.size();
         double err = vector_err[size-1];
 
+        for (int i=0;i< uN[uN.size()-1].size();++i)
+            std::cout << "uN(" << i << ") =" << uN[uN.size()-1](i) << "\n";
 
 #if 0
         //if (  err > 1e-5 )
@@ -6122,6 +6120,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
              << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
+#if 0
     for ( size_type i = 0; i < N; ++i )
     {
         for ( size_type j = std::max( i+1,N-Nm ); j < N; ++j )
@@ -6130,6 +6129,16 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
             wn[j].add( -__rij_pr, wn[i] );
         }
     }
+#else
+    for ( size_type i =N-Nm; i < N; ++i )
+    {
+        for ( size_type j = 0; j < i; ++j )
+        {
+            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
+            wn[i].add( -__rij_pr, wn[j] );
+        }
+    }
+#endif
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
