@@ -199,6 +199,7 @@ template<typename ModelType>
 bool
 CRBElementsDB<ModelType>::loadDB()
 {
+    std::cout << "M_N: " << M_N << std::endl;
 
     bool rebuild_db = boption(_name="crb.rebuild-database");
     int Nrestart = ioption(_name="crb.restart-from-N");
@@ -236,7 +237,7 @@ CRBElementsDB<ModelType>::loadDB()
             LOG(INFO) << "CRB db format (" << soption(_name="crb.db.format") << " unsupported. Switching to boost.";
         }
 
-        //std::cout << "Loading " << db << "...\n";
+        std::cout << "Loading " << db << "...\n";
         fs::ifstream ifs( db );
 
         if ( ifs )
@@ -289,21 +290,22 @@ CRBElementsDB<ModelType>::saveHDF5DB()
 {
     int size = M_WN.size();
 
+    std::ostringstream hdf5File;
+    fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+    p.replace_extension("");
+    hdf5File << p.string() << ".h5";
+
     LOG( INFO ) << "saving HDF5 Elements DB";
     for(int i=0; i<size; i++)
     {
-        std::ostringstream oss;
-        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".0." << i << ".h5";
-        LOG( INFO ) << oss.str();
-        M_WN[i].saveHDF5(oss.str());
+        std::ostringstream tableName;
+        LOG( INFO ) << hdf5File.str();
+        tableName << "M_WN[" << i << "]";
+        M_WN[i].saveHDF5(hdf5File.str(), tableName.str());
 
-        oss.str("");
-        p = this->dbLocalPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".1." << i << ".h5";
-        M_WNdu[i].saveHDF5(oss.str());
+        tableName.str("");
+        tableName << "M_WNdu[" << i << "]";
+        M_WNdu[i].saveHDF5(hdf5File.str(), tableName.str());
     }
     LOG( INFO ) << "Elements DB saved in hdf5";
 }
@@ -364,6 +366,8 @@ CRBElementsDB<ModelType>::loadHDF5DB()
 {
     LOG( INFO ) << " loading HDF5 Elements DB ... ";
 
+    std::cout << "M_N: " << M_N << std::endl;
+
     M_WN.resize( M_N );
     M_WNdu.resize( M_N );
 
@@ -393,15 +397,15 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     /* so we have to find the right path where they are located */
 
     /* build the filename of db 0 */
-    std::ostringstream oss;
+    std::ostringstream hdf5File;
     fs::path dbpath = this->dbLocalPath();
     fs::path p = dbpath / fs::path(this->dbFilename());
     p.replace_extension("");
-    oss << p.string() << ".0.0.h5";
+    hdf5File << p.string() << ".h5";
 
-    std::cout << oss.str() << std::endl;
+    std::cout << hdf5File.str() << std::endl;
     /* If the path does not exist then the db are in the system path */
-    if ( ! fs::exists( oss.str() ) )
+    if ( ! fs::exists( hdf5File.str() ) )
     {
         dbpath = this->dbSystemPath();
     }
@@ -410,21 +414,16 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     LOG( INFO ) << "loading Elements DB (hdf5)";
     for(int i=0; i<M_N; i++)
     {
-        std::ostringstream oss;
-        fs::path p = dbpath / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".0." << i << ".h5";
-
+        std::ostringstream tableName;
+        tableName << "M_WM[" << i << "]";
         temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        temp.loadHDF5(oss.str());
+        temp.loadHDF5(hdf5File.str(), tableName.str());
         M_WN[i] = temp;
 
-        oss.str("");
-        p = dbpath / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".1." << i << ".h5";
+        tableName.str("");
+        tableName << "M_WMdu[" << i << "]";
         temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        temp.loadHDF5(oss.str());
+        temp.loadHDF5(hdf5File.str(), tableName.str());
         M_WNdu[i] = temp;
     }
     LOG( INFO ) << "Elements DB loaded";

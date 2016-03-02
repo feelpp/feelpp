@@ -124,7 +124,7 @@ CRBDB::dbLocalPath() const
 fs::path
 CRBDB::lookForDB() const
 {
-    if(soption(_name="crb.db.format").compare("boost"))
+    if(soption(_name="crb.db.format").compare("boost") == 0)
     {
         //std::cout << "db fdilename=" << this->dbFilename() << "\n";
         // look in local repository $HOME/feel/db/crb/...
@@ -141,7 +141,7 @@ CRBDB::lookForDB() const
             return this->dbSystemPath() / this->dbFilename();
         }
     }
-    else if(soption(_name="crb.db.format").compare("hdf5"))
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
     {
         std::ostringstream oss;
         /* build the filename of db 0 */
