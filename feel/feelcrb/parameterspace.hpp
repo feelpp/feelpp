@@ -43,6 +43,7 @@
 
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/kdtree.hpp>
 
 namespace Feel
