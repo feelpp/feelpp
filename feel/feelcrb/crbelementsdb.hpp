@@ -122,6 +122,8 @@ public :
     void loadHDF5DB();
 #endif
 
+    virtual fs::path lookForDB() const;
+
 
     boost::tuple<wn_type, wn_type> wn()
     {
@@ -166,6 +168,59 @@ private :
 };//class CRBElementsDB
 
 template<typename ModelType>
+fs::path
+CRBElementsDB<ModelType>::lookForDB() const
+{
+    if(soption(_name="crb.db.format").compare("boost") == 0)
+    {
+        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
+        // look in local repository $HOME/feel/db/crb/...
+        if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
+        {
+            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
+            return this->dbLocalPath() / this->dbFilename();
+        }
+
+        // then look into the system for install databases
+        if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
+        {
+            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
+            return this->dbSystemPath() / this->dbFilename();
+        }
+    }
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        std::ostringstream oss;
+        /* build the filename of db 0 */
+        /* If this element exists, we load the database */
+        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".h5";
+
+        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
+        // look in local repository $HOME/feel/db/crb/...
+        if ( fs::exists( oss.str() ) )
+        {
+            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
+            return oss.str();
+        }
+
+        p = this->dbSystemPath() / fs::path(this->dbFilename());
+        p.replace_extension("");
+        oss << p.string() << ".h5";
+
+        // then look into the system for install databases
+        if ( fs::exists( oss.str() ) )
+        {
+            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
+            return oss.str();
+        }
+    }
+
+    return fs::path();
+}
+
+template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveDB()
 {
@@ -199,8 +254,6 @@ template<typename ModelType>
 bool
 CRBElementsDB<ModelType>::loadDB()
 {
-    std::cout << "M_N: " << M_N << std::endl;
-
     bool rebuild_db = boption(_name="crb.rebuild-database");
     int Nrestart = ioption(_name="crb.restart-from-N");
     if ( rebuild_db && Nrestart < 1 )
@@ -211,15 +264,11 @@ CRBElementsDB<ModelType>::loadDB()
 
     fs::path db = this->lookForDB();
 
-    std::cout << "test1 done...\n";
     if ( db.empty() )
         return false;
 
-    std::cout << "test2 done...\n";
     if ( !fs::exists( db ) )
         return false;
-
-    std::cout << "test3 done...\n";
 
 #ifdef FEELPP_HAS_HDF5
     if(soption(_name="crb.db.format").compare("hdf5") == 0)
@@ -295,8 +344,34 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     p.replace_extension("");
     hdf5File << p.string() << ".h5";
 
+    HDF5 hdf5;
+    hsize_t dims[1];
+    hsize_t offset[1];
+
+    dims[0] = 1;
+    offset[0] = 0;
+
+    /* If a previous db already exists, we remove it */
+    if( boost::filesystem::exists( hdf5File.str() ) )
+    {
+        boost::filesystem::remove( hdf5File.str() );
+    }
+
+    /* Select the correct size for data */
+    hid_t memDataType;
+    if(sizeof(int) == 4)
+    { memDataType = H5T_NATIVE_INT; }
+    else
+    { memDataType = H5T_NATIVE_LLONG; }
+
+    hdf5.openFile( hdf5File.str(), Environment::worldComm(), true, true );
+    hdf5.createTable( "dbSize", memDataType, dims, 1 );
+    hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
+    hdf5.closeTable( "dbSize" );
+    hdf5.closeFile();
+
     LOG( INFO ) << "saving HDF5 Elements DB";
-    for(int i=0; i<size; i++)
+    for(int i=0; i < size; i++)
     {
         std::ostringstream tableName;
         LOG( INFO ) << hdf5File.str();
@@ -366,7 +441,48 @@ CRBElementsDB<ModelType>::loadHDF5DB()
 {
     LOG( INFO ) << " loading HDF5 Elements DB ... ";
 
-    std::cout << "M_N: " << M_N << std::endl;
+    /* If we are loading a hdf5 database */
+    /* We passed a dummy databased in the load archive */
+    /* so we have to find the right path where they are located */
+
+    /* build the filename of db 0 */
+    std::ostringstream hdf5File;
+    fs::path dbpath = this->dbLocalPath();
+    fs::path p = dbpath / fs::path(this->dbFilename());
+    p.replace_extension("");
+    hdf5File << p.string() << ".h5";
+    /* If the path does not exist then the db are in the system path */
+    if ( ! fs::exists( hdf5File.str() ) )
+    {
+        dbpath = this->dbSystemPath();
+        p = dbpath / fs::path(this->dbFilename());
+        p.replace_extension("");
+        hdf5File.str("");
+        hdf5File << p.string() << ".h5";
+    }
+
+    HDF5 hdf5;
+    hsize_t dims[1];
+    hsize_t offset[1];
+
+    dims[0] = 1;
+    offset[0] = 0;
+
+    int size;
+    /* Select the correct size for data */
+    hid_t memDataType;
+    if(sizeof(int) == 4)
+    { memDataType = H5T_NATIVE_INT; }
+    else
+    { memDataType = H5T_NATIVE_LLONG; }
+
+    hdf5.openFile( hdf5File.str(), Environment::worldComm(), true, false );
+    hdf5.openTable( "dbSize", dims);
+    hdf5.read( "dbSize", memDataType, dims, offset, &size, 1 );
+    hdf5.closeTable( "dbSize");
+    hdf5.closeFile();
+
+    this->setMN(size);
 
     M_WN.resize( M_N );
     M_WNdu.resize( M_N );
@@ -391,25 +507,6 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     }
 
     element_type temp = Xh->element();
-
-    /* If we are loading a hdf5 database */
-    /* We passed a dummy databased in the load archive */
-    /* so we have to find the right path where they are located */
-
-    /* build the filename of db 0 */
-    std::ostringstream hdf5File;
-    fs::path dbpath = this->dbLocalPath();
-    fs::path p = dbpath / fs::path(this->dbFilename());
-    p.replace_extension("");
-    hdf5File << p.string() << ".h5";
-
-    std::cout << hdf5File.str() << std::endl;
-    /* If the path does not exist then the db are in the system path */
-    if ( ! fs::exists( hdf5File.str() ) )
-    {
-        dbpath = this->dbSystemPath();
-    }
-    std::cout << dbpath.string() << std::endl;
 
     LOG( INFO ) << "loading Elements DB (hdf5)";
     for(int i=0; i<M_N; i++)

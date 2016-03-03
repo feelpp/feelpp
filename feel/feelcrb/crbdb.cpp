@@ -124,50 +124,19 @@ CRBDB::dbLocalPath() const
 fs::path
 CRBDB::lookForDB() const
 {
-    if(soption(_name="crb.db.format").compare("boost") == 0)
+    //std::cout << "db fdilename=" << this->dbFilename() << "\n";
+    // look in local repository $HOME/feel/db/crb/...
+    if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
     {
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return this->dbLocalPath() / this->dbFilename();
-        }
-
-        // then look into the system for install databases
-        if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return this->dbSystemPath() / this->dbFilename();
-        }
+        //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
+        return this->dbLocalPath() / this->dbFilename();
     }
-    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+
+    // then look into the system for install databases
+    if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
     {
-        std::ostringstream oss;
-        /* build the filename of db 0 */
-        /* If this element exists, we load the database */
-        fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".0.0.h5";
-
-        //std::cout << "db fdilename=" << this->dbFilename() << "\n";
-        // look in local repository $HOME/feel/db/crb/...
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-            return oss.str();
-        }
-
-        p = this->dbSystemPath() / fs::path(this->dbFilename());
-        p.replace_extension("");
-        oss << p.string() << ".0.0.h5";
-
-        // then look into the system for install databases
-        if ( fs::exists( oss.str() ) )
-        {
-            //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-            return oss.str();
-        }
+        //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
+        return this->dbSystemPath() / this->dbFilename();
     }
 
     return fs::path();
