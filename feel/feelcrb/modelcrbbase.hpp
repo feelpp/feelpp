@@ -29,7 +29,7 @@
 #ifndef ModelCrbBase_H
 #define ModelCrbBase_H 1
 
-#include <feel/feel.hpp>
+//#include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
