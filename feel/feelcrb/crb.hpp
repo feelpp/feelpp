@@ -367,8 +367,15 @@ public:
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
         M_exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
-        M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") )
+        M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
+        M_orthonormalize_dual( boption(_name="crb.orthonormalize-dual") ),
+        M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
+        M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") ),
+        M_use_newton( boption(_name="crb.use-newton") ),
+        M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") )
     {
+        if ( !M_solve_dual_problem )
+            M_orthonormalize_dual = false;
         this->setTruthModel( model );
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
@@ -1375,9 +1382,9 @@ protected:
     size_type M_N;
     size_type M_Nm;
 
-    bool orthonormalize_primal;
-    bool orthonormalize_dual;
-    bool solve_dual_problem;
+    bool M_orthonormalize_primal;
+    bool M_orthonormalize_dual;
+    bool M_solve_dual_problem;
 
     convergence_type M_rbconv;
 
@@ -1961,39 +1968,11 @@ typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
 
-    M_model_executed_in_steady_mode = boption(_name="crb.is-model-executed-in-steady-mode");
     int proc_number = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
     bool rebuild_database = boption(_name="crb.rebuild-database") ;
-    orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
-    orthonormalize_dual = boption(_name="crb.orthonormalize-dual") ;
-    solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
-
-#if 0
-    M_elements_database.setMN( M_N );
-    if( M_elements_database.loadDB() )
-    {
-        LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-        auto basis_functions = M_elements_database.wn();
-        //M_WN = basis_functions.template get<0>();
-        //M_WNdu = basis_functions.template get<1>();
-        M_model->rBFunctionSpace()->setBasis( basis_functions );
-        M_database_contains_variance_info = boption(_name="crb.save-information-for-variance");
-    }
-    else
-    {
-        LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-        CHECK( rebuild_database ) <<" No database for basis functions found. Use option crb.rebuild-database=true to force reconstruction";
-    }
-#endif
-    M_use_newton = boption(_name="crb.use-newton") ;
-
-    //if ( this->worldComm().globalSize() > 1 )
-    //    solve_dual_problem = false;
-
-    if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
     M_Nm = ioption(_name="crb.Nm") ;
     bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
@@ -2091,9 +2070,10 @@ CRB<TruthModelType>::offline()
         M_WNmu->setSuperSampling( M_Xi );
 
 
-        if( proc_number == 0 ) std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
+        if( this->worldComm().isMasterRank() )
+            std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
 
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
 
@@ -2370,7 +2350,7 @@ CRB<TruthModelType>::offline()
 
             }//end of if ( model_type::is_time_dependent )
         }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
         ti.restart();
 
@@ -2379,7 +2359,7 @@ CRB<TruthModelType>::offline()
         M_primal_apee_mu->clear();
         M_dual_apee_mu->clear();
 
-        if ( proc_number == master_proc )
+        if( this->worldComm().isMasterRank() )
         {
             if( M_error_type == CRB_NO_RESIDUAL )
             {
@@ -2391,7 +2371,7 @@ CRB<TruthModelType>::offline()
         if( M_error_type == CRB_NO_RESIDUAL )
         {
             //every proc must have the same parameter mu
-            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+            boost::mpi::broadcast( this->worldComm() , mu , master_proc );
         }
 
         if( M_error_type != CRB_NO_RESIDUAL )
@@ -2403,7 +2383,7 @@ CRB<TruthModelType>::offline()
         }
 
         int size = mu.size();
-        if( proc_number == master_proc )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout << "  -- start with mu = [ ";
             for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
@@ -2503,18 +2483,18 @@ CRB<TruthModelType>::offline()
             }
 
             M_model->rBFunctionSpace()->deleteLastPrimalBasisElements( number_of_elem_to_remove );
-            if( solve_dual_problem )
+            if( M_solve_dual_problem )
                 M_model->rBFunctionSpace()->deleteLastDualBasisElements( number_of_elem_to_remove );
 
             M_N = Nrestart;
-            if( proc_number == 0 )
+            if( this->worldComm().isMasterRank() )
                 std::cout<<"Restart the RB construction at N = "<<Nrestart<<std::endl;
             LOG( INFO ) << "Restart the RB construction at N = "<<Nrestart;
         }
         else
         {
             mu = M_current_mu;
-            if( proc_number == 0 )
+            if( this->worldComm().isMasterRank() )
             {
                 std::cout<<"We are going to enrich the reduced basis"<<std::endl;
                 std::cout<<"There are "<<M_N<<" elements in the database"<<std::endl;
@@ -2539,7 +2519,7 @@ CRB<TruthModelType>::offline()
 
     LOG(INFO) << "[CRB::offline] starting offline adaptive loop\n";
 
-    bool reuse_prec = boption(_name="crb.reuse-prec") ;
+    //bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
     bool use_predefined_WNmu = boption(_name="crb.use-predefined-WNmu") ;
 
@@ -2565,12 +2545,12 @@ CRB<TruthModelType>::offline()
         }
         mu = M_WNmu->at( M_N ); // first element
 
-        if( proc_number == this->worldComm().masterRank() )
+        if( this->worldComm().isMasterRank() )
             std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
     }
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
+    if( this->worldComm().isMasterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2579,10 +2559,10 @@ CRB<TruthModelType>::offline()
     }
 
     bool all_procs = boption(_name="crb.system-memory-evolution-on-all-procs") ;
-    PsLogger ps ("PsLogCrbOffline" , Environment::worldComm() , "rss pmem pcpu" , all_procs );
+    PsLogger ps ("PsLogCrbOffline" , this->worldComm() , "rss pmem pcpu" , all_procs );
 
     bool only_master=boption(_name="crb.system-memory-evolution");
-    bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
+    bool only_one_proc= only_master * ( this->worldComm().isMasterRank() );
     bool write_memory_evolution = all_procs || only_one_proc ;
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
@@ -2621,7 +2601,7 @@ CRB<TruthModelType>::offline()
                 timer2.restart();
                 u = offlineFixedPointPrimal( mu );//, A  );
                 tpr=timer2.elapsed();
-                if( solve_dual_problem )
+                if( M_solve_dual_problem )
                 {
                     timer2.restart();
                     udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
@@ -2651,7 +2631,7 @@ CRB<TruthModelType>::offline()
             timer2.restart();
             u = offlineFixedPointPrimal( mu  );
             tpr=timer2.elapsed();
-            if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 timer2.restart();
                 udu = offlineFixedPointDual( mu , dual_initial_field );
@@ -2667,7 +2647,7 @@ CRB<TruthModelType>::offline()
         M_WNmu_complement = M_WNmu->complement();
         double time=timer2.elapsed();
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- primal problem solved in "<<tpr<<" s"<<std::endl;
             std::cout<<" -- dual problem solved in "<<tdu<<" s"<<std::endl;
@@ -2692,7 +2672,7 @@ CRB<TruthModelType>::offline()
 
         else
         {
-            if ( M_N == 0 && orthonormalize_primal==false )
+            if ( M_N == 0 && M_orthonormalize_primal==false )
             {
                 //add initial solution as element in the reduced basis if it's not zero
                 //else there will be problems during orthonormalization step
@@ -2772,7 +2752,7 @@ CRB<TruthModelType>::offline()
 
                     if ( M_mode_number>=nb_mode_max-1 )
                     {
-                        if( proc_number == master_proc )
+                        if( this->worldComm().isMasterRank() )
                         {
                             std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
                             std::cout<<"parameter choosen : [ ";
@@ -2834,7 +2814,7 @@ CRB<TruthModelType>::offline()
             }
 
             //and now the dual
-            if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 POD->setBdf( M_bdf_dual );
                 POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
@@ -2889,7 +2869,7 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             if ( M_model->isSteady() )
             {
@@ -2908,7 +2888,7 @@ CRB<TruthModelType>::offline()
         //in the case of transient problem, we can add severals modes for a same mu
         //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
         //we add the initial condition in the basis (so one more element)
-        size_type number_of_added_elements = M_Nm + ( M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
+        size_type number_of_added_elements = M_Nm + ( M_N==0 && M_orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
 
         //in the case of steady problems, we add only one element
         if( M_model->isSteady() )
@@ -2927,7 +2907,7 @@ CRB<TruthModelType>::offline()
             bool is_primal=true;
             POD->pod( ModeSet, is_primal, M_model->rBFunctionSpace()->primalRB() , use_solutions );
             M_model->rBFunctionSpace()->setPrimalBasis( ModeSet );
-            if( solve_dual_problem )
+            if( M_solve_dual_problem )
             {
                 ModeSet.clear();
                 POD->pod( ModeSet, false,  M_model->rBFunctionSpace()->dualRB() , use_solutions );
@@ -2938,7 +2918,7 @@ CRB<TruthModelType>::offline()
         {
             double norm_max = doption(_name="crb.orthonormality-tol");
             int max_iter = ioption(_name="crb.orthonormality-max-iter");
-            if ( orthonormalize_primal )
+            if ( M_orthonormalize_primal )
             {
                 timer2.restart();
                 double norm = norm_max+1;
@@ -2955,7 +2935,7 @@ CRB<TruthModelType>::offline()
                 }
                 tpr=timer2.elapsed();
             }
-            if ( orthonormalize_dual && solve_dual_problem )
+            if ( M_orthonormalize_dual && M_solve_dual_problem )
             {
                 timer2.restart();
                 double norm = norm_max+1;
@@ -2973,7 +2953,7 @@ CRB<TruthModelType>::offline()
             }
         }//orthonormalization
 
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"-- primal orthonormalization : "<<tpr<<" s"<<std::endl;
             std::cout<<"-- dual orthonormalization : "<<tdu<<" s"<<std::endl;
@@ -3174,7 +3154,7 @@ CRB<TruthModelType>::offline()
         if ( model_type::is_time_dependent || !M_model->isSteady() )
         {
             M_coeff_pr_ini_online.conservativeResize( M_N );
-            if ( orthonormalize_primal )
+            if ( M_orthonormalize_primal )
             {
                 for ( size_type elem=M_N-number_of_added_elements; elem<M_N; elem++ )
                 {
@@ -3185,7 +3165,7 @@ CRB<TruthModelType>::offline()
                 }
             }
 
-            else if ( !orthonormalize_primal )
+            else if ( !M_orthonormalize_primal )
             {
                 matrixN_type MN ( ( int )M_N, ( int )M_N ) ;
                 vectorN_type FN ( ( int )M_N );
@@ -3215,11 +3195,11 @@ CRB<TruthModelType>::offline()
                 }
             }
 
-            if ( solve_dual_problem )
+            if ( M_solve_dual_problem )
             {
                 M_coeff_du_ini_online.conservativeResize( M_N );
 
-                if ( orthonormalize_dual )
+                if ( M_orthonormalize_dual )
                 {
                     for ( size_type elem=M_N-number_of_added_elements; elem<M_N; elem++ )
                     {
@@ -3228,7 +3208,7 @@ CRB<TruthModelType>::offline()
                         M_coeff_du_ini_online(elem)= k ;
                     }
                 }
-                else if ( !orthonormalize_dual )
+                else if ( !M_orthonormalize_dual )
                 {
                     matrixN_type MNdu ( ( int )M_N, ( int )M_N ) ;
                     vectorN_type FNdu ( ( int )M_N );
@@ -3261,14 +3241,14 @@ CRB<TruthModelType>::offline()
         }
 
         time=timer3.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<" -- projection on reduced basis space : "<<time<<" s"<<std::endl;
         }
 
         if( boption(_name="crb.use-accurate-apee") )
         {
-            if( solve_dual_problem )
+            if( M_solve_dual_problem )
             {
                 std::vector< parameter_type > new_primal_parameters;
                 selectPrimalApeeParameters( M_N,  new_primal_parameters );
@@ -3291,12 +3271,12 @@ CRB<TruthModelType>::offline()
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "  -- offlineResidual update starts\n";
             timer2.restart();
             offlineResidual( M_N, number_of_added_elements );
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
             bool model_has_eim_error = M_model->hasEimError();
             if( model_has_eim_error )
@@ -3309,7 +3289,7 @@ CRB<TruthModelType>::offline()
         {
             //M_maxerror=M_iter_max-M_N;
 
-            if( proc_number == master_proc )
+            if( this->worldComm().isMasterRank() )
             {
                 bool already_exist;
                 do
@@ -3330,7 +3310,7 @@ CRB<TruthModelType>::offline()
 
             }
 
-            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+            boost::mpi::broadcast( this->worldComm() , mu , master_proc );
             M_current_mu = mu;
 
         }
@@ -3351,7 +3331,7 @@ CRB<TruthModelType>::offline()
             time=timer2.elapsed();
             M_current_mu = mu;
 
-            if( proc_number == master_proc )
+            if( this->worldComm().isMasterRank() )
                 std::cout << "  -- max error bounds computed in " << time << "s"<<std::endl;
         }
 
@@ -3359,53 +3339,34 @@ CRB<TruthModelType>::offline()
 
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
 
-        check( M_WNmu->size() );
+        if ( ioption(_name="crb.check.rb") == 1 )
+        {
+            timer2.restart();
+            check( M_WNmu->size() );
+            std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
+        }
 
-        if ( ioption(_name="crb.check.rb") == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
-
-        if( proc_number == 0 ) std::cout << "============================================================\n";
-        LOG(INFO) <<"========================================"<<"\n";
 
         timer2.restart();
         //save DB after adding an element
         this->saveDB();
-
         // M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
         M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
         M_elements_database.saveDB();
         tpr=timer2.elapsed();
+
         time=timer.elapsed();
-        if( Environment::worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() )
         {
             std::cout<<"saving in the database : "<<tpr<<" s"<<std::endl;
             std::cout << "total time: " << time <<" s"<< std::endl;
+            std::cout << "============================================================\n";
         }
+        LOG(INFO) <<"========================================"<<"\n";
     }
 
-    if( proc_number == 0 )
+    if( this->worldComm().isMasterRank() )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
-    bool visualize_basis = boption(_name="crb.visualize-basis") ;
-
-#if 0
-    if ( visualize_basis )
-    {
-        std::vector<wn_type> wn;
-        std::vector<std::string> names;
-        wn.push_back( M_WN );
-        names.push_back( "primal" );
-        wn.push_back( M_WNdu );
-        names.push_back( "dual" );
-        exportBasisFunctions( boost::make_tuple( wn ,names ) );
-
-        if ( orthonormalize_primal || orthonormalize_dual )
-        {
-            std::cout<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized"<<std::endl;
-        }
-    }
-#endif
-
-    //    this->saveDB();
-    //if( proc_number == 0 ) std::cout << "Offline CRB is done\n";
 
     return M_rbconv;
 
@@ -3687,12 +3648,12 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
     time_index--;
 
-    bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
+    //bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
     double sum=0;
-    if( solve_dual_problem )
+    if( M_solve_dual_problem )
     {
 
         Adu = M_model->newMatrix();
@@ -5542,11 +5503,11 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     int size=output_vector.size();
     double o =output_vector[size-1];
-    bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
+    //bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
-    if( solve_dual_problem )
+    if( M_solve_dual_problem )
     {
         fixedPointDual( N, mu , uNdu , uNduold , output_vector , K ) ;
 
@@ -5831,9 +5792,9 @@ CRB<TruthModelType>::delta( size_type N,
             double dual_residual=0;
 
             if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
-            bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
+            //bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
 
-            if( solve_dual_problem )
+            if( M_solve_dual_problem )
             {
                 if( accurate_apee )
                 {
@@ -5877,7 +5838,7 @@ CRB<TruthModelType>::delta( size_type N,
                     double r = math::sqrt( primal_sum );
                     double reim = math::sqrt( primal_sum_eim );
                     delta_pr =  ( r + reim ) /  alphaA ;
-                    if( solve_dual_problem )
+                    if( M_solve_dual_problem )
                     {
                         double rdu = math::sqrt( dual_sum );
                         double rdueim = math::sqrt( dual_sum_eim );
@@ -5890,7 +5851,7 @@ CRB<TruthModelType>::delta( size_type N,
                 else
                 {
                     delta_pr = math::sqrt( primal_sum ) /  alphaA ;
-                    if( solve_dual_problem )
+                    if( M_solve_dual_problem )
                         delta_du = math::sqrt( dual_sum ) / alphaA;
                     else
                         delta_du = 1;
@@ -5932,7 +5893,7 @@ CRB<TruthModelType>::delta( size_type N,
             time_index--;
             sum=0;
 
-            if (solve_dual_problem )
+            if (M_solve_dual_problem )
             {
                 for ( double time=Tf; time>=dt; time-=dt )
                 {
@@ -6170,11 +6131,11 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
         throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
     }
 
-    if ( orthonormalize_primal*orthonormalize_dual==0 )
+    if ( M_orthonormalize_primal*M_orthonormalize_dual==0 )
     {
         LOG(INFO)<<"Warning : calling checkOrthonormality is called but ";
-        LOG(INFO)<<" orthonormalize_dual = "<<orthonormalize_dual;
-        LOG(INFO)<<" and orthonormalize_primal = "<<orthonormalize_primal;
+        LOG(INFO)<<" orthonormalize_dual = "<<M_orthonormalize_dual;
+        LOG(INFO)<<" and orthonormalize_primal = "<<M_orthonormalize_primal;
     }
 
     matrixN_type A, I;
@@ -7774,7 +7735,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     //
     // Dual
     //
-    if( solve_dual_problem )
+    if( M_solve_dual_problem )
     {
         ti.restart();
 
@@ -7909,7 +7870,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             std::cout << "     o Gamma_du and Lambda_du updated in " << ti.elapsed() << "s\n";
 
 
-    }//end of if (solve_dual_problem)
+    }//end of if (M_solve_dual_problem)
 }
 
 
@@ -8156,7 +8117,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     // Dual
     //
     // compute this only once
-    if( solve_dual_problem )
+    if( M_solve_dual_problem )
     {
         auto endFo = eim_interpolation_errors_F[M_output_index].end();
 
@@ -8391,7 +8352,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         ti.restart();
         LOG(INFO) << "[offlineResidual eim] Done.\n";
 
-    }//end of if (solve_dual_problem)
+    }//end of if (M_solve_dual_problem)
 }
 
 template<typename TruthModelType>
@@ -8574,8 +8535,8 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         int nb_coeff = primal_coefficients[final_time_index].size();
         for(int i=0 ; i<nb_coeff ; i++)
             primal_residual_norm += primal_coefficients[final_time_index][i] ;
-        bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
-        if( solve_dual_problem )
+        //bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
+        if( M_solve_dual_problem )
         {
             if ( M_model->isSteady() )
                 dual_residual_norm =  math::abs( dual_coefficients[0][0]+dual_coefficients[0][1]+dual_coefficients[0][2] ) ;
@@ -8764,7 +8725,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
 
     if ( name_of_space=="dual" )
     {
-        if ( orthonormalize_dual )
+        if ( M_orthonormalize_dual )
             //in this case we can simplify because elements of reduced basis are orthonormalized
         {
             BOOST_FOREACH( auto du, M_model->rBFunctionSpace()->dualRB() )
@@ -8811,7 +8772,7 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
 
     else
     {
-        if ( orthonormalize_primal )
+        if ( M_orthonormalize_primal )
         {
             BOOST_FOREACH( auto pr, M_model->rBFunctionSpace()->primalRB() )
             {
