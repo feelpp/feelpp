@@ -288,7 +288,7 @@ public:
         M_WNmu_complement(),
         M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        exporter( Exporter<mesh_type>::New( "ensight" ) )
+        M_exporter( Exporter<mesh_type>::New( "ensight" ) )
     {
 
     }
@@ -323,7 +323,7 @@ public:
         M_WNmu_complement(),
         M_scmA( new scm_type( name+"_a", vm ) ),
         M_scmM( new scm_type( name+"_m", vm ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
+        M_exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
         M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
     {
         // this is too early to load the DB, we don't have the model yet and the
@@ -353,11 +353,11 @@ public:
         M_backend( backend() ),
         M_backend_primal( backend(_name="backend-primal") ),
         M_backend_dual( backend(_name="backend-dual") ),
-        M_output_index( vm["crb.output-index"].template as<int>() ),
-        M_tolerance( vm["crb.error-max"].template as<double>() ),
-        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
-        M_factor( vm["crb.factor"].template as<int>() ),
-        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
+        M_output_index( ioption(_name="crb.output-index") ),
+        M_tolerance( doption(_name="crb.error-max") ),
+        M_iter_max( ioption(_name="crb.dimension-max") ),
+        M_factor( ioption(_name="crb.factor") ),
+        M_error_type( CRBErrorType( ioption(_name="crb.error-type" ) ) ),
         M_Dmu( new parameterspace_type ),
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
@@ -366,8 +366,8 @@ public:
         M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
-        exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
-        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
+        M_exporter( Exporter<mesh_type>::New( "BasisFunction" ) ),
+        M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") )
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -1294,7 +1294,7 @@ protected:
     scm_ptrtype M_scmM;
 
     //export
-    export_ptrtype exporter;
+    export_ptrtype M_exporter;
 
 #if 0
     array_2_type M_C0_pr;
@@ -1454,7 +1454,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         F[l]=M_model->newVector();
 
     //M_backend_primal = backend_type::build( BACKEND_PETSC );
-    bool reuse_prec = boption(_name="crb.reuse-prec") ;
+    //bool reuse_prec = boption(_name="crb.reuse-prec") ;
 
     M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal" );
     M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=Environment::vm() , _name="bdf_primal_save" );
@@ -6213,8 +6213,8 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
 
-    exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
-    exporter->addRegions();
+    M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
+    M_exporter->addRegions();
     int basis_number=0;
     BOOST_FOREACH( auto wn , vect_wn )
     {
@@ -6241,14 +6241,14 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
             }
 
             std::string name =   basis_name + number + mu_str;
-            exporter->step( 0 )->add( name, element );
+            M_exporter->step( 0 )->add( name, element );
             element_number++;
         }
         basis_number++;
     }
 
 
-    exporter->save();
+    M_exporter->save();
 
 }
 

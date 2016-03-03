@@ -236,7 +236,7 @@ public:
         M_Fqm(),
         M_model( new model_type ),
         M_is_initialized( false ),
-        M_vm( vm ),
+        //M_vm( vm ),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
@@ -259,7 +259,7 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_vm(),
+        //M_vm(),
         M_mode( CRBModelMode::PFEM ),
         M_backend( backend(_name="backend") ),
         M_backend_primal( backend( _name="backend-primal") ),
@@ -279,7 +279,7 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_vm(),
+        //M_vm(),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
@@ -302,7 +302,7 @@ public:
         M_Fqm( o.M_Fqm ),
         M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
-        M_vm( o.M_vm ),
+        //M_vm( o.M_vm ),
         M_mode( o.M_mode ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
@@ -364,8 +364,8 @@ public:
         }
 
         auto Xh = M_model->functionSpace();
-        u = Xh->element();
-        v = Xh->element();
+        M_u = Xh->element();
+        M_v = Xh->element();
 
         bool symmetric = boption(_name="crb.use-symmetric-matrix");
         bool stock = boption(_name="crb.stock-matrices");
@@ -443,9 +443,9 @@ public:
     /**
      * \return  the \p variables_map
      */
-    po::variables_map vm() const
+    po::variables_map const& vm() const
     {
-        return M_vm;
+        return Environment::vm();//M_vm;
     }
 
     /**
@@ -2486,7 +2486,7 @@ private:
     bool M_is_initialized;
 
     //! variables_map
-    po::variables_map M_vm;
+    //po::variables_map M_vm;
 
     //! mode for CRBModel
     CRBModelMode M_mode;
@@ -2519,7 +2519,7 @@ private:
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> );
-    element_type u,v;
+    element_type M_u, M_v;
 
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
@@ -2755,7 +2755,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
 
-    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( u ),id( v ) ) );
+    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( M_u ),id( M_v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -2783,7 +2783,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_v
     auto Xh = M_model->functionSpace();
 
     index_vector_type index_vector;
-    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( u , v );
+    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( M_u , M_v );
     fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
 
     auto op_mass = preassemble_mass_matrix_in_composite_case.opmass();
@@ -2810,7 +2810,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     auto mesh = Xh->mesh();
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=inner(idt( u ),id( v ) )  );
+        integrate( _range=elements( mesh ), _expr=inner(idt( M_u ),id( M_v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -2826,7 +2826,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this );
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( M_u , M_v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
@@ -2865,7 +2865,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
     }
 
     index_vector_type index_vector;
-    AssembleInitialGuessVInCompositeCase<TruthModelType> assemble_initial_guess_v_in_composite_case ( v , initial_guess , this->shared_from_this());
+    AssembleInitialGuessVInCompositeCase<TruthModelType> assemble_initial_guess_v_in_composite_case ( M_v , initial_guess , this->shared_from_this());
     fusion::for_each( index_vector, assemble_initial_guess_v_in_composite_case );
 
     for(int q = 0; q < q_max; q++ )
@@ -2898,7 +2898,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( v ) )  );
+                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( M_v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }
