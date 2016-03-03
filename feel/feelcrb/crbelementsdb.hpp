@@ -124,6 +124,7 @@ public :
 
     virtual fs::path lookForDB() const;
 
+    virtual fs::path dbLocalPath() const;
 
     boost::tuple<wn_type, wn_type> wn()
     {
@@ -166,6 +167,47 @@ private :
 
 
 };//class CRBElementsDB
+
+template<typename ModelType>
+fs::path
+CRBElementsDB<ModelType>::dbLocalPath() const
+{
+    fs::path rep_path = "";
+    /* If we are using the boost implementation
+     * we use the original dbLocalPath from teh base class
+     */
+    if(soption(_name="crb.db.format").compare("boost") == 0)
+    {
+        rep_path = CRBDB::dbLocalPath();
+    }
+    /* otherwise we use a custom implementation
+     * to only output one hdf5 file in a common directory
+     */
+    else if(soption(_name="crb.db.format").compare("hdf5") == 0)
+    {
+        std::string suf;
+        if( (this->vm()).count( "crb.results-repo-name" ) )
+        {
+            std::string database_name = (this->vm())["crb.results-repo-name"].template as<std::string>();
+            suf = database_name + "_common";
+        }
+        else
+        {
+            std::string database_name = "default_repo";
+            suf = database_name + "_common";
+        }
+
+        // generate the local repository db path
+        std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
+                                  % Feel::Environment::rootRepository()
+                                  % M_prefixdir
+                                  % suf ).str();
+        rep_path = localpath;
+        fs::create_directories( rep_path );
+    }
+
+    return rep_path;
+}
 
 template<typename ModelType>
 fs::path
@@ -351,24 +393,29 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     dims[0] = 1;
     offset[0] = 0;
 
-    /* If a previous db already exists, we remove it */
-    if( boost::filesystem::exists( hdf5File.str() ) )
+    /* only do this on proc 0 */
+    if(Environment::worldComm().isMasterRank())
     {
-        boost::filesystem::remove( hdf5File.str() );
+        /* If a previous db already exists, we remove it */
+        if( boost::filesystem::exists( hdf5File.str() ) )
+        {
+            boost::filesystem::remove( hdf5File.str() );
+        }
+
+        /* Select the correct size for data */
+        hid_t memDataType;
+        if(sizeof(int) == 4)
+        { memDataType = H5T_NATIVE_INT; }
+        else
+        { memDataType = H5T_NATIVE_LLONG; }
+
+        hdf5.openFile( hdf5File.str(), Environment::worldComm().selfComm(), true, true );
+        hdf5.createTable( "dbSize", memDataType, dims, 1 );
+        hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
+        hdf5.closeTable( "dbSize" );
+        hdf5.closeFile();
     }
-
-    /* Select the correct size for data */
-    hid_t memDataType;
-    if(sizeof(int) == 4)
-    { memDataType = H5T_NATIVE_INT; }
-    else
-    { memDataType = H5T_NATIVE_LLONG; }
-
-    hdf5.openFile( hdf5File.str(), Environment::worldComm(), true, true );
-    hdf5.createTable( "dbSize", memDataType, dims, 1 );
-    hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
-    hdf5.closeTable( "dbSize" );
-    hdf5.closeFile();
+    Environment::worldComm().barrier();
 
     LOG( INFO ) << "saving HDF5 Elements DB";
     for(int i=0; i < size; i++)
