@@ -1520,7 +1520,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     auto uold = M_model->functionSpace()->element();
     auto bdf_poly = M_model->functionSpace()->element();
 
-    element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
     vector_ptrtype Rhs( M_backend_primal->newVector( M_model->functionSpace() ) );
 
@@ -1754,8 +1753,6 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     auto uold = M_model->functionSpace()->element();
     auto bdf_poly = M_model->functionSpace()->element();
-
-    element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
 
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
@@ -2511,7 +2508,6 @@ CRB<TruthModelType>::offline()
         F[l]=M_model->newVector();
 #endif
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
-    element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
     auto u = M_model->functionSpace()->element();
     auto udu = M_model->functionSpace()->element();
 
@@ -3146,11 +3142,10 @@ CRB<TruthModelType>::offline()
 
         LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
-        element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
-        element_ptrtype projection    ( new element_type ( M_model->functionSpace() ) );
-        M_model->initializationField( primal_initial_field, mu ); //fill initial_field
         if ( model_type::is_time_dependent || !M_model->isSteady() )
         {
+            element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
+            M_model->initializationField( primal_initial_field, mu ); //fill initial_field
             M_coeff_pr_ini_online.conservativeResize( M_N );
             if ( M_orthonormalize_primal )
             {
