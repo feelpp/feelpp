@@ -5861,7 +5861,10 @@ CRB<TruthModelType>::delta( size_type N,
             else
             {
                 delta_pr = math::sqrt( dt/alphaA * primal_sum );
-                delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                if( M_solve_dual_problem )
+                    delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                else
+                    delta_du = 1;
                 output_upper_bound[global_time_index] = delta_pr * delta_du;
                 //solution_upper_bound = delta_pr;
                 //solution_dual_upper_bound =  delta_du;
