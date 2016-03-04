@@ -57,9 +57,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
 {
     this->log("ThermoDynamics","loadMesh", "start" );
 
-    // create or reload mesh
-    if (this->doRestart()) this->createMesh();
-    else this->M_mesh = mesh;
+    CHECK( mesh ) << "mesh not init";
+    this->M_mesh = mesh;
     // functionSpaces and elements
     this->createFunctionSpaces();
     // bdf time schema
@@ -654,7 +653,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
 
         //viscous dissipation
-        if ( true )
+        if ( false/*true*/ )
         {
             double mu = 1.;
             auto defv = sym(gradv( this->fieldVelocityConvection() ) );
