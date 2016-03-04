@@ -79,6 +79,7 @@
 //#include <feel/feelvf/eye.hpp>
 #include <feel/feelvf/val.hpp>
 #include <feel/feelvf/function.hpp>
+#include <feel/feelvf/function2.hpp>
 #include <feel/feelvf/matvec.hpp>
 //#include <feel/feelvf/integral.hpp>
 
