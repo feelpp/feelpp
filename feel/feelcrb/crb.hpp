@@ -1041,6 +1041,8 @@ public:
     void offlineResidual( int Ncur , int number_of_added_elements=1 );
     void offlineResidual( int Ncur, mpl::bool_<true> ,int number_of_added_elements=1 );
     void offlineResidual( int Ncur, mpl::bool_<false> , int number_of_added_elements=1 );
+    void offlineResidualV0( int Ncur, mpl::bool_<false> , int number_of_added_elements=1 );
+    void offlineResidualV1( int Ncur, mpl::bool_<false> , int number_of_added_elements=1 );
 
     void offlineResidualEim( int Ncur , int number_of_added_elements=1 );
     void offlineResidualEim( int Ncur, mpl::bool_<true> ,int number_of_added_elements=1 );
@@ -2359,22 +2361,18 @@ CRB<TruthModelType>::offline()
         M_primal_apee_mu->clear();
         M_dual_apee_mu->clear();
 
-        if( this->worldComm().isMasterRank() )
+        if( M_error_type == CRB_NO_RESIDUAL )
         {
-            if( M_error_type == CRB_NO_RESIDUAL )
+            if( this->worldComm().isMasterRank() )
             {
                 //we don't want broadcast the element
                 bool broadcast=false;
                 mu = M_Dmu->element( broadcast );
             }
-        }
-        if( M_error_type == CRB_NO_RESIDUAL )
-        {
             //every proc must have the same parameter mu
             boost::mpi::broadcast( this->worldComm() , mu , master_proc );
         }
-
-        if( M_error_type != CRB_NO_RESIDUAL )
+        else
         {
             // start with M_C = { arg min mu, mu \in Xi }
             //the min is a global min so we can check
@@ -2503,7 +2501,7 @@ CRB<TruthModelType>::offline()
             LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
         }
     }//end of else associated to if ( rebuild_databse )
-
+#if 0
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
     sparse_matrix_ptrtype A = M_model->newMatrix();
@@ -2511,7 +2509,7 @@ CRB<TruthModelType>::offline()
     std::vector< vector_ptrtype > F( nl );
     for(int l=0; l<nl; l++)
         F[l]=M_model->newVector();
-
+#endif
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
     auto u = M_model->functionSpace()->element();
@@ -7584,6 +7582,544 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<true>, int number_
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_of_added_elements )
+{
+    if ( ioption(_name="crb.offline-residual-version" ) == 0 )
+        offlineResidualV0( Ncur,mpl::bool_<false>(),number_of_added_elements );
+    else
+        offlineResidualV1( Ncur,mpl::bool_<false>(),number_of_added_elements );
+}
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number_of_added_elements )
+{
+    boost::timer ti;
+    int __QLhs = M_model->Qa();
+    int __QRhs = M_model->Ql( 0 );
+    int __QOutput = M_model->Ql( M_output_index );
+    int __N = Ncur;
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
+                  << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
+
+    vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Y( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Z1(  M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __Z2(  M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __W(  M_backend->newVector( M_model->functionSpace() ) );
+    namespace ublas = boost::numeric::ublas;
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
+    std::vector< std::vector<vector_ptrtype> > MFqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
+    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    __X->zero();
+    __X->add( 1.0 );
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
+
+    //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
+#if 0
+    ublas::vector<value_type> mu( P );
+
+    for ( int q = 0; q < P; ++q )
+    {
+        mu[q] = mut( 0.0 );
+    }
+
+#endif
+
+    // Primal
+    // no need to recompute this term each time
+    if ( Ncur == M_Nm )
+    {
+        ti.restart();
+        LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
+        LOG(INFO) << "[offlineResidual] C0_pr\n";
+
+        // see above Z1 = C^-1 F and Z2 = F
+        for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q1); ++__m1 )
+            {
+                //LOG(INFO) << "__Fq->norm1=" << Fq[0][__q1][__m1]->l2Norm() << "\n";
+                M_model->l2solve( __Z1, Fqm[0][__q1][__m1] );
+                //for ( int __q2 = 0;__q2 < __q1;++__q2 )
+                for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
+                    {
+                        //LOG(INFO) << "__Fq->norm 2=" << Fq[0][__q2][__m2]->l2Norm() << "\n";
+                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
+                        //M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __X, Fq[0][__q2][__m2] );
+                        M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
+                        //M_C0_pr[__q2][__q1] = M_C0_pr[__q1][__q2];
+                        //VLOG(1) <<"M_C0_pr[" << __q1 << "][" << __m1 << "]["<< __q2 << "][" << __m2 << "]=" << M_C0_pr[__q1][__m1][__q2][__m2] << "\n";
+                        //LOG(INFO) << "M_C0_pr[" << __q1 << "][" << __m1 << "]["<< __q2 << "][" << __m2 << "]=" << M_C0_pr[__q1][__m1][__q2][__m2] << "\n";
+                    }//end of loop __m2
+                }//end of loop __q2
+                //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
+            }//end of loop __m1
+        }//end of loop __q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_C0_pr updated in " << ti.elapsed() << "s\n";
+
+    }// Ncur==M_Nm
+
+
+#if 0
+    parameter_type const& mu = M_WNmu->at( 0 );
+    //std::cout << "[offlineResidual] mu=" << mu << "\n";
+    beta_vector_type betaAqm;
+    std::vector<beta_vector_type> betaFqm;
+    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
+    value_type __c0_pr = 0.0;
+
+    for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
+    {
+        for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q1); ++__m1 )
+        {
+            value_type fq1 = betaFqm[0][__q1][__m1];
+
+            for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
+                {
+                    value_type fq2 = betaFqm[0][__q2][__m2];
+                    __c0_pr += M_C0_pr[__q1][__m1][__q2][__m2]*fq1*fq2;
+                }
+            }
+        }//end of loop __m1
+    }//end of loop __q1
+
+
+    //std::cout << "c0=" << __c0_pr << std::endl;
+
+    std::vector< sparse_matrix_ptrtype > A;
+    std::vector< std::vector<vector_ptrtype> > F;
+    boost::tie( A, F ) = M_model->update( mu );
+    M_model->l2solve( __X, F[0] );
+    //std::cout << "c0 2 = " << M_model->scalarProduct( __X, __X ) << "\n";;
+#endif
+
+    ti.restart();
+
+    bool optimize = boption(_name="crb.optimize-offline-residual") ;
+
+    //
+    //  Primal
+    //
+    LOG(INFO) << "[offlineResidual] Lambda_pr, Gamma_pr\n";
+
+    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    {
+        *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+
+        for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1) ; ++__m1 )
+            {
+                Aqm[__q1][__m1]->multVector(  __X, __W );
+                __W->scale( -1. );
+                //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
+                M_model->l2solve( __Z1, __W );
+                for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0, __q2); ++__m2 )
+                    {
+                        M_Lambda_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
+                        //__Y = Fq[0][__q2];
+                        //std::cout << "__Fq->norm=" << Fq[0][__q2]->l2Norm() << "\n";
+                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
+                        M_Lambda_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                        //VLOG(1) << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" <<  M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
+                        //std::cout << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
+                    }//m2
+                }//end of __q2
+            }//end of loop __m1
+        }//end of __q1
+    }//elem
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
+
+    ti.restart();
+
+    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    {
+        *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+        for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+            {
+                Aqm[__q1][__m1]->multVector(  __X, __W );
+                __W->scale( -1. );
+                M_model->l2solve( __Z1, __W );
+
+                for ( int __l = 0; __l < ( int )__N; ++__l )
+                {
+                    *__Y=M_model->rBFunctionSpace()->primalBasisElement(__l);
+
+                    if( optimize )
+                    {
+                        //case we don't use EIM
+                        for ( int __q2 = 0; __q2 < __q1; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+                                M_Gamma_pr[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
+
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = prod;
+                                M_Gamma_pr[ __q2][ __m2][ __q1][ __m1]( __l,elem ) = prod;
+                            } // m2
+                        } // q2
+                        //diagonal elements
+                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        __W->scale( -1. );
+                        M_model->l2solve( __Z2, __W );
+                        M_Gamma_pr[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
+                        double prod = M_model->scalarProduct( __Z1, __Z2 );
+                        M_Gamma_pr[ __q1][ __m1][ __q1][ __m1]( elem,__l ) = prod;
+                    }//optimize
+                    else
+                    {
+                        for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                M_Gamma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            } // m2
+                        } // q2
+                    }//no optimize
+                }//end of loop over l
+            } // m1
+        } // q1
+    } // elem
+
+    for ( int __j = 0; __j < ( int )__N; ++__j )
+    {
+        *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
+        for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+            {
+                Aqm[__q1][__m1]->multVector(  __X, __W );
+                __W->scale( -1. );
+                M_model->l2solve( __Z1, __W );
+
+                //column N-1
+                //int __l = __N-1;
+                for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                {
+                    *__Y=M_model->rBFunctionSpace()->primalBasisElement(elem);
+
+                    if( optimize )
+                    {
+                        //case we don't use EIM
+                        for ( int __q2 = 0; __q2 < __q1; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = prod;
+                                M_Gamma_pr[ __q2][ __m2][ __q1][ __m1]( elem,__j ) = prod;
+                            } // m2
+                        } // q2
+                        //diagonal elements
+                        Aqm[__q1][__m1]->multVector(  __Y, __W );
+                        __W->scale( -1. );
+                        M_model->l2solve( __Z2, __W );
+                        double prod = M_model->scalarProduct( __Z1, __Z2 );
+                        M_Gamma_pr[ __q1][ __m1][ __q1][ __m1]( __j,elem ) = prod;
+                    }//optimize
+                    else
+                    {
+                        for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                        {
+                            for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                            {
+                                Aqm[__q2][__m2]->multVector(  __Y, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+                                M_Gamma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+                            } // m2
+                        } // q2
+                    }//no optimize
+                }// end of loop elem
+            }// m1
+        }// q1
+    }// end of loop __j
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
+    sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
+    sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
+    ti.restart();
+
+    //
+    // Dual
+    //
+    // compute this only once
+    if( M_solve_dual_problem )
+    {
+        if ( Ncur == M_Nm )
+        {
+            LOG(INFO) << "[offlineResidual] Compute Dual residual data\n";
+            LOG(INFO) << "[offlineResidual] C0_du\n";
+
+            for ( int __q1 = 0; __q1 < __QOutput; ++__q1 )
+            {
+                for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,__q1); ++__m1 )
+                {
+                    *__Fdu = *Fqm[M_output_index][__q1][__m1];
+                    __Fdu->close();
+                    __Fdu->scale( -1.0 );
+                    M_model->l2solve( __Z1, __Fdu );
+
+                    for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
+                    {
+                        for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
+                        {
+                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
+                            __Fdu->scale( -1.0 );
+                            M_model->l2solve( __Z2, __Fdu );
+                            M_C0_du[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
+                            //M_C0_du[__q2][__q1] = M_C0_du[__q1][__q2];
+                            //M_C0_du[__q1][__q1] = M_model->scalarProduct( __Xdu, __Xdu );
+                        }//end of loop __m2
+                    }//end of loop __q2
+                }//end of loop __m1
+            }//end of loop __q1
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n";
+            ti.restart();
+        }
+
+        LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
+
+        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        {
+            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+
+            for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+            {
+                for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+                {
+
+                    if( boption("crb.use-symmetric-matrix") )
+                        Atq1 = Aqm[__q1][__m1];
+                    else
+                        Aqm[__q1][__m1]->transpose( Atq1 );
+
+                    Atq1->multVector(  __X, __W );
+                    __W->close();
+                    __W->scale( -1. );
+                    //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
+                    M_model->l2solve( __Z1, __W );
+
+                    for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
+                    {
+                        for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2) ; ++__m2 )
+                        {
+                            M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
+
+                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
+                            __Fdu->scale( -1.0 );
+                            M_model->l2solve( __Z2, __Fdu );
+                            M_Lambda_du[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z2, __Z1 );
+                            //VLOG(1) << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
+                            //std::cout << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
+                        } // m2
+                    } // q2
+                } // m1
+            } // q1
+        }//elem
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
+        ti.restart();
+
+        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        {
+            //int __j = __N-1;
+            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+
+            for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+            {
+                for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+                {
+                    if( boption("crb.use-symmetric-matrix") )
+                        Atq1=Aqm[__q1][__m1];
+                    else
+                        Aqm[__q1][__m1]->transpose( Atq1 );
+
+                    Atq1->multVector(  __X, __W );
+                    __W->scale( -1. );
+                    M_model->l2solve( __Z1, __W );
+
+                    for ( int __l = 0; __l < ( int )__N; ++__l )
+                    {
+                        *__Y=M_model->rBFunctionSpace()->dualBasisElement(__l);
+
+                        if( optimize )
+                        {
+                            //case we don't use EIM
+                            for ( int __q2 = 0; __q2 < __q1; ++__q2 )
+                            {
+                                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                                {
+                                    if( boption("crb.use-symmetric-matrix") )
+                                        Atq2 = Aqm[__q2][__m2];
+                                    else
+                                        Aqm[__q2][__m2]->transpose( Atq2 );
+
+                                    M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+                                    M_Gamma_du[__q2][__m2][__q1][__m1].conservativeResize( __N, __N );
+
+                                    Atq2->multVector(  __Y, __W );
+                                    __W->scale( -1. );
+                                    M_model->l2solve( __Z2, __W );
+                                    double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                    M_Gamma_du[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = prod;
+                                    M_Gamma_du[ __q2][ __m2][ __q1][ __m1]( __l,elem ) = prod;
+                                } // m2
+                            } // q2
+                            //diagonal elements
+                            Atq1->multVector(  __Y, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z2, __W );
+                            M_Gamma_du[__q1][__m1][__q1][__m1].conservativeResize( __N, __N );
+                            double prod = M_model->scalarProduct( __Z1, __Z2 );
+                            M_Gamma_du[ __q1][ __m1][ __q1][ __m1]( elem,__l ) = prod;
+                        }// optimize
+                        else
+                        {
+                            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                            {
+                                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                                {
+                                    if( boption("crb.use-symmetric-matrix") )
+                                        Atq2 = Aqm[__q2][__m2];
+                                    else
+                                        Aqm[__q2][__m2]->transpose( Atq2 );
+
+                                    M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                                    Atq2->multVector(  __Y, __W );
+                                    __W->scale( -1. );
+                                    M_model->l2solve( __Z2, __W );
+                                    M_Gamma_du[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                                } // m2
+                            }// q2
+                        } // no optimize
+                    }//__l
+                }//m1
+            }//q1
+        }//__elem
+
+        // update column __N-1
+        for ( int __j = 0; __j < ( int )__N; ++__j )
+        {
+            *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
+
+            for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
+            {
+                for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+                {
+                    if( boption("crb.use-symmetric-matrix") )
+                        Atq1=Aqm[__q1][__m1];
+                    else
+                        Aqm[__q1][__m1]->transpose( Atq1 );
+
+                    Atq1->multVector(  __X, __W );
+                    __W->scale( -1. );
+                    M_model->l2solve( __Z1, __W );
+
+                    //int __l = __N-1;
+                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                    {
+                        *__Y=M_model->rBFunctionSpace()->dualBasisElement(elem);
+
+                        if( optimize )
+                        {
+                            //case we don't use EIM
+                            for ( int __q2 = 0; __q2 < __q1; ++__q2 )
+                            {
+                                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                                {
+                                    if( boption("crb.use-symmetric-matrix") )
+                                        Atq2 = Aqm[__q2][__m2];
+                                    else
+                                        Aqm[__q2][__m2]->transpose( Atq2 );
+
+                                    Atq2->multVector(  __Y, __W );
+                                    __W->scale( -1. );
+                                    M_model->l2solve( __Z2, __W );
+                                    double prod = M_model->scalarProduct( __Z1, __Z2 );
+                                    M_Gamma_du[ __q1][ __m1][ __q2][ __m2]( __j, elem ) = prod;
+                                    M_Gamma_du[ __q2][ __m2][ __q1][ __m1]( elem, __j ) = prod;
+                                } // m2
+                            } // q2
+                            //diagonal elements
+                            Atq1->multVector(  __Y, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z2, __W );
+                            double prod = M_model->scalarProduct( __Z1, __Z2 );
+                            M_Gamma_du[ __q1][ __m1][ __q1][ __m1]( __j,elem ) = prod;
+                        }// optimize
+                        else
+                        {
+                            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                            {
+                                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                                {
+                                    if( boption("crb.use-symmetric-matrix") )
+                                        Atq2 = Aqm[__q2][__m2];
+                                    else
+                                        Aqm[__q2][__m2]->transpose( Atq2 );
+
+                                    Atq2->multVector(  __Y, __W );
+                                    __W->scale( -1. );
+                                    M_model->l2solve( __Z2, __W );
+                                    M_Gamma_du[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+                                }//m2
+                            }// q2
+                        }//no optimize
+                    }// elem
+                }// m1
+            }// q1
+        } // __j
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
+        ti.restart();
+        LOG(INFO) << "[offlineResidual] Done.\n";
+
+    }//end of if (solve_dual_problem)
+
+}
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number_of_added_elements )
 {
     boost::timer ti;
     int __QLhs = M_model->Qa();
