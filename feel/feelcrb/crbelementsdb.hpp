@@ -409,7 +409,7 @@ CRBElementsDB<ModelType>::saveHDF5DB()
         else
         { memDataType = H5T_NATIVE_LLONG; }
 
-        hdf5.openFile( hdf5File.str(), Environment::worldComm().selfComm(), true, true );
+        hdf5.openFile( hdf5File.str(), Environment::worldComm().subWorldCommSeq(), true, true );
         hdf5.createTable( "dbSize", memDataType, dims, 1 );
         hdf5.write( "dbSize", memDataType, dims, offset, &size, 1 );
         hdf5.closeTable( "dbSize" );
