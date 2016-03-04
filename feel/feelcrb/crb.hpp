@@ -370,9 +370,11 @@ public:
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
         M_orthonormalize_dual( boption(_name="crb.orthonormalize-dual") ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
+        M_compute_variance( boption(_name="crb.compute-variance") ),
         M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") ),
         M_use_newton( boption(_name="crb.use-newton") ),
-        M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") )
+        M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_save_output_behavior( boption(_name="crb.save-output-behavior") )
     {
         if ( !M_solve_dual_problem )
             M_orthonormalize_dual = false;
@@ -1428,7 +1430,7 @@ protected:
     std::vector < matrixN_type > M_variance_matrix_phi;
 
     bool M_compute_variance;
-    bool M_rbconv_contains_primal_and_dual_contributions;
+    //bool M_rbconv_contains_primal_and_dual_contributions;
     parameter_type M_current_mu;
     int M_no_residual_index;
 
@@ -1448,6 +1450,7 @@ protected:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
 
+    bool M_save_output_behavior;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1969,7 +1972,7 @@ CRB<TruthModelType>::offline()
 
     int proc_number = this->worldComm().globalRank();
     int master_proc = this->worldComm().masterRank();
-    M_rbconv_contains_primal_and_dual_contributions = true;
+    //M_rbconv_contains_primal_and_dual_contributions = true;
 
     bool rebuild_database = boption(_name="crb.rebuild-database") ;
 
@@ -3257,7 +3260,6 @@ CRB<TruthModelType>::offline()
 
 
 
-        M_compute_variance = boption(_name="crb.compute-variance");
         if ( M_database_contains_variance_info )
             throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
         //buildVarianceMatrixPhi( M_N );
@@ -5522,7 +5524,6 @@ typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_i
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
-    bool save_output_behavior = boption(_name="crb.save-output-behavior");
 
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
@@ -5532,19 +5533,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double time_step;
     double time_final;
     int number_of_time_step = 0;
-    size_type Qm;
 
     if ( M_model->isSteady() )
     {
         time_step = 1e30;
         time_for_output = 1e30;
-        Qm = 0;
         number_of_time_step=1;
     }
 
     else
     {
-        Qm = M_model->Qm();
         time_step = M_model->timeStep();
         time_final = M_model->timeFinal();
 
@@ -5564,23 +5562,21 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     uNold.resize( number_of_time_step );
     uNduold.resize( number_of_time_step );
 
-    int index=0;
-    BOOST_FOREACH( auto elem, uN )
+    for( int index=0;index<number_of_time_step;++index)
     {
         uN[index].resize( N );
         uNdu[index].resize( N );
         uNold[index].resize( N );
         uNduold[index].resize( N );
-        index++;
     }
-    double condition_number;
+    //double condition_number;
     //-- end of initialization step
 
     //vector containing outputs from time=time_step until time=time_for_output
-    std::vector<double>output_vector;
+    std::vector<double> output_vector;
     output_vector.resize( number_of_time_step );
-    double output;
-    int time_index=0;
+    //double output;
+    //int time_index=0;
 
     // init by 1, the model could provide better init
     //uN[0].setOnes(M_N);
@@ -5597,7 +5593,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     if( M_compute_variance )
     {
-
         if( ! M_database_contains_variance_info )
             throw std::logic_error( "[CRB::offline] ERROR there are no information available in the DataBase for variance computing, please set option crb.save-information-for-variance=true and rebuild the database" );
 
@@ -5605,7 +5600,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         int space=0;
 
-        time_index=0;
+        int time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
             vectorN_type uNsquare = uN[time_index].array().pow(2);
@@ -5621,14 +5616,14 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
             output_vector[time_index] = first + second;
 
-            time_index++;
+            ++time_index;
         }
     }
 
 
-    if ( save_output_behavior && Environment::worldComm().isMasterRank() )
+    if ( M_save_output_behavior && this->worldComm().isMasterRank() )
     {
-        time_index=0;
+        int time_index=0;
         std::ofstream file_output;
         std::string mu_str;
 
@@ -5643,7 +5638,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
         {
             file_output<<time<<"\t"<<output_vector[time_index]<<"\n";
-            time_index++;
+            ++time_index;
         }
 
         file_output.close();
@@ -8992,10 +8987,9 @@ typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
-    M_compute_variance = boption(_name="crb.compute-variance");
 
     //int Nwn = M_N;
-    int Nwn_max = ioption(_name="crb.dimension-max");
+    //int Nwn_max = ioption(_name="crb.dimension-max");
 #if 0
     if (  M_error_type!=CRB_EMPIRICAL )
     {
@@ -9069,7 +9063,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         int nb_coeff = primal_coefficients[final_time_index].size();
         for(int i=0 ; i<nb_coeff ; i++)
             primal_residual_norm += primal_coefficients[final_time_index][i] ;
-        //bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
+
         if( M_solve_dual_problem )
         {
             if ( M_model->isSteady() )
