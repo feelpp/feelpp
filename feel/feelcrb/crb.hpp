@@ -5447,31 +5447,6 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix) const
 {
-
-    double time_for_output;
-    double time_step;
-    double time_final;
-    int number_of_time_step;
-
-    if ( M_model->isSteady() )
-    {
-        time_step = 1e30;
-        time_for_output = 1e30;
-        number_of_time_step=1;
-    }
-    else
-    {
-        time_step = M_model->timeStep();
-        time_final = M_model->timeFinal();
-        if ( K > 0 )
-            time_for_output = K * time_step;
-        else
-        {
-            number_of_time_step = (time_final / time_step)+1;
-            time_for_output = (number_of_time_step-1) * time_step;
-        }
-    }
-
     matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     if(boption(_name="parallel.opencl.enable"))
@@ -5486,7 +5461,9 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     else
     {
 #endif
-    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+
+        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
         if(ioption(_name="parallel.debug"))
         {
@@ -5496,23 +5473,29 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 #endif
 
 
-    int size=output_vector.size();
-    double o =output_vector[size-1];
-    //bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
-    //if( this->worldComm().globalSize() > 1 )
-    //    solve_dual_problem=false;
-
     if( M_solve_dual_problem )
     {
         fixedPointDual( N, mu , uNdu , uNduold , output_vector , K ) ;
 
-        int time_index=0;
-
-        for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
+        // apply correction terms
+        if ( M_model->isSteady() )
         {
-            int k = time_index;
-            output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
-            time_index++;
+            output_vector[0]+=correctionTerms(mu, uN , uNdu, uNold, 0 );
+        }
+        else
+        {
+            int number_of_time_step = M_model->numberOfTimeStep();
+            double time_step = M_model->timeStep();
+            double time_for_output = (number_of_time_step-1)*time_step;
+            if ( K > 0 )
+                time_for_output = K*time_step;
+
+            int time_index=0;
+            for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
+            {
+                output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
+                ++time_index;
+            }
         }
     }
 
@@ -5524,39 +5507,9 @@ typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_i
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
-
-    //if K>0 then the time at which we want to evaluate output is defined by
-    //time_for_output = K * time_step
-    //else it's the default value and in this case we take final time
-    double time_for_output;
-
-    double time_step;
-    double time_final;
-    int number_of_time_step = 0;
-
-    if ( M_model->isSteady() )
-    {
-        time_step = 1e30;
-        time_for_output = 1e30;
-        number_of_time_step=1;
-    }
-
-    else
-    {
-        time_step = M_model->timeStep();
-        time_final = M_model->timeFinal();
-
-        if ( K > 0 )
-            time_for_output = K * time_step;
-
-        else
-        {
-            number_of_time_step = (time_final / time_step)+1;
-            time_for_output = (number_of_time_step-1) * time_step;
-        }
-    }
     if ( N > M_N ) N = M_N;
 
+    int number_of_time_step = M_model->numberOfTimeStep();
     uN.resize( number_of_time_step );
     uNdu.resize( number_of_time_step );
     uNold.resize( number_of_time_step );
@@ -5569,20 +5522,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         uNold[index].resize( N );
         uNduold[index].resize( N );
     }
-    //double condition_number;
-    //-- end of initialization step
-
     //vector containing outputs from time=time_step until time=time_for_output
     std::vector<double> output_vector;
     output_vector.resize( number_of_time_step );
-    //double output;
-    //int time_index=0;
-
-    // init by 1, the model could provide better init
-    //uN[0].setOnes(M_N);
 
     double conditioning=0;
     double determinant=0;
+    // init by 1, the model could provide better init
     uN[0].setOnes(N);
     if( M_use_newton )
         boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
@@ -5591,59 +5537,72 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     auto matrix_info = boost::make_tuple( conditioning, determinant );
 
-    if( M_compute_variance )
+    if ( M_compute_variance || M_save_output_behavior )
     {
-        if( ! M_database_contains_variance_info )
-            throw std::logic_error( "[CRB::offline] ERROR there are no information available in the DataBase for variance computing, please set option crb.save-information-for-variance=true and rebuild the database" );
-
-        int nb_spaces = functionspace_type::nSpaces;
-
-        int space=0;
-
-        int time_index=0;
-        for ( double time=time_step; time<=time_for_output; time+=time_step )
+        double time_step = M_model->timeStep();
+        double time_final = M_model->timeFinal();
+        //if K>0 then the time at which we want to evaluate output is defined by
+        //time_for_output = K * time_step
+        //else it's the default value and in this case we take final time
+        double time_for_output = time_step;
+        if ( !M_model->isSteady() )
         {
-            vectorN_type uNsquare = uN[time_index].array().pow(2);
-            double first = uNsquare.dot( M_variance_matrix_phi[space].block(0,0,N,N).diagonal() );
+            double time_for_output = (number_of_time_step-1)*time_step;
+            if ( K > 0 )
+                time_for_output = K*time_step;
+        }
 
-            double second = 0;
-            for(int k = 1; k <= N-1; ++k)
+        if( M_compute_variance )
+        {
+            if( ! M_database_contains_variance_info )
+                throw std::logic_error( "[CRB::offline] ERROR there are no information available in the DataBase for variance computing, please set option crb.save-information-for-variance=true and rebuild the database" );
+
+            int nb_spaces = functionspace_type::nSpaces;
+
+            int space=0;
+
+            int time_index=0;
+            for ( double time=time_step; time<=time_for_output; time+=time_step )
             {
-                for(int j = 1; j <= N-k; ++j)
+                vectorN_type uNsquare = uN[time_index].array().pow(2);
+                double first = uNsquare.dot( M_variance_matrix_phi[space].block(0,0,N,N).diagonal() );
+
+                double second = 0;
+                for(int k = 1; k <= N-1; ++k)
                 {
-                    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi[space](k-1 , j+k-1) ;
+                    for(int j = 1; j <= N-k; ++j)
+                    {
+                        second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi[space](k-1 , j+k-1) ;
+                    }
                 }
+                output_vector[time_index] = first + second;
+
+                ++time_index;
             }
-            output_vector[time_index] = first + second;
+        }
 
-            ++time_index;
+        if ( M_save_output_behavior && this->worldComm().isMasterRank() )
+        {
+            int time_index=0;
+            std::ofstream file_output;
+            std::string mu_str;
+
+            for ( int i=0; i<mu.size(); i++ )
+            {
+                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+            }
+
+            std::string name = "output-evolution" + mu_str;
+            file_output.open( name.c_str(),std::ios::out );
+            file_output<<"time \t outputRB\n";
+            for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
+            {
+                file_output<<time<<"\t"<<output_vector[time_index]<<"\n";
+                ++time_index;
+            }
+            file_output.close();
         }
     }
-
-
-    if ( M_save_output_behavior && this->worldComm().isMasterRank() )
-    {
-        int time_index=0;
-        std::ofstream file_output;
-        std::string mu_str;
-
-        for ( int i=0; i<mu.size(); i++ )
-        {
-            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
-        }
-
-        std::string name = "output-evolution" + mu_str;
-        file_output.open( name.c_str(),std::ios::out );
-        file_output<<"time \t outputRB\n";
-        for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
-        {
-            file_output<<time<<"\t"<<output_vector[time_index]<<"\n";
-            ++time_index;
-        }
-
-        file_output.close();
-    }
-
     return boost::make_tuple( output_vector, matrix_info);
 
 }
