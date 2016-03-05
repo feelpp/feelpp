@@ -222,7 +222,9 @@ public:
         M_is_initialized( false ),
         M_model( new model_type() ),
         M_backend( backend() ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 )
     {
         this->init();
     }
@@ -236,13 +238,14 @@ public:
         M_Fqm(),
         M_model( new model_type ),
         M_is_initialized( false ),
-        //M_vm( vm ),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 )
     {
         this->init();
     }
@@ -259,13 +262,14 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        //M_vm(),
         M_mode( CRBModelMode::PFEM ),
         M_backend( backend(_name="backend") ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 )
     {
         this->init();
     }
@@ -279,13 +283,14 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        //M_vm(),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 )
     {
         this->init();
     }
@@ -302,14 +307,14 @@ public:
         M_Fqm( o.M_Fqm ),
         M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
-        //M_vm( o.M_vm ),
         M_mode( o.M_mode ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
         M_backend_l2( o.M_backend_l2 ),
-        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
-
+        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms ),
+        M_isSteadyModel( o.M_isSteadyModel ),
+        M_numberOfTimeStep( o.M_numberOfTimeStep )
     {
         this->init();
     }
@@ -408,7 +413,15 @@ public:
         }
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
-        M_bdf = M_model->bdfModel();
+
+        if ( this->isSteady() )
+            M_numberOfTimeStep=1;
+        else
+        {
+            M_numberOfTimeStep=0;
+            for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
+                ++M_numberOfTimeStep;
+        }
     }
 
     //@}
@@ -445,7 +458,7 @@ public:
      */
     po::variables_map const& vm() const
     {
-        return Environment::vm();//M_vm;
+        return Environment::vm();
     }
 
     /**
@@ -2358,87 +2371,49 @@ public:
         return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
     }
 
-    double timeStep()
+    bdf_ptrtype /*const&*/ bdfModel() const
     {
-        return timeStep( mpl::bool_<model_type::is_time_dependent>() );
+        return M_model->bdfModel();
     }
-    double timeStep( mpl::bool_<true> )
-    {
-        double timestep;
 
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        if ( is_steady )
-            timestep=1e30;
-        else timestep = M_bdf->timeStep();
+    int numberOfTimeStep() const { return M_numberOfTimeStep; }
+
+    double timeStep() const
+    {
+        double timestep = 1e30;
+        if ( !this->isSteady() )
+            timestep = this->bdfModel()->timeStep();
         return timestep;
     }
-    double timeStep( mpl::bool_<false> )
+    double timeInitial() const
     {
-        return 1e30;
+        double timeinitial = 0.;
+        if ( !this->isSteady() )
+            timeinitial = this->bdfModel()->timeInitial();
+        return timeinitial;
     }
-
-    double timeInitial()
+    double timeFinal() const
     {
-        return timeInitial( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    double timeInitial( mpl::bool_<true> )
-    {
-        return M_bdf->timeInitial();
-    }
-    double timeInitial( mpl::bool_<false> )
-    {
-        return 0;
-    }
-
-    double timeFinal()
-    {
-        return timeFinal( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    double timeFinal( mpl::bool_<true> )
-    {
-        double timefinal;
-
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        if ( is_steady )
-            timefinal=1e30;
-        else
-            timefinal = M_bdf->timeFinal();
+        double timefinal=1e30;
+        if ( !this->isSteady() )
+            timefinal = this->bdfModel()->timeFinal();
         return timefinal;
     }
-    double timeFinal( mpl::bool_<false> )
+    int timeOrder() const
     {
-        return 1e30;
-    }
-
-    int timeOrder()
-    {
-        return timeOrder( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    int timeOrder( mpl::bool_<true> )
-    {
-        return M_bdf->timeOrder();
-    }
-    int timeOrder( mpl::bool_<false> )
-    {
-        return 0;
+        int order = 0;
+        if ( !this->isSteady() )
+            order = this->bdfModel()->timeOrder();
+        return order;
     }
 
 
-    bool isSteady()
+    bool isSteady() const
     {
-        return isSteady( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    bool isSteady( mpl::bool_<true> )
-    {
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        return is_steady;
-    }
-    bool isSteady( mpl::bool_<false> )
-    {
-        return true;
+        return M_isSteadyModel;
     }
 
-    bool isLinear()
+    bool isLinear() const
     {
         return is_linear ;
     }
@@ -2484,9 +2459,6 @@ protected:
 
 private:
     bool M_is_initialized;
-
-    //! variables_map
-    //po::variables_map M_vm;
 
     //! mode for CRBModel
     CRBModelMode M_mode;
@@ -2540,7 +2512,8 @@ private:
 
     sparse_matrix_ptrtype M_inner_product_matrix;
 
-    bdf_ptrtype M_bdf;
+    bool M_isSteadyModel;
+    int M_numberOfTimeStep;
 
     bool M_has_eim;
 
