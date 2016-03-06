@@ -371,10 +371,16 @@ public:
         M_orthonormalize_dual( boption(_name="crb.orthonormalize-dual") ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_compute_variance( boption(_name="crb.compute-variance") ),
+        M_computeMatrixInfo( boption(_name="crb.compute-matrix-information") ),
         M_database_contains_variance_info( boption(_name="crb.save-information-for-variance") ),
         M_use_newton( boption(_name="crb.use-newton") ),
         M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_save_output_behavior( boption(_name="crb.save-output-behavior") )
+        M_save_output_behavior( boption(_name="crb.save-output-behavior") ),
+        M_fixedpointMaxIterations( ioption(_name="crb.max-fixedpoint-iterations") ),
+        M_fixedpointIncrementTol( doption(_name="crb.increment-fixedpoint-tol") ),
+        M_fixedpointVerbose( boption(_name="crb.fixedpoint-verbose") ),
+        M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
+        M_loadElementsDb( boption(_name="crb.load-elements-database") )
     {
         if ( !M_solve_dual_problem )
             M_orthonormalize_dual = false;
@@ -383,8 +389,7 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         M_elements_database.setMN( M_N );
-        bool load_elements_db= boption(_name="crb.load-elements-database");
-        if( load_elements_db )
+        if( M_loadElementsDb )
         {
             if( M_elements_database.loadDB() )
             {
@@ -1430,6 +1435,7 @@ protected:
     std::vector < matrixN_type > M_variance_matrix_phi;
 
     bool M_compute_variance;
+    bool M_computeMatrixInfo;
     //bool M_rbconv_contains_primal_and_dual_contributions;
     parameter_type M_current_mu;
     int M_no_residual_index;
@@ -1451,6 +1457,14 @@ protected:
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
 
     bool M_save_output_behavior;
+
+    int M_fixedpointMaxIterations;
+    double M_fixedpointIncrementTol;
+    bool M_fixedpointVerbose;
+    double M_fixedpointCriticalValue;
+
+    bool M_loadElementsDb;
+
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -4082,7 +4096,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
 template< typename TruthModelType>
 double
-CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & uNold, int const k ) const
+CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
 {
     int N = uN[0].size();
 
@@ -4173,7 +4187,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
             //du = uNdu[K-dual_time_index];
             du = uNdu[dual_time_index];
             pr = uN[primal_time_index];
-            oldpr = uNold[primal_time_index];
+            oldpr = uN[primal_time_index-1];//uNold[primal_time_index];
             correction += dt*( Fdu.dot( du ) - du.dot( Aprdu*pr ) ) - du.dot(Mprdu*pr) + du.dot(Mprdu*oldpr) ;
         }
     }
@@ -4235,8 +4249,7 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     map_J.setZero( );
     beta_vector_type betaJqm;
 
-    bool load_elements_db=boption(_name="crb.load-elements-database");
-    if( load_elements_db )
+    if( M_loadElementsDb )
         boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
         boost::tie( boost::tuples::ignore,betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , 0 );
@@ -4255,8 +4268,7 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector<beta_vector_type> betaRqm;
-    bool load_elements_db=boption(_name="crb.load-elements-database");
-    if( load_elements_db )
+    if( M_loadElementsDb )
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
@@ -4296,15 +4308,14 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     double conditioning=0;
     double determinant=0;
-    if( boption(_name="crb.compute-matrix-information") )
+    if( M_computeMatrixInfo )
     {
         conditioning = computeConditioning( J );
         determinant = J.determinant();
     }
 
     std::vector<beta_vector_type> betaRqm;
-    bool load_elements_db=boption(_name="crb.load-elements-database");
-    if( load_elements_db )
+    if( M_loadElementsDb )
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
@@ -4575,38 +4586,31 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
-CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & /*uNold*/,
                                         std::vector< double > & output_vector , int K, bool print_rb_matrix) const
 {
-    double time_for_output;
+    double time_for_output = 1e30;
+    double time_step = 1e30;
+    //double time_final = 1e30;
 
-    double time_step;
-    double time_final;
-    int number_of_time_step=1;
-    size_type Qm;
-    int time_index=0;
-    double output=0;
+    int number_of_time_step = M_model->numberOfTimeStep();
+    //int number_of_time_step=1;
+    size_type Qm = 0;
+    int time_index = 0;
+    double output = 0;
 
-    if ( M_model->isSteady() )
-    {
-        time_step = 1e30;
-        time_for_output = 1e30;
-        Qm = 0;
-        //number_of_time_step=1;
-    }
 
-    else
+    if ( !M_model->isSteady() )
     {
         Qm = M_model->Qm();
         time_step = M_model->timeStep();
-        time_final = M_model->timeFinal();
+        //time_final = M_model->timeFinal();
 
         if ( K > 0 )
             time_for_output = K * time_step;
-
         else
         {
-            number_of_time_step = (time_final / time_step)+1;
+            //number_of_time_step = (time_final / time_step)+1;
             time_for_output = (number_of_time_step-1) * time_step;
         }
     }
@@ -4649,29 +4653,20 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     {
         for ( size_type n=0; n<N; n++ )
         {
-            uNold[1]( n ) = M_coeff_pr_ini_online(n);
+            //uNold[1]( n ) = M_coeff_pr_ini_online(n);
             uN[0]( n ) = M_coeff_pr_ini_online(n);
         }
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
-
     }
 
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double output_fixedpoint_tol  = doption(_name="crb.output-fixedpoint-tol");
-    bool fixedpoint_verbose  = boption(_name="crb.fixedpoint-verbose");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
-    double increment = increment_fixedpoint_tol;
-
-    bool load_elements_db=boption(_name="crb.load-elements-database");
+    double increment = M_fixedpointIncrementTol;
     bool is_linear = M_model->isLinear();
     int time_iter=0;
-    A.setZero( N,N );
 
-    if( ! is_linear )
+    if( !is_linear )
     {
         computeProjectionInitialGuess( mu , N , uN[0] );
     }
@@ -4691,22 +4686,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         VLOG(2) << "lb: start fix point\n";
 
         vectorN_type previous_uN( M_N );
-
         int fi=0;
-
-        double old_output;
-#if 0
-        //in the case were we want to control output error for fixed point
-        L.setZero( N );
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-        {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-            {
-                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
-            }
-        }
-        old_output = L.dot( uN[time_index] );
-#endif
 
         do
         {
@@ -4716,6 +4696,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 {
                     bool only_terms_time_dependent=false;
                     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
+                    A.setZero( N,N );
                     for ( size_type q = 0; q < Qa; ++q )
                     {
                         for(int m=0; m<mMaxA[q]; m++)
@@ -4743,7 +4724,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 //when lambda expressions will be totally operational
                 //we will call computeBetaQm( uN, mu, tim )
                 //and the test if( load_elements_db ) will disappear
-                if( load_elements_db )
+                if( M_loadElementsDb )
                 {
                     if( time_iter==1 )
                     {
@@ -4808,92 +4789,45 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             {
                 for(int m=0; m<mMaxM[q]; m++)
                 {
-                    F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                    //F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                    F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uN[time_index-1]/time_step;
                 }
             }
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        int nbelem = N * N * M_model->Qa();
-        double * array = new double[nbelem];
+            if(ioption(_name="parallel.debug"))
+            {
+                int nbelemAq = N * N * M_model->Qa();
+                double * arrayAq = new double[nbelemAq];
+                for( size_type q = 0; q < nbelemAq; ++q )
+                    memcpy(arrayAq + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
+                this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayAq, nbelemAq);
+                delete[] arrayAq;
 
-        for( size_type q = 0; q < M_model->Qa(); ++q )
-        {
-            memcpy(array + q * N * N, M_Aqm_pr[q][0].block( 0,0,N,N ).data(), N * N * sizeof(double));
-        }
+                int nbelemFq = N * M_model->Ql(0);
+                double * arrayFq = new double[nbelemFq];
+                for( size_type q = 0; q < nbelemFq; ++q )
+                    memcpy(arrayFq + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
+                this->dumpData("./out.cpu.dump", "[CPU] Aq: ", arrayFq, nbelemFq);
+                delete[] arrayFq;
 
-        this->dumpData("./out.cpu.dump", "[CPU] Aq: ", array, nbelem);
+                int nbelemBetaAq = M_model->Qa();
+                double * arrayBetaAq = new double[nbelemBetaAq];
+                for( size_type q = 0; q < nbelemBetaAq; ++q )
+                    memcpy(arrayBetaAq + q, &(betaAqm[q][0]), sizeof(double));
+                this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", arrayBetaAq, nbelemBetaAq);
+                delete[] arrayBetaAq;
 
-        delete[] array;
-    }
-#endif
+                int nbelemBetaFq = M_model->Ql(0);
+                double * arrayBetaFq = new double[nbelemBetaFq];
+                for( size_type q = 0; q < nbelemBetaFq; ++q )
+                    memcpy(arrayBetaFq + q, &(betaFqm[0][q][0]), sizeof(double));
+                this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", arrayBetaFq, nbelemBetaFq);
+                delete[] arrayBetaFq;
 
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        int nbelem = N * M_model->Ql(0);
-        double * array = new double[nbelem];
-
-        for( size_type q = 0; q < M_model->Ql(0); ++q )
-        {
-            memcpy(array + q * N, M_Fqm_pr[q][0].head(N).data(), N * sizeof(double));
-        }
-
-        this->dumpData("./out.cpu.dump", "[CPU] Aq: ", array, nbelem);
-
-        delete[] array;
-    }
-#endif
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        int nbelem = M_model->Qa();
-        double * array = new double[nbelem];
-
-        for( size_type q = 0; q < M_model->Qa(); ++q )
-        {
-            memcpy(array + q, &(betaAqm[q][0]), sizeof(double));
-        }
-
-        this->dumpData("./out.gpu.dump", "[CPU] betaAq: ", array, nbelem);
-
-        delete[] array;
-        //this->dumpData("./out.cpu.dump", "[CPU] betaAq: ", betaAqm[0].data(), M_model->Qa());
-    }
-#endif
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        int nbelem = M_model->Ql(0);
-        double * array = new double[nbelem];
-
-        for( size_type q = 0; q < M_model->Ql(0); ++q )
-        {
-            memcpy(array + q, &(betaFqm[0][q][0]), sizeof(double));
-        }
-
-        this->dumpData("./out.gpu.dump", "[CPU] betaFq: ", array, nbelem);
-
-        delete[] array;
-        //this->dumpData("./out.cpu.dump", "[CPU] betaFq: ", betaFqm[0][0].data(), M_model->Ql(0));
-    }
-#endif
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
-    }
-#endif
-    
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(ioption(_name="parallel.debug"))
-    {
-        this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
-    }
+                this->dumpData("./out.cpu.dump", "[CPU] A: ", A.data(), N * N);
+                this->dumpData("./out.cpu.dump", "[CPU] F: ", F.data(), N);
+            }
 #endif
 
             // backup uN
@@ -4908,8 +4842,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             //LOG( INFO )<<std::setprecision(14)<<" norm of full LU : "<<full_lu.norm();
             //LOG( INFO )<<std::setprecision(14)<<" norm of  LU     : "<<uN[time_index].norm();
 
-            if ( time_index<number_of_time_step-1 )
-                uNold[time_index+1] = uN[time_index];
+            //if ( time_index<number_of_time_step-1 )
+            //    uNold[time_index+1] = uN[time_index];
 
             L.setZero( N );
             for ( size_type q = 0; q < Ql; ++q )
@@ -4919,35 +4853,33 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
-            old_output = output;
             output = L.dot( uN[time_index] );
+            output_vector[time_index] = output;
 
            if( is_linear )
-               previous_uN=uN[time_index];
+               break;
+           //previous_uN=uN[time_index];
 
             increment = (uN[time_index]-previous_uN).norm();
 
-            //output_vector.push_back( output );
-            output_vector[time_index] = output;
-            DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
-            fi++;
-
-            if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+            if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
+            {
+                DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
                 VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
-
-            double residual_norm = (A * uN[time_index] - F).norm() ;
-            VLOG(2) << " residual_norm :  "<<residual_norm;
-
+                double residual_norm = (A * uN[time_index] - F).norm() ;
+                VLOG(2) << " residual_norm :  "<<residual_norm;
+            }
+            ++fi;
         }
-        while ( increment > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
+        while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
 
-        if( increment > increment_fixedpoint_tol )
+        if( increment > M_fixedpointIncrementTol )
             DVLOG(2)<<"[CRB::fixedPointPrimal] fixed point, proc "<<this->worldComm().globalRank()
                     <<" fixed point has no converged : increment = "<<increment
-                    <<" and tolerance : "<<increment_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
+                    <<" and tolerance : "<<M_fixedpointIncrementTol<<" so "<<M_fixedpointMaxIterations<<" iterations were done"<<std::endl;
 
-        if( increment > fixedpoint_critical_value )
+        if( increment > M_fixedpointCriticalValue )
             throw std::logic_error( "[CRB::fixedPointPrimal] fixed point ERROR : increment > critical value " );
 
         if ( time_index<number_of_time_step-1 )
@@ -4957,7 +4889,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     double condition_number = 0;
     double determinant = 0;
-    if( boption(_name="crb.compute-matrix-information") )
+    if( M_computeMatrixInfo )
     {
         condition_number = computeConditioning( A );
         determinant = A.determinant();
@@ -5613,7 +5545,7 @@ CRB<TruthModelType>::delta( size_type N,
                             parameter_type const& mu,
                             std::vector<vectorN_type> const& uN,
                             std::vector<vectorN_type> const& uNdu,
-                            std::vector<vectorN_type> const& uNold,
+                            std::vector<vectorN_type> const& /*uNold*/,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
@@ -5710,14 +5642,15 @@ CRB<TruthModelType>::delta( size_type N,
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
                 for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
                 {
-                    primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uNold[time_index], dt, time );
+                    primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
                 }
             }
             else
             {
                 for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
                 {
-                    auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                    int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
+                    auto pr = transientPrimalResidual( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
                     primal_sum += pr.template get<0>();
                     if( global_time_index==K )
                     {
@@ -5727,7 +5660,7 @@ CRB<TruthModelType>::delta( size_type N,
 
                     if( model_has_eim_error )
                     {
-                        auto preim = transientPrimalResidualEim( N, mu, uN[time_index], uNold[time_index], dt, time );
+                        auto preim = transientPrimalResidualEim( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
                         primal_sum_eim += preim.template get<0>();
                     }
                     time_index++;
@@ -5765,7 +5698,8 @@ CRB<TruthModelType>::delta( size_type N,
 
                         if( model_has_eim_error )
                         {
-                            auto dueim = transientDualResidualEim( N, mu, uN[time_index], uNold[time_index], dt, time );
+                            int time_old_pr_index = ( M_model->isSteady() )? 0 : time_index-1;
+                            auto dueim = transientDualResidualEim( N, mu, uN[time_index], uN[time_old_pr_index]/*uNold[time_index]*/, dt, time );
                             dual_sum_eim += dueim.template get<0>();
                         }
 
@@ -5833,7 +5767,8 @@ CRB<TruthModelType>::delta( size_type N,
             LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
             for ( double time=dt; time<=Tf; time+=dt )
             {
-                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
+                auto pr = transientPrimalResidual( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
                 //LOG(INFO) << "primal residual at time "<<time<<" : "<<pr.template get<0>()<<"\n";
                 sum+=pr.template get<0>();
                 time_index++;
@@ -9588,7 +9523,6 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
-    bool load_elements_db=boption(_name="crb.load-elements-database");
     bool is_linear=M_model->isLinear();
     //get beta coefficients
     if( is_linear )
@@ -9601,7 +9535,7 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
         //when lambda expressions will be totally operational
         //we will call computeBetaQm( uN, mu, tim )
         //and the test if( load_elements_db ) will disappear
-        if( load_elements_db )
+        if( M_loadElementsDb )
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
         else
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
@@ -9712,7 +9646,6 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
 
-    bool load_elements_db=boption(_name="crb.load-elements-database");
     bool is_linear=M_model->isLinear();
     //get beta coefficients
     if( is_linear )
@@ -9725,7 +9658,7 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
         //when lambda expressions will be totally operational
         //we will call computeBetaQm( uN, mu, tim )
         //and the test if( load_elements_db ) will disappear
-        if( load_elements_db )
+        if( M_loadElementsDb )
           boost::tie( betaMqm, betaAqm, betaFqm ) =  M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
         else
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
@@ -9802,7 +9735,7 @@ CRB<TruthModelType>::computeOnlinePrimalApee(  int N, parameter_type const& mu ,
     int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa; //d in the F.Casenave's paper
     lambda.resize(primal_size);
 
-    if( boption(_name="crb.compute-matrix-information") )
+    if( M_computeMatrixInfo )
     {
         double cond = computeConditioning( M_primal_T );
         double det = M_primal_T.determinant();
@@ -9836,7 +9769,7 @@ CRB<TruthModelType>::computeOnlineDualApee(  int N, parameter_type const& mu , v
     int dual_size = Ql*Ql + N*Qa*Ql + N*N*Ql*Ql; //d in the F.Casenave's paper
     lambda.resize(dual_size);
 
-    if( boption(_name="crb.compute-matrix-information") )
+    if( M_computeMatrixInfo )
     {
         double cond = computeConditioning( M_dual_T );
         double det = M_dual_T.determinant();
