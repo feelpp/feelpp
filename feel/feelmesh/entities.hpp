@@ -47,7 +47,9 @@ enum FaceLocation { INTERNAL = false, ON_BOUNDARY = true };
 enum GeoEntityContext
 {
     MESH_ENTITY_INTERNAL          = ( 1<<0 ), /**< internal entity */
-    MESH_ENTITY_BOUNDARY          = ( 1<<1 )  /**< boundary entity */
+    MESH_ENTITY_BOUNDARY          = ( 1<<1 ), /**< boundary entity */
+    MESH_ENTITY_INTERPROCESS      = ( 1<<2 ), /**< interprocess entity */
+    MESH_ENTITY_GHOST             = ( 1<<3 )  /**< ghost entity */
 };
 
 /**
