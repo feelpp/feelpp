@@ -5671,11 +5671,11 @@ CRB<TruthModelType>::delta( size_type N,
 
             double dual_residual=0;
 
-            if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
-            //bool solve_dual_problem = boption(_name="crb.solve-dual-problem") ;
-
             if( M_solve_dual_problem )
             {
+                if ( !M_model->isSteady() )
+                    dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
+
                 if( accurate_apee )
                 {
                     //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
@@ -5866,9 +5866,10 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                 parameter_type const& mu = M_WNmu_complement->at( k );
                 lb( N, mu, uN, uNdu , uNold ,uNduold );
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
-                auto vector_err = error_estimation.template get<0>();
-                int size=vector_err.size();
-                double _err = vector_err[size-1];
+                auto const& vector_err = error_estimation.template get<0>();
+                //int size=vector_err.size();
+                //double _err = vector_err[size-1];
+                double _err = vector_err.back();
                 vect_delta_pr( k ) = error_estimation.template get<3>();
                 vect_delta_du( k ) = error_estimation.template get<4>();
                 err( k ) = _err;
@@ -6296,17 +6297,8 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
-    beta_vector_type betaMFqm;
-    std::vector<beta_vector_type> betaFqm, betaLqm;
-
+    std::vector<beta_vector_type> betaFqm;
     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
-
-    size_type __QLhs = M_model->Qa();
-    size_type __QRhs = M_model->Ql( 0 );
-    size_type __Qm = M_model->Qm();
-    size_type __N = Ncur;
-
-
 
     residual_error_type steady_residual_contribution = steadyPrimalResidual( Ncur, mu, Un, time );
     std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
@@ -6322,20 +6314,29 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
     //so in that case, we don't need to compute this.
     if ( ! M_model->isSteady() && ! M_model_executed_in_steady_mode )
     {
+        size_type __QLhs = M_model->Qa();
+        size_type __QRhs = M_model->Ql( 0 );
+        size_type __Qm = M_model->Qm();
+        size_type __N = Ncur;
 
+        const vectorN_type UnTimeDeriv  = (Un - Unold)/time_step;
         for ( size_type __q1=0 ; __q1<__Qm; ++__q1 )
         {
             for ( size_type __m1=0 ; __m1< M_model->mMaxM(__q1); ++__m1 )
             {
-                value_type m_q1 = betaMqm[__q1][__m1];
+                const value_type m_q1 = betaMqm[__q1][__m1];
 
                 for ( size_type __q2=0 ; __q2<__QRhs; ++__q2 )
                 {
                     for ( size_type __m2=0 ; __m2< M_model->mMaxF(0,__q2); ++__m2 )
                     {
-                        value_type f_q2 = betaFqm[0][__q2][__m2];
+                        const value_type f_q2 = betaFqm[0][__q2][__m2];
+#if 0
                         __Cmf_pr +=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__m1][__q2][__m2].head( __N ).dot( Un );
                         __Cmf_pr -=  1./time_step * m_q1 * f_q2  * M_Cmf_pr[__q1][__m1][__q2][__m2].head( __N ).dot( Unold );
+#else
+                        __Cmf_pr +=  m_q1 * f_q2  * M_Cmf_pr[__q1][__m1][__q2][__m2].head( __N ).dot( UnTimeDeriv );
+#endif
                     }//m2
                 }//q2
 
@@ -6343,10 +6344,14 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
                 {
                     for ( size_type __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                     {
-                        value_type a_q2 = betaAqm[__q2][__m2];
-                        auto m = M_Cma_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Un;
+                        const value_type a_q2 = betaAqm[__q2][__m2];
+                        auto const m = M_Cma_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Un;
+#if 0
                         __Cma_pr += 1./time_step * m_q1 * a_q2 * Un.dot( m );
                         __Cma_pr -= 1./time_step * m_q1 * a_q2 * Unold.dot( m );
+#else
+                        __Cma_pr += m_q1 * a_q2 * UnTimeDeriv.dot( m );
+#endif
                     }//m2
                 }//q2
 
@@ -6354,13 +6359,18 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
                 {
                     for ( size_type __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                     {
-                        value_type m_q2 = betaMqm[__q2][__m2];
+                        const value_type m_q2 = betaMqm[__q2][__m2];
+#if 0
                         auto m1 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Un;
                         auto m2 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Unold;
                         __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m1 );
                         __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m2 );
                         __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m1 );
                         __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m2 );
+#else
+                        auto m = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*UnTimeDeriv;
+                        __Cmm_pr += m_q1 * m_q2 * UnTimeDeriv.dot( m );
+#endif
                     }//m2
                 }//q2
             }//m1
@@ -6548,7 +6558,7 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     //value_type delta_pr = math::sqrt( math::abs(__c0_pr+__lambda_pr+__gamma_pr) );
     value_type delta_pr = math::abs( __c0_pr+__lambda_pr+__gamma_pr ) ;
-#if(0)
+#if 0
 
     if ( !boost::math::isfinite( delta_pr ) )
     {
@@ -6599,76 +6609,96 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Undu ,vectorN_type const& Unduold , double time_step, double time ) const
 {
+
+    if ( M_model->isSteady() )
+    {
+        residual_error_type steady_residual_contribution = steadyDualResidual( Ncur, mu, Undu, time );
+        std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
+        steady_coeff_vector.push_back(0.);
+        steady_coeff_vector.push_back(0.);
+        steady_coeff_vector.push_back(0.);
+        return boost::make_tuple( steady_residual_contribution.template get<0>(), steady_coeff_vector );
+    }
+
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+    boost::tie( betaMqm, betaAqm, betaFqm) = M_model->computeBetaQm( mu, time );
+
+    value_type __gamma_du = 0.0;
+    value_type __Cmf_du=0;
+    value_type __Cma_du=0;
+    value_type __Cmm_du=0;
+
     int __QLhs = M_model->Qa();
     int __QOutput = M_model->Ql( M_output_index );
     int __Qm = M_model->Qm();
     int __N = Ncur;
 
-    beta_vector_type betaAqm;
-    beta_vector_type betaMqm;
-    beta_vector_type betaMFqm;
-    std::vector<beta_vector_type> betaFqm;
-    boost::tie( betaMqm, betaAqm, betaFqm) = M_model->computeBetaQm( mu, time );
-
-    residual_error_type steady_residual_contribution = steadyDualResidual( Ncur, mu, Undu, time );
-    std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
-    value_type __c0_du     = steady_coeff_vector[0];
-    value_type __lambda_du = steady_coeff_vector[1];
-    value_type __gamma_du  = steady_coeff_vector[2];
-
-
-    value_type __Cmf_du=0;
-    value_type __Cma_du=0;
-    value_type __Cmm_du=0;
-
-#if 1
-
-    if ( ! M_model->isSteady() && ! M_model_executed_in_steady_mode )
+    for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
     {
-
-        for ( int __q1=0 ; __q1<__Qm; ++__q1 )
+        for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
         {
-            for ( int __m1=0 ; __m1< M_model->mMaxM(__q1); ++__m1 )
+            value_type a_q1 = betaAqm[__q1][__m1];
+
+            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
             {
-                value_type m_q1 = betaMqm[__q1][__m1];
-
-                for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
-                    {
-                        value_type a_q2 = betaAqm[__q2][__m2];
-                        auto m = M_Cma_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Undu;
-                        __Cma_du += 1./time_step * m_q1 * a_q2 * Undu.dot( m );
-                        __Cma_du -= 1./time_step * m_q1 * a_q2 * Unduold.dot( m );
-                    }//m2
-                }//q2
+                    value_type a_q2 = betaAqm[__q2][__m2]*a_q1;
+                    auto m = M_Gamma_du[ __q1][ __m1][ __q2][ __m2].block( 0,0,__N,__N )*Undu;
+                    __gamma_du += a_q2*Undu.dot( m );
+                }//m2
+            }//q2
+        }//m1
+    }//q1
 
-                for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
+    const vectorN_type UnduTimeDeriv  = (Undu - Unduold)/time_step;
+    for ( int __q1=0 ; __q1<__Qm; ++__q1 )
+    {
+        for ( int __m1=0 ; __m1< M_model->mMaxM(__q1); ++__m1 )
+        {
+            const value_type m_q1 = betaMqm[__q1][__m1];
+
+            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
-                    {
-                        value_type m_q2 = betaMqm[__q2][__m2];
-                        auto m1 = M_Cmm_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Undu;
-                        auto m2 = M_Cmm_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Unduold;
-                        __Cmm_du += 1./( time_step*time_step ) * m_q1 * m_q2 * Undu.dot( m1 );
-                        __Cmm_du -= 1./( time_step*time_step ) * m_q1 * m_q2 * Undu.dot( m2 );
-                        __Cmm_du -= 1./( time_step*time_step ) * m_q1 * m_q2 * Unduold.dot( m1 );
-                        __Cmm_du += 1./( time_step*time_step ) * m_q1 * m_q2 * Unduold.dot( m2 );
-                    } //m2
-                } //q2
-
-            } //m1
-        }//end of loop over q1
-    }//end of if(! M_model->isSteady() && ! M_model_executed_in_steady_mode )
-
+                    const value_type a_q2 = betaAqm[__q2][__m2];
+                    auto const m = M_Cma_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Undu;
+#if 0
+                    __Cma_du += 1./time_step * m_q1 * a_q2 * Undu.dot( m );
+                    __Cma_du -= 1./time_step * m_q1 * a_q2 * Unduold.dot( m );
+#else
+                    __Cma_du += m_q1 * a_q2 * UnduTimeDeriv.dot( m );
 #endif
+                }//m2
+            }//q2
 
-    value_type delta_du;
+            for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
+                {
+                    const value_type m_q2 = betaMqm[__q2][__m2];
+#if 0
+                    auto m1 = M_Cmm_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Undu;
+                    auto m2 = M_Cmm_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Unduold;
+                    __Cmm_du += 1./( time_step*time_step ) * m_q1 * m_q2 * Undu.dot( m1 );
+                    __Cmm_du -= 1./( time_step*time_step ) * m_q1 * m_q2 * Undu.dot( m2 );
+                    __Cmm_du -= 1./( time_step*time_step ) * m_q1 * m_q2 * Unduold.dot( m1 );
+                    __Cmm_du += 1./( time_step*time_step ) * m_q1 * m_q2 * Unduold.dot( m2 );
+#else
+                    auto const m = M_Cmm_du[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*UnduTimeDeriv;
+                    __Cmm_du += m_q1 * m_q2 * UnduTimeDeriv.dot( m );
+#endif
+                } //m2
+            } //q2
 
-    if ( M_model->isSteady() )
-        delta_du =  math::abs( __c0_du+__lambda_du+__gamma_du ) ;
-    else
-        delta_du =  math::abs( __gamma_du+__Cma_du+__Cmm_du ) ;
+        } //m1
+    }//end of loop over q1
+
+
+    value_type delta_du =  math::abs( __gamma_du+__Cma_du+__Cmm_du ) ;
 
 #if 0
     double UnduNorm = Undu.norm();
@@ -6698,8 +6728,8 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
 
 
     std::vector<double> coeffs_vector;
-    coeffs_vector.push_back( __c0_du );
-    coeffs_vector.push_back( __lambda_du );
+    coeffs_vector.push_back( 0./*__c0_du*/ );
+    coeffs_vector.push_back( 0./*__lambda_du*/ );
     coeffs_vector.push_back( __gamma_du );
     coeffs_vector.push_back( __Cmf_du );
     coeffs_vector.push_back( __Cma_du );
