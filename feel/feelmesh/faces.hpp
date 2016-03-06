@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2010 Université Joseph Fourier
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,14 +23,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file faces.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
- */
-#ifndef __faces_H
-#define __faces_H 1
-
+#ifndef FEELPP_FACES_HPP
+#define FEELPP_FACES_HPP 1
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -137,9 +132,10 @@ public:
                                             multi_index::const_mem_fun<face_type,
                                                                        bool,
                                                                        &face_type::isInterProcessDomain>,
+                                            /*
                                             multi_index::const_mem_fun<face_type,
                                                                        rank_type,
-                                                                       &face_type::partition1>,
+                                             &face_type::partition1>,*/
                                             multi_index::const_mem_fun<face_type,
                                                                        rank_type,
                                                                        &face_type::partition2>
@@ -549,11 +545,10 @@ public:
     std::pair<interprocess_face_iterator, interprocess_face_iterator>
     interProcessFaces( rank_type p = invalid_rank_type_value ) const
     {
-        const rank_type part =  this->worldCommFaces().localRank();
         if ( p != invalid_rank_type_value )
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, p ) );
         else
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true ) );
     }
 
 #if 0
@@ -812,7 +807,7 @@ public:
             << "addFace failed, face not added to container : "
             << ret.first->id() << " face id:"
             << f.id();
-        
+
         return ret;
     }
 
@@ -890,15 +885,15 @@ public:
         {
             id = boost::unwrap_ref(*it).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker2 );
             DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
         }
     }
-    
+
     /**
      * update faces marker 3 from a vector whose size is exactely the number of
      * faces. This vector can be generated using a P0 discontinuous space
@@ -920,10 +915,10 @@ public:
         {
             id = boost::unwrap_ref(*it).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker );
             DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
         }
