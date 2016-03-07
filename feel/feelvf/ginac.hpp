@@ -711,6 +711,12 @@ struct map_scalar_fields: public std::map<std::string,std::vector<scalar_field_e
     map_scalar_fields(map_scalar_fields const& f ) = default;
     map_scalar_fields& operator=(map_scalar_fields && f ) = default;
     map_scalar_fields& operator=(map_scalar_fields const& f ) = default;
+    void setParameterValues( std::map<std::string,double> const& pv )
+    {
+        for( auto & f : *this )
+            for ( auto & g : f.second )
+                g.setParameterValues( pv );
+    }
 };
 
 template<int Order>

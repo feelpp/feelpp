@@ -113,7 +113,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
-           << "\n   Physical Parameters"
+           << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
+    *_ostr << "\n   Physical Parameters"
            << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
            << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()
            << "\n     -- nu  : " << this->densityViscosityModel()->cstNu();
@@ -193,6 +194,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_solverName;
+    if ( M_useThermodynModel )
+        *_ostr << M_thermodynModel->getInfo()->str();
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -360,6 +363,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->exportResultsImplHO( time );
     }
 
+    if ( M_useThermodynModel && !M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+    {
+        M_thermodynModel->exportResults( time );
+    }
+
 
     this->exportMeasures( time );
 
@@ -473,6 +481,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             hasFieldToExport = true;
         }
 #endif
+    }
+    if ( M_useThermodynModel && M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
+                                       M_thermodynModel->fieldTemperature() );
+        hasFieldToExport = true;
     }
 
     //----------------------//
@@ -830,6 +845,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
+    //--------------------------------------------------
+    // run thermodyn solver if not strong coupling
+    if ( M_useThermodynModel && !M_useGravityForce )
+    {
+        M_thermodynModel->updateFieldVelocityConvection( idv(fieldVelocity()) );
+        M_thermodynModel->solve();
+    }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -956,6 +978,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     if (this->isMoveDomain())
         M_meshALE->updateBdf();
 #endif
+    if ( M_useThermodynModel )
+        M_thermodynModel->updateTimeStep();
+
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
     this->updateTime( M_bdf_fluid->time() );
@@ -1707,6 +1732,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         ++nBlock;
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
+    if ( M_useThermodynModel && M_useGravityForce )
+        nBlock += M_thermodynModel->nBlockMatrixGraph();
     return nBlock;
 }
 
@@ -1797,6 +1824,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                               _diag_is_nonzero=false,_close=false)->graph();
         }
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
+    }
+
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        myblockGraph(indexBlock,indexBlock) = M_thermodynModel->buildBlockMatrixGraph()(0,0);
+
+        BlocksStencilPattern patCoupling1(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        patCoupling1(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock,0) = stencil(_test=M_thermodynModel->spaceTemperature(),
+                                             _trial=this->functionSpace(),
+                                             _pattern_block=patCoupling1,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+
+        BlocksStencilPattern patCoupling2(space_fluid_type::nSpaces,1,size_type(Pattern::ZERO));
+        patCoupling2(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),
+                                             _trial=M_thermodynModel->spaceTemperature(),
+                                             _pattern_block=patCoupling2,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
     }
 
     myblockGraph.close();

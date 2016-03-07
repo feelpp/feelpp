@@ -13,7 +13,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    typedef FeelModels::ThermoDynamics< Simplex<2,1,2>,
+    typedef FeelModels::ThermoDynamics< Simplex<FEELPP_DIM,1>,
                                         Lagrange<1, Scalar,Continuous,PointSetFekete> > model_type;
     boost::shared_ptr<model_type> thermoDyn( new model_type("thermo") );
     thermoDyn->init();
