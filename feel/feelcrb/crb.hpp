@@ -782,6 +782,7 @@ public:
      * \param uN primal solution
      * \param uNdu dual solution
      * \param K : index of time ( time = K*dt) at which we want to evaluate the output
+     * \param computeOutput : if true compute quantity of interest (output)
      * Note : K as a default value for non time-dependent problems
      *
      *\return compute online the lower bound
@@ -790,7 +791,8 @@ public:
 
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
     virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
+                                                                    std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0,
+                                                                    bool computeOutput = true ) const;
 
 
     /*
@@ -871,9 +873,10 @@ public:
      * \param condition number of the reduced matrix A
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
+     * \param computeOutput : if true compute quantity of interest (output)
      */
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
-                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
 
     /*
      * Dump data array into a file
@@ -920,10 +923,11 @@ public:
      * \param uNduold : dual old reduced solution ( vectorN_type )
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
+     * \param computeOutput : if true compute quantity of interest (output)
      */
     matrix_info_tuple fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                    std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-                                   std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+                                   std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput = true ) const;
 
     /**
      * computation of the conditioning number of a given matrix
@@ -4374,26 +4378,19 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K) const
 {
-    double time_for_output;
-    double time_step;
-    double time_final=0;
-    int number_of_time_step=1;
-    size_type Qm;
+    double time_for_output = 1e30;
+    double time_step = 1e30;
+    //double time_final=0;
+    int number_of_time_step = M_model->numberOfTimeStep();
+    size_type Qm = 0;
 
     int Qa=M_model->Qa();
     int Ql=M_model->Ql(M_output_index);
-    if ( M_model->isSteady() )
-    {
-        time_step = 1e30;
-        time_for_output = 1e30;
-        Qm = 0;
-    }
-
-    else
+    if ( !M_model->isSteady() )
     {
         Qm = M_model->Qm();
         time_step = M_model->timeStep();
-        time_final = M_model->timeFinal();
+        //time_final = M_model->timeFinal();
 
         if ( K > 0 )
         {
@@ -4402,7 +4399,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         }
         else
         {
-            number_of_time_step = (time_final / time_step)+1;
+            //number_of_time_step = (time_final / time_step)+1;
             time_for_output = (number_of_time_step-1) * time_step;
         }
     }
@@ -4450,12 +4447,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     }
 
      /**/
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double output_fixedpoint_tol  = doption(_name="crb.output-fixedpoint-tol");
-    bool fixedpoint_verbose  = boption(_name="crb.fixedpoint-verbose");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
-    double increment = increment_fixedpoint_tol;
+    double increment = M_fixedpointIncrementTol;
     //uNdu[0] = Adu.lu().solve( -Ldu );
     Adu.setZero( N,N );
 
@@ -4495,49 +4487,56 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) = M_model->computeBetaQm( mu ,time , only_terms_time_dependent );
             }
 
-            Ldu.setZero( N );
-            for ( size_type q = 0; q < Ql ; ++q )
-            {
-                for(int m=0; m < mMaxF[q]; m++)
-                    Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
-            }
-
-            //No Rhs for adjoint problem except mass contribution
             Fdu.setZero( N );
-
-            for ( size_type q = 0; q < Qm; ++q )
+            //Ldu.setZero( N );
+            if ( M_model->isSteady() )
             {
-                for(int m=0; m < mMaxM[q]; m++)
+                //Fdu = -Ldu;
+                for ( size_type q = 0; q < Ql ; ++q )
                 {
-                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                    for(int m=0; m < mMaxF[q]; m++)
+                        Fdu -= betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
+                }
+            }
+            else
+            {
+                //No Rhs for adjoint problem except mass contribution
+                for ( size_type q = 0; q < Qm; ++q )
+                {
+                    for(int m=0; m < mMaxM[q]; m++)
+                    {
+                        Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                    }
                 }
             }
 
             // backup uNdu
             next_uNdu = uNdu[time_index];
 
-            if ( M_model->isSteady() )
-                Fdu = -Ldu;
+            //if ( M_model->isSteady() )
+            //    Fdu = -Ldu;
             uNdu[time_index] = Adu.lu().solve( Fdu );
 
             fi++;
 
            if( is_linear )
-               next_uNdu=uNdu[time_index];
+               break;
+
+           //next_uNdu=uNdu[time_index];
 
             increment = (uNdu[time_index]-next_uNdu).norm();
 
-            if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+            if( M_fixedpointVerbose  && this->worldComm().isMasterRank() )
                 VLOG(2)<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment;
 
-        }while ( increment > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
+        }while ( increment > M_fixedpointIncrementTol && fi<M_fixedpointMaxIterations );
 
-        if( increment > increment_fixedpoint_tol )
+        if( increment > M_fixedpointIncrementTol )
             DVLOG(2)<<"[CRB::fixedPointDual] fixed point dual, proc "<<this->worldComm().globalRank()
                     <<" fixed point has no converged : norm of increment = "<<increment
-                    <<" and tolerance : "<<increment_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done";
+                    <<" and tolerance : "<<M_fixedpointIncrementTol<<" so "<<M_fixedpointMaxIterations<<" iterations were done";
 
-        if( increment > fixedpoint_critical_value )
+        if( increment > M_fixedpointCriticalValue )
             throw std::logic_error( "[CRB::fixedPointDual] fixed point ERROR : increment > critical value " );
 
         if( time_index > 0 )
@@ -4587,7 +4586,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & /*uNold*/,
-                                        std::vector< double > & output_vector , int K, bool print_rb_matrix) const
+                                        std::vector< double > & output_vector , int K, bool print_rb_matrix, bool computeOutput ) const
 {
     double time_for_output = 1e30;
     double time_step = 1e30;
@@ -4845,17 +4844,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             //if ( time_index<number_of_time_step-1 )
             //    uNold[time_index+1] = uN[time_index];
 
-            L.setZero( N );
-            for ( size_type q = 0; q < Ql; ++q )
-            {
-                for(int m=0; m < mMaxL[q]; m++)
-                {
-                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
-                }
-            }
-            output = L.dot( uN[time_index] );
-            output_vector[time_index] = output;
-
            if( is_linear )
                break;
            //previous_uN=uN[time_index];
@@ -4881,6 +4869,20 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         if( increment > M_fixedpointCriticalValue )
             throw std::logic_error( "[CRB::fixedPointPrimal] fixed point ERROR : increment > critical value " );
+
+        if ( computeOutput )
+        {
+            L.setZero( N );
+            for ( size_type q = 0; q < Ql; ++q )
+            {
+                for(int m=0; m < mMaxL[q]; m++)
+                {
+                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                }
+            }
+            output = L.dot( uN[time_index] );
+            output_vector[time_index] = output;
+        }
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
@@ -5377,7 +5379,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-                                  std::vector< double > & output_vector, int K, bool print_rb_matrix) const
+                                  std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
     matrix_info_tuple matrix_info;
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
@@ -5394,7 +5396,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     {
 #endif
 
-        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
 
 #if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
         if(ioption(_name="parallel.debug"))
@@ -5409,24 +5411,27 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     {
         fixedPointDual( N, mu , uNdu , uNduold , output_vector , K ) ;
 
-        // apply correction terms
-        if ( M_model->isSteady() )
+        if ( computeOutput )
         {
-            output_vector[0]+=correctionTerms(mu, uN , uNdu, uNold, 0 );
-        }
-        else
-        {
-            int number_of_time_step = M_model->numberOfTimeStep();
-            double time_step = M_model->timeStep();
-            double time_for_output = (number_of_time_step-1)*time_step;
-            if ( K > 0 )
-                time_for_output = K*time_step;
-
-            int time_index=0;
-            for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
+            // apply correction terms
+            if ( M_model->isSteady() )
             {
-                output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
-                ++time_index;
+                output_vector[0]+=correctionTerms(mu, uN , uNdu, uNold, 0 );
+            }
+            else
+            {
+                int number_of_time_step = M_model->numberOfTimeStep();
+                double time_step = M_model->timeStep();
+                double time_for_output = (number_of_time_step-1)*time_step;
+                if ( K > 0 )
+                    time_for_output = K*time_step;
+
+                int time_index=0;
+                for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
+                {
+                    output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
+                    ++time_index;
+                }
             }
         }
     }
@@ -5437,7 +5442,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 template<typename TruthModelType>
 typename boost::tuple<std::vector<double>,typename CRB<TruthModelType>::matrix_info_tuple >
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
-                         std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
+                         std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
+                         bool computeOutput ) const
 {
     if ( N > M_N ) N = M_N;
 
@@ -5456,7 +5462,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     }
     //vector containing outputs from time=time_step until time=time_for_output
     std::vector<double> output_vector;
-    output_vector.resize( number_of_time_step );
+    output_vector.resize( number_of_time_step, 0. );
 
     double conditioning=0;
     double determinant=0;
@@ -5465,7 +5471,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     if( M_use_newton )
         boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
     else
-        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix);
+        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
 
     auto matrix_info = boost::make_tuple( conditioning, determinant );
 
@@ -5805,8 +5811,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
     bool seek_mu_in_complement = boption(_name="crb.seek-mu-in-complement") ;
 
-    int proc = Environment::worldComm().globalRank();
-    int master_proc = Environment::worldComm().masterRank();
+    int proc = this->worldComm().globalRank();
+    int master_proc = this->worldComm().masterRank();
 
     std::vector< vectorN_type > uN;
     std::vector< vectorN_type > uNdu;
@@ -5864,7 +5870,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             for ( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
                 parameter_type const& mu = M_WNmu_complement->at( k );
-                lb( N, mu, uN, uNdu , uNold ,uNduold );
+                lb( N, mu, uN, uNdu , uNold ,uNduold, false, 0, false );
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k );
                 auto const& vector_err = error_estimation.template get<0>();
                 //int size=vector_err.size();
@@ -5885,7 +5891,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                 //std::cout << "--------------------------------------------------\n";
                 parameter_type const& mu = M_Xi->at( k );
                 //std::cout << "[maxErrorBounds] mu=" << mu << "\n";
-                lb( N, mu, uN, uNdu , uNold ,uNduold );
+                lb( N, mu, uN, uNdu , uNold ,uNduold, false, 0, false );
                 //auto tuple = lb( N, mu, uN, uNdu , uNold ,uNduold );
                 //double o = tuple.template get<0>();
                 //std::cout << "[maxErrorBounds] output=" << o << "\n";
@@ -5934,9 +5940,9 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     }
 
     //do communications to have global max
-    int world_size = Environment::worldComm().globalSize();
+    int world_size = this->worldComm().globalSize();
     std::vector<double> max_world( world_size );
-    mpi::all_gather( Environment::worldComm().globalComm(),
+    mpi::all_gather( this->worldComm().globalComm(),
                      maxerr,
                      max_world );
     auto it_max = std::max_element( max_world.begin() , max_world.end() );
@@ -5944,7 +5950,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     auto tuple = boost::make_tuple( mu , delta_pr , delta_du );
 
-    boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+    boost::mpi::broadcast( this->worldComm() , tuple , proc_having_good_mu );
 
     mu = tuple.template get<0>();
     delta_pr = tuple.template get<1>();
@@ -5954,9 +5960,11 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     maxerr = *it_max;
 
 
-    if( proc == master_proc )
-        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du<<" -- output error : "<<maxerr<<std::endl;
-    lb( N, mu, uN, uNdu , uNold ,uNduold );
+    if( this->worldComm().isMasterRank() )
+        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc 
+                 <<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du
+                 <<" -- output error : "<<maxerr<<std::endl;
+    //lb( N, mu, uN, uNdu , uNold ,uNduold );
 
     return boost::make_tuple( maxerr, mu , delta_pr, delta_du);
 
