@@ -170,7 +170,7 @@ public:
     size_type idElement1() const { return boost::get<1>( M_element1 ); }
     uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
     rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
-    
+
     size_type ad_first() const
     {
         return boost::get<1>( M_element0 );
@@ -516,7 +516,7 @@ public:
     typedef GeoElement0D<Dim,SubFace,T> self_type;
 #if 0
     using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
-                                           mpl::identity<self_type>, 
+                                           mpl::identity<self_type>,
                                            mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
 #else
     using element_type = self_type;
@@ -572,7 +572,7 @@ public:
 
     GeoElement0D & operator = ( GeoElement0D const& g ) = default;
     GeoElement0D & operator = ( GeoElement0D && g ) = default;
-    
+
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -631,6 +631,14 @@ public:
     bool isInterProcessDomain() const
     {
         return super2::isInterProcessDomain( super::processId()  );
+    }
+
+    /**
+     * @return location of entity
+     */
+    size_type location() const noexcept
+    {
+        return super::location();
     }
 
     /**
@@ -877,6 +885,14 @@ public:
     bool isInterProcessDomain() const
     {
         return super2::isInterProcessDomain( super::processId() );
+    }
+
+    /**
+     * @return location of entity
+     */
+    size_type location() const noexcept
+    {
+        return super::location();
     }
 
     /**
@@ -1187,6 +1203,14 @@ public:
     bool isInterProcessDomain() const
     {
         return super2::isInterProcessDomain( super::processId() );
+    }
+
+    /**
+     * @return location of entity
+     */
+    size_type location() const noexcept
+    {
+        return super::location();
     }
 
     /**
@@ -1525,6 +1549,14 @@ public:
     bool isInterProcessDomain() const
     {
         return super2::isInterProcessDomain( super::processId() );
+    }
+
+    /**
+     * @return location of entity
+     */
+    size_type location() const noexcept
+    {
+        return super::location();
     }
 
     /**

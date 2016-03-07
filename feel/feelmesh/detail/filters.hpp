@@ -388,22 +388,15 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+decltype(auto)
+internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
 {
 
-    typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.internalFaces( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
+    return mesh.internalFaces( __pid );
 }
 template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
+decltype(auto)
+internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
 {
     return internalfaces( *mesh, __pid, mpl::bool_<false>() );
 }

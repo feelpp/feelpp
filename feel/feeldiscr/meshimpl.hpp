@@ -214,8 +214,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  e.point( i ).addElement( e.id(), i );
                                          });
             }
-            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
-            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update add element info";
         }
 
         if ( true )
@@ -495,7 +495,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
         LOG(INFO) << "h average : " << this->hAverage() << "\n";
         LOG(INFO) << "    h min : " << this->hMin() << "\n";
         LOG(INFO) << "    h max : " << this->hMax() << "\n";
-        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
+        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n";
     }
 
 }
@@ -1518,6 +1518,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                              ( cface.element1().processId()==this->worldComm().localRank() ) )
                             facePtr->setProcessId( currentPid );
                     }
+                    facePtr->setInterProcess( facePtr->isInterProcessDomain() );
+                    LOG(INFO) << " ... face inter processdomain: " << facePtr->isInterProcessDomain() << " i: " << facePtr->isInterProcess();
                 }
 
                 // the face could have been entered apriori given by
@@ -1600,7 +1602,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         if ( ( facePtr->element0().processId()== currentPid ) || ( facePtr->element1().processId()== currentPid ) )
                             facePtr->setProcessId( currentPid );
                     }
-
+                    facePtr->setInterProcess( ( facePtr->pidElement0() != facePtr->pidElement1() ) );
+                    LOG(INFO) << " xxx face inter processdomain: " <<  ( facePtr->pidElement0() != facePtr->pidElement1() ) << " i: " << facePtr->isInterProcess() << " loc: " << facePtr->location();
 
 #if !defined( NDEBUG )
                     DVLOG(2) << "adding face info : \n";
@@ -1637,6 +1640,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     _faces.clear();
     boost::unordered_map<std::set<size_type>, face_type* >().swap( _faces );
 
+    tic();
     // update multi-index faces container
     for ( face_type* facePtr : _facesOrderedWithId )
     {
@@ -1647,6 +1651,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             delete facePtr;
         }
     }
+    toc("mesh::updateEntityCoDimensionOne", FLAGS_v>1);
     _facesOrderedWithId.clear();
     std::vector<face_type*>().swap(_facesOrderedWithId);
 

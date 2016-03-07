@@ -122,7 +122,7 @@ public:
      *
      * @return the context
      */
-    size_type operator()() const
+    size_type operator()() const noexcept
     {
         return M_context;
     }
@@ -138,7 +138,7 @@ public:
      *
      * @return the context value
      */
-    size_type context() const
+    size_type context() const noexcept
     {
         return M_context;
     }

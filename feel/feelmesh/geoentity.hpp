@@ -373,6 +373,12 @@ public:
     }
 
     /**
+     * @return location of entity encoded into a \c size_type : INTERNAL,
+     * ON_BOUNDARY, INTERPROCESS... or a combination of some of them
+     */
+    size_type location() const noexcept { return M_entity.context(); }
+
+    /**
      * @return true if the entity is internal, false otherwise
      */
     bool isInternal() const
