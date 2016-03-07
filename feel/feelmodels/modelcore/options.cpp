@@ -116,7 +116,7 @@ fluidMechanics_options(std::string const& prefix)
 {
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
-        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()/*->default_value("Navier-Stokes")*/, "fluid model : Navier-Stokes,Oseen,Stokes")
+        (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
@@ -193,12 +193,12 @@ fluidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
-        ;
 
-    fluidOptions.add_options()
-        //(prefixvm(prefix,"fluid-outlet.number").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of fluid outlet")
         (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
         (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
+
+        (prefixvm(prefix,"use-gravity-force").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
+        (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
         ;
 
     fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
@@ -206,12 +206,11 @@ fluidMechanics_options(std::string const& prefix)
 
 
     fluidOptions.add_options()
-        (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation");
+        (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
+        (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
     fluidOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
 
     return fluidOptions;
-    //return fluidOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).
-    //add( alemesh_options( prefix ) ).add( backend_options( prefixvm(prefix,"fluidinlet") ) );
 }
 
 Feel::po::options_description
@@ -311,6 +310,7 @@ thermoDynamics_options(std::string const& prefix)
         (prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
+        (prefixvm(prefix,"thermal-expansion").c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "thermal-conductivity [ 1/K) ]")
         (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
         (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
         (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
