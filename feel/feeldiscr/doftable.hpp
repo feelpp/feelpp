@@ -1762,6 +1762,102 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                    0 );
     }
 
+
+    // reordoring of global process id in doftable (active dofs before and ghost dofs after)
+    if ( this->worldComm().localSize()>1 )
+    {
+        size_type _nLocalDofWithGhost = this->nLocalDofWithGhost();
+        size_type _nLocalDofWithoutGhost = this->nLocalDofWithoutGhost();
+        std::vector<size_type> previousGlobalIdToNewGlobalId( _nLocalDofWithGhost );
+        size_type currentActiveDof=0,currentGhostDof=_nLocalDofWithoutGhost;
+        std::vector<size_type> newMapGlobalProcessToGlobalCluster( _nLocalDofWithGhost );
+        size_type firstGlobIndex = this->firstDofGlobalCluster();
+        for ( size_type k=0;k<_nLocalDofWithGhost;++k )
+        {
+            size_type gcdof = this->M_mapGlobalProcessToGlobalCluster[k];
+            if ( this->dofGlobalProcessIsGhost(k) )
+                previousGlobalIdToNewGlobalId[k]=currentGhostDof++;
+            else
+            {
+                this->M_mapGlobalClusterToGlobalProcess[gcdof-firstGlobIndex]=currentActiveDof;
+                previousGlobalIdToNewGlobalId[k]=currentActiveDof++;
+            }
+            newMapGlobalProcessToGlobalCluster[previousGlobalIdToNewGlobalId[k]] = gcdof;
+        }
+        this->M_mapGlobalProcessToGlobalCluster.clear();
+        this->M_mapGlobalProcessToGlobalCluster.swap( newMapGlobalProcessToGlobalCluster );
+
+        std::map<size_type, std::set<rank_type> > newActiveDofSharedOnCluster;
+        for ( auto const& activeDof : M_activeDofSharedOnCluster )
+            newActiveDofSharedOnCluster[ previousGlobalIdToNewGlobalId[activeDof.first] ] = activeDof.second;
+        this->M_activeDofSharedOnCluster.clear();
+        this->M_activeDofSharedOnCluster.swap( newActiveDofSharedOnCluster );
+
+        for( auto it = M_el_l2g.left.begin(), en = M_el_l2g.left.end(); it != en; ++it )
+        {
+            auto const& previousGDof=it->second;
+            Dof newGDof( previousGDof );
+            newGDof.setIndex( previousGlobalIdToNewGlobalId[previousGDof.index()] );
+            bool successfulModify = M_el_l2g.left.modify_data( it, boost::bimaps::_data = newGDof );
+            CHECK( successfulModify ) << "modify global dof id fails";
+        }
+
+        for ( auto & faceDataElt : M_face_l2g )
+            for ( FaceDof & faceDataDof : faceDataElt.second )
+                faceDataDof.setIndex( previousGlobalIdToNewGlobalId[faceDataDof.index()] );
+
+        dof_points_type newDofPoints;
+        for ( auto const& dofPt : M_dof_points )
+        {
+            size_type newDofId = previousGlobalIdToNewGlobalId[ dofPt.first ];
+            auto const& dofPtData = dofPt.second;
+            newDofPoints[newDofId] = boost::make_tuple( boost::get<0>( dofPtData ),newDofId,boost::get<2>( dofPtData ) );
+        }
+        M_dof_points.clear();
+        M_dof_points.swap( newDofPoints );
+
+        dof_marker_type newDofMarker;
+        for ( auto it = M_dof_marker.left.begin(), en = M_dof_marker.left.end(); it != en; ++it )
+            newDofMarker.insert( dof2marker(previousGlobalIdToNewGlobalId[it->first],it->second) );
+        M_dof_marker.clear();
+        M_dof_marker.swap( newDofMarker );
+    }
+
+    EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    for ( auto const& eltRange : elements( M,entityProcess) )
+    {
+        auto const& elt = boost::unwrap_ref(eltRange);
+        size_type elid= elt.id();
+        if ( is_mortar && elt.isOnBoundary() )
+        {
+            VLOG(1) << "resizing indices and signs for mortar...";
+            auto const& ldof = this->localDof( elid );
+            size_type ne = std::distance( ldof.first, ldof.second );
+            VLOG(1) << "resizing indices and signs for mortar:  " << ne;
+            M_locglob_indices[elid].resize( ne );
+            //M_locglob_signs[elid].resize( ne );
+            for( auto const& dof: this->localDof( elid ) )
+            {
+                M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
+                //M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
+            }
+        }
+        else
+            for ( int i = 0; i < FEType::nLocalDof; ++i )
+            {
+                int nc1 = ( is_product?nComponents:1 );
+
+                for ( int c1 =0; c1 < nc1; ++c1 )
+                {
+                    int ind = FEType::nLocalDof*c1+i;
+                    auto const& dof = localToGlobal( elid, i, c1 );
+                    M_locglob_indices[elid][ind] = dof.index();
+                    //M_locglob_signs[elid][ind] = dof.sign();
+                }
+            }
+    }
+
+
     this->buildIndexSplit();
 
     // build splits with components
@@ -2225,6 +2321,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     this->M_last_df_globalcluster[myrank]=this->M_last_df[myrank];
     this->M_n_dofs = next_free_dof;
 
+#if 0
     it_elt = M.beginElementWithProcessId();
 
     for ( ; it_elt != en_elt; ++it_elt )
@@ -2258,7 +2355,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                 }
             }
     }
-
+#endif
     // the dof points are necessary to build the parallel dof table
     if ( this->worldComm().localSize() > 1 )
         this->generateDofPoints( M, true );

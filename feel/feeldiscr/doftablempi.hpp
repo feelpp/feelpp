@@ -1165,6 +1165,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         }
     }
     //------------------------------------------------------------------------------//
+#if 0
     // update M_locglob_indices and M_locglob_signs
     face_it = mesh.interProcessFaces().first;
     for ( ; face_it!=face_en ; ++face_it )
@@ -1202,6 +1203,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                 }
             }
     }
+#endif
     //------------------------------------------------------------------------------//
     // generate dof point on extended part
     this->generateDofPointsExtendedGhostMap( mesh);
