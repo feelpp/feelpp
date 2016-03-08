@@ -63,14 +63,22 @@ public:
         }
 
     template<typename FT>
-    void addStep( FT const& f_u, FT const& f_acc )
+    void addStep( FT const& f_u, FT const& f_acc, double k1 )
         {
             up = u;
             accp=acc;
             u = f_u;
             acc = f_acc;
             dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/k());
+            this->push_back( k1, this->size()?t()+k1:k1 );
         }
+
+    void addStep( double k )
+        {
+            this->addStep( u_try, acc_try, k );
+            //this->push_back( k, this->size()?t()+k:k );
+        }
+
 
     /**
      * @return the l2 error of the increment relative to the latest solution
@@ -115,11 +123,6 @@ public:
             return std::make_pair( !(err > std::pow(1./0.7,3.)*keps), step*std::pow(keps/err,1./3.) );
         };
 
-    void acceptedStep( double k )
-        {
-            this->addStep( u_try, acc_try );
-            this->push_back( k, this->size()?t()+k:k );
-        }
 
     void eraseStep( double k )
         {
@@ -137,7 +140,7 @@ public:
     double computeError( FT& fd );
 
     template<typename BCType >
-    void averaging( BCType& bc );
+    void averaging( BCType& bc, double k1 );
 
     field_t const& extrapolateVelocity();
 
@@ -216,7 +219,7 @@ CNAB2<FieldType>::computeError( FT& fd )
 template<typename FieldType>
 template<typename BCType >
 void
-CNAB2<FieldType>::averaging( BCType& bc )
+CNAB2<FieldType>::averaging( BCType& bc, double k1 )
 {
     double tstar = tprev(1);
     double kstar = kprev(1);
@@ -227,11 +230,12 @@ CNAB2<FieldType>::averaging( BCType& bc )
     ustar = up;
     accstar=accp;
     up.on( _range=elements(mesh), _expr=.5*(idv(ustar)+idv(u)) );
-    /*for ( auto const& condition : bc )
-    {
-        auto g1 = expression(condition);
-        g1.setParameterValues( {"t",tprev(1) });
-        up.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+    /*if (boption("cnab2.averaging-bc"))
+        for ( auto const& condition : bc )
+        {
+            auto g1 = expression(condition);
+            g1.setParameterValues( {"t",tprev(1) });
+            up.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
      }*/
     accp.on( _range=elements(mesh), _expr=.5*(idv(accstar)+idv(acc)) );
 
@@ -243,15 +247,16 @@ CNAB2<FieldType>::averaging( BCType& bc )
     kstar = k();
     t() = tstar+.5*k();
     k() = kprev(1) + 0.5*kstar;
-    /*for ( auto const& condition : bc )
-    {
-        auto g1 = expression(condition);
-        g1.setParameterValues( {"t",t() });
-        u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
+    /*if (boption("cnab2.averaging-bc"))
+        for ( auto const& condition : bc )
+        {
+            auto g1 = expression(condition);
+            g1.setParameterValues( {"t",t() });
+            u.on( _range=markedfaces(mesh,marker(condition)), _expr=g1 );
      }*/
     dd.on(_range=elements(mesh),_expr=(idv(acc)-idv(accp))/k());
 
-
+    this->push_back( k1, this->size()?t()+k1:k1 );
 }
 
 
@@ -282,19 +287,16 @@ CNAB2<FieldType>::next( FT& fd, BCType& bc, bool is_converged )
 
         if ( ktry.first )
         {
+            double k1 = ktry.second;
             // accept the tried step and move forward
             if ( (index() > 0) && (index() % nstar == 0) )
             {
-                averaging( bc );
+                averaging( bc, k1 );
             }
             else
             {
-                this->addStep( u_try, acc_try );
+                this->addStep( k1 );
             }
-
-            // get new time step and store it in time set for the next round
-            double k1 = ktry.second;
-            this->push_back( k1, this->size()?t()+k1:k1 );
 
         }
         else
