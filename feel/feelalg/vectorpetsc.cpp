@@ -793,6 +793,8 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
     :
     super( v,dm,duplicate )
 {
+#if 0
+    CHECK( false ) << "TODO";
     int ierr=0;
     int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
 
@@ -850,10 +852,11 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
     this->M_is_initialized = true;
 
     this->close();
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------//
-
+#if 0
 template<typename T>
 void
 VectorPetscMPI<T>::init( const size_type n,
@@ -947,6 +950,57 @@ VectorPetscMPI<T>::init( const size_type n,
     if ( fast == false )
         this->zero ();
 }
+#else
+template<typename T>
+void
+VectorPetscMPI<T>::init( const size_type n,
+                         const size_type n_localWithoutGhost,
+                         const bool fast )
+{
+    //std::cout << "MPI init start" << std::endl;
+    int ierr=0;
+    int petsc_n=static_cast<int>( n );
+    int petsc_n_localWithoutGhost=static_cast<int>( n_localWithoutGhost );
+    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
+    int petsc_n_localGhost=static_cast<int>( this->map().nLocalGhosts() );
+    //std::cout << "petsc_n_localWithoutGhost "<< petsc_n_localWithoutGhost << std::endl;
+    //std::cout << "petsc_n_localWithGhost "<< petsc_n_localWithGhost << std::endl;
+
+    // Clear initialized vectors
+    if ( this->isInitialized() )
+        this->clear();
+
+    FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
+
+    PetscInt *idx = NULL;
+    if ( petsc_n_localGhost > 0 )
+    {
+        idx = new PetscInt[petsc_n_localGhost];
+        std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+n_localWithoutGhost,
+                   this->map().mapGlobalProcessToGlobalCluster().end(),
+                   idx );
+    }
+    ierr = VecCreateGhostWithArray( this->comm(),
+                                    petsc_n_localWithoutGhost, petsc_n,
+                                    petsc_n_localGhost,
+                                    idx,
+                                    NULL, &this->M_vec );
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = VecSetFromOptions( this->vec() );
+    CHKERRABORT( this->comm(),ierr );
+
+    if ( petsc_n_localGhost > 0 )
+        delete[] idx;
+
+
+    this->M_is_initialized = true;
+
+    if ( fast == false )
+        this->zero ();
+}
+
+#endif
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -955,15 +1009,17 @@ typename VectorPetscMPI<T>::value_type
 VectorPetscMPI<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
-    PetscScalar *values, value=0.;
-    ierr = VecGetArray( M_vecLocal, &values );
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
-    //std::cout << "\n operator MPI ";
-    value =  values[i /*- this->firstLocalIndex()*/ ];
-
-    ierr = VecRestoreArray( M_vecLocal, &values );
+    PetscScalar *values;
+    ierr = VecGetArray(lx,&values);
     CHKERRABORT( this->comm(),ierr );
-
+    PetscScalar& value =  values[i];
+    ierr = VecRestoreArray( lx, &values );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     return static_cast<value_type>( value );
 }
 template <typename T>
@@ -971,15 +1027,17 @@ typename VectorPetscMPI<T>::value_type&
 VectorPetscMPI<T>::operator() ( const size_type i )
 {
     int ierr=0;
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     PetscScalar *values;
-    ierr = VecGetArray( M_vecLocal, &values );
+    ierr = VecGetArray(lx,&values);
     CHKERRABORT( this->comm(),ierr );
-    //std::cout << "\n operator MPI ";
-    PetscScalar& value =  values[i /*- this->firstLocalIndex()*/ ];
-
-    ierr = VecRestoreArray( M_vecLocal, &values );
+    PetscScalar& value =  values[i];
+    ierr = VecRestoreArray( lx, &values );
     CHKERRABORT( this->comm(),ierr );
-
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     return static_cast<value_type&>( value );
 }
 //----------------------------------------------------------------------------------------------------//
@@ -1066,7 +1124,7 @@ void
 VectorPetscMPI<T>::zero()
 {
     super::zero();
-
+#if 0
     int ierr=0;
     PetscScalar z=0.;
     // 2.2.x & earlier style
@@ -1076,6 +1134,7 @@ VectorPetscMPI<T>::zero()
 #else
     ierr = VecSet ( M_vecLocal, z );
     CHKERRABORT( this->comm(),ierr );
+#endif
 #endif
 }
 
@@ -1088,7 +1147,7 @@ VectorPetscMPI<T>::clear()
     if ( this->isInitialized() )
     {
         super::clear();
-
+#if 0
        int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecDestroy( &M_vecLocal );
@@ -1101,6 +1160,7 @@ VectorPetscMPI<T>::clear()
         ierr = VecScatterDestroy( M_vecScatter );
         CHKERRABORT( this->comm(),ierr );
 #endif
+#endif
     }
 }
 
@@ -1110,12 +1170,9 @@ template <typename T>
 void VectorPetscMPI<T>::localize()
 {
     int ierr = 0;
-
-    // Perform the scatter
-    ierr = VecScatterBegin( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecGhostUpdateBegin(this->vec(),INSERT_VALUES,SCATTER_FORWARD);
     CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterEnd  ( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecGhostUpdateEnd(this->vec(),INSERT_VALUES,SCATTER_FORWARD);
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -1411,11 +1468,15 @@ VectorPetscMPI<T>::localSize() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
 
+#if 0
     int petsc_size=0;
     int ierr = VecGetLocalSize( M_vecLocal, &petsc_size );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<size_type>( petsc_size );
+#else
+    return this->map().nLocalDofWithGhost();
+#endif
 }
 
 #if BOOST_VERSION < 105900
