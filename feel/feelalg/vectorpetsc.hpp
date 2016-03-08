@@ -181,11 +181,28 @@ public:
         super( v.mapPtr() ),
         M_destroy_vec_on_exit( false )
         {
-            VecCreateGhostWithArray( v.map().worldComm().globalComm(),
-                                     v.map().nLocalDofWithoutGhost(), v.map().nDof(),
-                                     v.map().nLocalGhosts(),
-                                     (PetscInt*)0,
-                                     std::addressof( v[0] ), &M_vec );
+            int ierr=0;
+            PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
+            PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+            PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
+            PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? std::addressof( v[0] ) : NULL;
+            PetscInt *idx = NULL;
+            if ( petsc_n_localGhost > 0 )
+            {
+                idx = new PetscInt[petsc_n_localGhost];
+                std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                           this->map().mapGlobalProcessToGlobalCluster().end(),
+                           idx );
+            }
+            ierr = VecCreateGhostWithArray( this->comm(),
+                                            petsc_n_localWithoutGhost, petsc_n_dof,
+                                            petsc_n_localGhost, idx,
+                                            thearray, &M_vec );
+            CHKERRABORT( this->comm(),ierr );
+
+            if ( petsc_n_localGhost > 0 )
+                delete[] idx;
+
             this->M_is_initialized = true;
         }
 
@@ -835,10 +852,6 @@ public:
 private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
-
-    Vec M_vecLocal;
-
-    VecScatter M_vecScatter;
 
 };
 
