@@ -288,6 +288,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                        _expr= trans(idv(*M_SourceAdded))*id(v),
                        _geomap=this->geomap() );
     }
+    if ( M_useGravityForce && BuildCstPart )
+    {
+        myLinearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= idv(rho)*inner(M_gravityForce,id(v)),
+                       _geomap=this->geomap() );
+    }
     //--------------------------------------------------------------------------------------------------//
     // div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
