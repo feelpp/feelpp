@@ -1349,6 +1349,26 @@ public:
         return M_do_threshold;
     }
 
+    /**
+     * return local to global process indices : (elt,j)->gdof
+     */
+    typename DataMap::localglobal_indices_type const& localToGlobalIndicesTest( size_type ElId ) const
+    {
+        //CHECK(M_locglobIndicesTest) << "locglobIndicesTest not init";
+        return (*M_locglobIndicesTest)[ElId];
+    }
+    typename DataMap::localglobal_indices_type const& localToGlobalIndicesTrial( size_type ElId ) const
+    {
+        //CHECK(M_locglobIndicesTrial) << "locglobIndicesTrial not init";
+        return (*M_locglobIndicesTrial)[ElId];
+    }
+
+    /**
+     * basis global process (space def) to composite global process (identity with non composite space)
+     */
+    size_type basisGpToCompositeGpTest( size_type gpdof ) const { return (*M_basisGpToCompositeGpTest)[gpdof]; }
+    size_type basisGpToCompositeGpTrial( size_type gpdof ) const { return (*M_basisGpToCompositeGpTrial)[gpdof]; }
+
     //@}
 
     /** @name  Mutators
@@ -1372,6 +1392,24 @@ public:
     {
         M_do_threshold = do_threshold;
     }
+
+    /**
+     * set local to global process indices : (elt,j)->gdof
+     */
+    void setLocglobIndicesTest( typename DataMap::vector_indices_type const& indices )
+    {
+        M_locglobIndicesTest = std::addressof( indices );
+    }
+    void setLocglobIndicesTrial( typename DataMap::vector_indices_type const& indices )
+    {
+        M_locglobIndicesTrial = std::addressof( indices );
+    }
+
+    /**
+     * set basis global process (space def) to composite global process (identity with non composite space)
+     */
+    void setBasisGpToCompositeGpTest( std::vector<size_type> const& gpmap ) { M_basisGpToCompositeGpTest = std::addressof( gpmap ); }
+    void setBasisGpToCompositeGpTrial( std::vector<size_type> const& gpmap ) { M_basisGpToCompositeGpTrial = std::addressof( gpmap ); }
 
     //@}
 
@@ -1542,6 +1580,11 @@ private:
     std::vector<size_type> M_n_nz;
     std::vector<size_type> M_n_oz;
 
+
+    typename DataMap::vector_indices_type const* M_locglobIndicesTest;
+    typename DataMap::vector_indices_type const* M_locglobIndicesTrial;
+    std::vector<size_type> const* M_basisGpToCompositeGpTest;
+    std::vector<size_type> const* M_basisGpToCompositeGpTrial;
 };
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
@@ -1572,6 +1615,10 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
+    this->setLocglobIndicesTest( M_X1->dof()->localToGlobalProcessIndices(0)/*localToGlobalIndices()*/ );
+    this->setLocglobIndicesTrial( M_X2->dof()->localToGlobalProcessIndices(0)/*localToGlobalIndices()*/ );
+    this->setBasisGpToCompositeGpTest( M_X1->dof()->basisGpToCompositeGp(0) );
+    this->setBasisGpToCompositeGpTrial( M_X2->dof()->basisGpToCompositeGp(0) );
 
     DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
@@ -1761,8 +1808,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             if (M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
-                                                       M_bf.testSpace()->nLocalDofStart( M_test_index ),
-                                                       M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
+                                                       0/*M_bf.testSpace()->nLocalDofStart( M_test_index )*/,
+                                                       0/*M_bf.trialSpace()->nLocalDofStart( M_trial_index )*/ ) );
             else
                 list_block.push_back( Feel::vf::Block( 0, 0, 0, M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
 
@@ -1782,6 +1829,10 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
         bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
+        bf.setLocglobIndicesTest( M_bf.testSpace()->dof()->localToGlobalProcessIndices( M_test_index ) );
+        bf.setLocglobIndicesTrial( M_bf.trialSpace()->dof()->localToGlobalProcessIndices( M_trial_index ) );
+        bf.setBasisGpToCompositeGpTest( M_bf.testSpace()->dof()->basisGpToCompositeGp( M_test_index ) );
+        bf.setBasisGpToCompositeGpTrial( M_bf.trialSpace()->dof()->basisGpToCompositeGp( M_trial_index ) );
 
         bf += M_expr;
     }
@@ -1832,8 +1883,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             if (M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
-                                                       M_bf.testSpace()->nLocalDofStart( M_test_index ),
-                                                       M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
+                                                       0/*M_bf.testSpace()->nLocalDofStart( M_test_index )*/,
+                                                       0/*M_bf.trialSpace()->nLocalDofStart( M_trial_index )*/ ) );
             else
                 list_block.push_back( Feel::vf::Block( 0, 0, 0, M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
 
@@ -1853,6 +1904,10 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
         bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
+        bf.setLocglobIndicesTest( M_bf.testSpace()->dof()->localToGlobalProcessIndices( M_test_index ) );
+        bf.setLocglobIndicesTrial( M_bf.trialSpace()->dof()->localToGlobalProcessIndices( M_trial_index ) );
+        bf.setBasisGpToCompositeGpTest( M_bf.testSpace()->dof()->basisGpToCompositeGp( M_test_index ) );
+        bf.setBasisGpToCompositeGpTrial( M_bf.trialSpace()->dof()->basisGpToCompositeGp( M_trial_index ) );
 
         bf += M_expr;
     }

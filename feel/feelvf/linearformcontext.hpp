@@ -367,7 +367,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 
     if ( !UseMortar )
     {
-        M_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        //M_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        M_local_rows = M_form.localToGlobalIndices( elt_0 ).array() + row_start;
+
 #if !defined(NDEBUG)
         DVLOG(2) << "lf dof (elt=" << elt_0 << ") = " << M_local_rows << "\n";
 #endif
@@ -401,8 +403,10 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1 )
 {
     size_type row_start = M_lb.front().globalRowStart();
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
+    //M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+    //M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_form.localToGlobalIndices( elt_0 ).array() + row_start;
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_form.localToGlobalIndices( elt_1 ).array() + row_start;
 
     if ( test_dof_type::is_modal )
     {
