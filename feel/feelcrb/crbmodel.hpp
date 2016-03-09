@@ -116,7 +116,6 @@ public:
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
-
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -375,10 +374,14 @@ public:
         bool symmetric = boption(_name="crb.use-symmetric-matrix");
         bool stock = boption(_name="crb.stock-matrices");
 
+        // Access to eim eventually built in initModel
+        if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
+            M_has_eim = true;
+
         if( stock )
             this->computeAffineDecomposition();
-
-        this->countAffineDecompositionTerms();
+        else
+            this->countAffineDecompositionTerms(); //already called in computeAffineDecomposition() if stock
 
         if( this->hasEim() || (!symmetric) )
         {
@@ -393,10 +396,9 @@ public:
             for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
             {
                 for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
-                {
                     M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
-                }
             }
+
             //check that the matrix is filled, else we take energy matrix
             double norm=M_inner_product_matrix->l1Norm();
             if( norm == 0 && symmetric )
@@ -835,7 +837,7 @@ public:
 
 
     element_ptrtype assembleInitialGuess( parameter_type const& mu );
-
+    void assemble(){ return M_model->assemble(); }
     /**
      * \brief update the model wrt \p mu
      */
@@ -872,6 +874,13 @@ public:
     element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemUsingAffineDecompositionNewton( parameter_type const& mu );
+    void solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
+    void solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
+    bool updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
+    bool updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
@@ -891,8 +900,6 @@ public:
     {
         return M_model->isInitialized();
     }
-
-
 
     /**
      * returns list of eim objects ( scalar continuous)
@@ -1042,7 +1049,8 @@ public:
      */
     void countAffineDecompositionTerms()
     {
-        if( M_alreadyCountAffineDecompositionTerms )
+        bool cobuild = (ioption(_name="ser.rb-frequency") != 0);
+        if( M_alreadyCountAffineDecompositionTerms && !cobuild)
             return;
         else
             M_alreadyCountAffineDecompositionTerms=true;
@@ -1134,8 +1142,8 @@ public:
                 for(int q=0; q<M_Qm; q++)
                 {
                     M_mMaxM[q]=M_Mqm[q].size();
-                    if( M_mMaxM[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxM[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Qa=M_Aqm.size();
@@ -1143,8 +1151,8 @@ public:
                 for(int q=0; q<M_Qa; q++)
                 {
                     M_mMaxA[q]=M_Aqm[q].size();
-                    if( M_mMaxA[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxA[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Nl=M_Fqm.size();
@@ -1157,8 +1165,9 @@ public:
                     for(int q=0; q<M_Ql[output]; q++)
                     {
                         M_mMaxF[output][q]=M_Fqm[output][q].size();
-                        if( M_mMaxF[output][q] > 1 )
-                            M_has_eim=true;
+                        //std::cout << "countAffineDecomposition terms : M_mMaxF[" << output << "][" << q << "] = " << M_mMaxF[output][q] << std::endl;
+                        // if( M_mMaxF[output][q] > 1 )
+                        //     M_has_eim=true;
                     }
                 }
 
@@ -1652,7 +1661,6 @@ public:
 
         //first check is model provides a small affine decomposition or not
         boost::tie( Aq, Fq ) = M_model->computeAffineDecompositionLight();
-
         if( Aq.size() == 0 )
         {
             boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
@@ -1769,7 +1777,6 @@ public:
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
 
-
     std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition( )
     {
         return M_model->computeInitialGuessAffineDecomposition( );
@@ -1779,7 +1786,9 @@ public:
     {
         initial_guess_type initial_guess_v;
         initial_guess_v = M_model->computeInitialGuessAffineDecomposition();
-        this->assembleInitialGuessV( initial_guess_v);
+
+        this->assembleInitialGuessV( initial_guess_v); //Compute \int (q_initialguess) v
+
         for(int q=0; q<M_InitialGuessVector.size(); q++)
         {
             for(int m=0; m<M_InitialGuessVector[q].size(); m++)
@@ -1787,7 +1796,6 @@ public:
         }
         return M_InitialGuessV;
     }
-
 
     /**
      * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
@@ -2038,6 +2046,7 @@ public:
         if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
+            //M_Mqm[q][m]->printMatlab("mass_matrix.m");
             return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
         }
         else
@@ -2075,7 +2084,6 @@ public:
     {
         return M_model->betaInitialGuessQm();
     }
-
 
     /**
      * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
@@ -2115,7 +2123,7 @@ public:
         }
     }
 
-    element_ptrtype  InitialGuessQm( uint16_type q, int m ) const
+    element_ptrtype InitialGuessQm( uint16_type q, int m ) const
     {
         return M_InitialGuessV[q][m];
     }
@@ -2213,6 +2221,13 @@ public:
             }
         }
 
+        return result;
+    }
+
+    value_type InitialGuessVqm( uint16_type q, uint16_type m, element_type const& xi)
+    {
+        value_type result=0;
+        result = inner_product( *M_InitialGuessV[q][m] , xi );
         return result;
     }
 
@@ -2457,6 +2472,9 @@ protected:
     //! model
     model_ptrtype M_model;
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+
 private:
     bool M_is_initialized;
 
@@ -2668,8 +2686,8 @@ struct AssembleInitialGuessVInCompositeCase
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleInitialGuessVInCompositeCase( element_type  const v ,
-                                          initial_guess_type  const initial_guess ,
+    AssembleInitialGuessVInCompositeCase( element_type const v ,
+                                          initial_guess_type const initial_guess ,
                                           boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
@@ -2681,6 +2699,8 @@ struct AssembleInitialGuessVInCompositeCase
     void
     operator()( const T& t ) const
     {
+        using namespace Feel::vf;
+
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
@@ -2690,13 +2710,11 @@ struct AssembleInitialGuessVInCompositeCase
             int m_max = M_crb_model->mMaxInitialGuess(q);
             for( int m = 0; m < m_max ; m++)
             {
-                auto initial_guess_qm = M_crb_model->InitialGuessVector(q,m);
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
-                form1( _test=Xh, _vector=initial_guess_qm ) +=
-                    integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( view ) )*Feel::vf::id( v ) );
+                form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
+                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*id( v ) );
             }
         }
-
     }
 
     element_type  M_composite_v;
@@ -2799,6 +2817,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
+    //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
     AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( M_u , M_v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
@@ -3271,6 +3290,95 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type const& mu )
+{
+    sparse_matrix_ptrtype J = this->newMatrix();
+    vector_ptrtype R = this->newVector();
+
+    // auto initialguess = this->functionSpace()->elementPtr();
+    // initialguess = this->assembleInitialGuess( mu ) ;
+
+
+    boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
+
+    backend()->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->setType( TRUST_REGION );
+
+    auto solution = this->functionSpace()->element();
+    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    return solution;
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
+{
+    J->zero();
+
+    beta_vector_type betaJqm;
+    this->updateJacobian( X, M_Jqm );
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Qa(); ++q )
+    {
+        for(int m=0; m<this->mMaxA(q); m++)
+        {
+            J->addMatrix( betaJqm[q][m], M_Jqm[q][m] );
+        }
+    }
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu)
+{
+    R->zero();
+    std::vector< beta_vector_type > betaRqm;
+    this->updateResidual( X, M_Rqm );
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Ql( 0 ); ++q )
+    {
+        for(int m=0; m<this->mMaxF(0,q); m++)
+            R->add( betaRqm[0][q][m] , *M_Rqm[0][q][m] );
+    }
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateJacobian( u, Jqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    return M_model->updateJacobian( X, Jqm );
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateResidual( u, Rqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    return M_model->updateResidual( X, Rqm );
 }
 
 template<typename TruthModelType>

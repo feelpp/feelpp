@@ -864,6 +864,32 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( std::vector<double> ),
+    vdoption, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
+{
+	std::vector<double> opt;
+
+    try
+    {
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+    }
+
+    catch ( boost::bad_any_cast bac )
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
+    }
+
+    return opt;
+}
+
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
