@@ -137,6 +137,9 @@ public:
     typedef IndexSplit indexsplit_type;
     typedef boost::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
+    typedef Eigen::Matrix<int, Eigen::Dynamic, 1>  localglobal_indices_type;
+    typedef std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+
     /** @name Typedefs
      */
     //@{
@@ -514,6 +517,49 @@ public:
     }
 
 
+    /**
+     * return local to global process indices : (elt,j)->gdof
+     */
+    localglobal_indices_type const& localToGlobalProcessIndices( int tag,size_type ElId ) const
+    {
+        return M_localToGlobalProcessIndices[tag][ElId];
+    }
+    vector_indices_type const& localToGlobalProcessIndices( int tag ) const
+    {
+        return M_localToGlobalProcessIndices[tag];
+    }
+    void initTagLocalToGlobalProcessIndices( int nTag )
+    {
+        M_localToGlobalProcessIndices.resize( nTag );
+    }
+    void initLocalToGlobalProcessIndices( int tag, size_type nElement, int nDofPerElement )
+    {
+        M_localToGlobalProcessIndices[tag].resize( nElement, localglobal_indices_type::Zero( nDofPerElement ) );
+    }
+    void initEltLocalToGlobalProcessIndices( int tag, size_type eltId, int nDofPerElement )
+    {
+        M_localToGlobalProcessIndices[tag][eltId] = localglobal_indices_type::Zero( nDofPerElement );
+    }
+    void setLocalToGlobalProcessIndices( int tag, size_type eltId, int locId, size_type globId )
+    {
+        M_localToGlobalProcessIndices[tag][eltId][locId] = globId;
+    }
+
+
+    /**
+     * basis global process (space def) to composite global process
+     */
+    void initTagBasisGpToCompositeGp( int nTag ) { M_basisGpToCompositeGp.resize(nTag); }
+    void initBasisGpToCompositeGp( int tag, int nDof ) { M_basisGpToCompositeGp[tag].resize(nDof,invalid_size_type_value); }
+    void initBasisGpToCompositeGpIdentity( int tag, int nDof )
+        {
+            M_basisGpToCompositeGp[tag].resize(nDof);
+            std::iota( M_basisGpToCompositeGp[tag].begin(),M_basisGpToCompositeGp[tag].end(),0 );
+        }
+    std::vector<size_type>& basisGpToCompositeGpRef( int tag ) { return M_basisGpToCompositeGp[tag]; }
+
+    std::vector<size_type> const& basisGpToCompositeGp( int tag ) const { return M_basisGpToCompositeGp[tag]; }
+    size_type basisGpToCompositeGp( int tag,size_type gpdof ) const { return M_basisGpToCompositeGp[tag][gpdof]; }
 
     indexsplit_ptrtype const& indexSplit() const { return M_indexSplit; }
     void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
@@ -630,7 +676,10 @@ protected:
      */
     indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
-
+    //! local to global process indices : (elt,j)->gdof
+    std::vector<vector_indices_type> M_localToGlobalProcessIndices;
+    //! basis global process (space def) to composite global process (identity with non composite space)
+    std::vector<std::vector<size_type> > M_basisGpToCompositeGp;
 private:
 
 };
