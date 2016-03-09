@@ -569,6 +569,10 @@ public :
         return tuple.template get<0>();
     }
 
+    // Default updateResidual / updateJacobian functions
+    virtual bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
+    virtual bool updateJacobian(element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
+
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {
         return computeBetaQ( mu, mpl::bool_< is_time_dependent >(), time );
