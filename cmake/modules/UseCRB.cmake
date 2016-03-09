@@ -180,6 +180,7 @@ int main( int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=opusapp_options(\"${CRB_MODEL_SHORT_NAME}\")
                            .add(crbOptions())
+                           .add(crbSEROptions())
                            .add(make${CRB_MODEL_LONG_NAME}Options())
                            .add(eimOptions())
                            .add(podOptions())
