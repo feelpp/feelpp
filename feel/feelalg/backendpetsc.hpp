@@ -80,6 +80,7 @@ public:
     typedef VectorPetsc<value_type> petsc_vector_type;
     typedef boost::shared_ptr<vector_type> petsc_vector_ptrtype;
     typedef VectorPetscMPI<value_type> petscMPI_vector_type;
+    typedef boost::shared_ptr<petscMPI_vector_type> petscMPI_vector_ptrtype;
 
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
@@ -114,6 +115,18 @@ public:
     }
     ~BackendPetsc();
     void clear();
+
+
+    /**
+     * convert a vector into a backend pointer vector
+     */
+    vector_ptrtype toBackendVectorPtr( vector_type const& v  );
+
+    /**
+     * convert a pointer vector into a backend pointer vector
+     */
+    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  );
+
 
     sparse_matrix_ptrtype
     newMatrix()

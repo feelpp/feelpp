@@ -239,6 +239,33 @@ public:
      */
     static FEELPP_DEPRECATED backend_ptrtype build( BackendType bt, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
+    /**
+     * convert a vector into a backend pointer vector
+     */
+    virtual vector_ptrtype toBackendVectorPtr( vector_type const& v  )
+    {
+        vector_ptrtype _newvec;
+        return _newvec;
+    }
+
+    /**
+     * convert a pointer vector into a backend pointer vector
+     */
+    virtual vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  )
+    {
+        vector_ptrtype _newvec;
+        return _newvec;
+    }
+    /**
+     * convert a pointer vector into a backend pointer vector
+     * apply a dynamic_pointer_cast is necessary for shared<VectorUblas>
+     */
+    template<typename VecType>
+    vector_ptrtype toBackendVectorPtr( boost::shared_ptr<VecType> const& v  )
+    {
+        vector_ptrtype vcast = boost::dynamic_pointer_cast< vector_type >( v );
+        return this->toBackendVectorPtr( vcast );
+    }
 
     /**
      * instantiate a new sparse matrix
@@ -1073,13 +1100,16 @@ public:
         M_pre_solve = pre;
         auto dm = Feel::detail::datamap( solution );
         this->setDataMap( dm );
-#if 0
-        vector_ptrtype _sol( this->newVector( dm ) );
-        // initialize
-        *_sol = Feel::detail::ref( solution );
-#else
-        vector_ptrtype _sol( toPETScPtr( solution ) );
-#endif
+
+        vector_ptrtype _sol( this->toBackendVectorPtr( solution ) );
+        bool needToCopySolution = false;
+        if( !_sol )
+        {
+            _sol = this->newVector( dm );
+            *_sol = Feel::detail::ref( solution );
+            needToCopySolution = true;
+        }
+
         this->setTranspose( transpose );
         solve_return_type ret;
 
@@ -1091,12 +1121,14 @@ public:
         else
             ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
 
-        //new
         _sol->close();
-#if 0
-        Feel::detail::ref( solution ) = *_sol;
-        Feel::detail::ref( solution ).close();
-#endif
+
+        if ( needToCopySolution )
+        {
+            Feel::detail::ref( solution ) = *_sol;
+            Feel::detail::ref( solution ).close();
+        }
+
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve end" );
