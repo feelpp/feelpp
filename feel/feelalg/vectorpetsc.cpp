@@ -1123,7 +1123,29 @@ template <typename T>
 void
 VectorPetscMPI<T>::zero()
 {
+#if 0
     super::zero();
+#endif
+    int ierr = 0;
+    //this->close();
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+    PetscScalar z=0.;
+    ierr = VecSet ( lx, z );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+
+#if 0
+    for (int k=0;k<this->map().nLocalDofWithGhost();++k )
+    {
+        double val = this->operator()(k);
+        CHECK( std::abs(val)<1e-9 ) << "aiaia " << val;
+    }
+#endif
+
+
 #if 0
     int ierr=0;
     PetscScalar z=0.;
