@@ -619,9 +619,19 @@ public:
     /**
      * \return the local to global indices
      */
+    vector_indices_type const& localToGlobalIndices() const
+        {
+            //return M_locglob_indices;
+            return this->localToGlobalProcessIndices( 0 );
+        }
+
+    /**
+     * \return the local to global indices
+     */
     localglobal_indices_type const& localToGlobalIndices( size_type ElId )
         {
-            return M_locglob_indices[ElId];
+            //return M_locglob_indices[ElId];
+            return this->localToGlobalProcessIndices( 0, ElId );
         }
 
     /**
@@ -1386,7 +1396,7 @@ private:
     typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
 
 
-    vector_indices_type M_locglob_indices;
+    //vector_indices_type M_locglob_indices;
     vector_indices_type M_locglob_signs;
     localglobal_indices_type M_locglob_nosigns;
 
@@ -1581,7 +1591,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     // not when building the table
     const size_type nV = M.numElements();
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
-    M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+
+    //M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+    this->initTagLocalToGlobalProcessIndices( 1 );
+    this->initTagBasisGpToCompositeGp( 1 );
+    this->initLocalToGlobalProcessIndices( 0, nV, nDofPerElement );
+
     if ( is_hdiv_conforming || is_hcurl_conforming )
         M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
     else
@@ -1823,6 +1838,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         M_dof_marker.swap( newDofMarker );
     }
 
+    this->initBasisGpToCompositeGpIdentity( 0,this->nLocalDofWithGhost() );
+
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     for ( auto const& eltRange : elements( M,entityProcess) )
     {
@@ -1834,11 +1851,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             auto const& ldof = this->localDof( elid );
             size_type ne = std::distance( ldof.first, ldof.second );
             VLOG(1) << "resizing indices and signs for mortar:  " << ne;
-            M_locglob_indices[elid].resize( ne );
+            //M_locglob_indices[elid].resize( ne );
+            this->initEltLocalToGlobalProcessIndices( 0, elid, ne );
+
             //M_locglob_signs[elid].resize( ne );
             for( auto const& dof: this->localDof( elid ) )
             {
-                M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
+                //M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
+                this->setLocalToGlobalProcessIndices(0,elid,dof.first.localDof(), dof.second.index() );
                 //M_locglob_signs[elid][dof.first.localDof()] = dof.second.sign();
             }
         }
@@ -1851,7 +1871,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 {
                     int ind = FEType::nLocalDof*c1+i;
                     auto const& dof = localToGlobal( elid, i, c1 );
-                    M_locglob_indices[elid][ind] = dof.index();
+                    //M_locglob_indices[elid][ind] = dof.index();
+                    this->setLocalToGlobalProcessIndices(0,elid,ind, dof.index() );
                     //M_locglob_signs[elid][ind] = dof.sign();
                 }
             }

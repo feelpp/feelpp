@@ -622,7 +622,8 @@ struct updateDataMapProcessStandard
         :
         M_cursor( 0 ),
         M_start_index( worldCommFusion.globalSize(), 0 ),//  M_startDofGlobalCluster[worldCommFusion.globalRank()] ),
-        M_startIndexWithGhost( 0 ),
+        M_startIndexActiveDof( 0 ),
+        M_startIndexGhostDof( 0 ),
         M_lastCursor( lastCursor ),
         M_worldsComm( worldsComm ),
         M_dm( new DofType( worldCommFusion ) ),
@@ -642,6 +643,8 @@ struct updateDataMapProcessStandard
 
         M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost[myrank] );
         M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost[myrank] );
+
+        M_startIndexGhostDof = nLocWithoutGhost[myrank];
     }
 
     template <typename T>
@@ -676,36 +679,71 @@ struct updateDataMapProcessStandard
         const size_type firstDofGC = M_dm->firstDofGlobalCluster();
         const size_type firstDofGCSubSpace = x->dof()->firstDofGlobalCluster();
 
-        for (size_type gdof = x->dof()->firstDof(myrank) ; gdof < x->dof()->nLocalDofWithGhost(myrank) ; ++gdof )
+        // initialize containers with number of subspace
+        if ( M_cursor == 0 )
         {
-            const size_type localDof = M_startIndexWithGhost+gdof;//nLocalDofStart+gdof;
-            const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
+            M_dm->initTagLocalToGlobalProcessIndices( M_lastCursor+1 );
+            M_dm->initTagBasisGpToCompositeGp( M_lastCursor+1 );
+        }
 
-            if ( x->dof()->dofGlobalClusterIsOnProc( gdofGC ) )
+        // get ref of mapping between basis to composite gdof
+        std::vector<size_type> mapOldToNewGlobalProcess( nLocWithGhost );
+        //std::vector<size_type>& mapOldToNewGlobalProcess = M_dm->basisGpToCompositeGpRef( M_cursor );
+        // active dofs
+        for (size_type gdof = x->dof()->firstDof(myrank) ; gdof < nLocWithoutGhost ; ++gdof )
+        {
+            const size_type gdofNewGP = M_startIndexActiveDof+gdof;
+            const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
+            const size_type gdofNewGC = M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
+            M_dm->setMapGlobalProcessToGlobalCluster( gdofNewGP, gdofNewGC );
+            M_dm->setMapGlobalClusterToGlobalProcess( gdofNewGC-firstDofGC,gdofNewGP );
+            mapOldToNewGlobalProcess[gdof] = gdofNewGP;
+            CHECK( gdofNewGP < M_dm->nLocalDofWithGhost() ) << "error active global process dof " << gdofNewGP
+                                                            << " must be less than  " << M_dm->nLocalDofWithGhost() << "\n";
+        }
+        // ghost dofs
+        for (size_type gdof = nLocWithoutGhost ; gdof < nLocWithGhost  ; ++gdof )
+        {
+            const size_type gdofNewGP = M_startIndexGhostDof+(gdof-nLocWithoutGhost);
+            const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
+            const int realproc = x->dof()->procOnGlobalCluster(gdofGC);
+            const size_type gdofNewGC = M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
+            M_dm->setMapGlobalProcessToGlobalCluster( gdofNewGP, gdofNewGC );
+            mapOldToNewGlobalProcess[gdof] = gdofNewGP;
+            CHECK( gdofNewGP < M_dm->nLocalDofWithGhost() ) << "error ghost global process dof" << gdofNewGP
+                                                            <<" must be less than " << M_dm->nLocalDofWithGhost() << "\n";
+        }
+        // update local to global indices in composite view
+        size_type nElt = x->dof()->localToGlobalIndices().size();
+        int nDofPerElementCommon = (nElt>0)? x->dof()->localToGlobalIndices(0).size() : 0;
+        M_dm->initLocalToGlobalProcessIndices(M_cursor,nElt,nDofPerElementCommon);
+        for ( int eltId=0;eltId<x->mesh()->numElements();++eltId)
+        {
+            auto const& dofindices = x->dof()->localToGlobalIndices(eltId);
+            int nDofPerElement = dofindices.size();
+            if ( nDofPerElement!=nDofPerElementCommon )
+                M_dm->initEltLocalToGlobalProcessIndices(M_cursor,eltId,nDofPerElement);
+            for ( int j=0;j<nDofPerElement;++j )
             {
-                const size_type globalDof = M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
-                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-                M_dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
-            }
-            else
-            {
-                const int realproc = x->dof()->procOnGlobalCluster(gdofGC);
-                const size_type globalDof = M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
-                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                size_type gpDof = mapOldToNewGlobalProcess[dofindices(j)];
+                M_dm->setLocalToGlobalProcessIndices( M_cursor,eltId, j, gpDof );
             }
         }
+
+        M_dm->basisGpToCompositeGpRef( M_cursor ).swap( mapOldToNewGlobalProcess );
+        //M_dm->basisGpToCompositeGpRef( M_cursor ) = mapOldToNewGlobalProcess;
 
         for ( auto const& activeDofShared : x->dof()->activeDofSharedOnCluster() )
         {
-            M_dm->setActiveDofSharedOnCluster( M_startIndexWithGhost + activeDofShared.first, activeDofShared.second );
+            M_dm->setActiveDofSharedOnCluster( M_startIndexActiveDof + activeDofShared.first, activeDofShared.second );
         }
 
 
-
+        // update counters
         for (int proc = 0 ; proc < worldsize ; ++proc)
             M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
-        M_startIndexWithGhost+=nLocWithGhost;
-
+        M_startIndexActiveDof+=nLocWithoutGhost;
+        M_startIndexGhostDof+= (nLocWithGhost-nLocWithoutGhost);
         ++M_cursor;
     }
 
@@ -720,7 +758,8 @@ struct updateDataMapProcessStandard
 
     mutable uint16_type M_cursor;
     mutable std::vector<size_type> M_start_index;
-    mutable size_type M_startIndexWithGhost;
+    mutable size_type M_startIndexActiveDof;
+    mutable size_type M_startIndexGhostDof;
     uint16_type M_lastCursor;
     std::vector<WorldComm> M_worldsComm;
     mutable boost::shared_ptr<DofType> M_dm;

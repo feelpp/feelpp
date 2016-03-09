@@ -47,7 +47,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 {
     size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                                  size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+                                                 Feel::detail::NLocalDof<mpl::bool_<false/*true*/> >( this->worldsComm(), false, 0, i ) );
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -126,7 +126,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 {
     size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
                                                  size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+                                                 Feel::detail::NLocalDof<mpl::bool_<false/*true*/> >( this->worldsComm(), false, 0, i ) );
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
