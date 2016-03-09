@@ -97,7 +97,7 @@ struct MemoryUsage
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
 #endif
-    
+
 };
 /**
  * default \c makeAbout function to define the \c AboutData structure of the Feel++
@@ -231,7 +231,7 @@ public:
           ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #endif
-    
+
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -270,12 +270,20 @@ public:
     static bool finalized();
 
     /**
+     * @return the shared_ptr WorldComm
+     */
+    static boost::shared_ptr<WorldComm> worldCommPtr()
+        {
+            return S_worldcomm;
+        }
+
+    /**
      * return the worldcomm (static)
      */
     static WorldComm& worldComm()
-    {
-        return *S_worldcomm;
-    }
+        {
+            return *S_worldcomm;
+        }
     static WorldComm& worldCommSeq()
     {
         return *S_worldcommSeq;
@@ -322,7 +330,7 @@ public:
      * @return true if number of process is 1, hence the environment is
      * sequential
      */
-    static bool isSequential() 
+    static bool isSequential()
     {
         return numberOfProcessors() == 1;
     }
@@ -331,7 +339,7 @@ public:
      * @return true if the environment is not sequential, that is if the number
      * of process is greater than 1
      */
-    static bool isParallel() 
+    static bool isParallel()
     {
         return !isSequential();
     }
@@ -362,14 +370,14 @@ public:
     {
         return S_vm;
     }
-  
+
     template<typename T>
     static void setOptionValue(std::string s,T val)
     {
         auto it = S_vm.find( s );
         CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
         S_vm.at(s).value() = val;
-    } 
+    }
 
     static AboutData const& about()
     {
@@ -650,7 +658,7 @@ private:
     void initPetsc( int * argc = 0, char *** argv = NULL );
 #endif
 
-    
+
 
     //! process command-line/config-file options
     static void doOptions( int argc, char** argv,
@@ -856,6 +864,32 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( std::vector<double> ),
+    vdoption, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
+{
+	std::vector<double> opt;
+
+    try
+    {
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+    }
+
+    catch ( boost::bad_any_cast bac )
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
+    }
+
+    return opt;
+}
+
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
@@ -897,5 +931,8 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
-}
+} // Feel
+
+#include <feel/feelcore/feelio.hpp>
+
 #endif /* FEELPP_ENVIRONMENT_HPP */
