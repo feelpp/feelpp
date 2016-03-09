@@ -417,6 +417,7 @@ public :
     }
 
     virtual void initModel() = 0;
+    virtual void assemble() {  CHECK( false )<<" You have to implement assemble() \n"; };
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
