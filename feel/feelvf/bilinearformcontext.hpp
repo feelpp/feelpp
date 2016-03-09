@@ -701,8 +701,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #endif
         if ( UseMortarType == 0 )
         {
-            M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-            M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+            M_local_rows.array() = M_form.localToGlobalIndicesTest( elt_0 ).array() + row_start;
+            M_local_cols.array() = M_form.localToGlobalIndicesTrial( trial_eid ).array() + col_start;
 
             if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
                  is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
@@ -722,8 +722,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
             CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-            M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-            M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+            M_mortarTest_local_rows.array() = M_form.localToGlobalIndicesTest( elt_0 ).array() + row_start;
+            M_local_cols.array() = M_form.localToGlobalIndicesTrial( trial_eid ).array() + col_start;
 
             if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
                  is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
@@ -741,8 +741,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
             CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-            M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-            M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+            M_local_rows.array() = M_form.localToGlobalIndicesTest( elt_0 ).array() + row_start;
+            M_mortarTrial_local_cols.array() = M_form.localToGlobalIndicesTrial( trial_eid ).array() + col_start;
+
             if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
                  is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
                  is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
@@ -773,11 +774,15 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     DCHECK( trial_e0id != invalid_size_type_value && trial_e1id != invalid_size_type_value )
         << "this case should have been taken care of earlier before the assembly process\n";
 
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
+    //M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+    //M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_form.localToGlobalIndicesTest( elt_0 ).array() + row_start;
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_form.localToGlobalIndicesTest( elt_1 ).array() + row_start;
 
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e0id ).array() + col_start;
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e1id ).array() + col_start;
+    //M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e0id ).array() + col_start;
+    //M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e1id ).array() + col_start;
+    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_form.localToGlobalIndicesTrial( trial_e0id ).array() + col_start;
+    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_form.localToGlobalIndicesTrial( trial_e1id ).array() + col_start;
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {

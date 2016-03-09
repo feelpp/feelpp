@@ -527,7 +527,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
+#if 0
                     size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
+#else
+                    size_type thedof = (is_comp_space?Elem1::nComponents:1)*ldof.index();
+                    thedof = __form.basisGpToCompositeGpTrial( thedof );
+#endif
+;
                     DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();

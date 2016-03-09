@@ -743,6 +743,15 @@ public:
         return ( math::abs( v ) > M_threshold );
     }
 
+    /**
+     * return local to global process indices : (elt,j)->gdof
+     */
+    typename DataMap::localglobal_indices_type const& localToGlobalIndices( size_type ElId ) const
+    {
+        //CHECK(M_locglobIndices) << "locglobIndicesTest not init";
+        return (*M_locglobIndices)[ElId];
+    }
+
     //@}
 
     /** @name  Mutators
@@ -777,6 +786,14 @@ public:
     void setDoThreshold( bool do_threshold )
     {
         M_do_threshold = do_threshold;
+    }
+
+    /**
+     * set local to global process indices : (elt,j)->gdof
+     */
+    void setLocglobIndices( typename DataMap::vector_indices_type const& indices )
+    {
+        M_locglobIndices = std::addressof( indices );
     }
 
     //@}
@@ -858,6 +875,9 @@ private:
 
     bool M_do_threshold;
     value_type M_threshold;
+
+    typename DataMap::vector_indices_type const* M_locglobIndices;
+
 };
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -906,6 +926,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
         DVLOG(2) << "[linearform::linearform] block: "
                       << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
+
+    this->setLocglobIndices( M_X->dof()->localToGlobalProcessIndices(0) );
 
     if (  init )
         M_F->zero();
@@ -972,7 +994,7 @@ struct LFAssign
             if ( M_lf.testSpace()->worldsComm()[M_index].globalSize()>1 )
                 {
                     if (M_lf.testSpace()->hasEntriesForAllSpaces())
-                        __list_block.push_back( Block( 0, 0, M_Xh->nLocalDofStart( M_index ), 0 ) );
+                        __list_block.push_back( Block( 0, 0, 0/*M_Xh->nLocalDofStart( M_index )*/, 0 ) );
                     else
                         __list_block.push_back( Block( 0, 0, 0, 0 ) );
                 }
@@ -984,6 +1006,7 @@ struct LFAssign
                     __list_block,
                     M_lf.rowStartInVector(),
                     false );
+            lf.setLocglobIndices( M_lf.testSpace()->dof()->localToGlobalProcessIndices( M_index ) );
 
             //
             // in composite integration, make sure that if M_init is \p
