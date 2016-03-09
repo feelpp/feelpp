@@ -106,6 +106,95 @@ BackendPetsc<T>::clear()
 }
 
 template<typename T>
+typename BackendPetsc<T>::vector_ptrtype
+BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
+{
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+
+    vector_ublas_type * vecUblas = const_cast<vector_ublas_type *>( dynamic_cast<vector_ublas_type const*>( &v ) );
+    if ( vecUblas )
+    {
+        //std::cout << "Convert Ublas vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
+        return _newvec;
+    }
+    //vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type*>( &v );
+    vector_ublas_range_type * vecUblasRange = const_cast<vector_ublas_range_type *>( dynamic_cast<vector_ublas_range_type const*>( &v ) );
+    if ( vecUblasRange )
+    {
+        //std::cout << "Convert Ublas range vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
+        return _newvec;
+    }
+#if 0
+    vector_ublas_slice_type * vecUblasSlice = dynamic_cast<vector_ublas_slice_type*>( &v );
+    if ( vecUblasSlice )
+    {
+        //std::cout << "Convert Ublas slice vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+
+    //std::cout << "DefaultConvert vector\n";
+    return super::toBackendVectorPtr( v );
+}
+
+template<typename T>
+typename BackendPetsc<T>::vector_ptrtype
+BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
+{
+    if ( this->comm().globalSize()>1 )
+    {
+        petscMPI_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petscMPI_vector_type >( v );
+        //if ( vecPetsc ) std::cout << "Convert PetscMPI vector\n";
+        if ( vecPetsc )
+            return v;
+
+    }
+    else
+    {
+        petsc_vector_ptrtype vecPetsc = boost::dynamic_pointer_cast< petsc_vector_type >( v );
+        //if ( vecPetsc ) std::cout << "Convert Petsc vector\n";
+        if ( vecPetsc )
+            return v;
+    }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+    boost::shared_ptr<vector_ublas_type> vecUblas = boost::dynamic_pointer_cast< vector_ublas_type >( v );
+    if ( vecUblas )
+    {
+        //std::cout << "Convert Ublas vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
+        return _newvec;
+    }
+    boost::shared_ptr<vector_ublas_range_type> vecUblasRange = boost::dynamic_pointer_cast< vector_ublas_range_type >( v );
+    if ( vecUblasRange )
+    {
+        //std::cout << "Convert Ublas range vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
+        return _newvec;
+    }
+#if 0
+    boost::shared_ptr<vector_ublas_slice_type> vecUblasSlice = boost::dynamic_pointer_cast< vector_ublas_slice_type >( v );
+    if ( vecUblasSlice )
+    {
+        //std::cout << "Convert Ublas slice vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+
+    //std::cout << "DefaultConvert vector\n";
+    return super::toBackendVectorPtr( v );
+
+}
+
+template<typename T>
 typename BackendPetsc<T>::solve_return_type
 BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         sparse_matrix_ptrtype const& B,
