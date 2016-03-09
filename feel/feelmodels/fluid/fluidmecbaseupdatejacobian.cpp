@@ -433,7 +433,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 #endif // FEELPP_MODELS_HAS_MESHALE
 
     //--------------------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel )
+    if ( M_useThermodynModel && M_useGravityForce )
     {
         DataUpdateJacobian dataThermo( data );
         dataThermo.setDoBCStrongDirichlet( false );
@@ -461,15 +461,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                            _expr= thecoeff*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
-            double g=9.80665;
-            auto gravity = -g*oneY();
-            double T0 = 293.15;
-            double betaFluid = 0.00006900; // coefficient de dilatation thermique volumétrique
+            auto betaFluid = idv(thermalProperties->fieldThermalExpansion() );
             form2( _test=Xh,_trial=XhT,_matrix=J,
                    _rowstart=this->rowStartInMatrix(),
                    _colstart=M_thermodynModel->colStartInMatrix() ) +=
                 integrate( _range=elements(this->mesh() ),
-                           _expr= -idv(thermalProperties->fieldRho())*betaFluid*((idt(t)/*-T0*/)/*/T0*/)*inner(gravity,id(u)),
+                           _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
 
@@ -502,7 +499,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                     _element=u,_rhs=RBis,
                     _expr= vf::zero<nDim,1>() );
 
-        if ( M_useThermodynModel )
+        if ( M_useThermodynModel && M_useGravityForce )
         {
             M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
         }

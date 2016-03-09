@@ -911,6 +911,9 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    vector_field_expression<nDim,1,2> M_gravityForce;
+    bool M_useGravityForce;
+    //----------------------------------------------------
     // post-process field exported
     std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
@@ -960,6 +963,7 @@ protected:
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;
+    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 
