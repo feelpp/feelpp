@@ -302,7 +302,7 @@ void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )
 
     }
 
-    BOOST_FOREACH( auto d, data )
+    for( auto d : data )
     {
         mode_file << d.first << " " << d.second << "\n";
     }
