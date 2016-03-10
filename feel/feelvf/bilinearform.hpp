@@ -1819,8 +1819,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         {
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
-                                                   M_bf.testSpace()->nDofStart( M_test_index ),
-                                                   M_bf.trialSpace()->nDofStart( M_trial_index ) ) );
+                                                   0/*M_bf.testSpace()->nDofStart( M_test_index )*/,
+                                                   0/*M_bf.trialSpace()->nDofStart( M_trial_index )*/ ) );
         }
 
         typedef typename BFType::matrix_type matrix_type;
@@ -1894,8 +1894,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         {
             //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
-                                                   M_bf.testSpace()->nDofStart( M_test_index ),
-                                                   M_bf.trialSpace()->nDofStart( M_trial_index ) ) );
+                                                   0/*M_bf.testSpace()->nDofStart( M_test_index )*/,
+                                                   0/*M_bf.trialSpace()->nDofStart( M_trial_index )*/ ) );
         }
 
         typedef typename BFType::matrix_type matrix_type;
