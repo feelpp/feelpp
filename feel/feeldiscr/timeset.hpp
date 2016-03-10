@@ -113,23 +113,29 @@ public:
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
     typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+    typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
     typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
     typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
+    typedef boost::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
     typedef boost::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
     typedef boost::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
     typedef boost::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
+    typedef boost::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
 
     typedef typename scalar_p0_space_type::element_type element_scalar_type;
     typedef typename vector_p0_space_type::element_type element_vector_type;
     typedef typename tensor2_p0_space_type::element_type element_tensor2_type;
+    typedef typename tensor2symm_p0_space_type::element_type element_tensor2symm_type;
     typedef typename scalar_p1_space_type::element_type nodal_scalar_type;
     typedef typename vector_p1_space_type::element_type nodal_vector_type;
     typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
+    typedef typename tensor2symm_p1_space_type::element_type nodal_tensor2symm_type;
 
 
     /**
@@ -153,32 +159,40 @@ public:
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Scalar,Discontinuous> >, Discontinuous > scalar_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Scalar> > > scalar_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Vectorial> > > vector_p1_space_type;
         typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
+        typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
         typedef boost::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef boost::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
+        typedef boost::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
         typedef boost::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
         typedef boost::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
         typedef boost::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
+        typedef boost::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
 
         typedef typename scalar_p0_space_type::element_type element_scalar_type;
         typedef typename vector_p0_space_type::element_type element_vector_type;
         typedef typename tensor2_p0_space_type::element_type element_tensor2_type;
+        typedef typename tensor2symm_p0_space_type::element_type element_tensor2symm_type;
         typedef typename scalar_p1_space_type::element_type nodal_scalar_type;
         typedef typename vector_p1_space_type::element_type nodal_vector_type;
         typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
+        typedef typename tensor2symm_p1_space_type::element_type nodal_tensor2symm_type;
 
         typedef std::map<std::string, std::pair<scalar_type,bool> > map_scalar_type;
         typedef std::map<std::string, std::pair<complex_type,bool> > map_complex_type;
         typedef std::map<std::string, nodal_scalar_type> map_nodal_scalar_type;
         typedef std::map<std::string, nodal_vector_type> map_nodal_vector_type;
         typedef std::map<std::string, nodal_tensor2_type> map_nodal_tensor2_type;
+        typedef std::map<std::string, nodal_tensor2symm_type> map_nodal_tensor2symm_type;
         typedef std::map<std::string, element_scalar_type> map_element_scalar_type;
         typedef std::map<std::string, element_vector_type> map_element_vector_type;
         typedef std::map<std::string, element_tensor2_type> map_element_tensor2_type;
+        typedef std::map<std::string, element_tensor2symm_type> map_element_tensor2symm_type;
 
         typedef typename map_scalar_type::iterator scalar_iterator;
         typedef typename map_scalar_type::const_iterator scalar_const_iterator;
@@ -194,6 +208,8 @@ public:
 
         typedef typename map_nodal_tensor2_type::iterator nodal_tensor2_iterator;
         typedef typename map_nodal_tensor2_type::const_iterator nodal_tensor2_const_iterator;
+        typedef typename map_nodal_tensor2symm_type::iterator nodal_tensor2symm_iterator;
+        typedef typename map_nodal_tensor2symm_type::const_iterator nodal_tensor2symm_const_iterator;
 
         typedef typename map_element_scalar_type::iterator element_scalar_iterator;
         typedef typename map_element_scalar_type::const_iterator element_scalar_const_iterator;
@@ -203,6 +219,8 @@ public:
 
         typedef typename map_element_tensor2_type::iterator element_tensor2_iterator;
         typedef typename map_element_tensor2_type::const_iterator element_tensor2_const_iterator;
+        typedef typename map_element_tensor2symm_type::iterator element_tensor2symm_iterator;
+        typedef typename map_element_tensor2symm_type::const_iterator element_tensor2symm_const_iterator;
 
         //@}
 
@@ -378,6 +396,23 @@ public:
         }
 
         /**
+         * get the nodal tensor2 field with name n
+         * @param __n name of the field
+         * @return the nodal tensor2 field
+         */
+        nodal_tensor2symm_type nodalTensor2Symm( std::string const& __n ) const
+            {
+                if ( M_nodal_tensor2symm.find( sanitize(__n) ) == M_nodal_tensor2symm.end() )
+                {
+                    std::ostringstream __err;
+                    __err << "invalid nodal tensor2 field name " << sanitize(__n);
+                    throw std::logic_error( __err.str() );
+                }
+
+                return M_nodal_tensor2symm.find( sanitize(__n) )->second;
+            }
+
+        /**
          * get the element scalar field with name n
          * @param __n name of the element scalar field
          * @return the element scalar field
@@ -393,6 +428,23 @@ public:
 
             return M_element_scalar.find( sanitize(__n) )->second;
         }
+
+        /**
+         * get the element tensor2 field with name n
+         * @param __n name of the field
+         * @return the element tensor2 field
+         */
+        element_tensor2_type elementTensor2( std::string const& __n ) const
+            {
+                if ( M_element_tensor2.find( sanitize(__n) ) == M_element_tensor2.end() )
+                {
+                    std::ostringstream __err;
+                    __err << "invalid element tensor2 field name " << sanitize(__n);
+                    throw std::logic_error( __err.str() );
+                }
+
+                return M_element_tensor2.find( sanitize(__n) )->second;
+            }
 
         /**
          * get the element vector field with name n
@@ -412,21 +464,22 @@ public:
         }
 
         /**
-         * get the element tensor2 field with name n
+         * get the element tensor2symm field with name n
          * @param __n name of the field
-         * @return the element tensor2 field
+         * @return the element tensor2symm field
          */
-        element_tensor2_type elementTensor2( std::string const& __n ) const
-        {
-            if ( M_element_tensor2.find( sanitize(__n) ) == M_element_tensor2.end() )
+        element_tensor2symm_type elementTensor2Symm( std::string const& __n ) const
             {
-                std::ostringstream __err;
-                __err << "invalid element tensor2 field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
+                if ( M_element_tensor2symm.find( sanitize(__n) ) == M_element_tensor2symm.end() )
+                {
+                    std::ostringstream __err;
+                    __err << "invalid element tensor2symm field name " << sanitize(__n);
+                    throw std::logic_error( __err.str() );
+                }
+
+                return M_element_tensor2symm.find( sanitize(__n) )->second;
             }
 
-            return M_element_tensor2.find( sanitize(__n) )->second;
-        }
 
         //@}
 
@@ -845,6 +898,95 @@ public:
             }
 
         template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
+                  typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                boost::timer t;
+
+                if ( !M_ts->M_tensor2symm_p1 )
+                {
+                    M_ts->M_tensor2symm_p1 = boost::make_shared<tensor2symm_p1_space_type> ( M_mesh.get(),
+                                                                                     MESH_RENUMBER | MESH_CHECK,
+                                                                                     typename tensor2symm_p1_space_type::periodicity_type(),
+                                                                                     func.worldsComm(),
+                                                                                     std::vector<bool>(1,extendeddof) );
+                    M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
+                }
+
+                else if ( M_mesh.get() == M_ts->M_tensor2symm_p1->mesh() )
+                {
+                    M_tensor2symm_p1 = M_ts->M_tensor2symm_p1;
+                }
+
+            if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
+                {
+                    M_tensor2symm_p1 = boost::make_shared<tensor2symm_p1_space_type> ( M_mesh.get(),
+                                                                               MESH_RENUMBER | MESH_CHECK,
+                                                                               typename tensor2symm_p1_space_type::periodicity_type(),
+                                                                               func.worldsComm(),
+                                                                               std::vector<bool>(1,extendeddof) );
+                    DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space tensor2symm p1 created\n";
+                }
+
+                t.restart();
+                M_nodal_tensor2symm.insert( std::make_pair( __fname,M_tensor2symm_p1->element( __n, func.description() ) ) );
+                //M_nodal_tensor2symm[__fname].setName( __n );
+                //M_nodal_tensor2symm[__fname].setFunctionSpace( M_tensor2symm_p1 );
+                DVLOG(2) << "[timeset::add] setmesh :  " << t.elapsed() << "\n";
+                t.restart();
+
+                if ( func.worldComm().isActive() )
+                {
+                    // interpolate field on visualisation space
+                    interpolate( M_tensor2symm_p1, func, M_nodal_tensor2symm[__fname] );
+#if 0
+                    // if exporter use extended dof table but the field to export is not define on this part
+                    // we put to a random vectorial value for these ghosts dofs (else can disturbe visualisation range)
+                    size_type nGhostDofAddedInExtendedDofTable = M_tensor2symm_p1->dof()->nGhostDofAddedInExtendedDofTable();
+                    if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+                    {
+                        // get a random value (in the first elt valid)
+                        std::vector<typename tensor2symm_p1_space_type::value_type> randomEval( tensor2symm_p1_space_type::nComponents );
+                        for ( auto const& elt : elements(M_tensor2symm_p1->mesh()) )
+                        {
+                            if ( M_tensor2symm_p1->dof()->isElementDone( elt.id() ) && !elt.isGhostCell() )
+                            {
+                                for ( uint16_type comp=0; comp<tensor2symm_p1_space_type::nComponents ; ++comp )
+                                {
+                                    const size_type index = M_tensor2symm_p1->dof()->localToGlobal( elt.id(), 0, comp ).index();
+                                    randomEval[comp] = M_nodal_tensor2symm[__fname]( index );
+                                }
+                                break;
+                            }
+                        }
+                        // update extended elt with this tensor2symmial value
+                        for ( auto const& eltWrap : elements(M_tensor2symm_p1->mesh(),EntityProcessType::GHOST_ONLY) )
+                        {
+                            auto const& elt = boost::unwrap_ref(eltWrap);
+                            for ( uint16_type locDof=0; locDof < tensor2symm_p1_space_type::fe_type::nLocalDof; ++locDof )
+                                for ( uint16_type comp=0; comp<tensor2symm_p1_space_type::nComponents1 ; ++comp )
+                                {
+                                    const size_type index = M_tensor2symm_p1->dof()->localToGlobal( elt.id(), locDof, comp ).index();
+                                    if ( index <= ( M_tensor2symm_p1->dof()->lastDof()-nGhostDofAddedInExtendedDofTable) )
+                                        continue;
+                                    M_nodal_tensor2symm[__fname].set( index, randomEval[comp] );
+                                }
+                        }
+                    } // if ( nGhostDofAddedInExtendedDofTable>0 && !func.functionSpace()->dof()->buildDofTableMPIExtended() )
+#endif
+                } // if ( func.worldComm().isActive() )
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+
+                showMe( "Step::add" );
+                DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+            }
+
+        template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                   typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
@@ -974,6 +1116,25 @@ public:
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
             }
 
+        template<typename FunctionType>
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
+                  typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr )
+            {
+                bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
+                if ( !func.worldComm().isActive() ) return;
+
+                M_element_tensor2symm[__fname].setName( __n );
+                M_element_tensor2symm[__fname].setFunctionSpace( M_tensor2symm_p0 );
+
+                // interpolate field on visualisation space
+                interpolate( M_tensor2symm_p0, func, M_element_tensor2symm[__fname] );
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+                showMe( "Step::addElement" );
+                DVLOG(2) << "[TimeSet::add] p0 function done\n";
+            }
+
         //@}
 
         /** @name  Methods
@@ -1004,6 +1165,14 @@ public:
         {
             return M_nodal_tensor2.end();
         }
+        nodal_tensor2symm_const_iterator beginNodalTensor2Symm() const
+        {
+            return M_nodal_tensor2symm.begin();
+        }
+        nodal_tensor2symm_const_iterator endNodalTensor2Symm() const
+        {
+            return M_nodal_tensor2symm.end();
+        }
 
         element_scalar_const_iterator beginElementScalar() const
         {
@@ -1028,6 +1197,14 @@ public:
         element_tensor2_const_iterator endElementTensor2() const
         {
             return M_element_tensor2.end();
+        }
+        element_tensor2symm_const_iterator beginElementTensor2Symm() const
+        {
+            return M_element_tensor2symm.begin();
+        }
+        element_tensor2symm_const_iterator endElementTensor2Symm() const
+        {
+            return M_element_tensor2symm.end();
         }
 
         bool operator==( Step const& __s ) const
@@ -1192,6 +1369,17 @@ public:
                 ar & ( nodal_tensor2_type const& ) __ittensor2->second;
             }
 
+            s = M_nodal_tensor2symm.size();
+            ar & boost::serialization::make_nvp( "map_nodal_tensor2symm_size", s );
+
+            nodal_tensor2symm_const_iterator __ittensor2symm= M_nodal_tensor2symm.begin();
+            nodal_tensor2symm_const_iterator __entensor2symm= M_nodal_tensor2symm.end();
+
+            for ( ; __ittensor2symm!= __entensor2symm; ++__ittensor2symm )
+            {
+                ar & ( nodal_tensor2symm_type const& ) __ittensor2symm->second;
+            }
+
             s = M_element_scalar.size();
             ar & boost::serialization::make_nvp( "map_element_scalar_size", s );
             DVLOG(2) << "(saving) serialized size of element scalar (" << s << ")\n";
@@ -1223,6 +1411,17 @@ public:
             for ( ; __eittensor2!= __eentensor2; ++__eittensor2 )
             {
                 ar & ( element_tensor2_type const& ) __eittensor2->second;
+            }
+
+            s = M_element_tensor2symm.size();
+            ar & boost::serialization::make_nvp( "map_element_tensor2symm_size", s );
+
+            element_tensor2symm_const_iterator __eittensor2symm= M_element_tensor2symm.begin();
+            element_tensor2symm_const_iterator __eentensor2symm= M_element_tensor2symm.end();
+
+            for ( ; __eittensor2symm!= __eentensor2symm; ++__eittensor2symm )
+            {
+                ar & ( element_tensor2symm_type const& ) __eittensor2symm->second;
             }
         }
 
@@ -1344,6 +1543,27 @@ public:
                     DVLOG(2) << v.name() << " was loaded but not inserted (size: " << v.size() << ")\n";
             }
 
+            s = 0;
+            ar & boost::serialization::make_nvp( "map_nodal_tensor2symm_size", s );
+            DVLOG(2) << "(loading) serialized size of nodal scalar (" << s << ")\n";
+
+            for ( size_type __i = 0; __i < s; ++__i )
+            {
+                nodal_tensor2symm_type v;
+                ar & v;
+
+                DVLOG(2) << "(loading) dserialized scalar field " << v.name()
+                         << " of size " << v.size() << "\n";
+
+                std::pair<nodal_tensor2symm_iterator,bool> __it =  M_nodal_tensor2symm.insert( std::make_pair( v.name(), v ) );
+
+                if ( __it.second )
+                    DVLOG(2) << v.name() << " loaded and inserted (size: " << v.size() << ")\n";
+
+                else
+                    DVLOG(2) << v.name() << " was loaded but not inserted (size: " << v.size() << ")\n";
+            }
+
             // element scalar
             s = 0;
             ar & boost::serialization::make_nvp( "map_element_scalar_size", s );
@@ -1407,6 +1627,26 @@ public:
                 else
                     DVLOG(2) << v.name() << " was loaded but not inserted (size: " << v.size() << ")\n";
             }
+            s = 0;
+            ar & boost::serialization::make_nvp( "map_element_tensor2symm_size", s );
+            DVLOG(2) << "(loading) serialized size of element scalar (" << s << ")\n";
+
+            for ( size_type __i = 0; __i < s; ++__i )
+            {
+                element_tensor2symm_type v;
+                ar & v;
+
+                DVLOG(2) << "(loading) dserialized scalar field " << v.name()
+                         << " of size " << v.size() << "\n";
+
+                std::pair<element_tensor2symm_iterator,bool> __it =  M_element_tensor2symm.insert( std::make_pair( v.name(), v ) );
+
+                if ( __it.second )
+                    DVLOG(2) << v.name() << " loaded and inserted (size: " << v.size() << ")\n";
+
+                else
+                    DVLOG(2) << v.name() << " was loaded but not inserted (size: " << v.size() << ")\n";
+            }
         }
 
         template<class Archive>
@@ -1442,9 +1682,11 @@ public:
         map_nodal_scalar_type M_nodal_scalar;
         map_nodal_vector_type M_nodal_vector;
         map_nodal_tensor2_type M_nodal_tensor2;
+        map_nodal_tensor2symm_type M_nodal_tensor2symm;
         map_element_scalar_type M_element_scalar;
         map_element_vector_type M_element_vector;
         map_element_tensor2_type M_element_tensor2;
+        map_element_tensor2symm_type M_element_tensor2symm;
 
         Context M_state;
 
@@ -1452,9 +1694,11 @@ public:
         scalar_p0_space_ptrtype M_scalar_p0;
         vector_p0_space_ptrtype M_vector_p0;
         tensor2_p0_space_ptrtype M_tensor2_p0;
+        tensor2_p0_space_ptrtype M_tensor2symm_p0;
         scalar_p1_space_ptrtype M_scalar_p1;
         vector_p1_space_ptrtype M_vector_p1;
         tensor2_p1_space_ptrtype M_tensor2_p1;
+        tensor2symm_p1_space_ptrtype M_tensor2symm_p1;
 
 
     };
@@ -1910,9 +2154,11 @@ public:
     scalar_p0_space_ptrtype M_scalar_p0;
     vector_p0_space_ptrtype M_vector_p0;
     tensor2_p0_space_ptrtype M_tensor2_p0;
+    tensor2symm_p0_space_ptrtype M_tensor2symm_p0;
     scalar_p1_space_ptrtype M_scalar_p1;
     vector_p1_space_ptrtype M_vector_p1;
     tensor2_p1_space_ptrtype M_tensor2_p1;
+    tensor2symm_p1_space_ptrtype M_tensor2symm_p1;
 private:
 
     /**
@@ -2267,56 +2513,34 @@ TimeSet<MeshType, N>::Step::executeState( size_type __st )
         if ( hasData() )
         {
             DVLOG(2) << "releasing step " << M_index << " at time " << M_time << " allocated memory for this step\n";
-
+            auto clear = []( auto& c ) { c.second.clear(); };
             {
-                nodal_scalar_iterator __itscalar = M_nodal_scalar.begin();
-                nodal_scalar_iterator __enscalar = M_nodal_scalar.end();
-
-                for ( ; __itscalar != __enscalar; ++__itscalar )
-                {
-                    __itscalar->second.clear();
-                }
-
-                nodal_vector_iterator __itvector= M_nodal_vector.begin();
-                nodal_vector_iterator __envector= M_nodal_vector.end();
-
-                for ( ; __itvector!= __envector; ++__itvector )
-                {
-                    __itvector->second.clear();
-                }
-
-                nodal_tensor2_iterator __ittensor2= M_nodal_tensor2.begin();
-                nodal_tensor2_iterator __entensor2= M_nodal_tensor2.end();
-
-                for ( ; __ittensor2!= __entensor2; ++__ittensor2 )
-                {
-                    __ittensor2->second.clear();
-                }
+                std::for_each( M_nodal_scalar.begin(),
+                              M_nodal_scalar.end(),
+                              clear );
+                std::for_each( M_nodal_vector.begin(),
+                               M_nodal_vector.end(),
+                              clear );
+                std::for_each( M_nodal_tensor2.begin(),
+                              M_nodal_tensor2.end(),
+                              clear );
+                std::for_each( M_nodal_tensor2symm.begin(),
+                              M_nodal_tensor2symm.end(),
+                              clear );
             }
             {
-                element_scalar_iterator __itscalar = M_element_scalar.begin();
-                element_scalar_iterator __enscalar = M_element_scalar.end();
-
-                for ( ; __itscalar != __enscalar; ++__itscalar )
-                {
-                    __itscalar->second.clear();
-                }
-
-                element_vector_iterator __itvector= M_element_vector.begin();
-                element_vector_iterator __envector= M_element_vector.end();
-
-                for ( ; __itvector!= __envector; ++__itvector )
-                {
-                    __itvector->second.clear();
-                }
-
-                element_tensor2_iterator __ittensor2= M_element_tensor2.begin();
-                element_tensor2_iterator __entensor2= M_element_tensor2.end();
-
-                for ( ; __ittensor2!= __entensor2; ++__ittensor2 )
-                {
-                    __ittensor2->second.clear();
-                }
+                std::for_each( M_element_scalar.begin(),
+                              M_element_scalar.end(),
+                              clear );
+                std::for_each( M_element_vector.begin(),
+                              M_element_vector.end(),
+                              clear );
+                std::for_each( M_element_tensor2.begin(),
+                              M_element_tensor2.end(),
+                              clear );
+                std::for_each( M_element_tensor2symm.begin(),
+                              M_element_tensor2symm.end(),
+                              clear );
             }
             M_state.clear( STEP_IN_MEMORY );
         }
