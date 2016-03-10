@@ -916,67 +916,9 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
 #endif
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName, bool appendTable ) const
+VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName, bool appendMode )
 {
-    bool useTransposedStorage = true;
-    const int dimsComp0 = (useTransposedStorage)? 1 : 0;
-    const int dimsComp1 = (useTransposedStorage)? 0 : 1;
-    std::vector<uint> sizeValues(1, this->map().nLocalDofWithGhost() );
-    hsize_t dims[2];
-    dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;
-    hsize_t dims2[2];
-
-    dims2[dimsComp0] = sizeValues.size();dims2[dimsComp1] = 1;
-    hsize_t offset[2];
-    offset[dimsComp0] = this->comm().localRank(); offset[dimsComp1] = 0;
-
-    size_type nLocalDofWithGhostTotal = 0;
-    for (rank_type p=0 ; p < this->comm().localSize() ; ++p )
-        nLocalDofWithGhostTotal += this->map().nLocalDofWithGhost( p );
-
-    hsize_t dimsElt[2];
-    dimsElt[dimsComp0] = nLocalDofWithGhostTotal;//this->map().nDof();
-    dimsElt[dimsComp1] = 1;
-
-    hsize_t dimsElt2[2];
-    dimsElt2[dimsComp0] = this->map().nLocalDofWithGhost();
-    dimsElt2[dimsComp1] = 1;
-    hsize_t offsetElt[2];
-    size_type offsetCount = 0;
-    for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
-        offsetCount += this->map().nLocalDofWithGhost( p );
-
-    offsetElt[dimsComp0] = offsetCount;
-    offsetElt[dimsComp1] = 0;
-
-    HDF5 hdf5;
-    /* If appendTable is true, then we want to append the table to the hdf5 file */
-    /* To do so we open the hdf5 as existing and allow read/write in it */
-    if(appendTable)
-    {
-        hdf5.openFile( filename, this->comm().localComm(), true, true );
-    }
-    else
-    {
-        hdf5.openFile( filename, this->comm().localComm(), false );
-    }
-
-    if ( false )
-    {
-        // create size tab
-        hdf5.createTable( "size", H5T_NATIVE_UINT, dims );
-        hdf5.write( "size", H5T_NATIVE_UINT, dims2, offset, sizeValues.data() );
-        hdf5.closeTable( "size" );
-    }
-
-    // create double tab
-    hdf5.createTable( tableName, H5T_NATIVE_DOUBLE, dimsElt );
-    //hdf5.write( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, M_vec.data().begin()) );
-    if ( this->map().nLocalDofWithGhost() > 0 )
-        hdf5.write( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, (void *)&(M_vec[0]) );
-    hdf5.closeTable( tableName );
-
-    hdf5.closeFile();
+    this->ioHDF5( false, filename, tableName );
 }
 template<typename T, typename Storage>
 void
