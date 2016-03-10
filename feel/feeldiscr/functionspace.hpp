@@ -4929,7 +4929,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
     if ( !M_worldComm )
         M_worldComm = boost::shared_ptr<WorldComm>( new WorldComm( M_worldsComm[0] ));
 
-    if ( this->worldComm().globalSize()>1 )
+    if ( true )// this->worldComm().globalSize()>1 )
     {
         if ( this->hasEntriesForAllSpaces() )
             {
