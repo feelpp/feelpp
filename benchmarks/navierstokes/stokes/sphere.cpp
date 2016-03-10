@@ -71,7 +71,7 @@ int main( int argc, char** argv )
     po::store( po::parse_command_line( argc, argv, desc ), vm );
     po::notify( vm );
 
-    const int Order=3;
+    const int Order=2;
     const int OrderP=3;
     using namespace Feel;
     using namespace Feel::vf;
