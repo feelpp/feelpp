@@ -999,7 +999,7 @@ struct LFAssign
                         __list_block.push_back( Block( 0, 0, 0, 0 ) );
                 }
             else
-                __list_block.push_back( Block( 0, 0, M_Xh->nDofStart( M_index ), 0 ) );
+                __list_block.push_back( Block( 0, 0, 0/*M_Xh->nDofStart( M_index )*/, 0 ) );
 
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
                     M_lf.vectorPtr(),
@@ -1083,7 +1083,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
             size_type g_ic_start = __bit->globalRowStart();
             DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
 
-            M_F->zero( g_ic_start,g_ic_start + M_X->nDof() );
+            M_F->zero();// g_ic_start,g_ic_start + M_X->nDof() );
         }
     }
 
