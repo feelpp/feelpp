@@ -43,6 +43,7 @@
 namespace Feel
 {
 template<typename T> class VectorPetsc;
+template<typename T> class VectorPetscMPI;
 
 namespace ublas = boost::numeric::ublas;
 /*!
@@ -97,7 +98,7 @@ public:
         typedef VectorUblas<value_type,subtype> type;
     };
 
-
+    static const bool is_range_vector = boost::is_same<vector_type,typename this_type::range::subtype>::value;
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
 
@@ -117,7 +118,8 @@ public:
 
     VectorUblas( VectorUblas const & m );
 
-    VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+    VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
 
     FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
@@ -193,7 +195,17 @@ public:
     T operator()( size_type i ) const
     {
         checkIndex(i);
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        if ( is_range_vector )
+        {
+            auto const& dm = this->map();
+            const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
+            if ( i < nLocalActiveDof )
+                return M_vec.operator()( i );
+            else
+                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
+        }
+        else
+            return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -202,7 +214,17 @@ public:
     T& operator()( size_type i )
     {
         checkIndex(i);
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        if ( is_range_vector )
+        {
+            auto const& dm = this->map();
+            const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
+            if ( i < nLocalActiveDof )
+                return M_vec.operator()( i );
+            else
+                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
+        }
+        else
+            return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -210,8 +232,9 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        checkIndex(i);
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        //checkIndex(i);
+        //return M_vec.operator()( i-this->firstLocalIndex() );
+        return this->operator()( i );
     }
 
     /**
@@ -219,8 +242,9 @@ public:
      */
     T& operator[]( size_type i )
     {
-        checkIndex(i);
-        return M_vec.operator()( i-this->firstLocalIndex() );
+        //checkIndex(i);
+        //return M_vec.operator()( i-this->firstLocalIndex() );
+        return this->operator()( i );
     }
 
     /**
@@ -281,6 +305,23 @@ public:
     const_iterator end() const
     {
         return M_vec.end();
+    }
+    iterator beginGhost()
+    {
+        return M_vecNonContiguousGhosts.begin();
+    }
+    const_iterator beginGhost() const
+    {
+        return M_vecNonContiguousGhosts.begin();
+    }
+
+    iterator endGhost()
+    {
+        return M_vecNonContiguousGhosts.end();
+    }
+    const_iterator endGhost() const
+    {
+        return M_vecNonContiguousGhosts.end();
     }
 
     /**
@@ -396,6 +437,7 @@ public:
      */
     void setGlobalValue( size_type i, value_type v ) const
     {
+        CHECK( false ) << "setGlobalValue forbidden";
         //M_global_values( i ) = v;
     }
 
@@ -405,6 +447,8 @@ public:
     void setConstant( value_type v )
     {
         M_vec = ublas::scalar_vector<double>( M_vec.size(), v );
+        if ( is_range_vector )
+            M_vecNonContiguousGhosts = ublas::scalar_vector<double>( M_vecNonContiguousGhosts.size(), v );
     }
 
     //@}
@@ -433,8 +477,10 @@ public:
     void zero ()
     {
         //M_vec.clear();
-        this->outdateGlobalValues();
+        //this->outdateGlobalValues();
         std::fill( this->begin(), this->end(), value_type( 0 ) );
+        if ( is_range_vector )
+            std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
     }
 
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
@@ -581,6 +627,9 @@ public:
     {
         this->outdateGlobalValues();
         M_vec.operator *=( factor );
+        if ( is_range_vector )
+            M_vecNonContiguousGhosts.operator *=( factor );
+
     }
 
     /**
@@ -653,10 +702,14 @@ public:
     real_type l1Norm() const
     {
         checkInvariant();
-        double local_l1 = ublas::norm_1( M_vec );
+
+        double local_l1 = 0;
+        if ( is_range_vector || this->comm().size() == 1 )
+            local_l1 = ublas::norm_1( M_vec );
+        else
+            local_l1 = ublas::norm_1( M_vec );
 
         double global_l1 = local_l1;
-
 
 #ifdef FEELPP_HAS_MPI
 
@@ -709,7 +762,12 @@ public:
     real_type linftyNorm() const
     {
         checkInvariant();
-        real_type local_norminf = ublas::norm_inf( M_vec );
+        real_type local_norminf = 0;
+        if ( is_range_vector || this->comm().size() == 1 )
+            local_norminf = ublas::norm_inf( M_vec );
+        else
+            local_norminf = ublas::norm_inf( M_vec );
+
         real_type global_norminf = local_norminf;
 
 
@@ -778,7 +836,8 @@ public:
         this->outdateGlobalValues();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            M_vec.operator[]( i ) += a;
+            this->operator[]( i ) += a;
+        //M_vec.operator[]( i ) += a;
 
         return;
     }
@@ -806,7 +865,8 @@ public:
         this->outdateGlobalValues();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
+            this->operator()( i ) += a*v( v.firstLocalIndex() + i );
+        //M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
 
         return;
     }
@@ -910,7 +970,13 @@ private:
 
 
 private:
+
+    //! vector with in first active dofs and then ghost, all dofs is contiguous, if Storage is not a view
+    //! else is Storage is a view, the vector represent only the active dofs contiguous
     vector_type M_vec;
+    //! non contiguous ghost values : defined only with range view vector
+    vector_type M_vecNonContiguousGhosts;
+
     mutable bool M_global_values_updated;
     //mutable ublas::vector<value_type> M_global_values;
 };
@@ -992,7 +1058,10 @@ template<typename T,typename Storage>
 inline VectorPetsc<T>
 toPETSc( VectorUblas<T,Storage> & v )
 {
-    return VectorPetsc<T>( v );
+    if ( v.comm().size() > 1 )
+        return VectorPetscMPI<T>( v );
+    else
+        return VectorPetsc<T>( v );
 }
 
 /**
@@ -1013,7 +1082,10 @@ template<typename T,typename Storage>
 inline boost::shared_ptr<VectorPetsc<T>>
 toPETScPtr( VectorUblas<T,Storage> & v )
 {
-    return boost::make_shared<VectorPetsc<T>>( v );
+    if ( v.comm().size() > 1 )
+        return boost::make_shared<VectorPetscMPI<T>>( v );
+    else
+        return boost::make_shared<VectorPetsc<T>>( v );
 }
 
 /**
@@ -1034,7 +1106,10 @@ template<typename T,typename Storage>
 inline boost::shared_ptr<VectorPetsc<T>>
 toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
 {
-    return boost::make_shared<VectorPetsc<T>>( v );
+    if ( v->comm().size() > 1 )
+        return boost::make_shared<VectorPetscMPI<T>>( v );
+    else
+        return boost::make_shared<VectorPetsc<T>>( v );
 }
 
 
