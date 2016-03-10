@@ -1505,6 +1505,7 @@ public:
     static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
     static constexpr bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
     static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static constexpr bool is_tensor2symm = ( is_composite? false : basis_0_type::is_tensor2 && is_symm_v<basis_0_type> );
     static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
     static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static constexpr bool is_nodal = !is_modal;
@@ -1950,6 +1951,7 @@ public:
         static const bool is_scalar = functionspace_type::is_scalar;
         static const bool is_vectorial = functionspace_type::is_vectorial;
         static const bool is_tensor2 = functionspace_type::is_tensor2;
+        static const bool is_tensor2symm = functionspace_type::is_tensor2symm;
         static const bool is_continuous = functionspace_type::is_continuous;
         static const uint16_type nComponents1 = functionspace_type::nComponents1;
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
@@ -4795,6 +4797,10 @@ const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2symm;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename T,  typename Cont>
 const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -5100,7 +5106,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
 {
-    if ( ( is_vectorial || is_tensor2 ) && !M_comp_space )
+    if ( ( is_vectorial || is_tensor2 || is_tensor2symm ) && !M_comp_space )
     {
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
