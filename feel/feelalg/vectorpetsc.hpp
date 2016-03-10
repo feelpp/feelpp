@@ -805,6 +805,12 @@ public:
 
     VectorPetscMPI( datamap_ptrtype const& dm );
 
+    template<typename Storage>
+    VectorPetscMPI( VectorUblas<T,Storage>& v )
+        :
+        super( v )
+        {}
+
     ~VectorPetscMPI()
     {
         this->clear();
