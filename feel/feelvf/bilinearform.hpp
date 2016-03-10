@@ -650,6 +650,16 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        template<typename IM2,typename IMTest,typename IMTrial>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2, IMTest const& imTest, IMTrial const& imTrial,
+                 mpl::int_<2> );
+
 
         void initDynamicEigenMatrix()
         {
@@ -815,6 +825,23 @@ public:
                       fusion::at_key<test_gmc1>( M_test_gmc )->id() );
         }
         void assemble( size_type elt_0, size_type elt_1  );
+
+        /**
+         * local to global assembly given a pair of test and trial element ids
+         *  - \p elt.first provides the test element
+         *  - \p elt.second provides the trial element
+         */
+        void assemble( std::pair<size_type,size_type> const& elt );
+
+        /**
+         * local to global assembly associated to internal faces given a pair of
+         * test and trial element ids
+         *
+         *  - \p elt.first provides the test element
+         *  - \p elt.second provides the trial element
+         */
+        void assemble( std::pair<size_type,size_type> const& elt_0,
+                       std::pair<size_type,size_type> const& elt_1 );
 
         void assembleInCaseOfInterpolate();
 
@@ -1063,7 +1090,7 @@ public:
      */
     //@{
 
-    
+
     BilinearForm(){}
     /**
 
@@ -1465,8 +1492,8 @@ public:
     {
         return M_n_nz[i];
     }
-    
-    
+
+
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,

@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file pchm.hpp
+   \file pdhm.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#ifndef FEELPP_PCHM_H
-#define FEELPP_PCHM_H 1
+#ifndef FEELPP_PDHM_H
+#define FEELPP_PDHM_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -40,10 +40,10 @@ template<typename MeshType,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-struct Pchmg
+struct Pdhmg
 {
     typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Pset,Continuous,Pts,Tag>>,
+                          bases<Lagrange<Order,Pset,Discontinuous,Pts,Tag>>,
                           T,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
@@ -55,14 +55,14 @@ template<typename MeshType,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchm = Pchmg<MeshType,Order,Tensor2,T,Pts,Tag>;
+using Pdhm = Pdhmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
          int Order,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchms = Pchmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
+using Pdhms = Pdhmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 
 } // meta
 
@@ -71,29 +71,29 @@ template<typename MeshType,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchm_type = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::type;
+using Pdhm_type = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchm_ptrtype = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::ptrtype;
+using Pdhm_ptrtype = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
          int Order,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchms_type = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::type;
+using Pdhms_type = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
-using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
+using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 /**
- * \fn Pchm<k,MeshType>
+ * \fn Pdhm<k,MeshType>
  *
  * build a function space of continuous matrix fields which are piecewise polynomial
  * of degree (total or in each variable) less than k.
@@ -104,10 +104,10 @@ template<int Order,
          typename MeshType,
          int Tag = 0>
 inline
-Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchm( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pdhm_ptrtype<MeshType,Order,T,Pts,Tag>
+Pdhm( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return Pchm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
+    return Pdhm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
@@ -122,10 +122,10 @@ template<int Order,
          typename MeshType,
          int Tag = 0>
 inline
-Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchms( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
+Pdhms( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return Pchms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
+    return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                                                       _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
@@ -133,4 +133,4 @@ Pchms( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 
 } // Feel
 
-#endif /* FEELPP_PCHM_H */
+#endif /* FEELPP_PDHM_H */

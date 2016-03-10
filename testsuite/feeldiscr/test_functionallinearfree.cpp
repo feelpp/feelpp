@@ -163,7 +163,7 @@ testFunctionalLinearComposite()
     double result = functional->operator()( element );
     double result_free = functionalfree->operator()( element );
 
-    double epsilon=1e-13;
+    double epsilon=5e-13;
     BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), epsilon );
     BOOST_CHECK_SMALL( math::abs(result-result_compositefree), epsilon );
     BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), epsilon );

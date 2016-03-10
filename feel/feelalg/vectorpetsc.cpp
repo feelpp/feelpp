@@ -1387,19 +1387,21 @@ VectorPetscMPI<T>::dot( Vector<T> const& __v )
     this->close();
     PetscScalar e;
 
-    VectorPetscMPI<value_type> v( this->mapPtr() );
+    if ( dynamic_cast<VectorPetscMPI<T> const*>( &__v )  != ( VectorPetscMPI<T> const* )0 )
     {
-        size_type s = v.map().nLocalDofWithGhost();
-        size_type start = v.firstLocalIndex();
-
-        for ( size_type i = 0; i < s; ++i )
-            v.set( start + i, __v( start + i ) );
+        VectorPetscMPI<T> const& v   = dynamic_cast<VectorPetscMPI<T> const&>( __v );
+        auto ierr = VecDot( v.vec(), this->vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
     }
+    else
+    {
+        auto vp = boost::make_shared<VectorPetscMPI<value_type>>(this->mapPtr() );
+        vector_ptrtype v = vp;
+        *v = __v;
 
-    v.close();
-
-    VecDot( this->vec(), v.vec(), &e );
-
+        auto ierr=VecDot( this->vec(), vp->vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
+    }
     return e;
 }
 
