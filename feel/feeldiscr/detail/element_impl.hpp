@@ -45,9 +45,10 @@ typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template s
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name,
                                                                       bool updateOffViews )
 {
-    size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
-                                                 size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<false/*true*/> >( this->worldsComm(), false, 0, i ) );
+    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
+    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
+    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
+    startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -57,7 +58,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 
     if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
     {
-        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
+                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         // update M_containersOffProcess<i> : send
@@ -91,6 +93,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // build a subrange view identical
         ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                     ublas::range( 0, space->nLocalDof() ),
+                    ublas::range( 0, 0 ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
@@ -124,9 +127,10 @@ template<int i>
 typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name, bool updateOffViews ) const
 {
-    size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
-                                                 size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<false/*true*/> >( this->worldsComm(), false, 0, i ) );
+    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
+    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
+    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
+    startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -137,7 +141,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     if ( this->functionSpace()->worldsComm()[i].isActive() )
     {
         ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
-                    ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+                    ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
+                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         // update M_containersOffProcess<i> : send
@@ -167,6 +172,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // build a subrange view identical
         ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                     ublas::range( 0, space->nLocalDof() ),
+                    ublas::range( 0, 0 ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
