@@ -4,6 +4,7 @@
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pchm.hpp>
+#include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -41,7 +42,10 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
     BOOST_CHECK_SMALL( sfull(1,0)-syRef, 1e-12 );
 }
 
-BOOST_AUTO_TEST_CASE( element_component_tensor2 )
+
+template<typename SpaceT>
+void
+test_tensor2()
 {
     typedef Mesh<Simplex<2,1,2> > mesh_type;
     GeoTool::Node x1( 0,0 );
@@ -49,7 +53,7 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2 )
     GeoTool::Rectangle R( doption(_name="gmsh.hsize"),"OMEGA",x1,x2 );
     auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
 
-    auto VhTensor2 = Pchm<2>( mesh );
+    auto VhTensor2 = SpaceT::New( mesh );
     auto uTensor2 = VhTensor2->element();
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(1.),cst(2.),cst(3.),cst(4.) ) );
     auto uxx = uTensor2.comp( Component::X,Component::X );
@@ -67,7 +71,12 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2 )
     double sxy2 = integrate( _range=elements( mesh ), _expr=idv(uxy) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( sxy1-sxyRef, 1e-12 );
     BOOST_CHECK_SMALL( sxy2-sxyRef, 1e-12 );
-    double syxRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate()( 0,0 );
+    double syxRef = 0;
+    if ( SpaceT::is_tensor2symm )
+        syxRef = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate()( 0,0 );
+    else
+        syxRef = integrate( _range=elements( mesh ), _expr=cst(3.) ).evaluate()( 0,0 );
+
     double syx1 = integrate( _range=elements( mesh ), _expr=inner( idv( uTensor2 )*oneX(),oneY() ) ).evaluate()( 0,0 );
     double syx2 = integrate( _range=elements( mesh ), _expr=idv(uyx) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( syx1-syxRef, 1e-12 );
@@ -83,9 +92,26 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2 )
     BOOST_CHECK_SMALL( sfull(0,1)-sxyRef, 1e-12 );
     BOOST_CHECK_SMALL( sfull(1,0)-syxRef, 1e-12 );
     BOOST_CHECK_SMALL( sfull(1,1)-syyRef, 1e-12 );
+
+}
+BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
+{
+    test_tensor2<Pchm_type<Mesh<Simplex<2>>,2>>();
+}
+BOOST_AUTO_TEST_CASE( element_component_tensor2_discontinuous )
+{
+    test_tensor2<Pdhm_type<Mesh<Simplex<2>>,2>>();
+}
+
+BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous )
+{
+    test_tensor2<Pchms_type<Mesh<Simplex<2>>,2>>();
+}
+
+
+BOOST_AUTO_TEST_CASE( element_component_tensor2symm_discontinuous )
+{
+    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,2>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
-

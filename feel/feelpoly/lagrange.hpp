@@ -329,7 +329,8 @@ public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
                            boost::is_same<PolySetType<N>, Vectorial<N> >::value ||
-                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ) );
+                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ||
+                           boost::is_same<PolySetType<N>, Tensor2Symm<N> >::value ) );
 
     /** @name Typedefs
      */
