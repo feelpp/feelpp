@@ -830,7 +830,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
 #else
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::string tableName )
+VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::string tableName, bool appendMode )
 {
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
@@ -863,10 +863,11 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
     std::vector<double> dataStorage( dm.nLocalDofWithoutGhost() );
 
     HDF5 hdf5;
-    hdf5.openFile( filename, this->comm().localComm(), isLoad );
 
     if ( isLoad )
     {
+        hdf5.openFile( filename, this->comm().localComm(), isLoad );
+
         if ( false )
         {
             std::vector<uint> sizeValuesReload( 1 );
@@ -892,6 +893,16 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename, std::s
     }
     else // save
     {
+        /* If appendMode is true, then we want to append the table to the hdf5 file */
+        /* To do so we open the hdf5 as existing and allow read/write in it */
+        if(appendMode)
+        {
+            hdf5.openFile( filename, this->comm().localComm(), true, true );
+        }
+        else
+        {
+            hdf5.openFile( filename, this->comm().localComm(), false );
+        }
         if ( false )
         {
             // create size tab
