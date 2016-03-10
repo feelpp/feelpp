@@ -171,6 +171,7 @@ VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
     //M_global_values()
 {
@@ -181,6 +182,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
     super1( __s ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
     //M_global_values( __s )
 {
@@ -192,6 +194,7 @@ VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
@@ -203,6 +206,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
 {
     this->init( this->size(), this->localSize(), false );
@@ -213,6 +217,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     :
     super1( m ),
     M_vec( m.M_vec ),
+    M_vecNonContiguousGhosts( m.M_vecNonContiguousGhosts ),
     M_global_values_updated( m.M_global_values_updated )
 {
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
@@ -224,9 +229,24 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) ),
     M_global_values_updated( false )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
+}
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::
+VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), rangeActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), rangeGhost ) ),
+    M_global_values_updated( false )
+{
+    CHECK( is_range_vector ) << "is not a range vector";
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << rangeActive.size() << ", start:" << rangeActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << rangeGhost.size() << ", start:" << rangeGhost.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
 }
 
@@ -235,6 +255,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) ),
     M_global_values_updated( false )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
@@ -246,6 +267,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) ),
     M_global_values_updated( false )
 {
     //this->init( m.size(), m.size(), false );
@@ -255,6 +277,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) ),
     M_global_values_updated( false )
 {}
 
@@ -263,6 +286,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), slice_type(0,1,0) ) ),
     M_global_values_updated( false )
     //M_global_values( range.size() )
 {
@@ -277,6 +301,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) ),
     M_global_values_updated( false )
 {}
 
@@ -285,6 +310,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) ),
     M_global_values_updated( false )
     //M_global_values( range.size() )
 {
@@ -324,12 +350,12 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
 
     for ( size_type i = 0; i < this->localSize(); ++i )
     {
-        M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
+        this->operator()( i ) = V(  i );
+        //M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
         //M_vec.operator()( i ) = V(  i );
-
     }
 
-    this->outdateGlobalValues();
+    //this->outdateGlobalValues();
 
     return *this;
 }
