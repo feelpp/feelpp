@@ -59,7 +59,7 @@ int main( int argc, char** argv )
     using namespace Feel;
     using namespace Feel::vf;
     Feel::Environment env( argc, argv );
-    typedef Mesh<Simplex<2,4> > mesh_type;
+    typedef Mesh<Simplex<2,2> > mesh_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid-2",
