@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
