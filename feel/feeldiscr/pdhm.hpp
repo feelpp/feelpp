@@ -95,7 +95,7 @@ using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
 /**
  * \fn Pdhm<k,MeshType>
  *
- * build a function space of continuous matrix fields which are piecewise polynomial
+ * build a function space of discontinuous matrix fields which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
 template<int Order,
@@ -113,7 +113,7 @@ Pdhm( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 }
 
 /**
- * build a function space of continuous symmetric matrix fields which are piecewise polynomial
+ * build a function space of discontinuous symmetric matrix fields which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
 template<int Order,
