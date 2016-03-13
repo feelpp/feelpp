@@ -63,8 +63,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
+      typename MeshTraits<MeshType>::pid_element_const_iterator,
+      typename MeshTraits<MeshType>::pid_element_const_iterator>
       elements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
 {
 
@@ -74,8 +74,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
+      typename MeshTraits<MeshType>::pid_element_const_iterator,
+      typename MeshTraits<MeshType>::pid_element_const_iterator>
       elements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
 {
     return elements( *mesh, pid, mpl::bool_<false>() );

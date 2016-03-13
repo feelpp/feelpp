@@ -1603,7 +1603,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                             facePtr->setProcessId( currentPid );
                     }
                     facePtr->setInterProcess( ( facePtr->pidElement0() != facePtr->pidElement1() ) );
-                    LOG(INFO) << " xxx face inter processdomain: " <<  ( facePtr->pidElement0() != facePtr->pidElement1() ) << " i: " << facePtr->isInterProcess() << " loc: " << facePtr->location();
+                    DVLOG(3) << " xxx face inter processdomain: " <<  ( facePtr->pidElement0() != facePtr->pidElement1() ) << " i: " << facePtr->isInterProcess() << " loc: " << facePtr->location();
 
 #if !defined( NDEBUG )
                     DVLOG(2) << "adding face info : \n";
@@ -1666,8 +1666,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DVLOG(3) << "removing face id : " << f_it->id()
+                         << " marker : " << f_it->marker();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
                 //++f_it;
@@ -1699,8 +1699,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DVLOG(3) << "removing face id : " << f_it->id()
+                         << " marker : " << f_it->marker();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
             }
@@ -3404,8 +3404,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
+    typename self_type::pid_element_iterator el_it;
+    typename self_type::pid_element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
     const size_type nActifElt = std::distance( el_it, el_en );
     if ( nActifElt==0 ) return;
@@ -3513,8 +3513,8 @@ Mesh<Shape, T, Tag>::Localization::init()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
 
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
+    typename self_type::pid_element_iterator el_it;
+    typename self_type::pid_element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
     if ( el_it != el_en )
     {

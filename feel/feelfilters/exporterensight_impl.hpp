@@ -167,21 +167,21 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
             std::ostringstream filestr;
             filestr << this->path() << "/" << this->prefix() << "-paraview-" << this->worldComm().globalSize() << ".sos";
             std::ofstream __out( filestr.str().c_str() );
-            
+
             if ( __out.fail() )
             {
                 DVLOG(2) << "cannot open " << filestr.str()  << "\n";
                 exit( 0 );
             }
-            
+
             __out << "FORMAT:\n"
                 << "type: master_server gold \n"
                 << "SERVERS\n"
                 << "number of servers: " << this->worldComm().globalSize() << "\n";
-            
+
             for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
             {
-                
+
                 __out << "#Server " << pid+1 << "\n"
                     << "machine id: " << mpi::environment::processor_name() << "\n"
                     << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
@@ -195,7 +195,7 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
             std::ostringstream filestr;
             filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
             std::ofstream __out( filestr.str().c_str() );
-        
+
             if ( __out.fail() )
             {
                 DVLOG(2) << "cannot open " << filestr.str()  << "\n";
@@ -475,7 +475,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                 << this->prefix()
                 << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                 << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << timeIndex;
-            
+
             //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
             //, __ts->name(), __geofname.str() );
             M_filename =  __geofname.str();
@@ -573,7 +573,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
         CHECK( m_field.size()/nComponents == __var->second.localSize()/__var->second.nComponents ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
 
         //__field.clear();
-        typename mesh_type::element_const_iterator elt_it, elt_en;
+        typename mesh_type::pid_element_const_iterator elt_it, elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
         size_type e = 0;
 

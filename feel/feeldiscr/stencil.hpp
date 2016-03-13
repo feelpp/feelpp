@@ -575,7 +575,7 @@ public :
         typedef typename fusion::result_of::find<rangeiterator_test_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_test_type>::type> hasnotfindrange_type;
 
-        using defaultrange_type = elements_t<typename test_space_type::mesh_type>;
+        using defaultrange_type = pid_elements_t<typename test_space_type::mesh_type>;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of

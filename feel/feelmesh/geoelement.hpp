@@ -40,6 +40,17 @@
 
 namespace Feel
 {
+/**
+ * hash function for geoelements
+ */
+template<typename GeoT>
+struct GeoHash
+{
+    std::size_t operator()(GeoT const& x)const
+        {
+            return boost::hash<size_type>() ( x.id() );
+        }
+};
 
 class SubFaceOfNone
 {

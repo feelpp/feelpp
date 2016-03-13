@@ -221,7 +221,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                             gmshSaveFormat( out );
                             gmshSavePhysicalNames( out, __step->mesh() );
                         }
-                        
+
                         this->worldComm().barrier();
                         size_type nGlobPoint = numberOfGlobalPtAndIndex( __step->mesh() );
                         this->worldComm().barrier();
@@ -289,7 +289,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 // only if we have more than 1 process
                 if(this->worldComm().size() > 1)
                 {
-                    // The computation of the min/max, for readjusting the transfer function in Gmsh, 
+                    // The computation of the min/max, for readjusting the transfer function in Gmsh,
                     // needs to be done with all processes available as it requires some communication
                     this->computeMinMax( __step, minMaxValues );
 
@@ -313,7 +313,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                             __mshfname << this->prefix()  //<< this->prefix() //this->path()
                                 << "-" << this->worldComm().size()
                                 << ".msh";
-                            geoout << "Merge \"" << __fname.str() << "\";" << std::endl; 
+                            geoout << "Merge \"" << __fname.str() << "\";" << std::endl;
                         }
                         else
                         {
@@ -323,7 +323,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                                 __mshfname << this->prefix()  //<< this->prefix() //this->path()
                                     << "-" << this->worldComm().size() << "_" << i
                                     << ".msh";
-                                geoout << "Merge \"" << __mshfname.str() << "\";" << std::endl; 
+                                geoout << "Merge \"" << __mshfname.str() << "\";" << std::endl;
                             }
                         }
 
@@ -350,12 +350,12 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                                     // if we have min-max values
                                     // we correct the range for the transfer function (for scalar values)
                                     if(it->second.size() == 2)
-                                    {   
-                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) 
+                                    {
+                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j))
                                             << "].RangeType=2;" << std::endl;
                                         geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j))
                                             << "].CustomMin=" << it->second[0] << ";" << std::endl;
-                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j)) 
+                                        geoout << "View[nv-" << ((this->worldComm().size() - 1 - i) * minMaxValues.size() + (minMaxValues.size() - 1 - j))
                                             << "].CustomMax=" << it->second[1] << ";" << std::endl;
                                     }
                                 }
@@ -512,7 +512,7 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
     auto itPt = mesh->beginPointWithProcessId();
     auto const enPt = mesh->endPointWithProcessId();
 
-    
+
     /* If we want only one file, specify the same filename for each process */
     if(boption(_name="exporter.gmsh.merge") == true)
     {
@@ -917,7 +917,7 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const
 {
-    typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
+    typedef typename mesh_type::pid_element_const_iterator element_mesh_const_iterator;
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
     typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
@@ -983,7 +983,7 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
-        
+
         // record min-max value for function
         // check if record already exists
         if(minMaxValues.empty() || minMaxValues.find(__varVec->first) == minMaxValues.end())
@@ -996,7 +996,7 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
                 minMaxValues[__varVec->first].push_back(0.0);
             }
         }
-        
+
         /* need to update min/max for vectorial data */
         /*
         for (; elt_it!=elt_en ; ++elt_it )
@@ -1034,12 +1034,12 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
     {
         element_scalar_type const& __u = __ElmScal->second;
 
-        element_mesh_const_iterator elt_it = mesh->beginElement();
-        element_mesh_const_iterator elt_en = mesh->endElement();
+        auto elt_it = mesh->beginElement();
+        auto elt_en = mesh->endElement();
 
         if ( !__u.areGlobalValuesUpdated() )
             __u.updateGlobalValues();
-        
+
         // record min-max value for function
         // check if record already exists
         if(minMaxValues.empty() || minMaxValues.find(__ElmScal->first) == minMaxValues.end())
@@ -1047,7 +1047,7 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
             minMaxValues[__ElmScal->first].push_back(0.0);
             minMaxValues[__ElmScal->first].push_back(0.0);
         }
-        
+
 #if 0
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
@@ -1076,7 +1076,7 @@ void
 ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         step_ptrtype __step, size_type indexEltStart) const
 {
-    typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
+    typedef typename mesh_type::pid_element_const_iterator element_mesh_const_iterator;
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
     typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
@@ -1218,7 +1218,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         element_mesh_const_iterator elt_it;
         element_mesh_const_iterator elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
-        
+
         out << std::distance(elt_it, elt_en) << "\n";//number associated nodal values
 
         for (; elt_it!=elt_en ; ++elt_it )
