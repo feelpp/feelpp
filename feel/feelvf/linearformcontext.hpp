@@ -388,7 +388,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 #if !defined(NDEBUG)
         CHECK( M_test_dof->mesh()->isBoundaryElement( elt_0 ) ) << "element in context must be on boundary";
 #endif
-        M_mortar_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        //M_mortar_local_rows = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+        M_mortar_local_rows = M_form.localToGlobalIndices( elt_0 ).array() + row_start;
         if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
         {
             CHECK( false ) << "TODO";

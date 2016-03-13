@@ -579,6 +579,7 @@ public:
                 M_row_startInVector = lf.M_row_startInVector;
                 M_do_threshold = lf.M_do_threshold;
                 M_threshold = lf.M_threshold;
+                M_locglobIndices = lf.M_locglobIndices;
             }
             return *this;
         }
@@ -810,11 +811,11 @@ public:
         if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                M_F->add( i+this->rowStartInVector(), v );
+                M_F->add( i/*+this->rowStartInVector()*/, v );
         }
 
         else
-            M_F->add( i+this->rowStartInVector(), v );
+            M_F->add( i/*+this->rowStartInVector()*/, v );
     }
 
     /**
@@ -823,9 +824,11 @@ public:
      */
     void addVector( int* i, int n,  value_type* v )
     {
+#if 0
         if ( this->rowStartInVector()!=0 )
             for ( int k = 0; k< n ; ++k )
                 i[k]+=this->rowStartInVector();
+#endif
 
         M_F->addVector( i, n, v );
     }
@@ -888,7 +891,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_lb( __vf.M_lb ),
     M_row_startInVector( __vf.M_row_startInVector ),
     M_do_threshold( __vf.M_do_threshold ),
-    M_threshold( __vf.M_threshold )
+    M_threshold( __vf.M_threshold ),
+    M_locglobIndices( __vf.M_locglobIndices )
 
 {
     // add the vector contrib
@@ -927,7 +931,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
                       << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
-    this->setLocglobIndices( M_X->dof()->localToGlobalProcessIndices(0) );
+    datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
+    int dataBaseId = dm->basisIndexFromGp( M_row_startInVector );
+    this->setLocglobIndices( dm->localToGlobalProcessIndices( dataBaseId ) );
 
     if (  init )
         M_F->zero();
@@ -1006,7 +1012,10 @@ struct LFAssign
                     __list_block,
                     M_lf.rowStartInVector(),
                     false );
-            lf.setLocglobIndices( M_lf.testSpace()->dof()->localToGlobalProcessIndices( M_index ) );
+
+            datamap_ptrtype dm = M_lf.vectorPtr()->mapPtr();//M_lf.testSpace()->dof()
+            int dataBaseId = dm->basisIndexFromGp( M_lf.rowStartInVector() ) + M_index;
+            lf.setLocglobIndices( dm->localToGlobalProcessIndices( dataBaseId ) );
 
             //
             // in composite integration, make sure that if M_init is \p
