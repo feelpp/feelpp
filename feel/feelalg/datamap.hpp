@@ -166,6 +166,11 @@ public:
      */
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
 
+    /**
+     *
+     */
+    DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm );
+
     DataMap( DataMap const & dm ) = default;
     DataMap( DataMap&& dm ) = default;
     virtual ~DataMap();
@@ -545,7 +550,19 @@ public:
         M_localToGlobalProcessIndices[tag][eltId][locId] = globId;
     }
 
-
+    int nBasisGp() const { return M_basisGpToCompositeGp.size(); }
+    int basisIndexFromGp( size_type gpdof ) const
+        {
+            size_type currentStartId = 0;
+            for ( int tag=0;tag<this->nBasisGp();++tag )
+            {
+                size_type nGpDof = this->basisGpToCompositeGp( tag ).size();
+                if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
+                    return tag;
+                currentStartId+=nGpDof;
+            }
+            return 0;
+        }
     /**
      * basis global process (space def) to composite global process
      */
