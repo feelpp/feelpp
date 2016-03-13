@@ -48,8 +48,12 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     auto u = M_XhDisplacement->element(); //u = *X;
     // copy vector values in fluid element
+#if 0
     for ( size_type k=0;k<M_XhDisplacement->nLocalDofWithGhost();++k )
         u(k) = X->operator()(rowStartInVector+k);
+#else
+    M_blockVectorSolution.setSubVector( u, *X, 0 );
+#endif
     auto v = u;//M_Xh->element("v");
 
     //--------------------------------------------------------------------------------------------------//
@@ -159,9 +163,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     {
         auto p = M_XhPressure->element();//*M_fieldPressure;
         // copy vector values in pressure element
+#if 0
         size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
         for ( size_type k=0;k<M_XhPressure->nLocalDofWithGhost();++k )
             p(k) = X->operator()(rowStartInVector+startDofIndexPressure+k);
+#else
+        M_blockVectorSolution.setSubVector( p, *X, 1 );
+#endif
         // assemble
         this->updateJacobianIncompressibilityTerms(u,p,J);
     }
