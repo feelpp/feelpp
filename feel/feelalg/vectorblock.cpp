@@ -76,7 +76,7 @@ BlocksBaseVector<T>::localize()
     if ( !this->vector() ) return;
 
     this->vector()->close();
-
+#if 0
     size_type _start_i=0;
     for ( uint16_type i=0; i<this->nRow(); ++i )
     {
@@ -90,6 +90,28 @@ BlocksBaseVector<T>::localize()
         this->operator()( i,0 )->close();
         _start_i += nBlockRow;
     }
+#else
+    auto const& dm = this->vector()->map();
+    int currentDataBaseId = 0;
+    for ( uint16_type i=0; i<this->nRow(); ++i )
+    {
+        //size_type nBlockRow = this->operator()( i,0 )->localSize();
+        auto const& dmb = this->operator()( i,0 )->map();
+        int nDataBase = dmb.nBasisGp();
+        for ( int tag=0;tag<nDataBase;++tag,++currentDataBaseId )
+        {
+            auto const& basisGpToCompositeGpBlock = dmb.basisGpToCompositeGp(tag);
+            auto const& basisGpToCompositeGpVec = dm.basisGpToCompositeGp(currentDataBaseId);
+            for (int k=0;k<basisGpToCompositeGpBlock.size();++k)
+            {
+                this->operator()( i,0 )->set( basisGpToCompositeGpBlock[k], this->vector()->operator()( basisGpToCompositeGpVec[k] ) );
+            }
+        }
+        this->operator()( i,0 )->close();
+    }
+
+
+#endif
 }
 
 template <typename T>
@@ -98,6 +120,43 @@ BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
 {
     M_vector = backend->newBlockVector( _block=*this );
 }
+
+
+template <typename T>
+void
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , int blockId ) const
+{
+    auto const& dmVec = vec.map();
+    auto const& dmSubVec = subvec.map();
+    for ( int tag=0 ; tag<dmSubVec.nBasisGp() ; ++tag )
+    {
+        auto const& basisGpToContainerGpSubVec = dmSubVec.basisGpToCompositeGp( tag );
+        CHECK( blockId+tag < dmVec.nBasisGp() ) << "error "<<blockId+tag << " vs " << dmVec.nBasisGp();
+        auto const& basisGpToContainerGpVec = dmVec.basisGpToCompositeGp( blockId+tag );
+        CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
+        for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
+            vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
+    }
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec , int idStart ) const
+{
+    auto const& dmVec = vec.map();
+    auto const& dmSubVec = subvec.map();
+    int basisIndexSubVec = idStart;
+    for ( int tag=0 ; tag<dmSubVec.nBasisGp() ; ++tag )
+    {
+        auto const& basisGpToContainerGpSubVec = dmSubVec.basisGpToCompositeGp( tag );
+        CHECK( basisIndexSubVec+tag < dmVec.nBasisGp() ) << "error "<<basisIndexSubVec+tag<< " vs " << dmVec.nBasisGp();
+        auto const& basisGpToContainerGpVec = dmVec.basisGpToCompositeGp( basisIndexSubVec+tag );
+        CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
+        for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
+            subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
+    }
+}
+
 
 template class BlocksBaseVector<double>;
 
@@ -111,88 +170,31 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
 {
     auto nRow = blockVec.nRow();
 
-#if 0
-    size_type _size = 0;
-    for ( uint i=0; i<nRow; ++i )
-        _size += blockVec( i,0 )->size();
-
-    M_vec = backend.newVector( _size,_size );
-#else
-
-    boost::shared_ptr<DataMap> dm( new DataMap(blockVec(0,0)->map().worldComm()) );
-    const int myrank = dm->worldComm().globalRank();
-    const int worldsize = dm->worldComm().globalSize();
-    for (int proc = 0 ; proc < worldsize ; ++proc)
+    boost::shared_ptr<DataMap> dm;
+    if ( nRow == 1 )
     {
-        size_type firstDofGlobalCluster=0;
-        for ( int p=0; p<proc; ++p )
-            for ( uint16_type i=0 ; i<nRow; ++i )
-                firstDofGlobalCluster += blockVec(i,0)->map().nLocalDofWithoutGhost( p );
-        dm->setFirstDofGlobalCluster( proc, firstDofGlobalCluster );
-
-        size_type sizeWithoutGhost=0, sizeWithGhost=0, sizeGlobalCluster=0;
-        for ( uint16_type i=0 ; i<nRow; ++i)
-        {
-            sizeWithoutGhost += blockVec(i,0)->map().nLocalDofWithoutGhost( proc );
-            sizeWithGhost += blockVec(i,0)->map().nLocalDofWithGhost( proc );
-            sizeGlobalCluster += blockVec(i,0)->map().nDof();
-        }
-        dm->setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
-        dm->setNLocalDofWithGhost( proc, sizeWithGhost );
-        dm->setFirstDof( proc, 0 );
-        dm->setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
-        dm->setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
-        if ( proc==myrank )
-            dm->setNDof( sizeGlobalCluster );
+        dm = blockVec(0,0)->mapPtr();
     }
-
-    dm->resizeMapGlobalProcessToGlobalCluster( dm->nLocalDofWithGhost(myrank) );
-    dm->resizeMapGlobalClusterToGlobalProcess( dm->nLocalDofWithoutGhost(myrank) );
-    const size_type firstDofGC = dm->firstDofGlobalCluster(myrank);
-    size_type start_i = firstDofGC;
-    size_type nLocalDofStart = dm->firstDof();
-    for ( uint16_type i=0 ; i<nRow; ++i)
+    else
     {
-        const size_type firstBlockDofGC =  blockVec(i,0)->map().firstDofGlobalCluster(myrank);
-        for (size_type gdof = blockVec(i,0)->map().firstDof(myrank) ; gdof < blockVec(i,0)->map().nLocalDofWithGhost(myrank) ; ++gdof )
-        {
-            const size_type localDof = nLocalDofStart+gdof;
-            size_type gdofGC = blockVec(i,0)->map().mapGlobalProcessToGlobalCluster(gdof);
-            if ( blockVec(i,0)->map().dofGlobalClusterIsOnProc( gdofGC ) )
-            {
-                const size_type globalDof = start_i+(gdofGC-firstBlockDofGC);
-                dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-                dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
-            }
-            else
-            {
-                const int realproc = blockVec(i,0)->map().procOnGlobalCluster(gdofGC);
-                size_type nDofStart=dm->firstDofGlobalCluster(realproc);
-                for ( uint16_type k=0; k<i; ++k )
-                    nDofStart += blockVec(k,0)->map().nLocalDofWithoutGhost( realproc );
-                const size_type globDof = nDofStart+(gdofGC- blockVec(i,0)->map().firstDofGlobalCluster(realproc));
-                dm->setMapGlobalProcessToGlobalCluster( localDof, globDof );
-            }
-        }
-        nLocalDofStart += blockVec(i,0)->map().nLocalDofWithGhost( myrank );
-
-        start_i += blockVec(i,0)->map().nLocalDofWithoutGhost( myrank );
+        std::vector<boost::shared_ptr<DataMap> > listofdm;
+        for ( uint16_type i=0 ; i<nRow; ++i )
+            listofdm.push_back( blockVec(i,0)->mapPtr() );
+        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldComm() ) );
     }
-
-    //dm->showMeMapGlobalProcessToGlobalCluster();
-
     M_vec = backend.newVector( dm );
-#endif
+
     M_vec->zero();
 
     if ( copy_values )
     {
-        size_type start_i = M_vec->map().firstDof();
-        for ( uint i=0; i<nRow; ++i )
+        size_type start_i = 0;//M_vec->map().firstDof();
+        for ( int i=0; i<nRow; ++i )
         {
             blockVec( i,0 )->close(); // not good but necessary here (TODO)
-            this->updateBlockVec( blockVec( i,0 ),start_i );
-            start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
+            this->updateBlockVec( blockVec( i,0 ), start_i );
+            start_i += blockVec( i,0 )->map().nBasisGp();
+            //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
 }
@@ -201,11 +203,22 @@ template <typename T>
 void
 VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
-    auto const& blockmap = m->map();
-    const size_type size = blockmap.nLocalDofWithGhost() ;
+    auto const& dmb = m->map();
+    auto const& dm = M_vec->map();
 
-    for ( size_type i=0; i<size; ++i )
-        M_vec->set( start_i+i,m->operator()( i ) );
+    // int startTagIdInVec=0;
+    // for ( int i=0; i<start_i; ++i )
+    //     startTagIdInVec += this->operator[]( i,0 )->map().indexSplit()->size();
+
+    int nTag = dmb.nBasisGp();
+    for ( int tag=0;tag<nTag;++tag )
+    {
+        auto const& basisGpToCompositeGpBlock = dmb.basisGpToCompositeGp(tag);
+        auto const& basisGpToCompositeGpVec = dm.basisGpToCompositeGp(start_i+tag);
+        CHECK( basisGpToCompositeGpBlock.size() == basisGpToCompositeGpVec.size() ) << "incompatibility with size";
+        for (int k=0;k<basisGpToCompositeGpBlock.size();++k)
+            M_vec->set( basisGpToCompositeGpVec[k],m->operator()( basisGpToCompositeGpBlock[k] ) );
+    }
 }
 
 template class VectorBlockBase<double>;
