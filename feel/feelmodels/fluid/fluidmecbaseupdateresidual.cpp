@@ -49,8 +49,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     auto U = Xh->element("u");//U = *XVec;
     // copy vector values in fluid element
+#if 0
     for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
         U(k) = XVec->operator()(/*rowStartInVector+*/k);
+#else
+    M_blockVectorSolution.setSubVector( U, *XVec, 0 );
+#endif
 
     auto u = U.template element<0>();
     auto v = U.template element<0>();
@@ -452,21 +456,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             << " start dof index for dirichletlm is not present\n";
         size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
 
-        auto lambdaBC = this->XhDirichletLM()->element();
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
-            //size_type rowStartDirichletLM = startDofIndexDirichletLM;
-            for ( size_type kk=0;kk<this->XhDirichletLM()->nLocalDofWithGhost();++kk )
-                lambdaBC( kk ) = XVec->operator()( startDofIndexDirichletLM + kk);
+            auto lambdaBC = this->XhDirichletLM()->element();
+            int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startDofIndexDirichletLM );
+            M_blockVectorSolution.setSubVector( lambdaBC, *XVec, dataBaseIdLM );
 
             form1( _test=Xh,_vector=R,
                    _rowstart=rowStartInVector )+=
-                integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ), //elements(this->meshDirichletLM()),
+                integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ),
                            _expr= inner( idv(lambdaBC),id(u) ) );
 
             form1( _test=this->XhDirichletLM(),_vector=R,
                    _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
-                integrate( _range=elements(this->meshDirichletLM()),
+                integrate( //_range=elements(this->meshDirichletLM()),
+                    _range=markedfaces( this->mesh(),this->markerDirichletBClm() ),
                            _expr= inner(idv(u),id(lambdaBC) ) );
         }
 
@@ -477,6 +481,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
             {
+                auto lambdaBC = this->XhDirichletLM()->element();
                 form1( _test=this->XhDirichletLM(),_vector=R,
                        _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
                     integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
