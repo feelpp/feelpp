@@ -1225,9 +1225,17 @@ public:
 
         auto dm = Feel::detail::datamap( solution );
         this->setDataMap( dm );
-        vector_ptrtype _sol( this->newVector( dm  ) );
-        // initialize
-        *_sol = Feel::detail::ref( solution );
+
+        vector_ptrtype _sol( this->toBackendVectorPtr( solution ) );
+        bool needToCopySolution = false;
+        if( !_sol )
+        {
+            _sol = this->newVector( dm );
+            *_sol = Feel::detail::ref( solution );
+            _sol->close();
+            needToCopySolution = true;
+        }
+
         this->setTranspose( transpose );
         solve_return_type ret;
 
@@ -1267,11 +1275,13 @@ public:
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
         //else
         ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
-
-        //new
         _sol->close();
-        Feel::detail::ref( solution ) = *_sol;
-        Feel::detail::ref( solution ).close();
+
+        if ( needToCopySolution )
+        {
+            Feel::detail::ref( solution ) = *_sol;
+            Feel::detail::ref( solution ).close();
+        }
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::nlSolve end" );
