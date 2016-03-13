@@ -134,6 +134,166 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 }
 
+DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, WorldComm const& _worldComm )
+    :
+    DataMap( _worldComm )
+{
+    const int myrank = this->worldComm().globalRank();
+    const int worldsize = this->worldComm().globalSize();
+    int nRow = listofdm.size();
+    for (int proc = 0 ; proc < worldsize ; ++proc)
+    {
+        size_type firstDofGlobalCluster=0;
+        for ( int p=0; p<proc; ++p )
+            for ( uint16_type i=0 ; i<nRow; ++i )
+                firstDofGlobalCluster += listofdm[i]->nLocalDofWithoutGhost( p );
+        this->setFirstDofGlobalCluster( proc, firstDofGlobalCluster );
+
+        size_type sizeWithoutGhost=0, sizeWithGhost=0, sizeGlobalCluster=0;
+        for ( uint16_type i=0 ; i<nRow; ++i)
+        {
+            sizeWithoutGhost += listofdm[i]->nLocalDofWithoutGhost( proc );
+            sizeWithGhost += listofdm[i]->nLocalDofWithGhost( proc );
+            sizeGlobalCluster += listofdm[i]->nDof();
+        }
+        this->setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
+        this->setNLocalDofWithGhost( proc, sizeWithGhost );
+        this->setFirstDof( proc, 0 );
+        this->setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
+        this->setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
+        if ( proc==myrank )
+            this->setNDof( sizeGlobalCluster );
+    }
+
+    // initialize containers with number of subspace
+
+    int nTagNew = 0;
+    for ( uint16_type i=0 ; i<nRow; ++i)
+        nTagNew += listofdm[i]->nBasisGp();
+    this->initTagLocalToGlobalProcessIndices( nTagNew );
+    this->initTagBasisGpToCompositeGp( nTagNew );
+
+    // fill mapping between basis to composite gdof
+    std::vector<size_type> mapOldToNewGlobalProcess( this->nLocalDofWithGhost(myrank) );
+
+
+    this->resizeMapGlobalProcessToGlobalCluster( this->nLocalDofWithGhost(myrank) );
+    this->resizeMapGlobalClusterToGlobalProcess( this->nLocalDofWithoutGhost(myrank) );
+    const size_type firstDofGC = this->firstDofGlobalCluster(myrank);
+    size_type start_i = firstDofGC;
+    size_type activeDofIdStart = this->firstDof();
+    size_type ghostDofIdStart = this->nLocalDofWithoutGhost(myrank);
+
+    std::vector<size_type> gcDofCurrentStartIndex(worldsize);
+    for (int proc = 0 ; proc < worldsize ; ++proc)
+    {
+        gcDofCurrentStartIndex[proc] = this->firstDofGlobalCluster(proc);
+    }
+
+    int startNewTag =0;
+    for ( uint16_type i=0 ; i<nRow; ++i)
+    {
+        auto const& dmb = listofdm[i];
+        const size_type firstGcDofBlock = dmb->firstDofGlobalCluster(myrank);
+        const size_type nLocWithGhostBlock = dmb->nLocalDofWithGhost(myrank);
+        const size_type nLocWithoutGhostBlock= dmb->nLocalDofWithoutGhost(myrank);
+        // active dofs
+        for (size_type gpDofBlock = dmb->firstDof(myrank) ; gpDofBlock < nLocWithoutGhostBlock ; ++gpDofBlock )
+        {
+            const size_type gpDof = activeDofIdStart + gpDofBlock;
+            size_type gcDofBloc = dmb->mapGlobalProcessToGlobalCluster(gpDofBlock);
+            const size_type gcDof = start_i+(gcDofBloc-firstGcDofBlock);
+            this->setMapGlobalProcessToGlobalCluster( gpDof, gcDof );
+            this->setMapGlobalClusterToGlobalProcess( gcDof-firstDofGC ,gpDof );
+            mapOldToNewGlobalProcess[gpDofBlock] = gpDof;
+        }
+        // ghost dofs
+        for (size_type gpDofBlock = nLocWithoutGhostBlock ; gpDofBlock < nLocWithGhostBlock  ; ++gpDofBlock )
+        {
+            const size_type gdofNewGP = ghostDofIdStart+(gpDofBlock-nLocWithoutGhostBlock);
+            const size_type gdofGC = dmb->mapGlobalProcessToGlobalCluster(gpDofBlock);
+            const int realproc = dmb->procOnGlobalCluster(gdofGC);
+            const size_type gdofNewGC = gcDofCurrentStartIndex[realproc] + (gdofGC- dmb->firstDofGlobalCluster(realproc));
+            this->setMapGlobalProcessToGlobalCluster( gdofNewGP, gdofNewGC );
+            mapOldToNewGlobalProcess[gpDofBlock] = gdofNewGP;
+        }
+
+        // update local to global indices in composite view
+        int nTag = dmb->nBasisGp();
+        for ( int tag=0;tag<nTag;++tag )
+        {
+            size_type nElt = dmb->localToGlobalProcessIndices(tag).size();
+            int nDofPerElementCommon = (nElt>0)? dmb->localToGlobalProcessIndices(tag,0).size() : 0;
+            this->initLocalToGlobalProcessIndices(startNewTag+tag,nElt,nDofPerElementCommon);
+            for ( int eltId=0;eltId<nElt;++eltId )
+            {
+                auto const& dofindices = dmb->localToGlobalProcessIndices(tag,eltId);
+                int nDofPerElement = dofindices.size();
+                if ( nDofPerElement!=nDofPerElementCommon )
+                    this->initEltLocalToGlobalProcessIndices(startNewTag+tag,eltId,nDofPerElement);
+                for ( int j=0;j<nDofPerElement;++j )
+                {
+                    size_type gpdofidInBlock = dofindices(j);
+                    size_type gpDof = mapOldToNewGlobalProcess[gpdofidInBlock];
+                    this->setLocalToGlobalProcessIndices( startNewTag+tag, eltId, j, gpDof );
+                }
+            }
+
+            auto const& basisGpToCompositeGpBlock = dmb->basisGpToCompositeGp(tag);
+            std::vector<size_type> mapOldToNewGlobalProcess2( basisGpToCompositeGpBlock.size() );
+            for ( int k=0;k<basisGpToCompositeGpBlock.size();++k)
+            {
+                mapOldToNewGlobalProcess2[k] = mapOldToNewGlobalProcess[basisGpToCompositeGpBlock[k]];
+            }
+            this->basisGpToCompositeGpRef( startNewTag+tag ).swap( mapOldToNewGlobalProcess2 );
+
+        }
+
+        for ( auto const& activeDofShared : dmb->activeDofSharedOnCluster() )
+        {
+            this->setActiveDofSharedOnCluster( activeDofIdStart + activeDofShared.first, activeDofShared.second );
+        }
+        this->addNeighborSubdomains( dmb->neighborSubdomains() );
+
+        // update counters
+        start_i += listofdm[i]->nLocalDofWithoutGhost( myrank );
+        for ( int proc = 0 ; proc < worldsize ; ++proc )
+            gcDofCurrentStartIndex[proc] += dmb->nLocalDofWithoutGhost(proc);
+        activeDofIdStart += nLocWithoutGhostBlock;
+        ghostDofIdStart += (nLocWithGhostBlock-nLocWithoutGhostBlock);
+        startNewTag+=nTag;
+    }
+
+    // index split
+    bool computeIndexSplit = true;
+    if ( computeIndexSplit )
+    {
+        boost::shared_ptr<IndexSplit> indexSplit( new IndexSplit() );
+        const size_type firstDofGC = this->firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+            indexSplit->addSplit( firstDofGC, listofdm[i]->indexSplit() );
+        //indexSplit->showMe();
+        this->setIndexSplit( indexSplit );
+
+        bool hasComponentsSplit = false;
+        for ( uint16_type i=0; i<nRow; ++i )
+            if ( listofdm[i]->hasIndexSplitWithComponents() )
+            {
+                hasComponentsSplit = true;
+                break;
+            }
+        if ( hasComponentsSplit )
+        {
+            boost::shared_ptr<IndexSplit> indexSplitWithComponents( new IndexSplit() );
+            for ( uint16_type i=0; i<nRow; ++i )
+                indexSplitWithComponents->addSplit( firstDofGC, listofdm[i]->indexSplitWithComponents() );
+            this->setIndexSplitWithComponents( indexSplitWithComponents );
+        }
+    }
+
+    //this->showMeMapGlobalProcessToGlobalCluster();
+}
+
 DataMap::~DataMap()
 {}
 
