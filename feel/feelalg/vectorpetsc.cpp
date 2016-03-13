@@ -793,164 +793,12 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
     :
     super( v,dm,duplicate )
 {
-#if 0
-    CHECK( false ) << "TODO";
-    int ierr=0;
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
-
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
-
-    IS isGlob;
-    IS isLoc;
-    ISLocalToGlobalMapping isLocToGlobMap;
-
-    // create IS for vecScatter
-    PetscInt *idx;
-    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
-    idx = new PetscInt[n_idx];
-    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
-               this->map().mapGlobalProcessToGlobalCluster().end(),
-               idx );
-
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &isGlob );
-#else
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // create LocalToGlobalMapping
-    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create vecScatter
-    ierr = VecScatterCreate( this->vec(), isGlob,
-                             M_vecLocal, isLoc,
-                             &M_vecScatter );
-    CHKERRABORT( this->comm(),ierr );
-
-    // Clean up
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISDestroy ( &isGlob );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( &isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = ISDestroy ( isGlob );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-    delete[] idx;
-
-    this->M_is_initialized = true;
-
-    this->close();
-#endif
+    //this->close();
+    this->localize();
 }
 
 //----------------------------------------------------------------------------------------------------//
-#if 0
-template<typename T>
-void
-VectorPetscMPI<T>::init( const size_type n,
-                         const size_type n_localWithoutGhost,
-                         const bool fast )
-{
-    //std::cout << "MPI init start" << std::endl;
-    int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_localWithoutGhost=static_cast<int>( n_localWithoutGhost );
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
-    //std::cout << "petsc_n_localWithoutGhost "<< petsc_n_localWithoutGhost << std::endl;
-    //std::cout << "petsc_n_localWithGhost "<< petsc_n_localWithGhost << std::endl;
 
-    // Clear initialized vectors
-    if ( this->isInitialized() )
-        this->clear();
-
-    FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
-
-    ierr = VecCreateMPI ( this->comm(), petsc_n_localWithoutGhost, petsc_n,
-                          &this->M_vec );
-    CHKERRABORT( this->comm(),ierr );
-
-    // localToGlobalMapping
-    IS is;
-    ISLocalToGlobalMapping isLocToGlobMap;
-
-    PetscInt *idx;
-    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
-    idx = new PetscInt[n_idx];
-    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
-               this->map().mapGlobalProcessToGlobalCluster().end(),
-               idx );
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &is );
-#else
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &is );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // create LocalToGlobalMapping
-    ierr=ISLocalToGlobalMappingCreateIS( is, &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create local vector
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create vecScatter
-    IS isLoc;
-    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = VecScatterCreate( this->vec(), is,
-                             M_vecLocal, isLoc,
-                             &M_vecScatter );
-    CHKERRABORT( this->comm(),ierr );
-
-
-
-    // Clean up
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISDestroy( &is );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISLocalToGlobalMappingDestroy( &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( &isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = ISDestroy( is );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISLocalToGlobalMappingDestroy( isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-
-    delete[] idx;
-
-    ierr = VecSetFromOptions( this->vec() );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecSetFromOptions( M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
-
-
-    this->M_is_initialized = true;
-
-    if ( fast == false )
-        this->zero ();
-}
-#else
 template<typename T>
 void
 VectorPetscMPI<T>::init( const size_type n,
@@ -1000,8 +848,6 @@ VectorPetscMPI<T>::init( const size_type n,
         this->zero ();
 }
 
-#endif
-
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
@@ -1012,6 +858,13 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
     Vec lx;
     ierr = VecGhostGetLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+#if 0
+    CHECK( lx ) << "is not a GhostGetLocalForm";
+    PetscBool hola;
+    ierr = VecGhostIsLocalForm(this->vec(),lx, &hola);
+    CHKERRABORT( this->comm(),ierr );
+    CHECK( hola ) << "is not a GhostGetLocalForm2";
+#endif
     PetscScalar *values;
     ierr = VecGetArray(lx,&values);
     CHKERRABORT( this->comm(),ierr );
@@ -1030,6 +883,13 @@ VectorPetscMPI<T>::operator() ( const size_type i )
     Vec lx;
     ierr = VecGhostGetLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+#if 0
+    CHECK( lx ) << "is not a GhostGetLocalForm";
+    PetscBool hola;
+    ierr = VecGhostIsLocalForm(this->vec(),lx, &hola);
+    CHKERRABORT( this->comm(),ierr );
+    CHECK( hola ) << "is not a GhostGetLocalForm2";
+#endif
     PetscScalar *values;
     ierr = VecGetArray(lx,&values);
     CHKERRABORT( this->comm(),ierr );
@@ -1046,9 +906,6 @@ template <typename T>
 void
 VectorPetscMPI<T>::set( size_type i, const value_type& value )
 {
-    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
-    //if ( this->map().dofGlobalProcessIsGhost(i) ) return;
-
     int ierr=0;
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
@@ -1079,8 +936,6 @@ template <typename T>
 void
 VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 {
-    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
-
     int ierr=0;
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
