@@ -56,8 +56,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     auto U = Xh->element("u"); //U = *XVec;
     // copy vector values in fluid element
+#if 0
     for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
         U(k) = XVec->operator()(/*rowStartInVector+*/k);
+#else
+    M_blockVectorSolution.setSubVector( U, *XVec, 0 );
+#endif
 
     auto u = U.template element<0>();
     auto v = U.template element<0>();
