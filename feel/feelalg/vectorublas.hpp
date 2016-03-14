@@ -44,6 +44,7 @@ namespace Feel
 {
 template<typename T> class VectorPetsc;
 template<typename T> class VectorPetscMPI;
+template<typename T> class VectorPetscMPIRange;
 
 namespace ublas = boost::numeric::ublas;
 /*!
@@ -1059,7 +1060,12 @@ inline VectorPetsc<T>
 toPETSc( VectorUblas<T,Storage> & v )
 {
     if ( v.comm().size() > 1 )
-        return VectorPetscMPI<T>( v );
+    {
+        if( VectorUblas<T,Storage>::is_range_vector )
+            return VectorPetscMPIRange<T>( v );
+        else
+            return VectorPetscMPI<T>( v );
+    }
     else
         return VectorPetsc<T>( v );
 }
@@ -1083,7 +1089,12 @@ inline boost::shared_ptr<VectorPetsc<T>>
 toPETScPtr( VectorUblas<T,Storage> & v )
 {
     if ( v.comm().size() > 1 )
-        return boost::make_shared<VectorPetscMPI<T>>( v );
+    {
+        if( VectorUblas<T,Storage>::is_range_vector )
+            return boost::make_shared<VectorPetscMPIRange<T>>( v );
+        else
+            return boost::make_shared<VectorPetscMPI<T>>( v );
+    }
     else
         return boost::make_shared<VectorPetsc<T>>( v );
 }
@@ -1107,9 +1118,14 @@ inline boost::shared_ptr<VectorPetsc<T>>
 toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
 {
     if ( v->comm().size() > 1 )
-        return boost::make_shared<VectorPetscMPI<T>>( v );
+    {
+        if( VectorUblas<T,Storage>::is_range_vector )
+            return boost::make_shared<VectorPetscMPIRange<T>>( *v );
+        else
+            return boost::make_shared<VectorPetscMPI<T>>( *v );
+    }
     else
-        return boost::make_shared<VectorPetsc<T>>( v );
+        return boost::make_shared<VectorPetsc<T>>( *v );
 }
 
 
