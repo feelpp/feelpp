@@ -179,7 +179,7 @@ public:
     VectorPetsc( VectorUblas<T,Storage>& v )
         :
         super( v.mapPtr() ),
-        M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( true )
         {
             int ierr=0;
             PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
@@ -790,11 +790,11 @@ template<typename T>
 class VectorPetscMPI : public VectorPetsc<T>
 {
     typedef VectorPetsc<T> super;
-    typedef typename super::value_type value_type;
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
     typedef typename super::clone_ptrtype clone_ptrtype;
 public:
+    typedef typename super::value_type value_type;
 
     VectorPetscMPI()
         :
@@ -803,7 +803,7 @@ public:
 
     VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
 
-    VectorPetscMPI( datamap_ptrtype const& dm );
+    VectorPetscMPI( datamap_ptrtype const& dm, bool doInit=true );
 
     template<typename Storage>
     VectorPetscMPI( VectorUblas<T,Storage>& v )
@@ -834,15 +834,15 @@ public:
     void addVector ( const Vector<value_type>& V_in,
                      const MatrixSparse<value_type>& A_in );
 
-    void zero();
+    virtual void zero();
     void zero ( size_type /*start*/,  size_type /*stop*/ )
     {
         this->zero();
     }
 
-    void clear();
+    virtual void clear();
 
-    void localize();
+    virtual void localize();
 
     void close();
 
@@ -861,6 +861,44 @@ private :
 
 };
 
+template<typename T>
+class VectorPetscMPIRange : public VectorPetscMPI<T>
+{
+    typedef VectorPetscMPI<T> super_type;
+public:
+    typedef typename super_type::value_type value_type;
+
+    //VectorPetscMPIRange( datamap_ptrtype const& dm );
+
+    template<typename Storage>
+    VectorPetscMPIRange( VectorUblas<T,Storage>& v )
+        :
+        super_type( v.mapPtr(), false )
+        {
+            PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
+            PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
+            this->initRangeView( arrayActive,arrayGhost );
+        }
+    ~VectorPetscMPIRange()
+    {
+        this->clear();
+    }
+
+    void clear();
+    value_type operator() ( const size_type i ) const;
+    value_type& operator() ( const size_type i );
+
+    void zero();
+
+    void localize();
+private :
+    void initRangeView( PetscScalar arrayActive[], PetscScalar arrayGhost[] );
+
+private :
+    Vec M_vecGhost;
+    VecScatter M_vecScatterGhost;
+
+};
 /**
  * @addtogroup FreeFunctions
  * @{
