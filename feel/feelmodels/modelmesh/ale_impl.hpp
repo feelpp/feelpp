@@ -37,7 +37,7 @@
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
 
-#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelmesh/ale.hpp>
 #if defined( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
