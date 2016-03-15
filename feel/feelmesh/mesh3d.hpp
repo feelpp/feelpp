@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2012-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,11 +23,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file mesh3d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-14
- */
 #ifndef __Mesh3D_H
 #define __Mesh3D_H 1
 
@@ -62,6 +58,7 @@
 #include <feel/feelmesh/edges.hpp>
 #include <feel/feelmesh/points.hpp>
 #include <feel/feelmesh/functors.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 namespace Feel
 {
@@ -718,6 +715,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     // this one _is_ not on the boundary
     edg.setOnBoundary( false );
 
+    tic();
     for ( element_iterator elt_it = this->beginElement();
             elt_it != this->endElement(); ++elt_it )
     {
@@ -744,6 +742,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 #endif
                 // set edge id
                 edg.setId( edgeId );
+                if (!elt_it->isGhostCell() )
+                    edg.setProcessId( elt_it->processId() );
                 // update connected element in edge
                 if ( updateComponentAddElements )
                 {
@@ -767,19 +767,22 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             else
             {
                 eit =  this->edgeIterator( edgeId );
+                if (!elt_it->isGhostCell() && eit->processId() != elt_it->processId() )
+                    this->edges().modify( eit, Feel::detail::UpdateProcessId(elt_it->processId()) );
                 if ( updateComponentAddElements || eit->marker().isOn() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
                     this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
                 }
             }
-
+#if 0
             // set the process id from element (only active element)
             if (!elt_it->isGhostCell() && eit->processId() != elt_it->processId() )
                 this->edges().modify( eit, Feel::detail::UpdateProcessId(elt_it->processId()) );
-
+#endif
             // update edge pointer in element
-            this->elements().modify( elt_it, Feel::detail::UpdateEdge<edge_type>( j, boost::cref( *eit ) ) );
+            //this->elements().modify( elt_it, Feel::detail::UpdateEdge<edge_type>( j, boost::cref( *eit ) ) );
+            elt_it->setEdge( j, boost::cref( *eit ) );
 #if !defined(NDEBUG)
             this->elements().modify( elt_it,
                                      [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )( e.id() )( j ).error( "invalid edge in element" ); } );
@@ -798,8 +801,12 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( _default.first != _current.first )
                 {
                     edge_permutation_type permutation( edge_permutation_type::REVERSE_PERMUTATION );
+#if 0
                     this->elements().modify( elt_it,
                                              Feel::detail::UpdateEdgePermutation<edge_permutation_type>( j,permutation ) );
+#else
+                    elt_it->setEdgePermutation( j, permutation );
+#endif
                 }
             }
             else
@@ -823,10 +830,11 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
 #endif
     }
-
+    toc("mesh::updateEntitiesCoDimensionTwo set edge in elements", FLAGS_v>0);
     DVLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
     ti.restart();
 
+    tic();
     // update edge pointers in faces
     face_iterator face_it = this->beginFace();
     face_iterator face_en = this->endFace();
@@ -839,11 +847,16 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         for ( uint16_type e = 0; e < face_type::numEdges; ++e )
         {
             auto const& elt_edge = elt0.edge( elt0.f2e( j, e ) );
+#if 0
             this->faces().modify( face_it,
                                   [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
+#else
+            face_it->setEdge( e, elt_edge );
+#endif
 
         }
     }
+    toc("mesh::updateEntitiesCoDimensionTwo set edge in face",FLAGS_v>0);
     DVLOG(2) << "[Mesh3D::updateEdges] updating faces/edges : " << ti.elapsed() << "\n";
     ti.restart();
 
@@ -1043,12 +1056,13 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             elt2edgesData.second[j] = edgePtr->id();
         }
     }
-
+    tic();
     for ( edge_type* edgePtr : _edgesOrderedWithId )
     {
         this->edges().insert( this->edges().end(),*edgePtr );
         delete edgePtr;
     }
+    toc("mesh::updateEntitiesCoDimensionTwo edge insertion in multi_index", false );
     _edgesOrderedWithId.clear();
     _edges.clear();
 
@@ -1108,6 +1122,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     /*D*/VLOG(2) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
     ti.restart();
 
+    tic();
     // update edge pointers in faces
     face_iterator face_it = this->beginFace();
     face_iterator face_en = this->endFace();
@@ -1120,11 +1135,16 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         for ( uint16_type e = 0; e < face_type::numEdges; ++e )
         {
             auto const& elt_edge = elt0.edge( elt0.f2e( j, e ) );
+#if 0
             this->faces().modify( face_it,
                                   [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
+#else
+            face_it->setEdge( e, elt_edge );
+#endif
 
         }
     }
+    toc("mesh::updateEntitiesCoDimensionTwo update faces->edges", FLAGS_v>0);
 
 
 

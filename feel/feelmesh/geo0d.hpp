@@ -243,7 +243,7 @@ public:
     /**
      * set the mesh to which this geometric entity belongs to
      */
-    void setMesh( MeshBase const* m )
+    void setMesh( MeshBase const* m ) const
     {
         M_mesh = m;
     }
@@ -540,7 +540,7 @@ private:
     bool M_is_parametric;
 
     // mesh to which the geond element belongs to
-    MeshBase const* M_mesh;
+    mutable MeshBase const* M_mesh;
 
 
     Marker1 M_marker1;

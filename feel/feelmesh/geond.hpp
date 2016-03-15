@@ -306,7 +306,7 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id ) const
     {
         if ( M_neighbors.empty() )
         {
@@ -962,7 +962,7 @@ private:
     //std::vector<double> M_measurefaces;
 
     //! store neighbor element id
-    std::vector<std::pair<size_type,rank_type> > M_neighbors;
+    mutable std::vector<std::pair<size_type,rank_type> > M_neighbors;
 
     //! measure of the set of point element neighbors
     //value_type M_meas_pneighbors;

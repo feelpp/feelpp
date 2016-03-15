@@ -305,13 +305,17 @@ Mesh<Shape, T, Tag>::updateForUse()
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
         {
-            this->elements().modify( iv,[this]( element_type& e ) { e.setMeshAndGm( this, this->gm(), this->gm1() ); } );
+            //this->elements().modify( iv,[this]( element_type& e ) { e.setMeshAndGm( this, this->gm(), this->gm1() ); } );
+            iv->setMeshAndGm( this, this->gm(), this->gm1() );
         }
+        toc("Mesh::updateForUse update setMesh in elements",FLAGS_v>0);
+        tic();
         for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         {
-            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+            //this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+            itf->setMesh( this );
         }
-        toc("Mesh::updateForUse update setMesh in elements and faces",FLAGS_v>0);
+        toc("Mesh::updateForUse update setMesh in faces",FLAGS_v>0);
         VLOG(1) << "[Mesh::updateForUse] update setMesh in elements and faces";
 
         if ( !this->components().test( MESH_NO_UPDATE_MEASURES ) )
@@ -1671,11 +1675,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             {
                 // be careful: this step is crucial to set proper neighbor connectivity
                 element_iterator elt1 = this->elementIterator( f_it->ad_first(), f_it->proc_first() );
-                this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                //this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                Feel::detail::UpdateFace<face_type> upface( boost::cref( *f_it ) );
+                upface( *elt1 );
+                
                 if ( f_it->isConnectedTo1() )
                 {
                     element_iterator elt2 = this->elementIterator( f_it->ad_second(), f_it->proc_second() );
-                    this->elements().modify( elt2, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                    //this->elements().modify( elt2, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                    upface( *elt2 );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
                     this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );

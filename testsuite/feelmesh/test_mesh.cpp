@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -107,15 +108,35 @@ struct test_mesh_filters
 
         using namespace Feel;
 
-        BOOST_TEST_MESSAGE( "testing mesh faces" );
+        size_type nfaces = nelements( internalfaces(mesh), true );
+        size_type nfacesinter = nelements( interprocessfaces(mesh), true );
+        {
+            // interprocess faces
+            auto pit = mesh->interProcessFaces();
+            for( auto it = pit.first, en = pit.second; it != en; ++it )
+            {
+                LOG(INFO)  << "rank " << Environment::rank() << " processid=" << it->processId() << " internal:" << it->isInternal() << " interprocess:" << it->isInterProcessDomain();;
+                google::FlushLogFiles(google::INFO);
+
+                CHECK( it->processId() == Environment::rank() ) << "rank " << Environment::rank() << " processid=" << it->processId();
+                // the face must be connected with two elements
+                BOOST_CHECK( it->isConnectedTo0() &&
+                             it->isConnectedTo1() );
+            }
+        }
+        BOOST_TEST_MESSAGE( "testing mesh faces" << nfaces << " interprocess: " << nfacesinter );
         // location faces
         {
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator en = mesh->endInternalFace();
+            auto it = mesh->beginInternalFace();
+            auto en = mesh->endInternalFace();
 
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for ( ; it != en; ++it )
             {
+                LOG(INFO)  << "rank " << Environment::rank() << " processid=" << it->processId() << " internal:" << it->isInternal() << " interprocess:" << it->isInterProcessDomain();;
+                google::FlushLogFiles(google::INFO);
+
+                CHECK( it->processId() == Environment::rank() ) << "rank " << Environment::rank() << " processid=" << it->processId();
                 // the face must be connected with two elements
                 BOOST_CHECK( it->isConnectedTo0() &&
                              it->isConnectedTo1() );
@@ -206,7 +227,7 @@ BOOST_AUTO_TEST_SUITE( mesh )
 
 BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 {
-    test_mesh_filters tmf;
+    test_mesh_filters tmf(0.1);
     tmf();
 }
 BOOST_AUTO_TEST_CASE( test_mesh_comp )

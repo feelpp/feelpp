@@ -957,7 +957,7 @@ public:
     /**
      * Inserts a point as face of the edge geometric element
      */
-    void setFace( uint16_type const i, point_type const & p )
+    void setFace( uint16_type const i, point_type const & p ) const
     {
         FEELPP_ASSERT( i < numLocalVertices )( i ).error( "invalid local point index" );
         M_vertices[i] = const_cast<point_type*>( boost::addressof( p ) );
@@ -1035,7 +1035,7 @@ private:
 private:
 
     std::vector<uint8_type> M_map;
-    ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
+    mutable ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
     //ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
@@ -1291,7 +1291,7 @@ public:
      * Inserts an edge.
      * \sa setEdge()
      */
-    void setFace( uint16_type const i, edge_type const & p )
+    void setFace( uint16_type const i, edge_type const & p ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
 
@@ -1330,13 +1330,13 @@ public:
      * Inserts a point.  Uses point references put point
      * \sa setFace()
      */
-    void setEdge( uint16_type i, edge_type const & p )
+    void setEdge( uint16_type i, edge_type const & p ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
-    void setEdgePermutation( uint16_type i, edge_permutation_type o )
+    void setEdgePermutation( uint16_type i, edge_permutation_type o ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
 
@@ -1387,8 +1387,8 @@ private:
 
 private:
 
-    std::vector<edge_type*> M_edges;
-    std::vector<edge_permutation_type> M_edge_permutation;
+    mutable std::vector<edge_type*> M_edges;
+    mutable std::vector<edge_permutation_type> M_edge_permutation;
 };
 
 /*-------------------------------------------------------------------------
@@ -1629,14 +1629,14 @@ public:
     /**
      * Inserts an edge
      */
-    void setEdge( uint16_type const i, edge_type const & p )
+    void setEdge( uint16_type const i, edge_type const & p ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
         DCHECK( boost::addressof( p ) ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
-    void setEdgePermutation( uint16_type i, edge_permutation_type o )
+    void setEdgePermutation( uint16_type i, edge_permutation_type o ) const
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
 
@@ -1680,12 +1680,12 @@ public:
     /**
      * Inserts a face.
      */
-    void setFace( uint16_type const i, face_type const & p )
+    void setFace( uint16_type const i, face_type const & p ) const
     {
         M_faces[i] = const_cast<face_type*>( boost::addressof( p ) );
     }
 
-    void setFacePermutation( uint16_type i, face_permutation_type o )
+    void setFacePermutation( uint16_type i, face_permutation_type o ) const
     {
         FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
         M_face_permutation[i] = o;
@@ -1723,11 +1723,11 @@ private:
 
 private:
 
-    ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
-    ublas::bounded_array<face_type*, numLocalFaces> M_faces;
+    mutable ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
+    mutable ublas::bounded_array<face_type*, numLocalFaces> M_faces;
 
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
-    ublas::bounded_array<face_permutation_type, numLocalFaces> M_face_permutation;
+    mutable ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
+    mutable ublas::bounded_array<face_permutation_type, numLocalFaces> M_face_permutation;
 };
 /*@}*/
 
