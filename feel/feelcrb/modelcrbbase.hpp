@@ -281,10 +281,10 @@ public :
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
-        {
-            M_Aq.push_back( tuple.template get<0>().matrixPtr() );
-            M_betaAqString.push_back( tuple.template get<1>() );
-        }
+    {
+        M_Aq.push_back( tuple.template get<0>().matrixPtr() );
+        M_betaAqString.push_back( tuple.template get<1>() );
+    }
     /*
      * return the left hand side terms from the affine decomposition
      * that is to say bilinear forms Aq and beta coefficients associated
@@ -417,6 +417,18 @@ public :
     }
 
     virtual void initModel() = 0;
+
+    virtual void assemble()
+    {
+        if( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) )
+        {
+            Feel::cout << "************************************************************************ \n"
+                       << "** SER method is asked without implementation of assemble() function. ** \n"
+                       << "** assemble() function is needed to update affine decomposition during \n"
+                       << "** the simultaneous basis functions build ** \n"
+                       << "************************************************************************" << std::endl;
+        }
+    };
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
@@ -568,6 +580,10 @@ public :
         auto tuple = computeBetaQm( mu , time );
         return tuple.template get<0>();
     }
+
+    // Default updateResidual / updateJacobian functions
+    virtual bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
+    virtual bool updateJacobian(element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {
