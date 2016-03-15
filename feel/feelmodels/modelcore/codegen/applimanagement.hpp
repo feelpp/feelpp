@@ -5,7 +5,7 @@
 
 #include <feel/options.hpp>
 
-#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 
 //#include <fsi/fsidiscr/toolboxmesh.hpp>
