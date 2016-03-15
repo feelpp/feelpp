@@ -835,7 +835,7 @@ BenchmarkGreplNonlinearElliptic<Order>::computeInitialGuessAffineDecomposition( 
 template<int Order>
 double BenchmarkGreplNonlinearElliptic<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve )
 {
-    CHECK( need_to_solve ) << "The model need to have the solution to compute the output\n";
+    //CHECK( need_to_solve ) << "The model need to have the solution to compute the output\n";
 
     double s=0;
     if ( output_index==0 )

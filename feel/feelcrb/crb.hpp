@@ -3217,13 +3217,19 @@ CRB<TruthModelType>::offline()
         else
         {
             timer2.restart();
-            //boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
             time=timer2.elapsed();
             M_current_mu = mu;
 
             if( proc_number == master_proc )
-                std::cout << "  -- max error bound (" << M_maxerror << ") computed in " << time << "s" << std::endl;
+            {
+                int size = mu.size();
+                std::cout << "  -- max error bound (" << M_maxerror << ") computed in " << time << "s"
+                          << "  -- mu = [ ";
+                for ( int i=0; i< size-1; i++ )
+                    std::cout<< M_current_mu( i ) <<" ";
+                std::cout << M_current_mu( size-1 ) << " ]" <<std::endl;
+            }
         }
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
@@ -6435,12 +6441,13 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
         if( Environment::worldComm().isMasterRank() )
             std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
-        M_SER_maxerr = maxerr;
+        if( !getAdaptationSER() )
+            M_SER_maxerr = maxerr;
     }
 
     if( proc == master_proc )
         std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du<<" -- output error : "<<maxerr<<std::endl;
-    lb( N, mu, uN, uNdu , uNold ,uNduold );
+    //lb( N, mu, uN, uNdu , uNold ,uNduold );
 
     return boost::make_tuple( maxerr, mu , delta_pr, delta_du);
 
