@@ -1823,7 +1823,7 @@ public:
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
-            typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
+            typedef typename fs_type::template Element<value_type, typename Cont/*VectorUblas<T>*/::range::type > element_type;
             typedef std::pair< keyType, boost::shared_ptr<element_type> > the_type;
 
             typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
@@ -1835,7 +1835,7 @@ public:
         typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
-        typedef typename VectorUblas<T>::range::type ct_type;
+        typedef typename Cont/*VectorUblas<T>*/::range::type ct_type;
 
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
@@ -1974,6 +1974,11 @@ public:
                  size_type __start = 0,
                  ComponentType __ct = ComponentType::NO_COMPONENT,
                  ComponentType __ct2 = ComponentType::NO_COMPONENT );
+
+        Element( functionspace_ptrtype const& __functionspace,
+                 size_type nActiveDof, value_type* arrayActiveDof,
+                 size_type nGhostDof, value_type* arrayGhostDof );
+
 
         ~Element();
 
@@ -4427,6 +4432,42 @@ public:
         }
         return u;
     }
+
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space with value shared by the input vector
+     */
+    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element( boost::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
+    {
+        return this->element( *vec, blockIdStart );
+    }
+
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space with value shared by the input vector
+     */
+    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element( Vector<value_type> const& vec, int blockIdStart = 0 )
+    {
+        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        CHECK( vecPetsc ) << "only petsc vector";
+
+        auto const& dmVec = vec.map();
+        CHECK( blockIdStart < dmVec.nBasisGp() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.nBasisGp();
+        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,0) ) ) : nullptr;
+        size_type nGhostDof = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > u( this->shared_from_this(),nActiveDof,arrayActiveDof,
+                                                                                                nGhostDof, arrayGhostDof );
+        return u;
+    }
+
 
     /**
      * get the \p i -th \c FunctionSpace out the list

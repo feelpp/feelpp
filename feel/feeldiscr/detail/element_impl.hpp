@@ -48,7 +48,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
     size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
     size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+    if ( !Cont::is_shallow_array_adaptor_vector )
+        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -130,7 +132,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
     size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
     size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+    if ( !Cont::is_shallow_array_adaptor_vector )
+        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -290,6 +293,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     :
     Element( __functionspace, __c, __name, __name, __start, __ct, __ct2 )
 {}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+                                                             size_type nActiveDof, value_type* arrayActiveDof,
+                                                             size_type nGhostDof, value_type* arrayGhostDof )
+    :
+    super( nActiveDof,arrayActiveDof,nGhostDof,arrayGhostDof, __functionspace->dof() ),
+    M_functionspace( __functionspace ),
+    //M_name( __name ),
+    //M_desc( __desc ),
+    M_start( 0 ),
+    M_ct( ComponentType::NO_COMPONENT ),
+    M_ct2( ComponentType::NO_COMPONENT ),
+    M_containersOffProcess( boost::none )
+{
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
