@@ -557,8 +557,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
 
     boost::mpi::timer timerBCnewton;
 
-    auto const& u = this->fieldVelocity();
+    //auto const& u = this->fieldVelocity();
     auto Xh = this->functionSpace();
+    auto up = Xh->element( U, 0 );
+    auto u = up.template element<0>();
     auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
 
@@ -592,8 +594,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInitialNewtonSolutionBCDirichlet(vecto
     {
         auto const& listMarkerFaces = std::get<0>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
         if ( !listMarkerFaces.empty() )
-            modifVec(markedfaces(mesh,listMarkerFaces ),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=expression(d) );
+        //modifVec(markedfaces(mesh,listMarkerFaces ),
+        //u, U, expression(d), rowStartInVector );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -865,7 +869,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
     size_type rowStartInVector = this->rowStartInVector();
-    auto const& u = this->fieldVelocity();
+    //auto const& u = this->fieldVelocity();
+    auto up = Xh->element(R,0);
+    auto u = up.template element<0>();
 
     //R->close();
     if (!Xh->worldsComm()[0].isActive()) // only on Velocity Proc
@@ -881,8 +887,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletResidual(vector_ptrty
         auto const& listMarkerPoints = std::get<2>( ret );
         auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
         if ( !listMarkerFaces.empty() )
-            modifVec(markedfaces(mesh,listMarkerFaces ),
-                     u, R, exprUsed, rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=exprUsed );
+        //modifVec(markedfaces(mesh,listMarkerFaces ),
+        //             u, R, exprUsed, rowStartInVector );
         if ( !listMarkerEdges.empty() )
             modifVec(markededges(mesh,listMarkerEdges),
                      u, R, exprUsed, rowStartInVector );
