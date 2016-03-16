@@ -47,6 +47,34 @@ template<typename T> class VectorPetscMPI;
 template<typename T> class VectorPetscMPIRange;
 
 namespace ublas = boost::numeric::ublas;
+
+namespace detail
+{
+// patch for shallow_array_adaptor from
+// http://stackoverflow.com/questions/1735841/initializing-a-ublas-vector-from-a-c-array
+template<typename T>
+class shallow_array_adaptor
+    :
+        public boost::numeric::ublas::shallow_array_adaptor<T>
+{
+public:
+    typedef boost::numeric::ublas::shallow_array_adaptor<T> base_type;
+    typedef typename base_type::size_type                   size_type;
+    typedef typename base_type::pointer                     pointer;
+
+    shallow_array_adaptor(size_type n) : base_type(n) {}
+    shallow_array_adaptor(size_type n, pointer data) : base_type(n,data) {}
+    shallow_array_adaptor(const shallow_array_adaptor& c) : base_type(c) {}
+
+    // This function must swap the values of the items, not the data pointers.
+    void swap(shallow_array_adaptor& a) {
+        if (base_type::begin() != a.begin())
+            std::swap_ranges(base_type::begin(), base_type::end(), a.begin());
+    }
+};
+
+} // namespace detail
+
 /*!
  * \class VectorUblas
  * \brief interface to vector
@@ -87,9 +115,21 @@ public:
     typedef typename vector_type::iterator iterator;
     typedef typename vector_type::const_iterator const_iterator;
 
+    struct shallow_array_adaptor
+    {
+        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type> > subtype;
+        typedef ublas::vector_range<subtype> rangesubtype;
+        typedef VectorUblas<value_type,subtype> type;
+    };
+    static const bool is_shallow_array_adaptor_vector =
+        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::subtype>::value ||
+        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value;
+
     struct range
     {
-        typedef ublas::vector_range<ublas::vector<value_type> > subtype;
+        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
+                                   ublas::vector_range< typename shallow_array_adaptor::subtype >,
+                                   ublas::vector_range<ublas::vector<value_type> > >::type subtype;
         typedef VectorUblas<value_type,subtype> type;
     };
 
@@ -100,6 +140,9 @@ public:
     };
 
     static const bool is_range_vector = boost::is_same<vector_type,typename this_type::range::subtype>::value;
+    static const bool has_non_contiguous_ghosts = is_range_vector || is_shallow_array_adaptor_vector;
+
+
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
 
@@ -121,6 +164,7 @@ public:
 
     FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+    VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
 
     FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
@@ -131,6 +175,9 @@ public:
     FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
     VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
 
+    VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
+                 size_type nGhostDof, value_type* arrayGhostDof,
+                 datamap_ptrtype const& dm );
 
     ~VectorUblas();
 
@@ -196,7 +243,7 @@ public:
     T operator()( size_type i ) const
     {
         checkIndex(i);
-        if ( is_range_vector )
+        if ( has_non_contiguous_ghosts )
         {
             auto const& dm = this->map();
             const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
@@ -215,7 +262,7 @@ public:
     T& operator()( size_type i )
     {
         checkIndex(i);
-        if ( is_range_vector )
+        if ( has_non_contiguous_ghosts )
         {
             auto const& dm = this->map();
             const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
@@ -393,6 +440,22 @@ public:
     }
 
     /**
+     * Return ghost ublas vector (can be not used)
+     */
+    vector_type const& vecNonContiguousGhosts() const
+    {
+        return M_vecNonContiguousGhosts;
+    }
+
+    /**
+     * Return ghost ublas vector (can be not used)
+     */
+    vector_type & vecNonContiguousGhosts()
+    {
+        return M_vecNonContiguousGhosts;
+    }
+
+    /**
      * update global values array
      */
     bool areGlobalValuesUpdated() const
@@ -448,7 +511,7 @@ public:
     void setConstant( value_type v )
     {
         M_vec = ublas::scalar_vector<double>( M_vec.size(), v );
-        if ( is_range_vector )
+        if ( has_non_contiguous_ghosts )
             M_vecNonContiguousGhosts = ublas::scalar_vector<double>( M_vecNonContiguousGhosts.size(), v );
     }
 
@@ -480,7 +543,7 @@ public:
         //M_vec.clear();
         //this->outdateGlobalValues();
         std::fill( this->begin(), this->end(), value_type( 0 ) );
-        if ( is_range_vector )
+        if ( has_non_contiguous_ghosts )
             std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
     }
 
@@ -628,7 +691,7 @@ public:
     {
         this->outdateGlobalValues();
         M_vec.operator *=( factor );
-        if ( is_range_vector )
+        if ( has_non_contiguous_ghosts )
             M_vecNonContiguousGhosts.operator *=( factor );
 
     }
@@ -705,7 +768,7 @@ public:
         checkInvariant();
 
         double local_l1 = 0;
-        if ( is_range_vector || this->comm().size() == 1 )
+        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_l1 = ublas::norm_1( M_vec );
         else
             local_l1 = ublas::norm_1( M_vec );
@@ -764,7 +827,7 @@ public:
     {
         checkInvariant();
         real_type local_norminf = 0;
-        if ( is_range_vector || this->comm().size() == 1 )
+        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_norminf = ublas::norm_inf( M_vec );
         else
             local_norminf = ublas::norm_inf( M_vec );
@@ -886,12 +949,14 @@ public:
      * local vector \p v_local.
      */
     void localize ( ublas::vector<value_type>& v_local ) const;
+    void localize ( ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> >& v_local ) const {}
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
     void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local ) const;
+    void localize ( ublas::vector_range<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
 
     /**
      * Creates a copy of the global vector in the
