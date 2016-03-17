@@ -111,12 +111,19 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
     {
         CHECK( false ) << "not allowed";
     }
-    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::range const& r )
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
         :
         ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
     {
         CHECK( false ) << "not allowed";
     }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector_range<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+
 };
 
 template<>
@@ -144,6 +151,12 @@ struct fake<ublas::vector_slice<ublas::vector<double> > >: public ublas::vector_
     {
         CHECK( false ) << "not allowed";
     }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        ublas::vector_slice<ublas::vector<double> >( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::slice() )
+    {
+        CHECK( false ) << "not allowed";
+    }
 };
 
 template<>
@@ -165,7 +178,13 @@ struct fake<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > 
         :
         ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( nDof, arrayDof ) )
     {}
-    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::range const& r )
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::range const& /*r*/ )
+        :
+        ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
+     {
+         CHECK( false ) << "not allowed"; //CHECK
+     }
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
         :
         ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >( Feel::detail::shallow_array_adaptor<double>( 0, nullptr ) )
      {
@@ -186,6 +205,12 @@ struct fake<ublas::vector_range<ublas::vector<double, Feel::detail::shallow_arra
         super_type( v, r )
     {}
 
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& /*v*/, ublas::slice const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
 
     fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
         :
@@ -203,6 +228,43 @@ struct fake<ublas::vector_range<ublas::vector<double, Feel::detail::shallow_arra
     fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
         :
         super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::range() )
+    {
+        CHECK( false ) << "not allowed";
+    }
+};
+
+template<>
+struct fake<ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > > :
+        public ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double>> >
+{
+    typedef ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > vector_type;
+    typedef ublas::vector_slice<vector_type > super_type;
+
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::slice const& r )
+        :
+        super_type( v, r ) // super_type( ublas::project( v, r ) ) )
+    {}
+    fake( ublas::vector<double, Feel::detail::shallow_array_adaptor<double> >& v, ublas::range const& r )
+        :
+        super_type( v, ublas::slice( r.start(),1,r.size() ) )
+    {}
+
+    fake( ublas::vector<double>& /*v*/, ublas::range const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+    fake( ublas::vector<double>& /*v*/, ublas::slice const& /*r*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
+    {
+         CHECK( false ) << "not allowed";
+    }
+
+    fake( size_type /*nDof*/, value_type* /*arrayDof*/ )
+        :
+        super_type( *boost::shared_ptr<vector_type>( new vector_type(0) ), ublas::slice() )
     {
         CHECK( false ) << "not allowed";
     }
@@ -247,6 +309,10 @@ template<typename T>
 void resize( ublas::vector_range<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > >& /*v*/, size_type /*s*/, bool preserve = true )
 {
 }
+template<typename T>
+void resize( ublas::vector_slice<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > >& /*v*/, size_type /*s*/, bool preserve = true )
+{
+}
 
 template<typename T>
 size_type start( ublas::vector<T> const& /*v*/ )
@@ -271,6 +337,11 @@ size_type start( ublas::vector<T,Feel::detail::shallow_array_adaptor<T>> const& 
 }
 template<typename T>
 size_type start( ublas::vector_range<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > > const& v )
+{
+    return v.start();
+}
+template<typename T>
+size_type start( ublas::vector_slice<ublas::vector<T,Feel::detail::shallow_array_adaptor<T> > > const& v )
 {
     return v.start();
 }
@@ -386,6 +457,28 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
 }
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), sliceGhost ) ),
+    M_global_values_updated( false )
+{
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
+}
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), sliceGhost ) ),
+    M_global_values_updated( false )
+{
+    DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
+}
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range )
@@ -443,6 +536,31 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
 }
 
 template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
+                                     ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) ),
+    M_global_values_updated( false )
+{
+    CHECK( is_slice_vector ) << "is not a slice vector";
+}
+
+template <typename T, typename Storage>
+VectorUblas<T,Storage>::VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                                     typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm )
+    :
+    super1( dm ),
+    M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) ),
+    M_global_values_updated( false )
+{
+    CHECK( is_slice_vector ) << "is not a slice vector";
+}
+
+
+template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
                                      size_type nGhostDof, value_type* arrayGhostDof,
                                      datamap_ptrtype const& dm )
@@ -472,6 +590,13 @@ size_type
 VectorUblas<T,Storage>::start( ) const
 {
     return detail::start( M_vec );
+}
+
+template <typename T, typename Storage>
+size_type
+VectorUblas<T,Storage>::startNonContiguousGhosts( ) const
+{
+    return detail::start( M_vecNonContiguousGhosts );
 }
 
 template <typename T, typename Storage>
@@ -1099,6 +1224,7 @@ template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
 template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
 template class VectorUblas<double,ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > >;
 template class VectorUblas<double,ublas::vector_range<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > >;
+template class VectorUblas<double,ublas::vector_slice<ublas::vector<double, Feel::detail::shallow_array_adaptor<double> > > >;
 //template class VectorUblas<long double,ublas::vector<long double> >;
 //template class VectorUblas<long double,ublas::vector_range<ublas::vector<long double> > >;
 
