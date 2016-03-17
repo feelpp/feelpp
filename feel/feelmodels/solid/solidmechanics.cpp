@@ -216,8 +216,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-    auto const& u = this->fieldDisplacement();
     auto Xh = this->functionSpace();
+    auto u = Xh->element( U,0 );
     auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
 
@@ -231,14 +231,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
         auto const& listMarkerEdges = std::get<1>( ret );
         auto const& listMarkerPoints = std::get<2>( ret );
         if ( !listMarkerFaces.empty() )
-            modifVec(markedfaces(mesh,listMarkerFaces ),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=expression(d) );
         if ( !listMarkerEdges.empty() )
-            modifVec(markededges(mesh,listMarkerEdges),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markededges(mesh,listMarkerEdges),
+                 _expr=expression(d) );
         if ( !listMarkerPoints.empty() )
-            modifVec(markedpoints(mesh,listMarkerPoints),
-                     u, U, expression(d), rowStartInVector );
+            u.on(_range=markedpoints(mesh,listMarkerPoints),
+                 _expr=expression(d) );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -250,14 +250,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
             auto const& listMarkerEdges = std::get<1>( ret );
             auto const& listMarkerPoints = std::get<2>( ret );
             if ( !listMarkerFaces.empty() )
-                modifVec(markedfaces(mesh,listMarkerFaces),
-                         u[comp], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                           _expr=expression(d) );
             if ( !listMarkerEdges.empty() )
-                modifVec(markededges(mesh,listMarkerEdges),
-                         u[comp], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markededges(mesh,listMarkerEdges),
+                           _expr=expression(d) );
             if ( !listMarkerPoints.empty() )
-                modifVec(markedpoints(mesh,listMarkerPoints),
-                         u[comp], U, expression(d),rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
+                           _expr=expression(d) );
         }
     }
 
@@ -271,8 +271,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
 {
     if ( !this->hasDirichletBC() ) return;
 
-    auto const& u = this->fieldDisplacement();
     size_type rowStartInVector = this->rowStartInVector();
+    auto u = this->functionSpace()->element( R,0 );
 
     R->close();
     if ( !this->functionSpaceDisplacement()->worldsComm()[0].isActive() ) // only on Displacement Proc
@@ -286,14 +286,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
 
         auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
         if ( !listMarkerFaces.empty() )
-            modifVec( markedfaces(this->mesh(),listMarkerFaces),
-                      u, R, exprUsed, rowStartInVector );
+            u.on(_range=markedfaces(this->mesh(),listMarkerFaces),
+                 _expr=exprUsed );
         if ( !listMarkerEdges.empty() )
-            modifVec( markededges(this->mesh(),listMarkerEdges),
-                      u, R, exprUsed, rowStartInVector );
+            u.on(_range=markededges(this->mesh(),listMarkerEdges),
+                 _expr=exprUsed );
         if ( !listMarkerPoints.empty() )
-            modifVec( markedpoints(this->mesh(),listMarkerPoints),
-                      u, R, exprUsed, rowStartInVector );
+            u.on(_range=markedpoints(this->mesh(),listMarkerPoints),
+                 _expr=exprUsed );
     }
     for ( auto const& bcDirComp : M_bcDirichletComponents )
     {
@@ -306,14 +306,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
             auto const& listMarkerPoints = std::get<2>( ret );
             auto exprUsed = vf::cst(0.);
             if ( !listMarkerFaces.empty() )
-                modifVec( markedfaces(this->mesh(),listMarkerFaces),
-                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markedfaces(this->mesh(),listMarkerFaces),
+                           _expr=exprUsed );
             if ( !listMarkerEdges.empty() )
-                modifVec( markededges(this->mesh(),listMarkerEdges),
-                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markededges(this->mesh(),listMarkerEdges),
+                           _expr=exprUsed );
             if ( !listMarkerPoints.empty() )
-                modifVec( markedpoints(this->mesh(),listMarkerPoints),
-                          u[comp], R, exprUsed, rowStartInVector, element_displacement_type::nComponents );
+                u[comp].on(_range=markedpoints(this->mesh(),listMarkerPoints),
+                           _expr=exprUsed );
         }
     }
 
