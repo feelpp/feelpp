@@ -43,6 +43,7 @@ extern "C"
 #include <boost/filesystem/fstream.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
 
 #include <gflags/gflags.h>
 
@@ -59,6 +60,7 @@ extern "C"
 
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelcore/timertable.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
 
 #define stringize2(x) #x
@@ -530,6 +532,9 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    boost::gregorian::date today = boost::gregorian::day_clock::local_day();
+    tic();
+    cout << "Feel++ application " << about.appName() <<  " version " << about.version() << " date " << today << std::endl;
 }
 void
 Environment::clearSomeMemory()
@@ -549,6 +554,9 @@ Environment::~Environment()
 {
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
+
+    double t = toc("env");
+    cout << "Feel++ application " << S_about.appName() << " execution time " << t << "s" << std::endl;
 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
@@ -663,7 +671,6 @@ Environment::~Environment()
 
         google::ShutdownGoogleLogging();
     }
-
 }
 
 
