@@ -4,6 +4,7 @@
 #       Date: 2012-05-27
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -52,12 +53,13 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           #OUTPUT_FILE "gflags-configure"
           )
       else()
+        message(STATUS "GFlags: configure ... CXX:${CMAKE_CXX_COMPILER} CC=${CMAKE_C_COMPILER}")
         if ( APPLE )
           execute_process(
             COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags 
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-            #      OUTPUT_QUIET
-            #OUTPUT_FILE "gflags-configure"
+            #OUTPUT_QUIET
+            OUTPUT_FILE "gflags-configure"
             )
         else(APPLE)
           execute_process(
