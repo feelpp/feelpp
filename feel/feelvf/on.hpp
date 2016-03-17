@@ -474,6 +474,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
@@ -530,7 +532,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 #if 0
                     size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
 #else
-                    size_type thedof = (is_comp_space?Elem1::nComponents:1)*ldof.index();
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
                     thedof = __form.basisGpToCompositeGpTrial( thedof );
 #endif
 ;
