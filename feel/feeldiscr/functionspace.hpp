@@ -1923,7 +1923,7 @@ public:
 
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
+        typedef typename component_functionspace_type::template Element<T,typename Cont/*VectorUblas<value_type>*/::slice::type> component_type;
 
         /**
          * geometry typedef
@@ -2031,8 +2031,10 @@ public:
         comp()
         {
             //return comp( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
-            return this->template comp<THECOMP>( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            //return this->template comp<THECOMP>( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return this->comp( THECOMP );
         }
+#if 0
         template<ComponentType THECOMP>
         component_type
         comp( mpl::bool_<true> )
@@ -2059,7 +2061,7 @@ public:
                                    start()+(int)THECOMP,
                                    THECOMP );
         }
-
+#endif
         /**
          * get the component of the element
          * const version
@@ -2071,7 +2073,9 @@ public:
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
             //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
+                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
+
         }
         component_type
         comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
@@ -2085,11 +2089,16 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
+                              typename component_type::container_type( this->vec().data().expression(), sActive,
+                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
+                                                                       this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i );
@@ -2107,11 +2116,17 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+            auto sActive = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
+                              typename component_type::container_type( ( container_type& )*this, sActive, sGhost, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
@@ -2129,7 +2144,8 @@ public:
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
             //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
+                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
         }
         component_type
         comp( ComponentType i, ComponentType j, mpl::bool_<true> )
@@ -2143,12 +2159,18 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
+                              typename component_type::container_type( this->vec().data().expression(), sActive,
+                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
+                                                                       this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i,j );
@@ -2166,12 +2188,16 @@ public:
                 startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+            auto sActive = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nComponents, M_functionspace->nLocalGhostPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i,j );
@@ -2181,13 +2207,13 @@ public:
         operator[]( ComponentType i )
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         component_type
         operator[]( ComponentType i ) const
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
         operator[]( size_type i )
@@ -3194,11 +3220,11 @@ public:
         element( ExprT e, std::string const& name = "u",
                  bool updateOffViews = true,
                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 );
-
+#if 0
         template<int i>
         typename sub_element<i>::type
         elementImpl( std::string const& name ="u", bool updateOffViews=true ) const;
-
+#endif
         template<int i>
         typename sub_element<i>::type &
         element( std::string const& name ="u", bool updateOffViews=true )
@@ -4101,6 +4127,22 @@ public:
     size_type nLocalDofPerComponent() const
     {
         return this->nLocalDof()/qDim();
+    }
+
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalDofWithoutGhostPerComponent() const
+    {
+        return this->nLocalDofWithoutGhost()/qDim();
+    }
+
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalGhostPerComponent() const
+    {
+        return (this->nLocalDofWithGhost()-this->nLocalDofWithoutGhost())/qDim();
     }
 
 
