@@ -169,6 +169,10 @@ public:
     typedef typename elements_type::iterator element_iterator;
     typedef typename elements_type::const_iterator element_const_iterator;
 
+    //typedef typename elements_type::template index<0>::type pid_elements;
+    typedef typename elements_type::iterator pid_element_iterator;
+    typedef typename elements_type::const_iterator pid_element_const_iterator;
+
     // marker
     typedef typename elements_type::template index<Feel::detail::by_marker>::type marker_elements;
     typedef typename marker_elements::iterator marker_element_iterator;

@@ -6,6 +6,7 @@
        Date: 2005-08-10
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +22,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file geoentity.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-08-10
- */
-#ifndef __GeoEntity_H
-#define __GeoEntity_H 1
+#ifndef FEELPP_GEOENTITY_HPP
+#define FEELPP_GEOENTITY_HPP 1
 
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -37,12 +33,8 @@ namespace Feel
 {
 
 /**
-   \class GeoEntity
-   \brief base class for all geometric entities
-
-   @author Christophe Prud'homme
-   @see
-*/
+ * Base class for all geometric entities
+ */
 template<typename Entity>
 class GeoEntity
     :
@@ -381,6 +373,12 @@ public:
     }
 
     /**
+     * @return location of entity encoded into a \c size_type : INTERNAL,
+     * ON_BOUNDARY, INTERPROCESS... or a combination of some of them
+     */
+    size_type location() const noexcept { return M_entity.context(); }
+
+    /**
      * @return true if the entity is internal, false otherwise
      */
     bool isInternal() const
@@ -397,6 +395,15 @@ public:
     {
         return M_entity.test( MESH_ENTITY_BOUNDARY );
     }
+
+    /**
+     * Tells if  entity is interprocess (connected to at least two partitions)
+     * @return true if interprocess, false otherwise
+     */
+    bool isInterProcess() const noexcept
+        {
+            return M_entity.test( MESH_ENTITY_INTERPROCESS );
+        }
 
     /**
      * maximum dimension of the entity of the element touching the boundary
@@ -525,7 +532,7 @@ public:
             M_idInOtherPartitions = iop;
         }
 
-    
+
     /**
      * set (partition,id) in other partitions of the entity
      */
@@ -539,7 +546,7 @@ public:
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
     }
@@ -603,6 +610,22 @@ public:
         }
         M_boundaryEntityDimension = ent_d;
     }
+    /**
+     * set the interprocess flag
+     * @param b true if the item is interprocess, false otherwise
+     */
+    void setInterProcess( bool b ) noexcept
+        {
+            if ( b )
+            {
+                M_entity.set( MESH_ENTITY_INTERPROCESS );
+                M_entity.clear( MESH_ENTITY_BOUNDARY );
+            }
+            else
+            {
+                M_entity.clear( MESH_ENTITY_INTERPROCESS );
+            }
+        }
 
     /**
      * \return the number of partition the element is linked to including the

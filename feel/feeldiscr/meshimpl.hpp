@@ -214,8 +214,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  e.point( i ).addElement( e.id(), i );
                                          });
             }
-            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
-            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update add element info";
         }
 
         if ( true )
@@ -495,7 +495,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
         LOG(INFO) << "h average : " << this->hAverage() << "\n";
         LOG(INFO) << "    h min : " << this->hMin() << "\n";
         LOG(INFO) << "    h max : " << this->hMax() << "\n";
-        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
+        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n";
     }
 
 }
@@ -1518,6 +1518,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                              ( cface.element1().processId()==this->worldComm().localRank() ) )
                             facePtr->setProcessId( currentPid );
                     }
+                    facePtr->setInterProcess( facePtr->isInterProcessDomain() );
+                    LOG(INFO) << " ... face inter processdomain: " << facePtr->isInterProcessDomain() << " i: " << facePtr->isInterProcess();
                 }
 
                 // the face could have been entered apriori given by
@@ -1600,7 +1602,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         if ( ( facePtr->element0().processId()== currentPid ) || ( facePtr->element1().processId()== currentPid ) )
                             facePtr->setProcessId( currentPid );
                     }
-
+                    facePtr->setInterProcess( ( facePtr->pidElement0() != facePtr->pidElement1() ) );
+                    DVLOG(3) << " xxx face inter processdomain: " <<  ( facePtr->pidElement0() != facePtr->pidElement1() ) << " i: " << facePtr->isInterProcess() << " loc: " << facePtr->location();
 
 #if !defined( NDEBUG )
                     DVLOG(2) << "adding face info : \n";
@@ -1637,6 +1640,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     _faces.clear();
     boost::unordered_map<std::set<size_type>, face_type* >().swap( _faces );
 
+    tic();
     // update multi-index faces container
     for ( face_type* facePtr : _facesOrderedWithId )
     {
@@ -1647,6 +1651,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             delete facePtr;
         }
     }
+    toc("mesh::updateEntityCoDimensionOne", FLAGS_v>1);
     _facesOrderedWithId.clear();
     std::vector<face_type*>().swap(_facesOrderedWithId);
 
@@ -1661,8 +1666,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DVLOG(3) << "removing face id : " << f_it->id()
+                         << " marker : " << f_it->marker();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
                 //++f_it;
@@ -1694,8 +1699,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             // cleanup the face data structure :
             if ( !f_it->isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id()
-                           << " marker : " << f_it->marker();
+                DVLOG(3) << "removing face id : " << f_it->id()
+                         << " marker : " << f_it->marker();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
             }
@@ -3399,8 +3404,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
+    typename self_type::pid_element_iterator el_it;
+    typename self_type::pid_element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
     const size_type nActifElt = std::distance( el_it, el_en );
     if ( nActifElt==0 ) return;
@@ -3508,8 +3513,8 @@ Mesh<Shape, T, Tag>::Localization::init()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
 
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
+    typename self_type::pid_element_iterator el_it;
+    typename self_type::pid_element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
     if ( el_it != el_en )
     {

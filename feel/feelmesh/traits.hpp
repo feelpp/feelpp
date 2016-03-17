@@ -75,6 +75,9 @@ struct MeshTraits
     typedef typename mesh_type::location_element_iterator location_element_iterator;
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
 
+    typedef typename mesh_type::pid_element_iterator pid_element_iterator;
+    typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
+
     // face iterators
     typedef typename mesh_type::face_iterator face_iterator;
     typedef typename mesh_type::face_const_iterator face_const_iterator;

@@ -5175,9 +5175,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         __rt->clear();
         BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
-        typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
-        mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
+        auto it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
+        auto en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 
         for ( size_type __i = 0; it != en; ++__i, ++it )
         {

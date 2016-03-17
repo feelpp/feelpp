@@ -1316,7 +1316,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
             {
                 auto const& neighIds = pointsToNeihborPart.find( vId )->second;
                 for ( auto const& neighId : neighIds )
-                    M_meshPartIn->elements().modify( elt_it, Feel::detail::UpdateNeighborPartition( neighId ) );
+                    M_meshPartIn->elements().modify( M_meshPartIn->elementIterator(elt_it->id()), Feel::detail::UpdateNeighborPartition( neighId ) );
             }
         }
     }

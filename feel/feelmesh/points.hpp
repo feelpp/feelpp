@@ -40,6 +40,7 @@ namespace Feel
 {
 namespace multi_index = boost::multi_index;
 
+
 /// \cond detail
 /*!
   \class Points
@@ -63,28 +64,28 @@ public:
     point_type,
     multi_index::indexed_by<
     // sort by employee::operator<
-        multi_index::ordered_unique<multi_index::identity<point_type> >,
+        multi_index::hashed_unique<multi_index::identity<point_type>, GeoHash<point_type> >,
 
         // sort by less<int> on marker
         multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                        multi_index::composite_key<point_type,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              Marker1 const&,
-                                                                                              &point_type::marker>,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              rank_type,
-                                                                                              &point_type::processId> > >,
+                                       multi_index::composite_key<point_type,
+                                                                  multi_index::const_mem_fun<point_type,
+                                                                                             Marker1 const&,
+                                                                                             &point_type::marker>,
+                                                                  multi_index::const_mem_fun<point_type,
+                                                                                             rank_type,
+                                                                                             &point_type::processId> > >,
         // sort by less<int> on processId
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   rank_type,
-                                                                   &point_type::processId> >,
+        multi_index::hashed_non_unique<multi_index::tag<Feel::detail::by_pid>,
+                                       multi_index::const_mem_fun<point_type,
+                                                                  rank_type,
+                                                                  &point_type::processId> >,
 
         // sort by less<int> on boundary
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   bool,
-                                                                   &point_type::isOnBoundary> >
+        multi_index::hashed_non_unique<multi_index::tag<Feel::detail::by_location>,
+                                       multi_index::const_mem_fun<point_type,
+                                                                  bool,
+                                                                  &point_type::isOnBoundary> >
     >
     > points_type;
 
@@ -397,7 +398,7 @@ public:
      */
     location_point_const_iterator beginPointOnBoundary() const
     {
-        return M_points.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).first;
     }
 
     /**
@@ -407,29 +408,29 @@ public:
      */
     location_point_const_iterator endPointOnBoundary() const
     {
-        return M_points.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_points.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).second;
     }
 
 
     pid_point_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+        return M_points.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).first;
     }
     pid_point_const_iterator beginPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+        return M_points.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).first;
     }
     pid_point_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value )
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+        return M_points.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).second;
     }
     pid_point_const_iterator endPointWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
-        return M_points.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+        return M_points.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).second;
     }
 
 

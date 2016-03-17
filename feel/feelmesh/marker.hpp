@@ -156,6 +156,7 @@ private:
 
 namespace detail
 {
+struct by_id {};
 struct by_marker {};
 struct by_marker2 {};
 struct by_marker3 {};
@@ -169,4 +170,3 @@ struct by_ghostcell {};
 /// \endcond detail
 } // Feel
 #endif
-
