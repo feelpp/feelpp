@@ -214,8 +214,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                  e.point( i ).addElement( e.id(), i );
                                          });
             }
-            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
-            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update add element info";
         }
 
         if ( true )
@@ -398,7 +398,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
         }
     }
-
+    tic();
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
@@ -407,19 +407,27 @@ Mesh<Shape, T, Tag>::updateMeasures()
         {
             if ( meshIsStraightened && !iv->isOnBoundary() )
             {
+#if 0
                 this->elements().modify( iv,
                                          [=,&pc1,&thequad1,&pcf1]( element_type& e )
                                          {
                                              e.updateWithPc1(pc1, boost::ref( pcf1), thequad );
                                          } );
+#else
+                iv->updateWithPc1( pc1, boost::ref( pcf1), thequad );
+#endif
             }
             else
             {
+#if 0
                 this->elements().modify( iv,
                                          [=,&pc,&thequad,&pcf]( element_type& e )
                                          {
                                              e.updateWithPc(pc, boost::ref( pcf), thequad );
                                          } );
+#else
+                iv->updateWithPc(pc, boost::ref( pcf), thequad );
+#endif
             }
         }
 
@@ -443,6 +451,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 M_local_measbdy += iv->faceMeasure( f );
 #endif
     }
+    toc("mesh::updateMeasures update local measures", FLAGS_v>0);
 #if BOOST_VERSION >= 105500
     std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
     mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
@@ -468,14 +477,16 @@ Mesh<Shape, T, Tag>::updateMeasures()
                 if ( this->hasElement( _elt ) )
                     meas += this->element( _elt ).measure();
             }
-            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
+            //this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
+            iv->setMeasurePointElementNeighbors( meas );
         }
     }
     VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n";
 
     // compute h information: average, min and max
+    tic();
     {
-        ti.restart();
+
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
@@ -499,8 +510,8 @@ Mesh<Shape, T, Tag>::updateMeasures()
         LOG(INFO) << "h average : " << this->hAverage() << "\n";
         LOG(INFO) << "    h min : " << this->hMin() << "\n";
         LOG(INFO) << "    h max : " << this->hMax() << "\n";
-        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
     }
+    toc("mesh::updateMeasures compute h values", FLAGS_v>0);
 
 }
 
@@ -1678,7 +1689,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 //this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
                 Feel::detail::UpdateFace<face_type> upface( boost::cref( *f_it ) );
                 upface( *elt1 );
-                
+
                 if ( f_it->isConnectedTo1() )
                 {
                     element_iterator elt2 = this->elementIterator( f_it->ad_second(), f_it->proc_second() );
@@ -1803,6 +1814,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
         } // local face
     } // element loop
 
+    tic();
     for ( auto const& faceDatas : f2e )
     {
         int nConnectedElts = faceDatas.size();
@@ -1822,6 +1834,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
             }
         }
     }
+    toc("mesh::update adjacency set neighbors", FLAGS_v>0);
 }
 #else
 template<typename Shape, typename T, int Tag>
@@ -1893,6 +1906,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
             size_type eltId2 = std::get<0>( eltDatas );
             rank_type eltPid2 = std::get<1>( eltDatas );
             this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2, eltPid2 ); });
+            //eltIt1->setNeighbor( j, eltId2, eltPid2 );
         }
     }
 }

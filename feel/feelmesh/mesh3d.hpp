@@ -601,6 +601,7 @@ template <typename GEOSHAPE>
 void
 Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 {
+    tic();
     boost::timer ti;
     boost::unordered_map<std::set<size_type>, size_type > _edges;
     typename boost::unordered_map<std::set<size_type>, size_type >::iterator _edgeit;
@@ -614,7 +615,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     size_type vid, i1, i2;
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
 
-
+    tic();
     // First We check if we have already Edges stored
     if ( !this->edges().empty() )
     {
@@ -650,7 +651,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 #endif
         }
     }
-
+    toc("mesh::updateEntitiesCoDimensionTwo first pass on edges", FLAGS_v>0);
     DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
@@ -661,6 +662,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     // next edge inserted are on boundary
     edg.setOnBoundary( true, 0 );
 
+    tic();
     if ( true )//this->edges().empty() )
     {
         // We want that the first edges be those on the boundary, in order to obey the paradigm for
@@ -677,12 +679,13 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
                 boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
 
-
+                tic();
                 edge_iterator eit;
                 if ( edgeinserted )
                 {
                     // set edge id
                     edg.setId( _edgeit->second );
+                    edg.setProcessId( ifa->processId() );
                     ++next_edge;
 
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
@@ -699,13 +702,16 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     if ( !eit->isOnBoundary() )
                         this->edges().modify( eit, []( edge_type& e ) { e.setOnBoundary( true, 0 ); } );
                 }
+                toc("mesh::updateEntitiesCoDimensionTwo set edge boundary",FLAGS_v>0);
+                tic();
                 // set the process id from element (only active element)
                 if ( !ifa->isGhostCell() && eit->processId() != ifa->processId() )
                     this->edges().modify( eit, Feel::detail::UpdateProcessId(ifa->processId()) );
+                toc("mesh::updateEntitiesCoDimensionTwo set edge boundary processid",FLAGS_v>0);
             }
         }
     }
-
+    toc("mesh::updateEntitiesCoDimensionTwo update boundary faces", FLAGS_v>0);
     DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
@@ -748,7 +754,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( updateComponentAddElements )
                 {
                     edg.elements().clear();
-                    edg.addElement( vid );
+                    edg.addElement( vid, j );
                 }
 
                 // number of points on the edge is 2 (number of
@@ -772,7 +778,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( updateComponentAddElements || eit->marker().isOn() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
-                    this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
+                    //this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
+                    eit->addElement( vid, j );
                 }
             }
 #if 0
@@ -879,6 +886,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     DVLOG(2) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
 #endif
     ti.restart();
+    toc("mesh::updateEntitiesCoDimensionTwo total", FLAGS_v>0);
 }
 #else
 

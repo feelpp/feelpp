@@ -20,11 +20,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-  \file geond.hpp
-*/
-#ifndef _GEOND_HH_
-#define _GEOND_HH_
+#ifndef FEELPP_GEOND_HPP
+#define FEELPP_GEOND_HPP 1
+
+
+#include <unordered_map>
 
 #include <boost/numeric/ublas/storage.hpp>
 
@@ -877,7 +877,7 @@ public:
         return n;
     }
     //! set the measure of point element neighbors
-    void setMeasurePointElementNeighbors( value_type meas )
+    void setMeasurePointElementNeighbors( value_type meas ) const
     {
         if ( M_measures.find( GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT ) == M_measures.end() )
         {
@@ -899,22 +899,22 @@ public:
     void update();
     void updateWithPc( typename gm_type::precompute_ptrtype const& pc,
                        typename gm_type::faces_precompute_type & pcf,
-                       quad_meas_type const& thequad );
+                       quad_meas_type const& thequad ) const;
 
     void updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
                         typename gm1_type::faces_precompute_type & pcf,
-                        quad_meas1_type const& thequad );
+                        quad_meas1_type const& thequad ) const;
 private:
 
     template<typename GmType, typename QuadType>
     void updateMeasureImpl( boost::shared_ptr<GmType> gm, typename GmType::precompute_ptrtype const& pc,
-                            QuadType const& thequad );
+                            QuadType const& thequad ) const;
     template<typename GmType, typename QuadType>
     void updateMeasureFaceImpl( boost::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
-                                QuadType const& thequad, mpl::bool_<true> );
+                                QuadType const& thequad, mpl::bool_<true> ) const;
     template<typename GmType, typename QuadType>
     void updateMeasureFaceImpl( boost::shared_ptr<GmType> gm, typename GmType::faces_precompute_type & pcf,
-                                QuadType const& thequad, mpl::bool_<false> );
+                                QuadType const& thequad, mpl::bool_<false> ) const;
 
 private:
 
@@ -956,7 +956,7 @@ private:
         MEAS_NEIGHBORS_ELEMENT= 2
     };
 
-    std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
+    mutable std::unordered_map<GEOND_MEASURES,std::vector<value_type> > M_measures;
 
     //double M_measure;
     //std::vector<double> M_measurefaces;
@@ -1068,7 +1068,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_ptrtype const& pc,
                                                  typename gm_type::faces_precompute_type& pcf,
-                                                 quad_meas_type const& thequad )
+                                                 quad_meas_type const& thequad ) const
 {
     updateMeasureImpl( M_gm, pc, thequad );
     updateMeasureFaceImpl( M_gm, pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
@@ -1078,7 +1078,7 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc1( typename gm1_type::precompute_ptrtype const& pc,
                                                   typename gm1_type::faces_precompute_type & pcf,
-                                                  quad_meas1_type const& thequad )
+                                                  quad_meas1_type const& thequad ) const
 {
     updateMeasureImpl( M_gm1, pc, thequad );
     updateMeasureFaceImpl( M_gm1, pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
@@ -1089,7 +1089,7 @@ template<typename GmType, typename QuadType>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> gm,
                                                       typename GmType::precompute_ptrtype const& pc,
-                                                      QuadType const& thequad )
+                                                      QuadType const& thequad ) const
 {
     if ( M_measures.find( GEOND_MEASURES::MEAS_ELEMENT ) == M_measures.end() )
     {
@@ -1110,7 +1110,7 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
-                                                          mpl::bool_<true> )
+                                                          mpl::bool_<true> ) const
 {
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )
     {
@@ -1136,7 +1136,7 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
-                                                          mpl::bool_<false> )
+                                                          mpl::bool_<false> ) const
 {
     // need because M_measurefaces is used in Geomap::Context
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )

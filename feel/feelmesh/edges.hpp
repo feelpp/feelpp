@@ -41,6 +41,20 @@ namespace Feel
 {
 namespace multi_index = boost::multi_index;
 
+template<typename GeoT>
+struct GeoHash
+{
+    std::size_t operator()(GeoT const& x)const
+        {
+            return boost::hash<size_type>() ( x.id() );
+        }
+    std::size_t operator()(size_type x)const
+        {
+            return boost::hash<size_type>() ( x );
+        }
+};
+
+
 /// \cond \detail
 /*!
   \class Edges
@@ -68,7 +82,7 @@ public:
         edge_type,
         multi_index::indexed_by<
             // sort by employee::operator<
-            multi_index::ordered_unique<multi_index::identity<edge_type> >,
+            multi_index::hashed_unique<multi_index::identity<edge_type>, GeoHash<edge_type> >,
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<
@@ -82,16 +96,16 @@ public:
                                             > >,
 
             // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId> >,
+            multi_index::hashed_non_unique<multi_index::tag<Feel::detail::by_pid>,
+                                           multi_index::const_mem_fun<edge_type,
+                                                                      rank_type,
+                                                                      &edge_type::processId> >,
 
             // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       bool,
-                                                                       &edge_type::isOnBoundary> >
+            multi_index::hashed_non_unique<multi_index::tag<Feel::detail::by_location>,
+                                           multi_index::const_mem_fun<edge_type,
+                                                                      bool,
+                                                                      &edge_type::isOnBoundary> >
             >
         > edges_type;
 
@@ -226,7 +240,7 @@ public:
      * \return the range of iterator \c (begin,end) over the faces
      * with marker \p m on processor \p p
      */
-    
+
     std::pair<marker_edge_iterator, marker_edge_iterator>
     edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
     {
@@ -333,7 +347,7 @@ public:
      */
     location_edge_iterator beginInternalEdge()
     {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( INTERNAL ).first;
     }
     /**
      * get the end() iterator on all the internal edges
@@ -342,7 +356,7 @@ public:
      */
     location_edge_iterator endInternalEdge()
     {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( INTERNAL ).second;
     }
 
     /**
@@ -352,7 +366,7 @@ public:
      */
     location_edge_const_iterator beginInternalEdge() const
     {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( INTERNAL ).first;
     }
 
     /**
@@ -362,7 +376,7 @@ public:
      */
     location_edge_const_iterator endInternalEdge() const
     {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( INTERNAL ).second;
     }
 
     /**
@@ -372,7 +386,7 @@ public:
      */
     location_edge_iterator beginEdgeOnBoundary()
     {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).first;
     }
     /**
      * get the end() iterator on all the boundary edges
@@ -381,7 +395,7 @@ public:
      */
     location_edge_iterator endEdgeOnBoundary()
     {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).second;
     }
 
     /**
@@ -391,7 +405,7 @@ public:
      */
     location_edge_const_iterator beginEdgeOnBoundary() const
     {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).first;
     }
 
     /**
@@ -401,7 +415,7 @@ public:
      */
     location_edge_const_iterator endEdgeOnBoundary() const
     {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().equal_range( ON_BOUNDARY ).second;
     }
 
     /**
@@ -422,22 +436,22 @@ public:
     pid_edge_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value )
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).first;
     }
     pid_edge_const_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).first;
     }
     pid_edge_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value )
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).second;
     }
     pid_edge_const_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( /*boost::make_tuple( part )*/ part ).second;
     }
 
 

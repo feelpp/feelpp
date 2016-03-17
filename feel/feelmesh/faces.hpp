@@ -136,10 +136,10 @@ public:
                                             face_type,
                                             multi_index::const_mem_fun<face_type,
                                                                        bool,
-                                                                       &face_type::isInterProcessDomain>,
+                                                                       &face_type::isInterProcessDomain>,/*
                                             multi_index::const_mem_fun<face_type,
                                                                        rank_type,
-                                                                       &face_type::partition1>,
+                                                                                                          &face_type::partition1>,*/
                                             multi_index::const_mem_fun<face_type,
                                                                        rank_type,
                                                                        &face_type::partition2>
@@ -551,9 +551,9 @@ public:
     {
         const rank_type part =  this->worldCommFaces().localRank();
         if ( p != invalid_rank_type_value )
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part, p ) );
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, p ) );
         else
-            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, part ) );
+            return M_faces.template get<Feel::detail::by_interprocessdomain>().equal_range( boost::make_tuple( true ) );
     }
 
 #if 0
@@ -812,7 +812,7 @@ public:
             << "addFace failed, face not added to container : "
             << ret.first->id() << " face id:"
             << f.id();
-        
+
         return ret;
     }
 
@@ -890,15 +890,15 @@ public:
         {
             id = boost::unwrap_ref(*it).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker2 );
             DLOG_IF(WARNING, r == false ) << "update marker2 failed for element id " << id << " face id " << fid;
         }
     }
-    
+
     /**
      * update faces marker 3 from a vector whose size is exactely the number of
      * faces. This vector can be generated using a P0 discontinuous space
@@ -920,10 +920,10 @@ public:
         {
             id = boost::unwrap_ref(*it).id();
             auto const& theface = face( evec.mesh()->subMeshToMesh( id ) );
-            
+
             auto fid = evec.mesh()->subMeshToMesh( id );
             auto it = this->faceIterator( fid );
-            
+
             bool r = M_faces.modify( it, update_marker );
             DLOG_IF(WARNING, r == false ) << "update marker3 failed for element id " << id << " face id " << fid;
         }

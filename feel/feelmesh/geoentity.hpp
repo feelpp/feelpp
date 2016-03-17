@@ -525,7 +525,7 @@ public:
             M_idInOtherPartitions = iop;
         }
 
-    
+
     /**
      * set (partition,id) in other partitions of the entity
      */
@@ -539,7 +539,7 @@ public:
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
     }
@@ -670,10 +670,10 @@ public:
     /**
      * add a new element to which the point belongs
      */
-    self_type& addElement( size_type e, int id_in_element = 0 )
+    //self_type& addElement( size_type e, int id_in_element = 0 ) const
+    void addElement( size_type e, int id_in_element = 0 ) const
     {
         M_elist.insert( std::make_pair(e,id_in_element) );
-        return *this;
     }
 
     /**
@@ -700,10 +700,10 @@ public:
     /**
      * add a new ghost element to which the point belongs
      */
-    self_type& addElementGhost( rank_type proc, size_type e  )
+    //self_type& addElementGhost( rank_type proc, size_type e  ) const
+    void addElementGhost( rank_type proc, size_type e  ) const
     {
         M_elistGhost[proc].insert(e);
-        return *this;
     }
 
     /**
@@ -786,9 +786,9 @@ private:
     std::map<rank_type, size_type> M_idInOtherPartitions;
 
     //! element list to which the point belongs
-    std::set<std::pair<size_type,uint16_type>>  M_elist;
+    mutable std::set<std::pair<size_type,uint16_type>>  M_elist;
     //! ghost elements which share the entity
-    std::map<rank_type,std::set<size_type > > M_elistGhost;
+    mutable std::map<rank_type,std::set<size_type > > M_elistGhost;
 
 };
 
