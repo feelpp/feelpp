@@ -41,13 +41,13 @@ int main( int argc, char** argv )
                                    _email="feelpp-devel@feelpp.org" ) );
 
     tic();
-    //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0, _filename=soption("mesh.filename"), 
-                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
-    toc("loading mesh done",FLAGS_v>0);
-    
+
     if ( boption("mesh.partition.enable") && Environment::numberOfProcessors() == 1 )
     {
+        auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0, _filename=soption("mesh.filename"),
+                             _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+        toc("loading mesh done",FLAGS_v>0);
+
         // build a MeshPartitionSet based on a mesh partition that will feed a
         // partition io data structure to generate a parallel hdf5 file from which
         // the parallel mesh can be loaded
@@ -55,7 +55,8 @@ int main( int argc, char** argv )
         io_t io( fs::path(soption("mesh.filename")).stem().string()+".json" );
         io.write( partitionMesh( mesh, ioption("mesh.partition.size") ) );
         return 0;
-    } 
+    }
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _savehdf5=0, _filename=soption("mesh.filename") );
 
     auto Xhd0 = Pdh<0>(mesh);
     auto measures = Xhd0->element();
@@ -84,7 +85,7 @@ int main( int argc, char** argv )
     }
 
     for( auto marker: mesh->markerNames() )
-    {   
+    {
        auto name = marker.first;
        auto data = marker.second;
        if ( data[1] == mesh->dimension() )
