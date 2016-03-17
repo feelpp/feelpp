@@ -119,28 +119,33 @@ public:
     {
         typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type> > subtype;
         typedef ublas::vector_range<subtype> rangesubtype;
+        typedef ublas::vector_slice<subtype> slicesubtype;
         typedef VectorUblas<value_type,subtype> type;
     };
     static const bool is_shallow_array_adaptor_vector =
         boost::is_same<vector_type,typename this_type::shallow_array_adaptor::subtype>::value ||
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value;
+        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value ||
+        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::slicesubtype>::value;
 
     struct range
     {
         typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
-                                   ublas::vector_range< typename shallow_array_adaptor::subtype >,
+                                   typename this_type::shallow_array_adaptor::rangesubtype,
                                    ublas::vector_range<ublas::vector<value_type> > >::type subtype;
         typedef VectorUblas<value_type,subtype> type;
     };
 
     struct slice
     {
-        typedef ublas::vector_slice<ublas::vector<value_type> > subtype;
+        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
+                                   typename this_type::shallow_array_adaptor::slicesubtype,
+                                   ublas::vector_slice<ublas::vector<value_type> > >::type subtype;
         typedef VectorUblas<value_type,subtype> type;
     };
 
     static const bool is_range_vector = boost::is_same<vector_type,typename this_type::range::subtype>::value;
-    static const bool has_non_contiguous_ghosts = is_range_vector || is_shallow_array_adaptor_vector;
+    static const bool is_slice_vector = boost::is_same<vector_type,typename this_type::slice::subtype>::value;
+    static const bool has_non_contiguous_ghosts = is_range_vector || is_slice_vector || is_shallow_array_adaptor_vector;
 
 
     typedef typename super1::datamap_type datamap_type;
@@ -165,15 +170,22 @@ public:
     FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
     VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
     VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
-    VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
+
+    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
+    VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+    VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
 
     FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
     VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
-    VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
+    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
 
     FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
-    VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
+    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
+    VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
+                 ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+    VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                 typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
 
     VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
                  size_type nGhostDof, value_type* arrayGhostDof,
@@ -377,6 +389,12 @@ public:
      * otherwise returns 0
      */
     size_type start() const;
+
+    /**
+     * if the vector is a range, return the first index of the range,
+     * otherwise returns 0
+     */
+    size_type startNonContiguousGhosts() const;
 
     /**
      * return row_start, the index of the first
@@ -963,6 +981,7 @@ public:
      * local vector \p v_local.
      */
     void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local ) const;
+    void localize ( ublas::vector_slice<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
 
     /**
      * Same, but fills a \p NumericVector<T> instead of
