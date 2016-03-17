@@ -122,7 +122,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::strin
     return this->element<i>(name,updateOffViews);
 #endif
 }
-
+#if 0
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
@@ -185,7 +185,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 
 
 }
-
+#endif
 
 //
 // Element implementation
