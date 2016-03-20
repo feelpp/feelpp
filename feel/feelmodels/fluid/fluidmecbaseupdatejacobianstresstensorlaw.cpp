@@ -13,7 +13,7 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_type const& U,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_external_storage_type const& U,
                                                              sparse_matrix_ptrtype& J, vector_ptrtype& R,
                                                              bool _BuildCstPart ) const
 {
