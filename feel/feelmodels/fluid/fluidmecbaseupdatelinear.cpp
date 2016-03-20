@@ -164,9 +164,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
-            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
+            CHECK( this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startBlockIndexFieldsInMatrix().end() )
                 << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+            size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
 
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
             auto therange=boundaryfaces(mesh);
@@ -178,13 +178,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             {
                 form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=A,
                        _rowstart=this->rowStartInMatrix(),
-                       _colstart=this->colStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
+                       _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
                     integrate( _range=therange,//elements(mesh),
                                _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                                _geomap=this->geomap() );
 
                 form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=A,
-                       _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM,
+                       _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM,
                        _colstart=this->colStartInMatrix() ) +=
                     integrate( _range=therange,//elements(mesh),
                                _expr= + idt(p)*id(lambda),
@@ -196,7 +196,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             {
                 this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
                 form1( _test=M_XhMeanPressureLM, _vector=F,
-                       _rowstart=this->rowStartInMatrix()+startDofIndexDefinePressureCstLM ) +=
+                       _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
                     integrate( _range=therange,//elements(mesh),
                                _expr= FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this())*id(lambda),
                                _geomap=this->geomap() );

@@ -47,13 +47,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                                             _pattern=size_type(Pattern::COUPLED),
                                             _rowstart=rowStartInVector );
 
+#if 0
     auto U = Xh->element("u");//U = *XVec;
     // copy vector values in fluid element
 #if 0
     for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
         U(k) = XVec->operator()(/*rowStartInVector+*/k);
 #else
-    M_blockVectorSolution.setSubVector( U, *XVec, 0 );
+    M_blockVectorSolution.setSubVector( U, *XVec, rowStartInVector );
+#endif
+#else
+    auto U = Xh->element(XVec, rowStartInVector);
 #endif
 
     auto u = U.template element<0>();
@@ -201,15 +205,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         } // explicit
         if ( this->hasFluidOutletWindkesselImplicit() )
         {
-            CHECK( this->startDofIndexFieldsInMatrix().find("windkessel") != this->startDofIndexFieldsInMatrix().end() )
+            CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
                 << " start dof index for windkessel is not present\n";
-            size_type startDofIndexWindkessel = this->startDofIndexFieldsInMatrix().find("windkessel")->second;
+            size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
 
             if ( BuildCstPart || (!BuildCstPart && !UseJacobianLinearTerms) )
             {
-                auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
-                auto presDistal = presDistalProximal.template element<0>();
-                auto presProximal = presDistalProximal.template element<1>();
+                //auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
+                //auto presDistal = presDistalProximal.template element<0>();
+                //auto presProximal = presDistalProximal.template element<1>();
 
                 int cptOutletUsed = 0;
                 for (int k=0;k<this->nFluidOutlet();++k)
@@ -225,43 +229,57 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                     double Cd=std::get<3>(windkesselParam);
                     double Deltat = this->timeStepBDF()->timeStep();
 
-                    const size_type rowStartWindkessel = startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
+                    bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
+                    int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*cptOutletUsed;
+                    auto const& basisToContainerGpPressureDistalVec = R->map().basisGpToCompositeGp( blockStartWindkesselVec );
+                    auto const& basisToContainerGpPressureProximalVec = R->map().basisGpToCompositeGp( blockStartWindkesselVec+1 );
+                    if ( hasWindkesselActiveDof )
+                        CHECK( !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
+                    const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
+                    const size_type gpPressureProximalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalVec[0] : 0;
+
+                    //const size_type rowStartWindkessel = startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
+                    //const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
                     ++cptOutletUsed;
                     //----------------------------------------------------//
-                    if ( BuildCstPart  && M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                    if ( BuildCstPart  && hasWindkesselActiveDof )
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
                             pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
                         // add in vector
-                        R->add( rowStartInVectorWindkessel, -Cd*pressureDistalOld);
+                        R->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/, -Cd*pressureDistalOld);
                     }
                     //----------------------------------------------------//
                     if ( !BuildCstPart && !UseJacobianLinearTerms )
                     {
+                        auto presDistalProximal = M_fluidOutletWindkesselSpace->element(XVec,blockStartWindkesselVec);
+                        auto presDistal = presDistalProximal.template element<0>();
+                        auto presProximal = presDistalProximal.template element<1>();
+#if 0
                         for ( size_type kk=0;kk<M_fluidOutletWindkesselSpace->nLocalDofWithGhost();++kk )
                             presDistalProximal( kk ) = XVec->operator()( rowStartWindkessel + kk);
+#endif
                         //----------------------------------------------------//
                         // 1ere ligne
-                        if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                        if ( hasWindkesselActiveDof )
                         {
                             const double value = presDistalProximal(0)*(Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd);
-                            R->add( rowStartInVectorWindkessel,value );
+                            R->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/,value );
                         }
                         form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
-                               _rowstart=rowStartInVectorWindkessel ) +=
+                               _rowstart=blockStartWindkesselVec/*rowStartInVectorWindkessel*/ ) +=
                             integrate( _range=markedfaces(mesh,markerOutlet),
                                        _expr=-(trans(idv(u))*N())*id(presDistal),
                                        _geomap=this->geomap() );
                         //----------------------------------------------------//
                         // 2eme ligne
-                        if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
+                        if ( hasWindkesselActiveDof )
                         {
-                            R->add( rowStartInVectorWindkessel+1,  presDistalProximal(1)-presDistalProximal(0) );
-                       }
+                            R->add( gpPressureProximalVec/*rowStartInVectorWindkessel+1*/,  presDistalProximal(1)-presDistalProximal(0) );
+                        }
                         form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
-                               _rowstart=rowStartInVectorWindkessel )+=
+                               _rowstart=blockStartWindkesselVec/*rowStartInVectorWindkessel*/ )+=
                             integrate( _range=markedfaces(mesh,markerOutlet),
                                        _expr=-Rp*(trans(idv(u))*N())*id(presProximal),
                                        _geomap=this->geomap() );
@@ -409,9 +427,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
-            CHECK( this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startDofIndexFieldsInMatrix().end() )
+            CHECK( this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startBlockIndexFieldsInMatrix().end() )
                 << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startDofIndexDefinePressureCstLM = this->startDofIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+            size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
 
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
             auto therange = boundaryfaces(mesh);
@@ -421,11 +439,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
                 auto lambda = M_XhMeanPressureLM->element();
-                for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
-                    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
+                M_blockVectorSolution.setSubVector( lambda, *XVec, rowStartInVector+startBlockIndexDefinePressureCstLM );
+
+                //for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
+                //    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
 
                 form1( _test=M_XhMeanPressureLM,_vector=R,
-                       _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
+                       _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM ) +=
                     integrate( _range=therange,//elements(mesh),
                                _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
                                _geomap=this->geomap() );
@@ -452,15 +472,15 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     //------------------------------------------------------------------------------------//
     if (this->hasMarkerDirichletBClm())
     {
-        CHECK( this->startDofIndexFieldsInMatrix().find("dirichletlm") != this->startDofIndexFieldsInMatrix().end() )
+        CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
             << " start dof index for dirichletlm is not present\n";
-        size_type startDofIndexDirichletLM = this->startDofIndexFieldsInMatrix().find("dirichletlm")->second;
+        size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             auto lambdaBC = this->XhDirichletLM()->element();
-            int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startDofIndexDirichletLM );
-            M_blockVectorSolution.setSubVector( lambdaBC, *XVec, dataBaseIdLM );
+            //int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startBlockIndexDirichletLM );
+            M_blockVectorSolution.setSubVector( lambdaBC, *XVec, rowStartInVector+startBlockIndexDirichletLM );
 
             form1( _test=Xh,_vector=R,
                    _rowstart=rowStartInVector )+=
@@ -468,7 +488,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                            _expr= inner( idv(lambdaBC),id(u) ) );
 
             form1( _test=this->XhDirichletLM(),_vector=R,
-                   _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                   _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                 integrate( //_range=elements(this->meshDirichletLM()),
                     _range=markedfaces( this->mesh(),this->markerDirichletBClm() ),
                            _expr= inner(idv(u),id(lambdaBC) ) );
@@ -483,7 +503,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             {
                 auto lambdaBC = this->XhDirichletLM()->element();
                 form1( _test=this->XhDirichletLM(),_vector=R,
-                       _rowstart=rowStartInVector+startDofIndexDirichletLM ) +=
+                       _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(mesh,this->markersNameMovingBoundary() ),
                                _expr= -inner( idv(this->meshVelocity2()),id(lambdaBC) ) );
             }
@@ -697,7 +717,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         }
 
         if ( !markerDirichletEliminationOthers.empty() )
-            modifVec(markedfaces(mesh,markerDirichletEliminationOthers), u, R, vf::zero<nDim,1>(),rowStartInVector );
+        {
+            auto up = Xh->element(R,rowStartInVector);
+            auto u = up.template element<0>();
+            u.on(_range=markedfaces(mesh,markerDirichletEliminationOthers),
+                 _expr=vf::zero<nDim,1>() );
+        }
 
         if ( M_useThermodynModel && M_useGravityForce )
             M_thermodynModel->updateBCDirichletStrongResidual( R );
@@ -720,15 +745,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
 {
     this->log("FluidMechanics","updateNewtonInitialGuess","start");
 
-    auto const& u = this->fieldVelocity();
-    auto Xh = this->functionSpace();
-    auto mesh = this->mesh();
     size_type rowStartInVector = this->rowStartInVector();
+    //auto const& u = this->fieldVelocity();
+    auto Xh = this->functionSpace();
+    auto up = Xh->element( U, rowStartInVector );
+    auto u = up.template element<0>();
+    auto mesh = this->mesh();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
     {
         this->log("FluidMechanics","updateNewtonInitialGuess","update moving boundary with strong Dirichlet");
-        modifVec(markedfaces(mesh, this->markersNameMovingBoundary()), u, U, vf::idv(this->meshVelocity2()), rowStartInVector );
+        u.on(_range=markedfaces(mesh, this->markersNameMovingBoundary()),
+             _expr=idv(this->meshVelocity2()) );
     }
 #endif
     this->updateInitialNewtonSolutionBCDirichlet(U);
@@ -736,9 +764,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     for ( auto const& inletbc : M_fluidInletDesc )
     {
         std::string const& marker = std::get<0>( inletbc );
-        //auto const& inletVel = M_fluidInletVelocity.find(marker)->second;
         auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
-        modifVec(markedfaces(mesh, marker), u, U, -idv(inletVel)*N(), rowStartInVector );
+        u.on(_range=markedfaces(mesh, marker),
+             _expr=-idv(inletVel)*N() );
     }
 
     if ( M_useThermodynModel && M_useGravityForce )
@@ -746,7 +774,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
         M_thermodynModel->updateNewtonInitialGuess( U );
     }
 
-    U->close();
+    //U->close();
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");
 }
