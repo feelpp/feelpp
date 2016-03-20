@@ -253,7 +253,7 @@ public:
 
     //! Polynomial order \f$P_2\f$
     static const uint16_type Order = 4;
-    static const uint16_type OrderGeo = 4;
+    static const uint16_type OrderGeo = 2;
 
     //! numerical type is double
     typedef double value_type;
