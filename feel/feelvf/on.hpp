@@ -335,7 +335,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 #endif
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
-    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
     
     //
@@ -529,13 +529,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-#if 0
-                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
-#else
                     size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
                     thedof = __form.basisGpToCompositeGpTrial( thedof );
-#endif
-;
+
                     DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
@@ -605,7 +601,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
-    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
 
     // make sure that the form is close, ie the associated matrix is assembled
@@ -653,6 +649,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
         auto IhLoc = __fe->edgeLocalInterpolant();
 
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+
         for( auto& lit : M_elts )
         {
             edge_it = lit.template get<1>();
@@ -684,7 +682,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                 for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
-                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*ldof.index(); // global dof
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
+                    thedof = __form.basisGpToCompositeGpTrial( thedof );
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
@@ -757,7 +756,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_product = functionspace_type::is_product;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
-    static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble(MESH_POINTS): " << is_comp_space<< "\n";
 
     VLOG(2) << "On::assemble on Mesh Points";
@@ -821,6 +820,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
         auto IhLoc = __fe->vertexLocalInterpolant();
 
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
         
         for( auto& lit : M_elts )
         {
@@ -848,7 +848,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
                     size_type index = dof->localToGlobal( eid, ptid_in_element, c ).index();
-                    size_type thedof = M_u.start()+ (is_comp_space?Elem1::nComponents:1)*index; // global dof
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*index : index;
+                    thedof = __form.basisGpToCompositeGpTrial( thedof );
+
                     double __value = IhLoc( c );
                     
                     if ( std::find( dofs.begin(),
