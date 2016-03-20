@@ -3748,6 +3748,7 @@ public:
     //@{
     typedef Element<value_type> element_type;
     typedef Element<value_type> real_element_type;
+    typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
