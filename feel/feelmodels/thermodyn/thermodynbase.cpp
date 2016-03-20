@@ -740,14 +740,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype
     this->log("ThermoDynamics","updateNewtonInitialGuess","start" );
 
     auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    size_type rowStartInVector = this->rowStartInVector();
+    auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
 
     for( auto const& d : M_bcDirichlet )
     {
-        modifVec( markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                  u, U, expression(d), rowStartInVector );
+        u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+             _expr=expression(d) );
     }
 
     this->log("ThermoDynamics","updateNewtonInitialGuess","finish" );
@@ -773,18 +771,15 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     auto Xh = this->spaceTemperature();
     auto const& u = this->fieldTemperature();
     auto const& v = this->fieldTemperature();
+#if 0
+    auto const u = Xh->element(XVec, this->rowStartInVector());
+#endif
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
-#if 0
-    auto U = Xh->element("u");
-    // copy vector values in fluid element
-    for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
-        U(k) = XVec->operator()(/*rowStartInVector+*/k);
-#endif
 
     if ( buildCstPart )
     {
@@ -852,18 +847,11 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
-    //auto const& u = *this->fieldTemperature();
     auto const& v = this->fieldTemperature();
-    size_type rowStartInVector = this->rowStartInVector();
-
-
-    auto u = Xh->element("u");//U = *XVec;
-    // copy vector values in fluid element
-    for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
-        u(k) = XVec->operator()(rowStartInVector+k);
+    auto const u = Xh->element(XVec, this->rowStartInVector());
 
     auto myLinearForm = form1( _test=Xh, _vector=R,
-                               _rowstart=rowStartInVector );
+                               _rowstart=this->rowStartInVector() );
 
     if (!buildCstPart && !UseJacobianLinearTerms )
     {
@@ -888,7 +876,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         }
 
         //viscous dissipation
-        if ( buildCstPart )
+        if ( false/*buildCstPart*/ )
         {
             double mu = 1.;
             auto defv = sym(gradv( this->fieldVelocityConvection() ) );
@@ -910,6 +898,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                                _geomap=this->geomap() );
             }
         }
+
     }
 
     if (!this->isStationary())
@@ -961,12 +950,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","start" );
 
     auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
+    auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
+
     for( auto const& d : this->M_bcDirichlet )
     {
-        modifVec(markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-                 u, R, cst(0.), this->rowStartInVector() );
+        u.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+             _expr=cst(0.) );
     }
 
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","finish" );
@@ -999,7 +988,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual( vector_ptrtype&
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCRobinResidual( element_temperature_type const& u, vector_ptrtype& R, bool buildCstPart ) const
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCRobinResidual( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
