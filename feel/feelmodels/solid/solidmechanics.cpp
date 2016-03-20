@@ -217,12 +217,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
                                                this->worldComm(),this->verboseAllProc());
 
     auto Xh = this->functionSpace();
-    auto u = Xh->element( U,0 );
     auto mesh = this->mesh();
-    size_type rowStartInVector = this->rowStartInVector();
 
     if ( !Xh->worldsComm()[0].isActive()) // only on Displacement Proc
         return;
+
+    auto u = Xh->element( U, this->rowStartInVector() );
 
     for( auto const& d : M_bcDirichlet )
     {
@@ -271,12 +271,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrty
 {
     if ( !this->hasDirichletBC() ) return;
 
-    size_type rowStartInVector = this->rowStartInVector();
-    auto u = this->functionSpace()->element( R,0 );
-
     R->close();
     if ( !this->functionSpaceDisplacement()->worldsComm()[0].isActive() ) // only on Displacement Proc
         return;
+
+    auto u = this->functionSpace()->element( R,this->rowStartInVector() );
+
     for( auto const& d : M_bcDirichlet )
     {
         auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
@@ -518,7 +518,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_type const& u, vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R) const
 {
 
     if ( M_bcRobin.empty() ) return;
@@ -640,7 +640,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_type const& u, vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
 {
     if ( M_bcNeumannEulerianFrameScalar.empty() && M_bcNeumannEulerianFrameVectorial.empty() && M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
@@ -671,7 +671,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename s
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
 {
     if ( M_bcNeumannEulerianFrameScalar.empty() && M_bcNeumannEulerianFrameVectorial.empty() && M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
