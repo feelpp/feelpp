@@ -1624,14 +1624,10 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
     datamap_ptrtype dmTest = (true)? M_matrix->mapRowPtr() : M_X1->dof();
     datamap_ptrtype dmTrial = (true)? M_matrix->mapColPtr() : M_X2->dof();
-    //int basisIndexTest = (M_row_startInMatrix>0)? 1 : 0;
-    //int basisIndexTrial = (M_col_startInMatrix>0)? 1 : 0;
-    int basisIndexTest = dmTest->basisIndexFromGp( M_row_startInMatrix );
-    int basisIndexTrial = dmTrial->basisIndexFromGp( M_col_startInMatrix );
-    this->setLocglobIndicesTest( /*M_X1->dof()*/dmTest->localToGlobalProcessIndices(basisIndexTest)/*localToGlobalIndices()*/ );
-    this->setLocglobIndicesTrial( /*M_X2->dof()*/dmTrial->localToGlobalProcessIndices(basisIndexTrial)/*localToGlobalIndices()*/ );
-    this->setBasisGpToCompositeGpTest( /*M_X1->dof()*/dmTest->basisGpToCompositeGp(basisIndexTest) );
-    this->setBasisGpToCompositeGpTrial( /*M_X2->dof()*/dmTrial->basisGpToCompositeGp(basisIndexTrial) );
+    this->setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_row_startInMatrix ) );
+    this->setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_col_startInMatrix ) );
+    this->setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_row_startInMatrix ) );
+    this->setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_col_startInMatrix ) );
 
     DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
@@ -1844,12 +1840,10 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr();//M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr();//M_bf.trialSpace()->dof()
-        int dataBaseIdTest = dmTest->basisIndexFromGp( M_bf.rowStartInMatrix() ) + M_test_index;
-        int dataBaseIdTrial = dmTrial->basisIndexFromGp( M_bf.colStartInMatrix() ) + M_trial_index;
-        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( dataBaseIdTest ) );
-        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( dataBaseIdTrial ) );
-        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( dataBaseIdTest ) );
-        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( dataBaseIdTrial ) );
+        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
 
         bf += M_expr;
     }
@@ -1923,12 +1917,10 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr(); //M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr(); //M_bf.trialSpace()->dof()
-        int dataBaseIdTest = dmTest->basisIndexFromGp( M_bf.rowStartInMatrix() ) + M_test_index;
-        int dataBaseIdTrial = dmTrial->basisIndexFromGp( M_bf.colStartInMatrix() ) + M_trial_index;
-        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( dataBaseIdTest ) );
-        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( dataBaseIdTrial ) );
-        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( dataBaseIdTest ) );
-        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( dataBaseIdTrial ) );
+        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
 
         bf += M_expr;
     }
