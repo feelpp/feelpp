@@ -171,6 +171,7 @@ public:
     typedef std::vector< std::vector<sparse_matrix_ptrtype> > vector_sparse_matrix;
 
     using super_type::computeBetaQm;
+    typedef boost::tuple<beta_vector_type,  std::vector<beta_vector_type> > beta_type;
 
     typedef BenchmarkGreplNonlinearElliptic<Order> self_type;
 
@@ -207,7 +208,7 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >
+    beta_type
     computeBetaQm( element_type const& T,parameter_type const& mu )
     {
         auto eim_g = M_funs[0];
@@ -223,7 +224,7 @@ public:
             return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
     }
 
-    boost::tuple<beta_vector_type,  std::vector<beta_vector_type>  >
+    beta_type
     computeBetaQm( parameter_type const& mu )
     {
         auto eim_g = M_funs[0];
@@ -238,6 +239,34 @@ public:
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
             return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+    }
+
+    beta_type
+    computePicardBetaQm( element_type const& T,parameter_type const& mu )
+    {
+        auto eim_g = M_funs[0];
+        vectorN_type beta_g = eim_g->beta( mu , T );
+
+        std::vector<vectorN_type*> betas;
+        betas.push_back(&beta_g);
+
+        fillBetaQm(betas, mu);
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+
+    }
+
+    beta_type
+    computePicardBetaQm( parameter_type const& mu )
+    {
+        auto eim_g = M_funs[0];
+        vectorN_type beta_g = eim_g->beta( mu );
+
+        std::vector<vectorN_type*> betas;
+        betas.push_back(&beta_g);
+
+        fillBetaQm(betas, mu);
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+
     }
 
     void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
@@ -267,7 +296,8 @@ public:
             //output
             this->M_betaRqm[1][0][0] = 1;
         }
-        else
+        //else
+        if( !M_use_newton || boption(_name="ser.error-estimation") )
         {
             this->M_betaAqm[0][0]=1;
             this->M_betaFqm[0][0].resize(M);
@@ -290,11 +320,11 @@ public:
         return beta;
     }
 
-
     /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+    affine_decomposition_type computePicardAffineDecomposition();
     std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
 
     void assemble();
@@ -315,6 +345,8 @@ public:
 
     void assembleResidualWithAffineDecomposition(std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
     void assembleJacobianWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & Jqm);
+    void assembleFunctionalWithAffineDecomposition(std::vector<std::vector<sparse_matrix_ptrtype> > & RF_Aqm,
+                                                   std::vector< std::vector<std::vector<vector_ptrtype> > >& RF_Fqm);
     bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm);
     void updateResidualMonolithic(vector_ptrtype const& X, vector_ptrtype & R, parameter_type const& mu);
     void updateJacobianMonolithic(vector_ptrtype const& X, sparse_matrix_ptrtype & J, parameter_type const& mu);
@@ -479,7 +511,8 @@ void BenchmarkGreplNonlinearElliptic<Order>::initModel()
         this->M_Rqm[1][0].resize( 1 );
         this->M_Rqm[1][0][0]= backend()->newVector( this->Xh );
     }
-    else
+
+    if( !M_use_newton || boption(_name="ser.error-estimation") )
     {
         this->M_betaAqm.resize( 1 );
         this->M_betaAqm[0].resize( 1 );
@@ -592,10 +625,8 @@ BenchmarkGreplNonlinearElliptic<Order>::assembleResidualWithAffineDecomposition(
 
     Rqm[0][2][0]->close();
     Rqm[1][0][0]->close();
-
 }
 
-#if 1
 template <int Order>
 bool
 BenchmarkGreplNonlinearElliptic<Order>::updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm)
@@ -620,7 +651,6 @@ BenchmarkGreplNonlinearElliptic<Order>::updateResidual(element_type const& X, st
     // this->M_betaRqm[0][0][0] = 1;
     return true;
 }
-#endif
 
 template <int Order>
 void
@@ -701,7 +731,8 @@ void BenchmarkGreplNonlinearElliptic<Order>::assemble()
         assembleJacobianWithAffineDecomposition( this->M_Jqm );
         assembleResidualWithAffineDecomposition( this->M_Rqm );
     }
-    else
+
+    if( !M_use_newton || boption(_name="ser.error-estimation") )
     {
         auto v = Xh->element();
         auto eim_g = M_funs[0];
@@ -822,6 +853,13 @@ BenchmarkGreplNonlinearElliptic<Order>::computeAffineDecomposition()
         return boost::make_tuple( this->M_Jqm, this->M_Rqm );
     else
         return boost::make_tuple( this->M_Aqm, this->M_Fqm );
+}
+
+template<int Order>
+typename BenchmarkGreplNonlinearElliptic<Order>::affine_decomposition_type
+BenchmarkGreplNonlinearElliptic<Order>::computePicardAffineDecomposition()
+{
+    return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
 template<int Order>
