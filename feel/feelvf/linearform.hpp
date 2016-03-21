@@ -933,7 +933,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     }
 
     datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
-    this->setDofIdToContainerId( dm->basisGpToCompositeGp( M_row_startInVector ) );
+    this->setDofIdToContainerId( dm->dofIdToContainerId( M_row_startInVector ) );
     if (  init )
         M_F->zero();
 }
@@ -1013,7 +1013,7 @@ struct LFAssign
                     false );
 
             datamap_ptrtype dm = M_lf.vectorPtr()->mapPtr();//M_lf.testSpace()->dof()
-            lf.setDofIdToContainerId( dm->basisGpToCompositeGp( M_lf.rowStartInVector() + M_index ) );
+            lf.setDofIdToContainerId( dm->dofIdToContainerId( M_lf.rowStartInVector() + M_index ) );
 #else
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
                                                                                                   M_lf.vectorPtr(),

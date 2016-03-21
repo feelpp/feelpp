@@ -1604,7 +1604,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
 
     M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
-    this->initTagBasisGpToCompositeGp( 1 );
+    this->initNumberOfDofIdToContainerId( 1 );
 
     if ( is_hdiv_conforming || is_hcurl_conforming )
         M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
@@ -1847,7 +1847,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         M_dof_marker.swap( newDofMarker );
     }
 
-    this->initBasisGpToCompositeGpIdentity( 0,this->nLocalDofWithGhost() );
+    this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
 
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     for ( auto const& eltRange : elements( M,entityProcess) )

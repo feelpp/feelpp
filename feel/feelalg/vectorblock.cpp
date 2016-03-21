@@ -97,14 +97,14 @@ BlocksBaseVector<T>::localize()
     {
         //size_type nBlockRow = this->operator()( i,0 )->localSize();
         auto const& dmb = this->operator()( i,0 )->map();
-        int nDataBase = dmb.nBasisGp();
+        int nDataBase = dmb.numberOfDofIdToContainerId();
         for ( int tag=0;tag<nDataBase;++tag,++currentDataBaseId )
         {
-            auto const& basisGpToCompositeGpBlock = dmb.basisGpToCompositeGp(tag);
-            auto const& basisGpToCompositeGpVec = dm.basisGpToCompositeGp(currentDataBaseId);
-            for (int k=0;k<basisGpToCompositeGpBlock.size();++k)
+            auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId(tag);
+            auto const& dofIdToContainerIdVec = dm.dofIdToContainerId(currentDataBaseId);
+            for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             {
-                this->operator()( i,0 )->set( basisGpToCompositeGpBlock[k], this->vector()->operator()( basisGpToCompositeGpVec[k] ) );
+                this->operator()( i,0 )->set( dofIdToContainerIdBlock[k], this->vector()->operator()( dofIdToContainerIdVec[k] ) );
             }
         }
         this->operator()( i,0 )->close();
@@ -128,11 +128,11 @@ BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , i
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
-    for ( int tag=0 ; tag<dmSubVec.nBasisGp() ; ++tag )
+    for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
     {
-        auto const& basisGpToContainerGpSubVec = dmSubVec.basisGpToCompositeGp( tag );
-        CHECK( blockId+tag < dmVec.nBasisGp() ) << "error "<<blockId+tag << " vs " << dmVec.nBasisGp();
-        auto const& basisGpToContainerGpVec = dmVec.basisGpToCompositeGp( blockId+tag );
+        auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
+        CHECK( blockId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<blockId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
@@ -146,11 +146,11 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
     int basisIndexSubVec = idStart;
-    for ( int tag=0 ; tag<dmSubVec.nBasisGp() ; ++tag )
+    for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
     {
-        auto const& basisGpToContainerGpSubVec = dmSubVec.basisGpToCompositeGp( tag );
-        CHECK( basisIndexSubVec+tag < dmVec.nBasisGp() ) << "error "<<basisIndexSubVec+tag<< " vs " << dmVec.nBasisGp();
-        auto const& basisGpToContainerGpVec = dmVec.basisGpToCompositeGp( basisIndexSubVec+tag );
+        auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
+        CHECK( basisIndexSubVec+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<basisIndexSubVec+tag<< " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
@@ -193,7 +193,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
         {
             blockVec( i,0 )->close(); // not good but necessary here (TODO)
             this->updateBlockVec( blockVec( i,0 ), start_i );
-            start_i += blockVec( i,0 )->map().nBasisGp();
+            start_i += blockVec( i,0 )->map().numberOfDofIdToContainerId();
             //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
@@ -210,14 +210,14 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
     // for ( int i=0; i<start_i; ++i )
     //     startTagIdInVec += this->operator[]( i,0 )->map().indexSplit()->size();
 
-    int nTag = dmb.nBasisGp();
+    int nTag = dmb.numberOfDofIdToContainerId();
     for ( int tag=0;tag<nTag;++tag )
     {
-        auto const& basisGpToCompositeGpBlock = dmb.basisGpToCompositeGp(tag);
-        auto const& basisGpToCompositeGpVec = dm.basisGpToCompositeGp(start_i+tag);
-        CHECK( basisGpToCompositeGpBlock.size() == basisGpToCompositeGpVec.size() ) << "incompatibility with size";
-        for (int k=0;k<basisGpToCompositeGpBlock.size();++k)
-            M_vec->set( basisGpToCompositeGpVec[k],m->operator()( basisGpToCompositeGpBlock[k] ) );
+        auto const& dofIdToContainerIdBlock = dmb.dofIdToContainerId(tag);
+        auto const& dofIdToContainerIdVec = dm.dofIdToContainerId(start_i+tag);
+        CHECK( dofIdToContainerIdBlock.size() == dofIdToContainerIdVec.size() ) << "incompatibility with size";
+        for (int k=0;k<dofIdToContainerIdBlock.size();++k)
+            M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
     }
 }
 

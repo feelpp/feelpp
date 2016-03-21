@@ -1598,8 +1598,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
     datamap_ptrtype dmTest = (true)? M_matrix->mapRowPtr() : M_X1->dof();
     datamap_ptrtype dmTrial = (true)? M_matrix->mapColPtr() : M_X2->dof();
-    this->setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_row_startInMatrix ) );
-    this->setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_col_startInMatrix ) );
+    this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
+    this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 
     DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
@@ -1812,8 +1812,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr();//M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr();//M_bf.trialSpace()->dof()
-        bf.setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
         bf_type bf( M_test, trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
@@ -1892,8 +1892,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr(); //M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr(); //M_bf.trialSpace()->dof()
-        bf.setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
         bf_type bf( test, M_trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,

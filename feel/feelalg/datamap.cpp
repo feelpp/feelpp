@@ -169,8 +169,8 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
 
     int nTagNew = 0;
     for ( uint16_type i=0 ; i<nRow; ++i)
-        nTagNew += listofdm[i]->nBasisGp();
-    this->initTagBasisGpToCompositeGp( nTagNew );
+        nTagNew += listofdm[i]->numberOfDofIdToContainerId();
+    this->initNumberOfDofIdToContainerId( nTagNew );
 
     // fill mapping between basis to composite gdof
     std::vector<size_type> mapOldToNewGlobalProcess( this->nLocalDofWithGhost(myrank) );
@@ -218,16 +218,16 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
         }
 
         // update local to global indices in composite view
-        int nTag = dmb->nBasisGp();
+        int nTag = dmb->numberOfDofIdToContainerId();
         for ( int tag=0;tag<nTag;++tag )
         {
-            auto const& basisGpToCompositeGpBlock = dmb->basisGpToCompositeGp(tag);
-            std::vector<size_type> mapOldToNewGlobalProcess2( basisGpToCompositeGpBlock.size() );
-            for ( int k=0;k<basisGpToCompositeGpBlock.size();++k)
+            auto const& dofIdToContainerIdBlock = dmb->dofIdToContainerId(tag);
+            std::vector<size_type> mapOldToNewGlobalProcess2( dofIdToContainerIdBlock.size() );
+            for ( int k=0;k<dofIdToContainerIdBlock.size();++k)
             {
-                mapOldToNewGlobalProcess2[k] = mapOldToNewGlobalProcess[basisGpToCompositeGpBlock[k]];
+                mapOldToNewGlobalProcess2[k] = mapOldToNewGlobalProcess[dofIdToContainerIdBlock[k]];
             }
-            this->basisGpToCompositeGpRef( startNewTag+tag ).swap( mapOldToNewGlobalProcess2 );
+            this->dofIdToContainerIdRef( startNewTag+tag ).swap( mapOldToNewGlobalProcess2 );
 
         }
 

@@ -110,7 +110,7 @@ namespace Feel
         std::vector<bool> dofdone( u.functionSpace()->dof()->nLocalDofWithGhost(), false );
 
         auto const& dmVec = UnVec->map();
-        int basisIndexDmInVec = dmVec.basisIndexFromGp( rowstart );
+        int basisIndexDmInVec = dmVec.databaseIndexFromContainerId( rowstart );
         int subBasisIndexDm = (u.start()>0)? 1 : 0;
         basisIndexDmInVec+=subBasisIndexDm;//TODO!!!!!!!!!
         //face_const_iterator __face_it, __face_en;
@@ -140,7 +140,7 @@ namespace Feel
                             UnVec->set(rowstart+thedof,__value);
 #else
                             size_type thedof = /*(is_comp_space?Elem1::nComponents:1)*/ComponentShiftFactor*index;
-                            thedof = dmVec.basisGpToCompositeGp( basisIndexDmInVec ,thedof );
+                            thedof = dmVec.dofIdToContainerId( basisIndexDmInVec ,thedof );
                             UnVec->set(thedof,__value);
 #endif
                             dofdone[index] = true;
