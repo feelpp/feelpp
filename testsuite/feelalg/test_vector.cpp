@@ -101,14 +101,12 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     // element_product
     auto prod1 = element_product(v1,v1);
     BOOST_CHECK( prod1.sum() == 4*nDofVh1 );
-#if 0
     auto prod2a = element_product(v2a,v2a);
     BOOST_CHECK( prod2a.sum() == 25*nDofVh2a );
     auto prod2b = element_product(v2b,v2b);
     BOOST_CHECK( prod2b.sum() == 49*nDofVh2b );
     auto prod2a3 = element_product(v2a,v3);
     BOOST_CHECK( prod2a3.sum() == 45*nDofVh2a );
-#endif
     // add scalar
     v1.add( 3 );
     BOOST_CHECK( v1.sum() == 5*nDofVh1 );
