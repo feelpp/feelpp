@@ -601,23 +601,67 @@ VectorUblas<T,Storage>::startNonContiguousGhosts( ) const
 
 template <typename T, typename Storage>
 Vector<T> &
-VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
+VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
 {
     checkInvariant();
-    FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
-                   this->lastLocalIndex() == V.lastLocalIndex() )
-    ( this->firstLocalIndex() )( this->lastLocalIndex() )
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
     ( this->vec().size() )
-    ( V.firstLocalIndex() )( V.lastLocalIndex() ).warn( "may be vector invalid  copy" );
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid  copy" );
 
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
+    {
+        this->assignWithUblasImpl( *vecUblas );
+        return *this;
+    }
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
+    {
+        this->assignWithUblasImpl( *vecUblasRange );
+        return *this;
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        this->assignWithUblasImpl( *vecUblasSlice );
+        return *this;
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArray );
+        return *this;
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArrayRange );
+        return *this;
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        this->assignWithUblasImpl( *vecUblasExtArraySlice );
+        return *this;
+    }
+
+
+    // default operator=
     for ( size_type i = 0; i < this->localSize(); ++i )
     {
-        this->operator()( i ) = V(  i );
+        this->operator()( i ) = v(  i );
         //M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
         //M_vec.operator()( i ) = V(  i );
     }
-
-    //this->outdateGlobalValues();
 
     return *this;
 }
@@ -690,6 +734,63 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::close() const
 {
+}
+
+template<typename T, typename Storage>
+void
+VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
+{
+    checkInvariant();
+
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
+    {
+        this->addWithUblasImpl( a,*vecUblas );
+        return;
+    }
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
+    {
+        this->addWithUblasImpl( a,*vecUblasRange );
+        return;
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        this->addWithUblasImpl( a,*vecUblasSlice );
+        return;
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArray );
+        return;
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArrayRange );
+        return;
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        this->addWithUblasImpl( a,*vecUblasExtArraySlice );
+        return;
+    }
+
+    // default add operator
+    for ( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) += a*v( v.firstLocalIndex() + i );
+
+    return;
 }
 
 template<typename T, typename Storage>
@@ -936,14 +1037,9 @@ VectorUblas<T,Storage>::checkInvariant() const
 {
     DCHECK ( this->isInitialized() ) <<  "vector not initialized" ;
     DCHECK ( this->localSize() <= this->size() ) << "vector invalid size: " << this->size() << "," << this->localSize();
-    DCHECK ( this->localSize() == M_vec.size() ) << "vector invalid size: " << M_vec.size() << "," << this->localSize();
-    DCHECK( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() ||
-            (this->localSize()==0 && this->comm().globalSize()>1 ) )
-        << "vector invalid size"
-        << " this->size()="<< this->size()
-        << " this->lastLocalIndex()=" << this->lastLocalIndex()
-        << " this->firstLocalIndex()=" << this->firstLocalIndex()
-        << " this->localSize()=" << this->localSize() << "\n";
+    DCHECK ( this->localSize() == (M_vec.size()+M_vecNonContiguousGhosts.size() ) ) << "vector invalid size: " << M_vec.size() << ","
+                                                                                      << M_vecNonContiguousGhosts.size() << ","
+                                                                                      << this->localSize();
 }
 
 namespace detail

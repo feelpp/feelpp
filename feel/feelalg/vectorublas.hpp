@@ -244,7 +244,6 @@ public:
     template<typename AE>
     VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
     {
-        this->outdateGlobalValues();
         M_vec.operator=( e );
         return *this;
     }
@@ -314,7 +313,6 @@ public:
     Vector<T>& operator+=( const Vector<T>& v )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         add( 1., v );
         return *this;
     }
@@ -326,7 +324,6 @@ public:
     Vector<T>& operator-=( const Vector<T>& v )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         add( -1., v );
 
         return *this;
@@ -338,7 +335,6 @@ public:
     Vector<T>& operator*=( T const& v )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         this->scale( v );
 
         return *this;
@@ -558,8 +554,6 @@ public:
      */
     void zero ()
     {
-        //M_vec.clear();
-        //this->outdateGlobalValues();
         std::fill( this->begin(), this->end(), value_type( 0 ) );
         if ( has_non_contiguous_ghosts )
             std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
@@ -567,6 +561,7 @@ public:
 
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
     {
+        this->zero();
         //ublas::project( (*this), ublas::range( start1, stop1 ) ) = ublas::zero_vector<value_type>( stop1 );
     }
 
@@ -576,7 +571,6 @@ public:
     void add ( const size_type i, const value_type& value )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         ( *this )( i ) += value;
     }
 
@@ -595,7 +589,6 @@ public:
     void set ( size_type i, const value_type& value )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         ( *this )( i ) = value;
     }
 
@@ -617,7 +610,6 @@ public:
                      const std::vector<size_type>& dof_indices )
     {
         FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
-        this->outdateGlobalValues();
 
         for ( size_type i=0; i<v.size(); i++ )
             this->add ( dof_indices[i], v[i] );
@@ -633,7 +625,6 @@ public:
                      const std::vector<size_type>& dof_indices )
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
-        this->outdateGlobalValues();
 
         for ( size_type i=0; i<V.size(); i++ )
             this->add ( dof_indices[i], V( i ) );
@@ -660,7 +651,6 @@ public:
                      const std::vector<size_type>& dof_indices )
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
-        this->outdateGlobalValues();
 
         for ( size_type i=0; i<V.size(); i++ )
             this->add ( dof_indices[i], V( i ) );
@@ -707,7 +697,6 @@ public:
      */
     void scale ( const T factor )
     {
-        //this->outdateGlobalValues();
         M_vec.operator *=( factor );
         if ( has_non_contiguous_ghosts )
             M_vecNonContiguousGhosts.operator *=( factor );
@@ -906,7 +895,6 @@ public:
     void add( const T& a )
     {
         checkInvariant();
-        //this->outdateGlobalValues();
 #if 1
         for ( size_type i = 0; i < this->localSize(); ++i )
             this->operator[]( i ) += a;
@@ -927,7 +915,6 @@ public:
     void add( const Vector<T>& v )
     {
         checkInvariant();
-        this->outdateGlobalValues();
         add( 1., v );
         return;
     }
@@ -937,17 +924,7 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add( const T& a, const Vector<T>& v )
-    {
-        checkInvariant();
-        this->outdateGlobalValues();
-
-        for ( size_type i = 0; i < this->localSize(); ++i )
-            this->operator()( i ) += a*v( v.firstLocalIndex() + i );
-        //M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
-
-        return;
-    }
+    void add( const T& a, const Vector<T>& v );
 
     /**
      * Creates a copy of the global vector in the
@@ -1034,6 +1011,11 @@ protected:
 
 private:
 
+    template <typename OtherStorage>
+    void assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
+    template <typename OtherStorage>
+    void addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v );
+
     /**
      * check vector consistency
      */
@@ -1062,6 +1044,108 @@ private:
     //mutable ublas::vector<value_type> M_global_values;
 };
 
+
+template<typename T, typename Storage>
+template <typename OtherStorage>
+void
+VectorUblas<T,Storage>::assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
+{
+    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+    size_type nLocalGhosts = this->map().nLocalGhosts();
+    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
+    size_type nLocalGhostsV = v.map().nLocalGhosts();
+
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+
+    if ( this->comm().localSize() == 1 )
+    {
+        this->vec() = v.vec();
+    }
+    else if ( has_non_contiguous_ghosts )
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            if ( nLocalDofWithoutGhost > 0 )
+                this->vec() = v.vec();
+            if ( nLocalGhosts > 0 )
+                this->vecNonContiguousGhosts() = v.vecNonContiguousGhosts();
+        }
+        else
+        {
+            if ( nLocalDofWithoutGhostV > 0 )
+                this->vec() = ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
+            if ( nLocalGhostsV > 0 )
+                this->vecNonContiguousGhosts() = ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
+        }
+    }
+    else
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            if ( nLocalDofWithoutGhost > 0 )
+                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) = v.vec();
+            if ( nLocalGhosts > 0 )
+                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) = v.vecNonContiguousGhosts();
+        }
+        else
+        {
+            this->vec() = v.vec();
+        }
+    }
+
+}
+
+
+template<typename T, typename Storage>
+template <typename OtherStorage>
+void
+VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v )
+{
+    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+    size_type nLocalGhosts = this->map().nLocalGhosts();
+    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
+    size_type nLocalGhostsV = v.map().nLocalGhosts();
+
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+
+    if ( this->comm().localSize() == 1 )
+    {
+        this->vec() += a*v.vec();
+    }
+    else if ( has_non_contiguous_ghosts )
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            if ( nLocalDofWithoutGhost > 0 )
+                this->vec() += a*v.vec();
+            if ( nLocalGhosts > 0 )
+                this->vecNonContiguousGhosts() += a*v.vecNonContiguousGhosts();
+        }
+        else
+        {
+            if ( nLocalDofWithoutGhostV > 0 )
+                this->vec() += a*ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
+            if ( nLocalGhostsV > 0 )
+                this->vecNonContiguousGhosts() += a*ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
+        }
+    }
+    else
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            if ( nLocalDofWithoutGhost > 0 )
+                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) += a*v.vec();
+            if ( nLocalGhosts > 0 )
+                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) += a*v.vecNonContiguousGhosts();
+        }
+        else
+        {
+            this->vec() += a*v.vec();
+        }
+    }
+}
+
+
 /**
  * Computes the element wise product of two vectors and eventually in parallel
  * \param v1 vector (eventually distributed)
@@ -1069,9 +1153,9 @@ private:
  *
  * \return the element product of \p v1 and \p v2
  */
-template <typename T>
+template <typename T, typename Storage1, typename Storage2>
 VectorUblas<T>
-element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
+element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> const& v2 )
 {
     FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
                    v1.size() == v2.size() )
@@ -1080,12 +1164,69 @@ element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
 
     typedef typename type_traits<T>::real_type real_type;
 
-    VectorUblas<real_type> _t( v1.mapPtr() );
-    size_type s = v1.localSize();
-    size_type start = v1.firstLocalIndex();
+    static const bool storage1_has_non_contiguous_ghosts = VectorUblas<T,Storage1>::has_non_contiguous_ghosts;
+    static const bool storage2_has_non_contiguous_ghosts = VectorUblas<T,Storage2>::has_non_contiguous_ghosts;
 
-    for ( size_type i = 0; i < s; ++i )
-        _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
+    VectorUblas<real_type> _t( v1.mapPtr() );
+
+    size_type nLocalDofWithoutGhost = _t.map().nLocalDofWithoutGhost();
+    size_type nLocalGhosts = _t.map().nLocalGhosts();
+
+    if ( _t.comm().localSize() == 1 )
+    {
+        _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
+    }
+    else if ( storage1_has_non_contiguous_ghosts == storage2_has_non_contiguous_ghosts )
+    {
+        if ( storage1_has_non_contiguous_ghosts )
+        {
+            if ( nLocalDofWithoutGhost > 0 )
+                ublas::project( _t.vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) =
+                    ublas::element_prod( v1.vec(),v2.vec() );
+            if ( nLocalGhosts > 0 )
+                ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
+                    ublas::element_prod( v1.vecNonContiguousGhosts(),v2.vecNonContiguousGhosts() );
+        }
+        else
+        {
+            _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
+        }
+    }
+    else if ( storage1_has_non_contiguous_ghosts )
+    {
+        size_type nLocalDofWithoutGhostV2 = v1.map().nLocalDofWithoutGhost();
+        size_type nLocalGhostsV2 = v1.map().nLocalGhosts();
+
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
+                ublas::element_prod( v1.vec(),
+                                     ublas::project( v2.vec(), ublas::range( 0, nLocalDofWithoutGhostV2 ) ) );
+        if ( nLocalGhosts > 0 )
+            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
+                ublas::element_prod( v1.vecNonContiguousGhosts(),
+                                     ublas::project( v2.vec(), ublas::range( nLocalDofWithoutGhostV2,nLocalDofWithoutGhostV2+nLocalGhostsV2 ) ) );
+    }
+    else if ( storage2_has_non_contiguous_ghosts )
+    {
+        size_type nLocalDofWithoutGhostV1 = v1.map().nLocalDofWithoutGhost();
+        size_type nLocalGhostsV1 = v1.map().nLocalGhosts();
+
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
+                ublas::element_prod( ublas::project( v1.vec(), ublas::range( 0, nLocalDofWithoutGhostV1 ) ),
+                                     v2.vec() );
+        if ( nLocalGhosts > 0 )
+            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
+                ublas::element_prod( ublas::project( v1.vec(), ublas::range( nLocalDofWithoutGhostV1,nLocalDofWithoutGhostV1+nLocalGhostsV1 ) ),
+                                     v2.vecNonContiguousGhosts() );
+    }
+    else
+    {
+        size_type s = v1.localSize();
+        size_type start = v1.firstLocalIndex();
+        for ( size_type i = 0; i < s; ++i )
+            _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
+    }
 
     return _t;
 }
@@ -1097,10 +1238,10 @@ element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
  *
  * \return the inner product of \p v1 and \p v2
  */
-template <typename T>
+template <typename T, typename Storage1, typename Storage2>
 VectorUblas<T>
-element_product( boost::shared_ptr<VectorUblas<T> > const& v1,
-                 boost::shared_ptr<VectorUblas<T> > const& v2 )
+element_product( boost::shared_ptr<VectorUblas<T,Storage1> > const& v1,
+                 boost::shared_ptr<VectorUblas<T,Storage2> > const& v2 )
 {
     return element_product( *v1, *v2 );
 }
