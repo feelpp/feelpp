@@ -707,7 +707,7 @@ public:
      */
     void scale ( const T factor )
     {
-        this->outdateGlobalValues();
+        //this->outdateGlobalValues();
         M_vec.operator *=( factor );
         if ( has_non_contiguous_ghosts )
             M_vecNonContiguousGhosts.operator *=( factor );
@@ -736,8 +736,9 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = (this->localSize()>0)?
-            *std::min_element( M_vec.begin(), M_vec.end() ) :
+        size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+        real_type local_min = (nActiveDof>0)?
+            *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts)? M_vec.end() : M_vec.begin()+nActiveDof ) :
             std::numeric_limits<real_type>::max() ;
         real_type global_min = local_min;
 
@@ -762,8 +763,9 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = (this->localSize()>0)?
-            *std::max_element( M_vec.begin(), M_vec.end() ) :
+        size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+        real_type local_max = (nActiveDof>0)?
+            *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts)? M_vec.end() : M_vec.begin()+nActiveDof ) :
             std::numeric_limits<real_type>::min() ;
         real_type global_max = local_max;
 
@@ -789,7 +791,7 @@ public:
         if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_l1 = ublas::norm_1( M_vec );
         else
-            local_l1 = ublas::norm_1( M_vec );
+            local_l1 = ublas::norm_1( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
 
         double global_l1 = local_l1;
 
@@ -813,26 +815,23 @@ public:
     real_type l2Norm() const
     {
         checkInvariant();
-        real_type local_norm2 = 0, global_norm2=0;
+        real_type local_norm2 = 0;
 
-        if ( this->comm().size() == 1 )
-            {
-                local_norm2 = ublas::inner_prod( M_vec, M_vec );
-                global_norm2 = local_norm2;
-            }
+        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
+        {
+            local_norm2 = ublas::inner_prod( M_vec, M_vec );
+        }
         else
-            {
-                size_type s = this->localSize();
-                size_type start = this->firstLocalIndex();
-                for ( size_type i = 0; i < s; ++i )
-                    {
-                        if ( !this->localIndexIsGhost( start + i ) )
-                            local_norm2 += std::pow(M_vec.operator()( start + i ),2);
-                    }
+        {
+            auto vecActiveDof = ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) );
+            local_norm2 = ublas::inner_prod( vecActiveDof,vecActiveDof );
+        }
+        real_type global_norm2 = local_norm2;
+
 #ifdef FEELPP_HAS_MPI
-                mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
+        if ( this->comm().size() > 1 )
+            mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
 #endif
-            }
 
         return math::sqrt( global_norm2 );
     }
@@ -848,18 +847,15 @@ public:
         if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
             local_norminf = ublas::norm_inf( M_vec );
         else
-            local_norminf = ublas::norm_inf( M_vec );
+            local_norminf = ublas::norm_inf( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
 
         real_type global_norminf = local_norminf;
 
-
 #ifdef FEELPP_HAS_MPI
-
         if ( this->comm().size() > 1 )
         {
             mpi::all_reduce( this->comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
         }
-
 #endif
         return global_norminf;
     }
@@ -871,26 +867,21 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        value_type local_sum = 0, global_sum=0;
+        value_type local_sum = 0;
 
-        if ( this->comm().size() == 1 )
+        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
         {
             local_sum = ublas::sum( M_vec );
-            global_sum = local_sum;
         }
         else
         {
-            size_type s = this->localSize();
-            size_type start = this->firstLocalIndex();
-            for ( size_type i = 0; i < s; ++i )
-            {
-                if ( !this->localIndexIsGhost( start + i ) )
-                    local_sum += M_vec.operator()( start + i );
-            }
+            local_sum = ublas::sum( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
+        }
+        value_type global_sum = local_sum;
 #ifdef FEELPP_HAS_MPI
+        if ( this->comm().size() > 1 )
             mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
 #endif
-        }
 
         return global_sum;
     }
@@ -915,13 +906,18 @@ public:
     void add( const T& a )
     {
         checkInvariant();
-        this->outdateGlobalValues();
-
+        //this->outdateGlobalValues();
+#if 1
         for ( size_type i = 0; i < this->localSize(); ++i )
             this->operator[]( i ) += a;
         //M_vec.operator[]( i ) += a;
 
         return;
+#else
+        M_vec += a*ublas::unit_vector<value_type>();
+        if ( has_non_contiguous_ghosts )
+            M_vecNonContiguousGhosts += a;
+#endif
     }
 
     /**
