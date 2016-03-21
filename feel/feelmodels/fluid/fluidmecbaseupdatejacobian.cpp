@@ -297,10 +297,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                 bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
                 int blockStartWindkesselRow = rowStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
                 int blockStartWindkesselCol = colStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
-                auto const& basisToContainerGpPressureDistalRow = J->mapRow().basisGpToCompositeGp( blockStartWindkesselRow );
-                auto const& basisToContainerGpPressureDistalCol = J->mapCol().basisGpToCompositeGp( blockStartWindkesselCol );
-                auto const& basisToContainerGpPressureProximalRow = J->mapRow().basisGpToCompositeGp( blockStartWindkesselRow+1 );
-                auto const& basisToContainerGpPressureProximalCol = J->mapCol().basisGpToCompositeGp( blockStartWindkesselCol+1 );
+                auto const& basisToContainerGpPressureDistalRow = J->mapRow().dofIdToContainerId( blockStartWindkesselRow );
+                auto const& basisToContainerGpPressureDistalCol = J->mapCol().dofIdToContainerId( blockStartWindkesselCol );
+                auto const& basisToContainerGpPressureProximalRow = J->mapRow().dofIdToContainerId( blockStartWindkesselRow+1 );
+                auto const& basisToContainerGpPressureProximalCol = J->mapCol().dofIdToContainerId( blockStartWindkesselCol+1 );
                 if ( hasWindkesselActiveDof )
                     CHECK( !basisToContainerGpPressureDistalRow.empty() && !basisToContainerGpPressureDistalCol.empty() &&
                            !basisToContainerGpPressureProximalRow.empty() && !basisToContainerGpPressureProximalCol.empty() ) << "incomplete datamap info";

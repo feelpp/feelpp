@@ -4501,12 +4501,12 @@ public:
         CHECK( vecPetsc ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
-        CHECK( blockIdStart < dmVec.nBasisGp() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.nBasisGp();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,0) ) ) : nullptr;
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                          nGhostDof, arrayGhostDof );
         return u;
@@ -4525,12 +4525,12 @@ public:
         CHECK( vecPetsc ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
-        CHECK( blockIdStart < dmVec.nBasisGp() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.nBasisGp();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,0) ) ) : nullptr;
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
         element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
                                                                                nGhostDof, arrayGhostDof ) );
         return u;

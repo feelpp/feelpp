@@ -226,12 +226,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     int blockStartWindkesselRow = rowStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
                     int blockStartWindkesselCol = colStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
                     int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*cptOutletUsed;
-                    auto const& basisToContainerGpPressureDistalRow = A->mapRow().basisGpToCompositeGp( blockStartWindkesselRow );
-                    auto const& basisToContainerGpPressureDistalCol = A->mapCol().basisGpToCompositeGp( blockStartWindkesselCol );
-                    auto const& basisToContainerGpPressureDistalVec = F->map().basisGpToCompositeGp( blockStartWindkesselVec );
-                    auto const& basisToContainerGpPressureProximalRow = A->mapRow().basisGpToCompositeGp( blockStartWindkesselRow+1 );
-                    auto const& basisToContainerGpPressureProximalCol = A->mapCol().basisGpToCompositeGp( blockStartWindkesselCol+1 );
-                    auto const& basisToContainerGpPressureProximalVec = F->map().basisGpToCompositeGp( blockStartWindkesselVec+1 );
+                    auto const& basisToContainerGpPressureDistalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow );
+                    auto const& basisToContainerGpPressureDistalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol );
+                    auto const& basisToContainerGpPressureDistalVec = F->map().dofIdToContainerId( blockStartWindkesselVec );
+                    auto const& basisToContainerGpPressureProximalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow+1 );
+                    auto const& basisToContainerGpPressureProximalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol+1 );
+                    auto const& basisToContainerGpPressureProximalVec = F->map().dofIdToContainerId( blockStartWindkesselVec+1 );
                     if ( hasWindkesselActiveDof )
                         CHECK( !basisToContainerGpPressureDistalRow.empty() && !basisToContainerGpPressureDistalCol.empty() &&
                                !basisToContainerGpPressureProximalRow.empty() && !basisToContainerGpPressureProximalCol.empty() &&

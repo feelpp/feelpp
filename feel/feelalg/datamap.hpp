@@ -526,16 +526,16 @@ public:
     /**
      * \return the number of mapping (from functionspace id to container id with global process numbering)
      */
-    int nBasisGp() const { return M_basisGpToCompositeGp.size(); }
+    int numberOfDofIdToContainerId() const { return M_dofIdToContainerId.size(); }
     /**
-     * \return the mapping index which containe this global process id in container view
+     * \return the mapping index which contains this global process id in container view
      */
-    int basisIndexFromGp( size_type gpdof ) const
+    int databaseIndexFromContainerId( size_type gpdof ) const
         {
             size_type currentStartId = 0;
-            for ( int tag=0;tag<this->nBasisGp();++tag )
+            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
             {
-                size_type nGpDof = this->basisGpToCompositeGp( tag ).size();
+                size_type nGpDof = this->dofIdToContainerId( tag ).size();
                 if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
                     return tag;
                 currentStartId+=nGpDof;
@@ -543,31 +543,34 @@ public:
             return 0;
         }
     /**
-     * initialize the number of global process mapping
+     * initialize the number of dofIdToContainerId mapping
      */
-    void initTagBasisGpToCompositeGp( int nTag ) { M_basisGpToCompositeGp.resize(nTag); }
+    void initNumberOfDofIdToContainerId( int nTag ) { M_dofIdToContainerId.resize(nTag); }
     /**
      * initialize the number of dof id in the mapping
      */
-    void initBasisGpToCompositeGp( int tag, int nDof ) { M_basisGpToCompositeGp[tag].resize(nDof,invalid_size_type_value); }
+    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize(nDof,invalid_size_type_value); }
     /**
      * initialize a mapping as identity
      */
-    void initBasisGpToCompositeGpIdentity( int tag, int nDof )
+    void initDofIdToContainerIdIdentity( int tag, int nDof )
         {
-            M_basisGpToCompositeGp[tag].resize(nDof);
-            std::iota( M_basisGpToCompositeGp[tag].begin(),M_basisGpToCompositeGp[tag].end(),0 );
+            M_dofIdToContainerId[tag].resize(nDof);
+            std::iota( M_dofIdToContainerId[tag].begin(),M_dofIdToContainerId[tag].end(),0 );
         }
     /**
-     * \return a reference of database mapping (from functionspace id to container id with global process numbering)
+     * \return a reference of dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
      */
-    std::vector<size_type>& basisGpToCompositeGpRef( int tag ) { return M_basisGpToCompositeGp[tag]; }
+    std::vector<size_type>& dofIdToContainerIdRef( int tag ) { return M_dofIdToContainerId[tag]; }
 
     /**
-     * \return the database mapping (from functionspace id to container id with global process numbering)
+     * \return the dofIdToContainerId mapping (from functionspace id to container id with global process numbering)
      */
-    std::vector<size_type> const& basisGpToCompositeGp( int tag ) const { return M_basisGpToCompositeGp[tag]; }
-    size_type basisGpToCompositeGp( int tag,size_type gpdof ) const { return M_basisGpToCompositeGp[tag][gpdof]; }
+    std::vector<size_type> const& dofIdToContainerId( int tag ) const { return M_dofIdToContainerId[tag]; }
+    /**
+     * \return global process index in container from dof id
+     */
+    size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
     /**
      * \return the indexsplit description
@@ -687,8 +690,8 @@ protected:
      */
     indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
-    //! basis global process (space def) to composite global process (identity with non composite space)
-    std::vector<std::vector<size_type> > M_basisGpToCompositeGp;
+    //! dof global process id (space def) to container global process id (identity with non composite space)
+    std::vector<std::vector<size_type> > M_dofIdToContainerId;
 private:
 
 };
