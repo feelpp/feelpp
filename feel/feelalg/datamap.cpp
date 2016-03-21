@@ -70,18 +70,17 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     ( this->worldComm().globalRank() )
     ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
 
-#ifdef FEELPP_HAS_MPI
-    std::vector<int> local_sizes     ( this->worldComm().size(), 0 );
-    std::vector<int> local_sizes_send( this->worldComm().size(), 0 );
 
     if ( this->worldComm().size() > 1 )
     {
-        LOG(WARNING) << "Not imlemented!";
+#ifdef FEELPP_HAS_MPI
+        CHECK( false ) << "Not imlemented!";
+#else
+        CHECK( false ) << "MPI is required";
+#endif
     }
     else // sequential
     {
-        local_sizes[this->worldComm().rank()] = n_local;
-
         M_first_df[this->worldComm().rank()] = 0;
         M_last_df[this->worldComm().rank()] = n_local-1;
         // mpi
@@ -89,13 +88,19 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
         M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
         M_first_df_globalcluster[this->worldComm().rank()]=0;
         M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
-        // todo! : les map
         M_mapGlobalProcessToGlobalCluster.resize( n_local );
-        M_mapGlobalClusterToGlobalProcess.resize( n_local );
+        std::iota( this->M_mapGlobalClusterToGlobalProcess.begin(), 
+                   this->M_mapGlobalClusterToGlobalProcess.end(), 
+                   0 );
+        M_mapGlobalClusterToGlobalProcess = M_mapGlobalProcessToGlobalCluster;
     }
 
     if ( n == invalid_size_type_value )
-        M_n_dofs = M_last_df[this->worldComm().rank()]+1;
+        M_n_dofs = n_local;
+
+    this->initNumberOfDofIdToContainerId( 1 );
+    this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
+    this->buildIndexSplit();
 
 #  ifdef DEBUG
     // Make sure all the local sizes sum up to the global
@@ -103,7 +108,7 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     int sum=0;
 
     for ( int p=0; p< this->worldComm().size(); p++ )
-        sum += local_sizes[p];
+        sum += M_n_localWithoutGhost_df[p];
 
     if ( n != invalid_size_type_value )
         FEELPP_ASSERT ( sum == static_cast<int>( n ) )
@@ -113,17 +118,6 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
 #  endif
 
-#else // FEELPP_HAS_MPI
-
-    // No other options without MPI!
-    if ( n != n_local )
-    {
-        std::cerr << "ERROR:  MPI is required for n != n_local!"
-                  << std::endl;
-        //error();
-    }
-
-#endif // FEELPP_HAS_MPI
 
     /*
     DVLOG(2) << "        global size = " << this->size() << "\n";
