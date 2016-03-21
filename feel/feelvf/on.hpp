@@ -475,6 +475,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
@@ -530,7 +531,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
-                    thedof = __form.basisGpToCompositeGpTrial( thedof );
+                    thedof = trialDofIdToContainerId[ thedof ];
 
                     DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
@@ -650,6 +651,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         auto IhLoc = __fe->edgeLocalInterpolant();
 
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
         for( auto& lit : M_elts )
         {
@@ -683,7 +685,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                 for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
                     size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
-                    thedof = __form.basisGpToCompositeGpTrial( thedof );
+                    thedof = trialDofIdToContainerId[ thedof ];
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
@@ -821,7 +823,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         auto IhLoc = __fe->vertexLocalInterpolant();
 
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
-        
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
+
         for( auto& lit : M_elts )
         {
             pt_it = lit.template get<1>();
@@ -849,7 +852,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                 {
                     size_type index = dof->localToGlobal( eid, ptid_in_element, c ).index();
                     size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*index : index;
-                    thedof = __form.basisGpToCompositeGpTrial( thedof );
+                    thedof = trialDofIdToContainerId[ thedof ];
 
                     double __value = IhLoc( c );
                     
