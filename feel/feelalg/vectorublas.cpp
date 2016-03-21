@@ -354,9 +354,7 @@ VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
-    //M_global_values()
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
 }
 
@@ -365,9 +363,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
     super1( __s, Environment::worldCommSeq() ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
-    //M_global_values( __s )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( __s, __s, false );
 }
@@ -377,8 +373,7 @@ VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
     this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
@@ -389,8 +384,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local, Environment::worldCommSeq() ),
     M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) )
 {
     this->init( this->size(), this->localSize(), false );
 }
@@ -400,8 +394,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     :
     super1( m ),
     M_vec( m.M_vec ),
-    M_vecNonContiguousGhosts( m.M_vecNonContiguousGhosts ),
-    M_global_values_updated( m.M_global_values_updated )
+    M_vecNonContiguousGhosts( m.M_vecNonContiguousGhosts )
 {
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
@@ -412,8 +405,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
@@ -423,8 +415,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), rangeActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), rangeGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), rangeGhost ) )
 {
     CHECK( is_range_vector ) << "is not a range vector";
     DVLOG(2) << "[VectorUblas] constructor with active range: size:" << rangeActive.size() << ", start:" << rangeActive.start() << "\n";
@@ -438,8 +429,7 @@ VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_a
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), rangeActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), rangeGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), rangeGhost ) )
 {
     CHECK( is_range_vector ) << "is not a range vector";
     CHECK( is_shallow_array_adaptor_vector ) << "is_shallow_array_adaptor_vector";
@@ -451,8 +441,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), ublas::range(0,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
@@ -462,8 +451,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), sliceGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), sliceGhost ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
@@ -473,8 +461,7 @@ VectorUblas<T,Storage>::VectorUblas( typename VectorUblas<value_type>::shallow_a
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m.vec(), sliceActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), sliceGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vecNonContiguousGhosts(), sliceGhost ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with active range: size:" << sliceActive.size() << ", start:" << sliceActive.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with ghost range: size:" << sliceGhost.size() << ", start:" << sliceGhost.start() << "\n";
@@ -485,8 +472,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -495,8 +481,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, range_type(0,0) ) )
 {}
 
 template <typename T, typename Storage>
@@ -504,9 +489,7 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), slice_type(0,1,0) ) ),
-    M_global_values_updated( false )
-    //M_global_values( range.size() )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m.vec(), slice_type(0,1,0) ) )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
@@ -519,8 +502,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) )
 {}
 
 template <typename T, typename Storage>
@@ -528,9 +510,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type co
     :
     super1( invalid_size_type_value, range.size() ),
     M_vec( detail::fake<Storage>( m, range ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) ),
-    M_global_values_updated( false )
-    //M_global_values( range.size() )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( m, slice_type(0,1,0) ) )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -541,8 +521,7 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& mActive, slice_t
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) )
 {
     CHECK( is_slice_vector ) << "is not a slice vector";
 }
@@ -553,8 +532,7 @@ VectorUblas<T,Storage>::VectorUblas( typename this_type::shallow_array_adaptor::
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( mActive, sliceActive ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( mGhost, sliceGhost ) )
 {
     CHECK( is_slice_vector ) << "is not a slice vector";
 }
@@ -567,8 +545,7 @@ VectorUblas<T,Storage>::VectorUblas( size_type nActiveDof, value_type* arrayActi
     :
     super1( dm ),
     M_vec( detail::fake<Storage>( nActiveDof, arrayActiveDof ) ),
-    M_vecNonContiguousGhosts( detail::fake<Storage>( nGhostDof, arrayGhostDof ) ),
-    M_global_values_updated( false )
+    M_vecNonContiguousGhosts( detail::fake<Storage>( nGhostDof, arrayGhostDof ) )
 {}
 
 
@@ -682,9 +659,6 @@ VectorUblas<T,Storage>::init ( const size_type n,
         this->clear();
 
     super1::init( n, n_local, fast );
-
-    M_global_values_updated = false;
-    //M_global_values.resize( this->size() );
 
     // Initialize data structures
     detail::resize( M_vec, this->localSize() );

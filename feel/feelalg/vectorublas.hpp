@@ -474,7 +474,7 @@ public:
      */
     bool areGlobalValuesUpdated() const
     {
-        return M_global_values_updated;
+        return true;
     }
 
     /**
@@ -483,7 +483,7 @@ public:
     void updateGlobalValues() const
     {
         //this->localize( M_global_values );
-        M_global_values_updated = true;
+        //M_global_values_updated = true;
     }
 
     /**
@@ -493,6 +493,7 @@ public:
     {
         return this->operator()( i );
     }
+
     //{ return M_global_values( i ); }
 
     //@
@@ -507,16 +508,7 @@ public:
      */
     void outdateGlobalValues()
     {
-        M_global_values_updated = false;
-    }
-
-    /**
-     * set the \p i -th global value
-     */
-    void setGlobalValue( size_type i, value_type v ) const
-    {
-        CHECK( false ) << "setGlobalValue forbidden";
-        //M_global_values( i ) = v;
+        //M_global_values_updated = false;
     }
 
     /**
@@ -1040,8 +1032,6 @@ private:
     //! non contiguous ghost values : defined only with range view vector
     vector_type M_vecNonContiguousGhosts;
 
-    mutable bool M_global_values_updated;
-    //mutable ublas::vector<value_type> M_global_values;
 };
 
 
