@@ -170,7 +170,6 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
     int nTagNew = 0;
     for ( uint16_type i=0 ; i<nRow; ++i)
         nTagNew += listofdm[i]->nBasisGp();
-    this->initTagLocalToGlobalProcessIndices( nTagNew );
     this->initTagBasisGpToCompositeGp( nTagNew );
 
     // fill mapping between basis to composite gdof
@@ -222,23 +221,6 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
         int nTag = dmb->nBasisGp();
         for ( int tag=0;tag<nTag;++tag )
         {
-            size_type nElt = dmb->localToGlobalProcessIndices(tag).size();
-            int nDofPerElementCommon = (nElt>0)? dmb->localToGlobalProcessIndices(tag,0).size() : 0;
-            this->initLocalToGlobalProcessIndices(startNewTag+tag,nElt,nDofPerElementCommon);
-            for ( int eltId=0;eltId<nElt;++eltId )
-            {
-                auto const& dofindices = dmb->localToGlobalProcessIndices(tag,eltId);
-                int nDofPerElement = dofindices.size();
-                if ( nDofPerElement!=nDofPerElementCommon )
-                    this->initEltLocalToGlobalProcessIndices(startNewTag+tag,eltId,nDofPerElement);
-                for ( int j=0;j<nDofPerElement;++j )
-                {
-                    size_type gpdofidInBlock = dofindices(j);
-                    size_type gpDof = mapOldToNewGlobalProcess[gpdofidInBlock];
-                    this->setLocalToGlobalProcessIndices( startNewTag+tag, eltId, j, gpDof );
-                }
-            }
-
             auto const& basisGpToCompositeGpBlock = dmb->basisGpToCompositeGp(tag);
             std::vector<size_type> mapOldToNewGlobalProcess2( basisGpToCompositeGpBlock.size() );
             for ( int k=0;k<basisGpToCompositeGpBlock.size();++k)

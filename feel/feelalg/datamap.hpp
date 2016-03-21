@@ -508,14 +508,15 @@ public:
     void showMeMapGlobalProcessToGlobalCluster( bool showAll=false, std::ostream& __out = std::cout ) const;
 
     /**
-     * \return the communicator
+     * \return the mpi communicator
      */
-    //mpi::communicator const& comm() const { return M_comm; }
     WorldComm const& worldComm() const
     {
         return M_worldComm;
     }
-    // warning (vincent!!)
+    /**
+     * \return the mpi communicator
+     */
     WorldComm const& comm() const
     {
         return M_worldComm;
@@ -523,34 +524,12 @@ public:
 
 
     /**
-     * return local to global process indices : (elt,j)->gdof
+     * \return the number of mapping (from functionspace id to container id with global process numbering)
      */
-    localglobal_indices_type const& localToGlobalProcessIndices( int tag,size_type ElId ) const
-    {
-        return M_localToGlobalProcessIndices[tag][ElId];
-    }
-    vector_indices_type const& localToGlobalProcessIndices( int tag ) const
-    {
-        return M_localToGlobalProcessIndices[tag];
-    }
-    void initTagLocalToGlobalProcessIndices( int nTag )
-    {
-        M_localToGlobalProcessIndices.resize( nTag );
-    }
-    void initLocalToGlobalProcessIndices( int tag, size_type nElement, int nDofPerElement )
-    {
-        M_localToGlobalProcessIndices[tag].resize( nElement, localglobal_indices_type::Zero( nDofPerElement ) );
-    }
-    void initEltLocalToGlobalProcessIndices( int tag, size_type eltId, int nDofPerElement )
-    {
-        M_localToGlobalProcessIndices[tag][eltId] = localglobal_indices_type::Zero( nDofPerElement );
-    }
-    void setLocalToGlobalProcessIndices( int tag, size_type eltId, int locId, size_type globId )
-    {
-        M_localToGlobalProcessIndices[tag][eltId][locId] = globId;
-    }
-
     int nBasisGp() const { return M_basisGpToCompositeGp.size(); }
+    /**
+     * \return the mapping index which containe this global process id in container view
+     */
     int basisIndexFromGp( size_type gpdof ) const
         {
             size_type currentStartId = 0;
@@ -564,20 +543,35 @@ public:
             return 0;
         }
     /**
-     * basis global process (space def) to composite global process
+     * initialize the number of global process mapping
      */
     void initTagBasisGpToCompositeGp( int nTag ) { M_basisGpToCompositeGp.resize(nTag); }
+    /**
+     * initialize the number of dof id in the mapping
+     */
     void initBasisGpToCompositeGp( int tag, int nDof ) { M_basisGpToCompositeGp[tag].resize(nDof,invalid_size_type_value); }
+    /**
+     * initialize a mapping as identity
+     */
     void initBasisGpToCompositeGpIdentity( int tag, int nDof )
         {
             M_basisGpToCompositeGp[tag].resize(nDof);
             std::iota( M_basisGpToCompositeGp[tag].begin(),M_basisGpToCompositeGp[tag].end(),0 );
         }
+    /**
+     * \return a reference of database mapping (from functionspace id to container id with global process numbering)
+     */
     std::vector<size_type>& basisGpToCompositeGpRef( int tag ) { return M_basisGpToCompositeGp[tag]; }
 
+    /**
+     * \return the database mapping (from functionspace id to container id with global process numbering)
+     */
     std::vector<size_type> const& basisGpToCompositeGp( int tag ) const { return M_basisGpToCompositeGp[tag]; }
     size_type basisGpToCompositeGp( int tag,size_type gpdof ) const { return M_basisGpToCompositeGp[tag][gpdof]; }
 
+    /**
+     * \return the indexsplit description
+     */
     indexsplit_ptrtype const& indexSplit() const { return M_indexSplit; }
     void setIndexSplit( indexsplit_ptrtype const& is ) { M_indexSplit = is; }
     void buildIndexSplit();
@@ -693,8 +687,6 @@ protected:
      */
     indexsplit_ptrtype M_indexSplit, M_indexSplitWithComponents;
 
-    //! local to global process indices : (elt,j)->gdof
-    std::vector<vector_indices_type> M_localToGlobalProcessIndices;
     //! basis global process (space def) to composite global process (identity with non composite space)
     std::vector<std::vector<size_type> > M_basisGpToCompositeGp;
 private:
