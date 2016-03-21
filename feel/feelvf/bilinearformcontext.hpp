@@ -655,8 +655,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 #if !defined(NDEBUG)
     DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] row start " << row_start << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
     bool do_less = ( !UseMortar && ( M_form.isPatternDefault() &&
                        ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
