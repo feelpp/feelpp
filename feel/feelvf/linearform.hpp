@@ -579,7 +579,7 @@ public:
                 M_row_startInVector = lf.M_row_startInVector;
                 M_do_threshold = lf.M_do_threshold;
                 M_threshold = lf.M_threshold;
-                M_locglobIndices = lf.M_locglobIndices;
+                M_dofIdToContainerId = lf.M_dofIdToContainerId;
             }
             return *this;
         }
@@ -735,6 +735,21 @@ public:
         return M_row_startInVector;
     }
 
+    /**
+     * \return the threshold
+     */
+    value_type threshold() const
+    {
+        return M_threshold;
+    }
+
+    /**
+     * return true if do threshold. false otherwise
+     */
+    bool doThreshold() const
+    {
+        return M_do_threshold;
+    }
 
     /**
      * \return \c true if threshold applies, false otherwise
@@ -745,13 +760,9 @@ public:
     }
 
     /**
-     * return local to global process indices : (elt,j)->gdof
+     * \return mapping from test dof id to container id with global process numbering
      */
-    typename DataMap::localglobal_indices_type const& localToGlobalIndices( size_type ElId ) const
-    {
-        //CHECK(M_locglobIndices) << "locglobIndicesTest not init";
-        return (*M_locglobIndices)[ElId];
-    }
+    std::vector<size_type> const& dofIdToContainerId() const { return *M_dofIdToContainerId; }
 
     //@}
 
@@ -788,14 +799,11 @@ public:
     {
         M_do_threshold = do_threshold;
     }
-
     /**
-     * set local to global process indices : (elt,j)->gdof
+     * set mapping from test dof id to container id with global process numbering
      */
-    void setLocglobIndices( typename DataMap::vector_indices_type const& indices )
-    {
-        M_locglobIndices = std::addressof( indices );
-    }
+    void setDofIdToContainerId( std::vector<size_type> const& gpmap ) { M_dofIdToContainerId = std::addressof( gpmap ); }
+
 
     //@}
 
@@ -811,11 +819,11 @@ public:
         if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                M_F->add( i/*+this->rowStartInVector()*/, v );
+                M_F->add( i, v );
         }
 
         else
-            M_F->add( i/*+this->rowStartInVector()*/, v );
+            M_F->add( i, v );
     }
 
     /**
@@ -824,12 +832,6 @@ public:
      */
     void addVector( int* i, int n,  value_type* v )
     {
-#if 0
-        if ( this->rowStartInVector()!=0 )
-            for ( int k = 0; k< n ; ++k )
-                i[k]+=this->rowStartInVector();
-#endif
-
         M_F->addVector( i, n, v );
     }
 
@@ -879,7 +881,7 @@ private:
     bool M_do_threshold;
     value_type M_threshold;
 
-    typename DataMap::vector_indices_type const* M_locglobIndices;
+    std::vector<size_type> const* M_dofIdToContainerId;
 
 };
 
@@ -892,8 +894,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_row_startInVector( __vf.M_row_startInVector ),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold ),
-    M_locglobIndices( __vf.M_locglobIndices )
-
+    M_dofIdToContainerId( __vf.M_dofIdToContainerIdTest )
 {
     // add the vector contrib
     *M_F += *__vf.M_F;
@@ -932,8 +933,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     }
 
     datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
-    this->setLocglobIndices( dm->localToGlobalProcessIndices( M_row_startInVector ) );
-
+    this->setDofIdToContainerId( dm->basisGpToCompositeGp( M_row_startInVector ) );
     if (  init )
         M_F->zero();
 }
@@ -1005,7 +1005,7 @@ struct LFAssign
                 }
             else
                 __list_block.push_back( Block( 0, 0, 0/*M_Xh->nDofStart( M_index )*/, 0 ) );
-
+#if 0
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
                     M_lf.vectorPtr(),
                     __list_block,
@@ -1013,7 +1013,15 @@ struct LFAssign
                     false );
 
             datamap_ptrtype dm = M_lf.vectorPtr()->mapPtr();//M_lf.testSpace()->dof()
-            lf.setLocglobIndices( dm->localToGlobalProcessIndices( M_lf.rowStartInVector() + M_index ) );
+            lf.setDofIdToContainerId( dm->basisGpToCompositeGp( M_lf.rowStartInVector() + M_index ) );
+#else
+            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
+                                                                                                  M_lf.vectorPtr(),
+                                                                                                  M_lf.rowStartInVector() + M_index,
+                                                                                                  false,
+                                                                                                  M_lf.doThreshold(), M_lf.threshold() );
+#endif
+
 
             //
             // in composite integration, make sure that if M_init is \p

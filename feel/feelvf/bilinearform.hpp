@@ -1100,10 +1100,8 @@ public:
         M_col_startInMatrix( __vf.M_col_startInMatrix ),
         M_do_threshold( __vf.M_do_threshold ),
         M_threshold( __vf.M_threshold ),
-        M_locglobIndicesTest( __vf.M_locglobIndicesTest ),
-        M_locglobIndicesTrial( __vf.M_locglobIndicesTrial ),
-        M_basisGpToCompositeGpTest( __vf.M_basisGpToCompositeGpTest ),
-        M_basisGpToCompositeGpTrial( __vf.M_basisGpToCompositeGpTrial )
+        M_dofIdToContainerIdTest( __vf.M_dofIdToContainerIdTest ),
+        M_dofIdToContainerIdTrial( __vf.M_dofIdToContainerIdTrial )
 
     {}
 
@@ -1355,24 +1353,13 @@ public:
     }
 
     /**
-     * return local to global process indices : (elt,j)->gdof
+     * \return the mapping from test dof id to container id with global process numbering
      */
-    typename DataMap::localglobal_indices_type const& localToGlobalIndicesTest( size_type ElId ) const
-    {
-        //CHECK(M_locglobIndicesTest) << "locglobIndicesTest not init";
-        return (*M_locglobIndicesTest)[ElId];
-    }
-    typename DataMap::localglobal_indices_type const& localToGlobalIndicesTrial( size_type ElId ) const
-    {
-        //CHECK(M_locglobIndicesTrial) << "locglobIndicesTrial not init";
-        return (*M_locglobIndicesTrial)[ElId];
-    }
-
+    std::vector<size_type> const& dofIdToContainerIdTest() const { return *M_dofIdToContainerIdTest; }
     /**
-     * basis global process (space def) to composite global process (identity with non composite space)
+     * \return the mapping from trial dof id to container id with global process numbering
      */
-    size_type basisGpToCompositeGpTest( size_type gpdof ) const { return (*M_basisGpToCompositeGpTest)[gpdof]; }
-    size_type basisGpToCompositeGpTrial( size_type gpdof ) const { return (*M_basisGpToCompositeGpTrial)[gpdof]; }
+    std::vector<size_type> const& dofIdToContainerIdTrial() const { return *M_dofIdToContainerIdTrial; }
 
     //@}
 
@@ -1397,24 +1384,14 @@ public:
     {
         M_do_threshold = do_threshold;
     }
-
     /**
-     * set local to global process indices : (elt,j)->gdof
+     * set mapping from test dof id to container id with global process numbering
      */
-    void setLocglobIndicesTest( typename DataMap::vector_indices_type const& indices )
-    {
-        M_locglobIndicesTest = std::addressof( indices );
-    }
-    void setLocglobIndicesTrial( typename DataMap::vector_indices_type const& indices )
-    {
-        M_locglobIndicesTrial = std::addressof( indices );
-    }
-
+    void setDofIdToContainerIdTest( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTest = std::addressof( gpmap ); }
     /**
-     * set basis global process (space def) to composite global process (identity with non composite space)
+     * set mapping from trial dof id to container id with global process numbering
      */
-    void setBasisGpToCompositeGpTest( std::vector<size_type> const& gpmap ) { M_basisGpToCompositeGpTest = std::addressof( gpmap ); }
-    void setBasisGpToCompositeGpTrial( std::vector<size_type> const& gpmap ) { M_basisGpToCompositeGpTrial = std::addressof( gpmap ); }
+    void setDofIdToContainerIdTrial( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTrial = std::addressof( gpmap ); }
 
     //@}
 
@@ -1587,11 +1564,8 @@ private:
     std::vector<size_type> M_n_nz;
     std::vector<size_type> M_n_oz;
 
-
-    typename DataMap::vector_indices_type const* M_locglobIndicesTest;
-    typename DataMap::vector_indices_type const* M_locglobIndicesTrial;
-    std::vector<size_type> const* M_basisGpToCompositeGpTest;
-    std::vector<size_type> const* M_basisGpToCompositeGpTrial;
+    std::vector<size_type> const* M_dofIdToContainerIdTest;
+    std::vector<size_type> const* M_dofIdToContainerIdTrial;
 };
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
@@ -1624,10 +1598,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
     datamap_ptrtype dmTest = (true)? M_matrix->mapRowPtr() : M_X1->dof();
     datamap_ptrtype dmTrial = (true)? M_matrix->mapColPtr() : M_X2->dof();
-    this->setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_row_startInMatrix ) );
-    this->setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_col_startInMatrix ) );
-    this->setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_row_startInMatrix ) );
-    this->setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_col_startInMatrix ) );
+    this->setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_row_startInMatrix ) );
+    this->setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_col_startInMatrix ) );
 
     DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
@@ -1836,14 +1808,17 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         typedef Feel::vf::detail::BilinearForm<test_space_type,
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
-
+#if 0
         bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr();//M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr();//M_bf.trialSpace()->dof()
-        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_bf.colStartInMatrix() + M_trial_index ) );
-        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+#else
+        bf_type bf( M_test, trial, M_bf.matrixPtr(),
+                    M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
+                    false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
+#endif
 
         bf += M_expr;
     }
@@ -1913,14 +1888,17 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         typedef Feel::vf::detail::BilinearForm<test_space_type,
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
-
+#if 0
         bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
         datamap_ptrtype dmTest = M_bf.matrixPtr()->mapRowPtr(); //M_bf.testSpace()->dof()
         datamap_ptrtype dmTrial = M_bf.matrixPtr()->mapColPtr(); //M_bf.trialSpace()->dof()
-        bf.setLocglobIndicesTest( dmTest->localToGlobalProcessIndices( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setLocglobIndicesTrial( dmTrial->localToGlobalProcessIndices( M_bf.colStartInMatrix() + M_trial_index ) );
-        bf.setBasisGpToCompositeGpTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
-        bf.setBasisGpToCompositeGpTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+        bf.setDofIdToContainerIdTest( dmTest->basisGpToCompositeGp( M_bf.rowStartInMatrix() + M_test_index ) );
+        bf.setDofIdToContainerIdTrial( dmTrial->basisGpToCompositeGp( M_bf.colStartInMatrix() + M_trial_index ) );
+#else
+        bf_type bf( test, M_trial, M_bf.matrixPtr(),
+                    M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,
+                    false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
+#endif
 
         bf += M_expr;
     }
