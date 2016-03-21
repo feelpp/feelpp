@@ -3750,6 +3750,7 @@ public:
     typedef Element<value_type> real_element_type;
     typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef boost::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
 
@@ -4490,9 +4491,9 @@ public:
     /**
      * \param vec input vector
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
-     * \return the element of the function space with value shared by the input vector
+     * \return the element of the function space which use the storage values of the input vector
      */
-    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element_external_storage_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
         VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
@@ -4506,11 +4507,34 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > u( this->shared_from_this(),nActiveDof,arrayActiveDof,
-                                                                                                nGhostDof, arrayGhostDof );
+        element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
+                                         nGhostDof, arrayGhostDof );
         return u;
     }
 
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space which use the storage values of the input vector
+     */
+    element_external_storage_ptrtype
+    elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
+    {
+        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        CHECK( vecPetsc ) << "only petsc vector";
+
+        auto const& dmVec = vec.map();
+        CHECK( blockIdStart < dmVec.nBasisGp() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.nBasisGp();
+        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,0) ) ) : nullptr;
+        size_type nGhostDof = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.basisGpToCompositeGp(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
+                                                                               nGhostDof, arrayGhostDof ) );
+        return u;
+    }
 
     /**
      * get the \p i -th \c FunctionSpace out the list
