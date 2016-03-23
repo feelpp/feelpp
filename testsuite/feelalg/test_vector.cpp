@@ -24,6 +24,7 @@
 /**
    \file test_vector.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2010-08-07
  */
 #include <cmath>
@@ -35,9 +36,11 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/stencil.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -144,6 +147,246 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     v2b.setConstant( 7 + myrank );
     sync(v2b);
     BOOST_CHECK( v2b.linftyNorm() == (7+worldsize-1) );
+}
+BOOST_AUTO_TEST_CASE( test_vector_petsc )
+{
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Vh1 = Pchv<2>( mesh );
+    size_type nDofVh1 = Vh1->nDof();
+    auto backendPetsc = backend(_kind="petsc");
+    auto v1 = backendPetsc->newVector( Vh1 );
+    v1->setConstant( 2 );
+    auto v2 = backendPetsc->newVector( Vh1 );
+    v2->setConstant( 5 );
+    // sum
+    BOOST_CHECK( v1->sum() == 2*nDofVh1 );
+    BOOST_CHECK( v2->sum() == 5*nDofVh1 );
+    // add scalar
+    v1->add( 1. );
+    BOOST_CHECK( v1->sum() == 3*nDofVh1 );
+    // add vector
+    v1->add( 1., v2 );
+    BOOST_CHECK( v1->sum() == 8*nDofVh1 );
+    // dot
+    BOOST_CHECK( v1->dot(v2) == 40*nDofVh1 );
+    // reciprocal
+    v1->reciprocal();
+    BOOST_CHECK_SMALL( v1->sum() - (1./8.)*nDofVh1, 1e-9 );
+    // operator=
+    (*v1) = (*v2);
+    BOOST_CHECK( v1->sum() == 5*nDofVh1 );
+    // l1Norm, l2Norm
+    v1->setConstant( -3 );
+    BOOST_CHECK( v1->l1Norm() == 3*nDofVh1 );
+    BOOST_CHECK_SMALL( v1->l2Norm() - std::sqrt(9*nDofVh1), 1e-9 );
+
+    // linftyNorm, min, max
+    rank_type myrank = Environment::rank();
+    rank_type worldsize = Environment::numberOfProcessors();
+    v1->setConstant( 2 + myrank );
+    v1->close();//v1->localize();
+    BOOST_CHECK( v1->linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( v1->max() == (2+worldsize-1) );
+    BOOST_CHECK( v1->min() == 2 );
+    // pointwiseMult, pointwiseDivide
+    v1->setConstant( 4 );
+    v2->setConstant( 5 );
+    auto v3 = backendPetsc->newVector( Vh1 );
+    v3->pointwiseMult( *v1,*v2 );
+    BOOST_CHECK_SMALL( v3->sum() - 20*nDofVh1, 1e-9 );
+    v3->pointwiseDivide( *v1,*v2 );
+    BOOST_CHECK_SMALL( v3->sum() - (4./5.)*nDofVh1, 1e-9 );
+
+    // addVector with matrix
+    auto mat = backendPetsc->newMatrix( _test=Vh1,_trial=Vh1 );
+    for ( size_type k=0;k<Vh1->nLocalDof();++k )
+        mat->set(k,k,3.);
+    mat->close();
+    v1->addVector( v2, mat );
+    BOOST_CHECK( v1->sum() == 19*nDofVh1 );
+}
+BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
+{
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Vh1 = Pchv<2>( mesh );
+    size_type nDofVh1 = Vh1->nDof();
+    auto backendPetsc = backend(_kind="petsc");
+
+    auto v_ublas1 = Vh1->element();
+    auto v_ublas2 = Vh1->element();
+    auto v_petsc1 = toPETScPtr( v_ublas1 );
+    auto v_petsc2 = toPETScPtr( v_ublas2 );
+    auto v_petsc3 = backendPetsc->newVector( Vh1 );
+
+    auto VhB = THch<2>( mesh );
+    auto VhB1 = VhB->functionSpace<1>();
+    size_type nDofVhB = VhB->nDof();
+    size_type nDofVhB0 = VhB->functionSpace<0>()->nDof();
+    size_type nDofVhB1 = VhB->functionSpace<1>()->nDof();
+
+    auto vB_ublas1 = VhB->element();
+    auto vB0_ublas1 = vB_ublas1.element<0>();
+    auto vB1_ublas1 = vB_ublas1.element<1>();
+    auto vB_ublas2 = VhB->element();
+    auto vB0_ublas2 = vB_ublas2.element<0>();
+    auto vB1_ublas2 = vB_ublas2.element<1>();
+    auto vB1_ublas3 = VhB1->element();
+
+    auto vB_petsc1 = toPETScPtr( vB_ublas1 );
+    auto vB0_petsc1 = toPETScPtr( vB0_ublas1 );
+    auto vB1_petsc1 = toPETScPtr( vB1_ublas1 );
+    auto vB_petsc2 = backendPetsc->newVector( VhB );
+    auto vB1_petsc2 = toPETScPtr( vB1_ublas2 );
+    auto vB1_petsc3 = toPETScPtr( vB1_ublas3 );
+
+    // sum
+    v_ublas1.setConstant( 2 );
+    BOOST_CHECK( v_petsc1->sum() == 2*nDofVh1 );
+    v_petsc1->setConstant( 3 );
+    BOOST_CHECK( v_petsc1->sum() == 3*nDofVh1 );
+    BOOST_CHECK( v_ublas1.sum() == 3*nDofVh1 );
+    v_ublas1.setConstant( 2 );
+    BOOST_CHECK( v_petsc1->sum() == 2*nDofVh1 );
+    BOOST_CHECK( v_ublas1.sum() == 2*nDofVh1 );
+    // sum (case two arrays : active and ghost)
+    vB_petsc1->setConstant( 3 );
+    BOOST_CHECK( vB_petsc1->sum() == 3*nDofVhB );
+    BOOST_CHECK( vB_ublas1.sum() == 3*nDofVhB );
+    vB0_ublas1.setConstant( 6 );
+    BOOST_CHECK( vB0_petsc1->sum() == 6*nDofVhB0 );
+    BOOST_CHECK( vB0_ublas1.sum() == 6*nDofVhB0 );
+
+    // add scalar
+    v_petsc1->add( 1. );
+    BOOST_CHECK( v_petsc1->sum() == 3*nDofVh1 );
+    BOOST_CHECK( v_ublas1.sum() == 3*nDofVh1 );
+    // add scalar (case two arrays : active and ghost)
+    vB_petsc1->add( 1. );
+    BOOST_CHECK( vB0_petsc1->sum() == ((6+1)*nDofVhB0) );
+    BOOST_CHECK( vB1_petsc1->sum() == ((3+1)*nDofVhB1) );
+    BOOST_CHECK( vB_petsc1->sum() == ( ((6+1)*nDofVhB0) + ((3+1)*nDofVhB1) ) );
+    BOOST_CHECK( vB_ublas1.sum() == ( ((6+1)*nDofVhB0) + ((3+1)*nDofVhB1) ) );
+
+    // add vector
+    v_ublas2.setConstant( 7 );
+    v_petsc1->add( 1., *v_petsc2 );
+    BOOST_CHECK( v_petsc1->sum() == (3+7)*nDofVh1 );
+    BOOST_CHECK( v_ublas1.sum() == (3+7)*nDofVh1 );
+    v_petsc3->setConstant( 5 );
+    v_petsc1->add( 1., *v_petsc3 );
+    BOOST_CHECK( v_petsc1->sum() == (3+7+5)*nDofVh1 );
+    BOOST_CHECK( v_ublas1.sum() == (3+7+5)*nDofVh1 );
+    v_petsc3->add( 2., *v_petsc1 );
+    BOOST_CHECK( v_petsc3->sum() == (5+2*(3+7+5))*nDofVh1 );
+    // add vector (case two arrays : active and ghost)
+    vB1_petsc1->setConstant( 3 );
+    vB1_petsc2->setConstant( 7 );
+    vB1_petsc1->add( 1., *vB1_petsc2 );
+    BOOST_CHECK( vB1_petsc1->sum() == (3+7)*nDofVhB1 );
+    BOOST_CHECK( vB1_ublas1.sum() == (3+7)*nDofVhB1 );
+    vB1_ublas3.setConstant( 5 );
+    vB1_petsc1->add( 1., *vB1_petsc3 );
+    BOOST_CHECK( vB1_petsc1->sum() == (3+7+5)*nDofVhB1 );
+    vB1_petsc3->add( 2., *vB1_petsc1 );
+    BOOST_CHECK( vB1_ublas3.sum() == (5+2*(3+7+5))*nDofVhB1 );
+
+    // dot
+    v_ublas1.setConstant( 3 );
+    v_ublas2.setConstant( 7 );
+    v_petsc3->setConstant( 5 );
+    BOOST_CHECK( v_petsc1->dot( *v_petsc2 ) == (3*7)*nDofVh1 );
+    BOOST_CHECK( v_petsc1->dot( *v_petsc3 ) == (3*5)*nDofVh1 );
+    BOOST_CHECK( v_petsc3->dot( *v_petsc1 ) == (3*5)*nDofVh1 );
+    // dot (case two arrays : active and ghost)
+    vB1_petsc1->setConstant( 3 );
+    vB1_petsc2->setConstant( 7 );
+    vB1_ublas3.setConstant( 5 );
+    BOOST_CHECK( vB1_petsc1->dot( *vB1_petsc2 ) == (3*7)*nDofVhB1 );
+    BOOST_CHECK( vB1_petsc1->dot( *vB1_petsc3 ) == (3*5)*nDofVhB1 );
+    BOOST_CHECK( vB1_petsc3->dot( *vB1_petsc1 ) == (3*5)*nDofVhB1 );
+
+    // reciprocal
+    v_petsc1->reciprocal();
+    BOOST_CHECK_SMALL( v_petsc1->sum() - (1./3.)*nDofVh1, 1e-9 );
+    // reciprocal (case two arrays : active and ghost)
+    vB1_petsc1->reciprocal();
+    BOOST_CHECK_SMALL( vB1_petsc1->sum() - (1./3.)*nDofVhB1, 1e-9 );
+
+    // operator=
+    (*v_petsc1) = (*v_petsc2);
+    BOOST_CHECK( v_petsc1->sum() == 7*nDofVh1 );
+    (*v_petsc1) = (*v_petsc3);
+    BOOST_CHECK( v_petsc1->sum() == 5*nDofVh1 );
+    v_petsc1->setConstant( 3 );
+    (*v_petsc3) = (*v_petsc1);
+    BOOST_CHECK( v_petsc3->sum() == 3*nDofVh1 );
+    // operator= (case two arrays : active and ghost)
+    *vB1_petsc1 = *vB1_petsc2;
+    BOOST_CHECK( vB1_petsc1->sum() == 7*nDofVhB1 );
+    *vB1_petsc1 = *vB1_petsc3;
+    BOOST_CHECK( vB1_petsc1->sum() == 5*nDofVhB1 );
+    vB1_petsc1->setConstant( 3 );
+    *vB1_petsc3 = *vB1_petsc1;
+    BOOST_CHECK( vB1_petsc3->sum() == 3*nDofVhB1 );
+
+    // l1Norm, l2Norm
+    v_petsc1->setConstant( -4 );
+    BOOST_CHECK( v_petsc1->l1Norm() == 4*nDofVh1 );
+    BOOST_CHECK( v_ublas1.l1Norm() == 4*nDofVh1 );
+    BOOST_CHECK_SMALL( v_petsc1->l2Norm() - std::sqrt(4*4*nDofVh1), 1e-9 );
+    BOOST_CHECK_SMALL( v_ublas1.l2Norm() - std::sqrt(4*4*nDofVh1), 1e-9 );
+    // l1Norm, l2Norm (case two arrays : active and ghost)
+    vB1_petsc1->setConstant( -4 );
+    BOOST_CHECK( vB1_petsc1->l1Norm() == 4*nDofVhB1 );
+    BOOST_CHECK( vB1_ublas1.l1Norm() == 4*nDofVhB1 );
+    BOOST_CHECK_SMALL( vB1_petsc1->l2Norm() - std::sqrt(4*4*nDofVhB1), 1e-9 );
+    BOOST_CHECK_SMALL( vB1_ublas1.l2Norm() - std::sqrt(4*4*nDofVhB1), 1e-9 );
+
+    // linftyNorm, min, max
+    rank_type myrank = Environment::rank();
+    rank_type worldsize = Environment::numberOfProcessors();
+    v_petsc1->setConstant( 2 + myrank );
+    sync(v_ublas1);
+    //v_petsc1->close();
+    BOOST_CHECK( v_petsc1->linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( v_petsc1->max() == (2+worldsize-1) );
+    BOOST_CHECK( v_petsc1->min() == 2 );
+    BOOST_CHECK( v_ublas1.linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( v_ublas1.max() == (2+worldsize-1) );
+    BOOST_CHECK( v_ublas1.min() == 2 );
+    // linftyNorm, min, max (case two arrays : active and ghost)
+    vB1_petsc1->setConstant( 2 + myrank );
+    //sync(vB1_ublas1);//bug
+    //sync(vB_ublas1);//bug
+    vB1_petsc1->close();//work
+    BOOST_CHECK( vB1_petsc1->linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( vB1_petsc1->max() == (2+worldsize-1) );
+    BOOST_CHECK( vB1_petsc1->min() == 2 );
+    BOOST_CHECK( vB1_ublas1.linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( vB1_ublas1.max() == (2+worldsize-1) );
+    BOOST_CHECK( vB1_ublas1.min() == 2 );
+
+    // pointwiseMult, pointwiseDivide
+    v_petsc1->setConstant( 4 );
+    v_petsc2->setConstant( 5 );
+    v_petsc3->pointwiseMult( *v_petsc1,*v_petsc2 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - 20*nDofVh1, 1e-9 );
+    v_petsc3->pointwiseDivide( *v_petsc1,*v_petsc2 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - (4./5.)*nDofVh1, 1e-9 );
+    // pointwiseMult, pointwiseDivide (case two arrays : active and ghost)
+    vB1_petsc1->setConstant( 4 );
+    vB1_petsc2->setConstant( 5 );
+    vB1_petsc3->pointwiseMult( *vB1_petsc1,*vB1_petsc2 );
+    BOOST_CHECK_SMALL( vB1_petsc3->sum() - (4*5)*nDofVhB1, 1e-9 );
+    vB1_petsc3->pointwiseDivide( *vB1_petsc1,*vB1_petsc2 );
+    BOOST_CHECK_SMALL( vB1_petsc3->sum() - (4./5.)*nDofVhB1, 1e-9 );
+    vB1_petsc3->setConstant( 6 );
+    vB1_petsc1->pointwiseMult( *vB1_petsc2,*vB1_petsc3 );
+    BOOST_CHECK_SMALL( vB1_petsc1->sum() - (5*6)*nDofVhB1, 1e-9 );
+    vB1_petsc1->pointwiseDivide( *vB1_petsc2,*vB1_petsc3 );
+    BOOST_CHECK_SMALL( vB1_petsc1->sum() - (5./6.)*nDofVhB1, 1e-9 );
 
 }
 BOOST_AUTO_TEST_SUITE_END()
