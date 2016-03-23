@@ -1784,11 +1784,6 @@ VectorPetscMPIRange<T>::initRangeView( PetscScalar arrayActive[], PetscScalar ar
 
     this->M_is_initialized = true;
 
-    bool fast=false;
-    if ( fast == false )
-        this->zero ();
-
-
 }
 
 
