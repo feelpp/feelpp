@@ -318,7 +318,11 @@ public:
     value_type operator() ( const size_type i ) const;
     value_type& operator() ( const size_type i );
 
-
+    /**
+     *  \f$U = V\f$: copy all components.
+     */
+    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const VectorPetsc<value_type> &V );
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
@@ -423,12 +427,12 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
 
     /**
      * Call the assemble functions
@@ -479,27 +483,27 @@ public:
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    void set ( const value_type& value );
+    virtual void set( const value_type& value );
 
     /**
      * v(i) = value
      */
-    void set ( size_type i, const value_type& value );
+    void set( const size_type i, const value_type& value );
 
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector ( int* i, int n, value_type* v );
+    void setVector( int* i, int n, value_type* v );
 
     /**
      * v(i) += value
      */
-    void add ( size_type i, const value_type& value );
+    void add( const size_type i, const value_type& value );
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v );
+    void addVector( int* i, int n, value_type* v );
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -595,7 +599,7 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    void add ( const value_type& v_in );
+    virtual void add ( const value_type& v_in );
 
     /**
      * \f$ U+=V \f$ .
@@ -609,12 +613,12 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const value_type& a_in, const Vector<value_type>& v_in );
+    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    int reciprocal();
+    virtual int reciprocal();
 
     /**
      * @return the minimum element in the vector.
@@ -823,37 +827,104 @@ public:
     value_type operator() ( const size_type i ) const;
     value_type& operator() ( const size_type i );
 
+    /**
+     *  \f$U = V\f$: copy all components.
+     */
+    Vector<value_type>& operator= ( const Vector<value_type> &V );
+
+    /**
+     * \f$ v(i) = \mathrm{value} \forall i\f$
+     */
+    virtual void set( const value_type& value );
+
+    /**
+     * \f$ U(0-DIM)+=s\f$.
+     * Addition of \p s to all components. Note
+     * that \p s is a scalar and not a vector.
+     */
+    virtual void add( const value_type& v_in );
+
+    /**
+     * \f$ U+=a*V \f$ .
+     * Simple vector addition, equal to the
+     * \p operator +=.
+     */
+    virtual void add( const value_type& a_in, const Vector<value_type>& v_in );
+
+    /**
+     * v(i) = value (i is global process index)
+     */
     void set( size_type i, const value_type& value );
 
+    /**
+     * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
+     */
     void setVector( int* i, int n, value_type* v );
 
+    /**
+     * v(i) += value (i is global process index)
+     */
     void add( const size_type i, const value_type& value );
 
+    /**
+     * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
+     */
     void addVector( int* i, int n, value_type* v );
 
-    void addVector ( const Vector<value_type>& V_in,
-                     const MatrixSparse<value_type>& A_in );
+    /**
+     * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
+     * and a \p Vector \p V to \p this, where \p this=U.
+     */
+    void addVector( const Vector<value_type>& V_in,
+                    const MatrixSparse<value_type>& A_in );
 
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     * Set all entries to zero. Equivalent to \p v = 0.
+     */
     virtual void zero();
-    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    void zero( size_type /*start*/,  size_type /*stop*/ )
     {
         this->zero();
     }
 
+    /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    virtual int reciprocal();
+
+    /**
+     * @returns the \p VectorPetsc<T> to a pristine state.
+     */
     virtual void clear();
 
+    /**
+     * Update ghost values
+     */
     virtual void localize();
 
+    /**
+     * Call the assemble functions and update ghost values
+     */
     void close();
 
     size_type firstLocalIndex() const;
     size_type lastLocalIndex() const;
+    size_type localSize() const;
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
-    value_type dot( Vector<T> const& __v );
-
-    size_type localSize() const;
+protected :
+    void pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
 private :
 
@@ -884,13 +955,77 @@ public:
         this->clear();
     }
 
+    /**
+     * @returns the \p VectorPetsc<T> to a pristine state.
+     */
     void clear();
+
     value_type operator() ( const size_type i ) const;
     value_type& operator() ( const size_type i );
 
+    /**
+     *  \f$U = V\f$: copy all components.
+     */
+    Vector<value_type>& operator= ( const Vector<value_type> &V );
+
+    /**
+     * \f$ v(i) = \mathrm{value} \forall i\f$
+     */
+    void set( const value_type& value );
+
+    /**
+     * \f$ U(0-DIM)+=s\f$.
+     * Addition of \p s to all components. Note
+     * that \p s is a scalar and not a vector.
+     */
+    void add( const value_type& v_in );
+
+    /**
+     * \f$ U+=a*V \f$ .
+     * Simple vector addition, equal to the
+     * \p operator +=.
+     */
+    void add( const value_type& a_in, const Vector<value_type>& v_in );
+
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    void pointwiseMult( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    void pointwiseDivide( Vector<T> const& x, Vector<T> const& y );
+
+    /**
+     * Set all entries to zero. Equivalent to \p v = 0.
+     */
     void zero();
 
+    /**
+     * Replaces each component of a vector by its reciprocal.
+     */
+    int reciprocal();
+
+    /**
+     * Update ghost values
+     */
     void localize();
+
+    /**
+     * Returns the raw PETSc vector of ghosts in context pointer
+     */
+    Vec vecGhost() const
+    {
+        FEELPP_ASSERT ( M_vecGhost != 0 ).error( "invalid petsc vector" );
+        return M_vecGhost;
+    }
+    Vec& vecGhost()
+    {
+        FEELPP_ASSERT ( M_vecGhost != 0 ).error( "invalid petsc vector" );
+        return M_vecGhost;
+    }
+
 private :
     void initRangeView( PetscScalar arrayActive[], PetscScalar arrayGhost[] );
 

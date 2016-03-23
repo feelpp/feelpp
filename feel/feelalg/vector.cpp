@@ -127,12 +127,14 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
-        M_map = v.mapPtr();
+        if ( !M_map )
+            M_map = v.mapPtr();
 
         for ( size_type i = 0; i < this->map().nLocalDofWithGhost(); ++i )
         {
             this->set( i,  v( v.firstLocalIndex() + i ) );
         }
+        this->close();
     }
 
     return *this;
