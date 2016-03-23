@@ -630,15 +630,17 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
         this->assignWithUblasImpl( *vecUblasExtArraySlice );
         return *this;
     }
-
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        //toPETSc( *this ).operator=( *vecPetsc );
+        toPETScPtr( *this )->operator=( *vecPetsc );
+        return *this;
+    }
 
     // default operator=
     for ( size_type i = 0; i < this->localSize(); ++i )
-    {
         this->operator()( i ) = v(  i );
-        //M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
-        //M_vec.operator()( i ) = V(  i );
-    }
 
     return *this;
 }
@@ -759,10 +761,17 @@ VectorUblas<T,Storage>::add( const T& a, const Vector<T>& v )
         this->addWithUblasImpl( a,*vecUblasExtArraySlice );
         return;
     }
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        //toPETSc( *this ).add( a,*vecPetsc );
+        toPETScPtr( *this )->add( a,*vecPetsc );
+        return;
+    }
 
     // default add operator
     for ( size_type i = 0; i < this->localSize(); ++i )
-        this->operator()( i ) += a*v( v.firstLocalIndex() + i );
+        this->operator()( i ) += a*v(  i );
 
     return;
 }
@@ -1071,36 +1080,63 @@ VectorUblas<T,Storage>::pow( int n ) const
 
 template<typename T, typename Storage>
 typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dot( Vector<T> const& __v )
+VectorUblas<T,Storage>::dot( Vector<T> const& v )
 {
-    VectorUblas<T,Storage> const *v = dynamic_cast<VectorUblas<T,Storage> const*>( &__v );
-    real_type local_in_prod = 0;
-    real_type global_in_prod = 0;
-    if ( this->comm().size() == 1 )
+    typedef VectorUblas<T> the_vector_ublas_type;
+    typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
+    typedef typename the_vector_ublas_type::slice::type the_vector_ublas_slice_type;
+    typedef typename VectorUblas<T>::shallow_array_adaptor::type the_vector_ublas_extarray_type;
+    typedef typename the_vector_ublas_extarray_type::range::type the_vector_ublas_extarray_range_type;
+    typedef typename the_vector_ublas_extarray_type::slice::type the_vector_ublas_extarray_slice_type;
+
+    const the_vector_ublas_type * vecUblas = dynamic_cast<the_vector_ublas_type const*>( &v );
+    if ( vecUblas )
     {
-        local_in_prod = ublas::inner_prod( M_vec, v->vec() );
-        global_in_prod = local_in_prod;
+        return this->dotWithUblasImpl( *vecUblas );
     }
-    else
+    const the_vector_ublas_range_type * vecUblasRange = dynamic_cast<the_vector_ublas_range_type const*>( &v );
+    if ( vecUblasRange )
     {
-        size_type s = this->localSize();
-        size_type start = this->firstLocalIndex();
-        for ( size_type i = 0; i < s; ++i )
-        {
-            if ( !this->localIndexIsGhost( start + i ) )
-            {
-                real_type value1 =   M_vec.operator()( start + i );
-                real_type value2 = v->vec().operator()( start + i );
-                local_in_prod += value1*value2;
-            }
-        }
+        return this->dotWithUblasImpl( *vecUblasRange );
+    }
+    const the_vector_ublas_slice_type * vecUblasSlice = dynamic_cast<the_vector_ublas_slice_type const*>( &v );
+    if ( vecUblasSlice )
+    {
+        return this->dotWithUblasImpl( *vecUblasSlice );
+    }
+    const the_vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<the_vector_ublas_extarray_type const*>( &v );
+    if ( vecUblasExtArray )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArray );
+    }
+    const the_vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<the_vector_ublas_extarray_range_type const*>( &v );
+    if ( vecUblasExtArrayRange )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArrayRange );
+    }
+    const the_vector_ublas_extarray_slice_type * vecUblasExtArraySlice = dynamic_cast<the_vector_ublas_extarray_slice_type const*>( &v );
+    if ( vecUblasExtArraySlice )
+    {
+        return this->dotWithUblasImpl( *vecUblasExtArraySlice );
+    }
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> const*>( &v );
+    if ( vecPetsc && !is_slice_vector )
+    {
+        return toPETScPtr( *this )->dot( *vecPetsc );
+    }
+
+    // default dot operator
+    value_type localResult = 0;
+    for ( size_type k = 0; k < this->map().nLocalDofWithoutGhost(); ++k )
+    {
+        localResult += this->operator()(k)*v(k);
+    }
+    value_type globalResult = localResult;
 #ifdef FEELPP_HAS_MPI
-        mpi::all_reduce( this->comm(), local_in_prod, global_in_prod, std::plus<real_type>() );
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
 #endif
-    }
-
-    return global_in_prod;
-
+    return globalResult;
 }
 
 #ifdef FEELPP_HAS_HDF5

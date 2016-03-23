@@ -1007,6 +1007,8 @@ private:
     void assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
     template <typename OtherStorage>
     void addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v );
+    template <typename OtherStorage>
+    value_type dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
 
     /**
      * check vector consistency
@@ -1133,6 +1135,55 @@ VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage
             this->vec() += a*v.vec();
         }
     }
+}
+
+template<typename T, typename Storage>
+template <typename OtherStorage>
+typename VectorUblas<T,Storage>::value_type
+VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
+{
+    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+    value_type localResult = 0;
+    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
+
+    if ( this->comm().localSize() == 1 )
+    {
+        localResult = ublas::inner_prod( this->vec(), v.vec() );
+    }
+    else if ( has_non_contiguous_ghosts )
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            localResult = ublas::inner_prod( this->vec(), v.vec() );
+        }
+        else
+        {
+            localResult = ublas::inner_prod( this->vec(),
+                                             ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) ) );
+        }
+    }
+    else
+    {
+        if ( otherstorage_has_non_contiguous_ghosts )
+        {
+            localResult = ublas::inner_prod( ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ),
+                                             v.vec() );
+        }
+        else
+        {
+            localResult = ublas::inner_prod( ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ),
+                                             ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) ) );
+        }
+    }
+
+    value_type globalResult = localResult;
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
+#endif
+
+    return globalResult;
 }
 
 
