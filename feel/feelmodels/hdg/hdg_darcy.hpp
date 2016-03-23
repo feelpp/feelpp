@@ -94,10 +94,10 @@ public:
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
-    using trace_space_type = Pdh_type<face_mesh_type, order>;
-    using trace_space_ptrtype = Pdh_ptrtype<face_mesh_type, order>;
-    using trace_type = typename trace_space_type::element_type;
-    using trace_ptrtype = typename trace_space_type::element_ptrtype;
+    using multiplier_space_type = Pdh_type<face_mesh_type, order>;
+    using multiplier_space_ptrtype = Pdh_ptrtype<face_mesh_type, order>;
+    using multiplier_type = typename multiplier_space_type::element_type;
+    using multiplier_ptrtype = typename multiplier_space_type::element_ptrtype;
 
     // exporter
     using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
@@ -115,7 +115,7 @@ public:
 
     flux_type const& flux() const { return *up; }
     potential_type const& potential() const { return *pp; }
-    trace_type const& multiplier() const { return *phatp; }
+    multiplier_type const& multiplier() const { return *phatp; }
 
     void exportResults();
 
@@ -138,16 +138,16 @@ private:
     // FE spaces
     flux_space_ptrtype Vh;
     potential_space_ptrtype Wh;
-    trace_space_ptrtype Mh;
+    multiplier_space_ptrtype Mh;
 
     // FE elements
     flux_ptrtype up;
     potential_ptrtype pp;
-    trace_ptrtype phatp;
+    multiplier_ptrtype phatp;
 
     flux_type u, v;
     potential_type p, w;
-    trace_type phat, l;
+    multiplier_type phat, l;
 
     // Big matrix and vectors associated to the three fields formulation
     sparse_matrix_ptrtype A;
@@ -399,8 +399,10 @@ HDGdarcy<PotSpaceType>::exportResults()
     {
         if ( o == "flux" )
             e->add( "flux", *up );
-        if ( o == "pressure" )
+        if ( o == "potential" )
             e->add( "potential", *pp );
+        if ( o == "multiplier" )
+            e->add( "multiplier", *phatp)
     }
     e->save();
 
