@@ -82,6 +82,11 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     auto v3 = Vh3->element();
     v3.setConstant( 9 );
 
+    auto backendPetsc = backend(_kind="petsc");
+    auto v_petsc1 = backendPetsc->newVector( Vh1 );
+    auto v_petsc3 = backendPetsc->newVector( Vh3 );
+
+
     size_type nDofVh1 = Vh1->nDof();
     size_type nDofVh2 = Vh2->nDof();
     size_type nDofVh2a = v2a.functionSpace()->nDof();
@@ -124,17 +129,41 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     BOOST_CHECK( v3.sum() == 8*nDofVh2a );
     v3.setConstant( 9 );
     v2a = v3;
-    BOOST_CHECK( v3.sum() == 9*nDofVh2a );
+    BOOST_CHECK( v2a.sum() == 9*nDofVh2a );
+    // operator= (with petsc vector)
+    v_petsc1->setConstant( 2 );
+    v_petsc3->setConstant( 4 );
+    v1 = *v_petsc1;
+    BOOST_CHECK( v1.sum() == 2*nDofVh1 );
+    v3 = *v_petsc3;
+    BOOST_CHECK( v3.sum() == 4*nDofVh2a );
+    v2a = *v_petsc3;
+    BOOST_CHECK( v2a.sum() == 4*nDofVh2a );
     // add vector
     v1.setConstant( 2 );
     v2a.setConstant( 5 );
     v2b.setConstant( 7 );
+    v3.setConstant( 8 );
     v1.add(-1.,v1 );
     BOOST_CHECK( v1.sum() == 0 );
-    v2a.add( 1., v3 );
-    BOOST_CHECK( v2a.sum() == 14*nDofVh2a );
-    v3.add( 1., v2a );
-    BOOST_CHECK( v3.sum() == 23*nDofVh3 );
+    v2a.add( 2., v3 );
+    BOOST_CHECK( v2a.sum() == (5+2*8)*nDofVh2a );
+    v3.add( -3., v2a );
+    BOOST_CHECK_SMALL( v3.sum() - (8.-3.*(5+2*8))*nDofVh3, 1e-9 );
+    // add vector (with petsc vector)
+    v1.setConstant( 2 );
+    v2a.setConstant( 5 );
+    v3.setConstant( 7 );
+    v_petsc1->setConstant( 4 );
+    v_petsc3->setConstant( 6 );
+    v1.add(3.,*v_petsc1 );
+    BOOST_CHECK( v1.sum() == (2+3*4)*nDofVh1 );
+    v2a.add(3.,*v_petsc3 );
+    BOOST_CHECK( v2a.sum() == (5+3*6)*nDofVh2a );
+    v3.add(3.,*v_petsc3 );
+    BOOST_CHECK( v3.sum() == (7+3*6)*nDofVh2a );
+
+
     // linftyNorm
     rank_type myrank = Environment::rank();
     rank_type worldsize = Environment::numberOfProcessors();
@@ -147,6 +176,20 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     v2b.setConstant( 7 + myrank );
     sync(v2b);
     BOOST_CHECK( v2b.linftyNorm() == (7+worldsize-1) );
+    // dot
+    v1.setConstant( 2 );
+    v1bis.setConstant( 3 );
+    v2a.setConstant( 5 );
+    v3.setConstant( 7 );
+    BOOST_CHECK( v1.dot(v1bis) == (3*2)*nDofVh1 );
+    BOOST_CHECK( v2a.dot(v3) == (5*7)*nDofVh2a );
+    BOOST_CHECK( v3.dot(v2a) == (5*7)*nDofVh2a );
+    // dot (with petsc vector)
+    v_petsc1->setConstant( 4 );
+    v_petsc3->setConstant( 6 );
+    BOOST_CHECK( v1.dot( *v_petsc1 ) == (2*4)*nDofVh1 );
+    BOOST_CHECK( v2a.dot( *v_petsc3 ) == (5*6)*nDofVh2a );
+    BOOST_CHECK( v3.dot( *v_petsc3 ) == (7*6)*nDofVh2a );
 }
 BOOST_AUTO_TEST_CASE( test_vector_petsc )
 {
