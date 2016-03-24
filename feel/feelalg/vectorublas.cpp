@@ -644,6 +644,12 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
 
     return *this;
 }
+template <typename T, typename Storage>
+Vector<T>&
+VectorUblas<T,Storage>::operator= ( const this_type &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
+}
 
 template <typename T, typename Storage>
 void
@@ -703,7 +709,12 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::clear()
 {
-    detail::resize( M_vec, 0, false );
+    if ( !is_extarray_vector )
+    {
+        detail::resize( M_vec, 0, false );
+        if ( has_non_contiguous_ghosts )
+            detail::resize( M_vecNonContiguousGhosts, 0, false );
+    }
 }
 
 template<typename T, typename Storage>

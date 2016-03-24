@@ -126,6 +126,7 @@ public:
         boost::is_same<vector_type,typename this_type::shallow_array_adaptor::subtype>::value ||
         boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value ||
         boost::is_same<vector_type,typename this_type::shallow_array_adaptor::slicesubtype>::value;
+    static const bool is_extarray_vector = is_shallow_array_adaptor_vector;
 
     struct range
     {
@@ -240,6 +241,7 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const this_type &V );
 
     template<typename AE>
     VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
@@ -1323,7 +1325,7 @@ toPETSc( VectorUblas<T,Storage> & v )
 {
     if ( v.comm().size() > 1 )
     {
-        if( VectorUblas<T,Storage>::is_range_vector )
+        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
             return VectorPetscMPIRange<T>( v );
         else
             return VectorPetscMPI<T>( v );
@@ -1352,7 +1354,7 @@ toPETScPtr( VectorUblas<T,Storage> & v )
 {
     if ( v.comm().size() > 1 )
     {
-        if( VectorUblas<T,Storage>::is_range_vector )
+        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
             return boost::make_shared<VectorPetscMPIRange<T>>( v );
         else
             return boost::make_shared<VectorPetscMPI<T>>( v );
@@ -1381,7 +1383,7 @@ toPETSc( boost::shared_ptr<VectorUblas<T,Storage>> & v )
 {
     if ( v->comm().size() > 1 )
     {
-        if( VectorUblas<T,Storage>::is_range_vector )
+        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
             return boost::make_shared<VectorPetscMPIRange<T>>( *v );
         else
             return boost::make_shared<VectorPetscMPI<T>>( *v );

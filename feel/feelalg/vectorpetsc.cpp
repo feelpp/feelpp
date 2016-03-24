@@ -173,50 +173,50 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 template <typename T>
 typename VectorPetsc<T>::value_type
 VectorPetsc<T>::operator() ( const size_type i ) const
-    {
-        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
-        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
-                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
-                                                       << " first local index: "  << this->firstLocalIndex()
-                                                       << " last local index:  " << this->lastLocalIndex();
+{
+    DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+    DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+               ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                   << " first local index: "  << this->firstLocalIndex()
+                                                   << " last local index:  " << this->lastLocalIndex();
 
-        int ierr=0;
-        PetscScalar *values, value=0.;
+    int ierr=0;
+    PetscScalar *values, value=0.;
 
 
-        ierr = VecGetArray( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecGetArray( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        value = values[i - this->firstLocalIndex()];
+    value = values[i - this->firstLocalIndex()];
 
-        ierr = VecRestoreArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecRestoreArray ( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<value_type>( value );
-    }
+    return static_cast<value_type>( value );
+}
 template <typename T>
 typename VectorPetsc<T>::value_type&
 VectorPetsc<T>::operator() ( const size_type i )
-    {
-        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
-        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
-                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
-                                                       << " first local index: "  << this->firstLocalIndex()
-                                                       << " last local index:  " << this->lastLocalIndex();
+{
+    DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+    DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+               ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                   << " first local index: "  << this->firstLocalIndex()
+                                                   << " last local index:  " << this->lastLocalIndex();
 
-        int ierr=0;
-        PetscScalar *values;
+    int ierr=0;
+    PetscScalar *values;
 
-        ierr = VecGetArray( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecGetArray( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        PetscScalar& value = values[i - this->firstLocalIndex()];
+    PetscScalar& value = values[i - this->firstLocalIndex()];
 
-        ierr = VecRestoreArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecRestoreArray ( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<value_type&>( value );
-    }
+    return static_cast<value_type&>( value );
+}
 
 template <typename T>
 Vector<typename VectorPetsc<T>::value_type>&
@@ -230,6 +230,42 @@ VectorPetsc<T>::operator= ( const Vector<value_type> &V )
         CHKERRABORT( this->comm(),ierr );
         return *this;
     }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+
+    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &V );
+    if ( vecUblas )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
+        this->operator=( *vecPetscFromUblas );
+        return *this;
+    }
+    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &V );
+    if ( vecUblasRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
+        this->operator=( *vecPetscFromUblas );
+        return *this;
+    }
+    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &V );
+    if ( vecUblasExtArray )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
+        this->operator=( *vecPetscFromUblas );
+        return *this;
+    }
+    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &V );
+    if ( vecUblasExtArrayRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
+        this->operator=( *vecPetscFromUblas );
+        return *this;
+    }
+    CHECK( false ) << "TODO other kind of vector";
+
     return super::operator=( V );
 }
 
@@ -242,25 +278,88 @@ VectorPetsc<T>::operator= ( const VectorPetsc<value_type> &V )
 
 template <typename T>
 void
+VectorPetsc<T>::pointwiseOperationsImpl( Vector<T> const& xx, Vector<T> const& yy, int op )
+{
+    const VectorPetsc<T>* vecxPetsc = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* vecyPetsc = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    if ( vecxPetsc && vecyPetsc )
+    {
+        int ierr = 0;
+        if ( op == 0 )
+            ierr =  VecPointwiseMult( this->vec(), vecxPetsc->vec(), vecyPetsc->vec() );
+        else
+            ierr =  VecPointwiseDivide( this->vec(), vecxPetsc->vec(), vecyPetsc->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+
+    const vector_ublas_type * vecxUblas = dynamic_cast<vector_ublas_type const*>( &xx );
+    const vector_ublas_type * vecyUblas = dynamic_cast<vector_ublas_type const*>( &yy );
+    const vector_ublas_range_type * vecxUblasRange = dynamic_cast<vector_ublas_range_type const*>( &xx );
+    const vector_ublas_range_type * vecyUblasRange = dynamic_cast<vector_ublas_range_type const*>( &yy );
+    const vector_ublas_extarray_type * vecxUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &xx );
+    const vector_ublas_extarray_type * vecyUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &yy );
+    const vector_ublas_extarray_range_type * vecxUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &xx );
+    const vector_ublas_extarray_range_type * vecyUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &yy );
+    bool vecxIsUblasVarients = vecxUblas || vecxUblasRange || vecxUblasExtArray || vecxUblasExtArrayRange;
+    bool vecyIsUblasVarients = vecyUblas || vecyUblasRange || vecyUblasExtArray || vecyUblasExtArrayRange;
+    if ( ( vecxPetsc || vecxIsUblasVarients ) && ( vecyPetsc || vecyIsUblasVarients ) )
+    {
+        boost::shared_ptr<VectorPetsc<T>> vecxPetscFromUblas, vecyPetscFromUblas;
+        const VectorPetsc<T> * vecxPetscUsed;
+        const VectorPetsc<T> * vecyPetscUsed;
+        if ( vecxIsUblasVarients )
+        {
+            if ( vecxUblas )
+                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecxUblas ) ) );
+            else if ( vecxUblasRange )
+                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecxUblasRange ) ) );
+            else if ( vecxUblasExtArray )
+                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecxUblasExtArray ) ) );
+            else if ( vecxUblasExtArrayRange )
+                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecxUblasExtArrayRange ) ) );
+            vecxPetscUsed = &(*vecxPetscFromUblas);
+        }
+        else
+            vecxPetscUsed = vecxPetsc;
+
+        if ( vecyIsUblasVarients )
+        {
+            if ( vecyUblas )
+                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecyUblas ) ) );
+            else if ( vecyUblasRange )
+                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecyUblasRange ) ) );
+            else if ( vecyUblasExtArray )
+                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecyUblasExtArray ) ) );
+            else if ( vecyUblasExtArrayRange )
+                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecyUblasExtArrayRange ) ) );
+            vecyPetscUsed = &(*vecyPetscFromUblas);
+        }
+        else
+            vecyPetscUsed = vecyPetsc;
+
+        if ( op == 0 )
+            this->pointwiseMult( *vecxPetscUsed,*vecyPetscUsed );
+        else
+            this->pointwiseDivide( *vecxPetscUsed,*vecyPetscUsed );
+        return;
+    }
+
+    CHECK( false ) << "TODO other kind of vector";
+
+}
+
+template <typename T>
+void
 VectorPetsc<T>::pointwiseMult ( Vector<T> const& xx, Vector<T> const& yy )
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
-    if ( this->comm().size()>1 )
-    {
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
-    }
-    else
-    {
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
-    }
-
-    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
-    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
-    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
-    auto ierr =  VecPointwiseMult(this->vec(), x->vec(), y->vec() );
-    CHKERRABORT( this->comm(),ierr );
+    this->pointwiseOperationsImpl( xx,yy,0 );
 }
 
 template <typename T>
@@ -268,22 +367,7 @@ void
 VectorPetsc<T>::pointwiseDivide ( Vector<T> const& xx, Vector<T> const& yy )
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
-    if ( this->comm().size()>1 )
-    {
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
-    }
-    else
-    {
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
-    }
-
-    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
-    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
-    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
-    auto ierr =  VecPointwiseDivide(this->vec(), x->vec(), y->vec() );
-    CHKERRABORT( this->comm(),ierr );
+    this->pointwiseOperationsImpl( xx,yy,1 );
 }
 template <typename T>
 void
@@ -411,6 +495,41 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
 #endif
         return;
     }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+
+    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &v_in );
+    if ( vecUblas )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
+        this->add( a_in, *vecPetscFromUblas );
+        return;
+    }
+    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &v_in );
+    if ( vecUblasRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
+        this->add( a_in, *vecPetscFromUblas );
+        return;
+    }
+    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &v_in );
+    if ( vecUblasExtArray )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
+        this->add( a_in, *vecPetscFromUblas );
+        return;
+    }
+    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &v_in );
+    if ( vecUblasExtArrayRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
+        this->add( a_in, *vecPetscFromUblas );
+        return;
+    }
+
     CHECK( false ) << "TODO other kind of vector";
 }
 
@@ -585,6 +704,11 @@ template <typename T>
 typename VectorPetsc<T>::value_type
 VectorPetsc<T>::dot( Vector<T> const& __v )
 {
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+
     int ierr = 0;
     PetscScalar e;
     const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &__v );
@@ -594,6 +718,31 @@ VectorPetsc<T>::dot( Vector<T> const& __v )
         CHKERRABORT( this->comm(),ierr );
         return e;
     }
+    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &__v );
+    if ( vecUblas )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
+        return this->dot( *vecPetscFromUblas );
+    }
+    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &__v );
+    if ( vecUblasRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
+        return this->dot( *vecPetscFromUblas );
+    }
+    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &__v );
+    if ( vecUblasExtArray )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
+        return this->dot( *vecPetscFromUblas );
+    }
+    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &__v );
+    if ( vecUblasExtArrayRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
+        return this->dot( *vecPetscFromUblas );
+    }
+
     //CHECK( false ) << "TODO other kind of vector";
 
     // default case : build a new petsc vector with copy
@@ -910,55 +1059,67 @@ Vector<typename VectorPetscMPI<T>::value_type>&
 VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
 {
     int ierr=0;
-    const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
-    if ( vecPetscMPIRange )
+
+    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+    if ( !vecOutPetscMPIRange )
     {
-        ierr = VecCopy( vecPetscMPIRange->vec(), this->vec() );
-        CHKERRABORT( this->comm(),ierr );
+        const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
+        if ( vecPetscMPIRange )
+        {
+            ierr = VecCopy( vecPetscMPIRange->vec(), this->vec() );
+            CHKERRABORT( this->comm(),ierr );
 
-        size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
-        size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
+            size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
+            size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
 
-        Vec lxOut;
-        ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
-        CHKERRABORT( this->comm(),ierr );
+            Vec lxOut;
+            ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
 
-        PetscScalar *valuesOut;
-        PetscScalar *valuesInGhost;
-        ierr = VecGetArray( lxOut, &valuesOut );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
-        CHKERRABORT( this->comm(),ierr );
-        for ( size_type k=0;k<nLocalGhost;++k )
-            valuesOut[nLocalDofWithoutGhost+k] = valuesInGhost[k];
-        ierr = VecRestoreArray( lxOut, &valuesOut );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
-        CHKERRABORT( this->comm(),ierr );
+            PetscScalar *valuesOut;
+            PetscScalar *valuesInGhost;
+            ierr = VecGetArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+            for ( size_type k=0;k<nLocalGhost;++k )
+                valuesOut[nLocalDofWithoutGhost+k] = valuesInGhost[k];
+            ierr = VecRestoreArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
 
-        return *this;
-    }
-    const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
-    if ( vecPetscMPI )
-    {
-        Vec lx;
-        ierr = VecGhostGetLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxIn;
-        ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecCopy( lxIn, lx );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
-        CHKERRABORT( this->comm(),ierr );
-        return *this;
+            return *this;
+        }
+        const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
+        if ( vecPetscMPI )
+        {
+            Vec lx;
+            ierr = VecGhostGetLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            Vec lxIn;
+            ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecCopy( lxIn, lx );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            return *this;
+        }
     }
     return super::operator=( V );
+}
+
+template <typename T>
+Vector<typename VectorPetsc<T>::value_type>&
+VectorPetscMPI<T>::operator= ( const VectorPetscMPI<value_type> &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
 }
 
 template <typename T>
@@ -998,65 +1159,71 @@ VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
-    const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &v_in );
-    if ( vecPetscMPIRange )
+    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+    if ( !vecOutPetscMPIRange )
     {
+        const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &v_in );
+        if ( vecPetscMPIRange )
+        {
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-        ierr = VecAXPY( &a, vecPetscMPIRange->vec(), this->vec() );
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecAXPY( &a, vecPetscMPIRange->vec(), this->vec() );
+            CHKERRABORT( this->comm(),ierr );
 #else
-        ierr = VecAXPY( this->vec(), a, vecPetscMPIRange->vec() );
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecAXPY( this->vec(), a, vecPetscMPIRange->vec() );
+            CHKERRABORT( this->comm(),ierr );
 #endif
-        size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
-        size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
+            size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
+            size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
 
-        Vec lxOut;
-        ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
-        CHKERRABORT( this->comm(),ierr );
+            Vec lxOut;
+            ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
 
-        PetscScalar *valuesOut;
-        PetscScalar *valuesInGhost;
-        ierr = VecGetArray( lxOut, &valuesOut );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
-        CHKERRABORT( this->comm(),ierr );
-        for ( size_type k=0;k<nLocalGhost;++k )
-            valuesOut[nLocalDofWithoutGhost+k] += a*valuesInGhost[k];
-        ierr = VecRestoreArray( lxOut, &valuesOut );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
-        CHKERRABORT( this->comm(),ierr );
+            PetscScalar *valuesOut;
+            PetscScalar *valuesInGhost;
+            ierr = VecGetArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+            for ( size_type k=0;k<nLocalGhost;++k )
+                valuesOut[nLocalDofWithoutGhost+k] += a*valuesInGhost[k];
+            ierr = VecRestoreArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
 
-        return;
-    }
-    const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
-    if ( vecPetscMPI )
-    {
-        //CHECK( this->size() == v->size() ) << "invalid vector this.size : " << this->size() << " != v.size: " << v->size();
-        Vec lx;
-        ierr = VecGhostGetLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxIn;
-        ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
-        CHKERRABORT( this->comm(),ierr );
+            return;
+        }
+        const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
+        if ( vecPetscMPI )
+        {
+            //CHECK( this->size() == v->size() ) << "invalid vector this.size : " << this->size() << " != v.size: " << v->size();
+            Vec lx;
+            ierr = VecGhostGetLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            Vec lxIn;
+            ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-        ierr = VecAXPY( &a, lxIn, lx );
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecAXPY( &a, lxIn, lx );
+            CHKERRABORT( this->comm(),ierr );
 #else
-        ierr = VecAXPY( lx, a, lxIn );
-        CHKERRABORT( this->comm(),ierr );
+            ierr = VecAXPY( lx, a, lxIn );
+            CHKERRABORT( this->comm(),ierr );
 #endif
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
-        CHKERRABORT( this->comm(),ierr );
-        return;
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            return;
+        }
     }
-    CHECK( false ) << "TODO other kind of vector";
+
+    // try others casts
+    super::add( a_in, v_in );
 }
 
 
@@ -1135,44 +1302,46 @@ void
 VectorPetscMPI<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
 {
     int ierr = 0;
-    const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
-    const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
     const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
     const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
-    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
 
-    if ( !vecOutPetscMPIRange && vecxPetscMPI && vecyPetscMPI && !vecxPetscMPIRange && !vecyPetscMPIRange )
+    if( vecxPetscMPI && vecyPetscMPI )
     {
-        Vec lx;
-        ierr = VecGhostGetLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxInx;
-        ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxIny;
-        ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
-        CHKERRABORT( this->comm(),ierr );
+        VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+        if ( !vecOutPetscMPIRange )
+        {
+            const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+            const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+            if ( vecxPetscMPI && vecyPetscMPI && !vecxPetscMPIRange && !vecyPetscMPIRange )
+            {
+                Vec lx;
+                ierr = VecGhostGetLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxInx;
+                ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxIny;
+                ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
 
-        ierr =  VecPointwiseMult(lx, lxInx, lxIny );
-        CHKERRABORT( this->comm(),ierr );
+                ierr =  VecPointwiseMult(lx, lxInx, lxIny );
+                CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
-        CHKERRABORT( this->comm(),ierr );
-        return;
-    }
-    if ( vecxPetscMPI && vecyPetscMPI )
-    {
+                ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+                return;
+            }
+        }
+
         this->pointwiseOperationOthersPetscImpl(x,y,0);
         return;
     }
-    CHECK( false ) << "TODO other kind of vector";
     // default method
     super::pointwiseMult( x,y );
-    this->localize();
 }
 
 template <typename T>
@@ -1180,45 +1349,46 @@ void
 VectorPetscMPI<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
 {
     int ierr = 0;
-    const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
-    const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
     const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
     const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
-    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
-
-    if ( !vecOutPetscMPIRange && vecxPetscMPI && vecyPetscMPI && !vecxPetscMPIRange && !vecyPetscMPIRange )
+    if( vecxPetscMPI && vecyPetscMPI )
     {
-        Vec lx;
-        ierr = VecGhostGetLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxInx;
-        ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
-        CHKERRABORT( this->comm(),ierr );
-        Vec lxIny;
-        ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
-        CHKERRABORT( this->comm(),ierr );
+        VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+        if ( !vecOutPetscMPIRange )
+        {
+            const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+            const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+            if ( !vecxPetscMPIRange && !vecyPetscMPIRange )
+            {
+                Vec lx;
+                ierr = VecGhostGetLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxInx;
+                ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxIny;
+                ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
 
-        ierr =  VecPointwiseDivide(lx, lxInx, lxIny );
-        CHKERRABORT( this->comm(),ierr );
+                ierr =  VecPointwiseDivide(lx, lxInx, lxIny );
+                CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
-        CHKERRABORT( this->comm(),ierr );
-        return;
-    }
-    if ( vecxPetscMPI && vecyPetscMPI )
-    {
+                ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+                return;
+            }
+        }
+
         this->pointwiseOperationOthersPetscImpl(x,y,1);
         return;
     }
-    CHECK( false ) << "TODO other kind of vector";
 
     // default method
     super::pointwiseDivide( x,y );
-    this->localize();
 }
 
 template <typename T>
@@ -1907,8 +2077,15 @@ VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
 
         return *this;
     }
-    CHECK( false ) << "TODO other kind of vector";
-    return *this;
+
+    return super_type::operator= ( V );
+}
+
+template <typename T>
+Vector<typename VectorPetscMPIRange<T>::value_type>&
+VectorPetscMPIRange<T>::operator= ( const VectorPetscMPIRange<value_type> &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
 }
 
 template <typename T>
@@ -1996,7 +2173,8 @@ VectorPetscMPIRange<T>::add( const value_type& a_in, const Vector<value_type>& v
 
         return;
     }
-    CHECK( false ) << "TODO other kind of vector";
+
+    super_type::add( a_in, v_in );
 }
 
 template <typename T>
@@ -2014,14 +2192,7 @@ VectorPetscMPIRange<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
         CHKERRABORT( this->comm(),ierr );
         return;
     }
-    const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
-    const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
-    if ( vecxPetscMPI && vecyPetscMPI )
-    {
-        this->pointwiseOperationOthersPetscImpl(x,y,0);
-        return;
-    }
-    CHECK( false ) << "TODO other kind of vector";
+
     super_type::pointwiseMult( x,y );
 }
 template <typename T>
@@ -2039,14 +2210,6 @@ VectorPetscMPIRange<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y 
         CHKERRABORT( this->comm(),ierr );
         return;
     }
-    const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
-    const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
-    if ( vecxPetscMPI && vecyPetscMPI )
-    {
-        this->pointwiseOperationOthersPetscImpl(x,y,1);
-        return;
-    }
-    CHECK( false ) << "TODO other kind of vector";
     super_type::pointwiseDivide( x,y );
 }
 
