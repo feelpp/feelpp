@@ -49,6 +49,7 @@ BOOST_AUTO_TEST_SUITE( vector )
 
 BOOST_AUTO_TEST_CASE( test_vector_ublas_base )
 {
+    BOOST_TEST_MESSAGE( "test_vector_ublas_base" );
     using namespace Feel;
     VectorUblas<double> v1( 100 ), v2( 100 ), v3( 100 );
     v1.setConstant( 1 );
@@ -63,6 +64,7 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_base )
 }
 BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
 {
+    BOOST_TEST_MESSAGE( "test_vector_ublas_operations" );
     using namespace Feel;
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto Vh1 = Pchv<2>( mesh );
@@ -191,66 +193,196 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     BOOST_CHECK( v2a.dot( *v_petsc3 ) == (5*6)*nDofVh2a );
     BOOST_CHECK( v3.dot( *v_petsc3 ) == (7*6)*nDofVh2a );
 }
+BOOST_AUTO_TEST_CASE( test_vector_ublas_extarray )
+{
+    BOOST_TEST_MESSAGE( "test_vector_ublas_extarray" );
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Vh = Pchv<2>( mesh );
+    auto Wh = THch<2>( mesh );
+    auto Xh = Wh->functionSpace<1>();
+    size_type nDofVh = Vh->nDof(), nDofWh = Wh->nDof(), nDofXh = Xh->nDof();
+
+    auto backendPetsc = backend(_kind="petsc");
+    auto v_petsc1 = backendPetsc->newVector( Vh );
+    auto v_petsc2 = backendPetsc->newVector( Vh );
+    auto w_petsc1 = backendPetsc->newVector( Wh );
+    auto x_petsc1 = backendPetsc->newVector( Xh );
+    auto x_petsc2 = backendPetsc->newVector( Xh );
+
+    auto v_ublas1 = Vh->element( v_petsc1 );
+    auto v_ublas2 = Vh->element( v_petsc2 );
+    auto w_ublas1 = Wh->element( w_petsc1 );
+    auto w1_ublas1 = w_ublas1.element<1>();
+    auto x_ublas1 = Xh->element( x_petsc1 );
+
+    v_petsc1->setConstant( 2 );
+    w_petsc1->setConstant( 3 );
+    x_petsc1->setConstant( 4 );
+    // sum
+    BOOST_CHECK( v_ublas1.sum() == 2*nDofVh );
+    BOOST_CHECK( w_ublas1.sum() == 3*nDofWh );
+    BOOST_CHECK( x_ublas1.sum() == 4*nDofXh );
+    // add scalar
+    v_ublas1.add( 3. );
+    w_ublas1.add( 4. );
+    x_ublas1.add( 5. );
+
+    BOOST_CHECK( v_ublas1.sum() == (2+3)*nDofVh );
+    BOOST_CHECK( v_petsc1->sum() == (2+3)*nDofVh );
+    BOOST_CHECK( w_ublas1.sum() == (3+4)*nDofWh );
+    BOOST_CHECK( w_petsc1->sum() == (3+4)*nDofWh );
+    BOOST_CHECK( x_ublas1.sum() == (4+5)*nDofXh );
+    BOOST_CHECK( x_petsc1->sum() == (4+5)*nDofXh );
+    // add vector
+    v_ublas2.setConstant( 2 );
+    v_ublas1.add( 3., v_ublas2 );
+    BOOST_CHECK( v_ublas1.sum() == (2+3+3*2)*nDofVh );
+    w1_ublas1.setConstant( 6 );
+    x_ublas1.setConstant( 4 );
+    w1_ublas1.add( 2, x_ublas1 );
+    BOOST_CHECK( w1_ublas1.sum() == (6+2*4)*nDofXh );
+    x_ublas1.add( 5, w1_ublas1 );
+    BOOST_CHECK( x_ublas1.sum() == (4+5*(6+2*4))*nDofXh );
+
+    // operator=
+    v_ublas2.setConstant( 2 );
+    v_ublas1 = v_ublas2;
+    BOOST_CHECK( v_ublas1.sum() == 2*nDofVh );
+    x_ublas1.setConstant( 4 );
+    w1_ublas1 = x_ublas1;
+    BOOST_CHECK( w1_ublas1.sum() == 4*nDofXh );
+    w1_ublas1.setConstant( 6 );
+    x_ublas1 = w1_ublas1;
+    BOOST_CHECK( x_ublas1.sum() == 6*nDofXh );
+
+    // dot
+    v_ublas1.setConstant( 3 );
+    v_ublas2.setConstant( 5 );
+    BOOST_CHECK( v_ublas1.dot(v_ublas2) == (3*5)*nDofVh );
+    w1_ublas1.setConstant( 6 );
+    x_ublas1.setConstant( 4 );
+    BOOST_CHECK( w1_ublas1.dot(x_ublas1) == (6*4)*nDofXh );
+    BOOST_CHECK( x_ublas1.dot(w1_ublas1) == (6*4)*nDofXh );
+
+}
 BOOST_AUTO_TEST_CASE( test_vector_petsc )
 {
+    BOOST_TEST_MESSAGE( "test_vector_petsc" );
     using namespace Feel;
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto Vh1 = Pchv<2>( mesh );
+    auto v_ublas1 = Vh1->element();
     size_type nDofVh1 = Vh1->nDof();
     auto backendPetsc = backend(_kind="petsc");
-    auto v1 = backendPetsc->newVector( Vh1 );
-    v1->setConstant( 2 );
-    auto v2 = backendPetsc->newVector( Vh1 );
-    v2->setConstant( 5 );
+    auto v_petsc1 = backendPetsc->newVector( Vh1 );
+    auto v_petsc2 = backendPetsc->newVector( Vh1 );
+
+    auto VhB = THch<2>( mesh );
+    auto VhB1 = VhB->functionSpace<1>();
+    size_type nDofVhB = VhB->nDof();
+    size_type nDofVhB1 = VhB1->nDof();
+    auto vB_ublas1 = VhB->element();
+    auto vB1_ublas1 = vB_ublas1.element<1>();
+    auto vB_ublas2 = VhB->element();
+    auto vB1_ublas2 = vB_ublas2.element<1>();
+    auto vB1_ublas3 = VhB1->element();
+    auto vB1_petsc1 = backendPetsc->newVector( VhB1 );
+    auto vB1_petsc2 = backendPetsc->newVector( VhB1 );
+
+
+    v_petsc1->setConstant( 2 );
+    v_petsc2->setConstant( 5 );
     // sum
-    BOOST_CHECK( v1->sum() == 2*nDofVh1 );
-    BOOST_CHECK( v2->sum() == 5*nDofVh1 );
+    BOOST_CHECK( v_petsc1->sum() == 2*nDofVh1 );
+    BOOST_CHECK( v_petsc2->sum() == 5*nDofVh1 );
     // add scalar
-    v1->add( 1. );
-    BOOST_CHECK( v1->sum() == 3*nDofVh1 );
+    v_petsc1->add( 1. );
+    BOOST_CHECK( v_petsc1->sum() == (2+1)*nDofVh1 );
     // add vector
-    v1->add( 1., v2 );
-    BOOST_CHECK( v1->sum() == 8*nDofVh1 );
+    v_petsc1->add( 3., v_petsc2 );
+    BOOST_CHECK( v_petsc1->sum() == (2+1+3*5)*nDofVh1 );
+    // add vector (with ublas vector)
+    v_petsc1->setConstant( 5 );
+    v_ublas1.setConstant( 4 );
+    v_petsc1->add( 3., v_ublas1 );
+    BOOST_CHECK( v_petsc1->sum() == (5+3*4)*nDofVh1 );
+    vB1_petsc1->setConstant( 3 );
+    vB1_ublas1.setConstant( 9 );
+    vB1_petsc1->add( 4., vB1_ublas1 );
+    BOOST_CHECK( vB1_petsc1->sum() == (3+4*9)*nDofVhB1 );
+
     // dot
-    BOOST_CHECK( v1->dot(v2) == 40*nDofVh1 );
+    BOOST_CHECK( v_petsc1->dot(v_petsc2) == (5+3*4)*5*nDofVh1 );
+    // dot (with ublas vector)
+    v_petsc1->setConstant( 8 );
+    v_ublas1.setConstant( 3 );
+    BOOST_CHECK( v_petsc1->dot(v_ublas1) == (8*3)*nDofVh1 );
+    vB1_petsc1->setConstant( 8 );
+    vB1_ublas1.setConstant( 3 );
+    BOOST_CHECK( vB1_petsc1->dot(vB1_ublas1) == (8*3)*nDofVhB1 );
     // reciprocal
-    v1->reciprocal();
-    BOOST_CHECK_SMALL( v1->sum() - (1./8.)*nDofVh1, 1e-9 );
+    v_petsc1->reciprocal();
+    BOOST_CHECK_SMALL( v_petsc1->sum() - (1./8.)*nDofVh1, 1e-9 );
     // operator=
-    (*v1) = (*v2);
-    BOOST_CHECK( v1->sum() == 5*nDofVh1 );
+    *v_petsc1 = *v_petsc2;
+    BOOST_CHECK( v_petsc1->sum() == 5*nDofVh1 );
+    // operator= (with ublas vector)
+    v_ublas1.setConstant( 4 );
+    *v_petsc1 = v_ublas1;
+    BOOST_CHECK( v_petsc1->sum() == 4*nDofVh1 );
+    vB1_ublas1.setConstant( 9 );
+    *vB1_petsc1 = vB1_ublas1;
+    BOOST_CHECK( vB1_petsc1->sum() == 9*nDofVhB1 );
+
     // l1Norm, l2Norm
-    v1->setConstant( -3 );
-    BOOST_CHECK( v1->l1Norm() == 3*nDofVh1 );
-    BOOST_CHECK_SMALL( v1->l2Norm() - std::sqrt(9*nDofVh1), 1e-9 );
+    v_petsc1->setConstant( -3 );
+    BOOST_CHECK( v_petsc1->l1Norm() == 3*nDofVh1 );
+    BOOST_CHECK_SMALL( v_petsc1->l2Norm() - std::sqrt(9*nDofVh1), 1e-9 );
 
     // linftyNorm, min, max
     rank_type myrank = Environment::rank();
     rank_type worldsize = Environment::numberOfProcessors();
-    v1->setConstant( 2 + myrank );
-    v1->close();//v1->localize();
-    BOOST_CHECK( v1->linftyNorm() == (2+worldsize-1) );
-    BOOST_CHECK( v1->max() == (2+worldsize-1) );
-    BOOST_CHECK( v1->min() == 2 );
+    v_petsc1->setConstant( 2 + myrank );
+    v_petsc1->close();//v_petsc1->localize();
+    BOOST_CHECK( v_petsc1->linftyNorm() == (2+worldsize-1) );
+    BOOST_CHECK( v_petsc1->max() == (2+worldsize-1) );
+    BOOST_CHECK( v_petsc1->min() == 2 );
     // pointwiseMult, pointwiseDivide
-    v1->setConstant( 4 );
-    v2->setConstant( 5 );
-    auto v3 = backendPetsc->newVector( Vh1 );
-    v3->pointwiseMult( *v1,*v2 );
-    BOOST_CHECK_SMALL( v3->sum() - 20*nDofVh1, 1e-9 );
-    v3->pointwiseDivide( *v1,*v2 );
-    BOOST_CHECK_SMALL( v3->sum() - (4./5.)*nDofVh1, 1e-9 );
+    v_petsc1->setConstant( 4 );
+    v_petsc2->setConstant( 5 );
+    auto v_petsc3 = backendPetsc->newVector( Vh1 );
+    v_petsc3->pointwiseMult( *v_petsc1,*v_petsc2 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - (4*5)*nDofVh1, 1e-9 );
+    v_petsc3->pointwiseDivide( *v_petsc1,*v_petsc2 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - (4./5.)*nDofVh1, 1e-9 );
+    // pointwiseMult, pointwiseDivide (with ublas vector)
+    v_petsc1->setConstant( 6 );
+    v_ublas1.setConstant( 7 );
+    v_petsc3->pointwiseMult( *v_petsc1,v_ublas1 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - (6*7)*nDofVh1, 1e-9 );
+    v_petsc3->pointwiseDivide( *v_petsc1,v_ublas1 );
+    BOOST_CHECK_SMALL( v_petsc3->sum() - (6./7.)*nDofVh1, 1e-9 );
+    // pointwiseMult, pointwiseDivide (with ublas range vector)
+    vB1_petsc2->setConstant( 6 );
+    vB1_ublas1.setConstant( 4 );
+    vB1_petsc1->pointwiseMult( *vB1_petsc2,vB1_ublas1 );
+    BOOST_CHECK_SMALL( vB1_petsc1->sum() - (6*4)*nDofVhB1, 1e-9 );
+    vB1_petsc1->pointwiseDivide( *vB1_petsc2,vB1_ublas1 );
+    BOOST_CHECK_SMALL( vB1_petsc1->sum() - (6./4.)*nDofVhB1, 1e-9 );
+
 
     // addVector with matrix
     auto mat = backendPetsc->newMatrix( _test=Vh1,_trial=Vh1 );
     for ( size_type k=0;k<Vh1->nLocalDof();++k )
         mat->set(k,k,3.);
     mat->close();
-    v1->addVector( v2, mat );
-    BOOST_CHECK( v1->sum() == 19*nDofVh1 );
+    v_petsc1->addVector( v_petsc2, mat );
+    BOOST_CHECK( v_petsc1->sum() == (6+3*5)*nDofVh1 );
 }
 BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
 {
+    BOOST_TEST_MESSAGE( "test_vector_petsc_extarray" );
     using namespace Feel;
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
     auto Vh1 = Pchv<2>( mesh );
@@ -334,6 +466,14 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     BOOST_CHECK( vB1_petsc1->sum() == (3+7+5)*nDofVhB1 );
     vB1_petsc3->add( 2., *vB1_petsc1 );
     BOOST_CHECK( vB1_ublas3.sum() == (5+2*(3+7+5))*nDofVhB1 );
+    // add vector (case two arrays : active and ghost + ublas vector)
+    vB1_ublas1.setConstant( 8 );
+    vB1_ublas2.setConstant( 9 );
+    vB1_ublas3.setConstant( 7 );
+    vB1_petsc1->add( -4., vB1_ublas2 );
+    BOOST_CHECK( vB1_petsc1->sum() == (8.0-4*9)*nDofVhB1 );
+    vB1_petsc1->add( -2., vB1_ublas3 );
+    BOOST_CHECK( vB1_petsc1->sum() == ((8.0-4*9)-2*7)*nDofVhB1 );
 
     // dot
     v_ublas1.setConstant( 3 );
@@ -349,6 +489,11 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     BOOST_CHECK( vB1_petsc1->dot( *vB1_petsc2 ) == (3*7)*nDofVhB1 );
     BOOST_CHECK( vB1_petsc1->dot( *vB1_petsc3 ) == (3*5)*nDofVhB1 );
     BOOST_CHECK( vB1_petsc3->dot( *vB1_petsc1 ) == (3*5)*nDofVhB1 );
+    // dot (case two arrays : active and ghost + ublas vector)
+    vB1_ublas2.setConstant( 5 );
+    vB1_ublas3.setConstant( 6 );
+    BOOST_CHECK( vB1_petsc1->dot( vB1_ublas2 ) == (3*5)*nDofVhB1 );
+    BOOST_CHECK( vB1_petsc1->dot( vB1_ublas3 ) == (3*6)*nDofVhB1 );
 
     // reciprocal
     v_petsc1->reciprocal();
@@ -367,12 +512,19 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     BOOST_CHECK( v_petsc3->sum() == 3*nDofVh1 );
     // operator= (case two arrays : active and ghost)
     *vB1_petsc1 = *vB1_petsc2;
-    BOOST_CHECK( vB1_petsc1->sum() == 7*nDofVhB1 );
-    *vB1_petsc1 = *vB1_petsc3;
     BOOST_CHECK( vB1_petsc1->sum() == 5*nDofVhB1 );
+    *vB1_petsc1 = *vB1_petsc3;
+    BOOST_CHECK( vB1_petsc1->sum() == 6*nDofVhB1 );
     vB1_petsc1->setConstant( 3 );
     *vB1_petsc3 = *vB1_petsc1;
     BOOST_CHECK( vB1_petsc3->sum() == 3*nDofVhB1 );
+    // operator= (case two arrays : active and ghost + ublas vector)
+    vB1_ublas1.setConstant( 5 );
+    vB1_ublas3.setConstant( 6 );
+    *vB1_petsc1 = vB1_ublas1;
+    BOOST_CHECK( vB1_petsc1->sum() == 5*nDofVhB1 );
+    *vB1_petsc1 = vB1_ublas3;
+    BOOST_CHECK( vB1_petsc1->sum() == 6*nDofVhB1 );
 
     // l1Norm, l2Norm
     v_petsc1->setConstant( -4 );
