@@ -1073,7 +1073,7 @@ if(NOT GMSH_FOUND)#Download and Instal it
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
   message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
   execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${FEELPP_HOME_DIR}/contrib/gmsh/ ${CMAKE_BINARY_DIR}/contrib/gmsh/patches ${NProcs2}
+    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
     #      OUTPUT_QUIET
     OUTPUT_FILE "gmsh-configure"
