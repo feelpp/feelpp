@@ -192,6 +192,9 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     BOOST_CHECK( v1.dot( *v_petsc1 ) == (2*4)*nDofVh1 );
     BOOST_CHECK( v2a.dot( *v_petsc3 ) == (5*6)*nDofVh2a );
     BOOST_CHECK( v3.dot( *v_petsc3 ) == (7*6)*nDofVh2a );
+    //inner_product
+    BOOST_CHECK( inner_product( v1, v1bis ) == (3*2)*nDofVh1 );
+    BOOST_CHECK( inner_product( v1,*v_petsc1 ) == (2*4)*nDofVh1 );
 }
 BOOST_AUTO_TEST_CASE( test_vector_ublas_extarray )
 {
@@ -321,6 +324,9 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc )
     vB1_petsc1->setConstant( 8 );
     vB1_ublas1.setConstant( 3 );
     BOOST_CHECK( vB1_petsc1->dot(vB1_ublas1) == (8*3)*nDofVhB1 );
+    //inner_product
+    BOOST_CHECK( inner_product( v_petsc1, v_petsc2 ) == (8*5)*nDofVh1 );
+    BOOST_CHECK( inner_product( *v_petsc1, v_ublas1 ) == (8*3)*nDofVh1 );
     // reciprocal
     v_petsc1->reciprocal();
     BOOST_CHECK_SMALL( v_petsc1->sum() - (1./8.)*nDofVh1, 1e-9 );
