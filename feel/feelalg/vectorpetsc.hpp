@@ -768,6 +768,8 @@ public:
                             Vec &subvec,
                             bool init=true ) const;
 
+private :
+    void pointwiseOperationsImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
 protected:
 
@@ -831,6 +833,7 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const VectorPetscMPI<value_type> &V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
@@ -923,10 +926,10 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
-protected :
-    void pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
 private :
+
+    void pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
 
@@ -967,6 +970,7 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const VectorPetscMPIRange<value_type> &V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
