@@ -176,7 +176,7 @@ public:
      * there is no copy, PETSc will use the storage of the VectorUblas
      */
     template<typename Storage>
-    VectorPetsc( VectorUblas<T,Storage>& v )
+    VectorPetsc( VectorUblas<T,Storage> const& v )
         :
         super( v.mapPtr() ),
         M_destroy_vec_on_exit( true )
@@ -185,7 +185,7 @@ public:
             PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
             PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
             PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
-            PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? std::addressof( v[0] ) : NULL;
+            const PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? std::addressof( *v.begin()/*v[0]*/ ) : NULL;
             PetscInt *idx = NULL;
             if ( petsc_n_localGhost > 0 )
             {
@@ -702,7 +702,7 @@ public:
      */
     void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
-    value_type dot( Vector<T> const& __v );
+    value_type dot( Vector<T> const& __v ) const;
 
     /**
      * This function creates a vector which is defined
@@ -812,7 +812,7 @@ public:
     VectorPetscMPI( datamap_ptrtype const& dm, bool doInit=true );
 
     template<typename Storage>
-    VectorPetscMPI( VectorUblas<T,Storage>& v )
+    VectorPetscMPI( VectorUblas<T,Storage> const& v )
         :
         super( v )
         {}
@@ -945,12 +945,12 @@ public:
     //VectorPetscMPIRange( datamap_ptrtype const& dm );
 
     template<typename Storage>
-    VectorPetscMPIRange( VectorUblas<T,Storage>& v )
+    VectorPetscMPIRange( VectorUblas<T,Storage> const& v )
         :
         super_type( v.mapPtr(), false )
         {
-            PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
-            PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
+            const PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
+            const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
             this->initRangeView( arrayActive,arrayGhost );
         }
     ~VectorPetscMPIRange()
@@ -1031,7 +1031,7 @@ public:
     }
 
 private :
-    void initRangeView( PetscScalar arrayActive[], PetscScalar arrayGhost[] );
+    void initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] );
 
 private :
     Vec M_vecGhost;
