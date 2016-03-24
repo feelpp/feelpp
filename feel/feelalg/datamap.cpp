@@ -752,6 +752,9 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     } // if ( this->worldComm().localSize() > 1 )
 
 
+    dataMapRes->initNumberOfDofIdToContainerId( 1 );
+    dataMapRes->initDofIdToContainerIdIdentity( 0,dataMapRes->nLocalDofWithGhost() );
+
 
     if ( true )
     {
