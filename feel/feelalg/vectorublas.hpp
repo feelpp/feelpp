@@ -991,7 +991,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
-    value_type dot( Vector<T> const& __v );
+    value_type dot( Vector<T> const& __v ) const;
     //@}
 
 #ifdef FEELPP_HAS_HDF5
@@ -1010,7 +1010,7 @@ private:
     template <typename OtherStorage>
     void addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v );
     template <typename OtherStorage>
-    value_type dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
+    value_type dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const;
 
     /**
      * check vector consistency
@@ -1142,7 +1142,7 @@ VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage
 template<typename T, typename Storage>
 template <typename OtherStorage>
 typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
+VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const
 {
     static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
     value_type localResult = 0;
@@ -1350,7 +1350,7 @@ toPETSc( VectorUblas<T,Storage> & v )
  */
 template<typename T,typename Storage>
 inline boost::shared_ptr<VectorPetsc<T>>
-toPETScPtr( VectorUblas<T,Storage> & v )
+toPETScPtr( VectorUblas<T,Storage> const& v )
 {
     if ( v.comm().size() > 1 )
     {

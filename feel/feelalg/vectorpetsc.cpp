@@ -702,7 +702,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
 
 template <typename T>
 typename VectorPetsc<T>::value_type
-VectorPetsc<T>::dot( Vector<T> const& __v )
+VectorPetsc<T>::dot( Vector<T> const& __v ) const
 {
     typedef VectorUblas<T> vector_ublas_type;
     typedef typename vector_ublas_type::range::type vector_ublas_range_type;
@@ -1861,7 +1861,7 @@ VectorPetscMPI<T>::localSize() const
 
 template <typename T>
 void
-VectorPetscMPIRange<T>::initRangeView( PetscScalar arrayActive[], PetscScalar arrayGhost[] )
+VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] )
 {
     int ierr=0;
     PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );

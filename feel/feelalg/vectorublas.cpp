@@ -1091,7 +1091,7 @@ VectorUblas<T,Storage>::pow( int n ) const
 
 template<typename T, typename Storage>
 typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dot( Vector<T> const& v )
+VectorUblas<T,Storage>::dot( Vector<T> const& v ) const
 {
     typedef VectorUblas<T> the_vector_ublas_type;
     typedef typename the_vector_ublas_type::range::type the_vector_ublas_range_type;
