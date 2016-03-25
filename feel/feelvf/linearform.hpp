@@ -994,34 +994,11 @@ struct LFAssign
                 return;
             }
 
-            list_block_type __list_block;
-
-            if ( M_lf.testSpace()->worldsComm()[M_index].globalSize()>1 )
-                {
-                    if (M_lf.testSpace()->hasEntriesForAllSpaces())
-                        __list_block.push_back( Block( 0, 0, 0/*M_Xh->nLocalDofStart( M_index )*/, 0 ) );
-                    else
-                        __list_block.push_back( Block( 0, 0, 0, 0 ) );
-                }
-            else
-                __list_block.push_back( Block( 0, 0, 0/*M_Xh->nDofStart( M_index )*/, 0 ) );
-#if 0
-            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                    M_lf.vectorPtr(),
-                    __list_block,
-                    M_lf.rowStartInVector(),
-                    false );
-
-            datamap_ptrtype dm = M_lf.vectorPtr()->mapPtr();//M_lf.testSpace()->dof()
-            lf.setDofIdToContainerId( dm->dofIdToContainerId( M_lf.rowStartInVector() + M_index ) );
-#else
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
                                                                                                   M_lf.vectorPtr(),
                                                                                                   M_lf.rowStartInVector() + M_index,
                                                                                                   false,
                                                                                                   M_lf.doThreshold(), M_lf.threshold() );
-#endif
-
 
             //
             // in composite integration, make sure that if M_init is \p
@@ -1082,30 +1059,15 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> )
 {
-    if ( M_lb.empty() )
-    {
-        M_lb.push_back( Block( 0, 0, 0, 0 ) );
-    }
-
     if ( init )
     {
-        typename list_block_type::const_iterator __bit = M_lb.begin();
-        typename list_block_type::const_iterator __ben = M_lb.end();
-
-        for ( ; __bit != __ben; ++__bit )
-        {
-            DVLOG(2) << "LinearForm:: block: " << *__bit << "\n";
-            size_type g_ic_start = __bit->globalRowStart();
-            DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
-
-            M_F->zero();// g_ic_start,g_ic_start + M_X->nDof() );
-        }
+        M_F->zero();
     }
 
     __expr.assemble( M_X, *this );
-    //vector_range_type r( M_F, ublas::range( M_v.start(),M_v.start()+ M_v.size() ) );
-    //std::cout << "r = " << r << "\n";
-    //std::cout << "after F= " << M_F << "\n";
+
+    // specifiy that the vector M_F will be in assembly state
+    M_F->setIsClosed( false );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename ExprT>
