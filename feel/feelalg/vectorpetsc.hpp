@@ -329,10 +329,7 @@ public:
      */
     Vector<T> & operator += ( const Vector<value_type> &V )
     {
-        FEELPP_ASSERT( this->closed() ).error( "vector is not closed" );
-
         this->add( 1., V );
-
         return *this;
     }
 
@@ -342,10 +339,7 @@ public:
      */
     Vector<T> & operator -= ( const Vector<value_type> &V )
     {
-        FEELPP_ASSERT( this->closed() ).error( "vector is not closed" );
-
         this->add( -1., V );
-
         return *this;
     }
 
@@ -756,12 +750,15 @@ public:
         super( v ),
         M_destroy_vec_on_exit( true )
     {
-        FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
+        //FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
+        if ( !v.closed() )
+            const_cast<VectorPetsc<T>*>( &v )->close();
 
         VecDuplicate( v.M_vec, &M_vec );
         VecCopy( v.M_vec, M_vec );
         this->M_is_initialized = true;
-        this->close();
+        //this->close();
+        this->setIsClosed( true );
     }
 
     void getSubVectorPetsc( std::vector<size_type> const& rows,

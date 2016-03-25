@@ -100,6 +100,7 @@ VectorPetsc<T>::init ( const size_type n,
 
     this->M_is_initialized = true;
 
+    this->setIsClosed( true );
 
     if ( fast == false )
         this->zero ();
@@ -222,6 +223,11 @@ template <typename T>
 Vector<typename VectorPetsc<T>::value_type>&
 VectorPetsc<T>::operator= ( const Vector<value_type> &V )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
+
     const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &V );
     if ( vecPetsc )
     {
@@ -280,6 +286,13 @@ template <typename T>
 void
 VectorPetsc<T>::pointwiseOperationsImpl( Vector<T> const& xx, Vector<T> const& yy, int op )
 {
+   if ( !this->closed() )
+       this->close();
+   if ( !xx.closed() )
+        const_cast<Vector<T>*>( &xx )->close();
+   if ( !yy.closed() )
+        const_cast<Vector<T>*>( &yy )->close();
+
     const VectorPetsc<T>* vecxPetsc = dynamic_cast<const VectorPetsc<T>*>( &xx );
     const VectorPetsc<T>* vecyPetsc = dynamic_cast<const VectorPetsc<T>*>( &yy );
     if ( vecxPetsc && vecyPetsc )
@@ -374,11 +387,12 @@ void
 VectorPetsc<T>::zero()
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        this->close();
 
     int ierr=0;
-
     PetscScalar z=0.;
-    this->close();
+    //this->close();
     // 2.2.x & earlier style
 #if PETSC_VERSION_LESS_THAN(2,2,0)
     ierr = VecSet ( &z, M_vec );
@@ -394,6 +408,9 @@ int
 VectorPetsc<T>::reciprocal()
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        this->close();
+
     int ierr=0;
     ierr = VecReciprocal( M_vec );
     CHKERRABORT( this->comm(),ierr );
@@ -444,27 +461,29 @@ template <typename T>
 void
 VectorPetsc<T>::scale ( T factor_in )
 {
+    if ( !this->closed() )
+        this->close();
+
     int ierr = 0;
     PetscScalar factor = static_cast<PetscScalar>( factor_in );
 
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-
     ierr = VecScale( &factor, M_vec );
     CHKERRABORT( this->comm(),ierr );
-
     // 2.3.x & later style
 #else
-
     ierr = VecScale( M_vec, factor );
     CHKERRABORT( this->comm(),ierr );
-
 #endif
 }
 template <typename T>
 void
 VectorPetsc<T>::add ( const value_type& v_in )
 {
+    if ( !this->closed() )
+        this->close();
+
     const PetscScalar v = static_cast<PetscScalar>( v_in );
     int ierr=0;
     ierr = VecShift( M_vec, v );
@@ -480,6 +499,8 @@ template <typename T>
 void
 VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
 {
+    if ( !this->closed() )
+        this->close();
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
@@ -539,6 +560,8 @@ typename VectorPetsc<T>::real_type
 VectorPetsc<T>::min () const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
 
     int index=0, ierr=0;
     PetscReal min=0.;
@@ -555,6 +578,8 @@ typename VectorPetsc<T>::real_type
 VectorPetsc<T>::max() const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
 
     int index=0, ierr=0;
     PetscReal max=0.;
@@ -704,6 +729,9 @@ template <typename T>
 typename VectorPetsc<T>::value_type
 VectorPetsc<T>::dot( Vector<T> const& __v ) const
 {
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
     typedef VectorUblas<T> vector_ublas_type;
     typedef typename vector_ublas_type::range::type vector_ublas_range_type;
     typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
@@ -763,6 +791,12 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
                             const MatrixSparse<value_type>& A_in )
 
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !V_in.closed() )
+        const_cast<Vector<T>*>( &V_in )->close();
+    A_in.close();//TODO check matrix closed
+
     const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
     const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
 
@@ -842,6 +876,9 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
                                    Vec &subvec,
                                    bool init ) const
 {
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
     int ierr=0;
     IS isrow;
     PetscInt *rowMap;
@@ -947,6 +984,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 {
     //this->close();
     this->localize();
+    this->setIsClosed( true );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -995,6 +1033,8 @@ VectorPetscMPI<T>::init( const size_type n,
 
 
     this->M_is_initialized = true;
+
+    this->setIsClosed( true );
 
     if ( fast == false )
         this->zero ();
@@ -1058,8 +1098,12 @@ template <typename T>
 Vector<typename VectorPetscMPI<T>::value_type>&
 VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
 {
-    int ierr=0;
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
 
+    int ierr=0;
     VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
     if ( !vecOutPetscMPIRange )
     {
@@ -1126,6 +1170,8 @@ template <typename T>
 void
 VectorPetscMPI<T>::set( const value_type& value )
 {
+    if ( !this->closed() )
+        this->close();
     int ierr=0;
     const PetscScalar val = static_cast<PetscScalar>( value );
     Vec lx;
@@ -1141,6 +1187,8 @@ template <typename T>
 void
 VectorPetscMPI<T>::add( const value_type& v_in )
 {
+    if ( !this->closed() )
+        this->close();
     int ierr=0;
     const PetscScalar v = static_cast<PetscScalar>( v_in );
     Vec lx;
@@ -1156,6 +1204,11 @@ template <typename T>
 void
 VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
@@ -1301,6 +1354,13 @@ template <typename T>
 void
 VectorPetscMPI<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+
     int ierr = 0;
     const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
     const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
@@ -1348,6 +1408,13 @@ template <typename T>
 void
 VectorPetscMPI<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+
     int ierr = 0;
     const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
     const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
@@ -1524,6 +1591,8 @@ template <typename T>
 void
 VectorPetscMPI<T>::zero()
 {
+    if ( !this->closed() )
+        this->close();
     int ierr = 0;
     //this->close();
     Vec lx;
@@ -1581,6 +1650,8 @@ template <typename T>
 int
 VectorPetscMPI<T>::reciprocal()
 {
+    if ( !this->closed() )
+        this->close();
     int ierr = 0;
     Vec lx;
     ierr = VecGhostGetLocalForm(this->vec(),&lx);
@@ -1954,6 +2025,8 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
 
     this->M_is_initialized = true;
 
+    this->setIsClosed( true );
+
 }
 
 
@@ -2035,6 +2108,11 @@ template <typename T>
 Vector<typename VectorPetscMPIRange<T>::value_type>&
 VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
+
     int ierr=0;
     const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
     if ( vecPetscMPIRange )
@@ -2092,6 +2170,8 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::set( const value_type& value )
 {
+    if ( !this->closed() )
+        this->close();
     int ierr=0;
     const PetscScalar val = static_cast<PetscScalar>( value );
     ierr = VecSet ( this->vec(), val );
@@ -2104,6 +2184,8 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::add( const value_type& v_in )
 {
+    if ( !this->closed() )
+        this->close();
     int ierr=0;
     const PetscScalar v = static_cast<PetscScalar>( v_in );
     ierr = VecShift( this->vec(), v );
@@ -2116,6 +2198,11 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
@@ -2181,6 +2268,12 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
     int ierr = 0;
     const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
     const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
@@ -2199,6 +2292,12 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
     int ierr = 0;
     const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
     const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
@@ -2218,6 +2317,8 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::zero()
 {
+    if ( !this->closed() )
+        this->close();
     int ierr = 0;
     PetscScalar z=0.;
     ierr = VecSet( this->vec(), z );
@@ -2230,6 +2331,8 @@ template <typename T>
 int
 VectorPetscMPIRange<T>::reciprocal()
 {
+    if ( !this->closed() )
+        this->close();
     int ierr = 0;
     ierr = VecReciprocal( this->vec() );
     CHKERRABORT( this->comm(),ierr );
@@ -2242,6 +2345,9 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::localize()
 {
+    if ( !this->closed() )
+        this->close();
+
     int ierr = 0;
 
     // Perform the scatter
