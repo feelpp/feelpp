@@ -131,7 +131,19 @@ public:
      */
     virtual void clear ();
 
+    /**
+     *
+     */
     void localize(const Vector<T>& V);
+
+    /**
+     * @ set false if the vector is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b )
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
