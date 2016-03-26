@@ -870,7 +870,9 @@ EIM<ModelType>::offline()
                 }
             }
 
-            M_greedy_maxerr = error; // Store error to compute next increment
+            // If criterion is satisfied,
+            if( !getAdaptationSER() )
+                M_greedy_maxerr = error;
         }
         else
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
