@@ -178,6 +178,14 @@ BOOST_AUTO_TEST_CASE( test_vector_ublas_operations )
     v2b.setConstant( 7 + myrank );
     sync(v2b);
     BOOST_CHECK( v2b.linftyNorm() == (7+worldsize-1) );
+    // max
+    BOOST_CHECK( v1.max() == (2+worldsize-1) );
+    BOOST_CHECK( v2a.max() == (5+worldsize-1) );
+    BOOST_CHECK( v2b.max() == (7+worldsize-1) );
+    // min
+    BOOST_CHECK( v1.min() == 2 );
+    BOOST_CHECK( v2a.min() == 5 );
+    BOOST_CHECK( v2b.min() == 7 );
     // dot
     v1.setConstant( 2 );
     v1bis.setConstant( 3 );
@@ -377,14 +385,34 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc )
     vB1_petsc1->pointwiseDivide( *vB1_petsc2,vB1_ublas1 );
     BOOST_CHECK_SMALL( vB1_petsc1->sum() - (6./4.)*nDofVhB1, 1e-9 );
 
-
-    // addVector with matrix
     auto mat = backendPetsc->newMatrix( _test=Vh1,_trial=Vh1 );
     for ( size_type k=0;k<Vh1->nLocalDof();++k )
         mat->set(k,k,3.);
     mat->close();
+    auto matB1 = backendPetsc->newMatrix( _test=VhB1,_trial=VhB1 );
+    for ( size_type k=0;k<VhB1->nLocalDof();++k )
+        matB1->set(k,k,3.);
+    matB1->close();
+
+    // addVector with matrix
     v_petsc1->addVector( v_petsc2, mat );
     BOOST_CHECK( v_petsc1->sum() == (6+3*5)*nDofVh1 );
+    // addVector with matrix (with ublas vector)
+    v_petsc1->setConstant( 5. );
+    v_ublas1.setConstant( 8. );
+    v_petsc1->addVector( v_ublas1, *mat );
+    BOOST_CHECK( v_petsc1->sum() == (5+3*8)*nDofVh1 );
+    // addVector with matrix (with ublas range vector)
+    vB1_petsc1->setConstant( 5. );
+    vB1_ublas1.setConstant( 8. );
+    vB1_petsc1->addVector( vB1_ublas1, *matB1 );
+    BOOST_CHECK( v_petsc1->sum() == (5+3*8)*nDofVh1 );
+
+
+    // clone
+    auto veccloned = v_petsc1->clone();
+    veccloned->setConstant( 3. );
+    BOOST_CHECK_SMALL( veccloned->sum() - 3*nDofVh1, 1e-9 );
 }
 BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
 {
@@ -589,5 +617,9 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     vB1_petsc1->pointwiseDivide( *vB1_petsc2,*vB1_petsc3 );
     BOOST_CHECK_SMALL( vB1_petsc1->sum() - (5./6.)*nDofVhB1, 1e-9 );
 
+    // clone
+    auto vecCloned = vB1_petsc1->clone();
+    vecCloned->setConstant( 3. );
+    BOOST_CHECK_SMALL( vecCloned->sum() - 3*nDofVhB1, 1e-9 );
 }
 BOOST_AUTO_TEST_SUITE_END()
