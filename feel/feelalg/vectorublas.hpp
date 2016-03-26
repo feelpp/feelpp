@@ -720,8 +720,9 @@ public:
         checkInvariant();
 
         size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+        size_type nGhostDof = this->map().nLocalGhosts();
         real_type local_min = (nActiveDof>0)?
-            *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts)? M_vec.end() : M_vec.begin()+nActiveDof ) :
+            *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
             std::numeric_limits<real_type>::max() ;
         real_type global_min = local_min;
 
@@ -747,8 +748,9 @@ public:
         checkInvariant();
 
         size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+        size_type nGhostDof = this->map().nLocalGhosts();
         real_type local_max = (nActiveDof>0)?
-            *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts)? M_vec.end() : M_vec.begin()+nActiveDof ) :
+            *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
             std::numeric_limits<real_type>::min() ;
         real_type global_max = local_max;
 

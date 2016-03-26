@@ -127,7 +127,7 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
-        if ( !M_map )
+        if ( !M_map->isCompatible( v.map() ) )
             M_map = v.mapPtr();
 
         for ( size_type i = 0; i < this->map().nLocalDofWithGhost(); ++i )
