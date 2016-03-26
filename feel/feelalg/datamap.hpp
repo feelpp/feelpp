@@ -599,6 +599,11 @@ public:
      */
     //@{
 
+    /**
+     * \return true if this object is compatible with datamap dm
+     */
+    bool isCompatible( DataMap const& dm ) const;
+
     void close() const;
 
     // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )

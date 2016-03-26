@@ -273,6 +273,21 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
 DataMap::~DataMap()
 {}
 
+bool
+DataMap::isCompatible( DataMap const& dm ) const
+{
+    bool sameobject = ( dynamic_cast<void const*>( this ) == dynamic_cast<void const*>( &dm ) );
+    if ( sameobject )
+        return true;
+    if ( this->nDof() != dm.nDof() )
+        return false;
+    return true;
+    /*
+     if ( this->nLocalDofWithGhost() != dm.nLocalDofWithGhost() )
+     return false;
+     */
+}
+
 
 void
 DataMap::close() const
