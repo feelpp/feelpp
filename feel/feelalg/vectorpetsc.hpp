@@ -153,6 +153,7 @@ public:
         else
             this->M_vec = v;
         this->M_is_initialized = true;
+        this->setIsClosed( true );
     }
 
     VectorPetsc( Vec v, datamap_ptrtype const& dm, bool duplicate = false )
@@ -168,6 +169,7 @@ public:
         else
             this->M_vec = v;
         this->M_is_initialized = true;
+        this->setIsClosed( true );
     }
 
     /**
@@ -204,6 +206,7 @@ public:
                 delete[] idx;
 
             this->M_is_initialized = true;
+            this->setIsClosed( true );
         }
 
     /**
@@ -472,6 +475,14 @@ public:
      */
     FEELPP_DONT_INLINE void clear ();
 
+    /**
+     * Update ghost values
+     */
+    virtual void localize() {}
+
+    /**
+     *
+     */
     void localize( const Vector<T>& V);
 
     /**
@@ -795,7 +806,6 @@ class VectorPetscMPI : public VectorPetsc<T>
     typedef VectorPetsc<T> super;
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
-    typedef typename super::clone_ptrtype clone_ptrtype;
 public:
     typedef typename super::value_type value_type;
 
@@ -818,7 +828,6 @@ public:
     {
         this->clear();
     }
-    clone_ptrtype clone () const;
     void init( const size_type N,
                const size_type n_local,
                const bool fast=false );
@@ -870,13 +879,6 @@ public:
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
     void addVector( int* i, int n, value_type* v );
-
-    /**
-     * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
-     * and a \p Vector \p V to \p this, where \p this=U.
-     */
-    void addVector( const Vector<value_type>& V_in,
-                    const MatrixSparse<value_type>& A_in );
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
@@ -939,7 +941,7 @@ class VectorPetscMPIRange : public VectorPetscMPI<T>
 public:
     typedef typename super_type::value_type value_type;
 
-    //VectorPetscMPIRange( datamap_ptrtype const& dm );
+    VectorPetscMPIRange( datamap_ptrtype const& dm );
 
     template<typename Storage>
     VectorPetscMPIRange( VectorUblas<T,Storage> const& v )

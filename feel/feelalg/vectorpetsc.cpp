@@ -50,11 +50,17 @@ template <typename T>
 typename VectorPetsc<T>::clone_ptrtype
 VectorPetsc<T>::clone () const
 {
-    clone_ptrtype cloned_vector ( new VectorPetsc<T>( this->mapPtr() ) );
+    clone_ptrtype cloned_vector;
+    if ( dynamic_cast<VectorPetscMPIRange<T> const*>( this ) )
+        cloned_vector.reset( new VectorPetscMPIRange<T>( this->mapPtr() ) );
+    else if ( dynamic_cast<VectorPetscMPI<T> const*>( this ) )
+        cloned_vector.reset( new VectorPetscMPI<T>( this->mapPtr() ) );
+    else
+        cloned_vector.reset( new VectorPetsc<T>( this->mapPtr() ) );
     CHECK( cloned_vector->size() == this->size() ) << "Invalid cloned vector size : " << cloned_vector->size()
                                                    << " expected size : " << this->size() ;
     //*cloned_vector = *this;
-    CHECK( this->closed() ) << "VectorPETSc is closed and should not";
+    //CHECK( this->closed() ) << "VectorPETSc is closed and should not";
     return cloned_vector;
 }
 
@@ -231,6 +237,9 @@ VectorPetsc<T>::operator= ( const Vector<value_type> &V )
     const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &V );
     if ( vecPetsc )
     {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
         int ierr=0;
         ierr = VecCopy( vecPetsc->vec(), M_vec );
         CHKERRABORT( this->comm(),ierr );
@@ -270,7 +279,7 @@ VectorPetsc<T>::operator= ( const Vector<value_type> &V )
         this->operator=( *vecPetscFromUblas );
         return *this;
     }
-    CHECK( false ) << "TODO other kind of vector";
+    //CHECK( false ) << "TODO other kind of vector";
 
     return super::operator=( V );
 }
@@ -789,48 +798,73 @@ template <typename T>
 void
 VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
                             const MatrixSparse<value_type>& A_in )
-
 {
     if ( !this->closed() )
         this->close();
     if ( !V_in.closed() )
         const_cast<Vector<T>*>( &V_in )->close();
-    A_in.close();//TODO check matrix closed
+    if ( !A_in.closed() )
+        A_in.close();
 
-    const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
     const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
+    CHECK( A != 0 ) << "Invalid PETSc matrix\n";
 
-    CHECK ( A != 0 ) << "Invalid PETSc matrix\n";
-#if 0
-    this->close();
-    A->close();
-#endif
-    int ierr=0;
-
-
-    if ( !V )
+    int ierr = 0;
+    const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &V_in );
+    if ( vecPetsc )
     {
-        if ( this->comm().size()>1 )
-        {
-            VectorPetscMPI<T> tmp( V_in.mapPtr() );
-            dynamic_cast<Vector<T>&>( tmp ) = V_in;
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
-        }
-        else
-        {
-            VectorPetsc<T> tmp( V_in.mapPtr() );
-            dynamic_cast<Vector<T>&>( tmp ) = V_in;
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
-        }
+        ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), vecPetsc->M_vec, M_vec, M_vec );
+        CHKERRABORT( this->comm(),ierr );
+        // update ghost values (do nothing in sequential)
+        this->localize();
+        return;
     }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &V_in );
+    if ( vecUblas )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
+        this->addVector( *vecPetscFromUblas, A_in );
+        return;
+    }
+    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &V_in );
+    if ( vecUblasRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
+        this->addVector( *vecPetscFromUblas, A_in );
+        return;
+    }
+    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &V_in );
+    if ( vecUblasExtArray )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
+        this->addVector( *vecPetscFromUblas, A_in );
+        return;
+    }
+    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &V_in );
+    if ( vecUblasExtArrayRange )
+    {
+        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
+        this->addVector( *vecPetscFromUblas, A_in );
+        return;
+    }
+    //CHECK (false) << "other kind of vector";
+
+    // method by default : create petsc copy
+    boost::shared_ptr<VectorPetsc<T>> tmp;
+    if ( this->comm().size()>1 )
+        tmp.reset( new VectorPetscMPI<T>( V_in.mapPtr() ) );
     else
-    {
-        // The const_cast<> is not elegant, but it is required since PETSc
-        // is not const-correct.
-        ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->M_vec, M_vec, M_vec );
-
-    }
+        tmp.reset( new VectorPetsc<T>( V_in.mapPtr() ) );
+    *tmp = V_in;
+    ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp->M_vec, M_vec, M_vec );
     CHKERRABORT( this->comm(),ierr );
+    // update ghost values (do nothing in sequential)
+    this->localize();
 }
 
 template <typename T>
@@ -951,19 +985,6 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
-
-
-template <typename T>
-typename VectorPetscMPI<T>::clone_ptrtype
-VectorPetscMPI<T>::clone () const
-{
-    clone_ptrtype cloned_vector ( new VectorPetscMPI<T>( this->mapPtr() ) );
-    CHECK( cloned_vector->size() == this->size() ) << "Invalid cloned vector size : " << cloned_vector->size()
-                                                   << " expected size : " << this->size() ;
-    //*cloned_vector = *this;
-    CHECK( this->closed() ) << "VectorPETSc is closed and should not";
-    return cloned_vector;
-}
 
 
 template<typename T>
@@ -1107,6 +1128,9 @@ VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
     VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
     if ( !vecOutPetscMPIRange )
     {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
         const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
         if ( vecPetscMPIRange )
         {
@@ -1340,15 +1364,6 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
 }
 
 //----------------------------------------------------------------------------------------------------//
-
-template <typename T>
-void
-VectorPetscMPI<T>::addVector( const Vector<value_type>& V_in,
-                              const MatrixSparse<value_type>& A_in )
-{
-    super::addVector( V_in,A_in );
-    this->localize();
-}
 
 template <typename T>
 void
@@ -1927,7 +1942,15 @@ VectorPetscMPI<T>::localSize() const
 
 
 
-
+template <typename T>
+VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
+    :
+    super_type( dm, false )
+{
+    const PetscScalar* arrayActive = NULL;
+    const PetscScalar* arrayGhost = NULL;
+    this->initRangeView( arrayActive,arrayGhost );
+}
 
 
 template <typename T>
@@ -1940,15 +1963,18 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
     PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
 
     // active dof view
-    ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof,
-                                  arrayActive, &this->vec() );
+    if ( arrayActive )
+        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->vec() );
+    else
+        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->vec() );
     CHKERRABORT( this->comm(),ierr );
 
     // ghost dof view
-    ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1,petsc_n_localGhost,
-                                 arrayGhost, &M_vecGhost );
+    if ( arrayGhost )
+        ierr = VecCreateSeqWithArray( PETSC_COMM_SELF,1,petsc_n_localGhost,arrayGhost, &M_vecGhost );
+    else
+        ierr = VecCreateSeq( PETSC_COMM_SELF, petsc_n_localGhost, &M_vecGhost );
     CHKERRABORT( this->comm(),ierr );
-
 
     // localToGlobalMapping
     IS is;
@@ -2117,6 +2143,9 @@ VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
     const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
     if ( vecPetscMPIRange )
     {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
         ierr = VecCopy( vecPetscMPIRange->vec(), this->vec() );
         CHKERRABORT( this->comm(),ierr );
         ierr = VecCopy( vecPetscMPIRange->vecGhost(), this->vecGhost() );
@@ -2126,6 +2155,9 @@ VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
     const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
     if ( vecPetscMPI )
     {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
         ierr = VecCopy( vecPetscMPI->vec(), this->vec() );
         CHKERRABORT( this->comm(),ierr );
 
@@ -2366,13 +2398,19 @@ VectorPetscMPIRange<T>::localize()
 vector_ptrtype
 vec( Vec v, datamap_ptrtype datamap )
 {
-    return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+    if ( datamap->worldComm().localSize() > 1 )
+        return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+    else
+        return boost::make_shared<Feel::VectorPetsc<double>>( v, datamap );
 }
 #else
 vector_uptrtype
 vec( Vec v, datamap_ptrtype datamap )
 {
-    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    if ( datamap->worldComm().localSize() > 1 )
+        return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    else
+        return std::make_unique<Feel::VectorPetsc<double>>( v, datamap );
     // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
 }
 #endif

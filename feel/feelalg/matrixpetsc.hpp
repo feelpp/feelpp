@@ -135,8 +135,8 @@ public:
      * \p init(...).
      */
     MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
-
-    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
 
 
     /**
@@ -567,8 +567,8 @@ public :
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
     MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
-
-    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
 
     MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 
@@ -628,10 +628,6 @@ public :
                    Vector<value_type>& rhs,
                    Context const& on_context,
                    value_type value_on_diagonal );
-
-    real_type energy( Vector<value_type> const& __v,
-                      Vector<value_type> const& __u,
-                      bool transpose = false ) const;
 
 private :
 

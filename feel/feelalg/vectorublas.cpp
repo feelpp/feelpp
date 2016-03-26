@@ -580,7 +580,14 @@ template <typename T, typename Storage>
 Vector<T> &
 VectorUblas<T,Storage>::operator= ( const Vector<value_type> &v )
 {
+    if ( this == &v )
+        return *this;
+
     checkInvariant();
+
+    if ( !this->map().isCompatible( v.map() ) )
+        this->setMap( v.mapPtr() );
+
     FEELPP_ASSERT( this->localSize() == v.localSize() &&
                    this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
     ( this->localSize() )( this->map().nLocalDofWithoutGhost() )

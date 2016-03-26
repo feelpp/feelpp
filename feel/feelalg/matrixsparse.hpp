@@ -119,7 +119,12 @@ public:
      */
     MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+        :
+        MatrixSparse( dmRow, dmCol, dmRow->worldComm() )
+        {}
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -654,10 +659,22 @@ public:
     virtual real_type linftyNorm () const = 0;
 
     /**
-     * see if Sparse matrix has been closed
-     * and fully assembled yet
+     * @returns true if the matrix is closed (ready for
+     * computation), false otherwise.
      */
-    virtual bool closed() const = 0;
+    virtual bool closed() const
+    {
+        return M_is_closed;
+    }
+
+    /**
+     * @ set false if the matrix is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b )
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Print the contents of the matrix to the screen
@@ -784,29 +801,7 @@ public:
     {
         M_is_initialized = _init;
     }
-#if 0
-    template<typename DomainSpace, typename ImageSpace>
-    void updateIndexSplit( DomainSpace const& dm, ImageSpace const& im )
-    {
-        auto nSpace = DomainSpace::element_type::nSpaces;
 
-        if ( nSpace>1 )
-        {
-            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-            std::vector < std::vector<int> > is( nSpace );
-            uint cptSpaces=0;
-            uint start=0;
-            auto result = boost::make_tuple( cptSpaces,start );
-
-            std::vector < std::vector<int> > indexSplit( nSpace );
-            //detail::computeNDofForEachSpace cndof(nSpace);
-            detail::computeNDofForEachSpace cndof( indexSplit );
-            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
-
-            this->setIndexSplit( indexSplit );
-        }
-    }
-#endif
     virtual void sqrt( MatrixSparse<value_type>& _m ) const;
 
     void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
@@ -852,7 +847,6 @@ protected:
         }
 
     //! mpi communicator
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
 
     /**
@@ -861,16 +855,23 @@ protected:
      */
     bool M_is_initialized;
 
+    /**
+     * Flag to see if the Numeric
+     * assemble routines have been called yet
+     */
+    bool M_is_closed;
+
+    //! non zero entries representation
     graph_ptrtype M_graph;
 
+    //! matrix properties
     Context M_mprop;
 
     indexsplit_ptrtype M_indexSplit;
 
-    /**
-     * data distribution map of the vector over the processors
-     */
+    //! row data distribution in matrix
     datamap_ptrtype M_mapRow;
+    //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
 
@@ -888,6 +889,7 @@ inline
 MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
 {}
 
@@ -896,6 +898,7 @@ inline
 MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
     M_mapCol( dmCol )
