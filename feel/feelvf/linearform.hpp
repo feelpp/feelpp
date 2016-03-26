@@ -1052,6 +1052,10 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> )
 {
+    // do nothing if process not active for this space
+    if ( !M_X->worldComm().isActive() )
+        return;
+    // do assembly for each subspace
     fusion::for_each( M_X->functionSpaces(), make_lfassign( *this, M_X, __expr, init ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -1059,6 +1063,10 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> )
 {
+    // do nothing if process not active for this space
+    if ( !M_X->worldComm().isActive() )
+        return;
+
     if ( init )
     {
         M_F->zero();
@@ -1066,7 +1074,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
 
     __expr.assemble( M_X, *this );
 
-    // specifiy that the vector M_F will be in assembly state
+    // specifiy that the vector M_F is in assembly state
     M_F->setIsClosed( false );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
