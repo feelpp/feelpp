@@ -1627,7 +1627,9 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    if ( !this->M_X1->worldComm().isActive() ) return;
+    // do nothing if process not active for this space
+    if ( !this->M_X1->worldComm().isActive() )
+        return;
 
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
 }
@@ -1639,8 +1641,14 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         bool init,
         mpl::bool_<false> )
 {
+    // do nothing if process not active for this space
+    if ( !this->M_X1->worldComm().isActive() )
+        return;
+
     if ( init )
     {
+        M_matrix->zero();
+#if 0
         DVLOG(2) << "[BilinearForm::assign<false>] start\n";
         typedef ublas::matrix_range<matrix_type> matrix_range_type;
         typename list_block_type::const_iterator __bit = M_lb.begin();
@@ -1653,9 +1661,13 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
             M_matrix->zero( g_ic_start, g_ic_start + M_X1->nDof(),
                             g_jc_start, g_jc_start + M_X2->nDof() );
         }
+#endif
     }
 
     __expr.assemble( M_X1, M_X2, *this );
+
+    // specifiy that the matrix is in assembly state
+    M_matrix->setIsClosed( false );
 
     DVLOG(2) << "[BilinearForm::assign<false>] stop\n";
 
@@ -1667,6 +1679,10 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         bool init,
         mpl::bool_<true> )
 {
+    // do nothing if process not active for this space
+    if ( !this->M_X1->worldComm().isActive() )
+        return;
+
     DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
 
     if ( init ) M_matrix->zero();
@@ -1781,7 +1797,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                       << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
         typedef SpaceType trial_space_type;
         typedef TestSpaceType test_space_type;
-
+#if 0
         Feel::vf::list_block_type list_block;
 
         if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize()>1 )
@@ -1803,7 +1819,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                                                    0/*M_bf.testSpace()->nDofStart( M_test_index )*/,
                                                    0/*M_bf.trialSpace()->nDofStart( M_trial_index )*/ ) );
         }
-
+#endif
         typedef typename BFType::matrix_type matrix_type;
         typedef Feel::vf::detail::BilinearForm<test_space_type,
                 trial_space_type,
