@@ -1441,7 +1441,6 @@ protected:
     std::vector < std::vector<matrixN_type> > M_Jqm_pr;
     //residual
     std::vector < std::vector<vectorN_type> > M_Rqm_pr;
-    std::vector < std::vector<vector_ptrtype> > M_hRqm;
 
     //mass matrix
     std::vector < std::vector<matrixN_type> > M_Mqm_pr;
@@ -1973,7 +1972,6 @@ CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matr
             J->addMatrix( betaJqm[q][m], M_Jqm[q][m] );
         }
     }
-    //std::cout<<"norme de J : "<<J->l1Norm()<<std::endl;
 }
 
 template<typename TruthModelType>
@@ -1996,34 +1994,34 @@ typename CRB<TruthModelType>::vector_ptrtype
 CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
 {
 
-    auto all_beta = M_model->computeBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
+    auto all_beta = M_model->computePicardBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu );
     auto beta_A = all_beta.template get<1>();
     auto beta_F = all_beta.template get<2>();
 
     vector_ptrtype YR( backend()->newVector(M_model->functionSpace()) );
     YR->zero();
 
-    if( !M_use_newton )
+    int Qa = beta_A.size();
+    for ( size_type q = 0; q < Qa; ++q )
     {
-        for ( size_type q = 0; q < M_model->Qa(); ++q )
+        int mMaxA = beta_A[q].size();
+        for(size_type m = 0; m < mMaxA; ++m )
         {
-            for(size_type m = 0; m < M_model->mMaxA(q); ++m )
+            for(size_type n=0; n<M_N; ++n)
             {
-                for(size_type n=0; n<M_N; ++n)
-                    YR->add( beta_A[q][m]*uN[0](n), M_hAqm[q][m][n] );
+                YR->add( beta_A[q][m]*uN[0](n), M_hAqm[q][m][n] );
             }
         }
-        YR->scale( -1.0 );
     }
+    YR->scale( -1.0 );
 
-    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    int Ql = beta_F[0].size();
+    for ( size_type q = 0; q < Ql; ++q )
     {
-        for ( size_type m = 0; m < M_model->mMaxF(0,q); ++m )
+        int mMaxF = beta_F[0][q].size();
+        for ( size_type m = 0; m < mMaxF; ++m )
         {
-            if( !M_use_newton )
-                YR->add( beta_F[0][q][m] , M_hFqm[q][m] );
-            else
-                YR->add( beta_F[0][q][m] , M_hRqm[q][m] );
+            YR->add( beta_F[0][q][m] , M_hFqm[q][m] );
         }
     }
 
@@ -2047,14 +2045,9 @@ template<typename TruthModelType>
 double
 CRB<TruthModelType>::computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
 {
-    element_type u_approx = M_model->functionSpace()->element();
-
-    auto all_beta = M_model->computeBetaQm( this->expansion( uN[0] , M_N , M_model->rBFunctionSpace()->primalRB()  ), mu , 0 );
-    auto beta_A = all_beta.template get<1>();
-    auto beta_F = all_beta.template get<2>();
-
     vector_ptrtype YR( this->computeRieszResidual( mu, uN ) );
     double dual_norm = math::sqrt( M_model->scalarProduct(YR,YR) );
+    //Feel::cout << "[computeRieszResidualNorm] norm = " << dual_norm << std::endl;
     return dual_norm;
 }
 
@@ -2134,7 +2127,7 @@ CRB<TruthModelType>::offline()
 
     double delta_pr;
     double delta_du;
-    size_type index;
+    size_type index = 0;
 
     int Nrestart = ioption(_name="crb.restart-from-N");
     int Frestart = ioption(_name="ser.rb-rebuild-freq");
@@ -2412,7 +2405,14 @@ CRB<TruthModelType>::offline()
             ps.log(pslogname);
 
         if( proc_number == this->worldComm().masterRank() )
+        {
             std::cout << "N = " << M_N << "/"  << M_iter_max << "( max = " << user_max << ")\n";
+            int size = mu.size();
+            std::cout << "  -- mu = [ ";
+            for ( int i=0; i< size-1; i++ )
+                std::cout<< M_current_mu( i ) <<" ";
+            std::cout << M_current_mu( size-1 ) << " ]" <<std::endl;
+        }
 
         boost::mpi::timer timer, timer2, timer3;
         LOG(INFO) <<"========================================"<<"\n";
@@ -2816,8 +2816,10 @@ CRB<TruthModelType>::offline()
         {
             LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
 
+            M_hAqm.resize( M_model->Qa() );
             for  (size_type q = 0; q < M_model->Qa(); ++q )
             {
+                M_hAqm[q].resize( M_model->mMaxA(q) );
                 for( size_type m = 0; m < M_model->mMaxA(q); ++m )
                 {
                     M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
@@ -2876,8 +2878,10 @@ CRB<TruthModelType>::offline()
             LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
 
             LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
+            M_hFqm.resize( M_model->Ql( 0 ) );
             for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
             {
+                M_hFqm[q].resize( M_model->mMaxF( 0, q ) );
                 for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
                 {
                     M_Fqm_pr[q][m].conservativeResize( M_N );
@@ -2901,7 +2905,7 @@ CRB<TruthModelType>::offline()
                 }//loop over m (>= mMaxF - cobuild_eim_freq)
             }//loop over q
 
-        }//end of "if ! use_newton"
+    }//end of "if ! use_newton"
 
 
         if( M_use_newton )
@@ -2931,10 +2935,32 @@ CRB<TruthModelType>::offline()
                                                                           M_model->rBFunctionSpace()->primalBasisElement(j) );
                         }
                     }
-
                 }//loop over m
             }//loop over q
 
+            if( ser_error_estimation )
+            {
+                auto RF_A = M_model->RF_Aqm();
+                M_hAqm.resize( RF_A.size() );
+                for(int q = 0; q < RF_A.size(); ++q )
+                {
+                    M_hAqm[q].resize( RF_A[q].size() );
+                    for(int m = 0; m < RF_A[q].size(); ++m )
+                    {
+                        M_hAqm[q][m].resize( M_N );
+                        auto Aqm_xi_n = backend()->newVector( M_model->functionSpace() );
+                        auto xi_n = backend()->newVector( M_model->functionSpace() );
+                        for( int n=0; n < M_N; n++ )
+                        {
+                            M_hAqm[q][m][n] = backend()->newVector( M_model->functionSpace() );
+                            *xi_n = M_model->rBFunctionSpace()->primalBasisElement(n);
+                            auto Aqm = RF_A[q][m];
+                            Aqm->multVector( xi_n, Aqm_xi_n );
+                            M_model->l2solve( M_hAqm[q][m][n], Aqm_xi_n );
+                        }
+                    }//m
+                }//q
+            }
 
             LOG(INFO) << "[CRB::offline] compute Rq_pr" << "\n";
 
@@ -2950,15 +2976,24 @@ CRB<TruthModelType>::offline()
                         //M_Rqm_pr[q][m]( index ) = inner_product( *M_Rqm[0][q][m] , M_model->rBFunctionSpace()->primalBasisElement(index) );
                         M_Rqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_model->rBFunctionSpace()->primalBasisElement(index) );
                     }
-
-                    if( ser_error_estimation )
-                    {
-                        M_hRqm[q][m] = backend()->newVector( M_model->functionSpace() );
-                        auto Rqm = this->M_Rqm[0][q][m]; //Has been updated by previous newton() call
-                        M_model->l2solve( M_hRqm[q][m], Rqm );
-                    }
                 }//loop over m
             }//loop over q
+
+            if( ser_error_estimation )
+            {
+                auto RF_F = M_model->RF_Fqm();
+                M_hFqm.resize( RF_F.size() );
+                for(int q = 0; q < RF_F.size(); ++q )
+                {
+                    M_hFqm[q].resize( RF_F[q].size() );
+                    for(int m = 0; m < RF_F[q].size(); ++m )
+                    {
+                        M_hFqm[q][m] = backend()->newVector( M_model->functionSpace() );
+                        auto fqm = RF_F[q][m];
+                        M_model->l2solve( M_hFqm[q][m], fqm );
+                    }//m
+                }//q
+            }
 
         }//end if use_newton case
 
@@ -3217,13 +3252,19 @@ CRB<TruthModelType>::offline()
         else
         {
             timer2.restart();
-            //boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
             time=timer2.elapsed();
             M_current_mu = mu;
 
             if( proc_number == master_proc )
-                std::cout << "  -- max error bound (" << M_maxerror << ") computed in " << time << "s" << std::endl;
+            {
+                int size = mu.size();
+                std::cout << "  -- max error bound (" << M_maxerror << ") computed in " << time << "s"
+                          << "  -- mu = [ ";
+                for ( int i=0; i< size-1; i++ )
+                    std::cout<< M_current_mu( i ) <<" ";
+                std::cout << M_current_mu( size-1 ) << " ]" <<std::endl;
+            }
         }
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
@@ -3564,29 +3605,21 @@ CRB<TruthModelType>::updateAffineDecompositionSize()
 
         }//end of if ( model_type::is_time_dependent )
     }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-            
+
     LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
     M_Aqm_pr.resize( M_model->Qa() );
-    M_hAqm.resize( M_model->Qa() );
     M_Aqm_du.resize( M_model->Qa() );
     M_Aqm_pr_du.resize( M_model->Qa() );
-
     if( M_use_newton )
-    {
         M_Jqm_pr.resize( M_model->Qa() );
-    }
 
     for(int q=0; q<M_model->Qa(); q++)
     {
         M_Aqm_pr[q].resize( M_model->mMaxA(q) );
-        M_hAqm[q].resize( M_model->mMaxA(q) );
         M_Aqm_du[q].resize( M_model->mMaxA(q) );
         M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
-
         if(M_use_newton)
-        {
             M_Jqm_pr[q].resize( M_model->mMaxA(q) );
-        }
     }
 
     M_Mqm_pr.resize( M_model->Qm() );
@@ -3607,28 +3640,18 @@ CRB<TruthModelType>::updateAffineDecompositionSize()
     }
 
     M_Fqm_pr.resize( M_model->Ql( 0 ) );
-    M_hFqm.resize( M_model->Ql( 0 ) );
     M_Fqm_du.resize( M_model->Ql( 0 ) );
     M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
     M_Lqm_du.resize( M_model->Ql( M_output_index ) );
-
     if(M_use_newton)
-    {
         M_Rqm_pr.resize( M_model->Ql( 0 ) );
-        M_hRqm.resize( M_model->Ql( 0 ) );
-    }
 
     for(int q=0; q<M_model->Ql( 0 ); q++)
     {
         M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
-        M_hFqm[q].resize( M_model->mMaxF( 0 , q) );
         M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
-
         if(M_use_newton)
-        {
             M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
-            M_hRqm[q].resize( M_model->mMaxF( 0 , q) );
-        }
     }
     for(int q=0; q<M_model->Ql( M_output_index ); q++)
     {
@@ -6294,7 +6317,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
     double delta_pr=0;
     double delta_du=0;
-    if ( M_error_type == CRB_EMPIRICAL || ( ser_error_estimation && ser_greedy ) )
+
+    if ( M_error_type == CRB_EMPIRICAL )
     {
         if ( M_WNmu->size()==1 )
         {
@@ -6435,12 +6459,23 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
         if( Environment::worldComm().isMasterRank() )
             std::cout << "[RB] SER adaptation : " << this->getAdaptationSER()  << std::endl;
-        M_SER_maxerr = maxerr;
+        if( !getAdaptationSER() )
+            M_SER_maxerr = maxerr;
     }
 
     if( proc == master_proc )
         std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" -- delta_du : "<<delta_du<<" -- output error : "<<maxerr<<std::endl;
     lb( N, mu, uN, uNdu , uNold ,uNduold );
+
+    if( proc == master_proc )
+    {
+        int size = mu.size();
+        std::cout << "  [maxErrorBounds] -- max error bound (" << maxerr << ")"
+                  << "  -- mu = [ ";
+        for ( int i=0; i< size-1; i++ )
+            std::cout<< mu( i ) <<" ";
+        std::cout << mu( size-1 ) << " ]" <<std::endl;
+    }
 
     return boost::make_tuple( maxerr, mu , delta_pr, delta_du);
 
