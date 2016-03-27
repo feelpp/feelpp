@@ -23,8 +23,8 @@ template<typename Scalar,typename Index> void sparse_vector(int rows, int cols)
   SparseVectorType v1(rows), v2(rows), v3(rows);
   DenseMatrix refM1 = DenseMatrix::Zero(rows, rows);
   DenseVector refV1 = DenseVector::Random(rows),
-    refV2 = DenseVector::Random(rows),
-    refV3 = DenseVector::Random(rows);
+              refV2 = DenseVector::Random(rows),
+              refV3 = DenseVector::Random(rows);
 
   std::vector<int> zerocoords, nonzerocoords;
   initSparse<Scalar>(densityVec, refV1, v1, &zerocoords, &nonzerocoords);
@@ -52,6 +52,20 @@ template<typename Scalar,typename Index> void sparse_vector(int rows, int cols)
     }
   }
   VERIFY_IS_APPROX(v1, refV1);
+  
+  // test coeffRef with reallocation
+  {
+    SparseVectorType v4(rows);
+    DenseVector v5 = DenseVector::Zero(rows);
+    for(int k=0; k<rows; ++k)
+    {
+      int i = internal::random<int>(0,rows-1);
+      Scalar v = internal::random<Scalar>();
+      v4.coeffRef(i) += v;
+      v5.coeffRef(i) += v;
+    }
+    VERIFY_IS_APPROX(v4,v5);
+  }
 
   v1.coeffRef(nonzerocoords[0]) = Scalar(5);
   refV1.coeffRef(nonzerocoords[0]) = Scalar(5);
@@ -71,6 +85,7 @@ template<typename Scalar,typename Index> void sparse_vector(int rows, int cols)
   VERIFY_IS_APPROX(v1.dot(v2), refV1.dot(refV2));
   VERIFY_IS_APPROX(v1.dot(refV2), refV1.dot(refV2));
 
+  VERIFY_IS_APPROX(m1*v2, refM1*refV2);
   VERIFY_IS_APPROX(v1.dot(m1*v2), refV1.dot(refM1*refV2));
   int i = internal::random<int>(0,rows-1);
   VERIFY_IS_APPROX(v1.dot(m1.col(i)), refV1.dot(refM1.col(i)));

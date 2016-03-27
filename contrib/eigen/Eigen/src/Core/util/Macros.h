@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
 // This Source Code Form is subject to the terms of the Mozilla
@@ -13,83 +13,307 @@
 
 #define EIGEN_WORLD_VERSION 3
 #define EIGEN_MAJOR_VERSION 2
-#define EIGEN_MINOR_VERSION 4
+#define EIGEN_MINOR_VERSION 92
 
 #define EIGEN_VERSION_AT_LEAST(x,y,z) (EIGEN_WORLD_VERSION>x || (EIGEN_WORLD_VERSION>=x && \
                                       (EIGEN_MAJOR_VERSION>y || (EIGEN_MAJOR_VERSION>=y && \
                                                                  EIGEN_MINOR_VERSION>=z))))
+
+// Compiler identification, EIGEN_COMP_*
+
+/// \internal EIGEN_COMP_GNUC set to 1 for all compilers compatible with GCC
 #ifdef __GNUC__
-  #define EIGEN_GNUC_AT_LEAST(x,y) ((__GNUC__==x && __GNUC_MINOR__>=y) || __GNUC__>x)
+  #define EIGEN_COMP_GNUC 1
 #else
-  #define EIGEN_GNUC_AT_LEAST(x,y) 0
-#endif
- 
-#ifdef __GNUC__
-  #define EIGEN_GNUC_AT_MOST(x,y) ((__GNUC__==x && __GNUC_MINOR__<=y) || __GNUC__<x)
-#else
-  #define EIGEN_GNUC_AT_MOST(x,y) 0
+  #define EIGEN_COMP_GNUC 0
 #endif
 
-#if EIGEN_GNUC_AT_MOST(4,3) && !defined(__clang__)
+/// \internal EIGEN_COMP_CLANG set to 1 if the compiler is clang (alias for __clang__)
+#if defined(__clang__)
+  #define EIGEN_COMP_CLANG 1
+#else
+  #define EIGEN_COMP_CLANG 0
+#endif
+
+
+/// \internal EIGEN_COMP_LLVM set to 1 if the compiler backend is llvm
+#if defined(__llvm__)
+  #define EIGEN_COMP_LLVM 1
+#else
+  #define EIGEN_COMP_LLVM 0
+#endif
+
+/// \internal EIGEN_COMP_ICC set to __INTEL_COMPILER if the compiler is Intel compiler, 0 otherwise
+#if defined(__INTEL_COMPILER)
+  #define EIGEN_COMP_ICC __INTEL_COMPILER
+#else
+  #define EIGEN_COMP_ICC 0
+#endif
+
+/// \internal EIGEN_COMP_MINGW set to 1 if the compiler is mingw
+#if defined(__MINGW32__)
+  #define EIGEN_COMP_MINGW 1
+#else
+  #define EIGEN_COMP_MINGW 0
+#endif
+
+/// \internal EIGEN_COMP_SUNCC set to 1 if the compiler is Solaris Studio
+#if defined(__SUNPRO_CC)
+  #define EIGEN_COMP_SUNCC 1
+#else
+  #define EIGEN_COMP_SUNCC 0
+#endif
+
+/// \internal EIGEN_COMP_MSVC set to _MSC_VER if the compiler is Microsoft Visual C++, 0 otherwise.
+#if defined(_MSC_VER)
+  #define EIGEN_COMP_MSVC _MSC_VER
+#else
+  #define EIGEN_COMP_MSVC 0
+#endif
+
+/// \internal EIGEN_COMP_MSVC_STRICT set to 1 if the compiler is really Microsoft Visual C++ and not ,e.g., ICC
+#if EIGEN_COMP_MSVC && !(EIGEN_COMP_ICC)
+  #define EIGEN_COMP_MSVC_STRICT _MSC_VER
+#else
+  #define EIGEN_COMP_MSVC_STRICT 0
+#endif
+
+/// \internal EIGEN_COMP_IBM set to 1 if the compiler is IBM XL C++
+#if defined(__IBMCPP__) || defined(__xlc__)
+  #define EIGEN_COMP_IBM 1
+#else
+  #define EIGEN_COMP_IBM 0
+#endif
+
+/// \internal EIGEN_COMP_PGI set to 1 if the compiler is Portland Group Compiler
+#if defined(__PGI)
+  #define EIGEN_COMP_PGI 1
+#else
+  #define EIGEN_COMP_PGI 0
+#endif
+
+/// \internal EIGEN_COMP_ARM set to 1 if the compiler is ARM Compiler
+#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+  #define EIGEN_COMP_ARM 1
+#else
+  #define EIGEN_COMP_ARM 0
+#endif
+
+
+/// \internal EIGEN_GNUC_STRICT set to 1 if the compiler is really GCC and not a compatible compiler (e.g., ICC, clang, mingw, etc.)
+#if EIGEN_COMP_GNUC && !(EIGEN_COMP_CLANG || EIGEN_COMP_ICC || EIGEN_COMP_MINGW || EIGEN_COMP_PGI || EIGEN_COMP_IBM || EIGEN_COMP_ARM )
+  #define EIGEN_COMP_GNUC_STRICT 1
+#else
+  #define EIGEN_COMP_GNUC_STRICT 0
+#endif
+
+
+#if EIGEN_COMP_GNUC
+  #define EIGEN_GNUC_AT_LEAST(x,y) ((__GNUC__==x && __GNUC_MINOR__>=y) || __GNUC__>x)
+  #define EIGEN_GNUC_AT_MOST(x,y)  ((__GNUC__==x && __GNUC_MINOR__<=y) || __GNUC__<x)
+  #define EIGEN_GNUC_AT(x,y)       ( __GNUC__==x && __GNUC_MINOR__==y )
+#else
+  #define EIGEN_GNUC_AT_LEAST(x,y) 0
+  #define EIGEN_GNUC_AT_MOST(x,y)  0
+  #define EIGEN_GNUC_AT(x,y)       0
+#endif
+
+// FIXME: could probably be removed as we do not support gcc 3.x anymore
+#if EIGEN_COMP_GNUC && (__GNUC__ <= 3)
+#define EIGEN_GCC3_OR_OLDER 1
+#else
+#define EIGEN_GCC3_OR_OLDER 0
+#endif
+
+
+// Architecture identification, EIGEN_ARCH_*
+
+#if defined(__x86_64__) || defined(_M_X64) || defined(__amd64)
+  #define EIGEN_ARCH_x86_64 1
+#else
+  #define EIGEN_ARCH_x86_64 0
+#endif
+
+#if defined(__i386__) || defined(_M_IX86) || defined(_X86_) || defined(__i386)
+  #define EIGEN_ARCH_i386 1
+#else
+  #define EIGEN_ARCH_i386 0
+#endif
+
+#if EIGEN_ARCH_x86_64 || EIGEN_ARCH_i386
+  #define EIGEN_ARCH_i386_OR_x86_64 1
+#else
+  #define EIGEN_ARCH_i386_OR_x86_64 0
+#endif
+
+/// \internal EIGEN_ARCH_ARM set to 1 if the architecture is ARM
+#if defined(__arm__)
+  #define EIGEN_ARCH_ARM 1
+#else
+  #define EIGEN_ARCH_ARM 0
+#endif
+
+/// \internal EIGEN_ARCH_ARM64 set to 1 if the architecture is ARM64
+#if defined(__aarch64__)
+  #define EIGEN_ARCH_ARM64 1
+#else
+  #define EIGEN_ARCH_ARM64 0
+#endif
+
+#if EIGEN_ARCH_ARM || EIGEN_ARCH_ARM64
+  #define EIGEN_ARCH_ARM_OR_ARM64 1
+#else
+  #define EIGEN_ARCH_ARM_OR_ARM64 0
+#endif
+
+/// \internal EIGEN_ARCH_MIPS set to 1 if the architecture is MIPS
+#if defined(__mips__) || defined(__mips)
+  #define EIGEN_ARCH_MIPS 1
+#else
+  #define EIGEN_ARCH_MIPS 0
+#endif
+
+/// \internal EIGEN_ARCH_SPARC set to 1 if the architecture is SPARC
+#if defined(__sparc__) || defined(__sparc)
+  #define EIGEN_ARCH_SPARC 1
+#else
+  #define EIGEN_ARCH_SPARC 0
+#endif
+
+/// \internal EIGEN_ARCH_IA64 set to 1 if the architecture is Intel Itanium
+#if defined(__ia64__)
+  #define EIGEN_ARCH_IA64 1
+#else
+  #define EIGEN_ARCH_IA64 0
+#endif
+
+/// \internal EIGEN_ARCH_PPC set to 1 if the architecture is PowerPC
+#if defined(__powerpc__) || defined(__ppc__) || defined(_M_PPC)
+  #define EIGEN_ARCH_PPC 1
+#else
+  #define EIGEN_ARCH_PPC 0
+#endif
+
+
+
+// Operating system identification, EIGEN_OS_*
+
+/// \internal EIGEN_OS_UNIX set to 1 if the OS is a unix variant
+#if defined(__unix__) || defined(__unix)
+  #define EIGEN_OS_UNIX 1
+#else
+  #define EIGEN_OS_UNIX 0
+#endif
+
+/// \internal EIGEN_OS_LINUX set to 1 if the OS is based on Linux kernel
+#if defined(__linux__)
+  #define EIGEN_OS_LINUX 1
+#else
+  #define EIGEN_OS_LINUX 0
+#endif
+
+/// \internal EIGEN_OS_ANDROID set to 1 if the OS is Android
+// note: ANDROID is defined when using ndk_build, __ANDROID__ is defined when using a standalone toolchain.
+#if defined(__ANDROID__) || defined(ANDROID)
+  #define EIGEN_OS_ANDROID 1
+#else
+  #define EIGEN_OS_ANDROID 0
+#endif
+
+/// \internal EIGEN_OS_GNULINUX set to 1 if the OS is GNU Linux and not Linux-based OS (e.g., not android)
+#if defined(__gnu_linux__) && !(EIGEN_OS_ANDROID)
+  #define EIGEN_OS_GNULINUX 1
+#else
+  #define EIGEN_OS_GNULINUX 0
+#endif
+
+/// \internal EIGEN_OS_BSD set to 1 if the OS is a BSD variant
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__DragonFly__)
+  #define EIGEN_OS_BSD 1
+#else
+  #define EIGEN_OS_BSD 0
+#endif
+
+/// \internal EIGEN_OS_MAC set to 1 if the OS is MacOS
+#if defined(__APPLE__)
+  #define EIGEN_OS_MAC 1
+#else
+  #define EIGEN_OS_MAC 0
+#endif
+
+/// \internal EIGEN_OS_QNX set to 1 if the OS is QNX
+#if defined(__QNX__)
+  #define EIGEN_OS_QNX 1
+#else
+  #define EIGEN_OS_QNX 0
+#endif
+
+/// \internal EIGEN_OS_WIN set to 1 if the OS is Windows based
+#if defined(_WIN32)
+  #define EIGEN_OS_WIN 1
+#else
+  #define EIGEN_OS_WIN 0
+#endif
+
+/// \internal EIGEN_OS_WIN64 set to 1 if the OS is Windows 64bits
+#if defined(_WIN64)
+  #define EIGEN_OS_WIN64 1
+#else
+  #define EIGEN_OS_WIN64 0
+#endif
+
+/// \internal EIGEN_OS_WINCE set to 1 if the OS is Windows CE
+#if defined(_WIN32_WCE)
+  #define EIGEN_OS_WINCE 1
+#else
+  #define EIGEN_OS_WINCE 0
+#endif
+
+/// \internal EIGEN_OS_CYGWIN set to 1 if the OS is Windows/Cygwin
+#if defined(__CYGWIN__)
+  #define EIGEN_OS_CYGWIN 1
+#else
+  #define EIGEN_OS_CYGWIN 0
+#endif
+
+/// \internal EIGEN_OS_WIN_STRICT set to 1 if the OS is really Windows and not some variants
+#if EIGEN_OS_WIN && !( EIGEN_OS_WINCE || EIGEN_OS_CYGWIN )
+  #define EIGEN_OS_WIN_STRICT 1
+#else
+  #define EIGEN_OS_WIN_STRICT 0
+#endif
+
+/// \internal EIGEN_OS_SUN set to 1 if the OS is SUN
+#if (defined(sun) || defined(__sun)) && !(defined(__SVR4) || defined(__svr4__))
+  #define EIGEN_OS_SUN 1
+#else
+  #define EIGEN_OS_SUN 0
+#endif
+
+/// \internal EIGEN_OS_SOLARIS set to 1 if the OS is Solaris
+#if (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
+  #define EIGEN_OS_SOLARIS 1
+#else
+  #define EIGEN_OS_SOLARIS 0
+#endif
+
+
+
+#if EIGEN_GNUC_AT_MOST(4,3) && !EIGEN_COMP_CLANG
   // see bug 89
   #define EIGEN_SAFE_TO_USE_STANDARD_ASSERT_MACRO 0
 #else
   #define EIGEN_SAFE_TO_USE_STANDARD_ASSERT_MACRO 1
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ <= 3)
-#define EIGEN_GCC3_OR_OLDER 1
-#else
-#define EIGEN_GCC3_OR_OLDER 0
-#endif
-
-// 16 byte alignment is only useful for vectorization. Since it affects the ABI, we need to enable
-// 16 byte alignment on all platforms where vectorization might be enabled. In theory we could always
-// enable alignment, but it can be a cause of problems on some platforms, so we just disable it in
-// certain common platform (compiler+architecture combinations) to avoid these problems.
-// Only static alignment is really problematic (relies on nonstandard compiler extensions that don't
-// work everywhere, for example don't work on GCC/ARM), try to keep heap alignment even
-// when we have to disable static alignment.
-#if defined(__GNUC__) && !(defined(__i386__) || defined(__x86_64__) || defined(__powerpc__) || defined(__ppc__) || defined(__ia64__))
-#define EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT 1
-#else
-#define EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT 0
-#endif
-
-// static alignment is completely disabled with GCC 3, Sun Studio, and QCC/QNX
-#if !EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT \
- && !EIGEN_GCC3_OR_OLDER \
- && !defined(__SUNPRO_CC) \
- && !defined(__QNXNTO__)
-  #define EIGEN_ARCH_WANTS_STACK_ALIGNMENT 1
-#else
-  #define EIGEN_ARCH_WANTS_STACK_ALIGNMENT 0
-#endif
-
-#ifdef EIGEN_DONT_ALIGN
-  #ifndef EIGEN_DONT_ALIGN_STATICALLY
-    #define EIGEN_DONT_ALIGN_STATICALLY
-  #endif
-  #define EIGEN_ALIGN 0
-#else
-  #define EIGEN_ALIGN 1
-#endif
-
-// EIGEN_ALIGN_STATICALLY is the true test whether we want to align arrays on the stack or not. It takes into account both the user choice to explicitly disable
-// alignment (EIGEN_DONT_ALIGN_STATICALLY) and the architecture config (EIGEN_ARCH_WANTS_STACK_ALIGNMENT). Henceforth, only EIGEN_ALIGN_STATICALLY should be used.
-#if EIGEN_ARCH_WANTS_STACK_ALIGNMENT && !defined(EIGEN_DONT_ALIGN_STATICALLY)
-  #define EIGEN_ALIGN_STATICALLY 1
-#else
-  #define EIGEN_ALIGN_STATICALLY 0
-  #ifndef EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
-    #define EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
-  #endif
-#endif
+// This macro can be used to prevent from macro expansion, e.g.:
+//   std::max EIGEN_NOT_A_MACRO(a,b)
+#define EIGEN_NOT_A_MACRO
 
 #ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
-#define EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION RowMajor
+#define EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION Eigen::RowMajor
 #else
-#define EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION ColMajor
+#define EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION Eigen::ColMajor
 #endif
 
 #ifndef EIGEN_DEFAULT_DENSE_INDEX_TYPE
@@ -103,10 +327,85 @@
 #  define EIGEN_HAS_BUILTIN(x) 0
 #endif
 
+// A Clang feature extension to determine compiler features.
+// We use it to determine 'cxx_rvalue_references'
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+// Do we support r-value references?
+#if (__has_feature(cxx_rvalue_references) || \
+    (defined(__cplusplus) && __cplusplus >= 201103L) || \
+     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (EIGEN_COMP_MSVC >= 1600))
+  #define EIGEN_HAVE_RVALUE_REFERENCES
+#endif
+
+// Does the compiler support C99?
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901))       \
+  || (defined(__GNUC__) && defined(_GLIBCXX_USE_C99)) \
+  || (defined(_LIBCPP_VERSION) && !defined(_MSC_VER))
+#define EIGEN_HAS_C99_MATH 1
+#endif
+
+// Does the compiler support result_of?
+#if (__has_feature(cxx_lambdas) || (defined(__cplusplus) && __cplusplus >= 201103L))
+#define EIGEN_HAS_STD_RESULT_OF 1
+#endif
+
+// Does the compiler support variadic templates?
+#if __cplusplus > 199711L
+#define EIGEN_HAS_VARIADIC_TEMPLATES 1
+#endif
+
+// Does the compiler support const expressions?
+#ifdef __CUDACC__
+// Const expressions are supported provided that c++11 is enabled and we're using nvcc 7.5 or above
+#if defined(__CUDACC_VER__) &&  __CUDACC_VER__ >= 70500 && __cplusplus > 199711L
+  #define EIGEN_HAS_CONSTEXPR 1
+#endif
+#elif (defined(__cplusplus) && __cplusplus >= 201402L) || \
+    EIGEN_GNUC_AT_LEAST(4,8)
+#define EIGEN_HAS_CONSTEXPR 1
+#endif
+
+// Does the compiler support C++11 math?
+// Let's be conservative and enable the default C++11 implementation only if we are sure it exists
+#ifndef EIGEN_HAS_CXX11_MATH
+  #if (__cplusplus > 201103L) || (__cplusplus >= 201103L) && (EIGEN_COMP_GNUC_STRICT || EIGEN_COMP_CLANG || EIGEN_COMP_MSVC || EIGEN_COMP_ICC)  \
+      && (EIGEN_ARCH_i386_OR_x86_64) && (EIGEN_OS_GNULINUX || EIGEN_OS_WIN_STRICT || EIGEN_OS_MAC)
+    #define EIGEN_HAS_CXX11_MATH 1
+  #else
+    #define EIGEN_HAS_CXX11_MATH 0
+  #endif
+#endif
+
+// Does the compiler support proper C++11 containers?
+#ifndef EIGEN_HAS_CXX11_CONTAINERS
+  #if    (__cplusplus > 201103L) \
+      || ((__cplusplus >= 201103L) && (EIGEN_COMP_GNUC_STRICT || EIGEN_COMP_CLANG || EIGEN_COMP_ICC>=1400)) \
+      || EIGEN_COMP_MSVC >= 1900
+    #define EIGEN_HAS_CXX11_CONTAINERS 1
+  #else
+    #define EIGEN_HAS_CXX11_CONTAINERS 0
+  #endif
+#endif
+
+// Does the compiler support C++11 noexcept?
+#ifndef EIGEN_HAS_CXX11_NOEXCEPT
+  #if    (__cplusplus > 201103L) \
+      || ((__cplusplus >= 201103L) && (EIGEN_COMP_GNUC_STRICT || EIGEN_COMP_CLANG || EIGEN_COMP_ICC>=1400)) \
+      || EIGEN_COMP_MSVC >= 1900
+    #define EIGEN_HAS_CXX11_NOEXCEPT 1
+  #else
+    #define EIGEN_HAS_CXX11_NOEXCEPT 0
+  #endif
+#endif
+
 /** Allows to disable some optimizations which might affect the accuracy of the result.
   * Such optimization are enabled by default, and set EIGEN_FAST_MATH to 0 to disable them.
   * They currently include:
-  *   - single precision Cwise::sin() and Cwise::cos() when SSE vectorization is enabled.
+  *   - single precision ArrayBase::sin() and ArrayBase::cos() for SSE and AVX vectorization.
   */
 #ifndef EIGEN_FAST_MATH
 #define EIGEN_FAST_MATH 1
@@ -125,7 +424,7 @@
 // EIGEN_STRONG_INLINE is a stronger version of the inline, using __forceinline on MSVC,
 // but it still doesn't use GCC's always_inline. This is useful in (common) situations where MSVC needs forceinline
 // but GCC is still doing fine with just inline.
-#if (defined _MSC_VER) || (defined __INTEL_COMPILER)
+#if EIGEN_COMP_MSVC || EIGEN_COMP_ICC
 #define EIGEN_STRONG_INLINE __forceinline
 #else
 #define EIGEN_STRONG_INLINE inline
@@ -144,15 +443,15 @@
 #define EIGEN_ALWAYS_INLINE EIGEN_STRONG_INLINE
 #endif
 
-#if (defined __GNUC__)
+#if EIGEN_COMP_GNUC
 #define EIGEN_DONT_INLINE __attribute__((noinline))
-#elif (defined _MSC_VER)
+#elif EIGEN_COMP_MSVC
 #define EIGEN_DONT_INLINE __declspec(noinline)
 #else
 #define EIGEN_DONT_INLINE
 #endif
 
-#if (defined __GNUC__)
+#if EIGEN_COMP_GNUC
 #define EIGEN_PERMISSIVE_EXPR __extension__
 #else
 #define EIGEN_PERMISSIVE_EXPR
@@ -221,15 +520,15 @@
 #endif
 
 #ifdef EIGEN_NO_DEBUG
-#define EIGEN_ONLY_USED_FOR_DEBUG(x) (void)x
+#define EIGEN_ONLY_USED_FOR_DEBUG(x) EIGEN_UNUSED_VARIABLE(x)
 #else
 #define EIGEN_ONLY_USED_FOR_DEBUG(x)
 #endif
 
 #ifndef EIGEN_NO_DEPRECATED_WARNING
-  #if (defined __GNUC__)
+  #if EIGEN_COMP_GNUC
     #define EIGEN_DEPRECATED __attribute__((deprecated))
-  #elif (defined _MSC_VER)
+  #elif EIGEN_COMP_MSVC
     #define EIGEN_DEPRECATED __declspec(deprecated)
   #else
     #define EIGEN_DEPRECATED
@@ -238,7 +537,7 @@
   #define EIGEN_DEPRECATED
 #endif
 
-#if (defined __GNUC__)
+#if EIGEN_COMP_GNUC
 #define EIGEN_UNUSED __attribute__((unused))
 #else
 #define EIGEN_UNUSED
@@ -247,18 +546,32 @@
 // Suppresses 'unused variable' warnings.
 namespace Eigen {
   namespace internal {
-    template<typename T> void ignore_unused_variable(const T&) {}
+    template<typename T> EIGEN_DEVICE_FUNC void ignore_unused_variable(const T&) {}
   }
 }
 #define EIGEN_UNUSED_VARIABLE(var) Eigen::internal::ignore_unused_variable(var);
 
 #if !defined(EIGEN_ASM_COMMENT)
-  #if (defined __GNUC__) && ( defined(__i386__) || defined(__x86_64__) )
+  #if EIGEN_COMP_GNUC && (EIGEN_ARCH_i386_OR_x86_64 || EIGEN_ARCH_ARM_OR_ARM64)
     #define EIGEN_ASM_COMMENT(X)  __asm__("#" X)
   #else
     #define EIGEN_ASM_COMMENT(X)
   #endif
 #endif
+
+
+//------------------------------------------------------------------------------------------
+// Static and dynamic alignment control
+// 
+// The main purpose of this section is to define EIGEN_MAX_ALIGN_BYTES and EIGEN_MAX_STATIC_ALIGN_BYTES
+// as the maximal boundary in bytes on which dynamically and statically allocated data may be alignment respectively.
+// The values of EIGEN_MAX_ALIGN_BYTES and EIGEN_MAX_STATIC_ALIGN_BYTES can be specified by the user. If not,
+// a default value is automatically computed based on architecture, compiler, and OS.
+// 
+// This section also defines macros EIGEN_ALIGN_TO_BOUNDARY(N) and the shortcuts EIGEN_ALIGN{8,16,32,_MAX}
+// to be used to declare statically aligned buffers.
+//------------------------------------------------------------------------------------------
+
 
 /* EIGEN_ALIGN_TO_BOUNDARY(n) forces data to be n-byte aligned. This is used to satisfy SIMD requirements.
  * However, we do that EVEN if vectorization (EIGEN_VECTORIZE) is disabled,
@@ -267,26 +580,140 @@ namespace Eigen {
  * If we made alignment depend on whether or not EIGEN_VECTORIZE is defined, it would be impossible to link
  * vectorized and non-vectorized code.
  */
-#if (defined __GNUC__) || (defined __PGI) || (defined __IBMCPP__) || (defined __ARMCC_VERSION)
+#if (defined __CUDACC__)
+  #define EIGEN_ALIGN_TO_BOUNDARY(n) __align__(n)
+#elif EIGEN_COMP_GNUC || EIGEN_COMP_PGI || EIGEN_COMP_IBM || EIGEN_COMP_ARM
   #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
-#elif (defined _MSC_VER)
+#elif EIGEN_COMP_MSVC
   #define EIGEN_ALIGN_TO_BOUNDARY(n) __declspec(align(n))
-#elif (defined __SUNPRO_CC)
+#elif EIGEN_COMP_SUNCC
   // FIXME not sure about this one:
   #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
 #else
   #error Please tell me what is the equivalent of __attribute__((aligned(n))) for your compiler
 #endif
 
-#define EIGEN_ALIGN16 EIGEN_ALIGN_TO_BOUNDARY(16)
-
-#if EIGEN_ALIGN_STATICALLY
-#define EIGEN_USER_ALIGN_TO_BOUNDARY(n) EIGEN_ALIGN_TO_BOUNDARY(n)
-#define EIGEN_USER_ALIGN16 EIGEN_ALIGN16
+// If the user explicitly disable vectorization, then we also disable alignment
+#if defined(EIGEN_DONT_VECTORIZE)
+  #define EIGEN_IDEAL_MAX_ALIGN_BYTES 0
+#elif defined(__AVX__)
+  // 32 bytes static alignmeent is preferred only if really required
+  #define EIGEN_IDEAL_MAX_ALIGN_BYTES 32
 #else
-#define EIGEN_USER_ALIGN_TO_BOUNDARY(n)
-#define EIGEN_USER_ALIGN16
+  #define EIGEN_IDEAL_MAX_ALIGN_BYTES 16
 #endif
+
+
+// EIGEN_MIN_ALIGN_BYTES defines the minimal value for which the notion of explicit alignment makes sense
+#define EIGEN_MIN_ALIGN_BYTES 16
+
+// Defined the boundary (in bytes) on which the data needs to be aligned. Note
+// that unless EIGEN_ALIGN is defined and not equal to 0, the data may not be
+// aligned at all regardless of the value of this #define.
+
+#if (defined(EIGEN_DONT_ALIGN_STATICALLY) || defined(EIGEN_DONT_ALIGN))  && defined(EIGEN_MAX_STATIC_ALIGN_BYTES) && EIGEN_MAX_STATIC_ALIGN_BYTES>0
+#error EIGEN_MAX_STATIC_ALIGN_BYTES and EIGEN_DONT_ALIGN[_STATICALLY] are both defined with EIGEN_MAX_STATIC_ALIGN_BYTES!=0. Use EIGEN_MAX_STATIC_ALIGN_BYTES=0 as a synonym of EIGEN_DONT_ALIGN_STATICALLY.
+#endif
+
+// EIGEN_DONT_ALIGN_STATICALLY and EIGEN_DONT_ALIGN are deprectated
+// They imply EIGEN_MAX_STATIC_ALIGN_BYTES=0
+#if defined(EIGEN_DONT_ALIGN_STATICALLY) || defined(EIGEN_DONT_ALIGN)
+  #ifdef EIGEN_MAX_STATIC_ALIGN_BYTES
+    #undef EIGEN_MAX_STATIC_ALIGN_BYTES
+  #endif
+  #define EIGEN_MAX_STATIC_ALIGN_BYTES 0
+#endif
+
+#ifndef EIGEN_MAX_STATIC_ALIGN_BYTES
+
+  // Try to automatically guess what is the best default value for EIGEN_MAX_STATIC_ALIGN_BYTES
+  
+  // 16 byte alignment is only useful for vectorization. Since it affects the ABI, we need to enable
+  // 16 byte alignment on all platforms where vectorization might be enabled. In theory we could always
+  // enable alignment, but it can be a cause of problems on some platforms, so we just disable it in
+  // certain common platform (compiler+architecture combinations) to avoid these problems.
+  // Only static alignment is really problematic (relies on nonstandard compiler extensions),
+  // try to keep heap alignment even when we have to disable static alignment.
+  #if EIGEN_COMP_GNUC && !(EIGEN_ARCH_i386_OR_x86_64 || EIGEN_ARCH_ARM_OR_ARM64 || EIGEN_ARCH_PPC || EIGEN_ARCH_IA64)
+  #define EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT 1
+  #elif EIGEN_ARCH_ARM_OR_ARM64 && EIGEN_COMP_GNUC_STRICT && EIGEN_GNUC_AT_MOST(4, 6)
+  // Old versions of GCC on ARM, at least 4.4, were once seen to have buggy static alignment support.
+  // Not sure which version fixed it, hopefully it doesn't affect 4.7, which is still somewhat in use.
+  // 4.8 and newer seem definitely unaffected.
+  #define EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT 1
+  #else
+  #define EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT 0
+  #endif
+
+  // static alignment is completely disabled with GCC 3, Sun Studio, and QCC/QNX
+  #if !EIGEN_GCC_AND_ARCH_DOESNT_WANT_STACK_ALIGNMENT \
+  && !EIGEN_GCC3_OR_OLDER \
+  && !EIGEN_COMP_SUNCC \
+  && !EIGEN_OS_QNX
+    #define EIGEN_ARCH_WANTS_STACK_ALIGNMENT 1
+  #else
+    #define EIGEN_ARCH_WANTS_STACK_ALIGNMENT 0
+  #endif
+  
+  #if EIGEN_ARCH_WANTS_STACK_ALIGNMENT
+    #define EIGEN_MAX_STATIC_ALIGN_BYTES EIGEN_IDEAL_MAX_ALIGN_BYTES
+  #else
+    #define EIGEN_MAX_STATIC_ALIGN_BYTES 0
+  #endif
+  
+#endif
+
+// If EIGEN_MAX_ALIGN_BYTES is defined, then it is considered as an upper bound for EIGEN_MAX_ALIGN_BYTES
+#if defined(EIGEN_MAX_ALIGN_BYTES) && EIGEN_MAX_ALIGN_BYTES<EIGEN_MAX_STATIC_ALIGN_BYTES
+#undef EIGEN_MAX_STATIC_ALIGN_BYTES
+#define EIGEN_MAX_STATIC_ALIGN_BYTES EIGEN_MAX_ALIGN_BYTES
+#endif
+
+#if EIGEN_MAX_STATIC_ALIGN_BYTES==0 && !defined(EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT)
+  #define EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
+#endif
+
+// At this stage, EIGEN_MAX_STATIC_ALIGN_BYTES>0 is the true test whether we want to align arrays on the stack or not.
+// It takes into account both the user choice to explicitly enable/disable alignment (by settting EIGEN_MAX_STATIC_ALIGN_BYTES)
+// and the architecture config (EIGEN_ARCH_WANTS_STACK_ALIGNMENT).
+// Henceforth, only EIGEN_MAX_STATIC_ALIGN_BYTES should be used.
+
+
+// Shortcuts to EIGEN_ALIGN_TO_BOUNDARY
+#define EIGEN_ALIGN8  EIGEN_ALIGN_TO_BOUNDARY(8)
+#define EIGEN_ALIGN16 EIGEN_ALIGN_TO_BOUNDARY(16)
+#define EIGEN_ALIGN32 EIGEN_ALIGN_TO_BOUNDARY(32)
+#define EIGEN_ALIGN64 EIGEN_ALIGN_TO_BOUNDARY(64)
+#if EIGEN_MAX_STATIC_ALIGN_BYTES>0
+#define EIGEN_ALIGN_MAX EIGEN_ALIGN_TO_BOUNDARY(EIGEN_MAX_STATIC_ALIGN_BYTES)
+#else
+#define EIGEN_ALIGN_MAX
+#endif
+
+
+// Dynamic alignment control
+
+#if defined(EIGEN_DONT_ALIGN) && defined(EIGEN_MAX_ALIGN_BYTES) && EIGEN_MAX_ALIGN_BYTES>0
+#error EIGEN_MAX_ALIGN_BYTES and EIGEN_DONT_ALIGN are both defined with EIGEN_MAX_ALIGN_BYTES!=0. Use EIGEN_MAX_ALIGN_BYTES=0 as a synonym of EIGEN_DONT_ALIGN.
+#endif
+
+#ifdef EIGEN_DONT_ALIGN
+  #ifdef EIGEN_MAX_ALIGN_BYTES
+    #undef EIGEN_MAX_ALIGN_BYTES
+  #endif
+  #define EIGEN_MAX_ALIGN_BYTES 0
+#elif !defined(EIGEN_MAX_ALIGN_BYTES)
+  #define EIGEN_MAX_ALIGN_BYTES EIGEN_IDEAL_MAX_ALIGN_BYTES
+#endif
+
+#if EIGEN_IDEAL_MAX_ALIGN_BYTES > EIGEN_MAX_ALIGN_BYTES
+#define EIGEN_DEFAULT_ALIGN_BYTES EIGEN_IDEAL_MAX_ALIGN_BYTES
+#else
+#define EIGEN_DEFAULT_ALIGN_BYTES EIGEN_MAX_ALIGN_BYTES
+#endif
+
+//----------------------------------------------------------------------
+
 
 #ifdef EIGEN_DONT_USE_RESTRICT_KEYWORD
   #define EIGEN_RESTRICT
@@ -313,27 +740,31 @@ namespace Eigen {
 // just an empty macro !
 #define EIGEN_EMPTY
 
-#if defined(_MSC_VER) && (_MSC_VER < 1900) && (!defined(__INTEL_COMPILER))
-#define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
-  using Base::operator =;
-#elif defined(__clang__) // workaround clang bug (see http://forum.kde.org/viewtopic.php?f=74&t=102653)
-#define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
-  using Base::operator =; \
-  EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) { Base::operator=(other); return *this; } \
-  template <typename OtherDerived> \
-  EIGEN_STRONG_INLINE Derived& operator=(const DenseBase<OtherDerived>& other) { Base::operator=(other.derived()); return *this; }
+#if EIGEN_COMP_MSVC_STRICT && EIGEN_COMP_MSVC < 1900 // for older MSVC versions using the base operator is sufficient (cf Bug 1000)
+  #define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
+    using Base::operator =;
+#elif EIGEN_COMP_CLANG // workaround clang bug (see http://forum.kde.org/viewtopic.php?f=74&t=102653)
+  #define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
+    using Base::operator =; \
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) { Base::operator=(other); return *this; } \
+    template <typename OtherDerived> \
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const DenseBase<OtherDerived>& other) { Base::operator=(other.derived()); return *this; }
 #else
-#define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
-  using Base::operator =; \
-  EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
-  { \
-    Base::operator=(other); \
-    return *this; \
-  }
+  #define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
+    using Base::operator =; \
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+    { \
+      Base::operator=(other); \
+      return *this; \
+    }
 #endif
 
-#define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) \
-  EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
+
+/** \internal
+ * \brief Macro to manually inherit assignment operators.
+ * This is necessary, because the implicitly defined assignment operator gets deleted when a custom operator= is defined.
+ */
+#define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
 
 /**
 * Just a side note. Commenting within defines works only by documenting
@@ -347,37 +778,23 @@ namespace Eigen {
   typedef typename Eigen::internal::traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
   typedef typename Eigen::NumTraits<Scalar>::Real RealScalar; /*!< \brief The underlying numeric type for composed scalar types. \details In cases where Scalar is e.g. std::complex<T>, T were corresponding to RealScalar. */ \
   typedef typename Base::CoeffReturnType CoeffReturnType; /*!< \brief The return type for coefficient access. \details Depending on whether the object allows direct coefficient access (e.g. for a MatrixXd), this type is either 'const Scalar&' or simply 'Scalar' for objects that do not allow direct coefficient access. */ \
-  typedef typename Eigen::internal::nested<Derived>::type Nested; \
+  typedef typename Eigen::internal::ref_selector<Derived>::type Nested; \
   typedef typename Eigen::internal::traits<Derived>::StorageKind StorageKind; \
-  typedef typename Eigen::internal::traits<Derived>::Index Index; \
+  typedef typename Eigen::internal::traits<Derived>::StorageIndex StorageIndex; \
   enum { RowsAtCompileTime = Eigen::internal::traits<Derived>::RowsAtCompileTime, \
         ColsAtCompileTime = Eigen::internal::traits<Derived>::ColsAtCompileTime, \
         Flags = Eigen::internal::traits<Derived>::Flags, \
-        CoeffReadCost = Eigen::internal::traits<Derived>::CoeffReadCost, \
-        SizeAtCompileTime = Base::SizeAtCompileTime, \
-        MaxSizeAtCompileTime = Base::MaxSizeAtCompileTime, \
-        IsVectorAtCompileTime = Base::IsVectorAtCompileTime };
-
-
-#define EIGEN_DENSE_PUBLIC_INTERFACE(Derived) \
-  typedef typename Eigen::internal::traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
-  typedef typename Eigen::NumTraits<Scalar>::Real RealScalar; /*!< \brief The underlying numeric type for composed scalar types. \details In cases where Scalar is e.g. std::complex<T>, T were corresponding to RealScalar. */ \
-  typedef typename Base::PacketScalar PacketScalar; \
-  typedef typename Base::CoeffReturnType CoeffReturnType; /*!< \brief The return type for coefficient access. \details Depending on whether the object allows direct coefficient access (e.g. for a MatrixXd), this type is either 'const Scalar&' or simply 'Scalar' for objects that do not allow direct coefficient access. */ \
-  typedef typename Eigen::internal::nested<Derived>::type Nested; \
-  typedef typename Eigen::internal::traits<Derived>::StorageKind StorageKind; \
-  typedef typename Eigen::internal::traits<Derived>::Index Index; \
-  enum { RowsAtCompileTime = Eigen::internal::traits<Derived>::RowsAtCompileTime, \
-        ColsAtCompileTime = Eigen::internal::traits<Derived>::ColsAtCompileTime, \
-        MaxRowsAtCompileTime = Eigen::internal::traits<Derived>::MaxRowsAtCompileTime, \
-        MaxColsAtCompileTime = Eigen::internal::traits<Derived>::MaxColsAtCompileTime, \
-        Flags = Eigen::internal::traits<Derived>::Flags, \
-        CoeffReadCost = Eigen::internal::traits<Derived>::CoeffReadCost, \
         SizeAtCompileTime = Base::SizeAtCompileTime, \
         MaxSizeAtCompileTime = Base::MaxSizeAtCompileTime, \
         IsVectorAtCompileTime = Base::IsVectorAtCompileTime }; \
   using Base::derived; \
   using Base::const_cast_derived;
+
+
+// FIXME Maybe the EIGEN_DENSE_PUBLIC_INTERFACE could be removed as importing PacketScalar is rarely needed
+#define EIGEN_DENSE_PUBLIC_INTERFACE(Derived) \
+  EIGEN_GENERIC_PUBLIC_INTERFACE(Derived) \
+  typedef typename Base::PacketScalar PacketScalar;
 
 
 #define EIGEN_PLAIN_ENUM_MIN(a,b) (((int)a <= (int)b) ? (int)a : (int)b)
@@ -411,7 +828,7 @@ namespace Eigen {
 
 #define EIGEN_MAKE_CWISE_BINARY_OP(METHOD,FUNCTOR) \
   template<typename OtherDerived> \
-  EIGEN_STRONG_INLINE const CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived> \
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived> \
   (METHOD)(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const \
   { \
     return CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived>(derived(), other.derived()); \
@@ -427,5 +844,30 @@ namespace Eigen {
       const LHS, \
       const RHS \
     >
+
+#ifdef EIGEN_EXCEPTIONS
+#  define EIGEN_THROW_X(X) throw X
+#  define EIGEN_THROW throw
+#  define EIGEN_TRY try
+#  define EIGEN_CATCH(X) catch (X)
+#else
+#  ifdef __CUDA_ARCH__
+#    define EIGEN_THROW_X(X) asm("trap;") return {}
+#    define EIGEN_THROW asm("trap;"); return {}
+#  else
+#    define EIGEN_THROW_X(X) std::abort()
+#    define EIGEN_THROW std::abort()
+#  endif
+#  define EIGEN_TRY if (true)
+#  define EIGEN_CATCH(X) else
+#endif
+
+#if EIGEN_HAS_CXX11_NOEXCEPT
+#   define EIGEN_NO_THROW noexcept(true)
+#   define EIGEN_EXCEPTION_SPEC(X) noexcept(false)
+#else
+#   define EIGEN_NO_THROW throw()
+#   define EIGEN_EXCEPTION_SPEC(X) throw(X)
+#endif
 
 #endif // EIGEN_MACROS_H
