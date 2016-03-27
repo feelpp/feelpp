@@ -72,7 +72,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
     /** \brief Scalar type for matrices of type #MatrixType. */
     typedef typename MatrixType::Scalar Scalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
-    typedef typename MatrixType::Index Index;
+    typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
 
     /** \brief Complex scalar type for #MatrixType. 
       *
@@ -122,7 +122,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       * according to the specified problem \a size.
       * \sa GeneralizedEigenSolver()
       */
-    GeneralizedEigenSolver(Index size)
+    explicit GeneralizedEigenSolver(Index size)
       : m_eivec(size, size),
         m_alphas(size),
         m_betas(size),
@@ -263,6 +263,13 @@ template<typename _MatrixType> class GeneralizedEigenSolver
     }
 
   protected:
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+      EIGEN_STATIC_ASSERT(!NumTraits<Scalar>::IsComplex, NUMERIC_TYPE_MUST_BE_REAL);
+    }
+    
     MatrixType m_eivec;
     ComplexVectorType m_alphas;
     VectorType m_betas;
@@ -290,6 +297,8 @@ template<typename MatrixType>
 GeneralizedEigenSolver<MatrixType>&
 GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixType& B, bool computeEigenvectors)
 {
+  check_template_parameters();
+  
   using std::sqrt;
   using std::abs;
   eigen_assert(A.cols() == A.rows() && B.cols() == A.rows() && B.cols() == B.rows());
