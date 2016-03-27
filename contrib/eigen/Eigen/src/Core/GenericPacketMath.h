@@ -75,8 +75,11 @@ struct default_packet_traits
     HasCosh    = 0,
     HasTanh    = 0,
     HasLGamma = 0,
+    HasDiGamma = 0,
     HasErf = 0,
     HasErfc = 0,
+    HasIGamma = 0,
+    HasIGammac = 0,
 
     HasRound  = 0,
     HasFloor  = 0,
@@ -133,6 +136,11 @@ pcast(const SrcPacket& a, const SrcPacket& /*b*/) {
   return static_cast<TgtPacket>(a);
 }
 
+template <typename SrcPacket, typename TgtPacket>
+EIGEN_DEVICE_FUNC inline TgtPacket
+pcast(const SrcPacket& a, const SrcPacket& /*b*/, const SrcPacket& /*c*/, const SrcPacket& /*d*/) {
+  return static_cast<TgtPacket>(a);
+}
 
 /** \internal \returns a + b (coeff-wise) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -284,7 +292,7 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu
  { pstore(to, from); }
 
 /** \internal tries to do cache prefetching of \a addr */
-template<typename Scalar> inline void prefetch(const Scalar* addr)
+template<typename Scalar> EIGEN_DEVICE_FUNC inline void prefetch(const Scalar* addr)
 {
 #ifdef __CUDA_ARCH__
 #if defined(__LP64__)
@@ -439,6 +447,10 @@ Packet pceil(const Packet& a) { using numext::ceil; return ceil(a); }
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet plgamma(const Packet& a) { using numext::lgamma; return lgamma(a); }
 
+/** \internal \returns the derivative of lgamma, psi(\a a) (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pdigamma(const Packet& a) { using numext::digamma; return digamma(a); }
+
 /** \internal \returns the erf(\a a) (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet perf(const Packet& a) { using numext::erf; return erf(a); }
@@ -446,6 +458,14 @@ Packet perf(const Packet& a) { using numext::erf; return erf(a); }
 /** \internal \returns the erfc(\a a) (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet perfc(const Packet& a) { using numext::erfc; return erfc(a); }
+
+/** \internal \returns the incomplete gamma function igamma(\a a, \a x) */
+template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+Packet pigamma(const Packet& a, const Packet& x) { using numext::igamma; return igamma(a, x); }
+
+/** \internal \returns the complementary incomplete gamma function igammac(\a a, \a x) */
+template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+Packet pigammac(const Packet& a, const Packet& x) { using numext::igammac; return igammac(a, x); }
 
 /***************************************************************************
 * The following functions might not have to be overwritten for vectorized types

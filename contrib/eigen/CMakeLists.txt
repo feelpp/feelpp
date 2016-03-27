@@ -240,7 +240,7 @@ if(NOT MSVC)
     else()
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=hard")
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
@@ -336,6 +336,8 @@ endif()
 
 option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." OFF)
 
+set(EIGEN_CUDA_COMPUTE_ARCH 30 CACHE STRING "The CUDA compute architecture level to target when compiling CUDA code")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 # Backward compatibility support for EIGEN_INCLUDE_INSTALL_DIR
@@ -387,9 +389,9 @@ endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-#add_subdirectory(doc EXCLUDE_FROM_ALL)
+# add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-include(EigenConfigureTesting)
+# include(EigenConfigureTesting)
 
 # # fixme, not sure this line is still needed:
 # enable_testing() # must be called from the root CMakeLists, see man page
@@ -413,10 +415,10 @@ add_subdirectory(unsupported)
 
 # add_subdirectory(demos EXCLUDE_FROM_ALL)
 
-# must be after test and unsupported, for configuring buildtests.in
-add_subdirectory(scripts EXCLUDE_FROM_ALL)
+# # must be after test and unsupported, for configuring buildtests.in
+# add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
-# TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
+# # TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
 # if(EIGEN_BUILD_BTL)
 #   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
 # endif(EIGEN_BUILD_BTL)
@@ -429,9 +431,9 @@ add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
 # ei_testing_print_summary()
 
-message(STATUS "")
-message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
-message(STATUS "")
+# message(STATUS "")
+# message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
+# message(STATUS "")
 
 # option(EIGEN_FAILTEST "Enable failtests." OFF)
 # if(EIGEN_FAILTEST)
@@ -487,5 +489,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
         )
 
 # Add uninstall target
-add_custom_target ( uninstall
+add_custom_target ( eigen-uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)
