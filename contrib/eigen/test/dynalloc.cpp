@@ -9,11 +9,13 @@
 
 #include "main.h"
 
-#if EIGEN_ALIGN
-#define ALIGNMENT 16
+#if EIGEN_MAX_ALIGN_BYTES>0
+#define ALIGNMENT EIGEN_MAX_ALIGN_BYTES
 #else
 #define ALIGNMENT 1
 #endif
+
+typedef Matrix<float,8,1> Vector8f;
 
 void check_handmade_aligned_malloc()
 {
@@ -29,7 +31,7 @@ void check_handmade_aligned_malloc()
 
 void check_aligned_malloc()
 {
-  for(int i = 1; i < 1000; i++)
+  for(int i = ALIGNMENT; i < 1000; i++)
   {
     char *p = (char*)internal::aligned_malloc(i);
     VERIFY(size_t(p)%ALIGNMENT==0);
@@ -41,7 +43,7 @@ void check_aligned_malloc()
 
 void check_aligned_new()
 {
-  for(int i = 1; i < 1000; i++)
+  for(int i = ALIGNMENT; i < 1000; i++)
   {
     float *p = internal::aligned_new<float>(i);
     VERIFY(size_t(p)%ALIGNMENT==0);
@@ -53,7 +55,7 @@ void check_aligned_new()
 
 void check_aligned_stack_alloc()
 {
-  for(int i = 1; i < 400; i++)
+  for(int i = ALIGNMENT; i < 400; i++)
   {
     ei_declare_aligned_stack_constructed_variable(float,p,i,0);
     VERIFY(size_t(p)%ALIGNMENT==0);
@@ -68,7 +70,7 @@ struct MyStruct
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   char dummychar;
-  Vector4f avec;
+  Vector8f avec;
 };
 
 class MyClassA
@@ -76,15 +78,45 @@ class MyClassA
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     char dummychar;
-    Vector4f avec;
+    Vector8f avec;
 };
 
 template<typename T> void check_dynaligned()
 {
-  T* obj = new T;
-  VERIFY(T::NeedsToAlign==1);
-  VERIFY(size_t(obj)%ALIGNMENT==0);
-  delete obj;
+  // TODO have to be updated once we support multiple alignment values
+  if(T::SizeAtCompileTime % ALIGNMENT == 0)
+  {
+    T* obj = new T;
+    VERIFY(T::NeedsToAlign==1);
+    VERIFY(size_t(obj)%ALIGNMENT==0);
+    delete obj;
+  }
+}
+
+template<typename T> void check_custom_new_delete()
+{
+  {
+    T* t = new T;
+    delete t;
+  }
+  
+  {
+    std::size_t N = internal::random<std::size_t>(1,10);
+    T* t = new T[N];
+    delete[] t;
+  }
+  
+#if EIGEN_MAX_ALIGN_BYTES>0
+  {
+    T* t = static_cast<T *>((T::operator new)(sizeof(T)));
+    (T::operator delete)(t, sizeof(T));
+  }
+  
+  {
+    T* t = static_cast<T *>((T::operator new)(sizeof(T)));
+    (T::operator delete)(t);
+  }
+#endif
 }
 
 void test_dynalloc()
@@ -97,15 +129,24 @@ void test_dynalloc()
 
   for (int i=0; i<g_repeat*100; ++i)
   {
+    CALL_SUBTEST( check_custom_new_delete<Vector4f>() );
+    CALL_SUBTEST( check_custom_new_delete<Vector2f>() );
+    CALL_SUBTEST( check_custom_new_delete<Matrix4f>() );
+    CALL_SUBTEST( check_custom_new_delete<MatrixXi>() );
+  }
+  
+  // check static allocation, who knows ?
+  #if EIGEN_MAX_STATIC_ALIGN_BYTES
+  for (int i=0; i<g_repeat*100; ++i)
+  {
     CALL_SUBTEST(check_dynaligned<Vector4f>() );
     CALL_SUBTEST(check_dynaligned<Vector2d>() );
     CALL_SUBTEST(check_dynaligned<Matrix4f>() );
     CALL_SUBTEST(check_dynaligned<Vector4d>() );
     CALL_SUBTEST(check_dynaligned<Vector4i>() );
+    CALL_SUBTEST(check_dynaligned<Vector8f>() );
   }
-  
-  // check static allocation, who knows ?
-  #if EIGEN_ALIGN_STATICALLY
+
   {
     MyStruct foo0;  VERIFY(size_t(foo0.avec.data())%ALIGNMENT==0);
     MyClassA fooA;  VERIFY(size_t(fooA.avec.data())%ALIGNMENT==0);
