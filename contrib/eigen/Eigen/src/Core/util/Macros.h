@@ -99,9 +99,16 @@
   #define EIGEN_COMP_ARM 0
 #endif
 
+/// \internal EIGEN_COMP_ARM set to 1 if the compiler is ARM Compiler
+#if defined(__EMSCRIPTEN__)
+  #define EIGEN_COMP_EMSCRIPTEN 1
+#else
+  #define EIGEN_COMP_EMSCRIPTEN 0
+#endif
+
 
 /// \internal EIGEN_GNUC_STRICT set to 1 if the compiler is really GCC and not a compatible compiler (e.g., ICC, clang, mingw, etc.)
-#if EIGEN_COMP_GNUC && !(EIGEN_COMP_CLANG || EIGEN_COMP_ICC || EIGEN_COMP_MINGW || EIGEN_COMP_PGI || EIGEN_COMP_IBM || EIGEN_COMP_ARM )
+#if EIGEN_COMP_GNUC && !(EIGEN_COMP_CLANG || EIGEN_COMP_ICC || EIGEN_COMP_MINGW || EIGEN_COMP_PGI || EIGEN_COMP_IBM || EIGEN_COMP_ARM || EIGEN_COMP_EMSCRIPTEN)
   #define EIGEN_COMP_GNUC_STRICT 1
 #else
   #define EIGEN_COMP_GNUC_STRICT 0
@@ -336,7 +343,6 @@
 // Do we support r-value references?
 #if (__has_feature(cxx_rvalue_references) || \
     (defined(__cplusplus) && __cplusplus >= 201103L) || \
-     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
     (EIGEN_COMP_MSVC >= 1600))
   #define EIGEN_HAVE_RVALUE_REFERENCES
 #endif
@@ -354,8 +360,12 @@
 #endif
 
 // Does the compiler support variadic templates?
-#if __cplusplus > 199711L
+#if __cplusplus > 199711L || EIGEN_COMP_MSVC >= 1900
+// Disable the use of variadic templates when compiling with nvcc on ARM devices:
+// this prevents nvcc from crashing when compiling Eigen on Tegra X1
+#if !defined(__NVCC__) || !EIGEN_ARCH_ARM_OR_ARM64
 #define EIGEN_HAS_VARIADIC_TEMPLATES 1
+#endif
 #endif
 
 // Does the compiler support const expressions?

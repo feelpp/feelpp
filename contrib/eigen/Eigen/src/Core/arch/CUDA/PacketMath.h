@@ -21,7 +21,6 @@ namespace internal {
 template<> struct is_arithmetic<float4>  { enum { value = true }; };
 template<> struct is_arithmetic<double2> { enum { value = true }; };
 
-
 template<> struct packet_traits<float> : default_packet_traits
 {
   typedef float4 type;
@@ -40,8 +39,11 @@ template<> struct packet_traits<float> : default_packet_traits
     HasSqrt = 1,
     HasRsqrt = 1,
     HasLGamma = 1,
+    HasDiGamma = 1,
     HasErf = 1,
     HasErfc = 1,
+    HasIgamma = 1,
+    HasIGammac = 1,
 
     HasBlend = 0,
   };
@@ -63,8 +65,11 @@ template<> struct packet_traits<double> : default_packet_traits
     HasSqrt = 1,
     HasRsqrt = 1,
     HasLGamma = 1,
+    HasDiGamma = 1,
     HasErf = 1,
     HasErfc = 1,
+    HasIGamma = 1,
+    HasIGammac = 1,
 
     HasBlend = 0,
   };
@@ -183,25 +188,39 @@ template<> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void pstoreu<double>(double* to
   to[1] = from.y;
 }
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
 template<>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float4 ploadt_ro<float4, Aligned>(const float* from) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
   return __ldg((const float4*)from);
+#else
+  return make_float4(from[0], from[1], from[2], from[3]);
+#endif
 }
 template<>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double2 ploadt_ro<double2, Aligned>(const double* from) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
   return __ldg((const double2*)from);
+#else
+  return make_double2(from[0], from[1]);
+#endif
 }
 
 template<>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float4 ploadt_ro<float4, Unaligned>(const float* from) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
   return make_float4(__ldg(from+0), __ldg(from+1), __ldg(from+2), __ldg(from+3));
+#else
+  return make_float4(from[0], from[1], from[2], from[3]);
+#endif
 }
 template<>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double2 ploadt_ro<double2, Unaligned>(const double* from) {
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
   return make_double2(__ldg(from+0), __ldg(from+1));
-}
+#else
+  return make_double2(from[0], from[1]);
 #endif
+}
 
 template<> EIGEN_DEVICE_FUNC inline float4 pgather<float, float4>(const float* from, Index stride) {
   return make_float4(from[0*stride], from[1*stride], from[2*stride], from[3*stride]);
@@ -257,13 +276,41 @@ template<> EIGEN_DEVICE_FUNC inline double predux_mul<double2>(const double2& a)
   return a.x * a.y;
 }
 
+template<size_t offset>
+struct protate_impl<offset, float4>
+{
+  static float4 run(const float4& a) {
+    if (offset == 0) {
+      return make_float4(a.x, a.y, a.z, a.w);
+    }
+    if (offset == 1) {
+      return make_float4(a.w, a.x, a.y, a.z);
+    }
+    if (offset == 2) {
+      return make_float4(a.z, a.w, a.x, a.y);
+    }
+    return make_float4(a.y, a.z, a.w, a.x);
+  }
+};
+
+template<size_t offset>
+struct protate_impl<offset, double2>
+{
+  static double2 run(const double2& a) {
+    if (offset == 0) {
+      return make_double2(a.x, a.y);
+    }
+    return make_double2(a.y, a.x);
+  }
+};
+
+
 template<> EIGEN_DEVICE_FUNC inline float4  pabs<float4>(const float4& a) {
   return make_float4(fabsf(a.x), fabsf(a.y), fabsf(a.z), fabsf(a.w));
 }
 template<> EIGEN_DEVICE_FUNC inline double2 pabs<double2>(const double2& a) {
   return make_double2(fabs(a.x), fabs(a.y));
 }
-
 
 EIGEN_DEVICE_FUNC inline void
 ptranspose(PacketBlock<float4,4>& kernel) {

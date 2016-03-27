@@ -415,7 +415,7 @@ template<typename Scalar> struct scalar_lgamma_op {
     using numext::lgamma; return lgamma(a);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  inline Packet packetOp(const Packet& a) const { return internal::plgamma(a); }
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::plgamma(a); }
 };
 template<typename Scalar>
 struct functor_traits<scalar_lgamma_op<Scalar> >
@@ -424,6 +424,28 @@ struct functor_traits<scalar_lgamma_op<Scalar> >
     // Guesstimate
     Cost = 10 * NumTraits<Scalar>::MulCost + 5 * NumTraits<Scalar>::AddCost,
     PacketAccess = packet_traits<Scalar>::HasLGamma
+  };
+};
+
+/** \internal
+ * \brief Template functor to compute psi, the derivative of lgamma of a scalar.
+ * \sa class CwiseUnaryOp, Cwise::digamma()
+ */
+template<typename Scalar> struct scalar_digamma_op {
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_digamma_op)
+  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const {
+    using numext::digamma; return digamma(a);
+  }
+  typedef typename packet_traits<Scalar>::type Packet;
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::pdigamma(a); }
+};
+template<typename Scalar>
+struct functor_traits<scalar_digamma_op<Scalar> >
+{
+  enum {
+    // Guesstimate
+    Cost = 10 * NumTraits<Scalar>::MulCost + 5 * NumTraits<Scalar>::AddCost,
+    PacketAccess = packet_traits<Scalar>::HasDiGamma
   };
 };
 
@@ -438,7 +460,7 @@ template<typename Scalar> struct scalar_erf_op {
     using numext::erf; return erf(a);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  inline Packet packetOp(const Packet& a) const { return internal::perf(a); }
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::perf(a); }
 };
 template<typename Scalar>
 struct functor_traits<scalar_erf_op<Scalar> >
@@ -461,7 +483,7 @@ template<typename Scalar> struct scalar_erfc_op {
     using numext::erfc; return erfc(a);
   }
   typedef typename packet_traits<Scalar>::type Packet;
-  inline Packet packetOp(const Packet& a) const { return internal::perfc(a); }
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::perfc(a); }
 };
 template<typename Scalar>
 struct functor_traits<scalar_erfc_op<Scalar> >
@@ -644,7 +666,7 @@ struct functor_traits<scalar_floor_op<Scalar> >
 template<typename Scalar> struct scalar_ceil_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_ceil_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return numext::ceil(a); }
-  typedef typename packet_traits<Scalar>::type Packet;
+  template <typename Packet>
   EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::pceil(a); }
 };
 template<typename Scalar>
@@ -732,10 +754,10 @@ struct functor_traits<scalar_boolean_not_op<Scalar> > {
   * \sa class CwiseUnaryOp, Cwise::sign()
   */
 template<typename Scalar,bool iscpx=(NumTraits<Scalar>::IsComplex!=0) > struct scalar_sign_op;
-template<typename Scalar> 
+template<typename Scalar>
 struct scalar_sign_op<Scalar,false> {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_sign_op)
-  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const 
+  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const
   {
       return Scalar( (a>Scalar(0)) - (a<Scalar(0)) );
   }
@@ -743,17 +765,17 @@ struct scalar_sign_op<Scalar,false> {
   //template <typename Packet>
   //EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psign(a); }
 };
-template<typename Scalar> 
+template<typename Scalar>
 struct scalar_sign_op<Scalar,true> {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_sign_op)
-  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const 
+  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const
   {
     using std::abs;
     typedef typename NumTraits<Scalar>::Real real_type;
     real_type aa = abs(a);
     if (aa==0)
-      return Scalar(0); 
-    aa = 1./aa; 
+      return Scalar(0);
+    aa = 1./aa;
     return Scalar(real(a)*aa, imag(a)*aa );
   }
   //TODO

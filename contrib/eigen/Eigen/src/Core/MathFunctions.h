@@ -26,7 +26,7 @@ long double abs(long double x) { return (fabsl(x)); }
   
 namespace internal {
 
-/** \internal \struct global_math_functions_filtering_base
+/** \internal \class global_math_functions_filtering_base
   *
   * What it does:
   * Defines a typedef 'type' as follows:
@@ -496,7 +496,7 @@ template<typename Scalar, bool IsInteger>
 struct pow_default_impl
 {
   typedef Scalar retval;
-  static inline Scalar run(const Scalar& x, const Scalar& y)
+  static EIGEN_DEVICE_FUNC inline Scalar run(const Scalar& x, const Scalar& y)
   {
     EIGEN_USING_STD_MATH(pow);
     return pow(x, y);
@@ -506,7 +506,7 @@ struct pow_default_impl
 template<typename Scalar>
 struct pow_default_impl<Scalar, true>
 {
-  static inline Scalar run(Scalar x, Scalar y)
+  static EIGEN_DEVICE_FUNC inline Scalar run(Scalar x, Scalar y)
   {
     Scalar res(1);
     eigen_assert(!NumTraits<Scalar>::IsSigned || y >= 0);
@@ -748,9 +748,9 @@ template<typename T> EIGEN_DEVICE_FUNC bool isinf_msvc_helper(T x)
 }
 
 //MSVC defines a _isnan builtin function, but for double only
-EIGEN_DEVICE_FUNC inline bool isnan_impl(const long double& x) { return _isnan(x); }
-EIGEN_DEVICE_FUNC inline bool isnan_impl(const double& x)      { return _isnan(x); }
-EIGEN_DEVICE_FUNC inline bool isnan_impl(const float& x)       { return _isnan(x); }
+EIGEN_DEVICE_FUNC inline bool isnan_impl(const long double& x) { return _isnan(x)!=0; }
+EIGEN_DEVICE_FUNC inline bool isnan_impl(const double& x)      { return _isnan(x)!=0; }
+EIGEN_DEVICE_FUNC inline bool isnan_impl(const float& x)       { return _isnan(x)!=0; }
 
 EIGEN_DEVICE_FUNC inline bool isinf_impl(const long double& x) { return isinf_msvc_helper(x); }
 EIGEN_DEVICE_FUNC inline bool isinf_impl(const double& x)      { return isinf_msvc_helper(x); }
@@ -946,6 +946,14 @@ T (floor)(const T& x)
   return floor(x);
 }
 
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float floor(const float &x) { return ::floorf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double floor(const double &x) { return ::floor(x); }
+#endif
+
 template<typename T>
 EIGEN_DEVICE_FUNC
 T (ceil)(const T& x)
@@ -954,8 +962,8 @@ T (ceil)(const T& x)
   return ceil(x);
 }
 
-// Log base 2 for 32 bits positive integers.
-// Conveniently returns 0 for x==0.
+/** Log base 2 for 32 bits positive integers.
+  * Conveniently returns 0 for x==0. */
 inline int log2(int x)
 {
   eigen_assert(x>=0);
@@ -968,6 +976,82 @@ inline int log2(int x)
   v |= v >> 16;
   return table[(v * 0x07C4ACDDU) >> 27];
 }
+
+/** \returns the square root of \a x.
+  *
+  * It is essentially equivalent to \code using std::sqrt; return sqrt(x); \endcode,
+  * but slightly faster for float/double and some compilers (e.g., gcc), thanks to
+  * specializations when SSE is enabled.
+  *
+  * It's usage is justified in performance critical functions, like norm/normalize.
+  */
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T sqrt(const T &x)
+{
+  EIGEN_USING_STD_MATH(sqrt);
+  return sqrt(x);
+}
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T log(const T &x) {
+  EIGEN_USING_STD_MATH(log);
+  return log(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float log(const float &x) { return ::logf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double log(const double &x) { return ::log(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T tan(const T &x) {
+  EIGEN_USING_STD_MATH(tan);
+  return tan(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float tan(const float &x) { return ::tanf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double tan(const double &x) { return ::tan(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T abs(const T &x) {
+  EIGEN_USING_STD_MATH(abs);
+  return abs(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float abs(const float &x) { return ::fabsf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double abs(const double &x) { return ::fabs(x); }
+#endif
+
+template<typename T>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+T exp(const T &x) {
+  EIGEN_USING_STD_MATH(exp);
+  return exp(x);
+}
+
+#ifdef __CUDACC__
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float exp(const float &x) { return ::expf(x); }
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double exp(const double &x) { return ::exp(x); }
+#endif
 
 } // end namespace numext
 
@@ -1064,21 +1148,21 @@ struct scalar_fuzzy_impl : scalar_fuzzy_default_impl<Scalar, NumTraits<Scalar>::
 
 template<typename Scalar, typename OtherScalar> EIGEN_DEVICE_FUNC
 inline bool isMuchSmallerThan(const Scalar& x, const OtherScalar& y,
-                                   typename NumTraits<Scalar>::Real precision = NumTraits<Scalar>::dummy_precision())
+                              const typename NumTraits<Scalar>::Real &precision = NumTraits<Scalar>::dummy_precision())
 {
   return scalar_fuzzy_impl<Scalar>::template isMuchSmallerThan<OtherScalar>(x, y, precision);
 }
 
 template<typename Scalar> EIGEN_DEVICE_FUNC
 inline bool isApprox(const Scalar& x, const Scalar& y,
-                          typename NumTraits<Scalar>::Real precision = NumTraits<Scalar>::dummy_precision())
+                     const typename NumTraits<Scalar>::Real &precision = NumTraits<Scalar>::dummy_precision())
 {
   return scalar_fuzzy_impl<Scalar>::isApprox(x, y, precision);
 }
 
 template<typename Scalar> EIGEN_DEVICE_FUNC
 inline bool isApproxOrLessThan(const Scalar& x, const Scalar& y,
-                                    typename NumTraits<Scalar>::Real precision = NumTraits<Scalar>::dummy_precision())
+                               const typename NumTraits<Scalar>::Real &precision = NumTraits<Scalar>::dummy_precision())
 {
   return scalar_fuzzy_impl<Scalar>::isApproxOrLessThan(x, y, precision);
 }

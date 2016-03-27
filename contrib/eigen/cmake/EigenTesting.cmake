@@ -19,11 +19,14 @@ macro(ei_add_test_internal testname testname_with_suffix)
   endif()
   
   if(EIGEN_ADD_TEST_FILENAME_EXTENSION STREQUAL cu)
-    cuda_add_executable(${targetname} ${filename})
+    if (${ARGC} GREATER 2)
+      cuda_add_executable(${targetname} ${filename} OPTIONS ${ARGV2})
+    else()
+      cuda_add_executable(${targetname} ${filename})
+    endif()
   else()
     add_executable(${targetname} ${filename})
   endif()
-  
   
   if (targetname MATCHES "^eigen2_")
     add_dependencies(eigen2_buildtests ${targetname})
@@ -304,6 +307,12 @@ macro(ei_testing_print_summary)
       message(STATUS "C++11:             ON")
     else()
       message(STATUS "C++11:             OFF")
+    endif()
+
+    if(EIGEN_TEST_NVCC)
+      message(STATUS "CUDA:              ON")
+    else()
+      message(STATUS "CUDA:              OFF")
     endif()
 
   endif() # vectorization / alignment options
