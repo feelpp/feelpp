@@ -63,7 +63,7 @@ Packet4f plog<Packet4f>(const Packet4f& _x)
   x = _mm_or_ps(x, p4f_half);
 
   emm0 = _mm_sub_epi32(emm0, p4i_0x7f);
-  Packet4f e = padd(_mm_cvtepi32_ps(emm0), p4f_1);
+  Packet4f e = padd(Packet4f(_mm_cvtepi32_ps(emm0)), p4f_1);
 
   /* part2:
      if( x < SQRTHF ) {
@@ -72,9 +72,9 @@ Packet4f plog<Packet4f>(const Packet4f& _x)
      } else { x = x - 1.0; }
   */
   Packet4f mask = _mm_cmplt_ps(x, p4f_cephes_SQRTHF);
-  Packet4f tmp = _mm_and_ps(x, mask);
+  Packet4f tmp = pand(x, mask);
   x = psub(x, p4f_1);
-  e = psub(e, _mm_and_ps(p4f_1, mask));
+  e = psub(e, pand(p4f_1, mask));
   x = padd(x, tmp);
 
   Packet4f x2 = pmul(x,x);
@@ -126,7 +126,7 @@ Packet4f pexp<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(cephes_exp_p4, 1.6666665459E-1f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_exp_p5, 5.0000001201E-1f);
 
-  Packet4f tmp = _mm_setzero_ps(), fx;
+  Packet4f tmp, fx;
   Packet4i emm0;
 
   // clamp x
@@ -195,7 +195,7 @@ Packet2d pexp<Packet2d>(const Packet2d& _x)
   _EIGEN_DECLARE_CONST_Packet2d(cephes_exp_C2, 1.42860682030941723212e-6);
   static const __m128i p4i_1023_0 = _mm_setr_epi32(1023, 1023, 0, 0);
 
-  Packet2d tmp = _mm_setzero_pd(), fx;
+  Packet2d tmp, fx;
   Packet4i emm0;
 
   // clamp x
@@ -279,7 +279,7 @@ Packet4f psin<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(coscof_p2,  4.166664568298827E-002f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_FOPI, 1.27323954473516f); // 4 / M_PI
 
-  Packet4f xmm1, xmm2 = _mm_setzero_ps(), xmm3, sign_bit, y;
+  Packet4f xmm1, xmm2, xmm3, sign_bit, y;
 
   Packet4i emm0, emm2;
   sign_bit = x;
@@ -378,7 +378,7 @@ Packet4f pcos<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(coscof_p2,  4.166664568298827E-002f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_FOPI, 1.27323954473516f); // 4 / M_PI
 
-  Packet4f xmm1, xmm2 = _mm_setzero_ps(), xmm3, y;
+  Packet4f xmm1, xmm2, xmm3, y;
   Packet4i emm0, emm2;
 
   x = pabs(x);
@@ -462,11 +462,59 @@ Packet4f psqrt<Packet4f>(const Packet4f& _x)
 
 #else
 
-template<> EIGEN_STRONG_INLINE Packet4f psqrt<Packet4f>(const Packet4f& x) { return _mm_sqrt_ps(x); }
+template<>EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED 
+Packet4f psqrt<Packet4f>(const Packet4f& x) { return _mm_sqrt_ps(x); }
 
 #endif
 
-template<> EIGEN_STRONG_INLINE Packet2d psqrt<Packet2d>(const Packet2d& x) { return _mm_sqrt_pd(x); }
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet2d psqrt<Packet2d>(const Packet2d& x) { return _mm_sqrt_pd(x); }
+
+#if EIGEN_FAST_MATH
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet4f prsqrt<Packet4f>(const Packet4f& _x) {
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(inf, 0x7f800000);
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(nan, 0x7fc00000);
+  _EIGEN_DECLARE_CONST_Packet4f(one_point_five, 1.5f);
+  _EIGEN_DECLARE_CONST_Packet4f(minus_half, -0.5f);
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(flt_min, 0x00800000);
+
+  Packet4f neg_half = pmul(_x, p4f_minus_half);
+
+  // select only the inverse sqrt of positive normal inputs (denormals are
+  // flushed to zero and cause infs as well).
+  Packet4f le_zero_mask = _mm_cmple_ps(_x, p4f_flt_min);
+  Packet4f x = _mm_andnot_ps(le_zero_mask, _mm_rsqrt_ps(_x));
+
+  // Fill in NaNs and Infs for the negative/zero entries.
+  Packet4f neg_mask = _mm_cmplt_ps(_x, _mm_setzero_ps());
+  Packet4f zero_mask = _mm_andnot_ps(neg_mask, le_zero_mask);
+  Packet4f infs_and_nans = _mm_or_ps(_mm_and_ps(neg_mask, p4f_nan),
+                                        _mm_and_ps(zero_mask, p4f_inf));
+
+  // Do a single step of Newton's iteration.
+  x = pmul(x, pmadd(neg_half, pmul(x, x), p4f_one_point_five));
+
+  // Insert NaNs and Infs in all the right places.
+  return _mm_or_ps(x, infs_and_nans);
+}
+
+#else
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet4f prsqrt<Packet4f>(const Packet4f& x) {
+  // Unfortunately we can't use the much faster mm_rqsrt_ps since it only provides an approximation.
+  return _mm_div_ps(pset1<Packet4f>(1.0f), _mm_sqrt_ps(x));
+}
+
+#endif
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet2d prsqrt<Packet2d>(const Packet2d& x) {
+  // Unfortunately we can't use the much faster mm_rqsrt_pd since it only provides an approximation.
+  return _mm_div_pd(pset1<Packet2d>(1.0), _mm_sqrt_pd(x));
+}
 
 } // end namespace internal
 

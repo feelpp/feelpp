@@ -11,9 +11,20 @@ endmacro(ei_add_property)
 #internal. See documentation of ei_add_test for details.
 macro(ei_add_test_internal testname testname_with_suffix)
   set(targetname ${testname_with_suffix})
-
-  set(filename ${testname}.cpp)
-  add_executable(${targetname} ${filename})
+  
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+  
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION STREQUAL cu)
+    cuda_add_executable(${targetname} ${filename})
+  else()
+    add_executable(${targetname} ${filename})
+  endif()
+  
+  
   if (targetname MATCHES "^eigen2_")
     add_dependencies(eigen2_buildtests ${targetname})
   else()
@@ -68,11 +79,7 @@ macro(ei_add_test_internal testname testname_with_suffix)
     endif()
   endif() 
 
-  if(EIGEN_BIN_BASH_EXISTS)
-    add_test(${testname_with_suffix} "${Eigen_SOURCE_DIR}/test/runtest.sh" "${testname_with_suffix}")
-  else()
-    add_test(${testname_with_suffix} "${targetname}")
-  endif()
+  add_test(${testname_with_suffix} "${targetname}")
   
   # Specify target and test labels accoirding to EIGEN_CURRENT_SUBPROJECT
   get_property(current_subproject GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT)  
@@ -131,7 +138,13 @@ macro(ei_add_test testname)
   set(EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}${testname}\n")
   set_property(GLOBAL PROPERTY EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}")
 
-  file(READ "${testname}.cpp" test_source)
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+  
+  file(READ "${filename}" test_source)
   set(parts 0)
   string(REGEX MATCHALL "CALL_SUBTEST_[0-9]+|EIGEN_TEST_PART_[0-9]+|EIGEN_SUFFIXES(;[0-9]+)+"
          occurences "${test_source}")
@@ -251,16 +264,46 @@ macro(ei_testing_print_summary)
       message(STATUS "SSE4.2:            Using architecture defaults")
     endif()
 
+    if(EIGEN_TEST_AVX)
+      message(STATUS "AVX:               ON")
+    else()
+      message(STATUS "AVX:               Using architecture defaults")
+    endif()
+
+   if(EIGEN_TEST_FMA)
+      message(STATUS "FMA:               ON")
+    else()
+      message(STATUS "FMA:               Using architecture defaults")
+    endif()
+
     if(EIGEN_TEST_ALTIVEC)
       message(STATUS "Altivec:           ON")
     else()
       message(STATUS "Altivec:           Using architecture defaults")
     endif()
 
+    if(EIGEN_TEST_VSX)
+      message(STATUS "VSX:               ON")
+    else()
+      message(STATUS "VSX:               Using architecture defaults")
+    endif()
+
     if(EIGEN_TEST_NEON)
       message(STATUS "ARM NEON:          ON")
     else()
       message(STATUS "ARM NEON:          Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_NEON64)
+      message(STATUS "ARMv8 NEON:        ON")
+    else()
+      message(STATUS "ARMv8 NEON:        Using architecture defaults")
+    endif()
+    
+    if(EIGEN_TEST_CXX11)
+      message(STATUS "C++11:             ON")
+    else()
+      message(STATUS "C++11:             OFF")
     endif()
 
   endif() # vectorization / alignment options
@@ -310,34 +353,33 @@ macro(ei_set_sitename)
 endmacro(ei_set_sitename)
 
 macro(ei_get_compilerver VAR)
-  if(MSVC)
-    # on windows system, we use a modified CMake script  
-    include(EigenDetermineVSServicePack)
-    EigenDetermineVSServicePack( my_service_pack )
+    if(MSVC)
+      # on windows system, we use a modified CMake script  
+      include(EigenDetermineVSServicePack)
+      EigenDetermineVSServicePack( my_service_pack )
 
-    if( my_service_pack )
-      set(${VAR} ${my_service_pack})
+      if( my_service_pack )
+        set(${VAR} ${my_service_pack})
+      else()
+        set(${VAR} "na")
+      endif()
     else()
-      set(${VAR} "na")
-    endif()
-  else()
     # on all other system we rely on ${CMAKE_CXX_COMPILER}
-    # supporting a "--version" flag
+    # supporting a "--version" or "/version" flag
     
-    # check whether the head command exists
-    find_program(HEAD_EXE head NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_CMAKE_SYSTEM_PATH)
-    if(HEAD_EXE)
-      execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
-                      COMMAND head -n 1
-                      OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} EQUAL "Intel")
+      set(EIGEN_CXX_FLAG_VERSION "/version")
     else()
-      execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
-                      OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
-      string(REGEX REPLACE "[\n\r].*"  ""  eigen_cxx_compiler_version_string  ${eigen_cxx_compiler_version_string})
+      set(EIGEN_CXX_FLAG_VERSION "--version")
     endif()
+    
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${EIGEN_CXX_FLAG_VERSION}
+                    OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "[\n\r].*"  ""  eigen_cxx_compiler_version_string  ${eigen_cxx_compiler_version_string})
     
     ei_get_compilerver_from_cxx_version_string("${eigen_cxx_compiler_version_string}" CNAME CVER)
     set(${VAR} "${CNAME}-${CVER}")
+    
   endif()
 endmacro(ei_get_compilerver)
 
@@ -393,8 +435,16 @@ macro(ei_get_cxxflags VAR)
   ei_is_64bit_env(IS_64BIT_ENV)
   if(EIGEN_TEST_NEON)
     set(${VAR} NEON)
+  elseif(EIGEN_TEST_NEON64)
+    set(${VAR} NEON)
+  elseif(EIGEN_TEST_VSX)
+    set(${VAR} VSX)
   elseif(EIGEN_TEST_ALTIVEC)
     set(${VAR} ALVEC)
+  elseif(EIGEN_TEST_FMA)
+    set(${VAR} FMA)
+  elseif(EIGEN_TEST_AVX)
+    set(${VAR} AVX)
   elseif(EIGEN_TEST_SSE4_2)
     set(${VAR} SSE42)
   elseif(EIGEN_TEST_SSE4_1)
@@ -442,6 +492,10 @@ macro(ei_set_build_string)
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-32bit)
   else()
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-64bit)
+  endif()
+  
+  if(EIGEN_TEST_CXX11)
+    set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-cxx11)
   endif()
   
   if(EIGEN_BUILD_STRING_SUFFIX)

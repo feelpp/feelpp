@@ -53,7 +53,8 @@ template<typename _MatrixType> class HouseholderQR
     };
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
-    typedef typename MatrixType::Index Index;
+    // FIXME should be int
+    typedef typename MatrixType::StorageIndex StorageIndex;
     typedef Matrix<Scalar, RowsAtCompileTime, RowsAtCompileTime, (MatrixType::Flags&RowMajorBit) ? RowMajor : ColMajor, MaxRowsAtCompileTime, MaxRowsAtCompileTime> MatrixQType;
     typedef typename internal::plain_diag_type<MatrixType>::type HCoeffsType;
     typedef typename internal::plain_row_type<MatrixType>::type RowVectorType;
@@ -91,13 +92,14 @@ template<typename _MatrixType> class HouseholderQR
       * 
       * \sa compute()
       */
-    HouseholderQR(const MatrixType& matrix)
+    template<typename InputType>
+    explicit HouseholderQR(const EigenBase<InputType>& matrix)
       : m_qr(matrix.rows(), matrix.cols()),
         m_hCoeffs((std::min)(matrix.rows(),matrix.cols())),
         m_temp(matrix.cols()),
         m_isInitialized(false)
     {
-      compute(matrix);
+      compute(matrix.derived());
     }
 
     /** This method finds a solution x to the equation Ax=b, where A is the matrix of which
@@ -118,11 +120,11 @@ template<typename _MatrixType> class HouseholderQR
       * Output: \verbinclude HouseholderQR_solve.out
       */
     template<typename Rhs>
-    inline const internal::solve_retval<HouseholderQR, Rhs>
+    inline const Solve<HouseholderQR, Rhs>
     solve(const MatrixBase<Rhs>& b) const
     {
       eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
-      return internal::solve_retval<HouseholderQR, Rhs>(*this, b.derived());
+      return Solve<HouseholderQR, Rhs>(*this, b.derived());
     }
 
     /** This method returns an expression of the unitary matrix Q as a sequence of Householder transformations.
@@ -148,7 +150,8 @@ template<typename _MatrixType> class HouseholderQR
         return m_qr;
     }
 
-    HouseholderQR& compute(const MatrixType& matrix);
+    template<typename InputType>
+    HouseholderQR& compute(const EigenBase<InputType>& matrix);
 
     /** \returns the absolute value of the determinant of the matrix of which
       * *this is the QR decomposition. It has only linear complexity
@@ -187,8 +190,20 @@ template<typename _MatrixType> class HouseholderQR
       * For advanced uses only.
       */
     const HCoeffsType& hCoeffs() const { return m_hCoeffs; }
+    
+    #ifndef EIGEN_PARSED_BY_DOXYGEN
+    template<typename RhsType, typename DstType>
+    EIGEN_DEVICE_FUNC
+    void _solve_impl(const RhsType &rhs, DstType &dst) const;
+    #endif
 
   protected:
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+    }
+    
     MatrixType m_qr;
     HCoeffsType m_hCoeffs;
     RowVectorType m_temp;
@@ -218,7 +233,6 @@ namespace internal {
 template<typename MatrixQR, typename HCoeffs>
 void householder_qr_inplace_unblocked(MatrixQR& mat, HCoeffs& hCoeffs, typename MatrixQR::Scalar* tempData = 0)
 {
-  typedef typename MatrixQR::Index Index;
   typedef typename MatrixQR::Scalar Scalar;
   typedef typename MatrixQR::RealScalar RealScalar;
   Index rows = mat.rows();
@@ -251,88 +265,87 @@ void householder_qr_inplace_unblocked(MatrixQR& mat, HCoeffs& hCoeffs, typename 
 }
 
 /** \internal */
-template<typename MatrixQR, typename HCoeffs>
-void householder_qr_inplace_blocked(MatrixQR& mat, HCoeffs& hCoeffs,
-                                       typename MatrixQR::Index maxBlockSize=32,
-                                       typename MatrixQR::Scalar* tempData = 0)
+template<typename MatrixQR, typename HCoeffs,
+  typename MatrixQRScalar = typename MatrixQR::Scalar,
+  bool InnerStrideIsOne = (MatrixQR::InnerStrideAtCompileTime == 1 && HCoeffs::InnerStrideAtCompileTime == 1)>
+struct householder_qr_inplace_blocked
 {
-  typedef typename MatrixQR::Index Index;
-  typedef typename MatrixQR::Scalar Scalar;
-  typedef Block<MatrixQR,Dynamic,Dynamic> BlockType;
-
-  Index rows = mat.rows();
-  Index cols = mat.cols();
-  Index size = (std::min)(rows, cols);
-
-  typedef Matrix<Scalar,Dynamic,1,ColMajor,MatrixQR::MaxColsAtCompileTime,1> TempType;
-  TempType tempVector;
-  if(tempData==0)
+  // This is specialized for MKL-supported Scalar types in HouseholderQR_MKL.h
+  static void run(MatrixQR& mat, HCoeffs& hCoeffs, Index maxBlockSize=32,
+      typename MatrixQR::Scalar* tempData = 0)
   {
-    tempVector.resize(cols);
-    tempData = tempVector.data();
-  }
+    typedef typename MatrixQR::Scalar Scalar;
+    typedef Block<MatrixQR,Dynamic,Dynamic> BlockType;
 
-  Index blockSize = (std::min)(maxBlockSize,size);
+    Index rows = mat.rows();
+    Index cols = mat.cols();
+    Index size = (std::min)(rows, cols);
 
-  Index k = 0;
-  for (k = 0; k < size; k += blockSize)
-  {
-    Index bs = (std::min)(size-k,blockSize);  // actual size of the block
-    Index tcols = cols - k - bs;            // trailing columns
-    Index brows = rows-k;                   // rows of the block
-
-    // partition the matrix:
-    //        A00 | A01 | A02
-    // mat  = A10 | A11 | A12
-    //        A20 | A21 | A22
-    // and performs the qr dec of [A11^T A12^T]^T
-    // and update [A21^T A22^T]^T using level 3 operations.
-    // Finally, the algorithm continue on A22
-
-    BlockType A11_21 = mat.block(k,k,brows,bs);
-    Block<HCoeffs,Dynamic,1> hCoeffsSegment = hCoeffs.segment(k,bs);
-
-    householder_qr_inplace_unblocked(A11_21, hCoeffsSegment, tempData);
-
-    if(tcols)
+    typedef Matrix<Scalar,Dynamic,1,ColMajor,MatrixQR::MaxColsAtCompileTime,1> TempType;
+    TempType tempVector;
+    if(tempData==0)
     {
-      BlockType A21_22 = mat.block(k,k+bs,brows,tcols);
-      apply_block_householder_on_the_left(A21_22,A11_21,hCoeffsSegment.adjoint());
+      tempVector.resize(cols);
+      tempData = tempVector.data();
     }
-  }
-}
 
-template<typename _MatrixType, typename Rhs>
-struct solve_retval<HouseholderQR<_MatrixType>, Rhs>
-  : solve_retval_base<HouseholderQR<_MatrixType>, Rhs>
-{
-  EIGEN_MAKE_SOLVE_HELPERS(HouseholderQR<_MatrixType>,Rhs)
+    Index blockSize = (std::min)(maxBlockSize,size);
 
-  template<typename Dest> void evalTo(Dest& dst) const
-  {
-    const Index rows = dec().rows(), cols = dec().cols();
-    const Index rank = (std::min)(rows, cols);
-    eigen_assert(rhs().rows() == rows);
+    Index k = 0;
+    for (k = 0; k < size; k += blockSize)
+    {
+      Index bs = (std::min)(size-k,blockSize);  // actual size of the block
+      Index tcols = cols - k - bs;              // trailing columns
+      Index brows = rows-k;                     // rows of the block
 
-    typename Rhs::PlainObject c(rhs());
+      // partition the matrix:
+      //        A00 | A01 | A02
+      // mat  = A10 | A11 | A12
+      //        A20 | A21 | A22
+      // and performs the qr dec of [A11^T A12^T]^T
+      // and update [A21^T A22^T]^T using level 3 operations.
+      // Finally, the algorithm continue on A22
 
-    // Note that the matrix Q = H_0^* H_1^*... so its inverse is Q^* = (H_0 H_1 ...)^T
-    c.applyOnTheLeft(householderSequence(
-      dec().matrixQR().leftCols(rank),
-      dec().hCoeffs().head(rank)).transpose()
-    );
+      BlockType A11_21 = mat.block(k,k,brows,bs);
+      Block<HCoeffs,Dynamic,1> hCoeffsSegment = hCoeffs.segment(k,bs);
 
-    dec().matrixQR()
-       .topLeftCorner(rank, rank)
-       .template triangularView<Upper>()
-       .solveInPlace(c.topRows(rank));
+      householder_qr_inplace_unblocked(A11_21, hCoeffsSegment, tempData);
 
-    dst.topRows(rank) = c.topRows(rank);
-    dst.bottomRows(cols-rank).setZero();
+      if(tcols)
+      {
+        BlockType A21_22 = mat.block(k,k+bs,brows,tcols);
+        apply_block_householder_on_the_left(A21_22,A11_21,hCoeffsSegment, false); // false == backward
+      }
+    }
   }
 };
 
 } // end namespace internal
+
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+template<typename _MatrixType>
+template<typename RhsType, typename DstType>
+void HouseholderQR<_MatrixType>::_solve_impl(const RhsType &rhs, DstType &dst) const
+{
+  const Index rank = (std::min)(rows(), cols());
+  eigen_assert(rhs.rows() == rows());
+
+  typename RhsType::PlainObject c(rhs);
+
+  // Note that the matrix Q = H_0^* H_1^*... so its inverse is Q^* = (H_0 H_1 ...)^T
+  c.applyOnTheLeft(householderSequence(
+    m_qr.leftCols(rank),
+    m_hCoeffs.head(rank)).transpose()
+  );
+
+  m_qr.topLeftCorner(rank, rank)
+      .template triangularView<Upper>()
+      .solveInPlace(c.topRows(rank));
+
+  dst.topRows(rank) = c.topRows(rank);
+  dst.bottomRows(cols()-rank).setZero();
+}
+#endif
 
 /** Performs the QR factorization of the given matrix \a matrix. The result of
   * the factorization is stored into \c *this, and a reference to \c *this
@@ -341,23 +354,27 @@ struct solve_retval<HouseholderQR<_MatrixType>, Rhs>
   * \sa class HouseholderQR, HouseholderQR(const MatrixType&)
   */
 template<typename MatrixType>
-HouseholderQR<MatrixType>& HouseholderQR<MatrixType>::compute(const MatrixType& matrix)
+template<typename InputType>
+HouseholderQR<MatrixType>& HouseholderQR<MatrixType>::compute(const EigenBase<InputType>& matrix)
 {
+  check_template_parameters();
+  
   Index rows = matrix.rows();
   Index cols = matrix.cols();
   Index size = (std::min)(rows,cols);
 
-  m_qr = matrix;
+  m_qr = matrix.derived();
   m_hCoeffs.resize(size);
 
   m_temp.resize(cols);
 
-  internal::householder_qr_inplace_blocked(m_qr, m_hCoeffs, 48, m_temp.data());
+  internal::householder_qr_inplace_blocked<MatrixType, HCoeffsType>::run(m_qr, m_hCoeffs, 48, m_temp.data());
 
   m_isInitialized = true;
   return *this;
 }
 
+#ifndef __CUDACC__
 /** \return the Householder QR decomposition of \c *this.
   *
   * \sa class HouseholderQR
@@ -368,6 +385,7 @@ MatrixBase<Derived>::householderQr() const
 {
   return HouseholderQR<PlainObject>(eval());
 }
+#endif // __CUDACC__
 
 } // end namespace Eigen
 

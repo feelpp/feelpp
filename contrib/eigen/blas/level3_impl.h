@@ -6,7 +6,7 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+#include <iostream>
 #include "common.h"
 
 int EIGEN_BLAS_FUNC(gemm)(char *opa, char *opb, int *m, int *n, int *k, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *pb, int *ldb, RealScalar *pbeta, RealScalar *pc, int *ldc)
@@ -18,8 +18,8 @@ int EIGEN_BLAS_FUNC(gemm)(char *opa, char *opb, int *m, int *n, int *k, RealScal
   static bool init = false;
   if(!init)
   {
-    for(int k=0; k<12; ++k)
-      func[k] = 0;
+    for(int i=0; i<12; ++i)
+      func[i] = 0;
     func[NOTR  | (NOTR << 2)] = (internal::general_matrix_matrix_product<DenseIndex,Scalar,ColMajor,false,Scalar,ColMajor,false,ColMajor>::run);
     func[TR    | (NOTR << 2)] = (internal::general_matrix_matrix_product<DenseIndex,Scalar,RowMajor,false,Scalar,ColMajor,false,ColMajor>::run);
     func[ADJ   | (NOTR << 2)] = (internal::general_matrix_matrix_product<DenseIndex,Scalar,RowMajor,Conj, Scalar,ColMajor,false,ColMajor>::run);
@@ -50,13 +50,19 @@ int EIGEN_BLAS_FUNC(gemm)(char *opa, char *opb, int *m, int *n, int *k, RealScal
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"GEMM ",&info,6);
 
+  if (*m == 0 || *n == 0)
+    return 0;
+
   if(beta!=Scalar(1))
   {
     if(beta==Scalar(0)) matrix(c, *m, *n, *ldc).setZero();
     else                matrix(c, *m, *n, *ldc) *= beta;
   }
 
-  internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic> blocking(*m,*n,*k);
+  if(*k == 0)
+    return 0;
+
+  internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic> blocking(*m,*n,*k,1,true);
 
   int code = OP(*opa) | (OP(*opb) << 2);
   func[code](*m, *n, *k, a, *lda, b, *ldb, c, *ldc, alpha, blocking, 0);
@@ -72,8 +78,8 @@ int EIGEN_BLAS_FUNC(trsm)(char *side, char *uplo, char *opa, char *diag, int *m,
   static bool init = false;
   if(!init)
   {
-    for(int k=0; k<32; ++k)
-      func[k] = 0;
+    for(int i=0; i<32; ++i)
+      func[i] = 0;
 
     func[NOTR  | (LEFT  << 2) | (UP << 3) | (NUNIT << 4)] = (internal::triangular_solve_matrix<Scalar,DenseIndex,OnTheLeft, Upper|0,          false,ColMajor,ColMajor>::run);
     func[TR    | (LEFT  << 2) | (UP << 3) | (NUNIT << 4)] = (internal::triangular_solve_matrix<Scalar,DenseIndex,OnTheLeft, Lower|0,          false,RowMajor,ColMajor>::run);
@@ -127,16 +133,19 @@ int EIGEN_BLAS_FUNC(trsm)(char *side, char *uplo, char *opa, char *diag, int *m,
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"TRSM ",&info,6);
 
+  if(*m==0 || *n==0)
+    return 0;
+
   int code = OP(*opa) | (SIDE(*side) << 2) | (UPLO(*uplo) << 3) | (DIAG(*diag) << 4);
   
   if(SIDE(*side)==LEFT)
   {
-    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*m);
+    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*m,1,false);
     func[code](*m, *n, a, *lda, b, *ldb, blocking);
   }
   else
   {
-    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*n);
+    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*n,1,false);
     func[code](*n, *m, a, *lda, b, *ldb, blocking);
   }
 
@@ -222,12 +231,12 @@ int EIGEN_BLAS_FUNC(trmm)(char *side, char *uplo, char *opa, char *diag, int *m,
 
   if(SIDE(*side)==LEFT)
   {
-    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*m);
+    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*m,1,false);
     func[code](*m, *n, *m, a, *lda, tmp.data(), tmp.outerStride(), b, *ldb, alpha, blocking);
   }
   else
   {
-    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*n);
+    internal::gemm_blocking_space<ColMajor,Scalar,Scalar,Dynamic,Dynamic,Dynamic,4> blocking(*m,*n,*n,1,false);
     func[code](*m, *n, *n, tmp.data(), tmp.outerStride(), a, *lda, b, *ldb, alpha, blocking);
   }
   return 1;
@@ -312,8 +321,8 @@ int EIGEN_BLAS_FUNC(syrk)(char *uplo, char *op, int *n, int *k, RealScalar *palp
   static bool init = false;
   if(!init)
   {
-    for(int k=0; k<8; ++k)
-      func[k] = 0;
+    for(int i=0; i<8; ++i)
+      func[i] = 0;
 
     func[NOTR  | (UP << 2)] = (internal::general_matrix_matrix_triangular_product<DenseIndex,Scalar,ColMajor,false,Scalar,RowMajor,ColMajor,Conj, Upper>::run);
     func[TR    | (UP << 2)] = (internal::general_matrix_matrix_triangular_product<DenseIndex,Scalar,RowMajor,false,Scalar,ColMajor,ColMajor,Conj, Upper>::run);
@@ -352,6 +361,9 @@ int EIGEN_BLAS_FUNC(syrk)(char *uplo, char *op, int *n, int *k, RealScalar *palp
       else                matrix(c, *n, *n, *ldc).triangularView<Lower>() *= beta;
   }
 
+  if(*n==0 || *k==0)
+    return 0;
+
   #if ISCOMPLEX
   // FIXME add support for symmetric complex matrix
   if(UPLO(*uplo)==UP)
@@ -385,6 +397,8 @@ int EIGEN_BLAS_FUNC(syr2k)(char *uplo, char *op, int *n, int *k, RealScalar *pal
   Scalar* c = reinterpret_cast<Scalar*>(pc);
   Scalar alpha = *reinterpret_cast<Scalar*>(palpha);
   Scalar beta  = *reinterpret_cast<Scalar*>(pbeta);
+
+//   std::cerr << "in syr2k " << *uplo << " " << *op << " " << *n << " " << *k << " " << alpha << " " << *lda << " " << *ldb << " " << beta << " " << *ldc << "\n";
 
   int info = 0;
   if(UPLO(*uplo)==INVALID)                                            info = 1;
@@ -500,14 +514,16 @@ int EIGEN_BLAS_FUNC(hemm)(char *side, char *uplo, int *m, int *n, RealScalar *pa
 // c = alpha*conj(a')*a + beta*c  for op  = 'C'or'c'
 int EIGEN_BLAS_FUNC(herk)(char *uplo, char *op, int *n, int *k, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *pbeta, RealScalar *pc, int *ldc)
 {
+//   std::cerr << "in herk " << *uplo << " " << *op << " " << *n << " " << *k << " " << *palpha << " " << *lda << " " << *pbeta << " " << *ldc << "\n";
+
   typedef void (*functype)(DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, const Scalar&);
   static functype func[8];
 
   static bool init = false;
   if(!init)
   {
-    for(int k=0; k<8; ++k)
-      func[k] = 0;
+    for(int i=0; i<8; ++i)
+      func[i] = 0;
 
     func[NOTR  | (UP << 2)] = (internal::general_matrix_matrix_triangular_product<DenseIndex,Scalar,ColMajor,false,Scalar,RowMajor,Conj, ColMajor,Upper>::run);
     func[ADJ   | (UP << 2)] = (internal::general_matrix_matrix_triangular_product<DenseIndex,Scalar,RowMajor,Conj, Scalar,ColMajor,false,ColMajor,Upper>::run);
@@ -571,13 +587,15 @@ int EIGEN_BLAS_FUNC(her2k)(char *uplo, char *op, int *n, int *k, RealScalar *pal
   Scalar alpha = *reinterpret_cast<Scalar*>(palpha);
   RealScalar beta  = *pbeta;
 
+//   std::cerr << "in her2k " << *uplo << " " << *op << " " << *n << " " << *k << " " << alpha << " " << *lda << " " << *ldb << " " << beta << " " << *ldc << "\n";
+
   int info = 0;
   if(UPLO(*uplo)==INVALID)                                            info = 1;
   else if((OP(*op)==INVALID) || (OP(*op)==TR))                        info = 2;
   else if(*n<0)                                                       info = 3;
   else if(*k<0)                                                       info = 4;
   else if(*lda<std::max(1,(OP(*op)==NOTR)?*n:*k))                     info = 7;
-  else if(*lda<std::max(1,(OP(*op)==NOTR)?*n:*k))                     info = 9;
+  else if(*ldb<std::max(1,(OP(*op)==NOTR)?*n:*k))                     info = 9;
   else if(*ldc<std::max(1,*n))                                        info = 12;
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"HER2K",&info,6);

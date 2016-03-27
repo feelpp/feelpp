@@ -59,23 +59,47 @@ protected:
 public:
 
   /** Construct a 2D counter clock wise rotation from the angle \a a in radian. */
-  inline Rotation2D(const Scalar& a) : m_angle(a) {}
+  explicit inline Rotation2D(const Scalar& a) : m_angle(a) {}
   
   /** Default constructor wihtout initialization. The represented rotation is undefined. */
   Rotation2D() {}
+
+  /** Construct a 2D rotation from a 2x2 rotation matrix \a mat.
+    *
+    * \sa fromRotationMatrix()
+    */
+  template<typename Derived>
+  explicit Rotation2D(const MatrixBase<Derived>& m)
+  {
+    fromRotationMatrix(m.derived());
+  }
 
   /** \returns the rotation angle */
   inline Scalar angle() const { return m_angle; }
 
   /** \returns a read-write reference to the rotation angle */
   inline Scalar& angle() { return m_angle; }
+  
+  /** \returns the rotation angle in [0,2pi] */
+  inline Scalar smallestPositiveAngle() const {
+    Scalar tmp = fmod(m_angle,Scalar(2)*EIGEN_PI);
+    return tmp<Scalar(0) ? tmp + Scalar(2)*EIGEN_PI : tmp;
+  }
+  
+  /** \returns the rotation angle in [-pi,pi] */
+  inline Scalar smallestAngle() const {
+    Scalar tmp = fmod(m_angle,Scalar(2)*EIGEN_PI);
+    if(tmp>Scalar(EIGEN_PI))       tmp -= Scalar(2)*Scalar(EIGEN_PI);
+    else if(tmp<-Scalar(EIGEN_PI)) tmp += Scalar(2)*Scalar(EIGEN_PI);
+    return tmp;
+  }
 
   /** \returns the inverse rotation */
-  inline Rotation2D inverse() const { return -m_angle; }
+  inline Rotation2D inverse() const { return Rotation2D(-m_angle); }
 
   /** Concatenates two rotations */
   inline Rotation2D operator*(const Rotation2D& other) const
-  { return m_angle + other.m_angle; }
+  { return Rotation2D(m_angle + other.m_angle); }
 
   /** Concatenates two rotations */
   inline Rotation2D& operator*=(const Rotation2D& other)
@@ -89,11 +113,25 @@ public:
   Rotation2D& fromRotationMatrix(const MatrixBase<Derived>& m);
   Matrix2 toRotationMatrix() const;
 
+  /** Set \c *this from a 2x2 rotation matrix \a mat.
+    * In other words, this function extract the rotation angle from the rotation matrix.
+    *
+    * This method is an alias for fromRotationMatrix()
+    *
+    * \sa fromRotationMatrix()
+    */
+  template<typename Derived>
+  Rotation2D& operator=(const  MatrixBase<Derived>& m)
+  { return fromRotationMatrix(m.derived()); }
+
   /** \returns the spherical interpolation between \c *this and \a other using
     * parameter \a t. It is in fact equivalent to a linear interpolation.
     */
   inline Rotation2D slerp(const Scalar& t, const Rotation2D& other) const
-  { return m_angle * (1-t) + other.angle() * t; }
+  {
+    Scalar dist = Rotation2D(other.m_angle-m_angle).smallestAngle();
+    return Rotation2D(m_angle + dist*t);
+  }
 
   /** \returns \c *this with scalar type casted to \a NewScalarType
     *
@@ -119,6 +157,7 @@ public:
     * \sa MatrixBase::isApprox() */
   bool isApprox(const Rotation2D& other, const typename NumTraits<Scalar>::Real& prec = NumTraits<Scalar>::dummy_precision()) const
   { return internal::isApprox(m_angle,other.m_angle, prec); }
+  
 };
 
 /** \ingroup Geometry_Module

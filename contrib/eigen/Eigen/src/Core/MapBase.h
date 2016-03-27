@@ -12,7 +12,7 @@
 #define EIGEN_MAPBASE_H
 
 #define EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived) \
-      EIGEN_STATIC_ASSERT((int(internal::traits<Derived>::Flags) & LinearAccessBit) || Derived::IsVectorAtCompileTime, \
+      EIGEN_STATIC_ASSERT((int(internal::evaluator<Derived>::Flags) & LinearAccessBit) || Derived::IsVectorAtCompileTime, \
                           YOU_ARE_TRYING_TO_USE_AN_INDEX_BASED_ACCESSOR_ON_AN_EXPRESSION_THAT_DOES_NOT_SUPPORT_THAT)
 
 namespace Eigen { 
@@ -37,7 +37,6 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
     };
 
     typedef typename internal::traits<Derived>::StorageKind StorageKind;
-    typedef typename internal::traits<Derived>::Index Index;
     typedef typename internal::traits<Derived>::Scalar Scalar;
     typedef typename internal::packet_traits<Scalar>::type PacketScalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
@@ -76,8 +75,8 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
 
     typedef typename Base::CoeffReturnType CoeffReturnType;
 
-    inline Index rows() const { return m_rows.value(); }
-    inline Index cols() const { return m_cols.value(); }
+    EIGEN_DEVICE_FUNC inline Index rows() const { return m_rows.value(); }
+    EIGEN_DEVICE_FUNC inline Index cols() const { return m_cols.value(); }
 
     /** Returns a pointer to the first coefficient of the matrix or vector.
       *
@@ -85,24 +84,28 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
       *
       * \sa innerStride(), outerStride()
       */
-    inline const Scalar* data() const { return m_data; }
+    EIGEN_DEVICE_FUNC inline const Scalar* data() const { return m_data; }
 
+    EIGEN_DEVICE_FUNC
     inline const Scalar& coeff(Index rowId, Index colId) const
     {
       return m_data[colId * colStride() + rowId * rowStride()];
     }
 
+    EIGEN_DEVICE_FUNC
     inline const Scalar& coeff(Index index) const
     {
       EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
       return m_data[index * innerStride()];
     }
 
+    EIGEN_DEVICE_FUNC
     inline const Scalar& coeffRef(Index rowId, Index colId) const
     {
       return this->m_data[colId * colStride() + rowId * rowStride()];
     }
 
+    EIGEN_DEVICE_FUNC
     inline const Scalar& coeffRef(Index index) const
     {
       EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
@@ -123,12 +126,14 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
       return internal::ploadt<PacketScalar, LoadMode>(m_data + index * innerStride());
     }
 
-    inline MapBase(PointerType dataPtr) : m_data(dataPtr), m_rows(RowsAtCompileTime), m_cols(ColsAtCompileTime)
+    EIGEN_DEVICE_FUNC
+    explicit inline MapBase(PointerType dataPtr) : m_data(dataPtr), m_rows(RowsAtCompileTime), m_cols(ColsAtCompileTime)
     {
       EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
       checkSanity();
     }
 
+    EIGEN_DEVICE_FUNC
     inline MapBase(PointerType dataPtr, Index vecSize)
             : m_data(dataPtr),
               m_rows(RowsAtCompileTime == Dynamic ? vecSize : Index(RowsAtCompileTime)),
@@ -140,24 +145,28 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
       checkSanity();
     }
 
-    inline MapBase(PointerType dataPtr, Index nbRows, Index nbCols)
-            : m_data(dataPtr), m_rows(nbRows), m_cols(nbCols)
+    EIGEN_DEVICE_FUNC
+    inline MapBase(PointerType dataPtr, Index rows, Index cols)
+            : m_data(dataPtr), m_rows(rows), m_cols(cols)
     {
       eigen_assert( (dataPtr == 0)
-              || (   nbRows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == nbRows)
-                  && nbCols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == nbCols)));
+              || (   rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
+                  && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols)));
       checkSanity();
     }
 
+    #ifdef EIGEN_MAPBASE_PLUGIN
+    #include EIGEN_MAPBASE_PLUGIN
+    #endif
+
   protected:
 
+    EIGEN_DEVICE_FUNC
     void checkSanity() const
     {
-      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(internal::traits<Derived>::Flags&PacketAccessBit,
-                                        internal::inner_stride_at_compile_time<Derived>::ret==1),
-                          PACKET_ACCESS_REQUIRES_TO_HAVE_INNER_STRIDE_FIXED_TO_1);
-      eigen_assert(EIGEN_IMPLIES(internal::traits<Derived>::Flags&AlignedBit, (size_t(m_data) % 16) == 0)
-                   && "data is not aligned");
+#if EIGEN_MAX_ALIGN_BYTES>0
+      eigen_assert(((size_t(m_data) % EIGEN_PLAIN_ENUM_MAX(1,internal::traits<Derived>::Alignment)) == 0) && "data is not aligned");
+#endif
     }
 
     PointerType m_data;
@@ -175,7 +184,7 @@ template<typename Derived> class MapBase<Derived, WriteAccessors>
 
     typedef typename Base::Scalar Scalar;
     typedef typename Base::PacketScalar PacketScalar;
-    typedef typename Base::Index Index;
+    typedef typename Base::StorageIndex StorageIndex;
     typedef typename Base::PointerType PointerType;
 
     using Base::derived;
@@ -196,14 +205,18 @@ template<typename Derived> class MapBase<Derived, WriteAccessors>
                     const Scalar
                   >::type ScalarWithConstIfNotLvalue;
 
+    EIGEN_DEVICE_FUNC
     inline const Scalar* data() const { return this->m_data; }
+    EIGEN_DEVICE_FUNC
     inline ScalarWithConstIfNotLvalue* data() { return this->m_data; } // no const-cast here so non-const-correct code will give a compile error
 
+    EIGEN_DEVICE_FUNC
     inline ScalarWithConstIfNotLvalue& coeffRef(Index row, Index col)
     {
       return this->m_data[col * colStride() + row * rowStride()];
     }
 
+    EIGEN_DEVICE_FUNC
     inline ScalarWithConstIfNotLvalue& coeffRef(Index index)
     {
       EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS(Derived)
@@ -225,10 +238,11 @@ template<typename Derived> class MapBase<Derived, WriteAccessors>
                 (this->m_data + index * innerStride(), val);
     }
 
-    explicit inline MapBase(PointerType dataPtr) : Base(dataPtr) {}
-    inline MapBase(PointerType dataPtr, Index vecSize) : Base(dataPtr, vecSize) {}
-    inline MapBase(PointerType dataPtr, Index nbRows, Index nbCols) : Base(dataPtr, nbRows, nbCols) {}
+    EIGEN_DEVICE_FUNC explicit inline MapBase(PointerType dataPtr) : Base(dataPtr) {}
+    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index vecSize) : Base(dataPtr, vecSize) {}
+    EIGEN_DEVICE_FUNC inline MapBase(PointerType dataPtr, Index rows, Index cols) : Base(dataPtr, rows, cols) {}
 
+    EIGEN_DEVICE_FUNC
     Derived& operator=(const MapBase& other)
     {
       ReadOnlyMapBase::Base::operator=(other);

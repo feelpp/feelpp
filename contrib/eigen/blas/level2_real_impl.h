@@ -12,7 +12,7 @@
 // y = alpha*A*x + beta*y
 int EIGEN_BLAS_FUNC(symv) (char *uplo, int *n, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *px, int *incx, RealScalar *pbeta, RealScalar *py, int *incy)
 {
-  typedef void (*functype)(int, const Scalar*, int, const Scalar*, int, Scalar*, Scalar);
+  typedef void (*functype)(int, const Scalar*, int, const Scalar*, Scalar*, Scalar);
   static functype func[2];
 
   static bool init = false;
@@ -51,15 +51,15 @@ int EIGEN_BLAS_FUNC(symv) (char *uplo, int *n, RealScalar *palpha, RealScalar *p
 
   if(beta!=Scalar(1))
   {
-    if(beta==Scalar(0)) vector(actual_y, *n).setZero();
-    else                vector(actual_y, *n) *= beta;
+    if(beta==Scalar(0)) make_vector(actual_y, *n).setZero();
+    else                make_vector(actual_y, *n) *= beta;
   }
 
   int code = UPLO(*uplo);
   if(code>=2 || func[code]==0)
     return 0;
 
-  func[code](*n, a, *lda, actual_x, 1, actual_y, alpha);
+  func[code](*n, a, *lda, actual_x, actual_y, alpha);
 
   if(actual_x!=x) delete[] actual_x;
   if(actual_y!=y) delete[] copy_back(actual_y,y,*n,*incy);
@@ -179,7 +179,7 @@ int EIGEN_BLAS_FUNC(syr2)(char *uplo, int *n, RealScalar *palpha, RealScalar *px
 
   Scalar* x_cpy = get_compact_vector(x,*n,*incx);
   Scalar* y_cpy = get_compact_vector(y,*n,*incy);
-  
+
   int code = UPLO(*uplo);
   if(code>=2 || func[code]==0)
     return 0;
@@ -366,5 +366,3 @@ int EIGEN_BLAS_FUNC(ger)(int *m, int *n, Scalar *palpha, Scalar *px, int *incx, 
 
   return 1;
 }
-
-

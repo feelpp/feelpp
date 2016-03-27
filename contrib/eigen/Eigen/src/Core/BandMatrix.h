@@ -32,7 +32,7 @@ class BandMatrixBase : public EigenBase<Derived>
     };
     typedef typename internal::traits<Derived>::Scalar Scalar;
     typedef Matrix<Scalar,RowsAtCompileTime,ColsAtCompileTime> DenseMatrixType;
-    typedef typename DenseMatrixType::Index Index;
+    typedef typename DenseMatrixType::StorageIndex StorageIndex;
     typedef typename internal::traits<Derived>::CoefficientsType CoefficientsType;
     typedef EigenBase<Derived> Base;
 
@@ -179,7 +179,7 @@ struct traits<BandMatrix<_Scalar,_Rows,_Cols,_Supers,_Subs,_Options> >
 {
   typedef _Scalar Scalar;
   typedef Dense StorageKind;
-  typedef DenseIndex Index;
+  typedef Eigen::Index StorageIndex;
   enum {
     CoeffReadCost = NumTraits<Scalar>::ReadCost,
     RowsAtCompileTime = _Rows,
@@ -201,10 +201,10 @@ class BandMatrix : public BandMatrixBase<BandMatrix<_Scalar,Rows,Cols,Supers,Sub
   public:
 
     typedef typename internal::traits<BandMatrix>::Scalar Scalar;
-    typedef typename internal::traits<BandMatrix>::Index Index;
+    typedef typename internal::traits<BandMatrix>::StorageIndex StorageIndex;
     typedef typename internal::traits<BandMatrix>::CoefficientsType CoefficientsType;
 
-    inline BandMatrix(Index rows=Rows, Index cols=Cols, Index supers=Supers, Index subs=Subs)
+    explicit inline BandMatrix(Index rows=Rows, Index cols=Cols, Index supers=Supers, Index subs=Subs)
       : m_coeffs(1+supers+subs,cols),
         m_rows(rows), m_supers(supers), m_subs(subs)
     {
@@ -241,7 +241,7 @@ struct traits<BandMatrixWrapper<_CoefficientsType,_Rows,_Cols,_Supers,_Subs,_Opt
 {
   typedef typename _CoefficientsType::Scalar Scalar;
   typedef typename _CoefficientsType::StorageKind StorageKind;
-  typedef typename _CoefficientsType::Index Index;
+  typedef typename _CoefficientsType::StorageIndex StorageIndex;
   enum {
     CoeffReadCost = internal::traits<_CoefficientsType>::CoeffReadCost,
     RowsAtCompileTime = _Rows,
@@ -264,9 +264,9 @@ class BandMatrixWrapper : public BandMatrixBase<BandMatrixWrapper<_CoefficientsT
 
     typedef typename internal::traits<BandMatrixWrapper>::Scalar Scalar;
     typedef typename internal::traits<BandMatrixWrapper>::CoefficientsType CoefficientsType;
-    typedef typename internal::traits<BandMatrixWrapper>::Index Index;
+    typedef typename internal::traits<BandMatrixWrapper>::StorageIndex StorageIndex;
 
-    inline BandMatrixWrapper(const CoefficientsType& coeffs, Index rows=_Rows, Index cols=_Cols, Index supers=_Supers, Index subs=_Subs)
+    explicit inline BandMatrixWrapper(const CoefficientsType& coeffs, Index rows=_Rows, Index cols=_Cols, Index supers=_Supers, Index subs=_Subs)
       : m_coeffs(coeffs),
         m_rows(rows), m_supers(supers), m_subs(subs)
     {
@@ -312,9 +312,9 @@ template<typename Scalar, int Size, int Options>
 class TridiagonalMatrix : public BandMatrix<Scalar,Size,Size,Options&SelfAdjoint?0:1,1,Options|RowMajor>
 {
     typedef BandMatrix<Scalar,Size,Size,Options&SelfAdjoint?0:1,1,Options|RowMajor> Base;
-    typedef typename Base::Index Index;
+    typedef typename Base::StorageIndex StorageIndex;
   public:
-    TridiagonalMatrix(Index size = Size) : Base(size,size,Options&SelfAdjoint?0:1,1) {}
+    explicit TridiagonalMatrix(Index size = Size) : Base(size,size,Options&SelfAdjoint?0:1,1) {}
 
     inline typename Base::template DiagonalIntReturnType<1>::Type super()
     { return Base::template diagonal<1>(); }
@@ -326,6 +326,25 @@ class TridiagonalMatrix : public BandMatrix<Scalar,Size,Size,Options&SelfAdjoint
     { return Base::template diagonal<-1>(); }
   protected:
 };
+
+
+struct BandShape {};
+
+template<typename _Scalar, int _Rows, int _Cols, int _Supers, int _Subs, int _Options>
+struct evaluator_traits<BandMatrix<_Scalar,_Rows,_Cols,_Supers,_Subs,_Options> >
+  : public evaluator_traits_base<BandMatrix<_Scalar,_Rows,_Cols,_Supers,_Subs,_Options> >
+{
+  typedef BandShape Shape;
+};
+
+template<typename _CoefficientsType,int _Rows, int _Cols, int _Supers, int _Subs,int _Options>
+struct evaluator_traits<BandMatrixWrapper<_CoefficientsType,_Rows,_Cols,_Supers,_Subs,_Options> >
+  : public evaluator_traits_base<BandMatrixWrapper<_CoefficientsType,_Rows,_Cols,_Supers,_Subs,_Options> >
+{
+  typedef BandShape Shape;
+};
+
+template<> struct AssignmentKind<DenseShape,BandShape> { typedef EigenBase2EigenBase Kind; };
 
 } // end namespace internal
 

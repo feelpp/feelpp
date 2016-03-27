@@ -9,6 +9,20 @@
 
 #include "common.h"
 
+template<typename Index, typename Scalar, int StorageOrder, bool ConjugateLhs, bool ConjugateRhs>
+struct general_matrix_vector_product_wrapper
+{
+  static void run(Index rows, Index cols,const Scalar *lhs, Index lhsStride, const Scalar *rhs, Index rhsIncr, Scalar* res, Index resIncr, Scalar alpha)
+  {
+    typedef internal::const_blas_data_mapper<Scalar,Index,StorageOrder> LhsMapper;
+    typedef internal::const_blas_data_mapper<Scalar,Index,RowMajor> RhsMapper;
+    
+    internal::general_matrix_vector_product
+        <Index,Scalar,LhsMapper,StorageOrder,ConjugateLhs,Scalar,RhsMapper,ConjugateRhs>::run(
+        rows, cols, LhsMapper(lhs, lhsStride), RhsMapper(rhs, rhsIncr), res, resIncr, alpha);
+  }
+};
+
 int EIGEN_BLAS_FUNC(gemv)(char *opa, int *m, int *n, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *pb, int *incb, RealScalar *pbeta, RealScalar *pc, int *incc)
 {
   typedef void (*functype)(int, int, const Scalar *, int, const Scalar *, int , Scalar *, int, Scalar);
@@ -20,9 +34,9 @@ int EIGEN_BLAS_FUNC(gemv)(char *opa, int *m, int *n, RealScalar *palpha, RealSca
     for(int k=0; k<4; ++k)
       func[k] = 0;
 
-    func[NOTR] = (internal::general_matrix_vector_product<int,Scalar,ColMajor,false,Scalar,false>::run);
-    func[TR  ] = (internal::general_matrix_vector_product<int,Scalar,RowMajor,false,Scalar,false>::run);
-    func[ADJ ] = (internal::general_matrix_vector_product<int,Scalar,RowMajor,Conj, Scalar,false>::run);
+    func[NOTR] = (general_matrix_vector_product_wrapper<int,Scalar,ColMajor,false,false>::run);
+    func[TR  ] = (general_matrix_vector_product_wrapper<int,Scalar,RowMajor,false,false>::run);
+    func[ADJ ] = (general_matrix_vector_product_wrapper<int,Scalar,RowMajor,Conj ,false>::run);
 
     init = true;
   }
@@ -58,8 +72,8 @@ int EIGEN_BLAS_FUNC(gemv)(char *opa, int *m, int *n, RealScalar *palpha, RealSca
 
   if(beta!=Scalar(1))
   {
-    if(beta==Scalar(0)) vector(actual_c, actual_m).setZero();
-    else                vector(actual_c, actual_m) *= beta;
+    if(beta==Scalar(0)) make_vector(actual_c, actual_m).setZero();
+    else                make_vector(actual_c, actual_m) *= beta;
   }
 
   if(code>=4 || func[code]==0)
@@ -206,7 +220,7 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
   Scalar alpha = *reinterpret_cast<Scalar*>(palpha);
   Scalar beta = *reinterpret_cast<Scalar*>(pbeta);
   int coeff_rows = *kl+*ku+1;
-  
+
   int info = 0;
        if(OP(*trans)==INVALID)                                        info = 1;
   else if(*m<0)                                                       info = 2;
@@ -218,26 +232,26 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
   else if(*incy==0)                                                   info = 13;
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"GBMV ",&info,6);
-  
+
   if(*m==0 || *n==0 || (alpha==Scalar(0) && beta==Scalar(1)))
     return 0;
-  
+
   int actual_m = *m;
   int actual_n = *n;
   if(OP(*trans)!=NOTR)
     std::swap(actual_m,actual_n);
-  
+
   Scalar* actual_x = get_compact_vector(x,actual_n,*incx);
   Scalar* actual_y = get_compact_vector(y,actual_m,*incy);
-  
+
   if(beta!=Scalar(1))
   {
-    if(beta==Scalar(0)) vector(actual_y, actual_m).setZero();
-    else                vector(actual_y, actual_m) *= beta;
+    if(beta==Scalar(0)) make_vector(actual_y, actual_m).setZero();
+    else                make_vector(actual_y, actual_m) *= beta;
   }
-  
+
   MatrixType mat_coeffs(a,coeff_rows,*n,*lda);
-  
+
   int nb = std::min(*n,(*m)+(*ku));
   for(int j=0; j<nb; ++j)
   {
@@ -246,16 +260,16 @@ int EIGEN_BLAS_FUNC(gbmv)(char *trans, int *m, int *n, int *kl, int *ku, RealSca
     int len = end - start + 1;
     int offset = (*ku) - j + start;
     if(OP(*trans)==NOTR)
-      vector(actual_y+start,len) += (alpha*actual_x[j]) * mat_coeffs.col(j).segment(offset,len);
+      make_vector(actual_y+start,len) += (alpha*actual_x[j]) * mat_coeffs.col(j).segment(offset,len);
     else if(OP(*trans)==TR)
-      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).transpose() * vector(actual_x+start,len) ).value();
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).transpose() * make_vector(actual_x+start,len) ).value();
     else
-      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).adjoint()   * vector(actual_x+start,len) ).value();
-  }    
-  
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).adjoint()   * make_vector(actual_x+start,len) ).value();
+  }
+
   if(actual_x!=x) delete[] actual_x;
   if(actual_y!=y) delete[] copy_back(actual_y,y,actual_m,*incy);
-  
+
   return 0;
 }
 
@@ -272,7 +286,7 @@ int EIGEN_BLAS_FUNC(tbmv)(char *uplo, char *opa, char *diag, int *n, int *k, Rea
   Scalar* a = reinterpret_cast<Scalar*>(pa);
   Scalar* x = reinterpret_cast<Scalar*>(px);
   int coeff_rows = *k + 1;
-  
+
   int info = 0;
        if(UPLO(*uplo)==INVALID)                                       info = 1;
   else if(OP(*opa)==INVALID)                                          info = 2;
@@ -283,37 +297,37 @@ int EIGEN_BLAS_FUNC(tbmv)(char *uplo, char *opa, char *diag, int *n, int *k, Rea
   else if(*incx==0)                                                   info = 9;
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"TBMV ",&info,6);
-  
+
   if(*n==0)
     return 0;
-  
+
   int actual_n = *n;
-  
+
   Scalar* actual_x = get_compact_vector(x,actual_n,*incx);
-  
+
   MatrixType mat_coeffs(a,coeff_rows,*n,*lda);
-  
+
   int ku = UPLO(*uplo)==UPPER ? *k : 0;
   int kl = UPLO(*uplo)==LOWER ? *k : 0;
-  
+
   for(int j=0; j<*n; ++j)
   {
     int start = std::max(0,j - ku);
     int end = std::min((*m)-1,j + kl);
     int len = end - start + 1;
     int offset = (ku) - j + start;
-    
+
     if(OP(*trans)==NOTR)
-      vector(actual_y+start,len) += (alpha*actual_x[j]) * mat_coeffs.col(j).segment(offset,len);
+      make_vector(actual_y+start,len) += (alpha*actual_x[j]) * mat_coeffs.col(j).segment(offset,len);
     else if(OP(*trans)==TR)
-      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).transpose() * vector(actual_x+start,len) ).value();
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).transpose() * make_vector(actual_x+start,len) ).value();
     else
-      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).adjoint()   * vector(actual_x+start,len) ).value();
-  }    
-  
+      actual_y[j] += alpha * ( mat_coeffs.col(j).segment(offset,len).adjoint()   * make_vector(actual_x+start,len) ).value();
+  }
+
   if(actual_x!=x) delete[] actual_x;
   if(actual_y!=y) delete[] copy_back(actual_y,y,actual_m,*incy);
-  
+
   return 0;
 }
 #endif
@@ -337,8 +351,8 @@ int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, Real
   static bool init = false;
   if(!init)
   {
-    for(int k=0; k<16; ++k)
-      func[k] = 0;
+    for(int i=0; i<16; ++i)
+      func[i] = 0;
 
     func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Upper|0,       Scalar,false,Scalar,ColMajor>::run);
     func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::band_solve_triangular_selector<int,Lower|0,       Scalar,false,Scalar,RowMajor>::run);
@@ -362,7 +376,7 @@ int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, Real
   Scalar* a = reinterpret_cast<Scalar*>(pa);
   Scalar* x = reinterpret_cast<Scalar*>(px);
   int coeff_rows = *k+1;
-  
+
   int info = 0;
        if(UPLO(*uplo)==INVALID)                                       info = 1;
   else if(OP(*op)==INVALID)                                           info = 2;
@@ -373,22 +387,22 @@ int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, Real
   else if(*incx==0)                                                   info = 9;
   if(info)
     return xerbla_(SCALAR_SUFFIX_UP"TBSV ",&info,6);
-  
+
   if(*n==0 || (*k==0 && DIAG(*diag)==UNIT))
     return 0;
-  
+
   int actual_n = *n;
- 
+
   Scalar* actual_x = get_compact_vector(x,actual_n,*incx);
-  
+
   int code = OP(*op) | (UPLO(*uplo) << 2) | (DIAG(*diag) << 3);
   if(code>=16 || func[code]==0)
     return 0;
 
   func[code](*n, *k, a, *lda, actual_x);
-  
+
   if(actual_x!=x) delete[] copy_back(actual_x,x,actual_n,*incx);
-  
+
   return 0;
 }
 
@@ -521,4 +535,3 @@ int EIGEN_BLAS_FUNC(tpsv)(char *uplo, char *opa, char *diag, int *n, RealScalar 
 
   return 1;
 }
-
