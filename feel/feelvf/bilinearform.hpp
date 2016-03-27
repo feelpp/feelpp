@@ -576,7 +576,7 @@ public:
         {
             if ( same_mesh )
                 return getMap( left, right, std::is_same<Left, map_trial_fecontext_type>() );
-            return getMap( left, right, mpl::bool_<false>() );
+            return getMap( left, right, std::integral_constant<bool, false>() );
         }
         template<typename Left, typename Right>
         map_trial_fecontext_type getMap( Left  left, Right /*right*/, std::true_type )
@@ -594,7 +594,7 @@ public:
         {
             if ( same_mesh )
                 return getMapL( left, right, std::is_same<Left, map_left_trial_fecontext_type>() );
-            return getMapL( left, right, mpl::bool_<false>() );
+            return getMapL( left, right, std::integral_constant<bool, false>() );
         }
         template<typename Left, typename Right>
         map_left_trial_fecontext_type getMapL( Left  left, Right /*right*/, std::true_type )

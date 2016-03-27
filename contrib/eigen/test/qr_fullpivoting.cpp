@@ -23,8 +23,8 @@ template<typename MatrixType> void qr()
   MatrixType m1;
   createRandomPIMatrixOfRank(rank,rows,cols,m1);
   FullPivHouseholderQR<MatrixType> qr(m1);
-  VERIFY(rank == qr.rank());
-  VERIFY(cols - qr.rank() == qr.dimensionOfKernel());
+  VERIFY_IS_EQUAL(rank, qr.rank());
+  VERIFY_IS_EQUAL(cols - qr.rank(), qr.dimensionOfKernel());
   VERIFY(!qr.isInjective());
   VERIFY(!qr.isInvertible());
   VERIFY(!qr.isSurjective());
@@ -40,7 +40,11 @@ template<typename MatrixType> void qr()
   MatrixType c = qr.matrixQ() * r * qr.colsPermutation().inverse();
 
   VERIFY_IS_APPROX(m1, c);
-
+  
+  // stress the ReturnByValue mechanism
+  MatrixType tmp;
+  VERIFY_IS_APPROX(tmp.noalias() = qr.matrixQ() * r, (qr.matrixQ() * r).eval());
+  
   MatrixType m2 = MatrixType::Random(cols,cols2);
   MatrixType m3 = m1*m2;
   m2 = MatrixType::Random(cols,cols2);

@@ -63,7 +63,7 @@ Packet4f plog<Packet4f>(const Packet4f& _x)
   x = _mm_or_ps(x, p4f_half);
 
   emm0 = _mm_sub_epi32(emm0, p4i_0x7f);
-  Packet4f e = padd(_mm_cvtepi32_ps(emm0), p4f_1);
+  Packet4f e = padd(Packet4f(_mm_cvtepi32_ps(emm0)), p4f_1);
 
   /* part2:
      if( x < SQRTHF ) {
@@ -72,9 +72,9 @@ Packet4f plog<Packet4f>(const Packet4f& _x)
      } else { x = x - 1.0; }
   */
   Packet4f mask = _mm_cmplt_ps(x, p4f_cephes_SQRTHF);
-  Packet4f tmp = _mm_and_ps(x, mask);
+  Packet4f tmp = pand(x, mask);
   x = psub(x, p4f_1);
-  e = psub(e, _mm_and_ps(p4f_1, mask));
+  e = psub(e, pand(p4f_1, mask));
   x = padd(x, tmp);
 
   Packet4f x2 = pmul(x,x);
@@ -126,7 +126,7 @@ Packet4f pexp<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(cephes_exp_p4, 1.6666665459E-1f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_exp_p5, 5.0000001201E-1f);
 
-  Packet4f tmp = _mm_setzero_ps(), fx;
+  Packet4f tmp, fx;
   Packet4i emm0;
 
   // clamp x
@@ -195,7 +195,7 @@ Packet2d pexp<Packet2d>(const Packet2d& _x)
   _EIGEN_DECLARE_CONST_Packet2d(cephes_exp_C2, 1.42860682030941723212e-6);
   static const __m128i p4i_1023_0 = _mm_setr_epi32(1023, 1023, 0, 0);
 
-  Packet2d tmp = _mm_setzero_pd(), fx;
+  Packet2d tmp, fx;
   Packet4i emm0;
 
   // clamp x
@@ -279,7 +279,7 @@ Packet4f psin<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(coscof_p2,  4.166664568298827E-002f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_FOPI, 1.27323954473516f); // 4 / M_PI
 
-  Packet4f xmm1, xmm2 = _mm_setzero_ps(), xmm3, sign_bit, y;
+  Packet4f xmm1, xmm2, xmm3, sign_bit, y;
 
   Packet4i emm0, emm2;
   sign_bit = x;
@@ -378,7 +378,7 @@ Packet4f pcos<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4f(coscof_p2,  4.166664568298827E-002f);
   _EIGEN_DECLARE_CONST_Packet4f(cephes_FOPI, 1.27323954473516f); // 4 / M_PI
 
-  Packet4f xmm1, xmm2 = _mm_setzero_ps(), xmm3, y;
+  Packet4f xmm1, xmm2, xmm3, y;
   Packet4i emm0, emm2;
 
   x = pabs(x);
@@ -462,13 +462,134 @@ Packet4f psqrt<Packet4f>(const Packet4f& _x)
 
 #else
 
-template<> EIGEN_STRONG_INLINE Packet4f psqrt<Packet4f>(const Packet4f& x) { return _mm_sqrt_ps(x); }
+template<>EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED 
+Packet4f psqrt<Packet4f>(const Packet4f& x) { return _mm_sqrt_ps(x); }
 
 #endif
 
-template<> EIGEN_STRONG_INLINE Packet2d psqrt<Packet2d>(const Packet2d& x) { return _mm_sqrt_pd(x); }
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet2d psqrt<Packet2d>(const Packet2d& x) { return _mm_sqrt_pd(x); }
+
+#if EIGEN_FAST_MATH
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet4f prsqrt<Packet4f>(const Packet4f& _x) {
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(inf, 0x7f800000);
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(nan, 0x7fc00000);
+  _EIGEN_DECLARE_CONST_Packet4f(one_point_five, 1.5f);
+  _EIGEN_DECLARE_CONST_Packet4f(minus_half, -0.5f);
+  _EIGEN_DECLARE_CONST_Packet4f_FROM_INT(flt_min, 0x00800000);
+
+  Packet4f neg_half = pmul(_x, p4f_minus_half);
+
+  // select only the inverse sqrt of positive normal inputs (denormals are
+  // flushed to zero and cause infs as well).
+  Packet4f le_zero_mask = _mm_cmple_ps(_x, p4f_flt_min);
+  Packet4f x = _mm_andnot_ps(le_zero_mask, _mm_rsqrt_ps(_x));
+
+  // Fill in NaNs and Infs for the negative/zero entries.
+  Packet4f neg_mask = _mm_cmplt_ps(_x, _mm_setzero_ps());
+  Packet4f zero_mask = _mm_andnot_ps(neg_mask, le_zero_mask);
+  Packet4f infs_and_nans = _mm_or_ps(_mm_and_ps(neg_mask, p4f_nan),
+                                        _mm_and_ps(zero_mask, p4f_inf));
+
+  // Do a single step of Newton's iteration.
+  x = pmul(x, pmadd(neg_half, pmul(x, x), p4f_one_point_five));
+
+  // Insert NaNs and Infs in all the right places.
+  return _mm_or_ps(x, infs_and_nans);
+}
+
+#else
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet4f prsqrt<Packet4f>(const Packet4f& x) {
+  // Unfortunately we can't use the much faster mm_rqsrt_ps since it only provides an approximation.
+  return _mm_div_ps(pset1<Packet4f>(1.0f), _mm_sqrt_ps(x));
+}
+
+#endif
+
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
+Packet2d prsqrt<Packet2d>(const Packet2d& x) {
+  // Unfortunately we can't use the much faster mm_rqsrt_pd since it only provides an approximation.
+  return _mm_div_pd(pset1<Packet2d>(1.0), _mm_sqrt_pd(x));
+}
+
+// Hyperbolic Tangent function.
+// Doesn't do anything fancy, just a 13/6-degree rational interpolant which
+// is accurate up to a couple of ulp in the range [-9, 9], outside of which the
+// fl(tanh(x)) = +/-1.
+template <>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED Packet4f
+ptanh<Packet4f>(const Packet4f& _x) {
+  // Clamp the inputs to the range [-9, 9] since anything outside
+  // this range is +/-1.0f in single-precision.
+  _EIGEN_DECLARE_CONST_Packet4f(plus_9, 9.0f);
+  _EIGEN_DECLARE_CONST_Packet4f(minus_9, -9.0f);
+  const Packet4f x = pmax(p4f_minus_9, pmin(p4f_plus_9, _x));
+
+  // The monomial coefficients of the numerator polynomial (odd).
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_1, 4.89352455891786e-03f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_3, 6.37261928875436e-04f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_5, 1.48572235717979e-05f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_7, 5.12229709037114e-08f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_9, -8.60467152213735e-11f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_11, 2.00018790482477e-13f);
+  _EIGEN_DECLARE_CONST_Packet4f(alpha_13, -2.76076847742355e-16f);
+
+  // The monomial coefficients of the denominator polynomial (even).
+  _EIGEN_DECLARE_CONST_Packet4f(beta_0, 4.89352518554385e-03f);
+  _EIGEN_DECLARE_CONST_Packet4f(beta_2, 2.26843463243900e-03f);
+  _EIGEN_DECLARE_CONST_Packet4f(beta_4, 1.18534705686654e-04f);
+  _EIGEN_DECLARE_CONST_Packet4f(beta_6, 1.19825839466702e-06f);
+
+  // Since the polynomials are odd/even, we need x^2.
+  const Packet4f x2 = pmul(x, x);
+
+  // Evaluate the numerator polynomial p.
+  Packet4f p = pmadd(x2, p4f_alpha_13, p4f_alpha_11);
+  p = pmadd(x2, p, p4f_alpha_9);
+  p = pmadd(x2, p, p4f_alpha_7);
+  p = pmadd(x2, p, p4f_alpha_5);
+  p = pmadd(x2, p, p4f_alpha_3);
+  p = pmadd(x2, p, p4f_alpha_1);
+  p = pmul(x, p);
+
+  // Evaluate the denominator polynomial p.
+  Packet4f q = pmadd(x2, p4f_beta_6, p4f_beta_4);
+  q = pmadd(x2, q, p4f_beta_2);
+  q = pmadd(x2, q, p4f_beta_0);
+
+  // Divide the numerator by the denominator.
+  return pdiv(p, q);
+}
 
 } // end namespace internal
+
+namespace numext {
+
+template<>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+float sqrt(const float &x)
+{
+  return internal::pfirst(internal::Packet4f(_mm_sqrt_ss(_mm_set_ss(x))));
+}
+
+template<>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
+double sqrt(const double &x)
+{
+#if EIGEN_COMP_GNUC_STRICT
+  // This works around a GCC bug generating poor code for _mm_sqrt_pd
+  // See https://bitbucket.org/eigen/eigen/commits/14f468dba4d350d7c19c9b93072e19f7b3df563b
+  return internal::pfirst(internal::Packet2d(__builtin_ia32_sqrtsd(_mm_set_sd(x))));
+#else
+  return internal::pfirst(internal::Packet2d(_mm_sqrt_pd(_mm_set_sd(x))));
+#endif
+}
+
+} // end namespace numex
 
 } // end namespace Eigen
 

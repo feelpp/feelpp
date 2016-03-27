@@ -41,21 +41,20 @@ namespace Eigen {
 /** \internal Specialization for the data types supported by MKL */
 
 #define EIGEN_MKL_QR_COLPIV(EIGTYPE, MKLTYPE, MKLPREFIX, EIGCOLROW, MKLCOLROW) \
-template<> inline \
+template<> template<typename InputType> inline \
 ColPivHouseholderQR<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynamic> >& \
 ColPivHouseholderQR<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynamic> >::compute( \
-              const Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynamic>& matrix) \
+              const EigenBase<InputType>& matrix) \
 \
 { \
   using std::abs; \
   typedef Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynamic> MatrixType; \
-  typedef MatrixType::Scalar Scalar; \
   typedef MatrixType::RealScalar RealScalar; \
   Index rows = matrix.rows();\
   Index cols = matrix.cols();\
-  Index size = matrix.diagonalSize();\
 \
   m_qr = matrix;\
+  Index size = m_qr.diagonalSize();\
   m_hCoeffs.resize(size);\
 \
   m_colsTranspositions.resize(cols);\

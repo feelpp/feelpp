@@ -77,16 +77,25 @@ public:
     *          represents an invalid rotation. */
   template<typename Derived>
   inline AngleAxis(const Scalar& angle, const MatrixBase<Derived>& axis) : m_axis(axis), m_angle(angle) {}
-  /** Constructs and initialize the angle-axis rotation from a quaternion \a q. */
+  /** Constructs and initialize the angle-axis rotation from a quaternion \a q.
+    * This function implicitly normalizes the quaternion \a q.
+    */
   template<typename QuatDerived> inline explicit AngleAxis(const QuaternionBase<QuatDerived>& q) { *this = q; }
   /** Constructs and initialize the angle-axis rotation from a 3x3 rotation matrix. */
   template<typename Derived>
   inline explicit AngleAxis(const MatrixBase<Derived>& m) { *this = m; }
 
+  /** \returns the value of the rotation angle in radian */
   Scalar angle() const { return m_angle; }
+  /** \returns a read-write reference to the stored angle in radian */
   Scalar& angle() { return m_angle; }
 
+  /** \returns the rotation axis */
   const Vector3& axis() const { return m_axis; }
+  /** \returns a read-write reference to the stored rotation axis.
+    *
+    * \warning The rotation axis must remain a \b unit vector.
+    */
   Vector3& axis() { return m_axis; }
 
   /** Concatenates two rotations */
@@ -131,7 +140,7 @@ public:
     m_angle = Scalar(other.angle());
   }
 
-  static inline const AngleAxis Identity() { return AngleAxis(0, Vector3::UnitX()); }
+  static inline const AngleAxis Identity() { return AngleAxis(Scalar(0), Vector3::UnitX()); }
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
     * determined by \a prec.
@@ -149,29 +158,27 @@ typedef AngleAxis<float> AngleAxisf;
 typedef AngleAxis<double> AngleAxisd;
 
 /** Set \c *this from a \b unit quaternion.
-  * The axis is normalized.
+  * The resulting axis is normalized.
   * 
-  * \warning As any other method dealing with quaternion, if the input quaternion
-  *          is not normalized then the result is undefined.
+  * This function implicitly normalizes the quaternion \a q.
   */
 template<typename Scalar>
 template<typename QuatDerived>
 AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const QuaternionBase<QuatDerived>& q)
 {
-  using std::acos;
-  using std::min;
-  using std::max;
-  using std::sqrt;
-  Scalar n2 = q.vec().squaredNorm();
-  if (n2 < NumTraits<Scalar>::dummy_precision()*NumTraits<Scalar>::dummy_precision())
+  using std::atan2;
+  Scalar n = q.vec().norm();
+  if(n<NumTraits<Scalar>::epsilon())
+    n = q.vec().stableNorm();
+  if (n > Scalar(0))
   {
-    m_angle = 0;
-    m_axis << 1, 0, 0;
+    m_angle = Scalar(2)*atan2(n, q.w());
+    m_axis  = q.vec() / n;
   }
   else
   {
-    m_angle = Scalar(2)*acos((min)((max)(Scalar(-1),q.w()),Scalar(1)));
-    m_axis = q.vec() / sqrt(n2);
+    m_angle = Scalar(0);
+    m_axis << Scalar(1), Scalar(0), Scalar(0);
   }
   return *this;
 }
