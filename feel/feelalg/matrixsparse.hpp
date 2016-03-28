@@ -570,6 +570,15 @@ public:
     }
 
     /**
+     * Return copy vector of the diagonal part of the matrix.
+     */
+    virtual boost::shared_ptr<Vector<T> > diagonal() const
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return boost::shared_ptr<Vector<T>>();
+    }
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed
@@ -579,8 +588,9 @@ public:
     /**
      * \return the transpose of the matrix
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
+    virtual boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
+        CHECK( false ) << "Not Implemented in base class!";
         boost::shared_ptr<MatrixSparse<T> > Mt;
         transpose( *Mt, options );
         return Mt;
