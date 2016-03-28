@@ -374,10 +374,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
 
-    // make sure that the form is close, ie the associated matrix is assembled
-    __form.matrix().close();
-    // make sure that the right hand side is closed, ie the associated vector is assembled
-    M_rhs->close();
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    {
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
+    }
 
     //
     // start
@@ -573,13 +576,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         } // for( auto& lit : M_elts )
     }// findAFace
 
-    if ( __form.rowStartInMatrix()!=0)
-    {
-        auto const thedofshift = __form.rowStartInMatrix();
-        for (auto& itd : dofs)
-            itd+=thedofshift;
-    }
-
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
@@ -605,10 +601,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
 
-    // make sure that the form is close, ie the associated matrix is assembled
-    __form.matrix().close();
-    // make sure that the right hand side is closed, ie the associated vector is assembled
-    M_rhs->close();
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    {
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
+    }
 
     //
     // start
@@ -723,13 +722,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     }// findAEdge
 
-    if ( __form.rowStartInMatrix()!=0)
-    {
-        auto const thedofshift = __form.rowStartInMatrix();
-        for (auto& itd : dofs)
-            itd+=thedofshift;
-    }
-
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
@@ -770,11 +762,14 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     auto const* __fe = M_u.functionSpace()->fe().get();
     auto gm = mesh->gm();
 
-    // make sure that the form is close, ie the associated matrix is assembled
-    __form.matrix().close();
-    // make sure that the right hand side is closed, ie the associated vector is assembled
-    M_rhs->close();
-    
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    {
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
+    }
+
     std::vector<int> dofs;
     std::vector<value_type> values;
     auto pt_it = this->beginElement();
@@ -878,13 +873,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             }// pt_it != pt_en
         } // for( auto& lit : M_elts )
     }// findAFace
-
-    if ( __form.rowStartInMatrix()!=0)
-    {
-        auto const thedofshift = __form.rowStartInMatrix();
-        for (auto& itd : dofs)
-            itd+=thedofshift;
-    }
 
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
