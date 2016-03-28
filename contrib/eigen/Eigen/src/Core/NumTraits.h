@@ -17,7 +17,7 @@ namespace Eigen {
   *
   * \brief Holds information about the various numeric (i.e. scalar) types allowed by Eigen.
   *
-  * \param T the numeric type at hand
+  * \tparam T the numeric type at hand
   *
   * This class stores enums, typedefs and static methods giving information about a numeric type.
   *
@@ -60,6 +60,23 @@ template<typename T> struct GenericNumTraits
     MulCost = 1
   };
 
+  // Division is messy but important, because it is expensive and throughput
+  // varies significantly. The following numbers are based on min division
+  // throughput on Haswell.
+  template<bool Vectorized>
+  struct Div {
+    enum {
+#ifdef EIGEN_VECTORIZE_AVX
+      AVX = true,
+#else
+      AVX = false,
+#endif
+      Cost = IsInteger ? (sizeof(T) == 8 ? (IsSigned ? 24 : 21) : (IsSigned ? 8 : 9)):
+          Vectorized ? (sizeof(T) == 8 ? (AVX ? 16 : 8) : (AVX ? 14 : 7)) : 8
+    };
+  };
+
+
   typedef T Real;
   typedef typename internal::conditional<
                      IsInteger,
@@ -68,21 +85,38 @@ template<typename T> struct GenericNumTraits
                    >::type NonInteger;
   typedef T Nested;
 
-  static inline Real epsilon() { return std::numeric_limits<T>::epsilon(); }
+  EIGEN_DEVICE_FUNC
+  static inline Real epsilon()
+  {
+    return numext::numeric_limits<T>::epsilon();
+  }
+  EIGEN_DEVICE_FUNC
   static inline Real dummy_precision()
   {
     // make sure to override this for floating-point types
     return Real(0);
   }
-  static inline T highest() { return (std::numeric_limits<T>::max)(); }
-  static inline T lowest()  { return IsInteger ? (std::numeric_limits<T>::min)() : (-(std::numeric_limits<T>::max)()); }
-  
-#ifdef EIGEN2_SUPPORT
-  enum {
-    HasFloatingPoint = !IsInteger
-  };
-  typedef NonInteger FloatingPoint;
-#endif
+
+
+  EIGEN_DEVICE_FUNC
+  static inline T highest() {
+    return (numext::numeric_limits<T>::max)();
+  }
+
+  EIGEN_DEVICE_FUNC
+  static inline T lowest()  {
+    return IsInteger ? (numext::numeric_limits<T>::min)() : (-(numext::numeric_limits<T>::max)());
+  }
+
+  EIGEN_DEVICE_FUNC
+  static inline T infinity() {
+    return numext::numeric_limits<T>::infinity();
+  }
+
+  EIGEN_DEVICE_FUNC
+  static inline T quiet_NaN() {
+    return numext::numeric_limits<T>::quiet_NaN();
+  }
 };
 
 template<typename T> struct NumTraits : GenericNumTraits<T>
@@ -91,11 +125,13 @@ template<typename T> struct NumTraits : GenericNumTraits<T>
 template<> struct NumTraits<float>
   : GenericNumTraits<float>
 {
+  EIGEN_DEVICE_FUNC
   static inline float dummy_precision() { return 1e-5f; }
 };
 
 template<> struct NumTraits<double> : GenericNumTraits<double>
 {
+  EIGEN_DEVICE_FUNC
   static inline double dummy_precision() { return 1e-12; }
 };
 
@@ -136,9 +172,9 @@ struct NumTraits<Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols> >
     IsInteger = NumTraits<Scalar>::IsInteger,
     IsSigned  = NumTraits<Scalar>::IsSigned,
     RequireInitialization = 1,
-    ReadCost = ArrayType::SizeAtCompileTime==Dynamic ? Dynamic : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::ReadCost,
-    AddCost  = ArrayType::SizeAtCompileTime==Dynamic ? Dynamic : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::AddCost,
-    MulCost  = ArrayType::SizeAtCompileTime==Dynamic ? Dynamic : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::MulCost
+    ReadCost = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::ReadCost,
+    AddCost  = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::AddCost,
+    MulCost  = ArrayType::SizeAtCompileTime==Dynamic ? HugeCost : ArrayType::SizeAtCompileTime * NumTraits<Scalar>::MulCost
   };
   
   static inline RealScalar epsilon() { return NumTraits<RealScalar>::epsilon(); }
