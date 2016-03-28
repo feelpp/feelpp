@@ -31,7 +31,9 @@
 
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/policy.hpp>
 #include <feel/feeldiscr/dof.hpp>
+
 
 namespace Feel
 {
@@ -85,6 +87,7 @@ public:
     static const bool is_scalar = fe_type::is_scalar;
     static const bool is_vectorial = fe_type::is_vectorial;
     static const bool is_tensor2 = fe_type::is_tensor2;
+    static const bool is_tensor2symm = fe_type::is_tensor2 && is_symm_v<fe_type>;
     static const bool is_modal = fe_type::is_modal;
     static const bool is_product = fe_type::is_product;
 
@@ -260,7 +263,7 @@ private:
                     gDof += l ; // both nodal and modal case
                     if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
-                        
+
                         M_doftable->M_locglob_signs[ie][lc] = 1;
                     }
                 }
@@ -412,7 +415,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
-            
+
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
             // Polynomial order in each direction
@@ -450,7 +453,7 @@ private:
                             gDof += l;
                         else
                             gDof += M_doftable->vector_permutation[permutation][l];
-                        
+
                         /*
                         if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
@@ -491,7 +494,7 @@ private:
 
                     }
                 }
-                
+
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }
@@ -589,10 +592,29 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
 
         for ( uint16_type l = 0; l < nldof; ++l )
         {
-            for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
+            if ( is_tensor2symm )
             {
-                M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
-                                                           Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                for ( int c1 = 0; c1 < nComponents1; ++c1)
+                {
+                    for ( int c2 = 0; c2 < c1; ++c2, ++next_free_dof )
+                    {
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c1+c2) + l ),
+                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c2+c1) + l ),
+                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                    }
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c1+c1) + l ),
+                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                    ++next_free_dof;
+                }
+            }
+            else
+            {
+                for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
+                {
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
+                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                }
             }
         }
     }

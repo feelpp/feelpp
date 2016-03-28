@@ -87,7 +87,7 @@ public :
 
     CreateSubmeshTool( CreateSubmeshTool const& t ) = default;
     CreateSubmeshTool( CreateSubmeshTool     && t ) = default;
-    
+
     CreateSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
                        IteratorRange const& range,
                        WorldComm const& wc,
@@ -120,7 +120,7 @@ public :
     CreateSubmeshTool & operator=( CreateSubmeshTool     && t ) = default;
 
     /**
-     * build mesh using Context ctx 
+     * build mesh using Context ctx
      */
     mesh_build_ptrtype
     build()
@@ -129,8 +129,8 @@ public :
             return build( mpl::int_<idim_type::value>() );
         }
     /**
-     * build mesh using Context ctx 
-     * 
+     * build mesh using Context ctx
+     *
      * if ctx has the bit EXTRACTION_KEEP_MESH_RELATION set then sub mesh data
      * is added to the mesh
      */
@@ -147,7 +147,7 @@ public :
 
     /**
      * @return submesh data such as the parent element to which the generated
-     * mesh elements are associated. 
+     * mesh elements are associated.
      *
      * this allows to improve tremendously the performance of interpolation
      * operators between meshes with relation
@@ -591,7 +591,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             // update mesh relation
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
-
+            DVLOG(2) << "connecting new face to " << e.id() << " face " << oldElem.id();
             // add marked edges in 3d as marked faces for this element
             Feel::detail::addMarkedEdgesInSubMesh( M_mesh, oldElem, new_node_numbers, n_new_faces,
                                                    newMesh, oldEdgeIdsDone, mpl::bool_<mesh_type::nDim==3>() );
@@ -1028,7 +1028,7 @@ template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>
 createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
                    IteratorRange const& range,
-                   WorldComm const& wc, 
+                   WorldComm const& wc,
                    size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                    bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 {
@@ -1039,10 +1039,10 @@ createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,
 }
 
 /**
- * @brief create a submesh 
+ * @brief create a submesh
  * @code
  * auto mesh = unitSquare();
- * auto m = CreateSubmesh( mesh, elements(mesh) ); 
+ * auto m = CreateSubmesh( mesh, elements(mesh) );
  * @endcode
  */
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
@@ -1059,10 +1059,10 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
 }
 
 /**
- * @brief create a submesh from a range of (sub)elements 
+ * @brief create a submesh from a range of (sub)elements
  * @code
  * auto mesh = unitSquare();
- * auto m = CreateSubmesh( mesh, elements(mesh), mesh->worldComm() ); 
+ * auto m = CreateSubmesh( mesh, elements(mesh), mesh->worldComm() );
  * @endcode
  */
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>

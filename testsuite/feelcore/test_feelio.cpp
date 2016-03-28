@@ -74,11 +74,16 @@ BOOST_AUTO_TEST_CASE( test_stringstream )
     std::ostringstream os;
     MasterStream fs( os ) ;
     fs << "Hello World from process " << Environment::rank();
-    BOOST_TEST_MESSAGE( "str:: " << fs.str() );
-    if(Environment::rank() != Environment::masterRank() )
-      BOOST_CHECK_EQUAL( fs.str().empty(), true);
+    if ( Environment::isMasterRank() )
+    {
+        BOOST_TEST_MESSAGE( "str:: --" << fs.str() << "--\n");
+        BOOST_CHECK_EQUAL( fs.str(), "Hello World from process 0" );
+    }
     else
-      BOOST_CHECK_EQUAL( fs.str(), "Hello World from process 0");
+    {
+        BOOST_TEST_MESSAGE( "str:: --" << fs.str() << "--\n");
+        BOOST_CHECK_EQUAL( fs.str(), "" );
+    }
 
     BOOST_MESSAGE( "test_fstream done." );
 }

@@ -328,6 +328,117 @@ struct Tensor2 : public Tensor2Base
     }
 };
 
+struct Tensor2SymmBase {};
+
+/**
+ * Policy for symmetric rank 2 tensor polynomials or polynomial sets of
+ * dimension \p Dim
+ *
+ */
+template<uint16_type Dim>
+struct Tensor2Symm : public Tensor2SymmBase
+{
+    static const uint16_type rank = 2;
+    static const uint16_type nDim = Dim;
+
+    static const bool is_scalar = false;
+    static const bool is_vectorial = false;
+    static const bool is_tensor2 = true;
+    static const bool is_tensor3 = false;
+
+    static const uint16_type nComponents = nDim*nDim;
+    static const uint16_type nComponents1 = nDim;
+    static const uint16_type nComponents2 = nDim;
+    static const uint16_type nComponents3 = 1;
+    static const uint16_type nComponentsLast = nComponents2;
+
+    template<typename T>
+    static
+    ublas::matrix<T>
+    toMatrix( ublas::matrix<T> const&  __c )
+    {
+        typedef T value_type;
+        // reshape the coefficients in the vectorial case
+        const size_type nRows = __c.size1();
+        const size_type nRows1= __c.size2()*nComponents;
+        const size_type nCols = __c.size2();
+        ublas::matrix<T> __c_reshaped( nRows/nComponents, nCols*nComponents );
+
+        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows/nComponents, nCols*nComponents, -1 );
+        for ( int c1 = 0; c1 < nComponents; ++c1 )
+        {
+            uint16_type i1 = nRows1*c1;
+
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
+            {
+                ublas::project( __c_reshaped,
+                                ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
+                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
+                    ublas::project( __c,
+                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                    ublas::slice( 0, 1, nCols ) );
+            }
+        }
+
+        return __c_reshaped;
+    }
+
+    template<typename AE>
+    static
+    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
+    toType( ublas::matrix_expression<AE> const&  __c )
+    {
+
+    }
+
+    template<typename T>
+    static
+    ublas::matrix<T>
+    toType( ublas::matrix<T> const&  __c )
+    {
+        typedef T value_type;
+        // reshape the coefficients in the vectorial case
+        const size_type nRows = __c.size1()*nComponents;
+        const size_type nRows1= __c.size2();
+        const size_type nCols = __c.size2()/nComponents;
+        ublas::matrix<T> __c_reshaped( nRows, nCols );
+
+        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows, nCols, -1 );
+        for ( int c1 = 0; c1 < nComponents; ++c1 )
+        {
+            uint16_type i1 = nRows1*c1;
+
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
+            {
+                ublas::project( __c_reshaped,
+                                ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
+                                        ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
+                                        ublas::range( c2*nCols, ( c2+1 )*nCols ) );
+            }
+        }
+
+        return __c_reshaped;
+    }
+};
+
+/**
+ * if T derives from a Tensor2SymmBase then is_symm is mpl::bool_<true>,
+ * mpl::bool_<false> otherwise
+ */
+template<typename T>
+struct is_symm
+    : mpl::bool_<std::is_base_of<Tensor2SymmBase,T>::value>
+{
+};
+
+/**
+ * helper constant that is true if the T derives from Tensor2SymmBase, false
+ * orherwise
+ */
+template<typename T>
+constexpr bool is_symm_v = std::is_base_of<Tensor2SymmBase,T>::value;
+
 /**
  * Policy for rank 2 tensor polynomials or polynomial sets of
  * dimension \p Dim
@@ -403,11 +514,17 @@ struct GetComponent
             mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
 #else
     typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-            mpl::identity<Scalar<nDim> >,
-            typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
-            mpl::identity<Vectorial<nDim> >,
-            typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
-            mpl::identity<Tensor2<nDim> > >::type>::type>::type::type type;
+                              mpl::identity<Scalar<nDim> >,
+                              typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
+                                                mpl::identity<Vectorial<nDim> >,
+                                                typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
+                                                                  mpl::identity<Tensor2<nDim> >,
+                                                                  typename mpl::if_<boost::is_same<T, Tensor2Symm<nDim> >,
+                                                                                    mpl::identity<Tensor2Symm<nDim> >
+                                                                                    >::type
+                                                                  >::type
+                                                >::type
+                              >::type::type type;
 #endif
 };
 
@@ -432,6 +549,7 @@ struct RankUp2
 {
     static const uint16_type nDim = T::nDim;
     typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::next<typename mpl::next<iter>::type>::type>::type type;
 };
@@ -447,7 +565,10 @@ template<typename T>
 struct RankDown
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+    typedef typename mpl::if_<boost::is_base_of<Tensor2SymmBase,T>,
+                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2Symm<nDim>, Tensor3<nDim>>>,
+                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>>>
+                              >::type::type types;
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::prior<iter>::type>::type _type;
     typedef typename mpl::if_<boost::is_same<_type,mpl::void_>,
