@@ -405,13 +405,24 @@ public:
     void diagonal ( Vector<value_type>& dest ) const;
 
     /**
+     * Return copy vector of the diagonal part of the matrix.
+     */
+    boost::shared_ptr<Vector<T> > diagonal() const;
+
+    /**
      * Returns the transpose of a matrix
      *
-     * \param M the matrix to transpose
      * \param Mt the matrix transposed
      * \param options options for tranpose
      */
     void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
+
+    /**
+     * Returns the transpose of a matrix
+     *
+     * \param options options for tranpose
+     */
+    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix
@@ -593,6 +604,13 @@ public :
                 const size_type n_l,
                 graph_ptrtype const& graph );
 
+    /**
+     * define in petsc matrix the dof mapping between
+     * numbering between local process to global world
+     */
+    void initLocalToGlobalMapping();
+
+
     void set( const size_type i,
               const size_type j,
               const value_type& value );
@@ -624,8 +642,6 @@ public :
 private :
 
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
-
-    void initLocalToGlobalMapping();
 };
 
 

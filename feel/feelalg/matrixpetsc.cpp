@@ -688,6 +688,9 @@ template <typename T>
 inline
 void MatrixPetsc<T>::close ()  const
 {
+    if ( !this->isInitialized() )
+        return;
+
     int ierr=0;
     PetscBool assembled = PETSC_FALSE;
     ierr = MatAssembled(M_mat,&assembled);
@@ -875,22 +878,47 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
 
 template <typename T>
 void
-MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& matIn, MatrixSparse<T> &matRes )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
-    FEELPP_ASSERT( this->size2() == In.size1() )( this->size2() )( In.size1() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size2() == matIn.size1() )( this->size2() )( matIn.size1() ).error( "incompatible dimension" );
 
     if ( !this->closed() )
         this->close();
+    if ( matIn.closed() )
+        matIn.close();
+    if ( !matRes.closed() )
+        matRes.close();
 
-    MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> ( &In );
-    MatrixPetsc<T>* Y = dynamic_cast<MatrixPetsc<T>*> ( &Res );
+    MatrixPetsc<T> const* matInPetsc = dynamic_cast<MatrixPetsc<T> const*> ( &matIn );
+    MatrixPetsc<T>* matResPetsc = dynamic_cast<MatrixPetsc<T>*> ( &matRes );
+    if ( matInPetsc && matResPetsc )
+    {
+        int ierr=0;
+        if ( matResPetsc->isInitialized() )
+        {
+            ierr = MatMatMult(this->M_mat, matInPetsc->mat(), MAT_REUSE_MATRIX, PETSC_DEFAULT, &matResPetsc->mat());
+            CHKERRABORT( this->comm(),ierr );
+        }
+        else
+        {
+            ierr = MatMatMult(this->M_mat, matInPetsc->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &matResPetsc->mat());
+            CHKERRABORT( this->comm(),ierr );
 
-    FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
-    int ierr=0;
-
-    ierr = MatMatMult(this->M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
-    CHKERRABORT( this->comm(),ierr );
+            matRes.setMapRow( this->mapRowPtr() );
+            matRes.setMapCol( matIn.mapColPtr() );
+            MatrixPetscMPI<T>* matResPetscMPI = dynamic_cast<MatrixPetscMPI<T>*> ( &matRes );
+            if ( matResPetscMPI )
+                matResPetscMPI->initLocalToGlobalMapping();
+            matRes.setInitialized( true );
+            matRes.setIsClosed( true );
+            // TODO graph
+        }
+    }
+    else
+    {
+        CHECK( false ) << "TODO other kind of matrix";
+    }
 
 }
 
@@ -1485,9 +1513,37 @@ MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
 {
     if ( !this->closed() )
         this->close();
-    VectorPetsc<T>* v = dynamic_cast<VectorPetsc<T>*> ( &out );
-    int ierr = MatGetDiagonal( M_mat, v->vec() );
-    CHKERRABORT( this->comm(),ierr );
+
+
+    VectorPetsc<T>* vecOutPetsc = dynamic_cast<VectorPetsc<T>*> ( &out );
+
+    if ( vecOutPetsc )
+    {
+        CHECK ( out.isInitialized() ) << "vector must be initialized";
+
+        int ierr = MatGetDiagonal( M_mat, vecOutPetsc->vec() );
+        CHKERRABORT( this->comm(),ierr );
+
+        // update ghost in //
+        vecOutPetsc->localize();
+        return;
+    }
+
+    CHECK( false ) << "TODO other kind of vector";
+}
+template<typename T>
+boost::shared_ptr<Vector<T> >
+MatrixPetsc<T>::diagonal() const
+{
+    boost::shared_ptr<Vector<T> > vecRes;
+    const MatrixPetscMPI<T>* matPetscMpi = dynamic_cast<const MatrixPetscMPI<T>*> ( this );
+    if ( matPetscMpi )
+        vecRes.reset( new VectorPetscMPI<T>( this->mapRowPtr() ) );
+    else
+        vecRes.reset( new VectorPetsc<T>( this->mapRowPtr() ) );
+    this->diagonal( *vecRes );
+
+    return vecRes;
 }
 template<typename T>
 void
@@ -1497,79 +1553,107 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
     tic();
     if ( !this->closed() )
         this->close();
+    if ( !Mt.closed() )
+        Mt.close();
     toc("transpose: close()", FLAGS_v > 0);
     tic();
-    MatrixPetsc<T>* Atrans;
-    if ( this->comm().size()>1 )
-    {
-        Atrans = dynamic_cast<MatrixPetscMPI<T>*> ( &Mt );
-    }
-    else
-    {
-        Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
-    }
-
+    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
+    CHECK( Atrans ) << "support only petsc matrix";
     int ierr = 0;
-    if ( Atrans->isInitialized() )
-    {
-        ierr = PETSc::MatDestroy( Atrans->M_mat );
-        CHKERRABORT( this->comm(),ierr );
-    }
-    toc("transpose: matrix init", FLAGS_v > 0);
-    tic();
     if ( ctx.test( MATRIX_TRANSPOSE_ASSEMBLED ) )
+    {
+        if ( Atrans->isInitialized() )
         {
-#if (PETSC_VERSION_MAJOR >= 3)
-            ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
-#else
-            ierr = MatTranspose( M_mat, &Atrans->M_mat );
-#endif
+            ierr = MatTranspose( M_mat, MAT_REUSE_MATRIX,&Atrans->M_mat );
             CHKERRABORT( this->comm(),ierr );
+        }
+        else
+        {
+            ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
+            CHKERRABORT( this->comm(),ierr );
+
+            Mt.setMapRow( this->mapColPtr() );
+            Mt.setMapCol( this->mapRowPtr() );
+            MatrixPetscMPI<T>* matTransposedPetscMPI = dynamic_cast<MatrixPetscMPI<T>*> ( &Mt );
+            if ( matTransposedPetscMPI )
+                matTransposedPetscMPI->initLocalToGlobalMapping();
+            Mt.setInitialized( true );
+            Mt.setIsClosed( true );
             if ( this->hasGraph() )
                 Mt.setGraph( this->graph()->transpose() );
         }
+    }
     else if ( ctx.test( MATRIX_TRANSPOSE_UNASSEMBLED ) )
-        {
-            ierr = MatCreateTranspose( M_mat, &Atrans->M_mat );
-            CHKERRABORT( this->comm(),ierr );
-        }
-
+    {
+        ierr = MatCreateTranspose( M_mat, &Atrans->M_mat );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
     toc("transpose: create mat transpose", FLAGS_v > 0);
-    tic();
+
     if ( ctx.test( MATRIX_TRANSPOSE_CHECK ) )
+    {
+        tic();
+        if ( this->size1()==this->size2() )
         {
-            if ( this->size1()==this->size2() )
-                {
-                    PetscTruth isSymmetric;
-                    MatEqual( M_mat, Atrans->M_mat, &isSymmetric );
+            PetscTruth isSymmetric;
+            MatEqual( M_mat, Atrans->M_mat, &isSymmetric );
 
-                    if ( isSymmetric )
-                        {
+            if ( isSymmetric )
+            {
 #if (PETSC_VERSION_MAJOR >= 3)
-                            MatSetOption( M_mat,MAT_SYMMETRIC,PETSC_TRUE );
+                MatSetOption( M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
-                            MatSetOption( M_mat,MAT_SYMMETRIC );
+                MatSetOption( M_mat,MAT_SYMMETRIC );
 #endif
-                        }
+            }
 
-                    else
-                        {
-                            DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
-                        }
-                }
+            else
+            {
+                DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
+            }
         }
+        toc("transpose: init done", FLAGS_v > 0);
+    }
 
-
-
-    Mt.setInitialized( true );
-    toc("transpose: init done", FLAGS_v > 0);
 }
+
+template<typename T>
+boost::shared_ptr<MatrixSparse<T> >
+MatrixPetsc<T>::transpose( size_type options ) const
+{
+    boost::shared_ptr<MatrixSparse<T> > matRes;
+    const MatrixPetscMPI<T>* matPetscMpi = dynamic_cast<const MatrixPetscMPI<T>*> ( this );
+    if ( matPetscMpi )
+        matRes.reset( new MatrixPetscMPI<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+    else
+        matRes.reset( new MatrixPetsc<T>( this->mapColPtr(),this->mapRowPtr(), this->comm() ) );
+
+    this->transpose( *matRes, options );
+
+    return matRes;
+}
+
 
 template<typename T>
 void
 MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 {
+    this->transpose( Mt, Feel::MATRIX_TRANSPOSE_ASSEMBLED );
+    Mt.addMatrix( 1.,*this );
+    Mt.scale( 0.5 );
+#if 0
+    int ierr = 0;
+#if (PETSC_VERSION_MAJOR >= 3)
+    ierr = MatSetOption( Mt.M_mat,MAT_SYMMETRIC,PETSC_TRUE );
+#else
+    ierr = MatSetOption( Mt.M_mat,MAT_SYMMETRIC );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    return;
+
+#if 0
     if ( !this->closed() )
         this->close();
     int ierr = 0;
@@ -1676,6 +1760,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     ierr = PETSc::MatDestroy ( Btrans );
     CHKERRABORT( this->comm(),ierr );
+#endif
 }
 
 
