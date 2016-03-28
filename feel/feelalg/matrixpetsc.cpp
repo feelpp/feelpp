@@ -1802,89 +1802,133 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
         return e;
     }
 
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+
+    const vector_ublas_type * vec_ublas_v = dynamic_cast<vector_ublas_type const*>( &__v );
+    const vector_ublas_type * vec_ublas_u = dynamic_cast<vector_ublas_type const*>( &__u );
+    const vector_ublas_range_type * vec_ublasRange_v = dynamic_cast<vector_ublas_range_type const*>( &__v );
+    const vector_ublas_range_type * vec_ublasRange_u = dynamic_cast<vector_ublas_range_type const*>( &__u );
+    const vector_ublas_extarray_type * vec_ublasExtArray_v = dynamic_cast<vector_ublas_extarray_type const*>( &__v );
+    const vector_ublas_extarray_type * vec_ublasExtArray_u = dynamic_cast<vector_ublas_extarray_type const*>( &__u );
+    const vector_ublas_extarray_range_type * vec_ublasExtArrayRange_v = dynamic_cast<vector_ublas_extarray_range_type const*>( &__v );
+    const vector_ublas_extarray_range_type * vec_ublasExtArrayRange_u = dynamic_cast<vector_ublas_extarray_range_type const*>( &__u );
+    bool vecIsUblasVarients_v = vec_ublas_v || vec_ublasRange_v || vec_ublasExtArray_v || vec_ublasExtArrayRange_v;
+    bool vecIsUblasVarients_u = vec_ublas_u || vec_ublasRange_u || vec_ublasExtArray_u || vec_ublasExtArrayRange_u;
+
+    boost::shared_ptr<VectorPetsc<T>> vec_petscClone_v, vec_petscClone_u;
+    const VectorPetsc<T> * vec_petscUsed_v;
+    const VectorPetsc<T> * vec_petscUsed_u;
+    if ( vec_petsc_v )
+    {
+        vec_petscUsed_v = vec_petsc_v;
+    }
+    else if ( vecIsUblasVarients_v )
+    {
+        if ( vec_ublas_v )
+            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas_v ) ) );
+        else if ( vec_ublasRange_v )
+            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange_v ) ) );
+        else if ( vec_ublasExtArray_v )
+            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray_v ) ) );
+        else if ( vec_ublasExtArrayRange_v )
+            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange_v ) ) );
+        vec_petscUsed_v = &(*vec_petscClone_v);
+    }
     else
     {
-        VectorPetsc<value_type> u( __u.size(), __u.localSize() );
-        {
-            size_type s = u.localSize();
-            size_type start = u.firstLocalIndex();
-
-            for ( size_type i = 0; i < s; ++i )
-                u.set( start + i, __u(  start + i ) );
-        }
-        VectorPetsc<value_type> v( __v.size(), __v.localSize() );
-        {
-            size_type s = v.localSize();
-            size_type start = v.firstLocalIndex();
-
-            for ( size_type i = 0; i < s; ++i )
-                v.set( start + i, __v( start + i ) );
-        }
-        VectorPetsc<value_type> z( __v.size(), __v.localSize() );
-
-        if ( !transpose )
-            MatMult( M_mat, u.vec(), z.vec() );
+        if ( this->comm().size() > 1 )
+            vec_petscClone_v.reset( new VectorPetscMPI<value_type>( __v.mapPtr() ) );
         else
-            MatMultTranspose( M_mat, u.vec(), z.vec() );
-
-        VecDot( v.vec(), z.vec(), &e );
+            vec_petscClone_v.reset( new VectorPetsc<value_type>( __v.mapPtr() ) );
+        *vec_petscClone_v = __v;
+        vec_petscUsed_v = &(*vec_petscClone_v);
     }
 
-    return e;
+    if ( vec_petsc_u )
+    {
+        vec_petscUsed_u = vec_petsc_u;
+    }
+    else if ( vecIsUblasVarients_u )
+    {
+        if ( vec_ublas_u )
+            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas_u ) ) );
+        else if ( vec_ublasRange_u )
+            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange_u ) ) );
+        else if ( vec_ublasExtArray_u )
+            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray_u ) ) );
+        else if ( vec_ublasExtArrayRange_u )
+            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange_u ) ) );
+        vec_petscUsed_u = &(*vec_petscClone_u);
+    }
+    else
+    {
+        if ( this->comm().size() > 1 )
+            vec_petscClone_u.reset( new VectorPetscMPI<value_type>( __u.mapPtr() ) );
+        else
+            vec_petscClone_u.reset( new VectorPetsc<value_type>( __u.mapPtr() ) );
+        *vec_petscClone_u = __u;
+        vec_petscUsed_u = &(*vec_petscClone_u);
+    }
+
+    return this->energy( *vec_petscUsed_v, *vec_petscUsed_u, transpose );
 }
 
 template<typename T>
 void
 MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
 {
-    m->close();
+    if ( !m->closed() )
+        m->close();
 
     auto const& mapRowBlock = m->mapRow();
     auto const& mapColBlock = m->mapCol();
+    this->setIsClosed( false );
 
-    auto blockMatrix = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &*( m ) ) );
+    auto blockMatrix = boost::dynamic_pointer_cast< MatrixPetsc<T> >( m );
+    CHECK( blockMatrix ) << "support only PetscMatrix";
 
-    const size_type firstDofGCrow = mapRowBlock.firstDofGlobalCluster();
-    const size_type firstDofGCcol = mapColBlock.firstDofGlobalCluster();
-    const size_type nRowInBlock = mapRowBlock.nLocalDofWithGhost();
-    const int myrank = mapRowBlock.worldComm().globalRank();
+    const size_type firstDofGcRowBlock = mapRowBlock.firstDofGlobalCluster();
+    const size_type firstDofGcColBlock = mapColBlock.firstDofGlobalCluster();
+    const size_type nLocalDofWithoutGhostRowBlock = mapRowBlock.nLocalDofWithoutGhost();
+    const rank_type myrank = mapRowBlock.worldComm().globalRank();
     int ierr = 0;
     std::vector<PetscInt> idcXShift;
-
-    for ( size_type k=0;k<nRowInBlock;++k )
+    auto const& gp2gcRowBlock = mapRowBlock.mapGlobalProcessToGlobalCluster();
+    for ( size_type k=0;k<nLocalDofWithoutGhostRowBlock;++k )
     {
-        if ( !mapRowBlock.dofGlobalProcessIsGhost(k) )
+        const PetscInt gDof = gp2gcRowBlock[k];
+        PetscInt ncolsX;
+        const PetscInt *idcX;
+        const PetscScalar *valX;
+        ierr = MatGetRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
+        CHKERRABORT( this->comm(),ierr );
+
+        const PetscInt gDofShift = start_i[myrank]+ (gDof-firstDofGcRowBlock);
+        idcXShift.resize(ncolsX,0);
+        for (int c=0;c<ncolsX;++c)
         {
-            const PetscInt gDof = mapRowBlock.mapGlobalProcessToGlobalCluster(k);
-            PetscInt ncolsX;
-            const PetscInt *idcX;
-            const PetscScalar *valX;
-            ierr = MatGetRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
-            CHKERRABORT( this->comm(),ierr );
-
-            const PetscInt gDofShift = start_i[myrank]+ (gDof-firstDofGCrow);
-            idcXShift.resize(ncolsX,0);
-            for (int c=0;c<ncolsX;++c)
+            if ( mapColBlock.dofGlobalClusterIsOnProc(idcX[c]) )
             {
-                if ( mapColBlock.dofGlobalClusterIsOnProc(idcX[c]) )
-                {
-                    idcXShift[c] = start_j[myrank]+ ( idcX[c]-firstDofGCcol ) ;
-                }
-                else
-                {
-                    const int realproc = mapColBlock.procOnGlobalCluster(idcX[c]);
-                    idcXShift[c] = start_j[realproc] + ( idcX[c]-mapColBlock.firstDofGlobalCluster(realproc) );
-                }
+                idcXShift[c] = start_j[myrank]+ ( idcX[c]-firstDofGcColBlock );
             }
-            ierr = MatSetValues( this->mat(),1, &gDofShift,ncolsX,idcXShift.data(),valX, INSERT_VALUES );
-            CHKERRABORT( this->comm(),ierr );
-
-            // apply this when finish with MatGetRow
-            ierr = MatRestoreRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
-            CHKERRABORT( this->comm(),ierr );
+            else
+            {
+                const rank_type realproc = mapColBlock.procOnGlobalCluster(idcX[c]);
+                idcXShift[c] = start_j[realproc] + ( idcX[c]-mapColBlock.firstDofGlobalCluster(realproc) );
+            }
         }
-    }
+        ierr = MatSetValues( this->mat(),1, &gDofShift,ncolsX,idcXShift.data(),valX, INSERT_VALUES );
+        CHKERRABORT( this->comm(),ierr );
 
+        // apply this when finish with MatGetRow
+        ierr = MatRestoreRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
+        CHKERRABORT( this->comm(),ierr );
+
+    }
 
 }
 

@@ -151,6 +151,8 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
             for ( int proc=0 ;proc < worldsize;++proc )
                 start_i[proc] += blockSet(i,0)->mapRow().nLocalDofWithoutGhost(proc);
         }
+        if ( !M_mat->closed() )
+            M_mat->close();
     }
 
 }
