@@ -104,7 +104,6 @@ namespace parameter = boost::parameter;
 
 namespace detail
 {
-
 template<typename T,int M, int N>
 struct ID
 {
@@ -302,11 +301,11 @@ struct D
     array_type M_grad;
 };
 
-template<typename T>
+template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,1,1> m_type;
+    typedef Eigen::Matrix<value_type,D,1> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -1509,6 +1508,8 @@ public:
     static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
     static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
     static constexpr bool is_nodal = !is_modal;
+
+
     static constexpr uint16_type nComponents1 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents1 );
     static constexpr uint16_type nComponents2 = ( is_composite? invalid_uint16_type_value : basis_0_type::nComponents2 );
     static constexpr bool is_product = ( is_composite? invalid_uint16_type_value : basis_0_type::is_product );
@@ -1523,7 +1524,7 @@ public:
                              mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
     static const uint16_type N_COMPONENTS = nComponents;
     static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
-
+    static constexpr uint16_type nRealComponents = is_tensor2symm?basis_0_type::nComponents1*(basis_0_type::nComponents1+1)/2:nComponents;
     typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
     static const bool is_periodic = periodicity_0_type::is_periodic;
 
@@ -1956,6 +1957,7 @@ public:
         static const uint16_type nComponents1 = functionspace_type::nComponents1;
         static const uint16_type nComponents2 = functionspace_type::nComponents2;
         static const uint16_type nComponents = functionspace_type::nComponents;
+        static const uint16_type nRealComponents = functionspace_type::nRealComponents;
         static const uint16_type nSpaces = functionspace_type::nSpaces;
         static const bool is_mortar = functionspace_type::is_mortar;
         static const int rank = functionspace_type::rank;
@@ -2165,11 +2167,19 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                    startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
+            cout << "tc extract component " << (int)i << "," << (int)j
+                 << " startSlice:" << startSlice
+                 << " comp: " << nRealComponents
+                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
@@ -2187,10 +2197,19 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                    startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
+            cout << "fc extract component " << (int)i << "," << (int)j
+                 << " startSlice:" << startSlice
+                 << " comp: " << nRealComponents
+                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
@@ -2223,10 +2242,23 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+
+                if ( is_tensor2symm )
+                {
+                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                {
+                    startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
+
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
+            cout << "t extract component " << (int)i << "," << (int)j
+                 << " startSlice:" << startSlice
+                 << " comp: " << nRealComponents
+                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n" ;
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
@@ -2246,10 +2278,21 @@ public:
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                startSlice = ((int)i)*nComponents2+((int)j);
+                if ( is_tensor2symm )
+                {
+                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                }
+                else
+                {
+                    startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
+            cout << "f extract component " << (int)i << "," << (int)j
+                 << " startSlice:" << startSlice
+                 << " comp: " << nRealComponents
+                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
@@ -2455,7 +2498,7 @@ public:
         typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
-        typedef Eigen::Matrix<value_type,1,1> _div_type;
+        typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
@@ -2945,7 +2988,7 @@ public:
 
         //@}
 
-        typedef Feel::detail::Div<value_type> div_type;
+        typedef Feel::detail::Div<value_type,nComponents2> div_type;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -4078,7 +4121,7 @@ public:
      */
     uint16_type qDim() const
     {
-        return N_COMPONENTS;
+        return is_tensor2symm?nRealComponents:N_COMPONENTS;
     }
 
     /**
@@ -4784,6 +4827,12 @@ private:
 }; // FunctionSpace
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2symm;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nRealComponents;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
 const bool FunctionSpace<A0,A1,A2,A3, A4>::Element<T,Cont>::is_scalar;
 
@@ -4802,6 +4851,10 @@ const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2symm;
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename T,  typename Cont>
 const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename T,  typename Cont>
+const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nRealComponents;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
