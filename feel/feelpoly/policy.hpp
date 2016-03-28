@@ -346,7 +346,7 @@ struct Tensor2Symm : public Tensor2SymmBase
     static const bool is_tensor2 = true;
     static const bool is_tensor3 = false;
 
-    static const uint16_type nComponents = nDim*(nDim+1)/2;
+    static const uint16_type nComponents = nDim*nDim;
     static const uint16_type nComponents1 = nDim;
     static const uint16_type nComponents2 = nDim;
     static const uint16_type nComponents3 = 1;
@@ -369,7 +369,7 @@ struct Tensor2Symm : public Tensor2SymmBase
         {
             uint16_type i1 = nRows1*c1;
 
-            for ( int c2 = 0; c2 < c1; ++c2 )
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
                 ublas::project( __c_reshaped,
                                 ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
@@ -378,14 +378,6 @@ struct Tensor2Symm : public Tensor2SymmBase
                                     ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
                                     ublas::slice( 0, 1, nCols ) );
             }
-            // diagonal
-            ublas::project( __c_reshaped,
-                            ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                            ublas::range( c1*nCols, ( c1+1 )*nCols ) ) =
-                ublas::project( __c,
-                                ublas::slice( i1+c1, nComponents, nRows1/nComponents ),
-                                ublas::slice( 0, 1, nCols ) );
-
         }
 
         return __c_reshaped;
@@ -416,7 +408,7 @@ struct Tensor2Symm : public Tensor2SymmBase
         {
             uint16_type i1 = nRows1*c1;
 
-            for ( int c2 = 0; c2 < c1; ++c2 )
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
                 ublas::project( __c_reshaped,
                                 ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
@@ -424,13 +416,6 @@ struct Tensor2Symm : public Tensor2SymmBase
                                         ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
                                         ublas::range( c2*nCols, ( c2+1 )*nCols ) );
             }
-            // diagonal
-            ublas::project( __c_reshaped,
-                            ublas::slice( i1+c1, nComponents, nRows1/nComponents ),
-                            ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                                                            ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                                                            ublas::range( c1*nCols, ( c1+1 )*nCols ) );
-
         }
 
         return __c_reshaped;
@@ -529,11 +514,17 @@ struct GetComponent
             mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
 #else
     typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-            mpl::identity<Scalar<nDim> >,
-            typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
-            mpl::identity<Vectorial<nDim> >,
-            typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
-            mpl::identity<Tensor2<nDim> > >::type>::type>::type::type type;
+                              mpl::identity<Scalar<nDim> >,
+                              typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
+                                                mpl::identity<Vectorial<nDim> >,
+                                                typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
+                                                                  mpl::identity<Tensor2<nDim> >,
+                                                                  typename mpl::if_<boost::is_same<T, Tensor2Symm<nDim> >,
+                                                                                    mpl::identity<Tensor2Symm<nDim> >
+                                                                                    >::type
+                                                                  >::type
+                                                >::type
+                              >::type::type type;
 #endif
 };
 
@@ -558,6 +549,7 @@ struct RankUp2
 {
     static const uint16_type nDim = T::nDim;
     typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::next<typename mpl::next<iter>::type>::type>::type type;
 };
@@ -573,7 +565,10 @@ template<typename T>
 struct RankDown
 {
     static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+    typedef typename mpl::if_<boost::is_base_of<Tensor2SymmBase,T>,
+                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2Symm<nDim>, Tensor3<nDim>>>,
+                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>>>
+                              >::type::type types;
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::prior<iter>::type>::type _type;
     typedef typename mpl::if_<boost::is_same<_type,mpl::void_>,

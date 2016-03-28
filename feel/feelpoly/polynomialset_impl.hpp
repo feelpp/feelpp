@@ -112,7 +112,7 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, optimization_p1_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, optimization_p1_t )
 {
         //#pragma omp parallel
         //precompute_type* __pc = M_pc.get().get();
@@ -129,7 +129,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, optimizati
 
                 for ( uint16_type i = 0; i < I; ++i )
                 {
-                    grad_real.noalias() = (*M_gradphi)[i][0]*Bt.transpose();
+                    grad_real.noalias() = (*M_gradphi)[i][0][0]*Bt.transpose();
                     M_grad[i][0] = grad_real;
                 }
 
@@ -158,7 +158,7 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t )
 {
         //#pragma omp parallel
         //precompute_type* __pc = M_pc.get().get();
@@ -175,7 +175,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
                         for ( uint16_type q = 0; q < Q; ++q )
                         {
                                 matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                                M_grad[i][q] = (*M_gradphi)[i][q]*Bt.transpose();
+                                M_grad[i][q] = (*M_gradphi)[i][0][q]*Bt.transpose();
 #if 0
                                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
@@ -209,13 +209,13 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimiz
 
         } // grad
 
-        update( __gmc, mpl::int_<0>(), no_optimization_p1_t(), do_optimization_p2_t() );
+        update( __gmc, rank_t<0>(), no_optimization_p1_t(), do_optimization_p2_t() );
 }
 template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t, optimization_p2_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t, optimization_p2_t )
 {
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
@@ -250,11 +250,11 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<0>, no_optimization_p1_t, no_optimization_p2_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t, no_optimization_p2_t )
 {
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
-        
+
         geometric_mapping_context_type* thegmc = __gmc.get();
         LOG(INFO) << "use no_optimization_p2_t element " << thegmc->id();
         precompute_type* __pc = M_pc.get().get();
@@ -288,7 +288,7 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t )
 {
         //precompute_type* __pc = M_pc.get().get();
         geometric_mapping_context_type* thegmc = __gmc.get();
@@ -313,7 +313,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
                                         //uint16_type c1 = c;
                                         matrix_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                                         //matrix_type const& Bq = thegmc->B( q );
-                                        M_grad[i][q] = (*M_gradphi)[i][q]*Bt.transpose();
+                                        M_grad[i][q] = (*M_gradphi)[i][0][q]*Bt.transpose();
 #if 0
                                         M_dx[i][q] = M_grad[i][q].col( 0 );
 
@@ -370,13 +370,13 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
                                 }
                 }
         }
-        update( __gmc, mpl::int_<1>(), no_optimization_p1_t(), do_optimization_p2_t() );
+        update( __gmc, rank_t<1>(), no_optimization_p1_t(), do_optimization_p2_t() );
 }
 template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t, no_optimization_p2_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t, no_optimization_p2_t )
 {
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
@@ -409,7 +409,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimiz
                         L = B*__pc->hessian(i,c1,q)*B.transpose();
                         M_laplacian[i][q](c1,0) = L.trace();
                     } // c1 component of vector field
-                    
+
                 } // q
             } // c
         } //ii
@@ -419,7 +419,7 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, no_optimization_p1_t, optimization_p2_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t, optimization_p2_t )
 {
     if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
@@ -456,7 +456,7 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, optimization_p1_t )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_p1_t )
 {
     const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
     const uint16_type I = nDof; //M_ref_ele->nbDof();
@@ -510,15 +510,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, optimizati
                 //uint16_type c1 = c;
                 if ( is_hdiv_conforming )
                 {
-                    grad_real.noalias() = K*((*M_gradphi)[i][0]*Bt.transpose());
+                    grad_real.noalias() = K*((*M_gradphi)[i][0][0]*Bt.transpose());
                     grad_real /= thegmc->J(0);
                 }
                 else if ( is_hcurl_conforming )
                 {
-                    grad_real.noalias() = Bt*((*M_gradphi)[i][0]*Bt.transpose());
+                    grad_real.noalias() = Bt*((*M_gradphi)[i][0][0]*Bt.transpose());
                 }
                 else
-                    grad_real.noalias() = (*M_gradphi)[i][0]*Bt.transpose();
+                    grad_real.noalias() = (*M_gradphi)[i][0][0]*Bt.transpose();
 
                 M_grad[i][0] = grad_real;
 
@@ -527,11 +527,11 @@ update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<1>, optimizati
                 {
                     if ( is_hdiv_conforming )
                     {
-                        M_div[i][0]( 0,0 ) =  (*M_gradphi)[i][0].trace()/thegmc->J(0);
+                        M_div[i][0]( 0,0 ) =  (*M_gradphi)[i][0][0].trace()/thegmc->J(0);
                     }
                     else if ( is_hcurl_conforming )
                     {
-                        M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0]*Bt.transpose()) ).trace();
+                        M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0][0]*Bt.transpose()) ).trace();
                     }
                     else
                     {
@@ -591,14 +591,74 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, mpl::bool_<true> )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, optimization_p1_t )
 {
+    // TODO: differentiation of matrix fields
+    cout << "matrix fields diff" << std::endl;
+
+    const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+    const uint16_type I = nDof; //M_ref_ele->nbDof();
+
+    //precompute_type* __pc = M_pc.get().get();
+    geometric_mapping_context_type* thegmc = __gmc.get();
+
+    matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+    matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+    std::fill( M_div.data(), M_div.data()+M_div.num_elements(), div_type::Zero() );
+    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+    {
+
+        typedef typename boost::multi_array<value_type,4>::index_range range;
+
+        matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
+        for ( uint16_type ii = 0; ii < I; ++ii )
+        {
+            for ( uint16_type c = 0; c < nComponents; ++c )
+            {
+                uint16_type i = I*c + ii;
+
+                for( uint16_type c1 = 0; c1 < nRealDim; ++ c1 )
+                {
+                    grad_real.noalias() = (*M_gradphi)[i][c1][0]*Bt.transpose();
+
+                    // update divergence if needed
+                    if ( vm::has_div<context>::value )
+                    {
+                        for( uint16_type j = 0; j < nComponents2; ++j )
+                            M_div[i][0]( j,0 ) +=  grad_real( c1, j );
+                    }
+                }
+            } // c
+        } // ii
+#if 0
+        // we need the normal derivative
+        if ( vm::has_first_derivative_normal<context>::value )
+        {
+            std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
+            const uint16_type I = nDof*nComponents1;
+            const uint16_type Q = nPoints();
+
+            for ( int i = 0; i < I; ++i )
+                for ( uint16_type q = 0; q < Q; ++q )
+                {
+                    for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                    {
+                        for ( uint16_type l = 0; l < NDim; ++l )
+                        {
+                            M_dn[i][q]( c1,0 ) += M_grad[i][q]( c1,l ) * thegmc->unitNormal( l, q );
+                        }
+                    }
+                }
+        }
+#endif
+    } // grad
+
 }
 template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
-update( geometric_mapping_context_ptrtype const& __gmc, mpl::int_<2>, mpl::bool_<false> )
+update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, no_optimization_p1_t )
 {
 }
 
