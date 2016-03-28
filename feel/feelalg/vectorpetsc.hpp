@@ -434,19 +434,7 @@ public:
     /**
      * Call the assemble functions
      */
-    void close ()
-    {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc<> not initialized" );
-
-        int ierr=0;
-
-        ierr = VecAssemblyBegin( M_vec );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecAssemblyEnd( M_vec );
-        CHKERRABORT( this->comm(),ierr );
-
-        this->M_is_closed = true;
-    }
+    void close();
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and

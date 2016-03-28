@@ -40,7 +40,6 @@ MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat()
 {}
 template <typename T>
@@ -48,7 +47,6 @@ MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const
     :
     super(worldComm),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat( r, c )
 {}
 
@@ -57,7 +55,6 @@ MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
     M_is_initialized( m.M_is_initialized ),
-    M_is_closed( m.M_is_closed ),
     M_mat( m.M_mat )
 
 {}
@@ -134,7 +131,7 @@ template<typename T>
 void
 MatrixEigenDense<T>::close() const
 {
-    M_is_closed = true;
+    this->setIsClosed( true );
 }
 
 template<typename T>
