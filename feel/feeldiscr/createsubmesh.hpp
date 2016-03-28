@@ -1053,7 +1053,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 {
-    auto t = createSubmeshTool( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
     t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
 }
@@ -1075,7 +1075,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
 
 {
-    auto t = createSubmeshTool( inputMesh,range,wc,updateComponentsMesh );
+    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,wc,updateComponentsMesh );
     t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
 }
