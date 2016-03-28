@@ -844,8 +844,8 @@ MatrixPetsc<T>::addMatrix( const ublas::matrix<value_type>& dm,
     const size_type m = dm.size1();
     const size_type n = dm.size2();
 
-    FEELPP_ASSERT ( rows.size() == size1() ).error( "invalid row size" );
-    FEELPP_ASSERT ( cols.size() == size2() ).error( "invalid column size" );
+    FEELPP_ASSERT ( rows.size() == this->size1() ).error( "invalid row size" );
+    FEELPP_ASSERT ( cols.size() == this->size2() ).error( "invalid column size" );
 
     int ierr=0;
 
@@ -1879,7 +1879,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
+MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
 {
     if ( !m->closed() )
         m->close();
@@ -2409,8 +2409,8 @@ MatrixPetscMPI<T>::addMatrix( const ublas::matrix<value_type>& dm,
     const size_type m = dm.size1();
     const size_type n = dm.size2();
 
-    FEELPP_ASSERT ( rows.size() == size1() ).error( "invalid row size" );
-    FEELPP_ASSERT ( cols.size() == size2() ).error( "invalid column size" );
+    FEELPP_ASSERT ( rows.size() == this->size1() ).error( "invalid row size" );
+    FEELPP_ASSERT ( cols.size() == this->size2() ).error( "invalid column size" );
 
     int ierr=0;
 

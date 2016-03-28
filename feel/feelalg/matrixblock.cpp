@@ -428,7 +428,7 @@ MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt, size_type options )
 
 template <typename T>
 void
-MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
+MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
 {
     M_mat->updateBlockMat( m,start_i,start_j );
 }
