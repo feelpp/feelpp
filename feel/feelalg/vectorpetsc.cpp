@@ -226,6 +226,22 @@ VectorPetsc<T>::operator() ( const size_type i )
 }
 
 template <typename T>
+void
+VectorPetsc<T>::close()
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc<> not initialized" );
+
+    int ierr=0;
+
+    ierr = VecAssemblyBegin( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecAssemblyEnd( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+
+    this->M_is_closed = true;
+}
+
+template <typename T>
 Vector<typename VectorPetsc<T>::value_type>&
 VectorPetsc<T>::operator= ( const Vector<value_type> &V )
 {

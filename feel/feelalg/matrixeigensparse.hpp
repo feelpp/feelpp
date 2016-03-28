@@ -184,16 +184,6 @@ public:
 
 
     /**
-     * see if Eigen matrix has been closed
-     * and fully assembled yet
-     */
-    bool closed() const
-    {
-        return M_is_closed;
-    }
-
-
-    /**
      * Returns the read optimized eigen matrix.
      */
     matrix_type const& mat () const
@@ -421,7 +411,6 @@ protected:
 private:
 
     bool M_is_initialized;
-    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure

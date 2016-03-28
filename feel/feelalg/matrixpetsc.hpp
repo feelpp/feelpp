@@ -593,14 +593,6 @@ public :
                 const size_type n_l,
                 graph_ptrtype const& graph );
 
-
-    size_type size1() const;
-    size_type size2() const;
-    size_type rowStart() const;
-    size_type rowStop() const;
-    size_type colStart() const;
-    size_type colStop() const;
-
     void set( const size_type i,
               const size_type j,
               const value_type& value );

@@ -671,7 +671,7 @@ public:
      * @ set false if the matrix is in assembly state and need to be closed
      * for some next used (global operation) , false otherwise.
      */
-    void setIsClosed( bool b )
+    void setIsClosed( bool b ) const
     {
         M_is_closed = b;
     }
@@ -859,7 +859,7 @@ protected:
      * Flag to see if the Numeric
      * assemble routines have been called yet
      */
-    bool M_is_closed;
+    mutable bool M_is_closed;
 
     //! non zero entries representation
     graph_ptrtype M_graph;
