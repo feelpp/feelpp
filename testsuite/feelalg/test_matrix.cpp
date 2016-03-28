@@ -147,6 +147,7 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     double meshMeasure = mesh->measure();
     auto Vh1 = Pch<2>( mesh );
     size_type nDofVh1 = Vh1->nDof();
+    size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();
     auto u1 = Vh1->element();
     auto backendPetsc = backend(_kind="petsc");
     auto vec1a = backendPetsc->newVector( Vh1 );
@@ -192,12 +193,14 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
         integrate(_range=elements(mesh),_expr=idt(u1)*id(u1) );
     mat1a->close();
     BOOST_CHECK_SMALL( mat1a->energy(vec1a,vec1b) - 2*3*meshMeasure , tolCheck );
+
     // add matrix
     form2(_test=Vh1,_trial=Vh1,_matrix=mat1b ) =
         integrate(_range=elements(mesh),_expr=idt(u1)*id(u1) );
     mat1b->close();
     mat1a->addMatrix(3,mat1b );
     BOOST_CHECK_SMALL( mat1a->energy(vec1a,vec1b) - (1+3)*2*3*meshMeasure , tolCheck );
+
     // diagonal
     mat1a->zero();
     for ( size_type k=0;k<nDofActivesMat1Row;++k )
@@ -205,6 +208,22 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     mat1a->close();
     mat1a->diagonal(vec1a);
     BOOST_CHECK_SMALL( vec1a->sum() - 3*nDofVh1 , tolCheck );
+    size_type diagsum=0;
+    for ( size_type k=0;k<nLocalDofWithGhostVh1;++k)
+        diagsum += vec1a->operator()(k);
+    BOOST_CHECK( diagsum == 3*nLocalDofWithGhostVh1 );
+    for ( size_type k=0;k<nLocalDofWithGhostVh1;++k)
+        vec1a->set( k,4. );
+    vec1a->close();
+    BOOST_CHECK_SMALL( vec1a->sum() - 4*nDofVh1 , tolCheck );
+    // diagonal as new vector
+    auto vec1ad = mat1a->diagonal();
+    BOOST_CHECK_SMALL( vec1ad->sum() - 3*nDofVh1 , tolCheck );
+    diagsum=0;
+    for ( size_type k=0;k<nLocalDofWithGhostVh1;++k)
+        diagsum += vec1ad->operator()(k);
+    BOOST_CHECK( diagsum == 3*nLocalDofWithGhostVh1 );
+
     // transpose
     mat1a->zero();
     for ( size_type k=0;k<nDofActivesMat1Row;++k )
@@ -213,6 +232,13 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     mat1b->zero();
     mat1a->transpose( mat1b );
     BOOST_CHECK_SMALL( mat1b->l1Norm() - 7., tolCheck );
+    // transpose with matrix clear
+    mat1b->clear();
+    mat1a->transpose( mat1b );
+    BOOST_CHECK_SMALL( mat1b->l1Norm() - 7., tolCheck );
+    // transpose with new matrix
+    auto mat1at = mat1a->transpose();
+    BOOST_CHECK_SMALL( mat1at->l1Norm() - 7., tolCheck );
 
     // symmetricPart
     form2(_test=Vh1,_trial=Vh1,_matrix=mat1a ) =
@@ -224,6 +250,34 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     mat1c->scale( 0.5 );
     BOOST_CHECK_SMALL( mat1b->l1Norm() - mat1c->l1Norm(), tolCheck );
 
+    // matMatMult
+    mat1a->zero();
+    mat1b->zero();
+    for ( size_type k=0;k<nDofActivesMat1Row;++k )
+    {
+        mat1a->set( k,k, (7.+k));
+        mat1b->set( k,k, 1./(7.+k));
+    }
+    mat1a->close();
+    mat1b->close();
+    mat1c->clear(); // stencil will change
+    mat1a->matMatMult( *mat1b, *mat1c );
+    BOOST_CHECK_SMALL( mat1c->l1Norm() - 1., tolCheck );
+
+
+    // re-check local assembly
+    mat1a->zero();
+    mat1b->zero();
+    mat1c->zero();
+    for ( size_type k=0;k<nDofActivesMat1Row;++k )
+    {
+        mat1a->set( k,k, (7.+k));
+        mat1b->set( k,k, 1./(7.+k));
+        mat1c->set( k,k, 1./(7.+k));
+    }
+    mat1a->close();
+    mat1b->close();
+    mat1c->close();
 
 }
 BOOST_AUTO_TEST_SUITE_END()
