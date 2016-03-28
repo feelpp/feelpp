@@ -507,11 +507,13 @@ public:
                 {
                     if ( is_symm_v )
                     {
-                        int c = (c1+1)*c1/2;
                         for( int c2 = 0; c2 < c1; ++c2 )
-                            Ihloc( (c2+c)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalDof+q );
+                        }
                         // diagonal
-                        Ihloc( (c1+c)*nLocalDof+q ) = expr.evalq( c1, c1, q );
+                        Ihloc( (c1+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c1, q );
                     }
                     else
                     {
@@ -540,10 +542,12 @@ public:
                 {
                     if ( is_symm_v )
                     {
-                        int c = (c1+1)*c1/2;
                         for( int c2 = 0; c2 < c1; ++c2 )
-                            Ihloc( (c2+c)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
-                        Ihloc( (c1+c)*nLocalFaceDof+q ) = expr.evalq( c1, c1, q );
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalFaceDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c1, q );
                     }
                     else
                     {
@@ -573,10 +577,13 @@ public:
                 {
                     if ( is_symm_v )
                     {
-                        int c = (c1+1)*c1/2;
                         for( int c2 = 0; c2 < c1; ++c2 )
-                            Ihloc( (c2+c)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
-                        Ihloc( (c1+c)*nLocalEdgeDof+q ) = expr.evalq( c1, c1, q );
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalEdgeDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c1, q );
+
                     }
                     else
                     {
@@ -605,10 +612,12 @@ public:
                 {
                     if ( is_symm_v )
                     {
-                        int c = (c1+1)*c1/2;
                         for( int c2 = 0; c2 < c1; ++c2 )
-                            Ihloc( (c2+c)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
-                        Ihloc( (c1+c)*nLocalVertexDof+q ) = expr.evalq( c1, c1, q );
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalVertexDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c1, q );
                     }
                     else
                     {
@@ -647,13 +656,14 @@ public:
                     {
                         if ( is_symm_v )
                         {
-                            int c = (c1+1)*c1/2;
                             for( int c2 = 0; c2 < c1; ++c2 )
                             {
-                                int ldof = (c2+c)*nLocalDof + q;
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
                                 Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q;
+                                Ihloc( I, ldof2) = Ihloc( I, ldof);
                             }
-                            int ldof = (c1+c)*nLocalDof + q;
+                            int ldof = (c1+nComponents2*c1)*nLocalDof + q;
                             Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
                         }
                         else
