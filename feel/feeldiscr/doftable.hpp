@@ -120,6 +120,16 @@ struct hash<std::tuple<TT...>>
 
 namespace Feel
 {
+namespace detail {
+
+inline uint16_type
+symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
+{
+    return  j + n*i - i*(i+1) /2.;
+};
+
+
+}
 template<class ITERATOR>
 ITERATOR begin( std::pair<ITERATOR,ITERATOR> &range )
 {
@@ -201,8 +211,10 @@ public:
     static const bool is_scalar = FEType::is_scalar;
     static const bool is_vectorial = FEType::is_vectorial;
     static const bool is_tensor2 = FEType::is_tensor2;
+    static const bool is_tensor2symm = FEType::is_tensor2 && is_symm_v<FEType>;
     static const bool is_modal = FEType::is_modal;
     static const bool is_product = FEType::is_product;
+    static const uint16_type nRealComponents = is_tensor2symm?(fe_type::nComponents1*(fe_type::nComponents1+1)/2):fe_type::nComponents;
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
@@ -1081,7 +1093,10 @@ public:
 #endif
                     boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
 
-                    pDof += ncdof;
+                    if ( is_tensor2symm )
+                        pDof += nRealComponents;
+                    else
+                        pDof += ncdof;
 #if 0
                     DCHECK( __inserted == true )
                         << "dof should have been inserted" <<  ie << " " << lc_dof
@@ -1121,15 +1136,48 @@ public:
                         << "invalid local dof index"
                         <<  lc_dof << ", " << fe_type::nLocalDof*std::get<1>(itdof->first);
 #endif
-                    for( int c = 0; c < ncdof; ++c )
+                    if ( is_tensor2symm )
                     {
-                        M_ldof.setLocalDof( fe_type::nLocalDof*c+l_dof );
-                        M_gdof.setIndex( itdof->second+shift+c );
-                        auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
-                        //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
-                        DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
-                            ie << "," << lc_dof << ")";
-                        M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                        for( int c1 = 0; c1 < nComponents1; ++c1 )
+                        {
+                            for( int c2 = 0; c2 < c1; ++c2 )
+                            {
+                                const int k = detail::symmetricIndex(c1,c2,nComponents1);
+                                M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c2)+l_dof );
+                                M_gdof.setIndex( itdof->second+shift+k );
+                                auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                                DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
+                                    ie << "," << lc_dof << ")";
+
+                                M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c2+c1)+l_dof );
+                                res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                                DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
+                                    ie << "," << lc_dof << ")";
+                                //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
+
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                            }
+                            M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
+                            const int k = detail::symmetricIndex(c1,c1,nComponents1);
+                            M_gdof.setIndex( itdof->second+shift+k);
+                            auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                            DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
+                                ie << "," << lc_dof << ")";
+                            M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                        }
+                    }
+                    else
+                    {
+                        for( int c = 0; c < ncdof; ++c )
+                        {
+                            M_ldof.setLocalDof( fe_type::nLocalDof*c+l_dof );
+                            M_gdof.setIndex( itdof->second+shift+c );
+                            auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                            //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
+                            DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
+                                ie << "," << lc_dof << ")";
+                            M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                        }
                     }
 
 
@@ -1403,6 +1451,8 @@ public:
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nComponents;
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nRealComponents;
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh,
@@ -1766,7 +1816,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
     // build splits with components
     if ( is_product && nComponents > 1 )
-        this->buildIndexSplitWithComponents( nComponents );
+        this->buildIndexSplitWithComponents( nRealComponents );
 
     VLOG(2) << "[Dof::build] done building the map\n";
 }
