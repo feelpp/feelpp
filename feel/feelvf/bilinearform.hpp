@@ -1666,9 +1666,6 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     __expr.assemble( M_X1, M_X2, *this );
 
-    // specifiy that the matrix is in assembly state
-    M_matrix->setIsClosed( false );
-
     DVLOG(2) << "[BilinearForm::assign<false>] stop\n";
 
 }

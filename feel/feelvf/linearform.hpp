@@ -1073,9 +1073,6 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
     }
 
     __expr.assemble( M_X, *this );
-
-    // specifiy that the vector M_F is in assembly state
-    M_F->setIsClosed( false );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename ExprT>
