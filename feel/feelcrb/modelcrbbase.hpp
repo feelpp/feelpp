@@ -281,10 +281,10 @@ public :
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
-        {
-            M_Aq.push_back( tuple.template get<0>().matrixPtr() );
-            M_betaAqString.push_back( tuple.template get<1>() );
-        }
+    {
+        M_Aq.push_back( tuple.template get<0>().matrixPtr() );
+        M_betaAqString.push_back( tuple.template get<1>() );
+    }
     /*
      * return the left hand side terms from the affine decomposition
      * that is to say bilinear forms Aq and beta coefficients associated
@@ -418,6 +418,18 @@ public :
 
     virtual void initModel() = 0;
 
+    virtual void assemble()
+    {
+        if( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) )
+        {
+            Feel::cout << "************************************************************************ \n"
+                       << "** SER method is asked without implementation of assemble() function. ** \n"
+                       << "** assemble() function is needed to update affine decomposition during \n"
+                       << "** the simultaneous basis functions build ** \n"
+                       << "************************************************************************" << std::endl;
+        }
+    };
+
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
         return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
@@ -515,6 +527,18 @@ public :
         return boost::make_tuple( M_Aqm , M_Fqm );
     }
 
+    virtual affine_decomposition_type computePicardAffineDecomposition()
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
+            std::cout<<"** computePicardAffineDecomposition(...) **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeAffineDecomposition();
+    }
+
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
         return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
@@ -568,6 +592,10 @@ public :
         auto tuple = computeBetaQm( mu , time );
         return tuple.template get<0>();
     }
+
+    // Default updateResidual / updateJacobian functions
+    virtual bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
+    virtual bool updateJacobian(element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {
@@ -658,6 +686,19 @@ public :
     {
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
+
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu );
+    }
+
     virtual betaq_type computeBetaQ( parameter_type const& mu )
     {
         return computeBetaQ( mu, mpl::bool_< is_time_dependent >() );
@@ -734,7 +775,18 @@ public :
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu, time , only_terms_time_dependent );
+    }
+    
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
         //not that the parameter mu is here to indicates
@@ -832,6 +884,29 @@ public :
         }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
+    }
+
+    virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return this->computeBetaQm( u, mu );
+    }
+    virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( u, mu, time, only_time_dependent_terms );
     }
 
 
