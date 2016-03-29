@@ -35,6 +35,10 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+//#include <feel/feeldiscr/stencil.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define FEELAPP()                                                       \
     Feel::Application app;                                            \
@@ -94,17 +98,17 @@ public:
         {
             BOOST_CHECK( mpi::environment::initialized() );
             BOOST_TEST_MESSAGE( "mpi ok" );
-            BOOST_CHECK_EQUAL( detail::BackendManager<double>::instance().size(), 0 );
-            BOOST_CHECK_EQUAL( detail::BackendManager<std::complex<double>>::instance().size(), 0 );
+            BOOST_CHECK_EQUAL( Feel::detail::BackendManager<double>::instance().size(), 0 );
+            BOOST_CHECK_EQUAL( Feel::detail::BackendManager<std::complex<double>>::instance().size(), 0 );
             BOOST_TEST_MESSAGE( "backend manager empty" );
             auto b1 = backend(_name="test1");
             auto c1 = cbackend(_name="ctest1");
 #if 0
             BOOST_TEST_MESSAGE( "creating backend" );
-            BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 1 );
-            BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.first, BACKEND_PETSC );
-            BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.second, "test1" );
-            BOOST_FOREACH( auto b, detail::BackendManager::instance() )
+            BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().size(), 1 );
+            BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().begin()->first.first, BACKEND_PETSC );
+            BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().begin()->first.second, "test1" );
+            BOOST_FOREACH( auto b, Feel::detail::BackendManager::instance() )
             {
                 BOOST_TEST_MESSAGE( "[test_backend] backend name =" << b.first.second << " kind =" << b.first.first );;
             }
@@ -137,8 +141,43 @@ BOOST_AUTO_TEST_CASE( test_backend1 )
     app.run();
 
     BOOST_TEST_MESSAGE( "test_backend1 done" );
+}
+BOOST_AUTO_TEST_CASE( test_backend_petsc )
+{
+    double tolCheck = 1e-9;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    double meshMeasure = mesh->measure();
+    auto Vh1 = Pch<2>( mesh );
+    auto u1 = Vh1->element();
+    size_type nDofVh1 = Vh1->nDof();
+    size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();
+
+    auto backendPetsc = backend(_kind="petsc");
+    auto vec_petsc1x = backendPetsc->newVector( Vh1 );
+    auto vec_petsc1y = backendPetsc->newVector( Vh1 );
+    auto vec_petsc1z = backendPetsc->newVector( Vh1 );
+    auto mat_petsc1 = backendPetsc->newMatrix( _test=Vh1, _trial=Vh1 );
+
+    // assembly matrix, vector
+    form2(_test=Vh1,_trial=Vh1,_matrix=mat_petsc1 ) =
+        integrate(_range=elements(mesh),_expr=idt(u1)*id(u1) );
+    mat_petsc1->close();
+    form1(_test=Vh1,_vector=vec_petsc1z ) =
+        integrate(_range=elements(mesh),_expr=id(u1) );
+    vec_petsc1z->close();
+
+    vec_petsc1x->setConstant( 3. );
+    u1.setConstant( 2. );
+
+    // pre-check
+    BOOST_CHECK( vec_petsc1x->sum() == 3*nDofVh1 );
+    //BOOST_CHECK_CLOSE( mat_petsc1->energy(u1,u1) , 3*meshMeasure , tolCheck );
+    BOOST_CHECK_CLOSE( mat_petsc1->energy(vec_petsc1x,vec_petsc1x) , 3*3*meshMeasure , tolCheck );
+    // prod
+    backendPetsc->prod( mat_petsc1, vec_petsc1x, vec_petsc1y );
+    BOOST_CHECK_CLOSE( vec_petsc1y->sum() , 3*vec_petsc1z->sum(), tolCheck );
+
 
 }
-
 BOOST_AUTO_TEST_SUITE_END()
 
