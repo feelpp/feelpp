@@ -67,7 +67,7 @@ namespace Eigen {
       };
       typedef typename MatrixType::Scalar Scalar;
       typedef std::complex<typename NumTraits<Scalar>::Real> ComplexScalar;
-      typedef typename MatrixType::Index Index;
+      typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
 
       typedef Matrix<ComplexScalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> EigenvalueType;
       typedef Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> ColumnVectorType;
@@ -83,7 +83,7 @@ namespace Eigen {
        *
        * \sa compute() for an example.
        */
-      RealQZ(Index size = RowsAtCompileTime==Dynamic ? 1 : RowsAtCompileTime) : 
+      explicit RealQZ(Index size = RowsAtCompileTime==Dynamic ? 1 : RowsAtCompileTime) :
         m_S(size, size),
         m_T(size, size),
         m_Q(size, size),
@@ -240,10 +240,10 @@ namespace Eigen {
             m_S.coeffRef(i,j) = Scalar(0.0);
             m_S.rightCols(dim-j-1).applyOnTheLeft(i-1,i,G.adjoint());
             m_T.rightCols(dim-i+1).applyOnTheLeft(i-1,i,G.adjoint());
+            // update Q
+            if (m_computeQZ)
+              m_Q.applyOnTheRight(i-1,i,G);
           }
-          // update Q
-          if (m_computeQZ)
-            m_Q.applyOnTheRight(i-1,i,G);
           // kill T(i,i-1)
           if(m_T.coeff(i,i-1)!=Scalar(0))
           {
@@ -251,10 +251,10 @@ namespace Eigen {
             m_T.coeffRef(i,i-1) = Scalar(0.0);
             m_S.applyOnTheRight(i,i-1,G);
             m_T.topRows(i).applyOnTheRight(i,i-1,G);
+            // update Z
+            if (m_computeQZ)
+              m_Z.applyOnTheLeft(i,i-1,G.adjoint());
           }
-          // update Z
-          if (m_computeQZ)
-            m_Z.applyOnTheLeft(i,i-1,G.adjoint());
         }
       }
     }
@@ -276,7 +276,7 @@ namespace Eigen {
 
   /** \internal Look for single small sub-diagonal element S(res, res-1) and return res (or 0) */
   template<typename MatrixType>
-    inline typename MatrixType::Index RealQZ<MatrixType>::findSmallSubdiagEntry(Index iu)
+    inline Index RealQZ<MatrixType>::findSmallSubdiagEntry(Index iu)
     {
       using std::abs;
       Index res = iu;
@@ -294,7 +294,7 @@ namespace Eigen {
 
   /** \internal Look for single small diagonal element T(res, res) for res between f and l, and return res (or f-1)  */
   template<typename MatrixType>
-    inline typename MatrixType::Index RealQZ<MatrixType>::findSmallDiagEntry(Index f, Index l)
+    inline Index RealQZ<MatrixType>::findSmallDiagEntry(Index f, Index l)
     {
       using std::abs;
       Index res = l;
@@ -315,8 +315,8 @@ namespace Eigen {
       const Index dim=m_S.cols();
       if (abs(m_S.coeff(i+1,i))==Scalar(0))
         return;
-      Index z = findSmallDiagEntry(i,i+1);
-      if (z==i-1)
+      Index j = findSmallDiagEntry(i,i+1);
+      if (j==i-1)
       {
         // block of (S T^{-1})
         Matrix2s STi = m_T.template block<2,2>(i,i).template triangularView<Upper>().
@@ -352,7 +352,7 @@ namespace Eigen {
       }
       else
       {
-        pushDownZero(z,i,i+1);
+        pushDownZero(j,i,i+1);
       }
     }
 

@@ -211,18 +211,13 @@ show :
   else ()
     set (PETSC_LIBRARY_VEC "NOTFOUND" CACHE INTERNAL "Cleared" FORCE) # There is no libpetscvec
     petsc_find_library (SINGLE petsc)
-    # If we didn't found a library name libpetsc, we try with
-    # libpetsc_real, as it is used in latest Debian version
+    #Try to find Petsc REAL - for debian
     if(NOT PETSC_LIBRARY_SINGLE)
       petsc_find_library (SINGLE petsc_real)
     endif()
-    if(NOT PETSC_LIBRARY_SINGLE)
-      message(WARNING "CMake couldn't find PETSC_SINGLE_LIBRARY.")
-    else()
-      foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
-        set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
-      endforeach ()
-    endif()
+    foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
+      set (PETSC_LIBRARIES_${pkg} "${PETSC_LIBRARY_SINGLE}")
+    endforeach ()
   endif ()
   if (PETSC_LIBRARY_TS)
     message (STATUS "Recognized PETSc install with separate libraries for each package")
@@ -242,7 +237,7 @@ int main(int argc,char *argv[]) {
   ierr = PetscInitialize(&argc,&argv,0,help);CHKERRQ(ierr);
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
-  ierr = TSDestroy(&ts);CHKERRQ(ierr);
+  ierr = TSDestroy(ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }
@@ -257,7 +252,6 @@ int main(int argc,char *argv[]) {
   find_path (PETSC_INCLUDE_CONF petscconf.h HINTS "${PETSC_DIR}" PATH_SUFFIXES "${PETSC_ARCH}/include" "bmake/${PETSC_ARCH}" NO_DEFAULT_PATH)
   mark_as_advanced (PETSC_INCLUDE_DIR PETSC_INCLUDE_CONF)
   set (petsc_includes_minimal ${PETSC_INCLUDE_CONF} ${PETSC_INCLUDE_DIR})
-
 
   petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_minimal)
   if (petsc_works_minimal)
@@ -288,7 +282,7 @@ int main(int argc,char *argv[]) {
           #if(PETSc_FIND_REQUIRED)
           #message (FATAL_ERROR "PETSc is required and could not be used, maybe the install is broken.")
           #else()
-	        message (STATUS "PETSc could not be used, maybe the install is broken.")
+	      message (STATUS "PETSc could not be used, maybe the install is broken.")
           #endif()
 	    endif (petsc_works_all)
       endif (petsc_works_alllibraries)
