@@ -136,6 +136,38 @@ toPETSc( boost::shared_ptr<Preconditioner<T>> const& p )
     return boost::dynamic_pointer_cast<PreconditionerPetsc<T>>( p );
 }
 
+
+namespace detail
+{
+
+/**
+ * returns a pair of  (c++ pointer VectorPetsc, shared_ptr VectorPetsc )
+ * from input vector vec (with ref).
+ * - vec is a VectorPetsc, return the pointer of &vec and null shared_ptr
+ * - vec is a VectorUblas , return the pointer of petsc view and view in shared_ptr
+ * - otherwise return nullptr and null shared_ptr
+ * the shared_ptr is returned in order to not destroy the temporary object (ublas cases)
+ */
+template<typename T>
+std::pair<VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+toPETScPairPtr( Vector<T> & vec );
+
+/**
+ * returns a pair of  (c++ pointer VectorPetsc, shared_ptr VectorPetsc )
+ * from input vector vec (with const ref).
+ * - vec is a VectorPetsc, return the pointer of &vec and null shared_ptr
+ * - vec is a ublas vector, return the pointer of petsc view and view in shared_ptr
+ * - vec is another vector type and allowCopy is true, return a new VectorPetsc with values copied
+ * - otherwise return nullptr and null shared_ptr
+ * the shared_ptr is returned in order to not destroy the temporary object (ublas or copy cases)
+ */
+template<typename T>
+std::pair<const VectorPetsc<T> *, boost::shared_ptr<VectorPetsc<T> > >
+toPETScPairPtr( Vector<T> const& vec, bool allowCopy = false );
+
+} // namespace detail
+
+
 }
 
 #endif
