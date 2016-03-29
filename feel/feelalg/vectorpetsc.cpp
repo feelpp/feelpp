@@ -30,6 +30,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/topetsc.hpp>
 #include <feel/feeltiming/tic.hpp>
 #if BOOST_VERSION < 105900
 #include <boost/smart_ptr/make_shared.hpp>
@@ -72,14 +73,12 @@ VectorPetsc<T>::init ( const size_type n,
                        const bool fast )
 {
     int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_local=static_cast<int>( n_local );
-
+    int petsc_n = static_cast<PetscInt>( n );
+    int petsc_n_local=static_cast<PetscInt>( n_local );
 
     // Clear initialized vectors
     if ( this->isInitialized() )
         this->clear();
-
 
     // create a sequential vector if on only 1 processor
     if ( n_local == n )
@@ -104,13 +103,22 @@ VectorPetsc<T>::init ( const size_type n,
         CHKERRABORT( this->comm(),ierr );
     }
 
-    this->M_is_initialized = true;
-
+    this->setInitialized( true );
     this->setIsClosed( true );
 
-    if ( fast == false )
+    if ( !fast )
         this->zero ();
 }
+
+template<typename T>
+void
+VectorPetsc<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+    this->init( this->map().nLocalDofWithoutGhost(), this->map().nDof() );
+}
+
 template <typename T>
 void
 VectorPetsc<T>::set( const value_type& value )
@@ -263,40 +271,10 @@ VectorPetsc<T>::operator= ( const Vector<value_type> &V )
         return *this;
     }
 
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-
-    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &V );
-    if ( vecUblas )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
-        this->operator=( *vecPetscFromUblas );
-        return *this;
-    }
-    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &V );
-    if ( vecUblasRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
-        this->operator=( *vecPetscFromUblas );
-        return *this;
-    }
-    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &V );
-    if ( vecUblasExtArray )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
-        this->operator=( *vecPetscFromUblas );
-        return *this;
-    }
-    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &V );
-    if ( vecUblasExtArrayRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
-        this->operator=( *vecPetscFromUblas );
-        return *this;
-    }
-    //CHECK( false ) << "TODO other kind of vector";
+    auto vecPetscCastPair = Feel::detail::toPETScPairPtr( V, false );
+    VectorPetsc<T> const* vecPetscCast = vecPetscCastPair.first;
+    if ( vecPetscCast )
+        return this->operator=( *vecPetscCast );
 
     return super::operator=( V );
 }
@@ -332,60 +310,17 @@ VectorPetsc<T>::pointwiseOperationsImpl( Vector<T> const& xx, Vector<T> const& y
         return;
     }
 
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-
-    const vector_ublas_type * vecxUblas = dynamic_cast<vector_ublas_type const*>( &xx );
-    const vector_ublas_type * vecyUblas = dynamic_cast<vector_ublas_type const*>( &yy );
-    const vector_ublas_range_type * vecxUblasRange = dynamic_cast<vector_ublas_range_type const*>( &xx );
-    const vector_ublas_range_type * vecyUblasRange = dynamic_cast<vector_ublas_range_type const*>( &yy );
-    const vector_ublas_extarray_type * vecxUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &xx );
-    const vector_ublas_extarray_type * vecyUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &yy );
-    const vector_ublas_extarray_range_type * vecxUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &xx );
-    const vector_ublas_extarray_range_type * vecyUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &yy );
-    bool vecxIsUblasVarients = vecxUblas || vecxUblasRange || vecxUblasExtArray || vecxUblasExtArrayRange;
-    bool vecyIsUblasVarients = vecyUblas || vecyUblasRange || vecyUblasExtArray || vecyUblasExtArrayRange;
-    if ( ( vecxPetsc || vecxIsUblasVarients ) && ( vecyPetsc || vecyIsUblasVarients ) )
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPair_xx = Feel::detail::toPETScPairPtr( xx, true );
+    VectorPetsc<T> const* vecPetscCast_xx = vecPetscCastPair_xx.first;
+    auto vecPetscCastPair_yy = Feel::detail::toPETScPairPtr( yy, true );
+    VectorPetsc<T> const* vecPetscCast_yy = vecPetscCastPair_yy.first;
+    if ( vecPetscCast_xx && vecPetscCast_yy )
     {
-        boost::shared_ptr<VectorPetsc<T>> vecxPetscFromUblas, vecyPetscFromUblas;
-        const VectorPetsc<T> * vecxPetscUsed;
-        const VectorPetsc<T> * vecyPetscUsed;
-        if ( vecxIsUblasVarients )
-        {
-            if ( vecxUblas )
-                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecxUblas ) ) );
-            else if ( vecxUblasRange )
-                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecxUblasRange ) ) );
-            else if ( vecxUblasExtArray )
-                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecxUblasExtArray ) ) );
-            else if ( vecxUblasExtArrayRange )
-                vecxPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecxUblasExtArrayRange ) ) );
-            vecxPetscUsed = &(*vecxPetscFromUblas);
-        }
-        else
-            vecxPetscUsed = vecxPetsc;
-
-        if ( vecyIsUblasVarients )
-        {
-            if ( vecyUblas )
-                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecyUblas ) ) );
-            else if ( vecyUblasRange )
-                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecyUblasRange ) ) );
-            else if ( vecyUblasExtArray )
-                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecyUblasExtArray ) ) );
-            else if ( vecyUblasExtArrayRange )
-                vecyPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecyUblasExtArrayRange ) ) );
-            vecyPetscUsed = &(*vecyPetscFromUblas);
-        }
-        else
-            vecyPetscUsed = vecyPetsc;
-
         if ( op == 0 )
-            this->pointwiseMult( *vecxPetscUsed,*vecyPetscUsed );
+            this->pointwiseMult( *vecPetscCast_xx,*vecPetscCast_yy );
         else
-            this->pointwiseDivide( *vecxPetscUsed,*vecyPetscUsed );
+            this->pointwiseDivide( *vecPetscCast_xx,*vecPetscCast_yy );
         return;
     }
 
@@ -527,6 +462,9 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
 {
     if ( !this->closed() )
         this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
@@ -543,41 +481,14 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
         return;
     }
 
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-
-    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &v_in );
-    if ( vecUblas )
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( v_in, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
     {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
-        this->add( a_in, *vecPetscFromUblas );
+        this->add( a_in, *vecPetscCastIn );
         return;
     }
-    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &v_in );
-    if ( vecUblasRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
-        this->add( a_in, *vecPetscFromUblas );
-        return;
-    }
-    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &v_in );
-    if ( vecUblasExtArray )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
-        this->add( a_in, *vecPetscFromUblas );
-        return;
-    }
-    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &v_in );
-    if ( vecUblasExtArrayRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
-        this->add( a_in, *vecPetscFromUblas );
-        return;
-    }
-
-    CHECK( false ) << "TODO other kind of vector";
 }
 
 
@@ -758,57 +669,24 @@ VectorPetsc<T>::dot( Vector<T> const& __v ) const
     if ( !this->closed() )
         const_cast<VectorPetsc<T>*>( this )->close();
 
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
 
-    int ierr = 0;
-    PetscScalar e;
     const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &__v );
     if ( vecPetsc )
     {
+        int ierr = 0;
+        PetscScalar e;
         ierr = VecDot( this->vec(), vecPetsc->vec(), &e );
         CHKERRABORT( this->comm(),ierr );
         return e;
     }
-    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &__v );
-    if ( vecUblas )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
-        return this->dot( *vecPetscFromUblas );
-    }
-    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &__v );
-    if ( vecUblasRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
-        return this->dot( *vecPetscFromUblas );
-    }
-    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &__v );
-    if ( vecUblasExtArray )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
-        return this->dot( *vecPetscFromUblas );
-    }
-    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &__v );
-    if ( vecUblasExtArrayRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
-        return this->dot( *vecPetscFromUblas );
-    }
 
-    //CHECK( false ) << "TODO other kind of vector";
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( __v, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
+        return this->dot( *vecPetscCastIn );
 
-    // default case : build a new petsc vector with copy
-    boost::shared_ptr<VectorPetsc<value_type> > v;
-    if ( this->comm().size()>1 )
-        v.reset( new VectorPetscMPI<T>( __v.mapPtr() ) );
-    else
-        v.reset( new VectorPetsc<T>( __v.mapPtr() ) );
-    *v = __v;
-    ierr = VecDot( this->vec(), v->vec(), &e );
-    CHKERRABORT( this->comm(),ierr );
-    return e;
+    return value_type(0);
 }
 
 template <typename T>
@@ -837,51 +715,15 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         return;
     }
 
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-    const vector_ublas_type * vecUblas = dynamic_cast<vector_ublas_type const*>( &V_in );
-    if ( vecUblas )
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( V_in, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
     {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_type *>( vecUblas ) ) );
-        this->addVector( *vecPetscFromUblas, A_in );
+        this->addVector( *vecPetscCastIn, A_in );
         return;
     }
-    const vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type const*>( &V_in );
-    if ( vecUblasRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vecUblasRange ) ) );
-        this->addVector( *vecPetscFromUblas, A_in );
-        return;
-    }
-    const vector_ublas_extarray_type * vecUblasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &V_in );
-    if ( vecUblasExtArray )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vecUblasExtArray ) ) );
-        this->addVector( *vecPetscFromUblas, A_in );
-        return;
-    }
-    const vector_ublas_extarray_range_type * vecUblasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &V_in );
-    if ( vecUblasExtArrayRange )
-    {
-        auto vecPetscFromUblas = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vecUblasExtArrayRange ) ) );
-        this->addVector( *vecPetscFromUblas, A_in );
-        return;
-    }
-    //CHECK (false) << "other kind of vector";
 
-    // method by default : create petsc copy
-    boost::shared_ptr<VectorPetsc<T>> tmp;
-    if ( this->comm().size()>1 )
-        tmp.reset( new VectorPetscMPI<T>( V_in.mapPtr() ) );
-    else
-        tmp.reset( new VectorPetsc<T>( V_in.mapPtr() ) );
-    *tmp = V_in;
-    ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp->M_vec, M_vec, M_vec );
-    CHKERRABORT( this->comm(),ierr );
-    // update ghost values (do nothing in sequential)
-    this->localize();
 }
 
 template <typename T>
@@ -1010,7 +852,9 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm, bool doInit )
     super( dm,false ) //false for not init
 {
     if ( doInit )
-        this->init( dm->nDof(), dm->nLocalDofWithoutGhost() );
+        this->initImpl();
+
+    //this->init( dm->nDof(), dm->nLocalDofWithoutGhost() );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1026,33 +870,44 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplic
 }
 
 //----------------------------------------------------------------------------------------------------//
-
 template<typename T>
 void
 VectorPetscMPI<T>::init( const size_type n,
                          const size_type n_localWithoutGhost,
                          const bool fast )
 {
-    //std::cout << "MPI init start" << std::endl;
-    int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_localWithoutGhost=static_cast<int>( n_localWithoutGhost );
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
-    int petsc_n_localGhost=static_cast<int>( this->map().nLocalGhosts() );
-    //std::cout << "petsc_n_localWithoutGhost "<< petsc_n_localWithoutGhost << std::endl;
-    //std::cout << "petsc_n_localWithGhost "<< petsc_n_localWithGhost << std::endl;
+    CHECK( false ) << "not allowed";
+}
 
-    // Clear initialized vectors
+template<typename T>
+void
+VectorPetscMPI<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+    this->initImpl();
+}
+
+template<typename T>
+void
+VectorPetscMPI<T>::initImpl( const bool fast )
+{
+    int ierr=0;
+    int petsc_n = static_cast<PetscInt>( this->map().nDof() );
+    int petsc_n_localWithoutGhost = static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+    int petsc_n_localWithGhost = static_cast<PetscInt>( this->map().nLocalDofWithGhost() );
+    int petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+    FEELPP_ASSERT( petsc_n_localWithoutGhost < petsc_n )( petsc_n_localWithoutGhost )( petsc_n ).warn( "invalid local size" );
+
+    // clear initialized vectors
     if ( this->isInitialized() )
         this->clear();
-
-    FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
 
     PetscInt *idx = NULL;
     if ( petsc_n_localGhost > 0 )
     {
         idx = new PetscInt[petsc_n_localGhost];
-        std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+n_localWithoutGhost,
+        std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
                    this->map().mapGlobalProcessToGlobalCluster().end(),
                    idx );
     }
@@ -1069,12 +924,10 @@ VectorPetscMPI<T>::init( const size_type n,
     if ( petsc_n_localGhost > 0 )
         delete[] idx;
 
-
-    this->M_is_initialized = true;
-
+    this->setInitialized( true );
     this->setIsClosed( true );
 
-    if ( fast == false )
+    if ( !fast )
         this->zero ();
 }
 
@@ -1972,11 +1825,26 @@ VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
     this->initRangeView( arrayActive,arrayGhost );
 }
 
+template<typename T>
+void
+VectorPetscMPIRange<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+
+    const PetscScalar* arrayActive = NULL;
+    const PetscScalar* arrayGhost = NULL;
+    this->initRangeView( arrayActive,arrayGhost );
+}
 
 template <typename T>
 void
 VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] )
 {
+    // clear initialized vectors
+    if ( this->isInitialized() )
+        this->clear();
+
     int ierr=0;
     PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
     PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
@@ -2064,15 +1932,12 @@ VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const Pe
 
     ierr = VecSetFromOptions( this->vec() );
     CHKERRABORT( this->comm(),ierr );
-
     ierr = VecSetFromOptions( M_vecGhost );
     CHKERRABORT( this->comm(),ierr );
 
 
-    this->M_is_initialized = true;
-
+    this->setInitialized( true );
     this->setIsClosed( true );
-
 }
 
 

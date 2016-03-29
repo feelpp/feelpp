@@ -137,6 +137,14 @@ public:
     void localize(const Vector<T>& V);
 
     /**
+     * set initialized only for subclasses
+     */
+    void setInitialized( bool b )
+    {
+        M_is_initialized = b;
+    }
+
+    /**
      * @ set false if the vector is in assembly state and need to be closed
      * for some next used (global operation) , false otherwise.
      */
@@ -212,8 +220,10 @@ public:
                         const bool = false );
 
 
-    // surement a virtualiser!!!
-    void init ( datamap_ptrtype const& dm )
+    /**
+     * call init with datamap,
+     */
+    virtual void init ( datamap_ptrtype const& dm )
     {
         M_is_closed = false;
         M_is_initialized = false;

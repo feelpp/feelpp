@@ -312,6 +312,11 @@ public:
         this->init( N,N,fast );
     }
 
+    /**
+     * call init with datamap,
+     */
+    void init ( datamap_ptrtype const& dm );
+
     //@}
 
     /** @name Operator overloads
@@ -816,9 +821,16 @@ public:
     {
         this->clear();
     }
+
+
+    FEELPP_DEPRECATED
     void init( const size_type N,
                const size_type n_local,
                const bool fast=false );
+    /**
+     * call init with datamap,
+     */
+    void init( datamap_ptrtype const& dm );
 
     value_type operator() ( const size_type i ) const;
     value_type& operator() ( const size_type i );
@@ -916,6 +928,8 @@ public:
 
 private :
 
+    void initImpl( const bool fast = false );
+
     void pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op );
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
@@ -944,6 +958,11 @@ public:
     {
         this->clear();
     }
+
+    /**
+     * call init with datamap,
+     */
+    void init( datamap_ptrtype const& dm );
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.

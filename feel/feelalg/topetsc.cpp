@@ -75,7 +75,6 @@ toPETScPairPtr( Vector<T> & vec )
         return std::make_pair( vec_petscUsed,vec_petscClone );
     }
 
-    CHECK( false ) << "vector type can't be convert into a petsc vector";
     return std::make_pair( vec_petscUsed,vec_petscClone );
 }
 
@@ -132,7 +131,6 @@ toPETScPairPtr( Vector<T> const& vec, bool allowCopy )
         return std::make_pair( vec_petscUsed,vec_petscClone );
     }
 
-    CHECK( false ) << "vector type can't be convert into a petsc vector";
     return std::make_pair( vec_petscUsed,vec_petscClone );
 }
 
