@@ -254,6 +254,29 @@ IF ( MPI_FOUND )
   ELSE()
       MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
   ENDIF()
+
+  # Find mpi.h file in an attempt to detect flavour
+  find_path(__MPI_H_PATH mpi.h
+      PATH ${MPI_INCLUDE_PATH}
+  )
+  # If we find the header we attempt to grep lines in the files
+  # To detect the flavour
+  if(__MPI_H_PATH)
+      # Attempt to grep OPEN_MPI in the file
+      file(STRINGS ${__MPI_H_PATH}/mpi.h relines REGEX "OPEN_MPI")
+      if(relines)
+          # Put OpenMPI specific code here
+
+          # Automatically add oarsh to the options when using OpenMPI
+          # See: https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
+          if(FEELPP_ENABLE_SCHED_OAR)
+              set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\"")
+              message(STATUS "[feelpp] OAR detected - Automatically adding transport option to MPIEXEC_PREFLAGS (-mca plm_rsh_agent \"oarsh\")")
+          endif()
+      endif()
+  endif()
+  unset(__MPI_H_PATH)
+
 ENDIF()
 
 CHECK_FUNCTION_EXISTS(fmemopen FEELPP_HAS_STDIO_FMEMOPEN)
