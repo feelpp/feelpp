@@ -101,7 +101,7 @@ source /softs/cemracs_2015/cemracs.sh
 #OAR -l /nodes=64,walltime=0:30:00 # Number of tasks to use and Elapsed time limit of the job
 #OAR --stdout ${execname}_%I.o     # Standard output. %I is the job id
 #OAR --stdout ${execname}_%I.e     # Error output. %I is the job id
-#OAR --project feelpp-freeride     # Project ID
+#OAR --project hpcfeelpp     # Project ID
 
 #set -x
 source /applis/ciment/v2/env.bash
