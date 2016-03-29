@@ -138,7 +138,7 @@ private:
 
     sparse_matrix_ptrtype G;
     form2_type<pressure_space_type,pressure_space_type> form2_conv;
-    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_B, M_massv_inv, M_A;
+    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_B, M_massv_inv, M_Bt;
     vector_ptrtype rhs;
 
     op_mat_ptrtype massOp, diffOp, convOp;
@@ -168,7 +168,7 @@ private:
 
 template < typename space_type, typename PropertiesSpaceType>
 OperatorPCD<space_type, PropertiesSpaceType>::OperatorPCD( space_ptrtype Qh,
-                                      sparse_matrix_ptrtype A,
+                                      sparse_matrix_ptrtype Bt,
                                       backend_ptrtype b,
                                       BoundaryConditions const& bcFlags,
                                       std::string const& p,
@@ -193,7 +193,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::OperatorPCD( space_ptrtype Qh,
     M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
     M_B( backend()->newMatrix(_trial=M_Vh, _test=M_Qh) ),
     M_massv_inv( backend()->newMatrix(_trial=M_Vh, _test=M_Vh) ),
-    M_A( A ),
+    M_Bt( Bt ),
     rhs( backend()->newVector( M_Qh ) ),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
@@ -207,7 +207,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::OperatorPCD( space_ptrtype Qh,
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using mu=" << M_mu << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using rho=" << M_rho << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
-    
+
     this->assembleMass();
     this->assembleDiffusion();
 }
@@ -232,9 +232,9 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
 
     double time_step = M_accel?tn1-tn:1;
     tic();
-    form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*time_step*gradt(p)*trans(grad(q)));
+    form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*gradt(p)*trans(grad(q)));
     toc("OperatorPCD::update apply diffusion",FLAGS_v>0);
-    
+
     if ( hasConvection )
     {
         tic();
@@ -276,7 +276,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr
     {
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
         tic();
-        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)*idt(p)*id(q) );
+        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)/time_step*idt(p)*id(q) );
         toc("OperatorPCD::update apply mass",FLAGS_v>0);
     }
 
@@ -375,7 +375,7 @@ OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
         M_massv_inv->close();
         toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
         tic();
-        M_b->PtAP( M_massv_inv, M_A, M_diff );
+        M_b->PtAP( M_massv_inv, M_Bt, M_diff );
         M_diff->close();
         toc(" - OperatorPCD B T^-1 B^T built");
         if ( Environment::numberOfProcessors() == 1 )
