@@ -36,14 +36,15 @@
 namespace Feel
 {
 
-po::options_description
-hdg_darcy_options(std::string prefix)
+namespace HDG
 {
-    po::options_description hdgdarcyoptions( "Options for solving Darcy-like problems with HDG" );
-    hdgdarcyoptions.add_options()
+
+po::options_description
+darcy_options(std::string prefix)
+{
+    po::options_description darcyoptions( "Options for solving Darcy-like problems with HDG" );
+    darcyoptions.add_options()
         ( prefixvm( prefix, "filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
-        ( prefixvm( prefix, "permeability").c_str(), Feel::po::value<std::string>()->default_value( "-1" ), "permeability coefficient" )
-        ( prefixvm( prefix, "source").c_str(), Feel::po::value<std::string>()->default_value( "0" ), "Right hand side in the Poisson equation, -\nabla\cdot k\grad p = f" )
        ( prefixvm( prefix, "tau-cst").c_str(), Feel::po::value<double>()->default_value( 1. ), "stabilization constant" )
         /*
          The order of the stabilization function greatly affects the order of convergence of
@@ -54,15 +55,15 @@ hdg_darcy_options(std::string prefix)
        ( prefixvm( prefix, "tau-order").c_str(), Feel::po::value<int>()->default_value( 0 ), "order of the stabilization function" )
         ( prefixvm( prefix, "verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "verbose" )
         ;
-    return hdgdarcyoptions.add( backend_options(prefix) ).add( ts_options(prefix) );
+    return darcyoptions.add( backend_options(prefix) ).add( ts_options(prefix) );
 }
 
 template<typename PotSpaceType>
-class HDGdarcy
+class Darcy
 {
 
 public:
-    using self_type = HDGdarcy<PotSpaceType>;
+    using self_type = Darcy<PotSpaceType>;
     using potential_space_type = typename mpl::if_<is_shared_ptr<PotSpaceType>,
                                                   mpl::identity<typename PotSpaceType::element_type>,
                                                   mpl::identity<PotSpaceType>>::type::type;
@@ -102,8 +103,8 @@ public:
     // exporter
     using exporter_ptrtype = boost::shared_ptr<Exporter<mesh_type>>;
 
-    HDGdarcy() = delete;
-    HDGdarcy( std::string name, potential_space_ptrtype Wh_ptr_t );
+    Darcy() = delete;
+    Darcy( std::string name, potential_space_ptrtype Wh_ptr_t );
 
     void setStabilizationConstant( double t ) { tau_constant = t };
     void setStabilizationOrder( int  o ) { tau_order = o };
@@ -173,7 +174,7 @@ private:
 };
 
 template<typename PotSpaceType>
-HDGdarcy<PotSpaceType>::HDGdarcy( std::string n, potential_space_ptrtype Wh_ptr_t )
+Darcy<PotSpaceType>::Darcy( std::string n, potential_space_ptrtype Wh_ptr_t )
     :
     name( n ),
     props( Environment::expand( soption( _name=prefixvm(name,"filename")) ) ),
@@ -200,20 +201,25 @@ HDGdarcy<PotSpaceType>::HDGdarcy( std::string n, potential_space_ptrtype Wh_ptr_
 {
     tic();
 
-    permeability = expr( soption(prefixvm(name, "permeability")) );
-    source       = expr( soption(prefixvm(name, "source")) );
+    //    permeability = expr( soption(prefixvm(name, "permeability")) );
+    //    source       = expr( soption(prefixvm(name, "source")) );
+    permeability = props.functions()["permeability"];
+    source       = props.functions()["source"];
+
+    permeability.setParameterValues( props.parameters().toParameterValues() );
+    source.setParameterValues( props.parameters().toParameterValues() );
 
     dirichlet_conditions = props.boundaryConditions().getScalarFields ( "potential", "Dirichlet" );
     neumann_conditions = props.boundaryConditions().template getVectorFields<dim> ( "flux", "Neumann" );
 
     this -> initModel();
 
-    toc("HDGdarcy constructor", verbose || FLAGS_v > 0);
+    toc("Darcy constructor", verbose || FLAGS_v > 0);
 }
 
 template<typename PotSpaceType>
 void
-HDGdarcy<PotSpaceType>::initModel()
+Darcy<PotSpaceType>::initModel()
 {
     // build the big matrix associated to bilinear form over Vh x Wh x Mh
     BlocksBaseGraphCSR hdg_graph(3,3);
@@ -318,7 +324,7 @@ HDGdarcy<PotSpaceType>::initModel()
 
 template<typename PotSpaceType>
 void
-HDGdarcy<PotSpaceType>::addDirichlet()
+Darcy<PotSpaceType>::addDirichlet()
 {
     tic();
 
@@ -339,12 +345,12 @@ HDGdarcy<PotSpaceType>::addDirichlet()
 
     }
 
-    toc("HDGdarcy::addDirichlet", verbose || FLAGS_v > 0);
+    toc("Darcy::addDirichlet", verbose || FLAGS_v > 0);
 }
 
 template<typename PotSpaceType>
 void
-HDGdarcy<PotSpaceType>::addNeumann()
+Darcy<PotSpaceType>::addNeumann()
 {
     tic();
 
@@ -374,24 +380,24 @@ HDGdarcy<PotSpaceType>::addNeumann()
                          _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),tau_order) ) );
     }
 
-    toc("HDGdarcy::addNeumann", verbose || FLAGS_v > 0);
+    toc("Darcy::addNeumann", verbose || FLAGS_v > 0);
 }
 
 template<typename PotSpaceType>
 void
-HDGdarcy<PotSpaceType>::solve()
+Darcy<PotSpaceType>::solve()
 {
     tic();
     this -> addDirichlet();
     this -> addNeumann();
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
     hdg_sol.localize(U);
-    toc("HDGdarcy::solve", verbose || FLAGS_v > 0 );
+    toc("Darcy::solve", verbose || FLAGS_v > 0 );
 }
 
 template<typename PotSpaceType>
 void
-HDGdarcy<PotSpaceType>::exportResults()
+Darcy<PotSpaceType>::exportResults()
 {
     tic();
 
@@ -406,7 +412,11 @@ HDGdarcy<PotSpaceType>::exportResults()
     }
     e->save();
 
-    toc("HDGdarcy::exportResults", verbose);
+    toc("Darcy::exportResults", verbose);
 }
+
+} // HDG
+
+} // Feel
 
 #endif
