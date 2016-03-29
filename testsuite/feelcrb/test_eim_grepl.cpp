@@ -76,7 +76,7 @@ makeOptions()
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return simgetoptions.add( eimOptions() ).add( crbSEROptions() ).add( Feel::feel_options() );
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 
