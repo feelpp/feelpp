@@ -207,7 +207,11 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     form2(_test=Vh1,_trial=Vh1,_matrix=mat1a ) =
         integrate(_range=elements(mesh),_expr=idt(u1)*id(u1) );
     mat1a->close();
-    BOOST_CHECK_SMALL( mat1a->energy(vec1a,vec1b) - 2*3*meshMeasure , tolCheck );
+    BOOST_CHECK_CLOSE( mat1a->energy(vec1a,vec1b), 2*3*meshMeasure , tolCheck );
+    // energy with ublas vector
+    u1.setConstant( 3. );
+    u1b.setConstant( 4. );
+    BOOST_CHECK_CLOSE( mat1a->energy(u1,u1b), 3*4*meshMeasure , tolCheck );
 
     // add matrix
     form2(_test=Vh1,_trial=Vh1,_matrix=mat1b ) =
@@ -299,12 +303,10 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     BOOST_CHECK_CLOSE( vec1b->sum(), 2*3*nDofVh1, tolCheck );
     BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec1b), 2*3*nLocalDofWithGhostVh1, tolCheck );
     // multVector with vector clear
-#if 0
     vec1b->clear();
     mat1a->multVector( vec1a, vec1b );
     BOOST_CHECK_CLOSE( vec1b->sum(), 2*3*nDofVh1, tolCheck );
     BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec1b), 2*3*nLocalDofWithGhostVh1, tolCheck );
-#endif
     // multVector with ublas vector
     u1.setConstant( 5. );
     mat1a->multVector( u1, *vec1b );

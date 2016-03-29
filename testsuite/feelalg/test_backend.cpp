@@ -118,6 +118,19 @@ public:
 private:
     double meshSize;
 };
+
+namespace detail
+{
+template <typename T>
+double myLocalProcessSum( Feel::Vector<T> const& vec )
+{
+    double res = 0;
+    for ( size_type k=0;k<vec.map().nLocalDofWithGhost();++k )
+        res += vec( k );
+    return res;
+}
+}
+
 } // Feel
 
 using namespace Feel;
@@ -151,12 +164,14 @@ BOOST_AUTO_TEST_CASE( test_backend_petsc )
     auto u1 = Vh1->element();
     size_type nDofVh1 = Vh1->nDof();
     size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();
+    size_type nLocalDofWithoutGhostVh1 = Vh1->nLocalDofWithoutGhost();
 
     auto backendPetsc = backend(_kind="petsc");
     auto vec_petsc1x = backendPetsc->newVector( Vh1 );
     auto vec_petsc1y = backendPetsc->newVector( Vh1 );
     auto vec_petsc1z = backendPetsc->newVector( Vh1 );
     auto mat_petsc1 = backendPetsc->newMatrix( _test=Vh1, _trial=Vh1 );
+    auto mat_petsc1y = backendPetsc->newMatrix( _test=Vh1, _trial=Vh1 );
 
     // assembly matrix, vector
     form2(_test=Vh1,_trial=Vh1,_matrix=mat_petsc1 ) =
@@ -176,7 +191,23 @@ BOOST_AUTO_TEST_CASE( test_backend_petsc )
     // prod
     backendPetsc->prod( mat_petsc1, vec_petsc1x, vec_petsc1y );
     BOOST_CHECK_CLOSE( vec_petsc1y->sum() , 3*vec_petsc1z->sum(), tolCheck );
-
+    // diag
+    mat_petsc1y->zero();
+    for ( size_type k=0;k<nLocalDofWithoutGhostVh1;++k )
+        mat_petsc1y->set( k,k, 6. );
+    mat_petsc1y->close();
+    backendPetsc->diag( *mat_petsc1y, *vec_petsc1x );
+    BOOST_CHECK_CLOSE( vec_petsc1x->sum() , 6*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec_petsc1x), 6*nLocalDofWithGhostVh1, tolCheck );
+    // diag with clear
+    vec_petsc1x->clear();
+    backendPetsc->diag( *mat_petsc1y, *vec_petsc1x );
+    BOOST_CHECK_CLOSE( vec_petsc1x->sum() , 6*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec_petsc1x), 6*nLocalDofWithGhostVh1, tolCheck );
+    // diag with ublas vector
+    backendPetsc->diag( *mat_petsc1y, u1 );
+    BOOST_CHECK_CLOSE( u1.sum() , 6*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u1), 6*nLocalDofWithGhostVh1, tolCheck );
 
 }
 BOOST_AUTO_TEST_SUITE_END()
