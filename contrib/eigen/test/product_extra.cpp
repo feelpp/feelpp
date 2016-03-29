@@ -109,8 +109,68 @@ void mat_mat_scalar_scalar_product()
   double det = 6.0, wt = 0.5;
   VERIFY_IS_APPROX(dNdxy.transpose()*dNdxy*det*wt, det*wt*dNdxy.transpose()*dNdxy);
 }
+
+template <typename MatrixType> 
+void zero_sized_objects(const MatrixType& m)
+{
+  typedef typename MatrixType::Scalar Scalar;
+  const int PacketSize  = internal::packet_traits<Scalar>::size;
+  const int PacketSize1 = PacketSize>1 ?  PacketSize-1 : 1;
+  Index rows = m.rows();
+  Index cols = m.cols();
   
-void zero_sized_objects()
+  {
+    MatrixType res, a(rows,0), b(0,cols);
+    VERIFY_IS_APPROX( (res=a*b), MatrixType::Zero(rows,cols) );
+    VERIFY_IS_APPROX( (res=a*a.transpose()), MatrixType::Zero(rows,rows) );
+    VERIFY_IS_APPROX( (res=b.transpose()*b), MatrixType::Zero(cols,cols) );
+    VERIFY_IS_APPROX( (res=b.transpose()*a.transpose()), MatrixType::Zero(cols,rows) );
+  }
+  
+  {
+    MatrixType res, a(rows,cols), b(cols,0);
+    res = a*b;
+    VERIFY(res.rows()==rows && res.cols()==0);
+    b.resize(0,rows);
+    res = b*a;
+    VERIFY(res.rows()==0 && res.cols()==cols);
+  }
+  
+  {
+    Matrix<Scalar,PacketSize,0> a;
+    Matrix<Scalar,0,1> b;
+    Matrix<Scalar,PacketSize,1> res;
+    VERIFY_IS_APPROX( (res=a*b), MatrixType::Zero(PacketSize,1) );
+    VERIFY_IS_APPROX( (res=a.lazyProduct(b)), MatrixType::Zero(PacketSize,1) );
+  }
+  
+  {
+    Matrix<Scalar,PacketSize1,0> a;
+    Matrix<Scalar,0,1> b;
+    Matrix<Scalar,PacketSize1,1> res;
+    VERIFY_IS_APPROX( (res=a*b), MatrixType::Zero(PacketSize1,1) );
+    VERIFY_IS_APPROX( (res=a.lazyProduct(b)), MatrixType::Zero(PacketSize1,1) );
+  }
+  
+  {
+    Matrix<Scalar,PacketSize,Dynamic> a(PacketSize,0);
+    Matrix<Scalar,Dynamic,1> b(0,1);
+    Matrix<Scalar,PacketSize,1> res;
+    VERIFY_IS_APPROX( (res=a*b), MatrixType::Zero(PacketSize,1) );
+    VERIFY_IS_APPROX( (res=a.lazyProduct(b)), MatrixType::Zero(PacketSize,1) );
+  }
+  
+  {
+    Matrix<Scalar,PacketSize1,Dynamic> a(PacketSize1,0);
+    Matrix<Scalar,Dynamic,1> b(0,1);
+    Matrix<Scalar,PacketSize1,1> res;
+    VERIFY_IS_APPROX( (res=a*b), MatrixType::Zero(PacketSize1,1) );
+    VERIFY_IS_APPROX( (res=a.lazyProduct(b)), MatrixType::Zero(PacketSize1,1) );
+  }
+}
+
+template<int>
+void bug_127()
 {
   // Bug 127
   //
@@ -134,6 +194,16 @@ void zero_sized_objects()
   a*b;
 }
 
+template<int> void bug_817()
+{
+  ArrayXXf B = ArrayXXf::Random(10,10), C;
+  VectorXf x = VectorXf::Random(10);
+  C = (x.transpose()*B.matrix());
+  B = (x.transpose()*B.matrix());
+  VERIFY_IS_APPROX(B,C);
+}
+
+template<int>
 void unaligned_objects()
 {
   // Regression test for the bug reported here:
@@ -163,6 +233,29 @@ void unaligned_objects()
   }
 }
 
+template<typename T>
+EIGEN_DONT_INLINE
+Index test_compute_block_size(Index m, Index n, Index k)
+{
+  Index mc(m), nc(n), kc(k);
+  internal::computeProductBlockingSizes<T,T>(kc, mc, nc);
+  return kc+mc+nc;
+}
+
+template<typename T>
+Index compute_block_size()
+{
+  Index ret = 0;
+  ret += test_compute_block_size<T>(0,1,1);
+  ret += test_compute_block_size<T>(1,0,1);
+  ret += test_compute_block_size<T>(1,1,0);
+  ret += test_compute_block_size<T>(0,0,1);
+  ret += test_compute_block_size<T>(0,1,0);
+  ret += test_compute_block_size<T>(1,0,0);
+  ret += test_compute_block_size<T>(0,0,0);
+  return ret;
+}
+
 void test_product_extra()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -171,7 +264,12 @@ void test_product_extra()
     CALL_SUBTEST_2( mat_mat_scalar_scalar_product() );
     CALL_SUBTEST_3( product_extra(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_4( product_extra(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
+    CALL_SUBTEST_1( zero_sized_objects(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
-  CALL_SUBTEST_5( zero_sized_objects() );
-  CALL_SUBTEST_6( unaligned_objects() );
+  CALL_SUBTEST_5( bug_127<0>() );
+  CALL_SUBTEST_5( bug_817<0>() );
+  CALL_SUBTEST_6( unaligned_objects<0>() );
+  CALL_SUBTEST_7( compute_block_size<float>() );
+  CALL_SUBTEST_7( compute_block_size<double>() );
+  CALL_SUBTEST_7( compute_block_size<std::complex<double> >() );
 }
