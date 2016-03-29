@@ -32,6 +32,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
+#include <feel/feelalg/topetsc.hpp>
 #include <feel/feeltiming/tic.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
@@ -874,6 +875,74 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const
+{
+    CHECK( this->isInitialized() ) << "is not initialized";
+    CHECK( arg.isInitialized() ) << "is not initialized";
+    CHECK( dest.isInitialized() ) << "is not initialized";
+
+    if ( !this->closed() )
+        this->close();
+    if ( !arg.closed() )
+        const_cast<Vector<T>*>( &arg )->close();
+    if ( !dest.closed() )
+        dest.close();
+
+    // all data are in petsc type
+    VectorPetsc<T> const* vec_petsc_arg = dynamic_cast<VectorPetsc<T> const*>( &arg );
+    VectorPetsc<T> * vec_petsc_dest = dynamic_cast<VectorPetsc<T> *>( &dest );
+    if ( vec_petsc_arg && vec_petsc_dest )
+    {
+        int ierr = 0;
+        if ( !transpose )
+        {
+            if ( this->mapCol().worldComm().globalSize() == arg.map().worldComm().globalSize() )
+            {
+                ierr = MatMult( this->mat(), vec_petsc_arg->vec(), vec_petsc_dest->vec() );
+                CHKERRABORT( this->comm(),ierr );
+            }
+            else
+            {
+                auto x_convert = VectorPetscMPI<T>(this->mapColPtr());
+                x_convert.duplicateFromOtherPartition(arg);
+                x_convert.close();
+                ierr = MatMult( this->mat(), x_convert.vec(), vec_petsc_dest->vec() );
+                CHKERRABORT( this->comm(),ierr );
+            }
+        }
+        else
+        {
+            if ( this->mapRow().worldComm().globalSize() == arg.map().worldComm().globalSize() )
+            {
+                ierr = MatMultTranspose( this->mat(), vec_petsc_arg->vec(), vec_petsc_dest->vec() );
+                CHKERRABORT( this->comm(),ierr );
+            }
+            else
+            {
+                auto x_convert = VectorPetscMPI<T>(this->mapRowPtr());
+                x_convert.duplicateFromOtherPartition(arg);
+                x_convert.close();
+                ierr = MatMultTranspose( this->mat(), x_convert.vec(), vec_petsc_dest->vec() );
+                CHKERRABORT( this->comm(),ierr );
+            }
+        }
+        // update ghost if parallel vector
+        vec_petsc_dest->localize();
+        return;
+    }
+
+    // others vector type
+    auto vecPetscCastPair_arg = Feel::detail::toPETScPairPtr( arg, true );
+    VectorPetsc<T> const* vecPetscCast_arg = vecPetscCastPair_arg.first;
+    auto vecPetscCastPair_dest = Feel::detail::toPETScPairPtr( dest );
+    VectorPetsc<T> * vecPetscCast_dest = vecPetscCastPair_dest.first;
+    CHECK( vecPetscCast_dest ) << "vector dest type can not be convert into a petsc vector";
+    this->multVector( *vecPetscCast_arg, *vecPetscCast_dest, transpose );
+    return;
 }
 
 template <typename T>
