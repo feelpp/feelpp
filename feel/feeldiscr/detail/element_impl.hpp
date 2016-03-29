@@ -1000,13 +1000,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             .error( "FunctionSpace::Element invalid access index" );
             //value_type v_ = (*this)( gdof );
             value_type v_ = this->globalValue( gdof );
-            std::cout << " . v(" << gdof << ")=" << v_ << "\n";
+            //std::cout << " . v(" << gdof << ")=" << v_ << "\n";
             for ( size_type q = 0; q < Q; ++q )
             {
                 for ( size_type c2 = 0; c2 < ncdof2; ++c2 )
                 {
-                    std::cout << " .. context.div(" << ldof << "," << q << ")="
-                              << context.div( ldof, c2, 0, q ) << "\n" ;
+                    //std::cout << " .. context.div(" << ldof << "," << q << ")="
+                    //<< context.div( ldof, c2, 0, q ) << "\n" ;
 
                     v[q]( c2,0 ) += s(ldof)*v_*context.div( ldof, c2, 0, q );
                 }
