@@ -28,6 +28,7 @@ set(FEELPP_ENABLE_MANUAL OFF)
 set(Boost_NO_BOOST_CMAKE TRUE)
 set(Boost_NO_SYSTEM_PATHS TRUE)
 
+set(FEELPP_ENABLE_SCHED_OAR TRUE)
 
 #set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS/blas_LINUX.a)
 #message(STATUS "on froggy1 : BLAS_blas_LIBRARY : ${BLAS_blas_LIBRARY} ")
@@ -40,3 +41,8 @@ set(Boost_NO_SYSTEM_PATHS TRUE)
 #    $ENV{LIBRARY_PATH}
 #)
 #message(STATUS "on froggy1 : gfortran lib: ${GFORTRAN_LIBRARY} ")
+
+# Work around to get glog to compile
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_PERMIT_BACKWARD_HASH " )
+endif()
