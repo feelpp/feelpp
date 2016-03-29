@@ -883,13 +883,14 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
 {
     CHECK( this->isInitialized() ) << "is not initialized";
     CHECK( arg.isInitialized() ) << "is not initialized";
-    CHECK( dest.isInitialized() ) << "is not initialized";
 
     if ( !this->closed() )
         this->close();
     if ( !arg.closed() )
         const_cast<Vector<T>*>( &arg )->close();
-    if ( !dest.closed() )
+    if ( !dest.isInitialized() )
+        dest.init( this->mapColPtr() );
+    else if ( !dest.closed() )
         dest.close();
 
     // all data are in petsc type
@@ -1582,19 +1583,26 @@ MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
 {
     if ( !this->closed() )
         this->close();
-
+    if ( !out.isInitialized() )
+        out.init( this->mapRowPtr() );
+    else if ( !out.closed() )
+        const_cast<Vector<T>*>( &out )->close();
 
     VectorPetsc<T>* vecOutPetsc = dynamic_cast<VectorPetsc<T>*> ( &out );
-
     if ( vecOutPetsc )
     {
-        CHECK ( out.isInitialized() ) << "vector must be initialized";
-
         int ierr = MatGetDiagonal( M_mat, vecOutPetsc->vec() );
         CHKERRABORT( this->comm(),ierr );
-
         // update ghost in //
         vecOutPetsc->localize();
+        return;
+    }
+
+    auto vecPetscCastPair = Feel::detail::toPETScPairPtr( out );
+    VectorPetsc<T> * vecPetscCast = vecPetscCastPair.first;
+    if ( vecPetscCast )
+    {
+        this->diagonal( *vecPetscCast );
         return;
     }
 
@@ -1846,13 +1854,13 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
     if ( !__u.closed() )
         const_cast<Vector<value_type>*>( &__u )->close();
 
-    int ierr = 0;
-    PetscScalar e;
 
+    // case all vector are petsc
     VectorPetsc<T> const* vec_petsc_v = dynamic_cast<VectorPetsc<T> const*>( &__v );
     VectorPetsc<T> const* vec_petsc_u = dynamic_cast<VectorPetsc<T> const*>( &__u );
     if ( vec_petsc_v && vec_petsc_u )
     {
+        int ierr = 0;
         boost::shared_ptr<VectorPetsc<value_type> > z;
         if ( this->comm().size() > 1 )
             z = boost::make_shared< VectorPetscMPI<value_type> >( __v.mapPtr() );
@@ -1865,85 +1873,20 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             ierr = MatMultTranspose( M_mat, vec_petsc_u->vec(), z->vec() );
         CHKERRABORT( this->comm(),ierr );
 
+        PetscScalar e;
         ierr = VecDot( vec_petsc_v->vec(), z->vec(), &e );
         CHKERRABORT( this->comm(),ierr );
 
         return e;
     }
 
-
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-
-    const vector_ublas_type * vec_ublas_v = dynamic_cast<vector_ublas_type const*>( &__v );
-    const vector_ublas_type * vec_ublas_u = dynamic_cast<vector_ublas_type const*>( &__u );
-    const vector_ublas_range_type * vec_ublasRange_v = dynamic_cast<vector_ublas_range_type const*>( &__v );
-    const vector_ublas_range_type * vec_ublasRange_u = dynamic_cast<vector_ublas_range_type const*>( &__u );
-    const vector_ublas_extarray_type * vec_ublasExtArray_v = dynamic_cast<vector_ublas_extarray_type const*>( &__v );
-    const vector_ublas_extarray_type * vec_ublasExtArray_u = dynamic_cast<vector_ublas_extarray_type const*>( &__u );
-    const vector_ublas_extarray_range_type * vec_ublasExtArrayRange_v = dynamic_cast<vector_ublas_extarray_range_type const*>( &__v );
-    const vector_ublas_extarray_range_type * vec_ublasExtArrayRange_u = dynamic_cast<vector_ublas_extarray_range_type const*>( &__u );
-    bool vecIsUblasVarients_v = vec_ublas_v || vec_ublasRange_v || vec_ublasExtArray_v || vec_ublasExtArrayRange_v;
-    bool vecIsUblasVarients_u = vec_ublas_u || vec_ublasRange_u || vec_ublasExtArray_u || vec_ublasExtArrayRange_u;
-
-    boost::shared_ptr<VectorPetsc<T>> vec_petscClone_v, vec_petscClone_u;
-    const VectorPetsc<T> * vec_petscUsed_v;
-    const VectorPetsc<T> * vec_petscUsed_u;
-    if ( vec_petsc_v )
-    {
-        vec_petscUsed_v = vec_petsc_v;
-    }
-    else if ( vecIsUblasVarients_v )
-    {
-        if ( vec_ublas_v )
-            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas_v ) ) );
-        else if ( vec_ublasRange_v )
-            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange_v ) ) );
-        else if ( vec_ublasExtArray_v )
-            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray_v ) ) );
-        else if ( vec_ublasExtArrayRange_v )
-            vec_petscClone_v = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange_v ) ) );
-        vec_petscUsed_v = &(*vec_petscClone_v);
-    }
-    else
-    {
-        if ( this->comm().size() > 1 )
-            vec_petscClone_v.reset( new VectorPetscMPI<value_type>( __v.mapPtr() ) );
-        else
-            vec_petscClone_v.reset( new VectorPetsc<value_type>( __v.mapPtr() ) );
-        *vec_petscClone_v = __v;
-        vec_petscUsed_v = &(*vec_petscClone_v);
-    }
-
-    if ( vec_petsc_u )
-    {
-        vec_petscUsed_u = vec_petsc_u;
-    }
-    else if ( vecIsUblasVarients_u )
-    {
-        if ( vec_ublas_u )
-            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas_u ) ) );
-        else if ( vec_ublasRange_u )
-            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange_u ) ) );
-        else if ( vec_ublasExtArray_u )
-            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray_u ) ) );
-        else if ( vec_ublasExtArrayRange_u )
-            vec_petscClone_u = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange_u ) ) );
-        vec_petscUsed_u = &(*vec_petscClone_u);
-    }
-    else
-    {
-        if ( this->comm().size() > 1 )
-            vec_petscClone_u.reset( new VectorPetscMPI<value_type>( __u.mapPtr() ) );
-        else
-            vec_petscClone_u.reset( new VectorPetsc<value_type>( __u.mapPtr() ) );
-        *vec_petscClone_u = __u;
-        vec_petscUsed_u = &(*vec_petscClone_u);
-    }
-
-    return this->energy( *vec_petscUsed_v, *vec_petscUsed_u, transpose );
+    // others vector type
+    auto vecPetscCastPair_v = Feel::detail::toPETScPairPtr(  __v, true );
+    VectorPetsc<T> const* vecPetscCast_v = vecPetscCastPair_v.first;
+    auto vecPetscCastPair_u = Feel::detail::toPETScPairPtr(  __u, true );
+    VectorPetsc<T> const* vecPetscCast_u = vecPetscCastPair_u.first;
+    CHECK( vecPetscCast_v && vecPetscCast_u ) << "invalid vector type";
+    return this->energy( *vecPetscCast_v, *vecPetscCast_u, transpose );
 }
 
 template<typename T>

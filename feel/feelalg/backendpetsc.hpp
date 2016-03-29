@@ -327,50 +327,13 @@ public:
         // petsc mat/vec here
     }
 
+    /**
+     * apply matrix vector product with the matrix A and vector x
+     * and stores the result in b.
+     */
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b, bool transpose ) const
-    {
-        int ierr = 0;
-        petsc_sparse_matrix_type const& _A = dynamic_cast<petsc_sparse_matrix_type const&>( A );
-        petsc_vector_type const& _x = dynamic_cast<petsc_vector_type const&>( x );
-        petsc_vector_type const& _b = dynamic_cast<petsc_vector_type const&>( b );
-        if(!transpose) {
-            if ( _A.mapCol().worldComm().globalSize() == x.map().worldComm().globalSize() )
-            {
-                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
-                ierr = MatMult( _A.mat(), _x.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-            else
-            {
-                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
-                auto x_convert = petscMPI_vector_type(_A.mapColPtr());
-                x_convert.duplicateFromOtherPartition(x);
-                x_convert.close();
-                ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-        }
-        else {
-            if ( _A.mapRow().worldComm().globalSize() == x.map().worldComm().globalSize() )
-            {
-                //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
-                ierr = MatMultTranspose( _A.mat(), _x.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-            else
-            {
-                //std::cout << "BackendPetsc::prod with convert"<< std::endl;
-                auto x_convert = petscMPI_vector_type(_A.mapRowPtr());
-                x_convert.duplicateFromOtherPartition(x);
-                x_convert.close();
-                ierr = MatMultTranspose( _A.mat(), x_convert.vec(), _b.vec() );
-                CHKERRABORT( _A.comm().globalComm(),ierr );
-            }
-        }
-        b.close();
-    }
+               vector_type& b, bool transpose ) const;
 
     /**
      * get the matrix \c M whose diagonal is \c -v

@@ -327,13 +327,21 @@ BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
 }
 
 template <typename T>
+void
+BackendPetsc<T>::prod( sparse_matrix_type const& A,
+                       vector_type const& x,
+                       vector_type& b, bool transpose ) const
+{
+    A.multVector( x, b );
+}
+
+template <typename T>
 int
 BackendPetsc<T>::diag( sparse_matrix_type const& A_,
                        vector_type& d_ ) const
 {
-    MatrixPetsc<T> const& A = dynamic_cast<MatrixPetsc<T>const &> ( A_ );
-    VectorPetsc<T> & d = dynamic_cast<VectorPetsc<T>&> ( d_);
-    return MatGetDiagonal(A.mat(),d.vec());
+    A_.diagonal( d_ );
+    return 1;
 }
 
 template <typename T>
