@@ -42,6 +42,20 @@
 #include <feel/feeldiscr/stencil.hpp>
 #include <feel/feelvf/vf.hpp>
 
+namespace Feel
+{
+namespace detail
+{
+template <typename T>
+double myLocalProcessSum( Feel::Vector<T> const& vec )
+{
+    double res = 0;
+    for ( size_type k=0;k<vec.map().nLocalDofWithGhost();++k )
+        res += vec( k );
+    return res;
+}
+}
+}
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 using namespace Feel;
@@ -149,6 +163,7 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     size_type nDofVh1 = Vh1->nDof();
     size_type nLocalDofWithGhostVh1 = Vh1->nLocalDofWithGhost();
     auto u1 = Vh1->element();
+    auto u1b = Vh1->element();
     auto backendPetsc = backend(_kind="petsc");
     auto vec1a = backendPetsc->newVector( Vh1 );
     auto vec1b = backendPetsc->newVector( Vh1 );
@@ -264,20 +279,45 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     mat1a->matMatMult( *mat1b, *mat1c );
     BOOST_CHECK_SMALL( mat1c->l1Norm() - 1., tolCheck );
 
-
     // re-check local assembly
     mat1a->zero();
     mat1b->zero();
     mat1c->zero();
     for ( size_type k=0;k<nDofActivesMat1Row;++k )
     {
-        mat1a->set( k,k, (7.+k));
+        mat1a->set( k,k, 3. );
         mat1b->set( k,k, 1./(7.+k));
         mat1c->set( k,k, 1./(7.+k));
     }
     mat1a->close();
     mat1b->close();
     mat1c->close();
+
+    // multVector
+    vec1a->setConstant( 2. );
+    mat1a->multVector( vec1a, vec1b );
+    BOOST_CHECK_CLOSE( vec1b->sum(), 2*3*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec1b), 2*3*nLocalDofWithGhostVh1, tolCheck );
+    // multVector with vector clear
+#if 0
+    vec1b->clear();
+    mat1a->multVector( vec1a, vec1b );
+    BOOST_CHECK_CLOSE( vec1b->sum(), 2*3*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec1b), 2*3*nLocalDofWithGhostVh1, tolCheck );
+#endif
+    // multVector with ublas vector
+    u1.setConstant( 5. );
+    mat1a->multVector( u1, *vec1b );
+    BOOST_CHECK_CLOSE( vec1b->sum(), 5*3*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(*vec1b), 5*3*nLocalDofWithGhostVh1, tolCheck );
+    vec1a->setConstant( 7. );
+    mat1a->multVector( *vec1a, u1 );
+    BOOST_CHECK_CLOSE( u1.sum(), 7*3*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u1), 7*3*nLocalDofWithGhostVh1, tolCheck );
+    u1b.setConstant( 7. );
+    mat1a->multVector( u1b, u1 );
+    BOOST_CHECK_CLOSE( u1.sum(), 7*3*nDofVh1, tolCheck );
+    BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u1), 7*3*nLocalDofWithGhostVh1, tolCheck );
 
 }
 BOOST_AUTO_TEST_SUITE_END()
