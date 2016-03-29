@@ -28,6 +28,101 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+resizeAndSet( rank_t<0> )
+{
+    Eigen::Tensor<value_type,3> i_grad( 1, nRealDim, 1 );
+    std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
+
+    if ( vm::has_first_derivative_normal<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_dn( 1,1 );
+        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
+    }
+
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    {
+        Eigen::Tensor<value_type,3> i_hessian( nRealDim, nRealDim, 1 );
+        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
+    }
+    if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
+    {
+        Eigen::Tensor<value_type,3> i_hessian( nRealDim, nRealDim, 1 );
+        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
+        Eigen::Tensor<value_type,2> i_lap( 1, 1 );
+        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+    }
+
+}
+
+template<typename Poly, template<uint16_type> class PolySetType>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+void
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+resizeAndSet( rank_t<1> )
+{
+    Eigen::Tensor<value_type,3> i_grad( nComponents1, nRealDim, 1 );
+    std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
+
+    if ( vm::has_first_derivative_normal<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_dn( nComponents1,1 );
+        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
+    }
+
+    if ( vm::has_div<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_div( 1, 1 );
+        std::fill( M_div.data(), M_div.data()+M_div.num_elements(), i_div.constant(0.) );
+    }
+
+    if ( vm::has_curl<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_curl( nComponents1, 1 );
+        std::fill( M_curl.data(), M_curl.data()+M_curl.num_elements(), i_curl.constant(0.) );
+    }
+
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    {
+        Eigen::Tensor<value_type,3> i_hessian( nComponents1, nRealDim, nRealDim );
+        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
+    }
+    if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
+    {
+        Eigen::Tensor<value_type,3> i_hessian( nComponents1, nRealDim, nRealDim );
+        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
+        Eigen::Tensor<value_type,2> i_lap( nComponents1, 1 );
+        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
+    }
+
+}
+
+template<typename Poly, template<uint16_type> class PolySetType>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+void
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
+resizeAndSet( rank_t<2> )
+{
+    Eigen::Tensor<value_type,3> i_grad( nComponents1, nComponents2, nRealDim );
+    std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
+
+    if ( vm::has_first_derivative_normal<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_dn( nComponents1, nComponents2 );
+        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
+    }
+
+    if ( vm::has_div<context>::value )
+    {
+        Eigen::Tensor<value_type,2> i_div( nComponents1, 1 );
+        std::fill( M_div.data(), M_div.data()+M_div.num_elements(), i_div.constant(0.) );
+    }
+
+}
+
+template<typename Poly, template<uint16_type> class PolySetType>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
+void
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
 update( geometric_mapping_context_ptrtype const& __gmc,
         precompute_ptrtype const& __pc )
 {
@@ -80,25 +175,13 @@ update( geometric_mapping_context_ptrtype const& __gmc,
                         if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
                         {
                                 M_hessian.resize( boost::extents[ntdof][M_npoints] );
-                                // in P0 and P1 hessian is 0
-                                std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
                         }
                         if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
                         {
                             M_hessian.resize( boost::extents[ntdof][M_npoints] );
-                            if ( do_optimization_p1 )
-                            {
-                                // in P0 and P1 hessian is 0
-                                std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
-                            }
-
                             M_laplacian.resize( boost::extents[ntdof][M_npoints] );
-                            if ( do_optimization_p1  )
-                            {
-                                // in P0 and P1 laplacian is 0
-                                std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
-                            }
                         }
+                        resizeAndSet( rank_t<rank>() );
                 }
         }
 
@@ -123,20 +206,17 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, optimization_
                 const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
                 const uint16_type I = nDof; //M_ref_ele->nbDof();
 
-
-                matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
+                tensor_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
 
                 for ( uint16_type i = 0; i < I; ++i )
                 {
-                    grad_real.noalias() = (*M_gradphi)[i][0][0]*Bt.transpose();
-                    M_grad[i][0] = grad_real;
+                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
+                    M_grad[i][0] = (*M_gradphi)[i][0].contract( B,dims );
                 }
-
+#if 0
                 // we need the normal derivative
                 if ( vm::has_first_derivative_normal<context>::value )
                 {
-                        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
                         const uint16_type I = M_ref_ele->nbDof()*nComponents;
                         const uint16_type Q = nPoints();
 
@@ -150,6 +230,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, optimization_
                             }
                         }
                 }
+#endif
 
         } // grad
 }
@@ -160,56 +241,56 @@ void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t )
 {
-        //#pragma omp parallel
-        //precompute_type* __pc = M_pc.get().get();
-        geometric_mapping_context_type* thegmc = __gmc.get();
+    //#pragma omp parallel
+    //precompute_type* __pc = M_pc.get().get();
+    geometric_mapping_context_type* thegmc = __gmc.get();
 
-        if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  ||
-             vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  ||
+         vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    {
+        const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+        const uint16_type I = nDof; //M_ref_ele->nbDof();
+
+        for ( uint16_type i = 0; i < I; ++i )
         {
-                const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
-                const uint16_type I = nDof; //M_ref_ele->nbDof();
-
-                for ( uint16_type i = 0; i < I; ++i )
-                {
-                        for ( uint16_type q = 0; q < Q; ++q )
-                        {
-                                matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                                M_grad[i][q] = (*M_gradphi)[i][0][q]*Bt.transpose();
+            for ( uint16_type q = 0; q < Q; ++q )
+            {
+                tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
+                M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
 #if 0
-                                M_dx[i][q] = M_grad[i][q].col( 0 );
+                M_dx[i][q] = M_grad[i][q].col( 0 );
 
-                                if ( NDim == 2 )
-                                        M_dy[i][q] = M_grad[i][q].col( 1 );
+                if ( NDim == 2 )
+                    M_dy[i][q] = M_grad[i][q].col( 1 );
 
-                                if ( NDim == 3 )
-                                        M_dz[i][q] = M_grad[i][q].col( 2 );
+                if ( NDim == 3 )
+                    M_dz[i][q] = M_grad[i][q].col( 2 );
 #endif
-                        }
-                }
+            }
+        }
+#if 0
+        // we need the normal derivative
+        if ( vm::has_first_derivative_normal<context>::value )
+        {
+            const uint16_type I = M_ref_ele->nbDof()*nComponents;
+            const uint16_type Q = nPoints();
 
-                // we need the normal derivative
-                if ( vm::has_first_derivative_normal<context>::value )
+            for ( int i = 0; i < I; ++i )
+            {
+                for ( uint16_type q = 0; q < Q; ++q )
                 {
-                        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
-                        const uint16_type I = M_ref_ele->nbDof()*nComponents;
-                        const uint16_type Q = nPoints();
-
-                        for ( int i = 0; i < I; ++i )
-                        {
-                                for ( uint16_type q = 0; q < Q; ++q )
-                                {
-                                        for ( uint16_type l = 0; l < NDim; ++l )
-                                        {
-                                                M_dn[i][q]( 0,0 ) += M_grad[i][q]( 0,l ) * thegmc->unitNormal( l, q );
-                                        }
-                                }
-                        }
+                    for ( uint16_type l = 0; l < NDim; ++l )
+                    {
+                        M_dn[i][q]( 0,0 ) += M_grad[i][q]( 0,l ) * thegmc->unitNormal( l, q );
+                    }
                 }
+            }
+        }
+#endif
+    } // grad
 
-        } // grad
-
-        update( __gmc, rank_t<0>(), no_optimization_p1_t(), do_optimization_p2_t() );
+    //update( __gmc, rank_t<0>(), no_optimization_p1_t(), do_optimization_p2_t() );
 }
 template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
@@ -227,7 +308,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimizati
         // hessian only for P1 geometric mappings
         boost::multi_array<value_type,4> const& B3 = thegmc->B3();
 
-        std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), hess_type::Zero() );
         matrix_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
         //#pragma omp for
         for ( uint16_type i = 0; i < I; ++i )
@@ -310,50 +390,43 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimizati
 
                                 for ( uint16_type q = 0; q < Q; ++q )
                                 {
-                                        //uint16_type c1 = c;
-                                        matrix_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                                        //matrix_type const& Bq = thegmc->B( q );
-                                        M_grad[i][q] = (*M_gradphi)[i][0][q]*Bt.transpose();
-#if 0
-                                        M_dx[i][q] = M_grad[i][q].col( 0 );
+                                    tensor_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
 
+                                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(2, 1)}};
+                                    M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
+
+                                    // update divergence if needed
+                                    if ( vm::has_div<context>::value )
+                                    {
+                                        M_div[i][q].setZero();
+                                        for( int l = 0; l < nRealDim; ++l )
+                                            M_div[i][q]( 0,0 ) +=  M_grad[i][q](l,l,0);
+                                    }
+
+                                    // update curl if needed
+                                    if ( vm::has_curl<context>::value )
+                                    {
                                         if ( NDim == 2 )
-                                                M_dy[i][q] = M_grad[i][q].col( 1 );
-
-                                        if ( NDim == 3 )
-                                                M_dz[i][q] = M_grad[i][q].col( 2 );
-#endif
-                                        // update divergence if needed
-                                        if ( vm::has_div<context>::value )
                                         {
-                                                M_div[i][q]( 0,0 ) =  M_grad[i][q].trace();
+                                            M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
+                                            M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
+                                            M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                                         }
 
-                                        // update curl if needed
-                                        if ( vm::has_curl<context>::value )
+                                        else if ( NDim == 3 )
                                         {
-                                                if ( NDim == 2 )
-                                                {
-                                                        M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
-                                                        M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
-                                                        M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
-                                                }
-
-                                                else if ( NDim == 3 )
-                                                {
-                                                        M_curl[i][q]( 0 ) =  M_grad[i][q]( 2,1 ) - M_grad[i][q]( 1,2 );
-                                                        M_curl[i][q]( 1 ) =  M_grad[i][q]( 0,2 ) - M_grad[i][q]( 2,0 );
-                                                        M_curl[i][q]( 2 ) =  M_grad[i][q]( 1,0 ) - M_grad[i][q]( 0,1 );
-                                                }
+                                            M_curl[i][q]( 0 ) =  M_grad[i][q]( 2,1,0 ) - M_grad[i][q]( 1,2,0 );
+                                            M_curl[i][q]( 1 ) =  M_grad[i][q]( 0,2,0 ) - M_grad[i][q]( 2,0,0 );
+                                            M_curl[i][q]( 2 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
                                         }
+                                    }
                                 }
                         }
                 }
-
+#if 0
                 // we need the normal derivative
                 if ( vm::has_first_derivative_normal<context>::value )
                 {
-                        std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
                         const uint16_type I = nDof*nComponents1;
                         const uint16_type Q = nPoints();
 
@@ -369,8 +442,11 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimizati
                                         }
                                 }
                 }
+#endif
         }
+#if 0
         update( __gmc, rank_t<1>(), no_optimization_p1_t(), do_optimization_p2_t() );
+#endif
 }
 template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g>
@@ -388,7 +464,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimizati
 
         // hessian only for P1 geometric mappings
         boost::multi_array<value_type,4> const& B3 = thegmc->B3();
-        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
         hess_type L;
         //#pragma omp for
         for ( uint16_type ii = 0; ii < I; ++ii )
@@ -430,7 +505,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimizati
 
         // hessian only for P1 geometric mappings
         boost::multi_array<value_type,4> const& B3 = thegmc->B3();
-        std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), laplacian_type::Zero() );
         hess_type L;
         matrix_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
         //#pragma omp for
@@ -464,8 +538,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
     //precompute_type* __pc = M_pc.get().get();
     geometric_mapping_context_type* thegmc = __gmc.get();
 
-    matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-    matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+    tensor_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+    tensor_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
     if ( is_hdiv_conforming )
     {
         for ( uint16_type ii = 0; ii < I; ++ii )
@@ -473,8 +548,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
             for ( uint16_type q = 0; q < Q; ++q )
             {
                 // covariant piola transform
-                M_phi[ii][q].noalias() = K*(*M_pc)->phi(ii,q);
-                M_phi[ii][q] /= thegmc->J(q);
+                M_phi[ii][q] = K.contract((*M_pc)->phi(ii,q), dims )/thegmc->J(q);
             }
         }
     }
@@ -485,7 +559,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
             for ( uint16_type q = 0; q < Q; ++q )
             {
                 // piola transform
-                M_phi[ii][q].noalias() = Bt*(*M_pc)->phi(ii,q);
+                M_phi[ii][q] = Bt.contract((*M_pc)->phi(ii,q), dims );
             }
         }
     }
@@ -510,15 +584,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
                 //uint16_type c1 = c;
                 if ( is_hdiv_conforming )
                 {
-                    grad_real.noalias() = K*((*M_gradphi)[i][0][0]*Bt.transpose());
+                    grad_real.noalias() = K*((*M_gradphi)[i][0]*Bt.transpose());
                     grad_real /= thegmc->J(0);
                 }
                 else if ( is_hcurl_conforming )
                 {
-                    grad_real.noalias() = Bt*((*M_gradphi)[i][0][0]*Bt.transpose());
+                    grad_real.noalias() = Bt*((*M_gradphi)[i][0]*Bt.transpose());
                 }
                 else
-                    grad_real.noalias() = (*M_gradphi)[i][0][0]*Bt.transpose();
+                    grad_real.noalias() = (*M_gradphi)[i][0]*Bt.transpose();
 
                 M_grad[i][0] = grad_real;
 
@@ -527,11 +601,11 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
                 {
                     if ( is_hdiv_conforming )
                     {
-                        M_div[i][0]( 0,0 ) =  (*M_gradphi)[i][0][0].trace()/thegmc->J(0);
+                        M_div[i][0]( 0,0 ) =  (*M_gradphi)[i][0].trace()/thegmc->J(0);
                     }
                     else if ( is_hcurl_conforming )
                     {
-                        M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0][0]*Bt.transpose()) ).trace();
+                        M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0]*Bt.transpose()) ).trace();
                     }
                     else
                     {
@@ -567,7 +641,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_
         // we need the normal derivative
         if ( vm::has_first_derivative_normal<context>::value )
         {
-            std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
             const uint16_type I = nDof*nComponents1;
             const uint16_type Q = nPoints();
 
@@ -593,40 +666,34 @@ void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, optimization_p1_t )
 {
-    // TODO: differentiation of matrix fields
-    cout << "matrix fields diff" << std::endl;
-
     const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
     const uint16_type I = nDof; //M_ref_ele->nbDof();
 
     //precompute_type* __pc = M_pc.get().get();
     geometric_mapping_context_type* thegmc = __gmc.get();
 
-    matrix_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-    matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-    std::fill( M_div.data(), M_div.data()+M_div.num_elements(), div_type::Zero() );
+    tensor_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+
     if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
     {
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
 
-        matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
                 uint16_type i = I*c + ii;
 
-                for( uint16_type c1 = 0; c1 < nRealDim; ++ c1 )
+                Eigen::array<dimpair_t, 1> dims = {{dimpair_t(2, 1)}};
+                M_grad[i][0] = (*M_gradphi)[i][0].contract( B,dims );
+                // update divergence if needed
+                if ( vm::has_div<context>::value )
                 {
-                    grad_real.noalias() = (*M_gradphi)[i][c1][0]*Bt.transpose();
-
-                    // update divergence if needed
-                    if ( vm::has_div<context>::value )
-                    {
-                        for( uint16_type j = 0; j < nComponents2; ++j )
-                            M_div[i][0]( j,0 ) +=  grad_real( c1, j );
-                    }
+                    M_div[i][0].setZero();
+                    for( uint16_type j = 0; j < nComponents2; ++j )
+                        for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                            M_div[i][0]( j,0 ) +=  M_grad[i][0]( c1, j, c1 );
                 }
             } // c
         } // ii
@@ -634,7 +701,6 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, optimization_
         // we need the normal derivative
         if ( vm::has_first_derivative_normal<context>::value )
         {
-            std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), dn_type::Zero() );
             const uint16_type I = nDof*nComponents1;
             const uint16_type Q = nPoints();
 
@@ -660,6 +726,63 @@ void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, no_optimization_p1_t )
 {
+    const uint16_type Q = M_npoints;//__gmc->nPoints();//M_grad.size2();
+    const uint16_type I = nDof; //M_ref_ele->nbDof();
+
+    //precompute_type* __pc = M_pc.get().get();
+    geometric_mapping_context_type* thegmc = __gmc.get();
+
+
+
+    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+    {
+
+        typedef typename boost::multi_array<value_type,4>::index_range range;
+
+        for ( uint16_type ii = 0; ii < I; ++ii )
+        {
+            for ( uint16_type c = 0; c < nComponents; ++c )
+            {
+                uint16_type i = I*c + ii;
+
+                for ( uint16_type q = 0; q < Q; ++q )
+                {
+                    tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(2, 1)}};
+                    M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
+                    // update divergence if needed
+                    if ( vm::has_div<context>::value )
+                    {
+                        M_div[i][q].setZero();
+                        for( uint16_type j = 0; j < nComponents2; ++j )
+                            for( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                                M_div[i][q]( j,0 ) +=  M_grad[i][q]( c1, j, c1 );
+                    }
+                }
+            } // c
+        } // ii
+#if 0
+        // we need the normal derivative
+        if ( vm::has_first_derivative_normal<context>::value )
+        {
+            const uint16_type I = nDof*nComponents1;
+            const uint16_type Q = nPoints();
+
+            for ( int i = 0; i < I; ++i )
+                for ( uint16_type q = 0; q < Q; ++q )
+                {
+                    for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                    {
+                        for ( uint16_type l = 0; l < NDim; ++l )
+                        {
+                            M_dn[i][q]( c1,0 ) += M_grad[i][q]( c1,l ) * thegmc->unitNormal( l, q );
+                        }
+                    }
+                }
+        }
+#endif
+    } // grad
+
 }
 
 } // Feel

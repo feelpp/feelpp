@@ -181,7 +181,7 @@ class GeoMap
            typedef typename tangents_type::const_iterator tangent_const_iterator;
 
            typedef typename ublas::vector<value_type> vector_type;
-           typedef typename ublas::matrix<value_type> matrix_type;
+           typedef typename ublas::matrix<value_type,ublas::column_major> matrix_type;
 
 
 
@@ -404,9 +404,9 @@ void transform( matrix_node_t_type const& G,
                 precompute_type const* pc,
                 matrix_type & x ) const
 {
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> P( G.data(), G.rows(), G.cols() );
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> Phi( pc->phi().data(), pc->phi().rows(), pc->phi().cols() );
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> X( x.data(), x.size() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( G.data(), G.rows(), G.cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> Phi( pc->phi().data(), pc->phi().rows(), pc->phi().cols() );
+        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> X( x.data(), x.size() );
         X  = P*Phi;
     //ublas::axpy_prod( G, pc->phi(), x, true );
 }
@@ -1810,12 +1810,12 @@ private:
 
     void updateJKBN( mpl::bool_<true>, mpl::true_  )
         {
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
             MK.noalias() =  P*GradPhi;
             M_J = math::abs( MK.determinant() );
             MCS = MK.inverse();
@@ -1826,11 +1826,11 @@ private:
         {
 #if 0
             Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> P( M_G.data().begin(), M_G.size1(), M_G.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
-            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::RowMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>> GradPhi( M_g_linear.data().begin(), M_g_linear.size1(), M_g_linear.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MK( M_K.data().begin(), M_K.size1(), M_K.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((NDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCS( M_CS.data().begin(), M_CS.size1(), M_CS.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,PDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MCSi( M_CSi.data().begin(), M_CSi.size1(), M_CSi.size2() );
+            Eigen::Map<Eigen::Matrix<value_type,NDim,PDim,((PDim==1)?Eigen::ColMajor:Eigen::ColMajor)>> MB( M_B.data().begin(), M_B.size1(), M_B.size2() );
             MK.noalias() =  P*GradPhi;
             //ublas::axpy_prod( M_G, M_g_linear, M_K, true );
 
@@ -1942,9 +1942,9 @@ private:
                 }
 
                 // compute projector on tangent plane
-                Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
+                Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor> > P(M_Ptangent.data().begin(), NDim, NDim);
                 P.setIdentity(NDim, NDim);
-                Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > N(M_un_real.data().begin(), NDim,1);
+                Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor> > N(M_un_real.data().begin(), NDim,1);
                 P.noalias() -= N*N.transpose();
             }
 
