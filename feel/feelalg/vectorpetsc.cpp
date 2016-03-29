@@ -229,7 +229,8 @@ template <typename T>
 void
 VectorPetsc<T>::close()
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc<> not initialized" );
+    if ( !this->isInitialized() )
+        return;
 
     int ierr=0;
 
@@ -1653,6 +1654,9 @@ VectorPetscMPI<T>::clear()
 template <typename T>
 void VectorPetscMPI<T>::localize()
 {
+    if ( !this->isInitialized() )
+        return;
+
     int ierr = 0;
     ierr = VecGhostUpdateBegin(this->vec(),INSERT_VALUES,SCATTER_FORWARD);
     CHKERRABORT( this->comm(),ierr );
