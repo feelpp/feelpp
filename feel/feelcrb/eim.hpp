@@ -870,7 +870,9 @@ EIM<ModelType>::offline()
                 }
             }
 
-            M_greedy_maxerr = error; // Store error to compute next increment
+            // If criterion is satisfied,
+            if( !getAdaptationSER() )
+                M_greedy_maxerr = error;
         }
         else
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
@@ -1465,7 +1467,8 @@ public:
 
         if ( ofs )
         {
-            boost::archive::text_oarchive oa( ofs );
+            //boost::archive::text_oarchive oa( ofs );
+            boost::archive::binary_oarchive oa( ofs );
             // write class instance to archive
             oa << *this;
             // archive and stream closed when destructors are called
@@ -1496,7 +1499,8 @@ public:
 
         if ( ifs )
         {
-            boost::archive::text_iarchive ia( ifs );
+            //boost::archive::text_iarchive ia( ifs );
+            boost::archive::binary_iarchive ia( ifs );
             //write class instance to archive
             ia >> *this;
             //std::cout << "Loading " << db << " done...\n";
@@ -1714,7 +1718,7 @@ public:
     boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, model_solution_type const& solution, element_type const& z)
     {
         double max=0;
-        node_type node(nDim);
+        node_type node(mesh_type::nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu = mu;
@@ -1784,7 +1788,7 @@ public:
     boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, model_solution_type const& solution )
     {
         double max=0;
-        node_type node(nDim);
+        node_type node(mesh_type::nDim);
         for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu = mu;
