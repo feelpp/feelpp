@@ -516,8 +516,8 @@ public:
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector ( const Vector<T>& arg,
-                      Vector<T>& dest ) const;
+    virtual void multVector ( const Vector<T>& arg, Vector<T>& dest,
+                              bool transpose = false ) const;
 
     /**
      * Multiplies the matrix with \p arg and stores the result in \p
@@ -937,8 +937,8 @@ void MatrixSparse<T>::print( std::ostream& os ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::multVector ( const Vector<T>& arg,
-                                   Vector<T>& dest ) const
+void MatrixSparse<T>::multVector ( const Vector<T>& arg, Vector<T>& dest,
+                                   bool transpose ) const
 {
     dest.zero();
     this->multAddVector( arg,dest );

@@ -387,6 +387,12 @@ public:
     void addMatrix ( const T a, MatrixSparse<T> const&X );
 
     /**
+     * Multiplies the matrix with \p arg and stores the result in \p
+     * dest.
+     */
+    void multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const;
+
+    /**
      * Multiply this by a Sparse matrix \p In,
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
