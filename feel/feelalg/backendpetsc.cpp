@@ -349,9 +349,8 @@ int
 BackendPetsc<T>::diag( vector_type const & d_,
                        sparse_matrix_type& A_ ) const
 {
-    MatrixPetsc<T> & A = dynamic_cast<MatrixPetsc<T> &> ( A_ );
-    VectorPetsc<T> const& d = dynamic_cast<VectorPetsc<T> const&> ( d_ );
-    return MatDiagonalSet(A.mat(),d.vec(),ADD_VALUES);
+    A_.setDiagonal( d_ );
+    return 1;
 }
 
 /**

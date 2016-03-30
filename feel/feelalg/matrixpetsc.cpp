@@ -879,6 +879,65 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
 
 template <typename T>
 void
+MatrixPetsc<T>::setDiagonal( const Vector<T>& vecDiag )
+{
+    if ( !vecDiag.closed() )
+        const_cast<Vector<T>*>( &vecDiag )->close();
+
+    this->setIsClosed( false );
+
+    // all data are in petsc type
+    VectorPetsc<T> const* vecDiag_petsc = dynamic_cast<VectorPetsc<T> const*>( &vecDiag );
+    if ( vecDiag_petsc )
+    {
+        int ierr = 0;
+        ierr = MatDiagonalSet(this->mat(),vecDiag_petsc->vec(),INSERT_VALUES);
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+    // others vector type
+    auto vecPetscCastPair = Feel::detail::toPETScPairPtr( vecDiag, true );
+    VectorPetsc<T> const* vecDiag_petscCast = vecPetscCastPair.first;
+    if ( vecDiag_petscCast )
+    {
+        this->setDiagonal( *vecDiag_petscCast );
+        return;
+    }
+    CHECK( false ) << "invalid vector type";
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::addDiagonal( const Vector<T>& vecDiag )
+{
+    if ( !vecDiag.closed() )
+        const_cast<Vector<T>*>( &vecDiag )->close();
+
+    this->setIsClosed( false );
+
+    // all data are in petsc type
+    VectorPetsc<T> const* vecDiag_petsc = dynamic_cast<VectorPetsc<T> const*>( &vecDiag );
+    if ( vecDiag_petsc )
+    {
+        int ierr = 0;
+        ierr = MatDiagonalSet(this->mat(),vecDiag_petsc->vec(),ADD_VALUES);
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+    // others vector type
+    auto vecPetscCastPair = Feel::detail::toPETScPairPtr( vecDiag, true );
+    VectorPetsc<T> const* vecDiag_petscCast = vecPetscCastPair.first;
+    if ( vecDiag_petscCast )
+    {
+        this->addDiagonal( *vecDiag_petscCast );
+        return;
+    }
+    CHECK( false ) << "invalid vector type";
+
+}
+
+template <typename T>
+void
 MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const
 {
     CHECK( this->isInitialized() ) << "is not initialized";
