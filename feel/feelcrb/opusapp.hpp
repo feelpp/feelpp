@@ -401,12 +401,9 @@ public:
             int i=0;
             do
             {
-                LOG(INFO) << "[SER] step i= " << i << "\n";
                 //Begin with rb since first eim has already been built in initModel
-                if( i == 0 || crb->getOfflineStep() )
-                {
-                    this->loadDB(); // update AffineDecomposition and enrich RB database
-                }
+                this->loadDB(); // update AffineDecomposition and enrich RB database
+
                 crb->setRebuild( false ); //do not rebuild since co-build is not finished
                 int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
@@ -455,7 +452,7 @@ public:
                 }
                 ++i;
             }
-            while( crb->getOfflineStep() || do_offline_eim );
+            while( crb->getOfflineStep() );
         }
 
     FEELPP_DONT_INLINE

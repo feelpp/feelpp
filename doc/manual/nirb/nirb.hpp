@@ -746,7 +746,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
      integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
     */
     Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S
-    cout << " Dans ConstructStiffMatrixSnapshot " << endl;
+    std::cout << " Dans ConstructStiffMatrixSnapshot " << std::endl;
     //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() );
     //cout << "Path where the sol are load " << full_path_Sol << endl;
 
@@ -764,7 +764,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
             std::cerr << "In 'ConstructStiffMatrixSnapshot': ERROR IN LOADING FILE " << path <<std::endl;
             auto t = Xh->element();
             t.load(_path=path);
-            cout << "Reloading of ui done -> L2norm(ui)= " << t.l2Norm() << endl;
+            std::cout << "Reloading of ui done -> L2norm(ui)= " << t.l2Norm() << std::endl;
             exit( 0 );
         }
 
