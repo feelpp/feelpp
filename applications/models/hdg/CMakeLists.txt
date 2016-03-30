@@ -22,3 +22,4 @@
 #
 #
 
+#feelpp_add_application( hdg_darcy main.cpp )
