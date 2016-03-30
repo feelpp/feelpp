@@ -321,5 +321,40 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     BOOST_CHECK_CLOSE( u1.sum(), 7*3*nDofVh1, tolCheck );
     BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u1), 7*3*nLocalDofWithGhostVh1, tolCheck );
 
+    // setDiagonal
+    mat1a->zero();
+    vec1a->setConstant( 8. );
+    mat1a->setDiagonal( vec1a );
+    BOOST_CHECK_CLOSE( mat1a->l1Norm(), 8., tolCheck );
+    // setDiagonal with ublas vector
+    u1.setConstant( 9. );
+    mat1a->setDiagonal( u1 );
+    BOOST_CHECK_CLOSE( mat1a->l1Norm(), 9., tolCheck );
+    // addDiagonal
+    vec1a->setConstant( 8. );
+    mat1a->addDiagonal( vec1a );
+    BOOST_CHECK_CLOSE( mat1a->l1Norm(), 9+8, tolCheck );
+    // addDiagonal with ublas vector
+    u1.setConstant( 7. );
+    mat1a->addDiagonal( u1 );
+    BOOST_CHECK_CLOSE( mat1a->l1Norm(), 9+8+7, tolCheck );
+
+    // PtAP
+    vec1b->setConstant( 3. );
+    mat1b->setDiagonal( vec1b );
+    mat1c->clear(); // stencil will change
+    mat1a->PtAP( *mat1b, *mat1c );
+    BOOST_CHECK_CLOSE( mat1c->l1Norm(), 3*(9+8+7)*3, tolCheck );
+    mat1a->PtAP( *mat1b, *mat1c );// reuse stencil
+    BOOST_CHECK_CLOSE( mat1c->l1Norm(), 3*(9+8+7)*3, tolCheck );
+    // PAPt
+    vec1b->setConstant( 5. );
+    mat1b->setDiagonal( vec1b );
+    mat1c->clear(); // stencil will change
+    mat1a->PAPt( *mat1b, *mat1c );
+    BOOST_CHECK_CLOSE( mat1c->l1Norm(), 5*(9+8+7)*5, tolCheck );
+    mat1a->PAPt( *mat1b, *mat1c ); // reuse stencil
+    BOOST_CHECK_CLOSE( mat1c->l1Norm(), 5*(9+8+7)*5, tolCheck );
+
 }
 BOOST_AUTO_TEST_SUITE_END()
