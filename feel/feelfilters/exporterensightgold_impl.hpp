@@ -337,7 +337,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator e
             /* if we want to pack data in several files instead of one, we add an index to the filename */
             if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
             { __out << ".*"; }
-            __out << ext << std::endl;
+            __out << "." << ext << std::endl;
         }
         else
         {
@@ -346,7 +346,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator e
                   << it->second.name() << " " << __ts->name() << "." << it->first;
             if( ! boption( _name="exporter.ensightgold.merge.markers") )
             { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-            __out << ext << "." << std::string(M_timeExponent, '*') << std::endl;
+            __out << "." << ext << "." << std::string(M_timeExponent, '*') << std::endl;
         }
     }
 }

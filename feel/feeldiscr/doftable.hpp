@@ -1142,7 +1142,7 @@ public:
                         {
                             for( int c2 = 0; c2 < c1; ++c2 )
                             {
-                                const int k = detail::symmetricIndex(c1,c2,nComponents1);
+                                const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
                                 M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c2)+l_dof );
                                 M_gdof.setIndex( itdof->second+shift+k );
                                 auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
@@ -1158,7 +1158,7 @@ public:
                                 M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                             }
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
-                            const int k = detail::symmetricIndex(c1,c1,nComponents1);
+                            const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
                             M_gdof.setIndex( itdof->second+shift+k);
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
