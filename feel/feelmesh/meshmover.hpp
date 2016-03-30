@@ -197,7 +197,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename fectx_type::id_type m_type;
     typedef boost::multi_array<m_type,1> array_type;
     array_type uvalues( u.idExtents( *__ctx ) );
-    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+    m_type m(fe_type::nComponents1,fe_type::nComponents2);
+    std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
     u.id( *__ctx, uvalues );
 
     //const uint16_type ndofv = fe_type::nDof;
@@ -218,7 +219,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
         __c->update( *it_elt );
         __ctx->update( __c );
-        std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+        std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
         u.id( *__ctx, uvalues );
 
         for ( uint16_type l =0; l < nptsperelem; ++l )
@@ -289,7 +290,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
-    LOG(INFO) << "Notify observers that the mesh has changed\n"; 
+    LOG(INFO) << "Notify observers that the mesh has changed\n";
     imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
 #endif
 }
