@@ -208,7 +208,7 @@ public:
 
     ~LagrangeDual() = default;
     LagrangeDual& operator=( LagrangeDual const& ) = default;
-    
+
     points_type const& points() const
     {
         return M_pts;
@@ -244,14 +244,14 @@ public:
             {
                 return M_pset.pointsBySubEntity( topodim, entity, 1 );
             }
-            
-    
+
+
     points_type edgePoints(int edge) const
         {
             return M_pset.pointsBySubEntity( 1, edge, 1 );
         }
 
-    
+
     points_type vertexPoints(int vertex) const
         {
             return M_pset.pointsBySubEntity( 0, vertex, 1 );
@@ -329,7 +329,8 @@ public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
                            boost::is_same<PolySetType<N>, Vectorial<N> >::value ||
-                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ) );
+                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ||
+                           boost::is_same<PolySetType<N>, Tensor2Symm<N> >::value ) );
 
     /** @name Typedefs
      */
@@ -356,6 +357,9 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
+    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
+    using is_symm  = Feel::is_symm<polyset_type>;
+
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
 
@@ -500,8 +504,23 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalDof+q );
+                        }
+                        // diagonal
+                        Ihloc( (c1+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
         }
     local_interpolant_type
     faceLocalInterpolant() const
@@ -520,9 +539,22 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
-
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalFaceDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
         }
 
     local_interpolant_type
@@ -542,9 +574,23 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalEdgeDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalEdgeDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c1, q );
 
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
         }
     local_interpolant_type
     vertexLocalInterpolant() const
@@ -563,11 +609,24 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalVertexDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalVertexDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                    }
 
+                }
         }
-
     template<typename ExprType>
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
@@ -589,16 +648,33 @@ public:
             for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
             {
                 int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-                
+
                 for ( uint16_type c = 0; c < ncomp1; ++c )
                 {
                     uint16_type I = expr_basis_t::nLocalDof*c + i;
                     for( int c1 = 0; c1 < shape::M; ++c1 )
-                        for( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        if ( is_symm_v )
                         {
-                            int ldof = (c2+nComponents2*c1)*nLocalDof + q;
-                            Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            for( int c2 = 0; c2 < c1; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q;
+                                Ihloc( I, ldof2) = Ihloc( I, ldof);
+                            }
+                            int ldof = (c1+nComponents2*c1)*nLocalDof + q;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
                         }
+                        else
+                        {
+                            for( int c2 = 0; c2 < shape::N; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            }
+                        }
+                    }
                 }
             }
         }

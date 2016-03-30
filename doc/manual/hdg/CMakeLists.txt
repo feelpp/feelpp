@@ -1,10 +1,9 @@
-# -*- mode: cmake; coding: utf-8 -*-
-#
+###  CMakeLists.txt; coding: utf-8 --- 
+
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-29
+#       Date: 03 Mar 2016
 #
-#  Copyright (C) 2009-2012 Université Joseph Fourier (Grenoble I)
-#  Copyright (C) 2011-2016 Feel++ Consortium
+#  Copyright (C) 2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,31 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-add_subdirectory(python)
-
-if (NOT FEELPP_MINIMAL_CONFIGURATION)
-  foreach(DIR laplacian
-      stokes
-      advection
-      accoustic
-      dd
-      heat
-      solid
-      ns
-      heatns
-      nonlinear
-      adapt
-      nirb
-      fd
-      maxwell
-      opt
-      eikonal
-      eigen
-      magnetostatic
-      hdg )
-    add_subdirectory(${DIR})
-  endforeach()
-endif()
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
