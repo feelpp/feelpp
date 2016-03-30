@@ -308,7 +308,7 @@ MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 
 template <typename T>
 void
-MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const
 {
     //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
 

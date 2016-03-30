@@ -356,7 +356,7 @@ public:
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
      */
-    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const;
 
     /**
      * Multiply this by a Sparse matrix \p In,

@@ -407,7 +407,17 @@ public:
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
      */
-    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res );
+    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const;
+
+    /**
+     * Creates the matrix product C = P^T * A * P with A the current matrix
+     */
+    void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
+
+    /**
+     * Creates the matrix product C = P * A * P^T with A the current matrix
+     */
+    void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
 
     /**
      * scale the matrix by the factor \p a

@@ -1007,7 +1007,7 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
 
 template <typename T>
 void
-MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& matIn, MatrixSparse<T> &matRes )
+MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& matIn, MatrixSparse<T> &matRes ) const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
     FEELPP_ASSERT( this->size2() == matIn.size1() )( this->size2() )( matIn.size1() ).error( "incompatible dimension" );
@@ -1050,6 +1050,133 @@ MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& matIn, MatrixSparse<T> &matR
     }
 
 }
+
+
+template <typename T>
+void
+MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_type> & matC ) const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT( this->size1() == matP.size1() )( this->size1() )( matP.size1() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size2() == matP.size1() )( this->size2() )( matP.size1() ).error( "incompatible dimension" );
+
+    if ( !this->closed() )
+        this->close();
+    if ( matP.closed() )
+        matP.close();
+    if ( !matC.closed() )
+        matC.close();
+
+    MatrixPetsc<T> const* matP_petsc = dynamic_cast<MatrixPetsc<T> const*> ( &matP );
+    MatrixPetsc<T>* matC_petsc = dynamic_cast<MatrixPetsc<T>*> ( &matC );
+    if ( matP_petsc && matC_petsc )
+    {
+        int ierr=0;
+        if ( matC.isInitialized() )
+        {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+            ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_REUSE_MATRIX, 1.0, &matC_petsc->mat() );
+            CHKERRABORT( this->comm(),ierr );
+#else
+            CHECK( false ) << "PtAP requiert a PETSc version  >= 3.3";
+#endif
+        }
+        else
+        {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+            ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_INITIAL_MATRIX, 1.0, &matC_petsc->mat() );
+            CHKERRABORT( this->comm(),ierr );
+#else
+            CHECK( false ) << "PtAP requiert a PETSc version  >= 3.3";
+#endif
+            matC.setMapRow( matP.mapColPtr() );
+            matC.setMapCol( matP.mapColPtr() );
+            MatrixPetscMPI<T>* matC_petscMPI = dynamic_cast<MatrixPetscMPI<T>*> ( &matC );
+            if ( matC_petscMPI )
+                matC_petscMPI->initLocalToGlobalMapping();
+            matC.setInitialized( true );
+            matC.setIsClosed( true );
+            // TODO graph
+        }
+        return;
+    }
+
+    CHECK( false ) << "TODO other kind of matrix";
+}
+
+template <typename T>
+void
+MatrixPetsc<T>::PAPt( MatrixSparse<value_type> const& matP, MatrixSparse<value_type> & matC ) const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT( this->size1() == matP.size2() )( this->size1() )( matP.size2() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size2() == matP.size2() )( this->size2() )( matP.size2() ).error( "incompatible dimension" );
+
+    if ( !this->closed() )
+        this->close();
+    if ( matP.closed() )
+        matP.close();
+    if ( !matC.closed() )
+        matC.close();
+
+    MatrixPetsc<T> const* matP_petsc = dynamic_cast<MatrixPetsc<T> const*> ( &matP );
+    MatrixPetsc<T>* matC_petsc = dynamic_cast<MatrixPetsc<T>*> ( &matC );
+    if ( matP_petsc && matC_petsc )
+    {
+        int ierr=0;
+        if ( matC.isInitialized() )
+        {
+            if ( this->comm().size() == 1 )
+            {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+                ierr = MatRARt( this->mat(), matP_petsc->mat(), MAT_REUSE_MATRIX, 1.0, &matC_petsc->mat() );
+                CHKERRABORT( this->comm(),ierr );
+#else
+                CHECK( false ) << "PtAP requiert a PETSc version  >= 3.3";
+#endif
+            }
+            else
+            {
+                MatrixPetscMPI<T> matTemp_petscMPI( this->mapRowPtr(),matP.mapRowPtr() );
+                matP.matMatMult( *this, matTemp_petscMPI );
+                matTemp_petscMPI.matMatMult( *matP.transpose(), matC );
+            }
+        }
+        else
+        {
+            if ( this->comm().size() == 1 )
+            {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+                ierr = MatRARt( this->mat(), matP_petsc->mat(), MAT_INITIAL_MATRIX, 1.0, &matC_petsc->mat() );
+                CHKERRABORT( this->comm(),ierr );
+#else
+                CHECK( false ) << "PtAP requiert a PETSc version  >= 3.3";
+#endif
+            }
+            else
+            {
+                MatrixPetscMPI<T> matTemp_petscMPI( this->mapRowPtr(),matP.mapRowPtr() );
+                matP.matMatMult( *this, matTemp_petscMPI );
+                matTemp_petscMPI.matMatMult( *matP.transpose(), matC );
+            }
+
+            matC.setMapRow( matP.mapRowPtr() );
+            matC.setMapCol( matP.mapRowPtr() );
+            MatrixPetscMPI<T>* matC_petscMPI = dynamic_cast<MatrixPetscMPI<T>*> ( &matC );
+            if ( matC_petscMPI )
+                matC_petscMPI->initLocalToGlobalMapping();
+            matC.setInitialized( true );
+            matC.setIsClosed( true );
+            // TODO graph
+        }
+        return;
+    }
+
+    CHECK( false ) << "TODO other kind of matrix";
+}
+
+
+
 
 #if 0
 template <typename T>

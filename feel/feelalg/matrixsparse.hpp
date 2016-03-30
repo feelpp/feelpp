@@ -848,12 +848,39 @@ public:
         sqrt(*_m);
     }
 
-    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    virtual void matMatMult( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const;
 
+    /**
+     * Creates the matrix product C = P^T * A * P with A the current matrix
+     */
+    virtual void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     * Creates the matrix product C = P * A * P^T with A the current matrix
+     */
+    virtual void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     *
+     */
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
+    /**
+     *
+     */
     virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
-    
+
     /**
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
@@ -1048,7 +1075,7 @@ void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const
 {
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;

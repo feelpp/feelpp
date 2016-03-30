@@ -297,15 +297,8 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
-    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
-    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
-    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
-    
-    return MatPtAP( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
-#else
-    return -1;
-#endif
+    A_->PtAP( *P_, *C_ );
+    return 1;
 }
 
 
@@ -315,15 +308,8 @@ BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
-    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( A_.get() );
-    MatrixPetsc<T> const* P = dynamic_cast<MatrixPetsc<T> const*> ( P_.get() );
-    MatrixPetsc<T>* C = dynamic_cast<MatrixPetsc<T>*> ( C_.get() );
-    
-    return MatRARt( A->mat(), P->mat(), MAT_INITIAL_MATRIX, 1.0, &C->mat() );
-#else
-    return -1;
-#endif
+    A_->PAPt( *P_, *C_ );
+    return 1;
 }
 
 template <typename T>
@@ -332,7 +318,7 @@ BackendPetsc<T>::prod( sparse_matrix_type const& A,
                        vector_type const& x,
                        vector_type& b, bool transpose ) const
 {
-    A.multVector( x, b );
+    A.multVector( x, b, transpose );
 }
 
 template <typename T>
