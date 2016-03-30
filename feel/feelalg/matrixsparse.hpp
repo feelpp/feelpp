@@ -535,6 +535,35 @@ public:
     void multAddVector ( const Vector<T>& arg,
                          Vector<T>& dest ) const;
 
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    virtual void setDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    void setDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->setDiagonal( *vecDiag );
+        }
+
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    virtual void addDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    void addDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->addDiagonal( *vecDiag );
+        }
 
     /**
      * Return the value of the entry \p (i,j).  This may be an

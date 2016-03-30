@@ -387,6 +387,16 @@ public:
     void addMatrix ( const T a, MatrixSparse<T> const&X );
 
     /**
+     * set diagonal entries from vector
+     */
+    void setDiagonal( const Vector<T>& vecDiag );
+
+    /**
+     * add diagonal entries from vector
+     */
+    void addDiagonal( const Vector<T>& vecDiag );
+
+    /**
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
