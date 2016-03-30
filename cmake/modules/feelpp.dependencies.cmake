@@ -254,6 +254,29 @@ IF ( MPI_FOUND )
   ELSE()
       MESSAGE(WARNING "MPIIO not detected and disabled (Related features disable, e.g. Ensight Gold exporter).")
   ENDIF()
+
+  # Find mpi.h file in an attempt to detect flavour
+  find_path(__MPI_H_PATH mpi.h
+      PATH ${MPI_INCLUDE_PATH}
+  )
+  # If we find the header we attempt to grep lines in the files
+  # To detect the flavour
+  if(__MPI_H_PATH)
+      # Attempt to grep OPEN_MPI in the file
+      file(STRINGS ${__MPI_H_PATH}/mpi.h relines REGEX "OPEN_MPI")
+      if(relines)
+          # Put OpenMPI specific code here
+
+          # Automatically add oarsh to the options when using OpenMPI
+          # See: https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
+          if(FEELPP_ENABLE_SCHED_OAR)
+              set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\"")
+              message(STATUS "[feelpp] OAR detected - Automatically adding transport option to MPIEXEC_PREFLAGS (-mca plm_rsh_agent \"oarsh\")")
+          endif()
+      endif()
+  endif()
+  unset(__MPI_H_PATH)
+
 ENDIF()
 
 CHECK_FUNCTION_EXISTS(fmemopen FEELPP_HAS_STDIO_FMEMOPEN)
@@ -410,6 +433,10 @@ if(Boost_FOUND)
       add_definitions(-DBOOST_PP_VARIADICS=0)
       message(STATUS "[feelpp] added -DBOOST_PP_VARIADICS=0" )
     ENDIF()
+    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "59")
+      add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1)
+      message(STATUS "[feelpp] added -DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE=1" )
+    endif()
   ENDIF()
 else()
   message(STATUS "[feelpp] Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")

@@ -791,11 +791,11 @@ public:
     {
         auto solution = M_model->functionSpace()->element();
         solution = *T;
-        return computeBetaQm( solution , mu , time , only_time_dependent_terms );
+        return computeBetaQm( solution , mu , time , only_time_dependent_terms);
     }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
+        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
     }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
@@ -835,6 +835,92 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
+    betaqm_type computePicardBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computePicardBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
+    }
+
+    betaqm_type computePicardBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        boost::tuple<beta_vector_type,beta_vector_type,std::vector<beta_vector_type> >  beta_coefficients;
+        beta_coefficients = M_model->computeBetaQm( mu , time , only_time_dependent_terms );
+        return beta_coefficients;
+    }
+    betaqm_type computePicardBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type,std::vector<beta_vector_type> > steady_beta;
+
+        steady_beta = M_model->computePicardBetaQm( mu );
+
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
+    betaqm_type computePicardBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        auto solution = M_model->functionSpace()->element();
+        solution = *T;
+        return computePicardBetaQm( solution , mu , time , only_time_dependent_terms);
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computePicardBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        return M_model->computePicardBetaQm( T, mu, time , only_time_dependent_terms );
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm, betaMqm ;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type,std::vector<beta_vector_type> > steady_beta;
+
+        steady_beta = M_model->computePicardBetaQm(T, mu );
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
+
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
 
     element_ptrtype assembleInitialGuess( parameter_type const& mu );
     void assemble(){ return M_model->assemble(); }
@@ -1527,6 +1613,12 @@ public:
         if( Aq.size() == 0 )
         {
             boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            {
+                auto RF = M_model->computePicardAffineDecomposition();
+                M_RF_Aqm = RF.template get<0>();
+                M_RF_Fqm = RF.template get<1>();
+            }
         }
         else
         {
@@ -1664,6 +1756,13 @@ public:
         if( Aq.size() == 0 )
         {
             boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+
+            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            {
+                auto RF = M_model->computePicardAffineDecomposition();
+                M_RF_Aqm = RF.template get<0>();
+                M_RF_Fqm = RF.template get<1>();
+            }
         }
         else
         {
@@ -1847,6 +1946,14 @@ public:
         }
     }
 
+    /**
+     * Returns the matrix \c Aqm ( if Newton is used, Aqm(q,m) returns the Jacobian)
+     */
+    std::vector< std::vector<sparse_matrix_ptrtype> > RF_Aqm(){ return M_RF_Aqm; }
+    /**
+     * Returns the matrix \c Fqm ( if Newton is used, Fqm(0,q,m) returns the Residual)
+     */
+    std::vector< std::vector< vector_ptrtype > > RF_Fqm(){ return M_RF_Fqm[0]; }
 
     /**
      * \brief Returns the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (time dependent)
@@ -2474,6 +2581,9 @@ protected:
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_RF_Aqm;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > M_RF_Fqm;
+
 
 private:
     bool M_is_initialized;
