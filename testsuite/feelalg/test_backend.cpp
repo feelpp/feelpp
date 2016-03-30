@@ -208,6 +208,12 @@ BOOST_AUTO_TEST_CASE( test_backend_petsc )
     backendPetsc->diag( *mat_petsc1y, u1 );
     BOOST_CHECK_CLOSE( u1.sum() , 6*nDofVh1, tolCheck );
     BOOST_CHECK_CLOSE( Feel::detail::myLocalProcessSum(u1), 6*nLocalDofWithGhostVh1, tolCheck );
+    // set diag
+    vec_petsc1x->setConstant( 4. );
+    vec_petsc1y->setConstant( 5. );
+    backendPetsc->diag( *vec_petsc1x, *mat_petsc1y );
+    BOOST_CHECK_CLOSE( mat_petsc1y->energy(vec_petsc1y,vec_petsc1y) , 5*4*5*nDofVh1 , tolCheck );
+
 
 }
 BOOST_AUTO_TEST_SUITE_END()
