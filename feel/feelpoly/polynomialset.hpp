@@ -1524,34 +1524,22 @@ public:
                 std::cout << "M_gradphi[" << i << "]=" << *( M_gradphi.data()+i ) << "\n";
 
 #endif
-            update( __gmc, rank_t<rank>(), do_optimization_p1_t() );
+            update( __gmc, rank_t<rank>() );
             //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
         }
 
         //
         // update scalar valued polynomials
         //
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, optimization_p1_t );
-        // optimization for 2nd order derivative for P <= 1
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t );
-        // optimization for 2nd order derivative for P <= 2
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t, optimization_p2_t );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0>, no_optimization_p1_t, no_optimization_p2_t );
-
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> );
         //
         // update vector valued polynomials
         //
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, optimization_p1_t );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t );
-        // optimization for 2nd order derivative for P <= 2
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t, optimization_p2_t );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1>, no_optimization_p1_t, no_optimization_p2_t );
-
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> );
         //
         // update matrix valued polynomials
         //
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, optimization_p1_t );
-        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>, no_optimization_p1_t );
+        FEELPP_DONT_INLINE void update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2>  );
 
         /**
          * \return the number of points at which the basis functions
@@ -1804,6 +1792,18 @@ public:
             return 0;
         }
 
+        div_type const& div( uint16_type i, uint32_type q ) const
+            {
+                return div( i, q, do_optimization_p1_t() );
+            }
+        div_type const& div( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+            {
+                return M_div[i][0];
+            }
+        div_type const& div( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+            {
+                return M_div[i][q];
+            }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
                 return div( i, c1, c2, q, do_optimization_p1_t() );

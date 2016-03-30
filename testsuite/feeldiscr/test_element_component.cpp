@@ -111,6 +111,12 @@ test_tensor2()
     sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate();
     BOOST_CHECK_CLOSE( sdiv(0,0),2*area, 1e-12 );
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
+#if 0
+    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px()*Py(),Py()+Px(),Py(),2.3*Py()+Px() ) );
+    sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate();
+    BOOST_CHECK_CLOSE( sdiv(0,0),2*area, 1e-12 );
+    BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
+#endif
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
 {
