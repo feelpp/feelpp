@@ -109,7 +109,7 @@ struct ID
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -140,7 +140,10 @@ struct ID
         M_id( elem.idExtents( context ) )
     {
         for(int k = 0;k < M_id.shape()[0]; k++ )
+        {
+            M_id[k].resize( M, N );
             M_id[k].setZero();
+        }
         elem.id_( context, M_id );
     }
 
@@ -202,7 +205,7 @@ struct DD
 {
     typedef T value_type;
     friend class boost::serialization::access;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -222,7 +225,10 @@ struct DD
         M_grad( elem.gradExtents( context ) )
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].resize(M,N);
             M_grad[k].setZero();
+        }
         elem.grad_( context, M_grad );
     }
 
@@ -265,7 +271,7 @@ template<typename T,int N, int M, int P>
 struct D
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,P> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
 
@@ -286,7 +292,10 @@ struct D
         M_grad( elem.dExtents( context ) )
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].resize(M,P);
             M_grad[k].setZero();
+        }
         elem.d_( N, context, M_grad );
     }
 
@@ -305,7 +314,7 @@ template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,D,1> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -325,7 +334,10 @@ struct Div
         M_div( elem.divExtents( context ) )
     {
         for(int k = 0;k < M_div.shape()[0]; k++ )
+        {
+            M_div[k].resize(D,1);
             M_div[k].setZero();
+        }
         elem.div_( context, M_div );
     }
 
@@ -343,7 +355,7 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,D,1> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -363,7 +375,10 @@ struct Curl
         M_curl( elem.curlExtents( context ) )
     {
         for(int k = 0;k < M_curl.shape()[0]; k++ )
+        {
+            M_curl[k].resize(D,1);
             M_curl[k].setZero();
+        }
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
     }
     template<typename Elem, typename ContextType>
@@ -411,7 +426,7 @@ struct H
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Matrix<value_type,M,N> m_type;
+    typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -432,7 +447,10 @@ struct H
         M_hess( elem.hessExtents( context ) )
     {
         for(int k = 0;k < M_hess.shape()[0]; k++ )
+        {
+            M_hess[k].resize(M,N);
             M_hess[k].setZero();
+        }
         elem.hess_( context, M_hess );
     }
     m_type const& operator[]( uint16_type q  ) const
@@ -2169,7 +2187,7 @@ public:
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
                 if ( is_tensor2symm )
                 {
-                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
                     startSlice = ((int)i)*nComponents2+((int)j);
@@ -2199,7 +2217,7 @@ public:
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
                 if ( is_tensor2symm )
                 {
-                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
                     startSlice = ((int)i)*nComponents2+((int)j);
@@ -2245,7 +2263,7 @@ public:
 
                 if ( is_tensor2symm )
                 {
-                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
                 {
@@ -2280,7 +2298,7 @@ public:
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
                 if ( is_tensor2symm )
                 {
-                    startSlice = detail::symmetricIndex( (int)i, (int)j, nComponents1 );
+                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
                 {
@@ -2495,11 +2513,19 @@ public:
         //@{
 
         typedef boost::multi_array<value_type,3> array_type;
-        typedef Eigen::Matrix<value_type,nComponents1,nComponents2> _id_type;
+#if 0
+        typedef Eigen::Tensor<value_type,nComponents1,nComponents2> _id_type;
         typedef Eigen::Matrix<value_type,nComponents1,nRealDim> _grad_type;
         typedef Eigen::Matrix<value_type,nRealDim,nRealDim> _hess_type;
         typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
+#else
+        typedef Eigen::Tensor<value_type,2> _id_type;
+        typedef Eigen::Tensor<value_type,2> _grad_type;
+        typedef Eigen::Tensor<value_type,2> _hess_type;
+        typedef Eigen::Tensor<value_type,2> _div_type;
+        typedef Eigen::Tensor<value_type,2> _curl_type;
+#endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
         typedef boost::multi_array<_hess_type,1> hess_array_type;

@@ -567,13 +567,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
             for ( uint16_type q = 0; q < nq; ++q )
             {
-                for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                    for( typename array_type::index j = 0; j < nComponents2; ++j )
-                {
-                    v[q]( i,j ) += s(ldof)*v_*context.id( ldof, i, j, q );
-                    //vsum +=v_*context.id( ldof, i, 0, q );
-                    //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
-                }
+                v[q] += context.id(ldof,q)*(s(ldof)*v_);
             }
         }
     }
@@ -1003,13 +997,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             //std::cout << " . v(" << gdof << ")=" << v_ << "\n";
             for ( size_type q = 0; q < Q; ++q )
             {
-                for ( size_type c2 = 0; c2 < ncdof2; ++c2 )
-                {
-                    //std::cout << " .. context.div(" << ldof << "," << q << ")="
-                    //<< context.div( ldof, c2, 0, q ) << "\n" ;
-
-                    v[q]( c2,0 ) += s(ldof)*v_*context.div( ldof, c2, 0, q );
-                }
+                v[q] += context.div( ldof, q )*(s(ldof)*v_);
             }
         }
     }
