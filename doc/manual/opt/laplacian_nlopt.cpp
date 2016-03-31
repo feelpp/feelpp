@@ -49,7 +49,7 @@ int main(int argc, char**argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
-                     _about=about(_name="heat_nlopt",
+                     _about=about(_name="laplacian_nlopt",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
