@@ -157,7 +157,7 @@ test_tensor2()
     auto a12 = form2( _trial=Wh, _test=VhTensor2 );
     a12 += integrate( _range=elements(mesh), _expr=trans(idt(w))*div(uTensor2));
     a12.close();
-    auto a12v = a12(w,uTensor2);
+    auto a12v = a12(uTensor2,w);
     BOOST_CHECK_CLOSE( a12v, 4*area, 1e-11 );
     cout << "a12(ones, ones) = " << a12v << std::endl;
 
