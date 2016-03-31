@@ -106,7 +106,7 @@ public :
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
     }
 };
 
@@ -146,7 +146,13 @@ public :
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "  . [time int " << lapg <<" =" << ti.elapsed() << "s] b=" <<  b );
-        BOOST_CHECK_SMALL( (a-b).norm(), 1e-10 );
+        
+        BOOST_CHECK_CLOSE( a(0,0), b(0,0), 1e-10 );
+        if ( Dim >= 2 )
+            BOOST_CHECK_CLOSE( a(1,0), b(1,0), 1e-10 );
+        if ( Dim >= 3 )
+            BOOST_CHECK_CLOSE( a(2,0), b(2,0), 1e-10 );
+            
     }
 };
 

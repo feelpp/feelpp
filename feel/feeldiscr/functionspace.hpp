@@ -1521,7 +1521,7 @@ public:
     static constexpr uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
     static constexpr bool is_vectorial = ( is_composite? false : basis_0_type::is_vectorial );
-    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2 );
+    static constexpr bool is_tensor2 = ( is_composite? false : basis_0_type::is_tensor2  && !is_symm_v<basis_0_type> );
     static constexpr bool is_tensor2symm = ( is_composite? false : basis_0_type::is_tensor2 && is_symm_v<basis_0_type> );
     static constexpr bool is_continuous = ( is_composite? false : basis_0_type::isContinuous );
     static constexpr bool is_modal = ( is_composite? false : basis_0_type::is_modal );
