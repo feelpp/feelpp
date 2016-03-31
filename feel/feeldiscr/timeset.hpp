@@ -1694,7 +1694,7 @@ public:
         scalar_p0_space_ptrtype M_scalar_p0;
         vector_p0_space_ptrtype M_vector_p0;
         tensor2_p0_space_ptrtype M_tensor2_p0;
-        tensor2_p0_space_ptrtype M_tensor2symm_p0;
+        tensor2symm_p0_space_ptrtype M_tensor2symm_p0;
         scalar_p1_space_ptrtype M_scalar_p1;
         vector_p1_space_ptrtype M_vector_p1;
         tensor2_p1_space_ptrtype M_tensor2_p1;
