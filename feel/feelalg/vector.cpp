@@ -580,7 +580,7 @@ sync( Vector<T> & v, detail::syncOperator<T> const& opSync )
         for ( auto const& ghostDofVal : ghostDofValues )
         {
             size_type gcdof = ghostDofVal.first;
-            size_type gpdof = dataMap->mapGlobalClusterToGlobalProcess( gcdof - dataMap->firstDofGlobalCluster() );
+            size_type gpdof = gcdof - dataMap->firstDofGlobalCluster();
 #if !defined(NDEBUG)
             auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
             CHECK( boost::get<0>( resSearchDof ) ) << "dof not found";

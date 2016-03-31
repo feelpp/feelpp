@@ -1298,7 +1298,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
         hdf5.closeTable( "element" );
 
         for ( size_type k=0;k<dataStorage.size();++k )
-            this->set( dm.mapGlobalClusterToGlobalProcess( k ), dataStorage[k] );
+            this->set( k, dataStorage[k] );
         sync( *this );
     }
     else // save
@@ -1312,7 +1312,7 @@ VectorUblas<T,Storage>::ioHDF5( bool isLoad, std::string const& filename )
         }
 
         for ( size_type k=0;k<dataStorage.size();++k )
-            dataStorage[k] = this->operator()( dm.mapGlobalClusterToGlobalProcess( k ) );
+            dataStorage[k] = this->operator()( k );
 
         // create double tab
         hdf5.createTable( "element", H5T_NATIVE_DOUBLE, dimsElt );

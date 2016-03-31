@@ -1738,17 +1738,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 
             if (this->nLocalDofWithGhost() >0 )
             {
-                if (themasterRank == this->worldComm().localRank())
-                {
-                    this->M_mapGlobalClusterToGlobalProcess.resize( nDofP0 );
-                    std::iota( this->M_mapGlobalClusterToGlobalProcess.begin(), 
-                               this->M_mapGlobalClusterToGlobalProcess.end(), 
-                               0 );
-                }
-                else
-                {
-                    this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-                }
 
                 this->M_mapGlobalProcessToGlobalCluster.resize( nDofP0 );
                 std::iota( this->M_mapGlobalProcessToGlobalCluster.begin(), 
@@ -1776,13 +1765,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         // in sequential : identity map
         const size_type s = this->M_n_localWithGhost_df[this->comm().rank()];
         this->M_mapGlobalProcessToGlobalCluster.resize( s );
-        this->M_mapGlobalClusterToGlobalProcess.resize( s );
 
         std::iota( this->M_mapGlobalProcessToGlobalCluster.begin(), 
                    this->M_mapGlobalProcessToGlobalCluster.end(), 
-                   0 );
-        std::iota( this->M_mapGlobalClusterToGlobalProcess.begin(), 
-                   this->M_mapGlobalClusterToGlobalProcess.end(), 
                    0 );
     }
 
@@ -1802,10 +1787,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             if ( this->dofGlobalProcessIsGhost(k) )
                 previousGlobalIdToNewGlobalId[k]=currentGhostDof++;
             else
-            {
-                this->M_mapGlobalClusterToGlobalProcess[gcdof-firstGlobIndex]=currentActiveDof;
                 previousGlobalIdToNewGlobalId[k]=currentActiveDof++;
-            }
+
             newMapGlobalProcessToGlobalCluster[previousGlobalIdToNewGlobalId[k]] = gcdof;
         }
         this->M_mapGlobalProcessToGlobalCluster.clear();

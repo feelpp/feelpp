@@ -531,13 +531,10 @@ struct updateDataMapProcess
             M_dm->setNLocalDofWithGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
 
             M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
-            M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
 
             for ( size_type i=0; i<nLocWithGhost; ++i )
                 M_dm->setMapGlobalProcessToGlobalCluster( i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
 
-            for ( size_type i=0; i<nLocWithoutGhost; ++i )
-                M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 
@@ -571,7 +568,6 @@ struct updateDataMapProcess
 
         // update map
         M_dmOnOff->resizeMapGlobalProcessToGlobalCluster( nLocWithGhostOnOff );
-        M_dmOnOff->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhostOnOff );
 
         size_type startGlobClusterDof = M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
         size_type startGlobProcessDof = M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
@@ -579,11 +575,6 @@ struct updateDataMapProcess
         for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
         {
             M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
-        }
-
-        for ( size_type i=0; i<x->dof()->nLocalDofWithoutGhost(); ++i )
-        {
-            M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 

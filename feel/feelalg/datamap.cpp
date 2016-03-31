@@ -43,7 +43,6 @@ DataMap::DataMap( WorldComm const& _worldComm )
     M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_mapGlobalClusterToGlobalProcess(),
     M_worldComm( _worldComm ),
     M_indexSplit()
 {}
@@ -60,7 +59,6 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_mapGlobalClusterToGlobalProcess(),
     M_worldComm( _worldComm ),
     M_indexSplit()
 {
@@ -89,10 +87,9 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
         M_first_df_globalcluster[this->worldComm().rank()]=0;
         M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
         M_mapGlobalProcessToGlobalCluster.resize( n_local );
-        std::iota( this->M_mapGlobalClusterToGlobalProcess.begin(), 
-                   this->M_mapGlobalClusterToGlobalProcess.end(), 
+        std::iota( this->M_mapGlobalProcessToGlobalCluster.begin(),
+                   this->M_mapGlobalProcessToGlobalCluster.end(),
                    0 );
-        M_mapGlobalClusterToGlobalProcess = M_mapGlobalProcessToGlobalCluster;
     }
 
     if ( n == invalid_size_type_value )
@@ -171,7 +168,6 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
 
 
     this->resizeMapGlobalProcessToGlobalCluster( this->nLocalDofWithGhost(myrank) );
-    this->resizeMapGlobalClusterToGlobalProcess( this->nLocalDofWithoutGhost(myrank) );
     const size_type firstDofGC = this->firstDofGlobalCluster(myrank);
     size_type start_i = firstDofGC;
     size_type activeDofIdStart = this->firstDof();
@@ -197,7 +193,6 @@ DataMap::DataMap( std::vector<boost::shared_ptr<DataMap> > const& listofdm, Worl
             size_type gcDofBloc = dmb->mapGlobalProcessToGlobalCluster(gpDofBlock);
             const size_type gcDof = start_i+(gcDofBloc-firstGcDofBlock);
             this->setMapGlobalProcessToGlobalCluster( gpDof, gcDof );
-            this->setMapGlobalClusterToGlobalProcess( gcDof-firstDofGC ,gpDof );
             mapOldToNewGlobalProcess[gpDofBlock] = gpDof;
         }
         // ghost dofs
@@ -360,29 +355,14 @@ DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map )
     M_mapGlobalProcessToGlobalCluster=map;
 }
 void
-DataMap::setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map )
-{
-    M_mapGlobalClusterToGlobalProcess=map;
-}
-void
 DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j )
 {
     M_mapGlobalProcessToGlobalCluster[i]=j;
 }
 void
-DataMap::setMapGlobalClusterToGlobalProcess( size_type i, size_type j )
-{
-    M_mapGlobalClusterToGlobalProcess[i]=j;
-}
-void
 DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n )
 {
     M_mapGlobalProcessToGlobalCluster.resize( n );
-}
-void
-DataMap::resizeMapGlobalClusterToGlobalProcess( size_type n )
-{
-    M_mapGlobalClusterToGlobalProcess.resize( n );
 }
 
 void
@@ -437,7 +417,7 @@ DataMap::searchGlobalProcessDof( size_type gcdof ) const
     size_type gpdof = invalid_size_type_value;
     if ( this->dofGlobalClusterIsOnProc( gcdof ) )
     {
-        gpdof = this->mapGlobalClusterToGlobalProcess( gcdof - this->firstDofGlobalCluster() );
+        gpdof = gcdof - this->firstDofGlobalCluster();
         return boost::make_tuple( true, gpdof );
     }
 
@@ -664,7 +644,6 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
 
     // define mapping between global process and global cluster and store missing ghost dof to send
     dataMapRes->resizeMapGlobalProcessToGlobalCluster( dataMapRes->nLocalDofWithGhost(curProcId) );
-    dataMapRes->resizeMapGlobalClusterToGlobalProcess( dataMapRes->nLocalDofWithoutGhost(curProcId) );
     size_type firstDofGC = dataMapRes->firstDofGlobalCluster(curProcId);
     size_type idLocalDof=0, idGlobalDof=firstDofGC;
     std::map< rank_type, std::vector< size_type > > dataToSend, memoryDataToSend;
@@ -679,7 +658,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
         if ( !this->dofGlobalProcessIsGhost(id) )
         {
             dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=idGlobalDof;
-            dataMapRes->M_mapGlobalClusterToGlobalProcess[idGlobalDof-firstDofGC]=idLocalDof;
+
             if ( this->activeDofSharedOnCluster().find( id ) != this->activeDofSharedOnCluster().end() )
                 dofTableRelationGP[id]=idLocalDof;
             ++idGlobalDof;
@@ -727,7 +706,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
             rank_type theproc = dataR.first;
             for ( auto const& gcdof : dataR.second )
             {
-                size_type gpdof = this->mapGlobalClusterToGlobalProcess(gcdof-firstDofGC);
+                size_type gpdof = gcdof-firstDofGC;
                 dataMapRes->M_activeDofSharedOnCluster[gpdof].insert( theproc );
 
                 CHECK( dofTableRelationGP.find( gpdof ) != dofTableRelationGP.end() ) << "active dof gpdof not register";
@@ -794,7 +773,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
 
 
 void
-DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __out2 ) const
+DataMap::showMe( bool showAll, std::ostream& __out2 ) const
 {
     //__out << std::endl;
     this->comm().globalComm().barrier();
@@ -808,7 +787,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
             this->comm().globalComm().barrier();
             __out << "\n";
             __out << "-----------------------------------------------------------------------\n"
-                  << "------------------showMeMapGlobalProcessToGlobalCluster----------------\n"
+                  << "------------------DataMap showMe----------------\n"
                   << "-----------------------------------------------------------------------\n"
                   << "god rank : " << this->comm().godRank()  << "\n"
                   << "global rank : " << this->comm().globalRank()  << "\n"
@@ -833,15 +812,6 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __ou
                 {
                     __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
                           << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
-                }
-                __out << "-----------------------------------------------------------------------\n";
-#endif
-#if 0
-                __out << "mapGlobalClusterToGlobalProcess : \n";
-                for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
-                {
-                    __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
-                          <<"\n";
                 }
                 __out << "-----------------------------------------------------------------------\n";
 #endif

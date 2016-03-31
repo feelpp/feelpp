@@ -1632,7 +1632,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
             if ( original_dofCluster>=vecInput.map().firstDofGlobalCluster() &&
                  original_dofCluster<=vecInput.map().lastDofGlobalCluster() )
             {
-                const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                const size_type original_dofProcess = original_dofCluster-original_firstDofCluster;
                 this->set( convert_dofProcess, vecInput(original_dofProcess) );
             }
             else
@@ -1760,7 +1760,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
                     const size_type original_dofCluster = originaldofClusterMissing_recv[k];
                     if (original_dofCluster >=vecInput.map().firstDofGlobalCluster() && original_dofCluster<=vecInput.map().lastDofGlobalCluster())
                     {
-                        const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                        const size_type original_dofProcess = original_dofCluster-original_firstDofCluster;
                         dofClusterMissing_RequestVal[k]=vecInput(original_dofProcess);
                         dofClusterMissing_RequestIsFind[k]=1;
                     }
