@@ -448,21 +448,22 @@ public:
     //! Puts list of global elements on this processor size_typeo the user-provided array.
     std::vector<size_type> const& myGlobalElements() const;
 
+    //! processor numbering to world numbering
     std::vector<size_type> const& mapGlobalProcessToGlobalCluster() const
     {
         return M_mapGlobalProcessToGlobalCluster;
     }
-    std::vector<size_type> const& mapGlobalClusterToGlobalProcess() const
-    {
-        return M_mapGlobalClusterToGlobalProcess;
-    }
+
+    //! processor numbering to world numbering
     size_type mapGlobalProcessToGlobalCluster( size_type i ) const
     {
         return M_mapGlobalProcessToGlobalCluster[i];
     }
+
+    FEELPP_DEPRECATED
     size_type mapGlobalClusterToGlobalProcess( size_type i ) const
     {
-        return M_mapGlobalClusterToGlobalProcess[i];
+        return i;
     }
 
     void setNDof( size_type ndof );
@@ -475,11 +476,8 @@ public:
     void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
 
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
-    void setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map );
     void setMapGlobalProcessToGlobalCluster( size_type i, size_type j );
-    void setMapGlobalClusterToGlobalProcess( size_type i, size_type j );
     void resizeMapGlobalProcessToGlobalCluster( size_type n );
-    void resizeMapGlobalClusterToGlobalProcess( size_type n );
 
     void updateDataInWorld();
 
@@ -505,7 +503,11 @@ public:
         return M_closed;
     }
 
-    void showMeMapGlobalProcessToGlobalCluster( bool showAll=false, std::ostream& __out = std::cout ) const;
+    /**
+     * print some information
+     * showAll : print more (can be large)
+     */
+    void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
 
     /**
      * \return the mpi communicator
@@ -521,7 +523,6 @@ public:
     {
         return M_worldComm;
     }
-
 
     /**
      * \return the number of mapping (from functionspace id to container id with global process numbering)
@@ -664,16 +665,10 @@ protected:
     // ??
     mutable std::vector<size_type> M_myglobalelements;
 
-
     /**
      * Map between Global Process To Global Cluster.
      */
     std::vector<size_type> M_mapGlobalProcessToGlobalCluster;
-
-    /**
-     * Map between Global Cluster To Global Process.
-     */
-    std::vector<size_type> M_mapGlobalClusterToGlobalProcess;
 
     /**
      *The processors who neighbor the current processor
