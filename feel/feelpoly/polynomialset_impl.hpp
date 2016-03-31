@@ -263,7 +263,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
                 if ( vm::has_laplacian<context>::value  )
                 {
                     M_laplacian[i][q].setZero();
-                    for( int c = 0; c < nComponents1; ++c )
+                    for( int c = 0; c < nRealDim; ++c )
                         M_laplacian[i][q](0,0) += M_hessian[i][q]( c, c, 0 );
                         //M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
                 }
@@ -281,8 +281,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     geometric_mapping_context_type* thegmc = __gmc.get();
     const uint16_type I = M_phi.shape()[0];
     const int Q = do_optimization_p1?1:M_npoints;
-    tensor_eigen_ublas_type K ( thegmc->K( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-    tensor_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
     if ( is_hdiv_conforming )
     {
@@ -290,6 +289,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         {
             for ( uint16_type q = 0; q < Q; ++q )
             {
+                tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+
                 // covariant piola transform
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
                 M_phi[ii][q] = K.contract((*M_pc)->phi(ii,q), dims )/thegmc->J(q);
@@ -302,6 +304,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         {
             for ( uint16_type q = 0; q < Q; ++q )
             {
+                tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+                tensor_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+
                 // piola transform
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
                 M_phi[ii][q] = Bt.contract((*M_pc)->phi(ii,q), dims );
@@ -318,7 +323,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 
         for ( uint16_type q = 0; q < Q; ++q )
         {
-            tensor_eigen_ublas_type B ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+            tensor_eigen_ublas_type K ( thegmc->K( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
+            tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
@@ -327,14 +333,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 
                 if ( is_hdiv_conforming )
                 {
-                    M_grad[i][q] =  K.contract((*M_gradphi)[i][q].contract(Bt,dims1),dims2)/thegmc->J(q);
+                    M_grad[i][q] =  K.contract((*M_gradphi)[i][q].contract(B,dims1),dims2)/thegmc->J(q);
                 }
                 else if ( is_hcurl_conforming )
                 {
-                    M_grad[i][q] =  Bt.contract((*M_gradphi)[i][q].contract(Bt,dims1),dims2);
+                    M_grad[i][q] =  B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
                 }
                 else
-                    M_grad[i][q] =  (*M_gradphi)[i][q].contract(Bt,dims1);
+                    M_grad[i][q] =  (*M_gradphi)[i][q].contract(B,dims1);
 
                 // update divergence if needed
                 if ( vm::has_div<context>::value )
@@ -410,14 +416,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             for ( uint16_type q = 0; q < Q; ++q )
             {
                 tensor_eigen_ublas_type B ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
-                Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
-                Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
+                Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
+                Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
                 M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
 
                 M_laplacian[i][q].setZero();
-                for ( uint16_type c1 = 0; c1 < NDim; ++c1 )
+                for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
                 {
-                    for ( uint16_type c2 = 0; c2 < nComponents1; ++c2 )
+                    for ( uint16_type c2 = 0; c2 < nRealDim; ++c2 )
                         M_laplacian[i][q](c1,0) += M_hessian[i][q](c1,c2,c2);
                 } // c1 component of vector field
             } // i
