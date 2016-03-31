@@ -28,13 +28,13 @@ This file contains functions dealing with error reporting and termination
    Multiple buffers are defined to allow for recursive invokation. */
 #define MAX_JBUFS 128
 #ifdef LIBMESH_TLS
-LIBMESH_TLS int gk_cur_jbufs=-1;
-LIBMESH_TLS jmp_buf gk_jbufs[MAX_JBUFS];
-LIBMESH_TLS jmp_buf gk_jbuf;
+LIBMESH_TLS int feel_gk_cur_jbufs=-1;
+LIBMESH_TLS jmp_buf feel_gk_jbufs[MAX_JBUFS];
+LIBMESH_TLS jmp_buf feel_gk_jbuf;
 #else
-int gk_cur_jbufs=-1;
-jmp_buf gk_jbufs[MAX_JBUFS];
-jmp_buf gk_jbuf;
+int feel_gk_cur_jbufs=-1;
+jmp_buf feel_gk_jbufs[MAX_JBUFS];
+jmp_buf feel_gk_jbuf;
 #endif
 
 typedef void (*gksighandler_t)(int);
@@ -118,13 +118,13 @@ void gk_errexit(int signum, char *f_str,...)
 /***************************************************************************/
 int gk_sigtrap()
 {
-  if (gk_cur_jbufs+1 >= MAX_JBUFS)
+  if (feel_gk_cur_jbufs+1 >= MAX_JBUFS)
     return 0;
 
-  gk_cur_jbufs++;
+  feel_gk_cur_jbufs++;
 
-  old_SIGMEM_handlers[gk_cur_jbufs]  = signal(SIGMEM,  gk_sigthrow);
-  old_SIGERR_handlers[gk_cur_jbufs]  = signal(SIGERR,  gk_sigthrow);
+  old_SIGMEM_handlers[feel_gk_cur_jbufs]  = signal(SIGMEM,  gk_sigthrow);
+  old_SIGERR_handlers[feel_gk_cur_jbufs]  = signal(SIGERR,  gk_sigthrow);
 
   return 1;
 }
@@ -136,13 +136,13 @@ int gk_sigtrap()
 /***************************************************************************/
 int gk_siguntrap()
 {
-  if (gk_cur_jbufs == -1)
+  if (feel_gk_cur_jbufs == -1)
     return 0;
 
-  signal(SIGMEM,  old_SIGMEM_handlers[gk_cur_jbufs]);
-  signal(SIGERR,  old_SIGERR_handlers[gk_cur_jbufs]);
+  signal(SIGMEM,  old_SIGMEM_handlers[feel_gk_cur_jbufs]);
+  signal(SIGERR,  old_SIGERR_handlers[feel_gk_cur_jbufs]);
 
-  gk_cur_jbufs--;
+  feel_gk_cur_jbufs--;
 
   return 1;
 }
@@ -155,7 +155,7 @@ int gk_siguntrap()
 /*************************************************************************/
 void gk_sigthrow(int signum)
 {
-  longjmp(gk_jbufs[gk_cur_jbufs], signum);
+  longjmp(feel_gk_jbufs[feel_gk_cur_jbufs], signum);
 }
 
 
@@ -186,7 +186,7 @@ void gk_UnsetSignalHandlers()
 **************************************************************************/
 void gk_NonLocalExit_Handler(int signum)
 {
-  longjmp(gk_jbuf, signum);
+  longjmp(feel_gk_jbuf, signum);
 }
 
 

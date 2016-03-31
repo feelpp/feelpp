@@ -40,6 +40,7 @@ namespace FeelModels
 template<class SpaceType>
 class DynamicViscosityModel
 {
+    typedef DynamicViscosityModel<SpaceType> self_type;
 public :
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
@@ -47,11 +48,11 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
 
     DynamicViscosityModel( std::string prefix )
         :
         M_viscosityModelName( soption(_name="viscosity.law",_prefix=prefix ) ),
-        M_cstDynamicViscosity( doption(_name="mu",_prefix=prefix) ),
         M_powerLaw_n( doption(_name="power_law.n",_prefix=prefix) ),
         M_powerLaw_k( doption(_name="power_law.k",_prefix=prefix) ),
         M_powerLaw_n_generic( (M_powerLaw_n-1.)/2. ), M_powerLaw_k_generic( M_powerLaw_k ),
@@ -69,6 +70,8 @@ public :
         M_non_newtonian_hematocrit( doption(_name="hematocrit",_prefix=prefix) ),
         M_non_newtonian_TPMA( doption(_name="TPMA",_prefix=prefix) )
         {
+            M_cstDynamicViscosity[self_type::defaultMaterialName()] = doption(_name="mu",_prefix=prefix);
+
             CHECK( this->checkDynamicViscosityLaw() ) << "invalid viscosity model : " << this->dynamicViscosityLaw();
             if (this->dynamicViscosityLaw() == "walburn-schneck_law")
             {
@@ -107,21 +110,38 @@ public :
     }
 
     space_ptrtype const& dynamicViscositySpace() const { return M_space; }
-    double cstMu() const { return this->cstDynamicViscosity(); }
-    double cstDynamicViscosity() const { return M_cstDynamicViscosity; }
+
+    std::set<std::string> const& markers() const { return M_markers; }
+
+    double cstMu( std::string const& marker = "" ) const { return this->cstDynamicViscosity( marker); }
+    double cstDynamicViscosity( std::string const& marker = "" ) const
+    {
+        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        auto itFindMarker = M_cstDynamicViscosity.find( markerUsed );
+        CHECK( itFindMarker != M_cstDynamicViscosity.end() ) << "invalid marker not registered " << markerUsed;
+        return itFindMarker->second;
+    }
+
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
 
-    void setCstDynamicViscosity(double d) { M_cstDynamicViscosity=d;this->updateDynamicViscosity(cst(d)); }
-
-    template < typename ExprT >
-    void updateDynamicViscosity(vf::Expr<ExprT> const& __expr)
+    void setCstDynamicViscosity( double d, std::string const& marker = "" )
     {
-        if ( M_fieldDynamicViscosity )
-            M_fieldDynamicViscosity->on(_range=elements(M_fieldDynamicViscosity->mesh()),_expr=__expr );
+        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
+        M_cstDynamicViscosity[markerUsed]=d;
+        this->updateDynamicViscosity( cst(d), marker );
     }
 
+    template < typename ExprT >
+    void updateDynamicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
+    {
+        if ( !M_fieldDynamicViscosity ) return;
+        if ( marker.empty() )
+            M_fieldDynamicViscosity->on(_range=elements(M_fieldDynamicViscosity->mesh()),_expr=__expr );
+        else
+            M_fieldDynamicViscosity->on(_range=markedelements(M_fieldDynamicViscosity->mesh(),marker),_expr=__expr );
+    }
 
 
     double powerLaw_n() const { return M_powerLaw_n; }
@@ -164,12 +184,12 @@ public :
     void updateFromModelMaterials( ModelMaterials const& mat )
     {
         if ( mat.empty() ) return;
-        CHECK( mat.size() == 1 ) << "TODO multi-mat";
         for( auto const& m : mat )
         {
             auto const& mat = m.second;
             auto const& matmarker = m.first;
-            this->setCstDynamicViscosity( mat.mu() );
+            M_markers.insert( matmarker );
+            this->setCstDynamicViscosity( mat.mu(), matmarker );
         }
     }
 
@@ -221,8 +241,10 @@ public :
 private :
     std::string M_viscosityModelName;
     space_ptrtype M_space;
+    std::set<std::string> M_markers;
+
     element_ptrtype M_fieldDynamicViscosity;
-    double M_cstDynamicViscosity;
+    std::map<std::string,double> M_cstDynamicViscosity;
 
     double M_powerLaw_n, M_powerLaw_k, M_powerLaw_n_generic, M_powerLaw_k_generic;
     double M_mu_0, M_mu_inf;

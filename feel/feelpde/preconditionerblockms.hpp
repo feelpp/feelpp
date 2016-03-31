@@ -104,9 +104,11 @@ public:
     PreconditionerBlockMS( space_ptrtype Xh,
                            ModelProperties model,
                            std::string const& s,
-                           sparse_matrix_ptrtype A);
+                           sparse_matrix_ptrtype A,
+                           value_type relax=1);
 
     void init( void );
+    void initAMS( void );
 
     void apply( const vector_type & X, vector_type & Y ) const
     {
@@ -191,6 +193,7 @@ private:
     sparse_matrix_ptrtype M_mass;
     sparse_matrix_ptrtype M_L;
 
+    /// Warning: at this point the permittivity is set to one for the domain
     value_type M_er; // permittivity
 
     ModelProperties M_model;
@@ -219,13 +222,15 @@ private:
 
     sparse_matrix_ptrtype M_a_alpha;
     sparse_matrix_ptrtype M_a_beta;
+
+    value_type M_relax;
 };
 
     template < typename space_type >
 PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
                                                          ModelProperties model,        // model
                                                          std::string const& p,         // prefix
-                                                         sparse_matrix_ptrtype AA )    // The matrix
+                                                         sparse_matrix_ptrtype AA, value_type relax )    // The matrix
     :
         M_backend(backend()),           // the backend associated to the PC
         M_Xh( Xh ),
@@ -258,7 +263,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_X(M_backend->newVector( M_Qh )),
         M_Y(M_backend->newVector( M_Qh )),
         M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi")
+        phi(M_Qh, "phi"),
+        M_relax(relax)
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
@@ -288,10 +294,16 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+#if 0
+    //If you want to manage the relative permittivity materials per material,
+    //here is the entry to deal with.
     for(auto it : M_model.materials() )
     { 
         f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=M_er*inner(gradt(phi), grad(phi)));
     }
+#else
+    f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
+#endif
     auto f1LQ = form1(_test=M_Qh);
 
     for(auto const & it : m_dirichlet_p)
@@ -300,9 +312,72 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         f2L += on(_range=markedfaces(M_Qh->mesh(),it.first),_element=phi, _expr=it.second, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
+    toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
+}
 
+template < typename space_type >
+void
+PreconditionerBlockMS<space_type>::init( void )
+{
+    if( Environment::worldComm().isMasterRank() )
+        std::cout << "Init preconditioner blockms\n";
+    LOG(INFO) << "Init ...\n";
+    tic();
+    BoundaryConditions M_bc = M_model.boundaryConditions();
+
+    LOG(INFO) << "Create sub Matrix\n";
+    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
+    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
+
+    /*
+     * AA = [[ A - k^2 M, B^t],
+     *      [ B        , 0  ]]
+     * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
+     */
+    // Is the zero() necessary ?
+    M_11->zero();
+    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
+    LOG(INFO) << "Use relax = " << M_relax << std::endl;
+    M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
+    auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
+    auto f1A = form1(_test=M_Vh);
+    for(auto const & it : m_dirichlet_u )
+        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
+
+    /* 
+     * Rebuilding sub-backend
+     */
+    backend(_name=M_prefix_11, _rebuild=true);
+    backend(_name=M_prefix_22, _rebuild=true);
+    // We have to set the G, Px,Py,Pz or X,Y,Z matrices to AMS
     if(soption(_name="pc-type", _prefix=M_prefix_11) == "ams")
+    {
 #if FEELPP_DIM == 3
+    initAMS();
+    {
+        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
+        {
+            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
+                                       _backend=backend(_name=M_prefix_11),
+                                       _prefix=M_prefix_11,
+                                       _matrix=M_11
+                                      );
+            prec->setMatrix(M_11);
+            prec->attachAuxiliarySparseMatrix("a_alpha",M_a_alpha);
+            prec->attachAuxiliarySparseMatrix("a_beta",M_a_beta);
+        }
+    }
+#else
+    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
+#endif
+    }
+    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
+    LOG(INFO) << "Init done\n";
+}
+
+template < typename space_type >
+void
+PreconditionerBlockMS<space_type>::initAMS( void )
     {
         M_grad  = Grad( _domainSpace=M_Qh, _imageSpace=M_Vh);
 
@@ -343,66 +418,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
             prec->attachAuxiliaryVector("Z",M_Z);
         }
     }
-#else
-    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
-#endif
-    toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
-}
 
-template < typename space_type >
-void
-PreconditionerBlockMS<space_type>::init( void )
-{
-    if( Environment::worldComm().isMasterRank() )
-        std::cout << "Init preconditioner blockms\n";
-    LOG(INFO) << "Init ...\n";
-    tic();
-    BoundaryConditions M_bc = M_model.boundaryConditions();
-
-    LOG(INFO) << "Create sub Matrix\n";
-    map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
-    map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
-
-    /*
-     * AA = [[ A - k^2 M, B^t],
-     *      [ B        , 0  ]]
-     * We need to extract A-k^2 M and add it M to form A+(1-k^2) M = A+g M
-     */
-    // Is the zero() necessary ?
-    M_11->zero();
-    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
-    M_11->addMatrix(1,M_mass);                            // A-k^2 M + M = A+(1-k^2) M
-    auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
-    auto f1A = form1(_test=M_Vh);
-    for(auto const & it : m_dirichlet_u )
-        f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
-
-    if(soption(_name="pc-type",_prefix=M_prefix_11) == "ams")
-#if FEELPP_DIM == 3
-    {
-        if(boption(_name="setAlphaBeta",_prefix=M_prefix_11))
-        {
-            auto prec = preconditioner(_pc=pcTypeConvertStrToEnum(soption(M_prefix_11+".pc-type")),
-                                       _backend=backend(_name=M_prefix_11),
-                                       _prefix=M_prefix_11,
-                                       _matrix=M_11
-                                      );
-            prec->setMatrix(M_11);
-            prec->attachAuxiliarySparseMatrix("a_alpha",M_a_alpha);
-            prec->attachAuxiliarySparseMatrix("a_beta",M_a_beta);
-        }
-    }
-#else
-    std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
-#endif
-    /* 
-     * Rebuilding sub-backend
-     */
-    backend(_name=M_prefix_11, _rebuild=true);
-    backend(_name=M_prefix_22, _rebuild=true);
-    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
-    LOG(INFO) << "Init done\n";
-}
 
 template < typename space_type >
 int

@@ -8,6 +8,7 @@
 
   Copyright (C) 2014-2016 Feel++ Consortium
 
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -56,7 +57,9 @@ makeAbout()
                      "0.1",
                      "solve problem of grepl's benchmark (for rb use)",
                      AboutData::License_GPL,
+
                      "Copyright (c) 2014 Feel++ Consortium" );
+
     about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -85,12 +88,13 @@ public:
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<1,Scalar> > basis_type; //Lagrange scalar space
+
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    
+
     //! sparse matrix type associated with backend
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -105,7 +109,7 @@ public:
         super(),
         Xh()
     {
-        this->changeRepository( boost::format( "/grepl_fem/%1%-%2%" )
+        this->changeRepository( boost::format( "grepl_fem/%1%-%2%" )
                                 % doption(_name="mu1")
                                 % doption(_name="mu2")
                                 );
@@ -122,6 +126,7 @@ public:
     void updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J);
     void updateResidual(vector_ptrtype const& X,vector_ptrtype & R);
     element_type solveNewton();
+
     element_type solvePicard(element_type const&);
 
     private:
@@ -130,11 +135,13 @@ public:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
+
 }; //GreplFem
 
 void
 GreplFem::run()
 {
+
     auto e = exporter( _mesh=mesh );
     e->step( 0 )->setMesh( mesh );
     if ( Environment::isMasterRank() )
@@ -164,6 +171,7 @@ GreplFem::updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J)
     auto v = Xh->element(); //test
     if (!J) J = backend()->newMatrix( Xh, Xh );
     double gamma = doption(_name="gamma");
+
     double mu1=doption(_name="mu1");
     double mu2=doption(_name="mu2");
 
@@ -185,7 +193,9 @@ GreplFem::updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J)
 void
 GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
 {
+
     double gamma = doption(_name="gamma");
+
     double mu1=doption(_name="mu1");
     double mu2=doption(_name="mu2");
 
@@ -194,7 +204,7 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
     auto v = Xh->element(); //test
 
     auto g = exp( mu2*idv(u) );
-    auto proj_g = g;//vf::project(_space=Xh, _expr=g);
+    auto proj_g = g;
 
     R->zero();
     form1( _test=Xh, _vector=R ) =
@@ -219,7 +229,6 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
                    _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v), _quad=_Q<8>() );
 
     //R->close();
-
 }
 
 GreplFem::element_type
@@ -234,17 +243,18 @@ GreplFem::solveNewton()
     backend()->nlSolve(_solution=solution);
 
     return solution;
-
 }
 
 GreplFem::element_type
 GreplFem::solvePicard( element_type const& solNewton )
 {
     double gamma = doption(_name="gamma");
+
     double mu1=doption(_name="mu1");
     double mu2=doption(_name="mu2");
     double tol = doption(_name="tol");
     bool weakdir = boption(_name="weakdir");
+
     int nb_iter_max = 10;
 
     auto solution = Xh->element();
@@ -262,6 +272,7 @@ GreplFem::solvePicard( element_type const& solNewton )
 
         a.zero();
         a = integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+
         if( weakdir )
         {
             a += integrate( _range = boundaryfaces( mesh ),
@@ -282,6 +293,7 @@ GreplFem::solvePicard( element_type const& solNewton )
         error = normL2( _range=elements(mesh), _expr=idv(solution_old) - idv(solution));
         if ( Environment::isMasterRank() )
             std::cout << "  - picard::  iter = " << iter << ", error = " << error << std::endl;
+
         iter++;
 
     }while(error > tol && iter < nb_iter_max);
@@ -294,8 +306,7 @@ int main( int argc, char** argv )
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=makeAbout() );
-    
-    GreplFem app;
 
+    GreplFem app;
     app.run();
 }

@@ -1,10 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 2010-04-14
- 
+
  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
  Copyright (C) 2010-2016 Feel++ Consortium
 
@@ -12,12 +12,12 @@
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -257,7 +257,7 @@ fs::path scratchdir()
 
 Environment::Environment()
     :
-#if BOOST_VERSION >= 105500    
+#if BOOST_VERSION >= 105500
     Environment( 0, nullptr, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault("feelpp"), makeAboutDefault("feelpp").appName() )
 #else
     Environment( 0, nullptr, feel_nooptions(), feel_options(), makeAboutDefault("feelpp"), makeAboutDefault("feelpp").appName() )
@@ -270,12 +270,12 @@ Environment::Environment()
 
 Environment::Environment( int& argc, char**& argv )
     :
-#if BOOST_VERSION >= 105500    
+#if BOOST_VERSION >= 105500
     Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(argv[0]), makeAboutDefault(argv[0]).appName() )
 #else
     Environment( argc, argv, feel_nooptions(), feel_options(), makeAboutDefault(argv[0]), makeAboutDefault(argv[0]).appName() )
 #endif
-                 
+
 {
 }
 
@@ -295,7 +295,7 @@ struct PythonArgs
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
-                
+
                 while ( begin != end )
                 {
                     //std::cout << *begin << std::endl ;
@@ -303,7 +303,7 @@ struct PythonArgs
                     begin++;
                     i++;
                 }
-                
+
                 argv[argc]=nullptr;
             }
         }
@@ -365,7 +365,8 @@ Environment::Environment( int argc, char** argv,
                           po::options_description const& desc,
                           po::options_description const& desc_lib,
                           AboutData const& about,
-                          std::string directory )
+                          std::string directory,
+                          bool add_subdir_np )
 {
     if ( argc == 0 )
     {
@@ -401,21 +402,21 @@ Environment::Environment( int argc, char** argv,
                             {
                                 return o->format_name().erase( 0,2 ) == "backend";
                             } );
-    
+
     if   ( it == opts.end() )
         S_desc->add( *S_desc_lib );
 
     S_desc->add( file_options( about.appName() ) );
     S_desc->add( generic_options() );
-    S_about = about;        
+    S_about = about;
 
     // duplicate argv before passing to gflags because gflags is going to
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
 
-        
-    
+
+
     S_scratchdir = scratchdir();
     fs::path a0 = std::string( argv[0] );
     const int Nproc = 200;
@@ -502,7 +503,8 @@ Environment::Environment( int argc, char** argv,
 
         LOG( INFO ) << "change directory to " << directory << "\n";
         boost::format f( directory );
-        changeRepository( _directory=f );
+        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        changeRepository( _directory=f,_subdir=createSubdir );
     }
 
     freeargv( envargv );
@@ -513,6 +515,9 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    cout.attachWorldComm( S_worldcomm );
+    cerr.attachWorldComm( S_worldcomm );
+    clog.attachWorldComm( S_worldcomm );
 }
 void
 Environment::clearSomeMemory()
@@ -532,7 +537,7 @@ Environment::~Environment()
 {
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
-    
+
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free tolology data */
     Environment::destroyHwlocTopology();
@@ -1500,7 +1505,7 @@ Environment::geoPathList()
                    {
                        plist.push_back( p.string() );
                    } );
-    
+
     if ( fs::exists( Environment::localGeoRepository() ) )
         plist.push_back( Environment::localGeoRepository() );
 
@@ -1738,7 +1743,7 @@ int Environment::countCoresInSubtree( hwloc_obj_t node, bool logical )
     /* if we are a core node, we increment the counter */
     /* count the number of real cores or logical cores */
     /* according to the logical parameter */
-    if ( (logical && node->type == HWLOC_OBJ_PU) 
+    if ( (logical && node->type == HWLOC_OBJ_PU)
     || (!logical && node->type == HWLOC_OBJ_CORE) )
     {
         res++;
@@ -2005,20 +2010,20 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-    
+
 
     typedef std::vector< std::string > split_vector_type;
 
 #if defined FEELPP_ENABLED_PROJECTS
     split_vector_type SplitVec; // #2: Search for tokens
-    boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on ); 
+    boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on );
     for( auto const& s : SplitVec )
     {
         std::ostringstream o1,o2,o3;
         o1 << "$" << s << "_srcdir";
         o2 << "$" << s << "_builddir";
         o3 << "$" << s << "_databasesdir";
-        
+
         boost::replace_all( res, o1.str(), topSrcDir + "/research/" + s );
         VLOG(2) << o1.str() << " : " << topSrcDir + "/research/" + s;
         boost::replace_all( res, o2.str(),  topBuildDir + "/research/" + s );
@@ -2085,5 +2090,3 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 TimerTable Environment::S_timers;
 
 }
-
-

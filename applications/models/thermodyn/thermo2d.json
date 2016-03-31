@@ -10,10 +10,17 @@
     //         "value":"-1"
     //     }
     // },
-    // "Materials":
-    // {
-    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-    // },
+    "Materials":
+    {
+        //"Omega":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+        "Omega":
+        {
+            "name":"mymat",
+            "k11":"10",//[ W/(m*K) ]
+            "Cp":"1000.005", //[ J/(kg*K) ]
+            "rho":"1.205" //[ kg/(m^3) ]
+        }
+    },
     "BoundaryConditions":
     {
         "temperature":
@@ -23,10 +30,7 @@
                 "MarkerDirichlet":
                 {
                     "expr":"293-10*(y-1)*(y+1):y"
-                }
-            },
-            "Dirichlet":
-            {
+                },
                 "wall":
                 {
                     "expr":"293+0.38*t:t"
@@ -37,6 +41,14 @@
                 "MarkerNeumann":
                 {
                     "expr":"0:x" 
+                }
+            },
+            "Robin":
+            {
+                "MarkerRobin":
+                {
+                    "expr1":"16.667",// h coeff
+                    "expr2":"287"// temperature exterior
                 }
             }
         }
