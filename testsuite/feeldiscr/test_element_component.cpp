@@ -3,6 +3,7 @@
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pchm.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -47,6 +48,7 @@ template<typename SpaceT>
 void
 test_tensor2()
 {
+    using Feel::cout;
     typedef Mesh<Simplex<2,1,2> > mesh_type;
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 4,1 );
@@ -111,12 +113,56 @@ test_tensor2()
     sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate();
     BOOST_CHECK_CLOSE( sdiv(0,0),2*area, 1e-12 );
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
+
+
 #if 0
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px()*Py(),Py()+Px(),Py(),2.3*Py()+Px() ) );
     sdiv = integrate( _range=elements( mesh ), _expr=divv(uTensor2) ).evaluate();
     BOOST_CHECK_CLOSE( sdiv(0,0),2*area, 1e-12 );
     BOOST_CHECK_CLOSE( sdiv(1,0),2.3*area, 1e-12 );
 #endif
+
+    /*
+     * Test bilinear forms for HDG linear elasticity
+     */
+
+    auto Wh = Pdhv<2>( mesh );
+    auto w = Wh->element();
+
+    w.on(_range=elements(mesh), _expr=ones<2,1>());
+    uTensor2.on(_range=elements(mesh),_expr= ones<2,2>() );
+
+    // a11
+
+    auto a11a = form2( _trial=VhTensor2, _test=VhTensor2 );
+    a11a += integrate( _range=elements( mesh ), _expr=inner(idt(uTensor2),id(uTensor2)));
+    a11a.close();
+    auto a11a_v = a11a(uTensor2, uTensor2);
+    BOOST_CHECK_CLOSE( a11a_v, 4*area, 1e-11 );
+    cout << "a11a(ones, ones) = " << a11a_v << std::endl;
+
+    auto a11b = form2( _trial=VhTensor2, _test=VhTensor2 );
+    a11b += integrate( _range=elements( mesh ), _expr=trace(idt(uTensor2))*trace(id(uTensor2)));
+    a11b.close();
+    auto a11b_v = a11b(uTensor2, uTensor2);
+    BOOST_CHECK_CLOSE( a11b_v, 4*area, 1e-11 );
+    cout << "a11b(ones, ones) = " << a11b_v << std::endl;
+
+    cout << "a11 works" << std::endl;
+
+    // a12
+
+    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),Py(),Px(),Py() ) );
+
+    auto a12 = form2( _trial=Wh, _test=VhTensor2 );
+    a12 += integrate( _range=elements(mesh), _expr=trans(idt(w))*div(uTensor2));
+    a12.close();
+    auto a12v = a12(w,uTensor2);
+    BOOST_CHECK_CLOSE( a12v, 4*area, 1e-11 );
+    cout << "a12(ones, ones) = " << a12v << std::endl;
+
+    cout << "a12 works" << std::endl;
+
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
 {
