@@ -5,10 +5,10 @@ Mesh.CharacteristicLengthFromPoints=1;
 Mesh.SecondOrderIncomplete = 0;
 Mesh.Algorithm = 6;
 Mesh.Algorithm3D = 1; // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
-Mesh.OptimizeNetgen=1;
-
 Mesh.RecombinationAlgorithm=0;
 */
+Mesh.OptimizeNetgen=1;
+
 //lc=0.2;//M0
 //lc=0.15;//M1
 //lc=0.1;//M2

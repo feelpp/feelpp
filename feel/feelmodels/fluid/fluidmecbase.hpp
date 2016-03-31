@@ -52,6 +52,8 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
+#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
+
 
 
 
@@ -325,6 +327,13 @@ public:
     typedef typename space_fluid_pressure_type::Context context_pressure_type;
     typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
 
+
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    // thermo dynamics coupling
+    typedef FeelModels::ThermoDynamics< convex_type,
+                                        Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > thermodyn_model_type;
+    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -910,6 +919,9 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    vector_field_expression<nDim,1,2> M_gravityForce;
+    bool M_useGravityForce;
+    //----------------------------------------------------
     // post-process field exported
     std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
@@ -955,6 +967,11 @@ protected:
     updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
+
+    //----------------------------------------------------
+    bool M_useThermodynModel;
+    thermodyn_model_ptrtype M_thermodynModel;
+    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 

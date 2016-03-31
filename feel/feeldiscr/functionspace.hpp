@@ -1639,10 +1639,19 @@ public:
 
     // basis context
     //typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
+#if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
                               mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
                               //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
+#else
+    static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
+        vm::POINT|vm::GRAD|vm::JACOBIAN|vm::KB :
+        vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB;
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<mpl::void_>,
+                              mpl::identity<typename basis_0_type::template Context<basis_context_value, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+#endif
     typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
@@ -1781,11 +1790,7 @@ public:
                 DVLOG(2) << "build precompute data structure for geometric mapping\n";
 
                 // build geometric mapping
-                //auto gmc2 = M_Xh->mesh()->gm()->template context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ),
-                //
-                //                                                                                            gmpc );
-                auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ), gmpc );
-                //auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ), gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<basis_context_type::gmc_type::context>( M_Xh->mesh()->element( eid ), gmpc );
                 DVLOG(2) << "build geometric mapping context\n";
                 // compute finite element context
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
@@ -2046,13 +2051,15 @@ public:
                  std::string const& __name,
                  std::string const& __desc,
                  size_type __start = 0,
-                 ComponentType __ct = ComponentType::NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT,
+                 ComponentType __ct2 = ComponentType::NO_COMPONENT );
 
         Element( functionspace_ptrtype const& __functionspace,
                  container_type const& __c,
                  std::string const& __name = "unknown",
                  size_type __start = 0,
-                 ComponentType __ct = ComponentType::NO_COMPONENT );
+                 ComponentType __ct = ComponentType::NO_COMPONENT,
+                 ComponentType __ct2 = ComponentType::NO_COMPONENT );
 
         ~Element();
 
@@ -2112,7 +2119,7 @@ public:
         comp( mpl::bool_<true> )
         {
             CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
-            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nLocalDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
@@ -2125,7 +2132,7 @@ public:
         comp( mpl::bool_<false> )
         {
             CHECK( THECOMP >= ComponentType::X && (int)THECOMP < N_COMPONENTS ) << "Invalid component " << (int)THECOMP;
-            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( (int)THECOMP, N_COMPONENTS, M_functionspace->nLocalDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof()  ),
@@ -2142,37 +2149,53 @@ public:
          * @return the i-th component of the element
          */
         component_type
-        comp( ComponentType i ) const
+        comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
             //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
         }
         component_type
-        comp( ComponentType i, mpl::bool_<true> ) const
+        comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
+                              startContainerIndex,//start()+(size_type)i,
                               i );
             return c;
         }
         component_type
-        comp( ComponentType i, mpl::bool_<false> ) const
+        comp( ComponentType i, ComponentType j, mpl::bool_<false> ) const
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
-                              start()+(size_type)i,
+                              startContainerIndex,//start()+(size_type)i,
                               i );
             return c;
         }
@@ -2184,51 +2207,68 @@ public:
          * @return the i-th component of the element
          */
         component_type
-        comp( ComponentType i )
+        comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
             //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
         }
         component_type
-        comp( ComponentType i, mpl::bool_<true> )
+        comp( ComponentType i, ComponentType j, mpl::bool_<true> )
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int)i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
-                              i );
+                              startContainerIndex,//start()+(size_type)i,
+                              i,j );
             return c;
         }
         component_type
-        comp( ComponentType i, mpl::bool_<false> )
+        comp( ComponentType i, ComponentType j, mpl::bool_<false> )
         {
-            CHECK( i >= ComponentType::X && (int)i < N_COMPONENTS ) << "Invalid component " << (int) i;
-            auto s = ublas::slice( (int)i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int) i;
+            int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
+            if ( j != ComponentType::NO_COMPONENT )
+            {
+                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+                startSlice = ((int)i)*nComponents2+((int)j);
+                __name += "_" + componentToString( j );
+            }
+            auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+
+            size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
                               typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
                               __name,
-                              start()+(size_type)i,
-                              i );
+                              startContainerIndex,//start()+(size_type)i,
+                              i,j );
             return c;
         }
         component_type
         operator[]( ComponentType i )
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         component_type
         operator[]( ComponentType i ) const
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
         operator[]( size_type i )
@@ -2622,7 +2662,7 @@ public:
             {
                 for( int i = 0 ; it != en; ++it, ++i )
                 {
-                    v[0].setZero(1);
+                    v[0].setZero();
                     auto basis = it->second;
                     id( *basis, v );
                     int global_index = it->first;
@@ -3429,10 +3469,13 @@ public:
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
 
-            if ( !fs::exists( fs::path( path ) ) )
+            // if directory does not exist, create it only by one process
+            if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
                 fs::create_directories( fs::path( path ) );
             }
+            // wait creating directory
+            this->worldComm().barrier();
 
             std::ostringstream os1;
             os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
@@ -3743,7 +3786,7 @@ public:
         size_type M_start;
 
         //! type of the component
-        ComponentType M_ct;
+        ComponentType M_ct, M_ct2;
 
         // only init in // with composite case : ex p = U.element<1>()
         mutable boost::optional<container_vector_type> M_containersOffProcess;
@@ -3864,6 +3907,36 @@ public:
             return X;
         }
 
+#if 1
+    /**
+     * copy shared_ptr pointers of a FunctionSpace
+     * but not totally a view : must be use we caution
+     */
+    template<typename SimilarSpaceType>
+    void shallowCopy( boost::shared_ptr<SimilarSpaceType> const& simSpace )
+        {
+            BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename SimilarSpaceType::mesh_type, mesh_type>::value ),
+                                  INVALID_MESH_TYPE_COMPATIBILITY, (typename SimilarSpaceType::mesh_type, mesh_type ) );
+            BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename SimilarSpaceType::basis_type, basis_type>::value ),
+                                  INVALID_BASIS_TYPE_COMPATIBILITY, (typename SimilarSpaceType::basis_type, basis_type ) );
+
+            M_worldsComm = simSpace->worldsComm();
+            M_worldComm = simSpace->worldCommPtr();
+            M_mesh = simSpace->mesh();
+            M_periodicity = simSpace->periodicity();
+            M_ref_fe=simSpace->fe();
+            if ( simSpace->hasCompSpace() )
+                M_comp_space = simSpace->compSpace();
+            M_dof = simSpace->dof();
+            M_dofOnOff = simSpace->dofOnOff();
+            M_extendedDofTableComposite = simSpace->extendedDofTableComposite();
+            M_extendedDofTable = simSpace->extendedDofTable();
+            M_functionspaces = simSpace->functionSpaces();
+            if ( simSpace->hasRegionTree() )
+                M_rt = simSpace->regionTree();
+        }
+#endif
+
 
     /**
      * initialize the function space
@@ -3932,6 +4005,10 @@ public:
     {
         return *M_worldComm;
     }
+    boost::shared_ptr<WorldComm> const& worldCommPtr() const
+    {
+        return M_worldComm;
+    }
 
     bool hasEntriesForAllSpaces()
     {
@@ -3992,6 +4069,7 @@ public:
         return __c_interp->xReal();
     }
 
+    periodicity_type const& periodicity() const { return M_periodicity; }
 
     /**
      * return 1 if scalar space or the number of components if vectorial space
@@ -4040,6 +4118,7 @@ public:
     /**
      * \return the distribution of the dofs among the processors
      */
+    FEELPP_DEPRECATED
     proc_dist_map_type getProcDistMap() const
     {
         return procDistMap;
@@ -4095,6 +4174,14 @@ public:
     size_type nDofPerComponent() const
     {
         return this->nDof()/qDim();
+    }
+
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalDofPerComponent() const
+    {
+        return this->nLocalDof()/qDim();
     }
 
 
@@ -4289,7 +4376,7 @@ public:
     /**
      * \return true if need to build extended DofTable
      */
-    std::vector<bool> extendedDofTableComposite() const { return M_extendedDofTableComposite; }
+    std::vector<bool> const& extendedDofTableComposite() const { return M_extendedDofTableComposite; }
     bool extendedDofTable() const { return M_extendedDofTable; }
 
 
@@ -4435,6 +4522,15 @@ public:
     functionSpace()
     {
         return fusion::at_c<i>( M_functionspaces );
+    }
+
+
+    /**
+     * \return true if component Space was built
+    */
+    bool hasCompSpace() const
+    {
+        return ( M_comp_space )? true : false;
     }
 
     /**
@@ -4728,9 +4824,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
         mesh_components |= MESH_UPDATE_FACES;
 
-    M_mesh->components().set( mesh_components );
-
-    M_mesh->updateForUse();
+    if ( !M_mesh->isUpdatedForUse() )
+    {
+        M_mesh->components().set( mesh_components );
+        M_mesh->updateForUse();
+    }
 
     if ( is_periodic )
     {
@@ -5010,7 +5108,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
         M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
                                                                                           MESH_COMPONENTS_DEFAULTS,
                                                                                           M_periodicity,
-                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ),
+                                                                                          std::vector<bool>( 1,this->extendedDofTable() ) ) );
+
         VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
         VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
         VLOG(2) << " - component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";

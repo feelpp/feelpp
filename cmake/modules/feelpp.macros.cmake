@@ -103,7 +103,7 @@ macro(feelpp_add_application)
       add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
     ENDIF()
     IF(NOT FEELPP_APP_NO_SEQ_TEST)
-      add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
+      add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
     endif()
   endif()
 
@@ -268,7 +268,7 @@ macro(feelpp_add_test)
         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI} )
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
       ENDIF()
-      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
+      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CLI})
       set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
     endif()
 
@@ -403,6 +403,16 @@ macro(feelpp_max max var1 var2 )
     set(${max} ${var2})
   endif()
 endmacro(feelpp_max)
+
+#
+# compute the min of two variables
+macro(feelpp_min min var1 var2 )
+  if ( ${var1} GREATER ${var2})
+    set(${min} ${var2})
+  else()
+    set(${min} ${var1})
+  endif()
+endmacro(feelpp_min)
 
 # This macros cleans up a variable containing a list of paths
 # It:

@@ -26,12 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#ifndef __Preconditioner_H
-#define __Preconditioner_H 1
+#ifndef FEELPP_PRECONDITIONER_HPP
+#define FEELPP_PRECONDITIONER_HPP 1
 
 #include <boost/parameter.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
 
@@ -40,6 +41,7 @@
 
 namespace Feel
 {
+class BackendBase;
 template<typename T> class Backend;
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
@@ -427,20 +429,27 @@ typedef Feel::Singleton<PreconditionerManagerDeleterImpl> PreconditionerManagerD
 } // detail
 
 
-BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
-                                 preconditioner,
-                                 tag,
-                                 ( required
-                                   ( pc,( PreconditionerType ) )
-                                   ( backend, (backend_ptrtype) ) )
-                                 ( optional
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
+template<typename Args>
+struct compute_prec_return
+{
+    typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
+    typedef boost::shared_ptr<Preconditioner<value_type>> type;
+};
 
-                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                                   ( rebuild,      (bool), false )
-                                     )
-    )
+BOOST_PARAMETER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+                          preconditioner,
+                          tag,
+                          ( required
+                            ( pc,( PreconditionerType ) )
+                            ( backend, *(boost::is_convertible<mpl::_, boost::shared_ptr<BackendBase>>) ) )
+                          ( optional
+                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                            ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
+                            
+                            ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
+                            ( rebuild,      (bool), false )
+                            )
+                          )
 {
     // register the PreconditionerManager into Feel::Environment so that it gets the
     // PreconditionerManager is cleared up when the Environment is deleted
@@ -459,13 +468,15 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
+        if ( matrix && !git->second->matrix() )
+            git->second->setMatrix( matrix );
         return git->second;
     }
 
     else
     {
-
-        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), backend->comm() );
+        using value_type = typename compute_prec_return<Args>::value_type;
+        preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->comm() );
         p->setType( pc );
         p->setMatSolverPackageType( pcfactormatsolverpackage );
 

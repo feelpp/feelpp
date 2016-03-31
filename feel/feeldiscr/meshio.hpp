@@ -32,11 +32,11 @@ namespace Feel {
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::ioHDF5( IOStatus status, std::string const& filename )
+Mesh<Shape, T, Tag>::ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate )
 {
     PartitionIO<mesh_type> io( filename );
     if ( status == IOStatus::isLoading )
-        io.read( this->shared_from_this() );
+        io.read( this->shared_from_this(), ctxMeshUpdate );
     else if ( status == IOStatus::isSaving )
         io.write( this->shared_from_this() );
 }

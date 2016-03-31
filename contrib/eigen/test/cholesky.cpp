@@ -11,20 +11,11 @@
 #define EIGEN_NO_ASSERTION_CHECKING
 #endif
 
-static int nb_temporaries;
-
-#define EIGEN_DENSE_STORAGE_CTOR_PLUGIN { if(size!=0) nb_temporaries++; }
+#define TEST_ENABLE_TEMPORARY_TRACKING
 
 #include "main.h"
 #include <Eigen/Cholesky>
 #include <Eigen/QR>
-
-#define VERIFY_EVALUATION_COUNT(XPR,N) {\
-    nb_temporaries = 0; \
-    XPR; \
-    if(nb_temporaries!=N) std::cerr << "nb_temporaries == " << nb_temporaries << "\n"; \
-    VERIFY( (#XPR) && nb_temporaries==N ); \
-  }
 
 template<typename MatrixType,template <typename,int> class CholType> void test_chol_update(const MatrixType& symm)
 {
@@ -82,10 +73,6 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     MatrixType a1 = MatrixType::Random(rows,cols);
     symm += a1 * a1.adjoint();
   }
-
-  // to test if really Cholesky only uses the upper triangular part, uncomment the following
-  // FIXME: currently that fails !!
-  //symm.template part<StrictlyLower>().setZero();
 
   {
     SquareMatrixType symmUp = symm.template triangularView<Upper>();
@@ -180,12 +167,12 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     // restore
     if(sign == -1)
       symm = -symm;
-
+    
     // check matrices coming from linear constraints with Lagrange multipliers
     if(rows>=3)
     {
       SquareMatrixType A = symm;
-      int c = internal::random<int>(0,rows-2);
+      Index c = internal::random<Index>(0,rows-2);
       A.bottomRightCorner(c,c).setZero();
       // Make sure a solution exists:
       vecX.setRandom();
@@ -200,7 +187,7 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     // check non-full rank matrices
     if(rows>=3)
     {
-      int r = internal::random<int>(1,rows-1);
+      Index r = internal::random<Index>(1,rows-1);
       Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,r);
       SquareMatrixType A = a * a.adjoint();
       // Make sure a solution exists:
@@ -219,7 +206,7 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
       RealScalar s = (std::min)(16,std::numeric_limits<RealScalar>::max_exponent10/8);
       Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,rows);
       Matrix<RealScalar,Dynamic,1> d =  Matrix<RealScalar,Dynamic,1>::Random(rows);
-      for(int k=0; k<rows; ++k)
+      for(Index k=0; k<rows; ++k)
         d(k) = d(k)*std::pow(RealScalar(10),internal::random<RealScalar>(-s,s));
       SquareMatrixType A = a * d.asDiagonal() * a.adjoint();
       // Make sure a solution exists:
@@ -229,7 +216,20 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
       ldltlo.compute(A);
       VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
       vecX = ldltlo.solve(vecB);
-      VERIFY_IS_APPROX(A * vecX, vecB);
+
+      if(ldltlo.vectorD().real().cwiseAbs().minCoeff()>RealScalar(0))
+      {
+        VERIFY_IS_APPROX(A * vecX,vecB);
+      }
+      else
+      {
+        RealScalar large_tol =  std::sqrt(test_precision<RealScalar>());
+        VERIFY((A * vecX).isApprox(vecB, large_tol));
+        
+        ++g_test_level;
+        VERIFY_IS_APPROX(A * vecX,vecB);
+        --g_test_level;
+      }
     }
   }
 
@@ -384,10 +384,14 @@ void test_cholesky()
     CALL_SUBTEST_3( cholesky_definiteness(Matrix2d()) );
     CALL_SUBTEST_4( cholesky(Matrix3f()) );
     CALL_SUBTEST_5( cholesky(Matrix4d()) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
+    
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);    
     CALL_SUBTEST_2( cholesky(MatrixXd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_6( cholesky_cplx(MatrixXcd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
 
   CALL_SUBTEST_4( cholesky_verify_assert<Matrix3f>() );
@@ -399,6 +403,5 @@ void test_cholesky()
   CALL_SUBTEST_9( LLT<MatrixXf>(10) );
   CALL_SUBTEST_9( LDLT<MatrixXf>(10) );
   
-  TEST_SET_BUT_UNUSED_VARIABLE(s)
   TEST_SET_BUT_UNUSED_VARIABLE(nb_temporaries)
 }

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+mkdir -p deps
+cd deps
+
+# clang
+wget http://llvm.org/releases/3.7.1/llvm-3.7.1.src.tar.xz -O llvm-3.7.1.src.tar.xz
+wget http://llvm.org/releases/3.7.1/compiler-rt-3.7.1.src.tar.xz -O compiler-rt-3.7.1.src.tar.xz
+wget http://llvm.org/releases/3.7.1/cfe-3.7.1.src.tar.xz -O cfe-3.7.1.src.tar.xz
+
+# OpenMPI
+wget http://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-@OPENMPI_VERSION@.tar.gz -O openmpi-@OPENMPI_VERSION@.tar.gz
+
+# Gmsh
+wget http://gmsh.info/src/gmsh-@GMSH_VERSION@-source.tgz -O gmsh-@GMSH_VERSION@-source.tgz
+
+# Boost
+wget http://sourceforge.net/projects/boost/files/boost/@BOOST_VERSION@/boost_@BOOST_VERSION_US@.tar.gz/download -O boost_@BOOST_VERSION_US@.tar.gz
+
+# Petsc
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-@PETSC_VERSION@.tar.gz -O petsc-@PETSC_VERSION@.tar.gz
+
+wget http://gforge.inria.fr/frs/download.php/file/34099/scotch_6.0.3.tar.gz -O scotch_6.0.3.tar.gz
+wget http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.3.tar.gz -O SuiteSparse-4.4.3.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/scotch_6.0.3.tar.gz -O scotch_6.0.3.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/hypre-2.10.0b-p2.tar.gz -O hypre-2.10.0b-p2.tar.gz
+wget http://www.netlib.org/scalapack/scalapack-2.0.2.tgz -O scalapack-2.0.2.tgz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/Elemental-0.85-p1.tar.gz -O Elemental-0.85-p1.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/MUMPS_5.0.0-p1.tar.gz -O MUMPS_5.0.0-p1.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/fblaslapack-3.4.2.tar.gz -O fblaslapack-3.4.2.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/ml-6.2-p3.tar.gz -O ml-6.2-p3.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/metis-5.1.0-p1.tar.gz -O metis-5.1.0-p1.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/externalpackages/parmetis-4.0.3-p2.tar.gz -O parmetis-4.0.3-p2.tar.gz
+
+# SLEPc
+wget "http://slepc.upv.es/download/download.php?filename=slepc-@SLEPC_VERSION@.tar.gz" -O slepc-@SLEPC_VERSION@.tar.gz
+
+# ParaView
+wget "http://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v4.4&type=source&os=all&downloadFile=ParaView-v4.4.0-source.tar.gz" -O ParaView-v4.4.0-source.tar.gz

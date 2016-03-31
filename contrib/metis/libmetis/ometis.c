@@ -40,7 +40,7 @@
            the original and permuted matrices, then A[i] = A'[iperm[i]].
 */
 /*************************************************************************/
-int METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
+int Feel_METIS_NodeND(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
           idx_t *options, idx_t *perm, idx_t *iperm) 
 {
   int sigrval=0, renumber=0;
