@@ -127,7 +127,7 @@ test_tensor2(std::string name )
      * Test bilinear forms for HDG linear elasticity
      */
 
-    auto Wh = Pdhv<2>( mesh );
+    auto Wh = Pdhv<3>( mesh );
     auto w = Wh->element();
 
     w.on(_range=elements(mesh), _expr=ones<2,1>());
@@ -154,7 +154,7 @@ test_tensor2(std::string name )
     // a12
     auto e  = exporter(_mesh=mesh,_name=name);
     
-    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(0.),Py(),Px(),cst(0.) ) );
+    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),Py(),Px(),Py() ) );
     e->add( "u", uTensor2 );
     e->save(); 
     auto a12 = form2( _trial=Wh, _test=VhTensor2 );
@@ -165,9 +165,107 @@ test_tensor2(std::string name )
         BOOST_CHECK_CLOSE( a12v, 3*area, 1e-11 );
     else
         BOOST_CHECK_CLOSE( a12v, 4*area, 1e-11 );
+
     cout << "a12(ones, ones) = " << a12v << std::endl;
 
     cout << "a12 works" << std::endl;
+
+    // a13
+
+    // mesh for the Lagrange multiplier
+    typedef Simplex<1,1,2> face_convex_type;
+    typedef Mesh<face_convex_type> face_mesh_type;
+    using Mh_t = Pdhv_type<face_mesh_type, 2>;
+    using Mh_ptr_t = Pdhv_ptrtype<face_mesh_type, 2>;
+
+    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    Mh_ptr_t Mh = Pdhv<2>( face_mesh, true );
+    auto l = Mh->element();
+    l.on( _range=elements(face_mesh), _expr=ones<2,1>());
+
+    uTensor2.on(_range=elements(mesh),_expr= eye<2>() );
+
+    auto a13a = form2( _trial=Mh, _test=VhTensor2 );
+    a13a += integrate(_range=internalfaces(mesh),
+                      _expr=-( trans(idt(l))*leftface(id(uTensor2)*N())+
+                               trans(idt(l))*rightface(id(uTensor2)*N())) );
+    a13a.close();
+    auto a13a_v = a13a(uTensor2,l);
+    BOOST_CHECK_SMALL( a13a_v, 1e-11 );
+    cout << "a13a(eye, ones) = " << a13a_v << std::endl;
+
+    l.on( _range=elements(face_mesh), _expr=oneX());
+
+    auto a13b1 = form2( _trial=Mh, _test=VhTensor2 );
+    a13b1 += integrate(_range=boundaryfaces(mesh),
+                       _expr=-( trans(idt(l))*(id(uTensor2)*N())));
+    a13b1.close();
+    auto a13b1_v = a13b1(uTensor2,l);
+    BOOST_CHECK_SMALL( a13b1_v, 1e-11 );
+    cout << "a13b1(eye, oneX) = " << a13b1_v << std::endl;
+
+    l.on( _range=elements(face_mesh), _expr=oneY());
+
+    auto a13b2 = form2( _trial=Mh, _test=VhTensor2 );
+    a13b2 += integrate(_range=boundaryfaces(mesh),
+                       _expr=-( trans(idt(l))*(id(uTensor2)*N())));
+    a13b2.close();
+    auto a13b2_v = a13b2(uTensor2,l);
+    BOOST_CHECK_SMALL( a13b2_v, 1e-11 );
+    cout << "a13b2(eye, oneY) = " << a13b2_v << std::endl;
+
+    cout << "a13 works" << std::endl;
+
+    // a21
+
+    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),Py(),Px(),Py() ) );
+    w.on(_range=elements(mesh), _expr=ones<2,1>());
+
+    auto a21 = form2( _trial=VhTensor2, _test=Wh );
+    a21 += integrate( _range=elements(mesh), _expr=trans(id(w))*divt(uTensor2));
+    a21.close();
+    auto a21v = a21(w,uTensor2);
+    cout << "a21(ones,ones) = " << a12v << std::endl;
+
+    cout << "a21 works" << std::endl;
+
+    // a22
+
+    auto a22 = form2( _trial=Wh, _test=Wh );
+
+    a22 += integrate(_range=internalfaces(mesh),
+                     _expr=
+                     -( leftfacet( pow(h(),0)*trans(idt(w)))*leftface(id(w)) +
+                       rightfacet( pow(h(),0)*trans(idt(w)))*rightface(id(w) )));
+    a22 += integrate(_range=boundaryfaces(mesh),
+                     _expr=-(pow(h(),0)*trans(idt(w))*id(w)));
+
+    auto I = integrate( _range=internalfaces(mesh), _expr=cst(4.)).evaluate()(0,0)
+        +integrate(_range=boundaryfaces(mesh),
+                   _expr=cst(2.)).evaluate()(0,0);
+
+    auto a22v = a22(w,w);
+    BOOST_CHECK_CLOSE( a22v, -I, 1e-11 );
+    cout << "a22(ones, ones) = " << a22v << std::endl;
+
+    cout << "a22 works fine" << std::endl;
+
+    // a23
+
+    l.on( _range=elements(face_mesh), _expr=ones<2,1>());
+
+    auto a23 = form2( _trial=Mh, _test=Wh );
+    a23 += integrate(_range=internalfaces(mesh),
+                     _expr=trans(idt(l)) *
+                     ( leftface( pow(h(),0)*id(w) )+
+                       rightface( pow(h(),0)*id(w) )));
+    a23 += integrate(_range=boundaryfaces(mesh),
+                     _expr=trans(idt(l)) * pow(h(),0)*id(w) );
+
+    auto a23v = a23(w,l);
+    cout << "a23(ones, ones) = " << a23v << std::endl;
+
+    cout << "a23 works fine" << std::endl;
 
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
