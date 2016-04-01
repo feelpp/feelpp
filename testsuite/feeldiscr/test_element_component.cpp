@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE test_element_component
 #include <testsuite/testsuite.hpp>
 
+#include <feel/feel.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
@@ -56,7 +57,16 @@ test_tensor2(std::string name )
     GeoTool::Node x3( 0,1 );
     GeoTool::Rectangle R( doption(_name="gmsh.hsize"),"OMEGA",x1,x2 );
     //GeoTool::Triangle R( 3,"OMEGA",x1,x2,x3 );
-    auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
+    //    auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
+
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name = "domain",
+                                              _shape = "hypercube",
+                                              _usenames = true,
+                                              _dim = 2,
+                                              _h = doption(_name="gmsh.hsize"),
+                                              _xmin=0,_xmax=4,
+                                              _ymin=0,_ymax=1 ) );
 
     auto VhTensor2 = SpaceT::New( mesh );
     auto uTensor2 = VhTensor2->element();
@@ -153,10 +163,10 @@ test_tensor2(std::string name )
 
     // a12
     auto e  = exporter(_mesh=mesh,_name=name);
-    
+
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),Py(),Px(),Py() ) );
     e->add( "u", uTensor2 );
-    e->save(); 
+    e->save();
     auto a12 = form2( _trial=Wh, _test=VhTensor2 );
     a12 = integrate( _range=elements(mesh), _expr=trans(idt(w))*div(uTensor2));
     a12.close();
@@ -259,13 +269,92 @@ test_tensor2(std::string name )
                      _expr=trans(idt(l)) *
                      ( leftface( pow(h(),0)*id(w) )+
                        rightface( pow(h(),0)*id(w) )));
-    a23 += integrate(_range=boundaryfaces(mesh),
-                     _expr=trans(idt(l)) * pow(h(),0)*id(w) );
-
+    a23.close();
     auto a23v = a23(w,l);
     cout << "a23(ones, ones) = " << a23v << std::endl;
 
+    auto a23b = form2( _trial=Mh, _test=Wh );
+    a23b += integrate(_range=boundaryfaces(mesh),
+                      _expr=trans(idt(l)) * pow(h(),0)*id(w) );
+    a23b.close();
+    auto a23b_v = a23b(w,l);
+    cout << "a23b(ones, ones) = " << a23b_v << std::endl;
+
     cout << "a23 works fine" << std::endl;
+
+    // a31
+
+    l.on( _range=elements(face_mesh), _expr=ones<2,1>());
+
+    uTensor2.on(_range=elements(mesh),_expr= eye<2>() );
+
+    auto a31a = form2( _trial=VhTensor2, _test=Mh );
+    a31a += integrate(_range=internalfaces(mesh),
+                      _expr=-trans(id(l))*(leftfacet(idt(uTensor2)*N())+
+                                           rightfacet(idt(uTensor2)*N())) );
+    a31a.close();
+    auto a31a_v = a31a(l,uTensor2);
+    BOOST_CHECK_SMALL( a31a_v, 1e-11 );
+    cout << "a31a(ones, eye) = " << a31a_v << std::endl;
+
+    auto a31b = form2( _trial=VhTensor2, _test=Mh );
+    a31b += integrate(_range=markedfaces(mesh,"Neumann"),
+                      _expr=trans(id(l))*(idt(uTensor2)*N()));
+    a31b.close();
+    auto a31b_v = a31b(l,uTensor2);
+    BOOST_CHECK_SMALL( a31b_v, 1e-11 );
+    cout << "a31b(ones, eye) = " << a31b_v << std::endl;
+
+    cout << "a31 works fine" << std::endl;
+
+    // a32
+
+    auto a32a = form2( _trial=Wh, _test=Mh );
+
+    a32a += integrate(_range=internalfaces(mesh),
+                     _expr=-trans(id(l)) * (leftfacet( pow(h(),0)*idt(w) )+
+                                            rightfacet( pow(h(),0)*idt(w) )));
+    a32a.close();
+    auto a32a_v = a32a(l,w);
+    BOOST_CHECK_CLOSE( a32a_v, -a23v, 1e-11 );
+    cout << "a32a(ones, ones) = " << a32a_v << std::endl;
+
+    auto a32b = form2( _trial=Wh, _test=Mh );
+
+    a32b += integrate(_range=markedfaces(mesh,"Neumann"),
+                      _expr=-trans(id(l)) * ( pow(h(),0)*idt(w) ) );
+    a32b.close();
+    auto a32b_v = a32b(l, w);
+    cout << "a32b(ones, ones) = " << a32b_v << std::endl;
+
+    cout << "a32 works fine" << std::endl;
+
+    // a33
+
+    auto I1 = integrate( _range=internalfaces(mesh), _expr=cst(2.)).evaluate()(0,0);
+
+    auto a33a = form2(_trial=Mh, _test=Mh );
+    a33a += integrate(_range=internalfaces(mesh),
+                      _expr=trans(idt(l)) * id(l));//( leftface( pow(h(),0) )+
+    //                                                      rightface( pow(h(),0) )));
+    a33a.close();
+    auto a33a_v = a33a(l,l);
+    BOOST_CHECK_CLOSE( a33a_v, I1, 1e-11 );
+
+    auto a33b = form2(_trial=Mh, _test=Mh );
+    a33b += integrate(_range=markedfaces(mesh,"Neumann"),
+                      _expr=trans(idt(l)) * id(l) * ( pow(h(),0) ) );
+    a33b.close();
+    auto a33b_v = a33b(l,l);
+
+    auto a33c = form2(_trial=Mh, _test=Mh);
+    a33c += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                      _expr=trans(idt(l)) * id(l) );
+    a33c.close();
+    auto a33c_v = a33c(l,l);
+    BOOST_CHECK_CLOSE(a33b_v + a33c_v, 20., 1e-11);
+
+    cout << "a33 works fine" << std::endl;
 
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
@@ -283,9 +372,9 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous )
 }
 
 
-BOOST_AUTO_TEST_CASE( element_component_tensor2symm_discontinuous )
-{
-    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,1>>("tensor2_ds");
-}
+// BOOST_AUTO_TEST_CASE( element_component_tensor2symm_discontinuous )
+// {
+//     test_tensor2<Pdhms_type<Mesh<Simplex<2>>,1>>("tensor2_ds");
+// }
 
 BOOST_AUTO_TEST_SUITE_END()
