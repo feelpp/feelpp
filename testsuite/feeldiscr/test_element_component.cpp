@@ -335,7 +335,7 @@ test_tensor2(std::string name )
 
     auto a33a = form2(_trial=Mh, _test=Mh );
     a33a += integrate(_range=internalfaces(mesh),
-                      _expr=trans(idt(l)) * id(l));//( leftface( pow(h(),0) )+
+                      _expr=leftfacet(trans(idt(l))) * leftface(id(l)));//( leftface( pow(h(),0) )+
     //                                                      rightface( pow(h(),0) )));
     a33a.close();
     auto a33a_v = a33a(l,l);
