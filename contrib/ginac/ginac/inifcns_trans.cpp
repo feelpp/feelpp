@@ -698,7 +698,7 @@ REGISTER_FUNCTION(asin, eval_func(asin_eval).
                         evalf_func(asin_evalf).
                         derivative_func(asin_deriv).
                         conjugate_func(asin_conjugate).
-                        latex_name("\\arcsin"));
+                        latex_name("\\arcsin"))
 
 //////////
 // inverse cosine (arc cosine)
@@ -1155,7 +1155,7 @@ REGISTER_FUNCTION(cosh, eval_func(cosh_eval).
                         real_part_func(cosh_real_part).
                         imag_part_func(cosh_imag_part).
                         conjugate_func(cosh_conjugate).
-                        latex_name("\\cosh"));
+                        latex_name("\\cosh"))
 
 //////////
 // hyperbolic tangent (trigonometric function)
@@ -1489,7 +1489,7 @@ REGISTER_FUNCTION(atanh, eval_func(atanh_eval).
                          evalf_func(atanh_evalf).
                          derivative_func(atanh_deriv).
                          series_func(atanh_series).
-                         conjugate_func(atanh_conjugate));
+                         conjugate_func(atanh_conjugate))
 
 
 } // namespace GiNaC
