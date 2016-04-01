@@ -41,6 +41,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
