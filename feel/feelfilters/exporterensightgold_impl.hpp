@@ -1995,7 +1995,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             VLOG(1) << "field size=" << __field_size;
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
-
+            int nc = __var->second.nComponents;
+            if ( __var->second.is_tensor2symm )
+                nc = __var->second.nComponents1*(__var->second.nComponents1+1)/2;
+            
             /*
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
@@ -2024,7 +2027,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                        if ( c < __var->second.nComponents )
+                        if ( c < nc )
                         {
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
 
@@ -2237,10 +2240,14 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                 nComponents = 9;
             if ( __evar->second.is_tensor2symm )
                 nComponents = 6;
+
+            int nc = __evar->second.nComponents;
+            if ( __evar->second.is_tensor2symm )
+                nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
             
-            size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
+            size_type __field_size = nComponents * __evar->second.size()/nc;
             cout << "components: " << nComponents << " field.size: " << __field_size << std::endl;
-            cout << "components old: " << __evar->second.nComponents  << " field.size: " <<  __evar->second.size()<< std::endl;
+            cout << "components old: " << nc  << " field.size: " <<  __evar->second.size()<< std::endl;
             ublas::vector<float> __field( __field_size );
             __field.clear();
 
@@ -2269,6 +2276,9 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                 uint16_type c1= c;
                 if ( __evar->second.is_tensor2symm )
                     c1=reorder_tensor2symm[c];
+                int nc = __evar->second.nComponents;
+                if ( __evar->second.is_tensor2symm )
+                    nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
@@ -2279,7 +2289,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
 
                     size_type global_node_id = c1*ncells+e ;
 
-                    if ( c < __evar->second.nComponents )
+                    if ( c < nc)
                     {
                         size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
 
