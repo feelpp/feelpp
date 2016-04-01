@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
-
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-28
+# -*- mode: cmake; coding: utf-8 -*-
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2009-11-29
+#
+#  Copyright (C) 2009-2010 UniversitÃ© Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-add_custom_target( testsuite )
 
-add_subdirectory(contrib)
-
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls fit)
-  add_custom_target( test${testdir} )
-  add_subdirectory( feel${testdir} )
-
-endforeach()
