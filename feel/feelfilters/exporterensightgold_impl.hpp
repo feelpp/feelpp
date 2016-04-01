@@ -1887,6 +1887,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 uint16_type nComponents = __var->second.nComponents;
                 if ( __var->second.is_vectorial )
                     nComponents = 3;
+                if ( __var->second.is_tensor2  )
+                    nComponents = 9;
+                if ( __var->second.is_tensor2symm  )
+                    nComponents = 6;
 
                 int nfaces = mp.ids.size();
                 std::vector<float> field( nComponents*nfaces, 0.0 );
@@ -1996,6 +2000,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
             */
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             /* loop on the elements */
             int index = 0;
@@ -2006,10 +2011,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 /* because we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
                 for ( uint16_type c = 0; c < nComponents; ++c )
                 {
+                    uint16_type c1= c;
+                    if ( __var->second.is_tensor2symm )
+                        c1 = reorder_tensor2symm[c];
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
                         size_type ptid = mp.old2new[elt_it->get().point( p ).id()]-1;
-                        size_type global_node_id = mp.ids.size()*c + ptid ;
+                        size_type global_node_id = mp.ids.size()*c1 + ptid ;
                         //LOG(INFO) << elt_it->get().point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
                         DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->get().id()
                                                                      << " local pt:" << p
@@ -2229,8 +2237,10 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                 nComponents = 9;
             if ( __evar->second.is_tensor2symm )
                 nComponents = 6;
-
+            
             size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
+            cout << "components: " << nComponents << " field.size: " << __field_size << std::endl;
+            cout << "components old: " << __evar->second.nComponents  << " field.size: " <<  __evar->second.size()<< std::endl;
             ublas::vector<float> __field( __field_size );
             __field.clear();
 
@@ -2252,9 +2262,13 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
             */
-
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
+            
             for ( int c = 0; c < nComponents; ++c )
             {
+                uint16_type c1= c;
+                if ( __evar->second.is_tensor2symm )
+                    c1=reorder_tensor2symm[c];
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
@@ -2263,7 +2277,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                              << " elt_it :  " << elt.id()
                              << " e : " << e << "\n";
 
-                    size_type global_node_id = c*ncells+e ;
+                    size_type global_node_id = c1*ncells+e ;
 
                     if ( c < __evar->second.nComponents )
                     {

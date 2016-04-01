@@ -1103,6 +1103,32 @@ public:
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
+                if ( !M_ts->M_tensor2_p0 )
+                {
+                    M_ts->M_tensor2_p0 = boost::make_shared<tensor2_p0_space_type> ( M_mesh.get(),
+                                                                                   MESH_RENUMBER | MESH_CHECK,
+                                                                                   typename tensor2_p0_space_type::periodicity_type(),
+                                                                                   func.worldsComm(),
+                                                                                   std::vector<bool>(1,extendeddof) );
+                    M_tensor2_p0 = M_ts->M_tensor2_p0;
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
+                }
+
+                else if ( M_mesh.get() == M_ts->M_tensor2_p0->mesh() )
+                {
+                    M_tensor2_p0 = M_ts->M_tensor2_p0;
+                }
+
+                if (  M_mesh.get() != M_ts->M_tensor2_p0->mesh() && !M_tensor2_p0 )
+                {
+                    M_tensor2_p0 = boost::make_shared<tensor2_p0_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename tensor2_p0_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof) );
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
+                }
+
 
                 M_element_tensor2[__fname].setName( __n );
                 M_element_tensor2[__fname].setFunctionSpace( M_tensor2_p0 );
@@ -1122,6 +1148,32 @@ public:
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
+
+                if ( !M_ts->M_tensor2symm_p0 )
+                {
+                    M_ts->M_tensor2symm_p0 = boost::make_shared<tensor2symm_p0_space_type> ( M_mesh.get(),
+                                                                                   MESH_RENUMBER | MESH_CHECK,
+                                                                                   typename tensor2symm_p0_space_type::periodicity_type(),
+                                                                                   func.worldsComm(),
+                                                                                   std::vector<bool>(1,extendeddof) );
+                    M_tensor2symm_p0 = M_ts->M_tensor2symm_p0;
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
+                }
+
+                else if ( M_mesh.get() == M_ts->M_tensor2symm_p0->mesh() )
+                {
+                    M_tensor2symm_p0 = M_ts->M_tensor2symm_p0;
+                }
+
+                if (  M_mesh.get() != M_ts->M_tensor2symm_p0->mesh() && !M_tensor2symm_p0 )
+                {
+                    M_tensor2symm_p0 = boost::make_shared<tensor2symm_p0_space_type> ( M_mesh.get(),
+                                                                             MESH_RENUMBER | MESH_CHECK,
+                                                                             typename tensor2symm_p0_space_type::periodicity_type(),
+                                                                             func.worldsComm(),
+                                                                             std::vector<bool>(1,extendeddof) );
+                    DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p0 created\n";
+                }
 
                 M_element_tensor2symm[__fname].setName( __n );
                 M_element_tensor2symm[__fname].setFunctionSpace( M_tensor2symm_p0 );
