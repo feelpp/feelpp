@@ -1018,15 +1018,15 @@ public:
             std::cout << "is_product = " << reference_element_type::is_product << std::endl;
             std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 #endif
-            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nDim/nDim:M_ref_ele->nbDof()/nDim );
+            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nRealDim/nRealDim:M_ref_ele->nbDof()/nRealDim );
             //std::cout << "I = " << I << std::endl;
             //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
 
             const index Q = __pts.size2();
             //std::cout << "Q = " << I << std::endl;
 
-            const int ncdof= ( reference_element_type::is_product?nDim:1 );
-            int nldof= ( reference_element_type::is_product?I*nDim:I );
+            const int ncdof= ( reference_element_type::is_product?nRealDim:1 );
+            int nldof= ( reference_element_type::is_product?I*nRealDim:I );
             //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
             M_phi.resize( boost::extents[nldof][__pts.size2()] );
             M_grad.resize( boost::extents[nldof][__pts.size2()] );
@@ -1034,7 +1034,7 @@ public:
 
             id_type i_phi( nComponents1, 1 );
             std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
-            g_type i_grad( nComponents1, nDim, 1 );
+            g_type i_grad( nComponents1, nRealDim, 1 );
             std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.));
             h_type i_hessian( nComponents1, nDim, nDim );
             std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.));
@@ -1050,17 +1050,17 @@ public:
                 for ( index c1 = 0; c1 < ncdof; ++c1 )
                 {
                     for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nComponents1; ++j )
-                            M_phi[I*c1+i][q]( j,0 ) = phiv( nldof*c1+nDim*i+j, q );
+                        for ( index j = 0; j < nRealDim; ++j )
+                            M_phi[I*c1+i][q]( j,0 ) = phiv( nldof*c1+nRealDim*i+j, q );
 
                     //M_phi[I*c1+i][q](j,0) = phiv( nDim*I*c1+nDim*i+j, q );
 
                     for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nComponents1; ++j )
+                        for ( index j = 0; j < nRealDim; ++j )
                             for ( index l = 0; l < nDim; ++l )
                             {
                                 //M_grad[I*c1+i][j](l,q) = __grad[l]( nDim*I*c1+nDim*i+j, q );
-                                M_grad[I*c1+i][q]( j,l,0 ) = __grad[l]( nldof*c1+nDim*i+j, q );
+                                M_grad[I*c1+i][q]( j,l,0 ) = __grad[l]( nldof*c1+nRealDim*i+j, q );
                                 //M_grad[I*c1+i][j][nDim-1][q] = __grad[l]( nldof*c1+nDim*i+j, q );
                                 //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  M_grad[I*c1+i][j](l,q) << "\n";
                             }
@@ -1070,7 +1070,7 @@ public:
                             for ( index j = 0; j < nDim; ++j )
                                 for ( index k = j; k < nDim; ++k )
                                 {
-                                    value_type t = __hess(j,k)( nldof*c1+nDim*i+l,q);
+                                    value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
                                     M_hessian[I*c1+i][q]( l,j,k ) = t;
                                     M_hessian[I*c1+i][q]( l,k,j ) = t;
                                 }
