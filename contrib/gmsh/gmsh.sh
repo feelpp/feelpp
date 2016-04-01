@@ -23,6 +23,17 @@ mkdir -p build
 cd build
 echo "$PWD"
 
+if [ -z ${PETSC_DIR} ]; then
+  export PETSC_DIR=$HOME/modules/libs/petsc-3.6.3.dfsg1_mpicc_4.9.3
+  export PETSC_ARCH=arch-linux2-mpicc-opt
+fi
+if [ -z ${SLEPC_DIR} ]; then
+  export SLEPC_DIR=$HOME/modules/libs/slepc-3.6.2.dfsg_mpicc_4.9.3
+fi
+
+echo "PETSC_DIR=$PETSC_DIR"
+echo "SLEPC_DIR=$SLEPC_DIR"
+
 echo "Install to ${installDir}"
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=${installDir} \
@@ -31,7 +42,11 @@ cmake .. \
   -DENABLE_MPI=ON \
   -DENABLE_BUILD_LIB=1 \
   -DENABLE_BUILD_SHARED=1 \
-  -DENABLE_SLEPC=0
+  -DENABLE_KBIPACK:BOOL=ON \
+  -DENABLE_METIS:BOOL=ON \
+  -DENABLE_TAUCS:BOOL=OFF \
+  -DENABLE_PETSC:BOOL=ON \
+  -DENABLE_SLEPC:BOOL=ON
 
 make -j${nbProc} lib
 make -j${nbProc} shared
