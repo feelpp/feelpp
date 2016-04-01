@@ -24,9 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
-// to compare against GSL
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_spline.h>
 
 enum interpol_type
 {
@@ -66,9 +63,7 @@ class InterpolP0 : public Interpol
             right,
             center
         };
-        InterpolP0( std::vector<pair_type> data, interpol_type_P0 iType = left ) : super(data), M_iType(iType)
-    {
-    }
+        InterpolP0( std::vector<pair_type> data, interpol_type_P0 iType = left ) : super(data), M_iType(iType) {}
         value_type diff(double _x) { return 0.; }
         value_type operator()(double _x)
         {
