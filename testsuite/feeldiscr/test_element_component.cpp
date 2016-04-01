@@ -7,6 +7,7 @@
 #include <feel/feeldiscr/pchm.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 
@@ -46,7 +47,7 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
 
 template<typename SpaceT>
 void
-test_tensor2()
+test_tensor2(std::string name )
 {
     using Feel::cout;
     typedef Mesh<Simplex<2,1,2> > mesh_type;
@@ -151,14 +152,19 @@ test_tensor2()
     cout << "a11 works" << std::endl;
 
     // a12
-
-    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( Px(),Py(),Px(),Py() ) );
-
+    auto e  = exporter(_mesh=mesh,_name=name);
+    
+    uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(0.),Py(),Px(),cst(0.) ) );
+    e->add( "u", uTensor2 );
+    e->save(); 
     auto a12 = form2( _trial=Wh, _test=VhTensor2 );
-    a12 += integrate( _range=elements(mesh), _expr=trans(idt(w))*div(uTensor2));
+    a12 = integrate( _range=elements(mesh), _expr=trans(idt(w))*div(uTensor2));
     a12.close();
     auto a12v = a12(uTensor2,w);
-    BOOST_CHECK_CLOSE( a12v, 4*area, 1e-11 );
+    if ( SpaceT::is_tensor2symm )
+        BOOST_CHECK_CLOSE( a12v, 3*area, 1e-11 );
+    else
+        BOOST_CHECK_CLOSE( a12v, 4*area, 1e-11 );
     cout << "a12(ones, ones) = " << a12v << std::endl;
 
     cout << "a12 works" << std::endl;
@@ -166,22 +172,22 @@ test_tensor2()
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
 {
-    test_tensor2<Pchm_type<Mesh<Simplex<2>>,2>>();
+    test_tensor2<Pchm_type<Mesh<Simplex<2>>,2>>("tensor2_c");
 }
 BOOST_AUTO_TEST_CASE( element_component_tensor2_discontinuous )
 {
-    test_tensor2<Pdhm_type<Mesh<Simplex<2>>,2>>();
+    test_tensor2<Pdhm_type<Mesh<Simplex<2>>,2>>("tensor2_d");
 }
 
 BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous )
 {
-    test_tensor2<Pchms_type<Mesh<Simplex<2>>,2>>();
+    test_tensor2<Pchms_type<Mesh<Simplex<2>>,2>>("tensor2_cs");
 }
 
 
 BOOST_AUTO_TEST_CASE( element_component_tensor2symm_discontinuous )
 {
-    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,1>>();
+    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,1>>("tensor2_ds");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
