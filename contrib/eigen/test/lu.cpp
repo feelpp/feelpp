@@ -92,6 +92,26 @@ template<typename MatrixType> void lu_non_invertible()
   // test that the code, which does resize(), may be applied to an xpr
   m2.block(0,0,m2.rows(),m2.cols()) = lu.solve(m3);
   VERIFY_IS_APPROX(m3, m1*m2);
+
+  // test solve with transposed
+  m3 = MatrixType::Random(rows,cols2);
+  m2 = m1.transpose()*m3;
+  m3 = MatrixType::Random(rows,cols2);
+  lu.template _solve_impl_transposed<false>(m2, m3);
+  VERIFY_IS_APPROX(m2, m1.transpose()*m3);
+  m3 = MatrixType::Random(rows,cols2);
+  m3 = lu.transpose().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.transpose()*m3);
+
+  // test solve with conjugate transposed
+  m3 = MatrixType::Random(rows,cols2);
+  m2 = m1.adjoint()*m3;
+  m3 = MatrixType::Random(rows,cols2);
+  lu.template _solve_impl_transposed<true>(m2, m3);
+  VERIFY_IS_APPROX(m2, m1.adjoint()*m3);
+  m3 = MatrixType::Random(rows,cols2);
+  m3 = lu.adjoint().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.adjoint()*m3);
 }
 
 template<typename MatrixType> void lu_invertible()
@@ -100,7 +120,9 @@ template<typename MatrixType> void lu_invertible()
      LU.h
   */
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
-  int size = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
+  Index size = MatrixType::RowsAtCompileTime;
+  if( size==Dynamic)
+    size = internal::random<Index>(1,EIGEN_TEST_MAX_SIZE);
 
   MatrixType m1(size, size), m2(size, size), m3(size, size);
   FullPivLU<MatrixType> lu;
@@ -122,6 +144,24 @@ template<typename MatrixType> void lu_invertible()
   m2 = lu.solve(m3);
   VERIFY_IS_APPROX(m3, m1*m2);
   VERIFY_IS_APPROX(m2, lu.inverse()*m3);
+
+  // test solve with transposed
+  lu.template _solve_impl_transposed<false>(m3, m2);
+  VERIFY_IS_APPROX(m3, m1.transpose()*m2);
+  m3 = MatrixType::Random(size,size);
+  m3 = lu.transpose().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.transpose()*m3);
+
+  // test solve with conjugate transposed
+  lu.template _solve_impl_transposed<true>(m3, m2);
+  VERIFY_IS_APPROX(m3, m1.adjoint()*m2);
+  m3 = MatrixType::Random(size,size);
+  m3 = lu.adjoint().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.adjoint()*m3);
+
+  // Regression test for Bug 302
+  MatrixType m4 = MatrixType::Random(size,size);
+  VERIFY_IS_APPROX(lu.solve(m3*m4), lu.solve(m3)*m4);
 }
 
 template<typename MatrixType> void lu_partial_piv()
@@ -130,14 +170,32 @@ template<typename MatrixType> void lu_partial_piv()
      PartialPivLU.h
   */
   typedef typename MatrixType::Index Index;
-  Index rows = internal::random<Index>(1,4);
-  Index cols = rows;
+  Index size = internal::random<Index>(1,4);
 
-  MatrixType m1(cols, rows);
+  MatrixType m1(size, size), m2(size, size), m3(size, size);
   m1.setRandom();
   PartialPivLU<MatrixType> plu(m1);
 
   VERIFY_IS_APPROX(m1, plu.reconstructedMatrix());
+
+  m3 = MatrixType::Random(size,size);
+  m2 = plu.solve(m3);
+  VERIFY_IS_APPROX(m3, m1*m2);
+  VERIFY_IS_APPROX(m2, plu.inverse()*m3);
+
+  // test solve with transposed
+  plu.template _solve_impl_transposed<false>(m3, m2);
+  VERIFY_IS_APPROX(m3, m1.transpose()*m2);
+  m3 = MatrixType::Random(size,size);
+  m3 = plu.transpose().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.transpose()*m3);
+
+  // test solve with conjugate transposed
+  plu.template _solve_impl_transposed<true>(m3, m2);
+  VERIFY_IS_APPROX(m3, m1.adjoint()*m2);
+  m3 = MatrixType::Random(size,size);
+  m3 = plu.adjoint().solve(m2);
+  VERIFY_IS_APPROX(m2, m1.adjoint()*m3);
 }
 
 template<typename MatrixType> void lu_verify_assert()
@@ -171,6 +229,7 @@ void test_lu()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( lu_non_invertible<Matrix3f>() );
+    CALL_SUBTEST_1( lu_invertible<Matrix3f>() );
     CALL_SUBTEST_1( lu_verify_assert<Matrix3f>() );
 
     CALL_SUBTEST_2( (lu_non_invertible<Matrix<double, 4, 6> >()) );
