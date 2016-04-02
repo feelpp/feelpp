@@ -458,24 +458,23 @@ public :
 
     bool isClosed() const { return M_isClosed; }
 
+    /**
+     * termination function for fill
+     */
     template<typename Arg1>
-    void
-    fill( int& n, 
-          int& c,
-          const Arg1& arg1 )
-        {
-            std::cout << "fillG n=" << n << " c= " << c << std::endl;
-        }
+    void  fill( int& n, int& c, const Arg1& arg1 ) {}
+
+    /**
+     * fill row and col
+     */
     template<typename Arg1, typename Arg2, typename ...Args>
     void
-    fill( int& n, 
-          int& c,
-          const Arg1& arg1, const Arg2& arg2, 
-          const Args&... args )
+    fill( int& n, int& c, const Arg1& arg1, const Arg2& arg2, const Args&... args )
         {
             this->operator()( n,c ) = stencil( _test=arg1,_trial=arg2, _diag_is_nonzero=false, _close=false)->graph();
             this->operator()( c,n ) = stencil( _test=arg2,_trial=arg1, _diag_is_nonzero=false, _close=false)->graph();
     
+            // go to next submatrix
             fill( n, ++c, arg1, args... );
         }
 
