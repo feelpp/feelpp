@@ -33,37 +33,50 @@ enum interpol_type
     Akima
 };
 
-class Interpol
+/*
+ * Given an un-ordered dataset, provide a representation for the interpolant
+ * Options are available for the extrapolation
+ */
+class Interpolator
 {
     public:
         using value_type = double;
         using pair_type = std::pair<value_type, value_type>;
 
-        static Interpol* New( interpol_type type, std::vector<pair_type> data);
+        static Interpolator* New( interpol_type type, std::vector<pair_type> data);
 
-        Interpol(std::vector<pair_type> data) : M_data(data)
+        // Sort the data
+        Interpolator(std::vector<pair_type> data) : M_data(data)
     {
+        LOG(INFO) << "Interpolator::M_data.size() = " << M_data.size() << std::endl;
         std::sort(M_data.begin(), M_data.end(), []( pair_type a, pair_type b){ return a.first < b.first; });
     }
+        // Evaluate the interpolant
         virtual value_type operator()(double _x) = 0;
+        // Evaluate the interpolant derivative
         virtual value_type diff(double _x) = 0;
     protected:
         std::vector<std::pair<value_type, value_type>> M_data;
 };// class interpolBase
 
-class InterpolP0 : public Interpol
+class InterpolatorP0 : public Interpolator
 {
     public:
-        typedef Interpol super;
+        typedef Interpolator super;
         using value_type = double;
         using pair_type = std::pair<value_type, value_type>;
+        /*
+         * left   = P0(x\in{x_i, x_{i+1}}) = x_{i+1} 
+         * right  = P0(x\in{x_i, x_{i+1}}) = x_{i} 
+         * center = P0(x\in{x_i, x_{i+1}}) = x > 0.5*(x_{i} + x_{i+1}) : x_{i+1} : x_{i}
+         */
         enum interpol_type_P0
         {
             left=0,
             right,
             center
         };
-        InterpolP0( std::vector<pair_type> data, interpol_type_P0 iType = left ) : super(data), M_iType(iType) {}
+        InterpolatorP0( std::vector<pair_type> data, interpol_type_P0 iType = left ) : super(data), M_iType(iType) {}
         value_type diff(double _x) { return 0.; }
         value_type operator()(double _x)
         {
@@ -108,21 +121,27 @@ class InterpolP0 : public Interpol
     private:
         interpol_type_P0 M_iType;
 
-}; // InterpolP0
+}; // InterpolatorP0
 
-class InterpolP1 : public Interpol
+class InterpolatorP1 : public Interpolator
 {
     public:
-        typedef Interpol super;
+        typedef Interpolator super;
         using value_type = double;
         using pair_type = std::pair<value_type, value_type>;
+        /*
+         * zero : P1(x ! \in{x_0, x_n} ) = 0
+         * constant : P1(x = x0) = x0 || P1(x = xn) = xn
+         * extrapol : linear extrapolation
+         */
         enum extrapol_type_P1
         {
             zero=0,
             constant,
             extrapol
         };
-        InterpolP1( std::vector<pair_type> data, extrapol_type_P1 r = zero, extrapol_type_P1 l = zero ) : super(data), M_r_type(r), M_l_type(l)
+        // Extrapolation method at left or right can be different
+        InterpolatorP1( std::vector<pair_type> data, extrapol_type_P1 r = zero, extrapol_type_P1 l = zero ) : super(data), M_r_type(r), M_l_type(l)
     {
     }
         value_type operator()(double _x)
@@ -221,22 +240,30 @@ class InterpolP1 : public Interpol
         extrapol_type_P1 M_r_type;
         extrapol_type_P1 M_l_type;
 
-}; // InterpolP0
+}; // InterpolatorP0
 
-class InterpolSpline : public Interpol
+/*
+ * Interpolate with a*x**3 + b*x**2 + c*x + d
+ * TODO: interpolate a(x-xi)**3 + ... instead of ax**3 (only to generate a easiest to inverse linear system)
+ */
+class InterpolatorSpline : public Interpolator
 {
     public:
-        typedef Interpol super;
+        typedef Interpolator super;
         using value_type = double;
         using pair_type = std::pair<value_type, value_type>;
         using SpMat = Eigen::SparseMatrix<value_type>; 
         using T = Eigen::Triplet<value_type>;
+        /*
+         * natural : f''(x0) = f''(xn) = 0
+         * clamped : f'(x0) = 0; f'(xn) = 0
+         */
         enum extrapol_type_spline
         {
             natural=0,
             clamped
         };
-        InterpolSpline( std::vector<pair_type> data, extrapol_type_spline r = natural, extrapol_type_spline l = natural ) : super(data), M_r_type(r), M_l_type(l)
+        InterpolatorSpline( std::vector<pair_type> data, extrapol_type_spline r = natural, extrapol_type_spline l = natural ) : super(data), M_r_type(r), M_l_type(l)
     {
         SpMat A((this->M_data.size()-1)*4,(this->M_data.size()-1)*4);
         std::vector<T> coef;
@@ -376,18 +403,22 @@ class InterpolSpline : public Interpol
             }
         }
 
-}; // InterpolSpline
+}; // InterpolatorSpline
 
 // http://www.iue.tuwien.ac.at/phd/rottinger/node60.html
-class InterpolAkima : public Interpol
+/*
+ * The Akima's interpolation differs with the Cspline by the first order derivative imposed at nodes
+ * TODO: interpolate a(x-xi)**3 + ... instead of ax**3
+ */
+class InterpolatorAkima : public Interpolator
 {
     public:
-        typedef Interpol super;
+        typedef Interpolator super;
         using value_type = double;
         using pair_type = std::pair<value_type, value_type>;
         using SpMat = Eigen::SparseMatrix<value_type>; 
         using T = Eigen::Triplet<value_type>;
-        InterpolAkima( std::vector<pair_type> data) : super(data)
+        InterpolatorAkima( std::vector<pair_type> data) : super(data)
     {
         // two entries : one spline
         SpMat A((this->M_data.size()-1)*4,(this->M_data.size()-1)*4);
@@ -517,30 +548,30 @@ class InterpolAkima : public Interpol
             }
         }
 
-}; // InterpolSpline
+}; // InterpolatorSpline
 
-Interpol* Interpol::New( interpol_type type, std::vector<pair_type> data)
+Interpolator* Interpolator::New( interpol_type type, std::vector<pair_type> data)
 {
     switch(type)
     {
         case P0:
             {
-                return new InterpolP0(data);
+                return new InterpolatorP0(data);
                 break;
             }
         case P1:
             {
-                return new InterpolP1(data);
+                return new InterpolatorP1(data);
                 break;
             }
         case Spline:
             {
-                return new InterpolSpline(data);
+                return new InterpolatorSpline(data);
                 break;
             }
         case Akima:
             {
-                return new InterpolAkima(data);
+                return new InterpolatorAkima(data);
                 break;
             }
     }
