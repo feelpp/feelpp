@@ -23,3 +23,7 @@
 #
 
 set(FEELPP_ENABLE_SCHED_OAR TRUE)
+# see https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
+# option shall depend on MPI_FLAVOR (here defined only OpenMPI
+set(MPIEXEC_PREFLAGS "-machinefile $OAR_NODEFILE -mca plm_rsh_agent \"oarsh\" " CACHE STRING "These flags will be directly before the executable that is being run by MPIEXEC.")
+message(STATUS "on rheticus : MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} ")
