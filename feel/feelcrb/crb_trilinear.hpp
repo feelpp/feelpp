@@ -189,7 +189,7 @@ public:
         super_crb( name, vm , model ),
         M_crbdb( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
                  name,
-                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % iioption(_name="crb.output-index") % option(_name="crb.error-type") ).str(),
+                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % ioption(_name="crb.output-index") % option(_name="crb.error-type") ).str(),
                  vm )
     {
         this->setTruthModel( model );
