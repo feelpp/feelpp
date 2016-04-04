@@ -270,7 +270,7 @@ IF ( MPI_FOUND )
           # Automatically add oarsh to the options when using OpenMPI
           # See: https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
           if(FEELPP_ENABLE_SCHED_OAR)
-              set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\"")
+              set(MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\")
               message(STATUS "[feelpp] OAR detected - Automatically adding transport option to MPIEXEC_PREFLAGS (-mca plm_rsh_agent \"oarsh\")")
           endif()
       endif()
