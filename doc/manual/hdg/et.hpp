@@ -60,6 +60,11 @@ public:
     typedef Mesh<face_convex_type> face_mesh_type;
     typedef boost::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
+    // Ch
+    using Ch_t = Pch_type<mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
+    using Ch_element_t = typename Ch_t::element_type;
+    using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
     // Xh
     using Xh_t = Pch_type<mesh_type,OrderP>;
     using Xh_ptr_t = Pch_ptrtype<mesh_type,OrderP>;
@@ -96,7 +101,7 @@ public:
                                 );
     }
 
-    template<typename MatrixType, typename VectorType, typename Vht, typename Wht, typename Mht, typename Xht,
+    template<typename MatrixType, typename VectorType, typename Vht, typename Wht, typename Mht, typename Cht, typename Xht,
              typename Vhet, typename Whet, typename Xhet>
     void
     assemble_A_and_F( MatrixType A,
@@ -104,6 +109,7 @@ public:
                       Vht Vh,
                       Wht Wh,
                       Mht Mh,
+                      Cht Ch,
                       Xht Xh,
                       Vhet,
                       Whet,
@@ -134,20 +140,24 @@ ElectroThermal<Dim, OrderP>::run()
     auto Vh = Pdhv<OrderP>( mesh, true );
     auto Wh = Pdh<OrderP>( mesh, true );
     auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    //auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"bottom"), EXTRACTION_KEEP_MESH_RELATION, 0 );
     auto Mh = Pdh<OrderP>( face_mesh, true );
     auto Xh = Pch<OrderP>( mesh );
+    auto Ch = Pch<0>( mesh );
 
     toc("spaces",true);
 
     cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl
-         << "Xh<" << OrderP << "> : " << Xh->nDof() << std::endl;
+         << "Xh<" << OrderP << "> : " << Xh->nDof() << std::endl
+         << "Ch<" << 0 << "> : " << Ch->nDof() << std::endl;
 
     auto up = Vh->elementPtr( "u" );
     auto pp = Wh->elementPtr( "p" );
     auto phatp = Mh->elementPtr( "phat" );
     auto Tp = Xh->elementPtr( "T" );
+    auto mup = Ch->elementPtr( "c1" );
 
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
@@ -157,6 +167,7 @@ ElectroThermal<Dim, OrderP>::run()
     auto w = Wh->element( "w" );
     auto phat = Mh->element( "phat" );
     auto l = Mh->element( "lambda" );
+    auto nu = Ch->element( "nu" );
 
     // Number of dofs associated with each space U and P
     auto nDofu = u.functionSpace()->nDof();
@@ -165,42 +176,58 @@ ElectroThermal<Dim, OrderP>::run()
     auto nDofT = T.functionSpace()->nDof();
 
     tic();
-    // build the big matrix associated to bilinear form over Vh x Wh x Mh
-    BlocksBaseGraphCSR hdg_graph(4,4);
+#if 1
+    BlocksBaseGraphCSR hdg_graph(5,5);
     hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,0) = stencil( _test=Xh,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,0) = stencil( _test=Ch,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(4,0) = stencil( _test=Xh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,1) = stencil( _test=Xh,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,1) = stencil( _test=Ch,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(4,1) = stencil( _test=Xh,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,2) = stencil( _test=Xh,_trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,2) = stencil( _test=Ch,_trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(4,2) = stencil( _test=Xh,_trial=Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
-    hdg_graph(0,3) = stencil( _test=Vh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(1,3) = stencil( _test=Wh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(2,3) = stencil( _test=Mh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,3) = stencil( _test=Xh,_trial=Xh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(0,3) = stencil( _test=Vh,_trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(1,3) = stencil( _test=Wh,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(2,3) = stencil( _test=Mh,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,3) = stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(4,3) = stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+
+    hdg_graph(0,4) = stencil( _test=Vh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(1,4) = stencil( _test=Wh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(2,4) = stencil( _test=Mh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,4) = stencil( _test=Ch,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(4,4) = stencil( _test=Xh,_trial=Xh, _diag_is_nonzero=false, _close=false)->graph();
 
     auto A = backend()->newBlockMatrix(_block=hdg_graph);
 
-    BlocksBaseVector<double> hdg_vec(4);
+    #else
+    // build the big matrix associated to bilinear form over Vh x Wh x Mh
+    auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Xh,Wh,Mh,Ch,Xh));
+#endif
+    BlocksBaseVector<double> hdg_vec(5);
     hdg_vec(0,0) = backend()->newVector( Vh );
     hdg_vec(1,0) = backend()->newVector( Wh );
     hdg_vec(2,0) = backend()->newVector( Mh );
-    hdg_vec(3,0) = backend()->newVector( Xh );
+    hdg_vec(3,0) = backend()->newVector( Ch );
+    hdg_vec(4,0) = backend()->newVector( Xh );
     auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-    BlocksBaseVector<double> hdg_sol(4);
+    BlocksBaseVector<double> hdg_sol(5);
     hdg_sol(0,0) = up;
     hdg_sol(1,0) = pp;
     hdg_sol(2,0) = phatp;
-    hdg_sol(3,0) = Tp;
+    hdg_sol(3,0) = mup;
+    hdg_sol(4,0) = Tp;
     auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
     toc("matrices",true);
 
@@ -221,7 +248,18 @@ ElectroThermal<Dim, OrderP>::run()
     double I_error_last = I_error ;
     double I_In = 0.5*I_error ;
 
-
+#if 1
+    assemble_A_and_F( A, F, Vh, Wh, Mh, Ch, Xh, up, pp, Tp );
+    backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
+    hdg_sol.localize(U);
+    double I =  integrate(_range=markedfaces(mesh,"bottom"),
+                          _expr=inner(idv(*up),N())).evaluate()(0,0);
+    cout << "I=" << I << std::endl;
+    e->add( "V", *pp );
+    e->add( "J", *up );
+    e->add( "T", *Tp );
+    e->save();
+#else
     // time loop for control
     for ( bdfT->start(T) ;
           (!bdfT->isFinished() );
@@ -269,10 +307,11 @@ ElectroThermal<Dim, OrderP>::run()
         e->step(bdfT->time())->add( "T", *Tp );
         e->save();
     }
+#endif
 }
 
 template<int Dim, int OrderP>
-template<typename MatrixType, typename VectorType, typename Vht, typename Wht, typename Mht, typename Xht,
+template<typename MatrixType, typename VectorType, typename Vht, typename Wht, typename Mht, typename Cht, typename Xht,
          typename Vhet, typename Whet, typename Xhet>
 void
 ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
@@ -280,6 +319,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                                                Vht Vh,
                                                Wht Wh,
                                                Mht Mh,
+                                               Cht Ch,
                                                Xht Xh,
                                                Vhet Jp,
                                                Whet Vp,
@@ -303,6 +343,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
     auto w = Wh->element( "w" );
+    auto nu = Ch->element( "w" );
     auto phat = Mh->element( "phat" );
     auto l = Mh->element( "lambda" );
 
@@ -325,10 +366,15 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                       _expr=id(l)*V);
 
     auto rhs4 = form1( _test=Xh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
+                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
     rhs4 += integrate(_range=elements(mesh),_expr=inner(idv(*Jp))/sigma);
     rhs4 += integrate(_range=markedfaces(mesh,"R"),
                       _expr=doption("h")*doption("Tw")*id(q));
+
+    auto rhs5 = form1( _test=Ch, _vector=F,
+                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
+    rhs5 += integrate(_range=markedfaces(mesh,"bottom"),
+                      _expr=doption("I_target")*id(nu));
 
     // end dp
 
@@ -429,11 +475,20 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a33 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
                      _expr=idt(phat) * id(l) );
 
-    auto a44 = form2(_trial=Xh, _test=Xh,_matrix=A,
+    auto a41 = form2(_trial=Vh, _test=Ch,_matrix=A,
                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost(),
+                     _colstart=0);
+    a41 += integrate( _range=markedfaces(mesh,"bottom"), _expr=trans(idt(u))*N()*id(nu) );
+    auto a14 = form2(_trial=Ch, _test=Vh,_matrix=A,
+                     _rowstart=0,
                      _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
-    a44 += integrate(_range=elements(mesh), _expr=k*gradt(T)*trans(grad(T)));
-    a44 += integrate(_range=markedfaces(mesh,"R"), _expr=doption("h")*idt(T)*id(q));
+    a14 += integrate( _range=markedfaces(mesh,"bottom"), _expr=trans(id(u))*N()*idt(nu) );
+
+    auto a55 = form2(_trial=Xh, _test=Xh,_matrix=A,
+                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
+                     _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
+    a55 += integrate(_range=elements(mesh), _expr=k*gradt(T)*trans(grad(T)));
+    a55 += integrate(_range=markedfaces(mesh,"R"), _expr=doption("h")*idt(T)*id(q));
 }
 
 
