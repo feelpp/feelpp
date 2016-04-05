@@ -125,9 +125,11 @@ ElectroThermal<Dim, OrderP>::run()
 {
     int proc_rank = Environment::worldComm().globalRank();
 
+    bool check_errors = boption("check_errors");
+
     V=doption("V");
     tic();
-    auto mesh = loadMesh( new mesh_type);
+    auto mesh = loadMesh( new mesh_type );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -252,6 +254,35 @@ ElectroThermal<Dim, OrderP>::run()
     double I =  integrate(_range=markedfaces(mesh,"bottom"),
                           _expr=inner(idv(*up),N())).evaluate()(0,0);
     cout << "I=" << I << std::endl;
+
+    // ****** Compute error ******
+
+    auto sigma = expr(soption("sigma"));
+    auto p_exact = expr(soption("p_exact"));
+    auto gradp_exact = grad<Dim>(p_exact);
+    auto u_exact = -sigma*trans(gradp_exact);
+
+    if (check_errors)
+    {
+        bool has_dirichlet = nelements(markedfaces(mesh,{"top","bottom"}), true) >= 1;
+        auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(*up) );
+
+        double l2err_p = 1e+30;
+        if ( has_dirichlet )
+        {
+            l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(*pp) );
+        }
+        else
+        {
+            auto mean_p_exact = mean( elements(mesh), p_exact )(0,0);
+            auto mean_p = mean( elements(mesh), idv(*pp) )(0,0);
+            l2err_p = normL2( elements(mesh),
+                              (p_exact - cst(mean_p_exact)) - (idv(*pp) - cst(mean_p)) );
+        }
+        cout << "||u_exact - u||_L2 = " << l2err_u << std::endl;
+        cout << "||p_exact - p||_L2 = " << l2err_p << std::endl;
+    }
+
     e->add( "V", *pp );
     e->add( "J", *up );
     e->add( "T", *Tp );
@@ -344,17 +375,32 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto phat = Mh->element( "phat" );
     auto l = Mh->element( "lambda" );
 
+    bool check_errors = boption("check_errors");
+
+    auto p_exact = expr(soption("p_exact"));
+    auto gradp_exact = grad<Dim>(p_exact);
+    auto u_exact = -sigma*trans(gradp_exact);
+    auto f = -sigma*laplacian(p_exact);
+
     // Building the RHS
 
     auto rhs2 = form1( _test=Wh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost() );
 
-    //rhs2 += integrate(_range=elements(mesh),                      _expr=f*id(w));
+    rhs2 += integrate(_range=elements(mesh), _expr=f*id(w));
 
     auto rhs3 = form1( _test=Mh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
-    rhs3 += integrate(_range=markedfaces(mesh,"top"),
-                      _expr=id(l)*V);
+    if (check_errors)
+    {
+        rhs3 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
+                          _expr=id(l)*p_exact);
+        rhs3 += integrate(_range=markedfaces(mesh,"R"),
+                          _expr=-id(l)*(sigma*gradp_exact*N()) );
+    }
+    else
+        rhs3 += integrate(_range=markedfaces(mesh,"top"),
+                          _expr=id(l)*V);
 
     auto rhs4 = form1( _test=Xh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
@@ -364,10 +410,12 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     auto rhs5 = form1( _test=Ch, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
-    rhs5 += integrate(_range=markedfaces(mesh,"bottom"),
-                      _expr=doption("I_target")*id(nu));
-
-    // Building the LHS
+    if (check_errors)
+        rhs5 += integrate(_range=markedfaces(mesh,"bottom"),
+                          _expr=(-sigma*gradp_exact*N())*id(nu));
+    else
+        rhs5 += integrate(_range=markedfaces(mesh,"bottom"),
+                          _expr=doption("I_target")*id(nu));
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
     a11 += integrate(_range=elements(mesh),_expr=(trans(idt(u))*id(v))/sigma );
@@ -483,13 +531,6 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a43 += integrate(_range=markedfaces(mesh,"bottom"),
                      _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
-
-#if 0
-    auto a44 = form2(_trial=Ch, _test=Ch,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost(),
-                     _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
-    a44 += integrate( _range=elements(mesh), _expr=1e-7*id(nu)*idt(nu) );
-#endif
 
     auto a51 = form2(_trial=Vh, _test=Xh,_matrix=A,
                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
