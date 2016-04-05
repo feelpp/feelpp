@@ -199,8 +199,8 @@ ElectroThermal<Dim, OrderP>::run()
     hdg_graph(0,3) = stencil( _test=Vh,_trial=Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,3) = stencil( _test=Wh,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     hdg_graph(2,3) = stencil( _test=Mh,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,3) = stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(4,3) = stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,3) = stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false)->graph();//stencil( _test=Ch,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(4,3) = stencil( _test=Xh,_trial=Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,4) = stencil( _test=Vh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     hdg_graph(1,4) = stencil( _test=Wh,_trial=Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
@@ -438,7 +438,6 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
-
     // begin dp: added extended pattern, multiplied by 0.5
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
@@ -484,6 +483,12 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
     a14 += integrate( _range=markedfaces(mesh,"bottom"), _expr=trans(id(u))*N()*idt(nu) );
 
+#if 0
+    auto a44 = form2(_trial=Ch, _test=Ch,_matrix=A,
+                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost(),
+                     _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost());
+    a44 += integrate( _range=elements(mesh), _expr=1e-7*id(nu)*idt(nu) );
+#endif
     auto a55 = form2(_trial=Xh, _test=Xh,_matrix=A,
                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
                      _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
