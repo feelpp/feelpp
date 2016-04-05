@@ -100,14 +100,14 @@ The complete code reads as follows :
 
 [source,sh]
 ----
-{% include "08-myintegrals.cpp" %}
+{% include "/Tutorial/08-ComputingIntegrals/08-myintegrals.cpp" %}
 ----
 
 === Config file
 
 [source,sh]
 ----
-{% include "08-myintegrals.cfg" %}
+{% include "/Tutorial/08-ComputingIntegrals/08-myintegrals.cfg" %}
 ----
 
 

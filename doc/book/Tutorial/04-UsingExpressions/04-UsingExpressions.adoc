@@ -66,14 +66,14 @@ auto curl_f=curl(f);
 
 [source,c++]
 ----
-{% include "04-myexpression.cpp" %}
+{% include "/Tutorial/04-UsingExpressions/04-myexpression.cpp" %}
 ----
 
 === Config file
 
 [source,c++]
 ----
-{% include "04-myexpression.cfg" %}
+{% include "/Tutorial/04-UsingExpressions/04-myexpression.cfg" %}
 ----
 
 === Compilation and execution

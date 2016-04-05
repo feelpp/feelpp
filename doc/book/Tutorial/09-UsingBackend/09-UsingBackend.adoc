@@ -79,12 +79,12 @@ The whole code example :
 
 [source,cpp]
 ----  
-{% include "09-mybackend.cpp" %}
+{% include "/Tutorial/09-UsingBackend/09-mybackend.cpp" %}
 ----  
 
 === Config file
 
 [source,cfg]
 ----  
-{% include "09-mybackend.cfg" %}
+{% include "/Tutorial/09-UsingBackend/09-mybackend.cfg" %}
 ----  
