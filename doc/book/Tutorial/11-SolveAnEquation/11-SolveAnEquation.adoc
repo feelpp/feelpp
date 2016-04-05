@@ -89,12 +89,12 @@ The complete code reads as follows :
 
 [source,cpp]
 ----
-{% include "Tutorial/11-SolveAnEquation/11-mylaplacian.cpp" %}
+{% include "/Tutorial/11-SolveAnEquation/11-mylaplacian.cpp" %}
 ----
 
 === Config file
 
 [source,cfg]
 ----
-{% include "Tutorial/11-SolveAnEquation/11-mylaplacian.cfg" %}
+{% include "/Tutorial/11-SolveAnEquation/11-mylaplacian.cfg" %}
 ----

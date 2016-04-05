@@ -66,7 +66,7 @@ We can apply theses boundary condition this way
 
 [source,c++]
 ----  
-{% include "Tutorial/10-Model/10-model1.cpp" %}
+{% include "/Tutorial/10-Model/10-model1.cpp" %}
 ----
 
 === PostProcessing 
@@ -79,7 +79,7 @@ We have set up an example : an anisotropic laplacian.
 
 [source,c++]
 ----  
-{% include "Tutorial/10-Model/10-model2.cpp" %}
+{% include "/Tutorial/10-Model/10-model2.cpp" %}
 ----
 
 
