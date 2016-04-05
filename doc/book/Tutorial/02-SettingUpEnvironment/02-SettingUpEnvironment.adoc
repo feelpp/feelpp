@@ -17,20 +17,19 @@ We initialize the environment variables through the Feel++ `Environment` class, 
 
 === Source code
 
-[source,cpp,numbered]
+[source,cpp]
 ----
-{% include "./02-environment.cpp" %}
+{% include "code/02-environment.cpp" %}
 ----
 
 
 
 === Config file
 
-[source,c++,numbered]
+[source,cpp]
 ----
-{% include "./02-environment.cfg" %}
+{% include "/02-environment.cfg" %}
 ----
-
 
 
 == Adding options
