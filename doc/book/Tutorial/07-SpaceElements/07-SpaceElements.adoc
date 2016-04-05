@@ -50,12 +50,12 @@ One can also use :
 
 [source,c++]
 ----
-{% include "code/07-myfunctionspace.cpp" %}
+{% include "07-myfunctionspace.cpp" %}
 ----
 
 === Config file
 
 [source,c++]
 ----
-{% include "code/07-myfunctionspace.cfg" %}
+{% include "07-myfunctionspace.cfg" %}
 ----

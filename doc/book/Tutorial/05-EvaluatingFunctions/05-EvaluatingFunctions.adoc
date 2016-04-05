@@ -52,7 +52,7 @@ for (int i = 0; i<max; i++)
 === Code
 [source,c++]
 ----
-{% include "code/05-myexporter.cpp" %}
+{% include "05-myexporter.cpp" %}
 ----
 The list of the Feel++ Keyword is link:../QuickReference/keywords.adoc[here].
 
@@ -105,6 +105,6 @@ ex1->save();
 
 [source,c++]
 ----
-{% include "code/myfunctor.cpp" %}
+{% include "myfunctor.cpp" %}
 ----
 The list of the Feel++ Keyword is link:../QuickReference/keywords.adoc[here].

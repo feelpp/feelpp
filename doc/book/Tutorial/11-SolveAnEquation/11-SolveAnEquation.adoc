@@ -89,12 +89,12 @@ The complete code reads as follows :
 
 [source,cpp]
 ----
-{% include "code/11-mylaplacian.cpp" %}
+{% include "11-mylaplacian.cpp" %}
 ----
 
 === Config file
 
 [source,cfg]
 ----
-{% include "code/11-mylaplacian.cfg" %}
+{% include "11-mylaplacian.cfg" %}
 ----

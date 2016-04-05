@@ -23,12 +23,12 @@ See this link:06-VisualizingFunctions.adoc[section] for more details about expor
 
 [source,c++]
 ----
-{% include "code/03-mymesh.cpp" %}
+{% include "03-mymesh.cpp" %}
 ----
 
 == The config file
 
 [source,c++]
 ----
-{% include "code/03-mymesh.cfg" %}
+{% include "03-mymesh.cfg" %}
 ----
