@@ -1,0 +1,23 @@
+{
+ 
+    "gitbook": "3.0.0-pre.5",
+    "plugins": ["anchors","include-codeblock","include-highlight","mathjax","ga","richquotes","toc","expandable-chapters","unicodecss"],
+    "pluginsConfig": {
+        "ga": {
+            "token": "UA-65761593-1"
+        },
+        "richquotes" : {
+            "todos" : true,
+            "fixme" : true
+        }
+    },
+    "links": {
+        "sidebar": {
+            "Feel++": "http://www.feelpp.org/",
+            "GitHub": "http://www.github.com/feelpp/feelpp"
+        }
+    }, 
+    "variables": {
+        "feelpp": "Feel++"
+    }
+}
