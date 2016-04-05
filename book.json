@@ -1,6 +1,6 @@
 {
     "root": "doc/book", 
-    "gitbook": "3.0.0-pre.5",
+    "gitbook": "3.X.X",
     "plugins": ["anchors","include-codeblock","include-highlight","mathjax-beta","ga","richquotes","toc","expandable-chapters","unicodecss"],
     "pluginsConfig": {
         "ga": {
