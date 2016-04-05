@@ -1,0 +1,100 @@
+== Solve a partial differential equation
+
+With all the previously notions we approach, the definition of a partial differential equation and boundary conditions are our next step. More details on these aspects can be retrieve at this link:../QuickReference/forms.adoc[page].
+
+
+=== Construction of the equation
+
+This example refers to a laplacian problem, define by
+
+$$
+−Δu=1 \text{ in } Ω=[0,1]^2
+$$
+$$
+u=1 \text{ on } ∂Ω
+$$
+
+After turning it into its weak form, we have 
+
+$$
+\int_\Omega \nabla u \cdot \nabla v = \int_\Omega v
+$$$$
+u=1 \text{ on } ∂Ω
+$$
+where u is the unknown and v a test function.
+The left side is known as the bilinear form $$a$$ and the right side is the linear form $$l$$. This equation can be so written :
+
+$$
+\int_\Omega a(u,v) = \int_\Omega l(v)
+$$$$
+u=1 \text{ on } ∂Ω
+$$
+
+=== Implementation
+
+The steps to implement this problem are
+
+- Loading a 2D mesh, creating the function space $$Vh$$, composed of piecewise polynomial functions of order 2, and its associated elements
+
+----
+ auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+ auto Vh = Pch<2>( mesh );
+ auto u = Vh->element();
+ auto v = Vh->element();
+----
+
+- Define the linear form $$l$$ with test function space $$Vh$$
+
+----
+auto l = form1( _test=Vh );
+l = integrate(_range=elements(mesh),
+              _expr=id(v));
+----
+
+- Define the bilinear form $$a$$ with $$Vh$$ as test and trial function spaces
+
+----
+auto a = form2( _trial=Vh, _test=Vh);
+a = integrate(_range=elements(mesh),
+              _expr=gradt(u)*trans(grad(v)) );
+----
+
+`form1` and `form2` are used to define respectively the left and right side of our partial differential equation.
+
+- Add Dirichlet boundary condition on $$u$$
+
+----
+a+=on(_range=boundaryfaces(mesh), 
+      _rhs=l, _element=u, _expr=cst(0.) );
+----
+
+We impose, in this case, $$u=0$$ on $$\partial\Omega$$, with the keyword `on`.
+
+- Solving the problem
+
+----
+a.solve(_rhs=l,_solution=u);
+----
+
+- Exporting the solution
+
+----
+auto e = exporter( _mesh=mesh );
+e->add( "u", u );
+e->save();
+----
+
+=== Code
+The complete code reads as follows :
+
+[source,cpp]
+----
+{% include "code/11-mylaplacian.cpp" %}
+----
+
+=== Config file
+
+[source,cfg]
+----
+{% include "code/11-mylaplacian.cfg" %}
+----
