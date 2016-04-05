@@ -1,4 +1,5 @@
 {
+    "root": "./doc/book",
     "gitbook": "3.0.0-pre.5",
     "plugins": ["anchors","include-codeblock","include-highlight","mathjax","ga","richquotes","toc","expandable-chapters","unicodecss"],
     "pluginsConfig": {
@@ -15,8 +16,7 @@
             "Feel++": "http://www.feelpp.org/",
             "GitHub": "http://www.github.com/feelpp/feelpp"
         }
-    },
-    "root": "./doc/book",
+    }, 
     "variables": {
         "feelpp": "Feel++"
     }
