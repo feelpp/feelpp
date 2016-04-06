@@ -1,0 +1,446 @@
+= Solid Mechanics Models
+:toc:
+:toc-placement: macro
+:toclevels: 2
+
+toc::[]
+
+== Models 
+
+{% include "SaintVenantKirchhoff.adoc" %}
+
+== Json file
+
+Let's describe how a json file is build.
+
+=== Properties
+
+* Linear 
+* Saint-Venant-Kirchhoff
+* NeoHookean
+
+When materials are closed to incompressibility formulation in displacement/pressure are available.
+
+.Table of Models for `model` option
+|===
+| Model | Name 
+
+| Linear Elasticity 
+| `Elasticity`
+
+| Hyper Elasticity 
+| `Hyper-Elasticity`
+
+|===
+
+.Table of Models for `material_law` in hyper elasticity
+|===
+| Model | Name   | Volumic law
+
+| Saint-Venant-Kirchhoff
+| `SaintVenantKirchhoff`
+| classic, simo1985
+
+| NeoHookean
+| `NeoHookean`
+| classic, simo1985
+
+|===
+
+option: `mechanicalproperties.compressible.volumic_law`
+
+== Materials
+
+[source,json]
+.Materials section
+----
+"Materials":
+{
+    "marker":
+    {
+        "name":"solid",
+        "E":"1.4e6",
+        "nu":"0.4",
+        "rho":"1e3"
+    }
+}
+----
+
+where `E` stands for the Young's modulus in $$Pa$$, `nu` the Poisson's ratio ( dimensionless ) and `rho` the density in $$kg\cdot m^{-3}$$.
+
+=== Boundary Conditions
+
+Boundary conditions and volumic forces are set in the json files
+[source,json]
+.Example for boundary conditions
+----
+"BoundaryConditions":
+{
+    "field":
+    {
+        "<condition type>":
+        {
+            "marker":
+            {
+                "expr": "value"
+            }
+        }
+    }
+}
+----
+where all component of vectorial field can be access with `<field>_x` for the $$x$$ component where `<field>` is the name of the vectorial field. +
+The condition types are explain in the two following tables.
+
+.Boundary conditions
+|===
+| Name | Options | Type 
+
+| Dirichlet 
+| faces, edges and component-wise
+| "Dirichlet"
+
+| Neumann 
+| scalar, vectorial
+| "Neumann_scalar" or "Neumann_vectorial"
+
+| Pressure follower ,
+| Nonlinear boundary condition set in deformed domain
+| TODO
+
+| Robin 
+| TODO
+| TODO
+
+|===
+
+.Volumic forces
+|===
+| Name | Options | Type
+
+| Expression
+| Vectorial
+| "VolumicForces"
+
+|===
+
+=== Post Process
+
+[source,json]
+----
+"PostProcess":
+{
+    "Fields":["field1","field2",...],
+    "Measures":
+    {
+        "<measure type>":
+        {
+            "label":
+            {
+                "<range type>":"value",
+                "fields":["field1","field3"]
+            }
+        }
+    }
+}
+----
+
+The fields allowed to be exported in the `Fields` section are:
+
+- displacement
+- velocity
+- acceleration
+- stress or normal-stress
+- pressure
+- material-properties
+- pid
+- fsi
+- Von-Mises
+- Tresca
+- principal-stresses
+- all
+
+.Measure type and range type associated
+|===
+|Measure type | Range type | example
+
+|Points | coords | "{0,0,0}"
+|Maximum | markers | "marker1"
+|Minimum | markers | "marker1"
+|volume_variation* | - | "volume_variation":""
+|===
+
+*volume_variation does not take a set of point or of range, it is a volumic measure.
+
+The fields on which one can do measures:
+
+- volume_variation
+- displacement
+- velocity
+- acceleration
+- pressure
+- principal-stress-0
+- principal-stress-1
+- principal-stress-2
+- sigma_xx, sigma_xy, ...
+
+== Action
+
+Let's finish with a simple example in order to show how this works and how to use them. We will interest us to the deformation of an elastic structure.
+
+=== Feel++ code
+
+First at all, we define our model type with 
+
+----
+typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,1>,
+                                    Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
+----
+
+We choose here $$\mathbb{P}_1$$ space for displacement order. This definition allows us to create our fluid model object SM like this
+ 
+----
+auto SM = model_type::New("solid");
+----
+
+The method `New` retrieve all data from the configuration and json files, as well build a mesh if need.
+
+----
+SM->isStationary()
+----
+
+will determine if our model is stationary or not.
+
+If it isn't, our model is time reliant, and a loop on time is necessary. We then solve our problem and export the results at each time step.
+
+----
+    {
+        SM->init();
+        SM->printAndSaveInfo();
+
+        for ( ; !SM->timeStepBase()->isFinished(); SM->updateTimeStep() )
+        {
+            SM->solve();
+            SM->exportResults();
+        }
+    }
+----
+
+If it is stationary, we need to check if we are in quasi static mode or not.
+
+----
+bool algoQuasiStatic = boption(_name="solve-quasi-static");
+----
+
+If not, we save and print our model and solvers. Then the system is solve and we can export the results.
+
+----
+if ( !algoQuasiStatic )
+        {
+            SM->init();
+            SM->printAndSaveInfo();
+            SM->solve();
+            SM->exportResults();
+        }
+----
+
+==== Code
+Here is the code 
+
+[source,cpp]
+----
+{% include "../Examples/solid_model.cpp" %}
+----
+
+=== Configuration file 
+
+The config file is used to define options  linked to our case we would have the possibility to change at will. It can be, for example, files paths as follows
+
+----
+[solid]
+filename=$top_srcdir/applications/models/solid/TurekHron/csm3.json
+
+# precondtioner config
+geofile=$top_srcdir/applications/models/solid/TurekHron/csm.geo
+
+[exporter]
+directory=applications/models/solid/TurekHron/csm3/$solid_tag
+
+----
+
+It can also be resolution dependent parameters such as mesh elements size, methods used  to define our problem and solvers.
+
+----
+[solid]
+
+material_law=StVenantKirchhoff# StVenantKirchhoff, NeoHookean
+
+# use density and material coeff cst in appli
+jacobian-linear-update=false
+linearsystem-cst-update=false
+
+# snes and ksp config
+#reuse-prec=true#false
+#reuse-jac=true#false
+reuse-jac.rebuild-at-first-newton-step=true
+reuse-prec.rebuild-at-first-newton-step=true
+snes-maxit=500
+snes-maxit-reuse=10
+snes-ksp-maxit=1000
+snes-ksp-maxit-reuse=100
+
+# precondtioner config
+pc-type=lu #lu,gasm,ml
+ksp-converged-reason=1
+----
+
+In this case, we use the Saint-Venant-Kirchhoff model to  define our problem, we set the update of linear system constant and jacobian linear as "no update", we discretize values associated to solvers ( SNES and KSP ), and finally we choose LU as the preconditioner method.
+
+==== Code
+[source,cfg]
+----
+{% include "../Examples/csm3.cfg" %}
+----
+
+=== Json file
+
+First at all, we define some general information like the name ( and short name ) and the model we would like to use
+
+[source,json]
+----
+"Name": "Solid Mechanics ",
+"ShortName":"Solid",
+"Model":"Hyper-Elasticity",
+----
+
+Then we define parameters we will need to solve our problem. Here we define a gravitational constant.
+
+----
+"Parameters":
+    {
+        "gravity":
+        {
+            "value":"2"
+        }
+    },
+----
+
+After that, we define the link:#Material[material properties]. In our case, we define the solid we will study, named beam here, by $$E$$, $$\nu$$ and $$\rho$$, respectively its Young's modulus ( $$kg/ms^2$$ ), its Poisson's ratio ( dimensionless ) and its density (in $$kg/m^3$$)
+
+[source,json]
+----
+Materials":
+    {
+        "beam":{
+            "name":"solid",
+            "E":"1.4e6",
+            "nu":"0.4",
+            "rho":"1e3"
+        }
+    },
+----
+
+The link:#Boundary_Conditions[boundary conditions] are the next aspect we define. Here, we impose on the displacement several conditions :
+
+- A Dirichlet condition on fixed wall
+- A Neumann condition on free wall
+- A volumic force, represent here by the action of the gravity on the solid.
+
+[source,json]
+----
+BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "fixed-wall":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "Neumann_scalar":
+            {
+                "free-wall":
+                {
+                    "expr":"0"
+                }
+            },
+            "VolumicForces":
+            {
+                "":
+                {
+                    "expr":"{0,-gravity*1e3}:gravity"
+                }
+            }
+        }
+    },
+----
+
+The link:#Post_Process[post process] aspect is the last one to define. We want to export displacement values as well as measure displacement and velocity on point $$A$$ along with the maximum of this values on all the free wall.
+
+[source,json]
+----
+PostProcess":
+    {
+        "Fields":["displacement"],
+        "Measures":
+        {
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0.6,0.2,0}",
+                    "fields":["displacement","velocity"]
+                }
+            },
+            "Maximum":
+            {
+                "free-wall":
+                {
+                    "markers":"free-wall",
+                    "fields":["displacement","velocity"]
+                }
+            }
+        }
+    }
+----
+
+==== Code
+
+[source,cfg]
+----
+{% include "../Examples/csm3.json" %}
+----
+
+
+=== Compilation/Execution
+
+Once you've a build dir, you just have to realise the command `make` at 
+
+--------------------
+{buildir}/applications/models/solid
+--------------------
+
+This will generate executables named `feelpp_application_solid_*`. To execute it, you need to give the path of the cfg file associated to your case, with `--config-file`.
+
+For example
+
+----
+mpirun -np 4 feelpp_application_fluid_2d --config-file={sourcedir}/applications/models/solid/TurekHron/csm3.cfg
+----
+
+is how to execute the case ahead on 4 processors.
+
+The result files are then stored by default in  
+
+----
+feel/applications/models/solid/{case_name}/{OrderDis}{Geometric_order}/{processor_used}
+----
+
+If we return once again at the example, they are in 
+
+----
+feel/applications/models/solid/TurekHron/csm3/P1G1/np_8
+----
+
+

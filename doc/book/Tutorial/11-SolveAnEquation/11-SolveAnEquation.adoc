@@ -18,7 +18,8 @@ After turning it into its weak form, we have
 
 $$
 \int_\Omega \nabla u \cdot \nabla v = \int_\Omega v
-$$$$
+$$
+$$
 u=1 \text{ on } ∂Ω
 $$
 where u is the unknown and v a test function.
@@ -26,7 +27,8 @@ The left side is known as the bilinear form $$a$$ and the right side is the line
 
 $$
 \int_\Omega a(u,v) = \int_\Omega l(v)
-$$$$
+$$
+$$
 u=1 \text{ on } ∂Ω
 $$
 
