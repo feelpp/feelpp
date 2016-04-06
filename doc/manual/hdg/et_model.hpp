@@ -126,6 +126,7 @@ private:
 public:
     void init();
     void solve();
+    void exportResults();
 };
 
 template<int Dim, int OrderP>
@@ -526,5 +527,15 @@ ElectroThermal<Dim, OrderP>::assembleF()
     }
 }
 
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::exportResults()
+{
+    auto e = exporter( M_Vh->mesh());
+    e->add("potential", *M_pp);
+    e->add("current", *M_up);
+    e->add("temperature", *M_Tp);
+    e->save();
+}
 
 } // Feel

@@ -24,4 +24,10 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
-feelpp_add_application( electro-thermal-model SRCS et_main_model.cpp INCLUDE_IN_ALL CFG et_model.cfg et_model.json DEFS FEELPP_DIM=2 GEO test2D.geo )
+
+foreach(D 2 3)
+  foreach(P  RANGE 1 3 1)
+    configure_file(et_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/et${D}DP${P}_main.cpp )
+    feelpp_add_application( electro-thermal-model_${D}DP${P} SRCS et${D}DP${P}_main.cpp INCLUDE_IN_ALL CFG et_model${D}D.cfg et_model${D}D.json )
+  endforeach()
+endforeach()
