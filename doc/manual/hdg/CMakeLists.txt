@@ -24,3 +24,4 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 GEO test2D.geo )
+feelpp_add_application( electro-thermal-model SRCS et_main_model.cpp INCLUDE_IN_ALL CFG et_model.cfg et_model.json DEFS FEELPP_DIM=2 GEO test2D.geo )
