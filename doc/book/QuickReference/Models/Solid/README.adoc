@@ -7,7 +7,7 @@ toc::[]
 
 == Models 
 
-{% include "SaintVenantKirchhoff.adoc" %}
+{% include "/QuickReference/Models/Solid/SaintVenantKirchhoff.adoc" %}
 
 == Json file
 
@@ -248,7 +248,7 @@ Here is the code
 
 [source,cpp]
 ----
-{% include "../Examples/solid_model.cpp" %}
+{% include "/QuickReference/Models/Examples/solid_model.cpp" %}
 ----
 
 === Configuration file 
@@ -298,7 +298,7 @@ In this case, we use the Saint-Venant-Kirchhoff model to  define our problem, we
 ==== Code
 [source,cfg]
 ----
-{% include "../Examples/csm3.cfg" %}
+{% include "/QuickReference/Models/Examples/csm3.cfg" %}
 ----
 
 === Json file
@@ -409,7 +409,7 @@ PostProcess":
 
 [source,cfg]
 ----
-{% include "../Examples/csm3.json" %}
+{% include "/QuickReference/Models/Examples/csm3.json" %}
 ----
 
 

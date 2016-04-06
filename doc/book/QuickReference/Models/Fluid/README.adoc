@@ -7,7 +7,7 @@ toc::[]
 
 == Models 
 
-{% include "NavierStokes.adoc" %}
+{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
 
 
 == JSON file
@@ -148,7 +148,6 @@ The fields on which one can do measures:
 Let's finish with a simple example in order to show how this works and how to use them. We will interest us to a fluid flow into a cavity in 3D.
 
 === Feel++ code
-Here is the code 
 
 First at all, we define our model type with 
 
@@ -202,7 +201,7 @@ If it's not, our model is time reliant, and a loop on time is necessary. Our mod
 
 [source,cpp]
 ----
-{% include "../Examples/fluid_model.cpp" %}
+{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
 ----
 
 
@@ -242,7 +241,7 @@ In this case, we use Oseen to define our problem, we set the update of linear sy
 
 [source,cfg]
 ----
-{% include "../Examples/cavity3d.cfg" %}
+{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
 ----
 
 === Json file
@@ -320,7 +319,7 @@ The link:#Post_Process[post process] aspect is the last one to define. We choose
 
 [source,json]
 ----
-{% include "../Examples/cavity3d.json" %}
+{% include "/QuickReference/Models/Examples/cavity3d.json" %}
 ----
 
 === Compilation/Execution

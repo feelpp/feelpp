@@ -4,4 +4,4 @@ The Fluid Structure models are formed from the combination of a link:../Solid/RE
 
 == Models
 
-{% include "FSIModel.adoc" %}
+{% include "/QuickReference/Models/FluidStructure/FSIModel.adoc" %}
