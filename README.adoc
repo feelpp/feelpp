@@ -1,8 +1,10 @@
-Feel++
+Feel++ 
 ======
 :toc:
 :toc-placement: preamble
-:toc-level: 1
+:toclevels: 1
+
+The Finite Element Embedded Library in C++
 
 == Gitter Discussion Forum 
 
