@@ -264,7 +264,7 @@ ElectroThermal<Dim, OrderP>::run()
 
     if (check_errors)
     {
-        bool has_dirichlet = nelements(markedfaces(mesh,{"top","bottom"}), true) >= 1;
+        bool has_dirichlet = nelements(markedfaces(mesh,{"top"}), true) >= 1;
         auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(*up) );
 
         double l2err_p = 1e+30;
@@ -393,7 +393,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
     if (check_errors)
     {
-        rhs3 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
+        rhs3 += integrate(_range=markedfaces(mesh,{"top"}),
                           _expr=id(l)*p_exact);
         rhs3 += integrate(_range=markedfaces(mesh,"R"),
                           _expr=-id(l)*(sigma*gradp_exact*N()) );
@@ -505,7 +505,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a33 += integrate(_range=markedfaces(mesh,"R"),
                      _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-    a33 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
+    a33 += integrate(_range=markedfaces(mesh,{"top"}),
                      _expr=idt(phat) * id(l) );
 
     auto a34 = form2(_trial=Ch, _test=Mh,_matrix=A,
