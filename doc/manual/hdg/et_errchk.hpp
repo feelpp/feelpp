@@ -181,7 +181,7 @@ ElectroThermal<Dim, OrderP>::run()
     hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(3,0) = stencil( _test=Ch,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(4,0) = stencil( _test=Xh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(4,0) = stencil( _test=Xh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
@@ -404,7 +404,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     auto rhs4 = form1( _test=Xh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
-    rhs4 += integrate(_range=elements(mesh),_expr=inner(idv(*Jp))/sigma);
+    rhs4 += integrate(_range=elements(mesh),_expr=inner(idv(*Jp))/sigma * id(q));
     rhs4 += integrate(_range=markedfaces(mesh,"R"),
                       _expr=doption("h")*doption("Tw")*id(q));
 
@@ -531,11 +531,6 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a43 += integrate(_range=markedfaces(mesh,"bottom"),
                      _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
-
-    auto a51 = form2(_trial=Vh, _test=Xh,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
-                     _colstart=0);
-    a51 += integrate( _range=elements(mesh), _expr=trans(idt(u))*id(v) / sigma * id(q) );
 
     auto a55 = form2(_trial=Xh, _test=Xh,_matrix=A,
                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
