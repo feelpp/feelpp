@@ -7,7 +7,7 @@ toc::[]
 
 == Models 
 
-{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
+//{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
 
 
 == JSON file
@@ -201,7 +201,7 @@ If it's not, our model is time reliant, and a loop on time is necessary. Our mod
 
 [source,cpp]
 ----
-{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
+//{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
 ----
 
 
@@ -241,7 +241,7 @@ In this case, we use Oseen to define our problem, we set the update of linear sy
 
 [source,cfg]
 ----
-{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
+//{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
 ----
 
 === Json file
@@ -319,7 +319,7 @@ The link:#Post_Process[post process] aspect is the last one to define. We choose
 
 [source,json]
 ----
-{% include "/QuickReference/Models/Examples/cavity3d.json" %}
+//{% include "/QuickReference/Models/Examples/cavity3d.json" %}
 ----
 
 === Compilation/Execution
