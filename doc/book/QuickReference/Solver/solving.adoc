@@ -9,7 +9,7 @@ The configuration files `.cfg` allow for a wide range of options to solve a line
 
 We consider now the following example 
 
-[sources,cpp]
+[source,cpp]
 ----
 {% include "/Tutorial/code/mylaplacian.cpp" %}
 ----
