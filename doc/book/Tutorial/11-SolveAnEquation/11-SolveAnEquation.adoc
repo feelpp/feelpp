@@ -1,6 +1,6 @@
 == Solve a partial differential equation
 
-With all the previously notions we approach, the definition of a partial differential equation and boundary conditions are our next step. More details on these aspects can be retrieve at this link:../QuickReference/forms.adoc[page].
+With all the previously notions we approach, the definition of a partial differential equation and boundary conditions are our next step. More details on these aspects can be retrieve at this link:../../QuickReference/forms.adoc[page].
 
 
 === Construction of the equation

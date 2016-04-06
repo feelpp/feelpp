@@ -22,7 +22,7 @@ $$\boldsymbol{(1)}, \boldsymbol{(2)}, \boldsymbol{(3)}$$ are the fluid-struture 
 
 === Fluid structure coupling conditions with 1D reduced model
 
-For the link:FSIModel.adoc#_fluid_structure_coupling_conditions[coupling conditions], between the 2D fluid and 1D structure, we need to modify the original ones $$ \boldsymbol{(1)},\boldsymbol{(2)}, \boldsymbol{(3)} $$ by
+For the link:#_fluid_structure_coupling_conditions[coupling conditions], between the 2D fluid and 1D structure, we need to modify the original ones $$ \boldsymbol{(1)},\boldsymbol{(2)}, \boldsymbol{(3)} $$ by
 
 $$
 \dot{\eta}_s \boldsymbol{e}_r - \boldsymbol{u}_f = \boldsymbol{0} \quad \boldsymbol{(1.2)}

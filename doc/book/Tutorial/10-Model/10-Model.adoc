@@ -9,7 +9,7 @@ toc::[]
 == Introduction 
 
 It is well known an equation can describe a huge range of physical
-problems. Each of theses problems will have a particular environment, but the equation to solve will be the same. To make our program applicable to theses range of problem, we have defined a model. Models definitions can be retrieve in this link:../QuickReference/Models/README.adoc[section].
+problems. Each of theses problems will have a particular environment, but the equation to solve will be the same. To make our program applicable to theses range of problem, we have defined a model. Models definitions can be retrieve in this link:../../QuickReference/Models/README.adoc[section].
 
 == What is a model
 

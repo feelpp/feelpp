@@ -15,7 +15,7 @@ We may use various kind of expressions :
 
 Let's begin with the evaluation of the expression $$ sin(\pi x)$$ on a unit circle.
 
-First at all, we define the unit circle and its link:07-SpaceElements.adoc[function space] :
+First at all, we define the unit circle and its link:../07-SpaceElements/07-SpaceElements.adoc[function space] :
 
 ----
 auto mesh = unitCircle<2>();
@@ -54,7 +54,7 @@ for (int i = 0; i<max; i++)
 ----
 {% include "/Tutorial/05-EvaluatingFunctions/05-myexporter.cpp" %}
 ----
-The list of the Feel++ Keyword is link:../QuickReference/keywords.adoc[here].
+The list of the Feel++ Keyword is link:../../QuickReference/keywords.adoc[here].
 
 == Hard Coded 
 
@@ -107,4 +107,4 @@ ex1->save();
 ----
 {% include "/Tutorial/05-EvaluatingFunctions/myfunctor.cpp" %}
 ----
-The list of the Feel++ Keyword is link:../QuickReference/keywords.adoc[here].
+The list of the Feel++ Keyword is link:../../QuickReference/keywords.adoc[here].

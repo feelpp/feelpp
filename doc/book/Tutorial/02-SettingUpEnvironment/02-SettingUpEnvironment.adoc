@@ -13,7 +13,7 @@ Let's begin with our first program using the Feel\++ framework.  To start, you i
 We use the C\++ `namespace` to avoid `Feel::` prefix before
 Feel++ objects.
 
-We initialize the environment variables through the Feel++ `Environment` class, which can be found link:../QuickReference/environment.adoc[here].
+We initialize the environment variables through the Feel++ `Environment` class, which can be found link:../../QuickReference/environment.adoc[here].
 
 === Source code
 

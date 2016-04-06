@@ -6,7 +6,7 @@ Computing integrals over mesh
 
 toc::[]
 
-The next step is to compute integrals over the mesh ( See link:../QuickReference/integrals.adoc[this] for detailed methods ).
+The next step is to compute integrals over the mesh ( See link:../../QuickReference/integrals.adoc[this] for detailed methods ).
 
 == Step by step explanations
 

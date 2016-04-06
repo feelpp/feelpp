@@ -7,7 +7,7 @@ Spaces and elements
 toc::[]
 
 You've learned how to discretize the space you want to compute on.
-You now have to learn how to define and use function spaces and elements of functions spaces. For advanced informations on this subject, you can look link:../QuickReference/spaces.adoc[there].
+You now have to learn how to define and use function spaces and elements of functions spaces. For advanced informations on this subject, you can look link:../../QuickReference/spaces.adoc[there].
 
 == Constructing a function space
 

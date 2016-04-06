@@ -213,7 +213,7 @@ Optional Parameters:
 * `_physical_are_elementary_regions`  to load specific meshes formats. 
    - Default = `false`
 
-The file you want to load has to be in an appropriate repository. See link:Tutorial/03-LoadingMesh.adoc[LoadMesh].
+The file you want to load has to be in an appropriate repository. See link:../Tutorial/03-LoadingMesh/03-LoadingMesh.adoc[LoadMesh].
 
 **Examples:**
 
@@ -308,7 +308,7 @@ Optional Parameters:
 * `_files_path`  path to the file. 
    - Default = `localGeoRepository().`
 
-The file you want to load has to be in an appropriate repository. See link:Tutorial/03-LoadingMesh.adoc[LoadMesh].
+The file you want to load has to be in an appropriate repository. See link:../Tutorial/03-LoadingMesh/03-LoadingMesh.adoc[LoadMesh].
 
 *Example:*
 
