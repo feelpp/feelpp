@@ -26,6 +26,8 @@
 
 
 #include <vector>
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/ginac.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -40,9 +42,10 @@ struct ModelMaterial
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
-    ModelMaterial( std::string name )
+    ModelMaterial( std::string name, pt::ptree p )
         :
         M_name( name ),
+        M_p( p ),
         M_rho( 1. ),
         M_mu(1. ),
         M_Cp( 1 ),
@@ -182,8 +185,77 @@ struct ModelMaterial
             _map["Tliq"]  = Tliq();
             return _map;
         }
+
+    std::string getString( std::string const& key )
+        {
+            return M_p.get( key, "" );
+        }
+
+    Expr<GinacEx<2> > getScalar( std::string const& key ) { return expr( M_p.get( key, "0" ) ); }
+    // Expr<GinacEx<2> > getScalar( std::string const& key, std::pair<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
+    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::string const& sym, ExprT e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T-1) )
+                s += ",0";
+            s += "}";
+            return expr<T,1>( M_p.get( key, s ) );
+        }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::pair<std::string,double> const& params )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T-1) )
+                s += ",0";
+            s += "}";
+            return expr<T,1>( M_p.get( key, s ), params );
+        }
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::map<std::string,double> const& params )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T-1) )
+                s += ",0";
+            s += "}";
+            return expr<T,1>( M_p.get( key, s ), params );
+        }
+    // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
+    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
+    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
+    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T1*T2-1) )
+                s += ",0";
+            s += "}";
+            return expr<T1,T2>( M_p.get( key, s ) );
+        }
+    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::pair<std::string,double> const& params )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T1*T2-1) )
+                s += ",0";
+            s += "}";
+            return expr<T1,T2>( M_p.get( key, s ), params );
+        }
+    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::map<std::string,double> const& params )
+        {
+            std::string s = "{0";
+            for ( auto i : range(T1*T2-1) )
+                s += ",0";
+            s += "}";
+            return expr<T1,T2>( M_p.get( key, s ), params );
+        }
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::string const& sym, ExprT e );
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
+    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
+
 private:
     std::string M_name; /*!< Material name*/
+    pt::ptree M_p;
+
     double M_rho; /*!< Density */
     double M_mu;  /*!< Molecular(dynamic) viscosity */
     
