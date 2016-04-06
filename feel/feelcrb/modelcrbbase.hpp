@@ -527,6 +527,18 @@ public :
         return boost::make_tuple( M_Aqm , M_Fqm );
     }
 
+    virtual affine_decomposition_type computePicardAffineDecomposition()
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
+            std::cout<<"** computePicardAffineDecomposition(...) **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeAffineDecomposition();
+    }
+
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
         return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
@@ -674,6 +686,19 @@ public :
     {
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
+
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu );
+    }
+
     virtual betaq_type computeBetaQ( parameter_type const& mu )
     {
         return computeBetaQ( mu, mpl::bool_< is_time_dependent >() );
@@ -750,7 +775,18 @@ public :
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu, time , only_terms_time_dependent );
+    }
+    
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
         //not that the parameter mu is here to indicates
@@ -848,6 +884,29 @@ public :
         }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
+    }
+
+    virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return this->computeBetaQm( u, mu );
+    }
+    virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( u, mu, time, only_time_dependent_terms );
     }
 
 

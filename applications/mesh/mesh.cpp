@@ -42,10 +42,11 @@ int main( int argc, char** argv )
 
     tic();
     //auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>, _partitions=1, _savehdf5=0 );
-    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=0, _filename=soption("mesh.filename"), 
+    Feel::cout << "mesh.save.enable=" << boption("mesh.save.enable") << std::endl << std::flush;
+    auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=boption("mesh.save.enable"), _filename=soption("mesh.filename"),
                          _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
     toc("loading mesh done",FLAGS_v>0);
-    
+
     if ( boption("mesh.partition.enable") && Environment::numberOfProcessors() == 1 )
     {
         // build a MeshPartitionSet based on a mesh partition that will feed a
@@ -55,7 +56,7 @@ int main( int argc, char** argv )
         io_t io( fs::path(soption("mesh.filename")).stem().string()+".json" );
         io.write( partitionMesh( mesh, ioption("mesh.partition.size") ) );
         return 0;
-    } 
+    }
 
     auto Xhd0 = Pdh<0>(mesh);
     auto measures = Xhd0->element();
