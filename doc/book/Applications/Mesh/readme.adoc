@@ -2,6 +2,6 @@
 
 As the title suggest, this section will be dedicate to mesh applications. It is composed by 
 
-- link:Partitioning/readme.adoc[A mesh partitioner] 
+- link:Partitioner/readme.adoc[A mesh partitioner] 
 
-- link:Reading/readme.adoc[A partitioned mesh reader ] 
+- link:Reader/readme.adoc[A partitioned mesh reader ] 
