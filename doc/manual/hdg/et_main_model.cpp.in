@@ -31,8 +31,6 @@ makeOptions()
     po::options_description testhdivoptions( "Electro-Thermal Model options" );
     testhdivoptions.add_options()
         ( "Tw", po::value<double>()->default_value( 1 ), "water temperature" )
-        ( "V", po::value<double>()->default_value( 1 ), "electric potential" )
-        ( "I_target", po::value<double>()->default_value( 1 ), "target current" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "picard.itol", po::value<double>()->default_value( 1e-4 ), "tolerance" )
@@ -69,8 +67,12 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=makeOptions() );
-    ElectroThermal<2,1> ET;
+
+    typedef ElectroThermal<@D@,@P@> et_type;
+    
+    et_type ET;
     ET.init();
     ET.solve();
+    ET.exportResults();
     return 0;
 }
