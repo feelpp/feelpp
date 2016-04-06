@@ -57,7 +57,7 @@ From `doc/manual/stokes/stokes.cpp`
 
 [source,cpp]
 ----
-{% include "../../Tutorial/code/mystokes.cpp" %}
+{% include "/Tutorial/code/mystokes.cpp" %}
 ----
 
 ==  $$H^1$$ norm
