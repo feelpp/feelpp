@@ -48,22 +48,7 @@
         {
             "Robin":
             {
-                "Channel0":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
-                },
-                "Channel1":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
-                },
-                "TieRods":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
-                },
-                "CoolingHoles":
+                "R":
                 {
                     "expr1":"h:h",
                     "expr2":"h*Tw:h:Tw"
