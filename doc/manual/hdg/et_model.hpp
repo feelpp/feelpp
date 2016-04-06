@@ -117,7 +117,6 @@ private:
     Wh_element_ptr_t M_pp;
     Xh_element_ptr_t M_Tp;
 
-    double M_V;
     int M_tau_order;
 
     void assembleA();
@@ -137,7 +136,6 @@ ElectroThermal<Dim, OrderP>::init()
 
     int proc_rank = Environment::worldComm().globalRank();
 
-    M_V=doption("V");
     M_tau_order = ioption("tau_order");
 
     tic();
