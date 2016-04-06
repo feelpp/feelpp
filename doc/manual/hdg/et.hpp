@@ -457,7 +457,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     a33 += integrate(_range=markedfaces(mesh,"R"),
                      _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-    a33 += integrate(_range=markedfaces(mesh,{"top","bottom"}),
+    a33 += integrate(_range=markedfaces(mesh,{"top"}),
                      _expr=idt(phat) * id(l) );
 
     auto a34 = form2(_trial=Ch, _test=Mh,_matrix=A,
