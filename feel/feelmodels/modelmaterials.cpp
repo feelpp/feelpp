@@ -60,6 +60,7 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
        << "]";
     return os;
 }
+
 ModelMaterials::ModelMaterials( pt::ptree const& p )  : M_p( p )
 {
     setup();
@@ -95,7 +96,7 @@ ModelMaterials::getMaterial( pt::ptree const& v )
 {
     std::string t = v.get<std::string>( "name" );
     LOG(INFO) << "loading material name: " << t << std::endl;
-    ModelMaterial m(t);
+    ModelMaterial m(t, v);
     m.setRho( v.get( "rho", 1.f ) );
     m.setMu( v.get( "mu", 1.f ) );
     m.setCp( v.get( "Cp", 1.f ) );
