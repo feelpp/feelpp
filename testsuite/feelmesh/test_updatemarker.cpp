@@ -56,7 +56,7 @@ makeAbout()
 
 
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( updatemarker_suite )
 
 using dim_t = boost::mpl::list<boost::mpl::int_<2>, boost::mpl::int_<3> >;
