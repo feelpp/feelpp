@@ -7,7 +7,7 @@ toc::[]
 
 == Models 
 
-//{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
+{% include "/QuickReference/Models/Fluid/NavierStokes.adoc" %}
 
 
 == JSON file
@@ -201,13 +201,13 @@ If it's not, our model is time reliant, and a loop on time is necessary. Our mod
 
 [source,cpp]
 ----
-//{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
+{% include "/QuickReference/Models/Examples/fluid_model.cpp" %}
 ----
 
 
 === Configuration file
 
-The config file is used to define options,  linked to our case, we would have the possibility to change at will. It can be, for example, files paths as follows
+The config file is used to define options, linked to our case, we would have the possibility to change at will. It can be, for example, files paths as follows
 
 ----
 [fluid]
@@ -241,7 +241,7 @@ In this case, we use Oseen to define our problem, we set the update of linear sy
 
 [source,cfg]
 ----
-//{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
+{% include "/QuickReference/Models/Examples/cavity3d.cfg" %}
 ----
 
 === Json file
@@ -255,7 +255,7 @@ First at all, we define some general information like the name ( and short name 
 "Model":"Navier-Stokes",
 ----
 
-Then we define the link:#Material[material properties]. In our case, the fluid, define  by rho` its density in $$kg\cdot m^{-3}$$ and `mu` its dynamic viscosity in $$kg\cdot (m \cdot s)^{-1}$$, is the only material we have to define.
+Then we define the link:#_material[material properties]. In our case, the fluid, define  by rho` its density in $$kg\cdot m^{-3}$$ and `mu` its dynamic viscosity in $$kg\cdot (m \cdot s)^{-1}$$, is the only material we have to define.
 
 [source,json]
 ----
@@ -269,7 +269,7 @@ Then we define the link:#Material[material properties]. In our case, the fluid, 
     },
 ----
 
-The link:#Boundary_Conditions[boundary conditions] are the next aspect we define. Here, we impose on the velocity $$u_f$$ Dirichlet conditions at two specific places : `lid` and `wall`.
+The link:#_boundary_conditions[boundary conditions] are the next aspect we define. Here, we impose on the velocity $$u_f$$ Dirichlet conditions at two specific places : `lid` and `wall`.
 
 [source,json]
 ----
@@ -292,7 +292,7 @@ The link:#Boundary_Conditions[boundary conditions] are the next aspect we define
     }
 ----
 
-The link:#Post_Process[post process] aspect is the last one to define. We choose the fields we want to export ( velocity, pressure and pid ). Furthermore, we want to measure forces on `wall` and the pressure at point $$A$$.
+The link:#_post_process[post process] aspect is the last one to define. We choose the fields we want to export ( velocity, pressure and pid ). Furthermore, we want to measure forces on `wall` and the pressure at point $$A$$.
 
 [source,json]
 ----

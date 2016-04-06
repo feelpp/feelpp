@@ -324,7 +324,7 @@ Then we define parameters we will need to solve our problem. Here we define a gr
     },
 ----
 
-After that, we define the link:#Material[material properties]. In our case, we define the solid we will study, named beam here, by $$E$$, $$\nu$$ and $$\rho$$, respectively its Young's modulus ( $$kg/ms^2$$ ), its Poisson's ratio ( dimensionless ) and its density (in $$kg/m^3$$)
+After that, we define the link:#_material[material properties]. In our case, we define the solid we will study, named beam here, by $$E$$, $$\nu$$ and $$\rho$$, respectively its Young's modulus ( $$kg/ms^2$$ ), its Poisson's ratio ( dimensionless ) and its density (in $$kg/m^3$$)
 
 [source,json]
 ----
@@ -339,7 +339,7 @@ Materials":
     },
 ----
 
-The link:#Boundary_Conditions[boundary conditions] are the next aspect we define. Here, we impose on the displacement several conditions :
+The link:#_boundary_conditions[boundary conditions] are the next aspect we define. Here, we impose on the displacement several conditions :
 
 - A Dirichlet condition on fixed wall
 - A Neumann condition on free wall
@@ -376,7 +376,7 @@ BoundaryConditions":
     },
 ----
 
-The link:#Post_Process[post process] aspect is the last one to define. We want to export displacement values as well as measure displacement and velocity on point $$A$$ along with the maximum of this values on all the free wall.
+The link:#_post_process[post process] aspect is the last one to define. We want to export displacement values as well as measure displacement and velocity on point $$A$$ along with the maximum of this values on all the free wall.
 
 [source,json]
 ----
