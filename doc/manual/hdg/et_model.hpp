@@ -37,6 +37,9 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 
+#include <boost/optional.hpp>
+#include <boost/algorithm/string.hpp>
+
 namespace Feel {
 
 
@@ -117,8 +120,15 @@ private:
     Wh_element_ptr_t M_pp;
     Xh_element_ptr_t M_Tp;
 
+    boost::optional<double> M_V;
+
     int M_tau_order;
 
+    bool M_integralCondition;
+    bool M_isPicard;
+
+    void initGraphs();
+    void initGraphsWithIntegralCond();
     void assembleA();
     void assembleF();
 
@@ -133,8 +143,27 @@ void
 ElectroThermal<Dim, OrderP>::init()
 {
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption("model_json") ) );
+    if ( boost::icontains(M_modelProperties->model(), "integral" ) )
+        M_integralCondition = true;
+    else
+        M_integralCondition = false;
+    if ( boost::icontains(M_modelProperties->model(),"hdg-picard") )
+        M_isPicard = true;
+    else
+        M_isPicard = false;
+
+    cout << "Model : " << M_modelProperties->model()
+         << " using ";
+    if ( M_integralCondition )
+        cout << "integral condition on the current and ";
+    if ( M_isPicard )
+        cout << "Picard algorithm" << endl;
+    else
+        cout << "linear case" << endl;
 
     int proc_rank = Environment::worldComm().globalRank();
+
+    M_V = boost::none;
 
     M_tau_order = ioption("tau_order");
 
@@ -149,7 +178,6 @@ ElectroThermal<Dim, OrderP>::init()
 
     M_Vh = Pdhv<OrderP>( mesh, true );
     M_Wh = Pdh<OrderP>( mesh, true );
-    //auto face_mesh_bottom = createSubmesh( mesh, markedfaces(mesh,"bottom"), EXTRACTION_KEEP_MESH_RELATION, 0 );
     M_Mh = Pdh<OrderP>( face_mesh, true );
     M_Xh = Pch<OrderP>( mesh );
     M_Ch = Pch<0>( mesh );
@@ -164,11 +192,110 @@ ElectroThermal<Dim, OrderP>::init()
 
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
-    auto phatp = M_Mh->elementPtr( "phat" );
     M_Tp = M_Xh->elementPtr( "T" );
-    auto mup = M_Ch->elementPtr( "c1" );
 
     tic();
+    if ( M_integralCondition )
+        this->initGraphsWithIntegralCond();
+    else
+        this->initGraphs();
+    toc("matrices",true);
+}
+
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::solve()
+{
+    if ( boost::icontains(M_modelProperties->model(),"hdg-picard") )
+    {
+        int itmax = ioption( "picard.itmax" );
+        double tol = doption( "picard.itol" );
+
+        auto mesh = M_Vh->mesh();
+
+        auto po = M_Wh->element();
+        auto To = M_Xh->element();
+
+        // picard loop
+        cout << "  #iteration incrp incrT current" << std::endl;
+        int it = 0;
+        double incrp, incrT;
+        do
+        {
+            assembleA();
+            assembleF();
+            backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
+            M_hdg_sol.localize(M_U);
+            incrp = normL2( _range=elements(mesh), _expr=idv(*M_pp)-idv(po) );
+            incrT = normL2( _range=elements(mesh), _expr=idv(*M_Tp)-idv(To) );
+
+            po = *M_pp;
+            To=*M_Tp;
+            // compute current
+            double I = integrate(_range=markedfaces(mesh,"bottom"),
+                                 _expr=inner(idv(*M_up),N())).evaluate()(0,0);
+            cout << "  picard #" << it << " " << incrp << " " << incrT << " " << I << std::endl;
+        } while ( ( incrp > tol || incrT > tol ) && ( ++it < itmax ) );
+
+    }
+    else {
+        assembleA();
+        assembleF();
+        backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
+        M_hdg_sol.localize(M_U);
+    }
+}
+
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::initGraphs()
+{
+    auto phatp = M_Mh->elementPtr( "phat" );
+
+    BlocksBaseGraphCSR hdg_graph(4,4);
+    hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(3,0) = stencil( _test=M_Xh,_trial=M_Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+
+    hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(3,1) = stencil( _test=M_Xh,_trial=M_Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+
+    hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
+    hdg_graph(3,2) = stencil( _test=M_Xh,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+
+    hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    hdg_graph(3,3) = stencil( _test=M_Xh,_trial=M_Xh, _diag_is_nonzero=false, _close=false)->graph();
+
+    M_A = backend()->newBlockMatrix(_block=hdg_graph);
+
+    BlocksBaseVector<double> hdg_vec(4);
+    hdg_vec(0,0) = backend()->newVector( M_Vh );
+    hdg_vec(1,0) = backend()->newVector( M_Wh );
+    hdg_vec(2,0) = backend()->newVector( M_Mh );
+    hdg_vec(3,0) = backend()->newVector( M_Xh );
+    M_F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
+
+    M_hdg_sol = BlocksBaseVector<double>(4);
+    M_hdg_sol(0,0) = M_up;
+    M_hdg_sol(1,0) = M_pp;
+    M_hdg_sol(2,0) = phatp;
+    M_hdg_sol(3,0) = M_Tp;
+    M_U = backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+}
+
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::initGraphsWithIntegralCond()
+{
+    auto phatp = M_Mh->elementPtr( "phat" );
+    auto mup = M_Ch->elementPtr( "c1" );
 
     BlocksBaseGraphCSR hdg_graph(5,5);
     hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
@@ -218,17 +345,6 @@ ElectroThermal<Dim, OrderP>::init()
     M_hdg_sol(3,0) = mup;
     M_hdg_sol(4,0) = M_Tp;
     M_U = backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
-    toc("matrices",true);
-}
-
-template<int Dim, int OrderP>
-void
-ElectroThermal<Dim, OrderP>::solve()
-{
-    assembleA();
-    assembleF();
-    backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
-    M_hdg_sol.localize(M_U);
 }
 
 template<int Dim, int OrderP>
@@ -256,53 +372,39 @@ ElectroThermal<Dim, OrderP>::assembleA()
 
 
     // Building the LHS
+    size_type VhDof = M_Vh->nLocalDofWithGhost();
+    size_type WhDof = M_Wh->nLocalDofWithGhost();
+    size_type MhDof = M_Mh->nLocalDofWithGhost();
+    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
 
     auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
     auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A,
                       _rowstart=0,
-                      _colstart=M_Vh->nLocalDofWithGhost() );
+                      _colstart=VhDof );
     auto a13 = form2( _trial=M_Mh, _test=M_Vh,_matrix=M_A,
                       _rowstart=0,
-                      _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost());
-    auto a14 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A,
-                     _rowstart=0,
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost());
+                      _colstart=VhDof+WhDof);
     auto a21 = form2( _trial=M_Vh, _test=M_Wh,_matrix=M_A,
-                      _rowstart=M_Vh->nLocalDofWithGhost(),
+                      _rowstart=VhDof,
                       _colstart=0);
     auto a22 = form2( _trial=M_Wh, _test=M_Wh,_matrix=M_A,
-                      _rowstart=M_Vh->nLocalDofWithGhost(),
-                      _colstart=M_Vh->nLocalDofWithGhost() );
+                      _rowstart=VhDof,
+                      _colstart=VhDof );
     auto a23 = form2( _trial=M_Mh, _test=M_Wh,_matrix=M_A,
-                      _rowstart=M_Vh->nLocalDofWithGhost(),
-                      _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost());
-    auto a24 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost());
+                      _rowstart=VhDof,
+                      _colstart=VhDof+WhDof);
     auto a31 = form2( _trial=M_Vh, _test=M_Mh,_matrix=M_A,
-                      _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost(),
+                      _rowstart=VhDof+WhDof,
                       _colstart=0);
     auto a32 = form2( _trial=M_Wh, _test=M_Mh,_matrix=M_A,
-                      _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost(),
-                      _colstart=M_Vh->nLocalDofWithGhost());
+                      _rowstart=VhDof+WhDof,
+                      _colstart=VhDof);
     auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost());
-    auto a34 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost());
-    auto a41 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost(),
-                     _colstart=0);
-    auto a42 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost());
-    auto a43 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost());
+                     _rowstart=VhDof+WhDof,
+                     _colstart=VhDof+WhDof);
     auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A,
-                     _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost()+M_Ch->nLocalDofWithGhost(),
-                     _colstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost()+M_Ch->nLocalDofWithGhost());
+                     _rowstart=VhDof+WhDof+MhDof+ChDof,
+                     _colstart=VhDof+WhDof+MhDof+ChDof);
 
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
@@ -352,6 +454,7 @@ ElectroThermal<Dim, OrderP>::assembleA()
     {
         auto marker = pairMat.first;
         auto material = pairMat.second;
+
         a11 += integrate(_range=markedelements(mesh,marker),_expr=(trans(idt(u))*id(v))/material.getScalar("sigma") );
         a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k")*gradt(T)*trans(grad(T)));
     }
@@ -391,32 +494,55 @@ ElectroThermal<Dim, OrderP>::assembleA()
         }
     }
 
-    itField = M_modelProperties->boundaryConditions().find( "current");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    if ( M_integralCondition )
     {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Dirichlet" );
-        if ( itType != mapField.end() )
+        auto a14 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A,
+                         _rowstart=0,
+                         _colstart=VhDof+WhDof+MhDof);
+        auto a34 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A,
+                         _rowstart=VhDof+WhDof,
+                         _colstart=VhDof+WhDof+MhDof);
+        auto a41 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A,
+                         _rowstart=VhDof+WhDof+MhDof,
+                         _colstart=0);
+        auto a42 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A,
+                         _rowstart=VhDof+WhDof+MhDof,
+                         _colstart=VhDof);
+        auto a43 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A,
+                         _rowstart=VhDof+WhDof+MhDof,
+                         _colstart=VhDof+WhDof);
+        auto a24 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A,
+                         _rowstart=VhDof,
+                         _colstart=VhDof+WhDof+MhDof);
+        itField = M_modelProperties->boundaryConditions().find( "current");
+        // only if model contains integral
+        if ( itField != M_modelProperties->boundaryConditions().end() )
         {
-            for ( auto const& exAtMarker : (*itType).second )
+            auto mapField = (*itField).second;
+            auto itType = mapField.find( "Dirichlet" );
+            if ( itType != mapField.end() )
             {
-                std::string marker = exAtMarker.marker();
-                a14 += integrate( _range=markedfaces(mesh,marker), _expr=trans(id(u))*N()*idt(nu) );
+                for ( auto const& exAtMarker : (*itType).second )
+                {
+                    std::string marker = exAtMarker.marker();
 
-                a24 += integrate( _range=markedfaces(mesh,marker),
-                                  _expr=tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
+                    a14 += integrate( _range=markedfaces(mesh,marker), _expr=trans(id(u))*N()*idt(nu) );
 
-                a34 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=-tau_constant * idt(nu) * id(l) * ( pow(h(),M_tau_order) ));
+                    a24 += integrate( _range=markedfaces(mesh,marker),
+                                      _expr=tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
 
-                a41 += integrate( _range=markedfaces(mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
+                    a34 += integrate(_range=markedfaces(mesh,marker),
+                                     _expr=-tau_constant * idt(nu) * id(l) * ( pow(h(),M_tau_order) ));
 
-                a42 += integrate( _range=markedfaces(mesh,marker), _expr=tau_constant *
-                                  ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
+                    a41 += integrate( _range=markedfaces(mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
-                a43 += integrate(_range=markedfaces(mesh,marker),
-                                 _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
+                    a42 += integrate( _range=markedfaces(mesh,marker), _expr=tau_constant *
+                                      ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
 
+                    a43 += integrate(_range=markedfaces(mesh,marker),
+                                     _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
+
+                }
             }
         }
     }
@@ -431,11 +557,7 @@ ElectroThermal<Dim, OrderP>::assembleA()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                std::string gst = exAtMarker.expression1();
-                auto mats = M_modelProperties->materials();
-                auto mat = mats.material( marker );
-                auto h = boost::lexical_cast<double>(mat.getString( "h" ));
-                auto g = expr(gst, {{"h",h}});
+                auto g = expr(exAtMarker.expression1());
                 a55 += integrate(_range=markedfaces(mesh,marker), _expr=g*idt(T)*id(q));
             }
         }
@@ -454,12 +576,15 @@ ElectroThermal<Dim, OrderP>::assembleF()
 
     // Building the RHS
 
+    size_type VhDof = M_Vh->nLocalDofWithGhost();
+    size_type WhDof = M_Wh->nLocalDofWithGhost();
+    size_type MhDof = M_Mh->nLocalDofWithGhost();
+    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
+
     auto rhs3 = form1( _test=M_Mh, _vector=M_F,
-                       _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost());
+                       _rowstart=VhDof+WhDof);
     auto rhs4 = form1( _test=M_Xh, _vector=M_F,
-                       _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost()+M_Ch->nLocalDofWithGhost());
-    auto rhs5 = form1( _test=M_Ch, _vector=M_F,
-                       _rowstart=M_Vh->nLocalDofWithGhost()+M_Wh->nLocalDofWithGhost()+M_Mh->nLocalDofWithGhost());
+                       _rowstart=VhDof+WhDof+MhDof+ChDof);
 
     for( auto const& pairMat : M_modelProperties->materials() )
     {
@@ -478,26 +603,39 @@ ElectroThermal<Dim, OrderP>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
-                rhs3 += integrate(_range=markedfaces(mesh,marker),
-                                  _expr=id(l)*g);
+                if ( M_V )
+                {
+                    double V = *M_V;
+                    rhs3 += integrate(_range=markedfaces(mesh,marker),
+                                      _expr=id(l)*V);
+                }
+                else {
+                    auto g = expr(exAtMarker.expression());
+                    rhs3 += integrate(_range=markedfaces(mesh,marker),
+                                      _expr=id(l)*g);
+                }
             }
         }
     }
 
-    itField = M_modelProperties->boundaryConditions().find( "current");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
+    if ( M_integralCondition )         // only if model contains integral
     {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Dirichlet" );
-        if ( itType != mapField.end() )
+        auto rhs5 = form1( _test=M_Ch, _vector=M_F,
+                           _rowstart=VhDof+WhDof+MhDof);
+        itField = M_modelProperties->boundaryConditions().find( "current");
+        if ( itField != M_modelProperties->boundaryConditions().end() )
         {
-            for ( auto const& exAtMarker : (*itType).second )
+            auto mapField = (*itField).second;
+            auto itType = mapField.find( "Dirichlet" );
+            if ( itType != mapField.end() )
             {
-                std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression());
-                rhs5 += integrate(_range=markedfaces(mesh,marker),
-                                  _expr=g*id(nu));
+                for ( auto const& exAtMarker : (*itType).second )
+                {
+                    std::string marker = exAtMarker.marker();
+                    auto g = expr(exAtMarker.expression());
+                    rhs5 += integrate(_range=markedfaces(mesh,marker),
+                                      _expr=g*id(nu));
+                }
             }
         }
     }
@@ -514,10 +652,7 @@ ElectroThermal<Dim, OrderP>::assembleF()
             {
                 std::string marker = exAtMarker.marker();
                 std::string gst = exAtMarker.expression2();
-                auto mats = M_modelProperties->materials();
-                auto mat = mats.material( marker );
-                auto h = boost::lexical_cast<double>(mat.getString( "h" ));
-                auto g = expr(gst, {{"h",h}, {"Tw",Tw}});
+                auto g = expr(gst, {{"Tw",Tw}});
                 rhs4 += integrate(_range=markedfaces(mesh,marker),
                                   _expr=g*id(q));
             }
