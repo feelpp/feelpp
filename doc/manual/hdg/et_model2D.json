@@ -25,6 +25,10 @@
                 "top":
                 {
                     "expr":"1"
+                },
+                "bottom":
+                {
+                    "expr":"0"
                 }
             },
             "Neumann":
