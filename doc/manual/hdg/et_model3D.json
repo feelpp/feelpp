@@ -12,18 +12,22 @@
         },
         "Channel0":
         {
+            "name":"channel0",
             "h": "10000"
         },
         "Channel1":
         {
+            "name":"channel1",
             "h": "10000"
         },
         "TieRods":
         {
+            "name":"tierods",
             "h": "55000"
         },
         "CoolingHoles":
         {
+            "name":"coolingholes",
             "h": "55000"
         }
     },
