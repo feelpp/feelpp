@@ -929,7 +929,7 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string tableName, bool appendMode )
 {
-    this->ioHDF5( false, filename, tableName );
+    this->ioHDF5( false, filename, tableName, appendMode);
 }
 template<typename T, typename Storage>
 void
