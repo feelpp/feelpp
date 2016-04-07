@@ -2,33 +2,20 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
+    "Parameters":
+    {
+        "Tw":"20",
+        "alpha":"0",
+        "Lorentz":"2.44e-8"
+    },
     "Materials":
     {
         "Omega":
         {
             "name":"copper",
-            "sigma":"48e+6",
-            "k":"377"
-        },
-        "Channel0":
-        {
-            "name":"channel0",
-            "h": "10000"
-        },
-        "Channel1":
-        {
-            "name":"channel1",
-            "h": "10000"
-        },
-        "TieRods":
-        {
-            "name":"tierods",
-            "h": "55000"
-        },
-        "CoolingHoles":
-        {
-            "name":"coolingholes",
-            "h": "55000"
+            "sigma0":"48e+6",
+            "sigma":"sigma0/(1+alpha*(T-Tw)):sigma0:alpha:T:Tw",
+            "k":"sigma*Lorentz*T:sigma:Lorentz:T"
         }
     },
     "BoundaryConditions":
@@ -82,23 +69,23 @@
             {
                 "Channel0":
                 {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
+                    "expr1":"0.01",
+                    "expr2":"0.01*Tw:Tw"
                 },
                 "Channel1":
                 {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
+                    "expr1":"0.01",
+                    "expr2":"0.01*Tw:Tw"
                 },
                 "TieRods":
                 {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
+                    "expr1":"0.055",
+                    "expr2":"0.055*Tw::Tw"
                 },
                 "CoolingHoles":
                 {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
+                    "expr1":"0.055",
+                    "expr2":"0.055*Tw:Tw"
                 }
             }
         }
