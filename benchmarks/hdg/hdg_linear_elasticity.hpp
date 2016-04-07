@@ -35,6 +35,7 @@ makeOptions()
 {
     po::options_description testhdivoptions( "test h_div options" );
     testhdivoptions.add_options()
+        ( "convtest", po::value<bool>()->default_value( 1 ), "1: convergence test, 0:otherwise" )
         ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
@@ -43,6 +44,7 @@ makeOptions()
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
         ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
         ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
+        ( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
         // ( "u_exacts", po::value<std::vector<std::string> >(), "u exact to test" )
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
@@ -97,8 +99,8 @@ public:
 
     using Vh_t =  Pdhms_type<mesh_type,OrderP>;
     using Vh_ptr_t =  Pdhms_ptrtype<mesh_type,OrderP>;
-    using Wh_t =  Pdhv_type<mesh_type,OrderP+1>;
-    using Wh_ptr_t =  Pdhv_ptrtype<mesh_type,OrderP+1>;
+    using Wh_t =  Pdhv_type<mesh_type,OrderP>;
+    using Wh_ptr_t =  Pdhv_ptrtype<mesh_type,OrderP>;
     using Mh_t =  Pdhv_type<face_mesh_type,OrderP>;
     using Mh_ptr_t =  Pdhv_ptrtype<face_mesh_type,OrderP>;
 
@@ -210,6 +212,7 @@ Hdg<Dim, OrderP>::convergence()
             //std::cout << "createGMSHmesh" << std::endl;
             LOG(INFO) << "[Hdg] Mesh has been created \n";
             if( boption("use_hypercube"))
+            {
                 mesh = createGMSHMesh( _mesh=new mesh_type,
                                        _desc=domain( _name = mesh_name ,
                                                      _shape = "hypercube",
@@ -219,6 +222,9 @@ Hdg<Dim, OrderP>::convergence()
                                                      _xmin=0,_xmax=2,
                                                      _ymin=0,_ymax=2,
                                                      _zmin=0,_zmax=2 ) );
+                mesh->addMarkerName( "clamped",( Dim==2 )?1:19, (Dim==2)?1:2);
+                mesh->addMarkerName( "tip",( Dim==2)?3:27, (Dim==2)?1:2);
+            }
             else
                 mesh = loadMesh( new mesh_type);
         }
@@ -231,6 +237,7 @@ Hdg<Dim, OrderP>::convergence()
                                  _refine=i,
                                  _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         }
+
         toc("mesh",true);
 
         // ****** Hybrid-mixed formulation ******
@@ -238,7 +245,7 @@ Hdg<Dim, OrderP>::convergence()
         tic();
 
         Vh_ptr_t Vh = Pdhms<OrderP>( mesh, true );
-        Wh_ptr_t Wh = Pdhv<OrderP+1>( mesh, true );
+        Wh_ptr_t Wh = Pdhv<OrderP>( mesh, true );
         auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
         Mh_ptr_t Mh = Pdhv<OrderP>( face_mesh,true );
 
@@ -376,7 +383,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto lambda = expr(soption("lambda"));
     auto mu     = expr(soption("mu"));
     auto c1     = cst(0.5)/mu;
-    auto c2     = -lambda/(cst(2.) * mu * (cst(3.)*lambda + cst(2.)*mu));
+    auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
     auto tau_constant = cst(M_tau_constant);
     auto mesh = Vh->mesh();
 
@@ -398,22 +405,39 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     auto rhs3 = form1( _test=Mh, _vector=F,
                        _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
-    rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                      _expr=trans(id(m))*(sigma_exact*N()));
+
+    // in convergence test Neumann condition is given from the displacement and
+    // constitutive law
+    if ( boption( "convtest" ) )
+        rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
+                          _expr=trans(id(m))*(sigma_exact*N()));
+    else
+    {
+        auto load = expr<2,2>( soption("load") );
+        rhs3 += integrate(_range=markedfaces(mesh,"Tip"),
+                          _expr=trans(id(m))*(load*N()));
+    }
     rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
                       _expr=trans(id(m))*u_exact);
 
     cout << "rhs3 works fine" << std::endl;
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
+    auto a11_b = form2( _trial=Vh, _test=Vh );
     a11 += integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     a11 += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+
+    a11_b = integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+    a11_b += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
     cout << "a11 works fine" << std::endl;
 
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
     a12 += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
+
+    auto a12_b = form2( _trial=Wh, _test=Vh );
+    a12_b = integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
 
     cout << "a12 works fine" << std::endl;
 
@@ -426,6 +450,22 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=-trans(idt(uhat))*(id(v)*N()));
 
+    auto a13_b = form2( _trial=Mh, _test=Vh )
+
+    a13_b = integrate(_range=internalfaces(mesh),
+                      _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+                               trans(idt(uhat))*rightface(id(v)*N())) );
+    a13_b += integrate(_range=boundaryfaces(mesh),
+                     _expr=-trans(idt(uhat))*(id(v)*N()));
+
+    v.on(_range=elements(mesh),_expr=eye<Dim>() );
+    sigma.on(_range=elements(mesh),_expr=idv(sigma_exact) );
+    u.on(_range=elements(mesh),_expr=idv(u_exact) );
+    uhat.on(_range=elements(face_mesh),_expr=idv(u_exact) );
+    double a11bv = a11_b(v,sigma);
+    double a12bv = a12_b(v,u);
+    double a13bv = a13_b(v,uhat);
+    cout << "1st row"  << a11bv << " + " << a12bv << " + " << a13bv << " = " << a11bv+a12bv+a13bv << std::endl;
     cout << "a13 works fine" << std::endl;
 
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
@@ -469,7 +509,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                                     rightfacet(idt(sigma)*N())) ) );
 
     // BC
-    a31 += integrate(_range=markedfaces(mesh,"Neumann"),
+    a31 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"} ),
                      _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
     cout << "a31 works fine" << std::endl;
@@ -481,7 +521,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(h(),M_tau_order)*idt(u) )+
                                                     rightfacet( pow(h(),M_tau_order)*idt(u) )));
 
-    a32 += integrate(_range=markedfaces(mesh,"Neumann"),
+    a32 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
                      _expr=-tau_constant * trans(id(m)) * ( pow(h(),M_tau_order)*idt(u) ) );
 
     // end dp
@@ -495,7 +535,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(h(),M_tau_order) )+
                                                                  rightface( pow(h(),M_tau_order) )));
 
-    a33 += integrate(_range=markedfaces(mesh,"Neumann"),
+    a33 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(h(),M_tau_order) ) );
     a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
                      _expr=trans(idt(uhat)) * id(m) );
