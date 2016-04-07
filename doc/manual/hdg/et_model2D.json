@@ -9,11 +9,6 @@
             "name":"copper",
             "sigma":"50",
             "k":"300"
-        },
-        "R":
-        {
-            "name":"r",
-            "h": "1"
         }
     },
     "BoundaryConditions":
@@ -55,8 +50,8 @@
             {
                 "R":
                 {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
+                    "expr1":"1",
+                    "expr2":"Tw:Tw"
                 }
             }
         }
