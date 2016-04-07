@@ -386,6 +386,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
     auto tau_constant = cst(M_tau_constant);
     auto mesh = Vh->mesh();
+    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
 
     auto sigma = Vh->element( "sigma" );
     auto v     = Vh->element( "v" );
@@ -450,7 +451,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=-trans(idt(uhat))*(id(v)*N()));
 
-    auto a13_b = form2( _trial=Mh, _test=Vh )
+    auto a13_b = form2( _trial=Mh, _test=Vh );
 
     a13_b = integrate(_range=internalfaces(mesh),
                       _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
@@ -459,9 +460,9 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=-trans(idt(uhat))*(id(v)*N()));
 
     v.on(_range=elements(mesh),_expr=eye<Dim>() );
-    sigma.on(_range=elements(mesh),_expr=idv(sigma_exact) );
-    u.on(_range=elements(mesh),_expr=idv(u_exact) );
-    uhat.on(_range=elements(face_mesh),_expr=idv(u_exact) );
+    sigma.on(_range=elements(mesh),_expr=sigma_exact );
+    u.on(_range=elements(mesh),_expr=u_exact );
+    uhat.on(_range=elements(face_mesh),_expr=u_exact );
     double a11bv = a11_b(v,sigma);
     double a12bv = a12_b(v,u);
     double a13bv = a13_b(v,uhat);
