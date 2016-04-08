@@ -8,7 +8,7 @@
     },
     "Materials":
     {
-        "Omega":
+        "omega":
         {
             "name":"copper",
             "alpha":"3.35e-3",
@@ -48,6 +48,14 @@
                     "expr":"0"
                 },
                 "TieRods":
+                {
+                    "expr":"0"
+                },
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
                 {
                     "expr":"0"
                 }
