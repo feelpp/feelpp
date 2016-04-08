@@ -129,8 +129,8 @@ private:
 
     void initGraphs();
     void initGraphsWithIntegralCond();
-    void assembleA();
-    void assembleF();
+    void assembleA( int iter = -1 );
+    void assembleF( int iter = -1 );
 
 public:
     void init();
@@ -157,9 +157,9 @@ ElectroThermal<Dim, OrderP>::init()
     if ( M_integralCondition )
         cout << "integral condition on the current and ";
     if ( M_isPicard )
-        cout << "Picard algorithm" << endl;
+        cout << "Picard algorithm" << std::endl;
     else
-        cout << "linear case" << endl;
+        cout << "linear case" << std::endl;
 
     int proc_rank = Environment::worldComm().globalRank();
 
@@ -222,8 +222,8 @@ ElectroThermal<Dim, OrderP>::solve()
         double incrp, incrT;
         do
         {
-            assembleA();
-            assembleF();
+            assembleA(it);
+            assembleF(it);
             backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
             M_hdg_sol.localize(M_U);
             incrp = normL2( _range=elements(mesh), _expr=idv(*M_pp)-idv(po) );
@@ -349,15 +349,14 @@ ElectroThermal<Dim, OrderP>::initGraphsWithIntegralCond()
 
 template<int Dim, int OrderP>
 void
-ElectroThermal<Dim, OrderP>::assembleA()
+ElectroThermal<Dim, OrderP>::assembleA( int iter )
 {
     M_A->zero();
     auto mesh = M_Vh->mesh();
 
     // stabilisation parameter
-    // auto k = expr(soption("k"));
-    // auto sigma = expr(soption("sigma"));
     auto tau_constant = cst(doption("tau_constant"));
+    auto Tw = M_modelProperties->parameters()["Tw"].value();
 
     auto T = M_Xh->element( "T" );
     auto q = M_Xh->element( "q" );
@@ -455,8 +454,23 @@ ElectroThermal<Dim, OrderP>::assembleA()
         auto marker = pairMat.first;
         auto material = pairMat.second;
 
-        a11 += integrate(_range=markedelements(mesh,marker),_expr=(trans(idt(u))*id(v))/material.getScalar("sigma") );
-        a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k")*gradt(T)*trans(grad(T)));
+        if ( M_isPicard && iter > 0)
+        {
+            auto sigma0 = material.getDouble("sigma0");
+            auto alpha = material.getDouble("alpha");
+            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
+            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"Tw",Tw}});
+            auto k0 = material.getDouble("k0");
+            auto k = material.getScalar("k", "T", idv(M_Tp));
+            k.setParameterValues({{"k0",k0},{"Tw",Tw},{"alpha",alpha}});
+
+            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/sigma );
+            a55 += integrate(_range=markedelements(mesh,marker), _expr=k*gradt(T)*trans(grad(T)) );
+        }
+        else {
+            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("sigma0") );
+            a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k0")*gradt(T)*trans(grad(T)) );
+        }
     }
 
 
@@ -566,13 +580,15 @@ ElectroThermal<Dim, OrderP>::assembleA()
 
 template<int Dim, int OrderP>
 void
-ElectroThermal<Dim, OrderP>::assembleF()
+ElectroThermal<Dim, OrderP>::assembleF( int iter )
 {
     M_F->zero();
     auto mesh = M_Vh->mesh();
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
     auto q = M_Xh->element( "q" );
+
+    auto Tw = M_modelProperties->parameters()["Tw"].value();
 
     // Building the RHS
 
@@ -590,7 +606,19 @@ ElectroThermal<Dim, OrderP>::assembleF()
     {
         auto marker = pairMat.first;
         auto material = pairMat.second;
-        rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/material.getScalar("sigma") * id(q));
+        if ( M_isPicard && iter > 0 )
+        {
+            auto sigma0 = material.getDouble("sigma0");
+            auto alpha = material.getDouble("alpha");
+            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
+            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"Tw",Tw}});
+
+            rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/sigma * id(q));
+        }
+        else
+        {
+            rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/material.getScalar("sigma0") * id(q));
+        }
     }
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
@@ -640,7 +668,6 @@ ElectroThermal<Dim, OrderP>::assembleF()
         }
     }
 
-    auto Tw = doption("Tw");
     itField = M_modelProperties->boundaryConditions().find( "temperature");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
