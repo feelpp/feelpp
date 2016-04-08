@@ -1616,8 +1616,8 @@ public:
             if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
             {
                 auto RF = M_model->computePicardAffineDecomposition();
-                M_RF_Aqm = RF.template get<0>();
-                M_RF_Fqm = RF.template get<1>();
+                M_RF_Aqm = RF.template get<1>();
+                M_RF_Fqm = RF.template get<2>();
             }
         }
         else
