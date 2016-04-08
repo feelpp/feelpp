@@ -186,10 +186,9 @@ struct ModelMaterial
             return _map;
         }
 
-    std::string getString( std::string const& key )
-        {
-            return M_p.get( key, "" );
-        }
+    std::string getString( std::string const& key ) { return M_p.get( key, "" ); }
+    int getInt( std::string const& key ) { return M_p.get( key, 0 ); }
+    double getDouble( std::string const& key ) { return M_p.get( key, 0. ); }
 
     Expr<GinacEx<2> > getScalar( std::string const& key ) { return expr( M_p.get( key, "0" ) ); }
     // Expr<GinacEx<2> > getScalar( std::string const& key, std::pair<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
