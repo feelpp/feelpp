@@ -547,7 +547,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "2nd row: "  << a21v
          << " + " << a221v << " + " << a222v
          << " + " << a231v << " + " << a232v
-         << " - " << rhs2_v(w) << " = " << a21v+a22v+a23v-rhs2_v(w) << std::endl;
+         << " - " << rhs2_v(w) << " = " << a21v+a221v+a222v+a231v+a232v-rhs2_v(w) << std::endl;
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
