@@ -417,7 +417,6 @@ public :
     }
 
     virtual void initModel() = 0;
-    virtual void assemble() {  CHECK( false )<<" You have to implement assemble() \n"; };
 
     virtual void assemble()
     {
