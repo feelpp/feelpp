@@ -42,6 +42,7 @@ makeOptions()
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
+        ( "v_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
         ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
         ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
         ( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
@@ -386,6 +387,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
     auto tau_constant = cst(M_tau_constant);
     auto mesh = Vh->mesh();
+    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
 
     auto sigma = Vh->element( "sigma" );
     auto v     = Vh->element( "v" );
@@ -423,12 +425,14 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "rhs3 works fine" << std::endl;
 
     auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
-    auto a11_b = form2( _trial=Vh, _test=Vh );
+    auto a11_b1 = form2( _trial=Vh, _test=Vh );
+    auto a11_b2 = form2( _trial=Vh, _test=Vh );
+
     a11 += integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     a11 += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
-    a11_b = integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    a11_b += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+    a11_b1 = integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+    a11_b2 = integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
     cout << "a11 works fine" << std::endl;
 
@@ -450,22 +454,25 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=-trans(idt(uhat))*(id(v)*N()));
 
-    auto a13_b = form2( _trial=Mh, _test=Vh )
+    auto a13_b1 = form2( _trial=Mh, _test=Vh );
+    auto a13_b2 = form2( _trial=Mh, _test=Vh );
 
-    a13_b = integrate(_range=internalfaces(mesh),
-                      _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+    a13_b1 = integrate(_range=internalfaces(mesh),
+                       _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
                                trans(idt(uhat))*rightface(id(v)*N())) );
-    a13_b += integrate(_range=boundaryfaces(mesh),
-                     _expr=-trans(idt(uhat))*(id(v)*N()));
+    a13_b2 = integrate(_range=boundaryfaces(mesh),
+                       _expr=-trans(idt(uhat))*(id(v)*N()));
 
-    v.on(_range=elements(mesh),_expr=eye<Dim>() );
-    sigma.on(_range=elements(mesh),_expr=idv(sigma_exact) );
-    u.on(_range=elements(mesh),_expr=idv(u_exact) );
-    uhat.on(_range=elements(face_mesh),_expr=idv(u_exact) );
-    double a11bv = a11_b(v,sigma);
+    v.on(_range=elements(mesh),_expr=expr<Dim,Dim>(soption("v_testfun")) );
+    sigma.on(_range=elements(mesh),_expr=sigma_exact );
+    u.on(_range=elements(mesh),_expr=u_exact );
+    uhat.on(_range=elements(face_mesh),_expr=u_exact );
+    double a11b1v = a11_b1(v,sigma);
+    double a11b2v = a11_b2(v,sigma);
     double a12bv = a12_b(v,u);
-    double a13bv = a13_b(v,uhat);
-    cout << "1st row"  << a11bv << " + " << a12bv << " + " << a13bv << " = " << a11bv+a12bv+a13bv << std::endl;
+    double a13b1v = a13_b1(v,uhat);
+    double a13b2v = a13_b2(v,uhat);
+    cout << "1st row: "  << a11b1v << " + " << a11b2v << " + " << a12bv << " + " << a13b1v << " + " << a13b2v << " = " << a11b1v+a11b2v+a12bv+a13b1v+a13b2v << std::endl;
     cout << "a13 works fine" << std::endl;
 
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
