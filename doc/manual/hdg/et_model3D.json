@@ -4,18 +4,18 @@
     "Model":"hdg",
     "Parameters":
     {
-        "Tw":"20",
-        "alpha":"0",
-        "Lorentz":"2.44e-8"
+        "Tw":"293"
     },
     "Materials":
     {
         "Omega":
         {
             "name":"copper",
+            "alpha":"3.35e-3",
             "sigma0":"48e+6",
             "sigma":"sigma0/(1+alpha*(T-Tw)):sigma0:alpha:T:Tw",
-            "k":"sigma*Lorentz*T:sigma:Lorentz:T"
+            "k0":"0.38",
+            "k":"k0/(Tw*alpha*(T-Tw))*T:k0:Tw:alpha:T"
         }
     },
     "BoundaryConditions":
