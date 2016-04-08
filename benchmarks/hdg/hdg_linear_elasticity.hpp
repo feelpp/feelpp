@@ -43,6 +43,7 @@ makeOptions()
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
         ( "v_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
+        ( "w_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
         ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
         ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
         ( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
@@ -478,7 +479,11 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost(), _colstart=0);
 
+
     a21 += integrate(_range=elements(mesh),_expr=(trans(id(w))*divt(sigma)));
+
+    auto a21_v = form2( _trial=Vh, _test=Wh);
+    a21_v += integrate(_range=elements(mesh),_expr=(trans(id(w))*divt(sigma)));
 
     cout << "a21 works fine" << std::endl;
 
@@ -491,6 +496,15 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      ( leftfacet( pow(h(),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
                        rightfacet( pow(h(),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
     a22 += integrate(_range=boundaryfaces(mesh),
+                     _expr=-(tau_constant * pow(h(),M_tau_order)*trans(idt(u))*id(w)));
+
+    auto a22_v = form2( _trial=Wh, _test=Wh );
+
+    a22_v += integrate(_range=internalfaces(mesh),
+                     _expr=-tau_constant *
+                     ( leftfacet( pow(h(),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
+                       rightfacet( pow(h(),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+    a22_v += integrate(_range=boundaryfaces(mesh),
                      _expr=-(tau_constant * pow(h(),M_tau_order)*trans(idt(u))*id(w)));
 
     // end dp
@@ -507,8 +521,26 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=tau_constant * trans(idt(uhat)) * pow(h(),M_tau_order)*id(w) );
 
+    auto a23_v = form2( _trial=Mh, _test=Wh);
+    a23_v += integrate(_range=internalfaces(mesh),
+                     _expr=tau_constant * trans(idt(uhat)) *
+                     ( leftface( pow(h(),M_tau_order)*id(w) )+
+                       rightface( pow(h(),M_tau_order)*id(w) )));
+
+    a23_v += integrate(_range=boundaryfaces(mesh),
+                     _expr=tau_constant * trans(idt(uhat)) * pow(h(),M_tau_order)*id(w) );
+
     cout << "a23 works fine" << std::endl;
 
+    w.on(_range=elements(mesh),_expr=expr<Dim,1>(soption("w_testfun")) );
+    double a21v=a21_v(w,sigma);
+    double a22v=a22_v(w,u);
+    double a23v=a23_v(w,uhat);
+
+    auto rhs2_v = form1( _test=Wh);
+    rhs2_v = integrate(_range=elements(mesh),
+                     _expr=trans(div_sigma_exact)*id(w));
+    cout << "2nd row: "  << a21v << " + " << a22v << " + " << a23v << " - " << rhs2_v(w) << " = " << a21v+a22v+a23v-rhs2_v(w) << std::endl;
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
