@@ -233,7 +233,7 @@ Test_AOI::run()
 //________________________________________________________________________________//
 //________________________________________________________________________________//
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( auto_order_integration_testsuite )
 BOOST_AUTO_TEST_CASE( auto_order_integration )
