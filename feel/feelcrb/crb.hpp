@@ -9345,7 +9345,8 @@ typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
-
+    if ( false )
+    {
     if( boption(_name="crb.use-newton") )
     {
         boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
@@ -9355,7 +9356,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         if( boption("crb.stock-matrices") )
             M_model->computeAffineDecomposition();
     }
-
+    }
     //int Nwn = M_N;
     //int Nwn_max = ioption(_name="crb.dimension-max");
 #if 0
