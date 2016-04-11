@@ -575,16 +575,16 @@ public:
         map_trial_fecontext_type getMap( Left  left, Right right, bool same_mesh = true )
         {
             if ( same_mesh )
-                return getMap( left, right, boost::is_same<Left, map_trial_fecontext_type>() );
-            return getMap( left, right, mpl::bool_<false>() );
+                return getMap( left, right, std::is_same<Left, map_trial_fecontext_type>() );
+            return getMap( left, right, std::integral_constant<bool, false>() );
         }
         template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  left, Right /*right*/, mpl::bool_<true> )
+        map_trial_fecontext_type getMap( Left  left, Right /*right*/, std::true_type )
         {
             return left;
         }
         template<typename Left, typename Right>
-        map_trial_fecontext_type getMap( Left  /*left*/, Right right, mpl::bool_<false> )
+        map_trial_fecontext_type getMap( Left  /*left*/, Right right, std::false_type )
         {
             return map_trial_fecontext_type( right );
         }
@@ -593,16 +593,16 @@ public:
         map_left_trial_fecontext_type getMapL( Left  left, Right right, bool same_mesh = true )
         {
             if ( same_mesh )
-                return getMapL( left, right, boost::is_same<Left, map_left_trial_fecontext_type>() );
-            return getMapL( left, right, mpl::bool_<false>() );
+                return getMapL( left, right, std::is_same<Left, map_left_trial_fecontext_type>() );
+            return getMapL( left, right, std::integral_constant<bool, false>() );
         }
         template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  left, Right /*right*/, mpl::bool_<true> )
+        map_left_trial_fecontext_type getMapL( Left  left, Right /*right*/, std::true_type )
         {
             return left;
         }
         template<typename Left, typename Right>
-        map_left_trial_fecontext_type getMapL( Left  /*left*/, Right right, mpl::bool_<false> )
+        map_left_trial_fecontext_type getMapL( Left  /*left*/, Right right, std::false_type )
         {
             return right;
         }
@@ -1063,7 +1063,7 @@ public:
      */
     //@{
 
-    
+
     BilinearForm(){}
     /**
 
@@ -1465,8 +1465,8 @@ public:
     {
         return M_n_nz[i];
     }
-    
-    
+
+
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
