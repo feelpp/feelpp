@@ -26,18 +26,10 @@
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2016-04-06
  */
-#define USE_BOOST_TEST 1
-#define BOOST_TEST_MODULE eim testsuite
 
 #include <vector>
 
 #include <testsuite/testsuite.hpp>
-
-#include <boost/timer.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
@@ -83,25 +75,17 @@ makeAbout()
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
-
-BOOST_AUTO_TEST_SUITE( db )
-
-BOOST_AUTO_TEST_CASE( test_db1 )
+int main(int argc, char **argv)
 {
-    BOOST_TEST_MESSAGE( "test_db starts..." );
+    char ** argv1;
+    int argc1 = 3;
+    argv1 = new char*[argc1 + 1];
+    argv1[0] = strdup("test_db");
+    argv1[1] = strdup("--config-file");
+    argv1[2] = strdup("/ssd/ancel/feelpp/clang/build/testsuite/feelcrb/heat1d.cfg");
+    argv1[3] = NULL;
 
-    using namespace Feel;
-
-    char ** argv;
-    int argc = 3;
-    argv = new char*[argc + 1];
-    argv[0] = strdup("test_db");
-    argv[1] = strdup("--config-file");
-    argv[2] = strdup("/ssd/ancel/feelpp/clang/build/testsuite/feelcrb/heat1d.cfg");
-    argv[3] = NULL;
-
-    Feel::Environment env( _argc=argc, _argv=argv,
+    Feel::Environment env( _argc=argc1, _argv=argv1,
                            _desc=opusapp_options("heat1d")
                            .add(crbOptions())
                            .add(crbSEROptions())
@@ -177,15 +161,19 @@ BOOST_AUTO_TEST_CASE( test_db1 )
     /* Check that we have the correct basis sizes */
     for(int i = 1; i < wnSize.size(); i++)
     {
-        BOOST_CHECK(wnSize[0] == wnSize[i]);
+        if(wnSize[0] == wnSize[i])
+        {
+            return 1;
+        }
     }
  
     for(int i = 1; i < wnSize.size(); i++)
     {
-        BOOST_CHECK(wnSize[0] == wnSize[i]);
+        if(wnSize[0] != wnSize[i])
+        {
+            return 1;
+        }
     }   
 
-    BOOST_TEST_MESSAGE( "test_db done" );
+    return 0;
 }
-
-BOOST_AUTO_TEST_SUITE_END()
