@@ -1,8 +1,8 @@
-Index: CMakeLists.txt
+Index: gmsh-tetgen-2.12.0/CMakeLists.txt
 ===================================================================
---- gmsh-tetgen-2.9.4~svn21703.orig/CMakeLists.txt  (revision 21900)
-+++ gmsh-tetgen-2.9.4~svn21703/CMakeLists.txt (working copy)
-@@ -720,13 +720,15 @@
+--- gmsh-tetgen-2.12.0.orig/CMakeLists.txt
++++ gmsh-tetgen-2.12.0/CMakeLists.txt
+@@ -710,13 +710,15 @@ endif(ENABLE_MATHEX)
  if(ENABLE_MPI)
    find_package(MPI)
    if(MPI_FOUND)
@@ -21,4 +21,4 @@ Index: CMakeLists.txt
 +    # cmake_force_cxx_compiler(${MPI_CXX_COMPILER} "MPI C++ Compiler")
    endif(MPI_FOUND)
  endif(ENABLE_MPI)
-
+ 

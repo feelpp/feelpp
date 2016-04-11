@@ -35,10 +35,19 @@ if ( FEELPP_ENABLE_ML_LIBRARY )
     NO_DEFAULT_PATH
     )
 
+  IF (NOT ML_INCLUDE_DIR)
+    FIND_PATH(ML_INCLUDE_DIR ml_include.h
+      PATHS
+      /opt/local/lib/petsc/lib
+      )
+  ENDIF()
+    
+  IF (NOT ML_INCLUDE_DIR)
   FIND_PATH(ML_INCLUDE_DIR ml_include.h
     PATHS
-    /opt/local/lib/petsc/lib
+    /usr/include/trilinos
     )
+  ENDIF()
 
   FIND_LIBRARY(ML_LIBRARY NAMES ml
     PATHS
@@ -48,10 +57,16 @@ if ( FEELPP_ENABLE_ML_LIBRARY )
     NO_DEFAULT_PATH
     )
 
-  FIND_LIBRARY(ML_LIBRARY NAMES ml
-    PATHS
-    /opt/local/lib/petsc/lib
+  IF (NOT ML_LIBRARY)
+    FIND_LIBRARY(ML_LIBRARY NAMES ml
+      PATHS
+      /opt/local/lib/petsc/lib
     )
+  ENDIF()
+  
+  IF (NOT ML_LIBRARY)
+    FIND_LIBRARY(ML_LIBRARY NAMES trilinos_ml)
+  ENDIF()
 endif()
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS (ML DEFAULT_MSG  ML_INCLUDE_DIR ML_LIBRARY )

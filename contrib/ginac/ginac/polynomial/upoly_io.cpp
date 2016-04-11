@@ -68,8 +68,8 @@ void dbgprint(const type& p)                              \
 	print(p, std::cerr);                                  \
 }
 
-DEFINE_OPERATOR_OUT(upoly);
-DEFINE_OPERATOR_OUT(umodpoly);
+DEFINE_OPERATOR_OUT(upoly)
+DEFINE_OPERATOR_OUT(umodpoly)
 #undef DEFINE_OPERATOR_OUT
 
 } // namespace GiNaC

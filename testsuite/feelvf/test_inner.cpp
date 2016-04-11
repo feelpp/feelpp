@@ -101,7 +101,7 @@ public :
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 
 BOOST_AUTO_TEST_CASE( test_0 )
