@@ -101,6 +101,9 @@ int main(int argc, char **argv)
     std::vector<int> wnSize;
     std::vector<int> wnduSize;
 
+    int sampleSize = 4;
+    std::vector<double> wnSample;
+
     // Setup initial options
     Environment::setOptionValue("crb.results-repo-name", std::string("test_db"));
     Environment::setOptionValue("crb.rebuild-database", true);
@@ -116,6 +119,12 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
+    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    {
+        for(int i = 0; i < sampleSize; i++)
+        { wnSample.push_back(WN[0][i]); }
+    }
+
     delete app;
 
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
@@ -127,6 +136,12 @@ int main(int argc, char **argv)
     WNdu = crb->wndu();
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
+
+    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    {
+        for(int i = 0; i < sampleSize; i++)
+        { wnSample.push_back(WN[0][i]); }
+    }
 
     delete app;
 
@@ -144,6 +159,12 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
+    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    {
+        for(int i = 0; i < sampleSize; i++)
+        { wnSample.push_back(WN[0][i]); }
+    }
+
     delete app;
 
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
@@ -155,6 +176,26 @@ int main(int argc, char **argv)
     WNdu = crb->wndu();
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
+
+    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    {
+        for(int i = 0; i < sampleSize; i++)
+        { wnSample.push_back(WN[0][i]); }
+    }
+
+    /*
+    std::cout << wnSample.size() << std::endl;
+
+    for(int i = 0; i < wnSample.size(); i++)
+    {
+        if(i != 0 && (i % sampleSize) == 0)
+        {
+            std::cout << std::endl;
+        }
+        std::cout << wnSample.at(i) << " ";
+    }
+    std::cout << std::endl;
+    */
 
     delete app;
 
