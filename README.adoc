@@ -1,8 +1,10 @@
-Feel++
+Feel++ 
 ======
 :toc:
 :toc-placement: preamble
-:toc-level: 1
+:toclevels: 1
+
+The Finite Element Embedded Library in C++
 
 == Gitter Discussion Forum 
 
@@ -33,8 +35,9 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 Here are the latest releases of Feel++
 
  * Feel++ link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
- * Feel++ link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/3881/feelpp/feelpp.png["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.45132"]
 
+ * Feel++ link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
 
 == Documentation
 

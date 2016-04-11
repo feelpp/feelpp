@@ -33,13 +33,17 @@
 #define FEELPP_IMPORTERACUSIMRAWMESH_HPP 1
 
 #include <map>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
+namespace pt =  boost::property_tree;
+
 namespace Feel
 {
+namespace pt = boost::property_tree;
 namespace detail
 {
 inline 
