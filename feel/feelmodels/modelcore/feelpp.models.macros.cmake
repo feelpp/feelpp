@@ -763,6 +763,9 @@ macro(genLibFluidMechanics)
     if (FEELPP_MODELS_ENABLE_MESHALE )
       set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
     endif()
+    # thermodynamcis depend
+    set(LIB_DEPENDS feelpp_model_thermodyn${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
+
 
     if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
       set( LIBBASE_ADD_CMAKE_INSTALL 1 )

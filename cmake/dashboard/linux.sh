@@ -17,6 +17,7 @@ do_clang34=`echo $compiler_list | grep clang-3.4`
 do_clang35=`echo $compiler_list | grep clang-3.5`
 do_clang36=`echo $compiler_list | grep clang-3.6`
 do_clang37=`echo $compiler_list | grep clang-3.7`
+do_clang38=`echo $compiler_list | grep clang-3.8`
 
 export FEELPP_SCRATCHDIR=/tmp/feel-logs/
 rm -rf $FEELPP_SCRATCHDIR
@@ -76,6 +77,13 @@ if [ ! -z "$do_clang37" -a -x /usr/bin/clang++-3.7 ]; then
     rm -rf $FEELPP_WORKDIR 
     #clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
     $COMMON,FEELPP_CXXNAME=clang-3.7,FEELPP_CXX=/usr/bin/clang++-3.7,FEELPP_C=/usr/bin/clang-3.7
+    rm -rf $FEELPP_WORKDIR 
+fi
+if [ ! -z "$do_clang38" -a -x /usr/bin/clang++-3.8 ]; then
+    export FEELPP_WORKDIR=/tmp/feel-clang-3.8
+    rm -rf $FEELPP_WORKDIR 
+    #clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
+    $COMMON,FEELPP_CXXNAME=clang-3.8,FEELPP_CXX=/usr/bin/clang++-3.8,FEELPP_C=/usr/bin/clang-3.8
     rm -rf $FEELPP_WORKDIR 
 fi
 rm -rf $FEELPP_SCRATCHDIR

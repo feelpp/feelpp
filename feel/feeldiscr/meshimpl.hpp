@@ -30,6 +30,7 @@
 #ifndef FEELPP_MESHIMPL_HPP
 #define FEELPP_MESHIMPL_HPP 1
 
+#include <unordered_set>
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/feeltiming/tic.hpp>
 
@@ -200,8 +201,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             VLOG(1) << "[Mesh::updateForUse] update on boundary ";
         }
 
-
-
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
             tic();
@@ -266,6 +265,30 @@ Mesh<Shape, T, Tag>::updateForUse()
             }
             toc("register elements associated to marked points" , FLAGS_v > 0 );
             VLOG(1) << "[Mesh::updateForUse] update add element info for marked points";
+        }
+
+
+        // update number of vertices
+        if ( this->numVertices() == 0 )
+        {
+            if ( nOrder == 1 )
+                this->setNumVertices( this->numPoints() );
+            else
+            {
+                tic();
+                boost::tie( iv, en ) = this->elementsRange();
+                std::unordered_set<size_type> vertexIds;
+                vertexIds.reserve( this->numPoints() );
+                for ( ; iv != en; ++iv )
+                {
+                    for ( int p = 0; p < element_type::numVertices; ++p )
+                        vertexIds.insert( iv->point( p ).id() );
+                }
+                this->setNumVertices( vertexIds.size() );
+                vertexIds.clear();
+                std::unordered_set<size_type>().swap( vertexIds );
+                toc("Mesh::updateForUse update number of vertices",FLAGS_v>0);
+            }
         }
 
         this->updateNumGlobalElements<mesh_type>();

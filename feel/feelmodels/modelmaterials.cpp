@@ -50,6 +50,13 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
        << ", E: " << m.E()
        << ", nu: " << m.nu()
        << ", sigma: " << m.sigma()
+       << ", Cs: " <<  m.Cs()
+       << ", Cl: " <<  m.Cl()
+       << ", L: " <<  m.L()
+       << ", Ks: " <<  m.Ks()
+       << ", Kl: " <<  m.Kl()
+       << ", Tsol: " <<  m.Tsol()
+       << ", Tliq: " <<  m.Tliq()
        << "]";
     return os;
 }
@@ -106,6 +113,14 @@ ModelMaterials::getMaterial( pt::ptree const& v )
     m.setNu( v.get( "nu", 1.f ) );
     m.setSigma( v.get( "sigma", 1.f ) );
     m.setC( v.get( "C", 1.f ) );
+    
+    m.setCs(    v.get("Cs",0.f) );
+    m.setCl(    v.get("Cl",0.f) );
+    m.setL(     v.get("L",0.f) );
+    m.setKs( v.get("Ks",0.f) );
+    m.setKl( v.get("Kl",0.f) );
+    m.setTsol(   v.get("Tsol",0.f) );
+    m.setTliq(   v.get("Tliq",0.f) );
 
     LOG(INFO) << "adding material " << m;
     return m;
@@ -114,7 +129,7 @@ void
 ModelMaterials::saveMD(std::ostream &os)
 {
   os << "### Materials\n";
-  os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|\n";
+  os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|Cs|Cl|L|Ks|Kl|Tsol|Tliq|\n";
   os << "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n";
   for(auto it = this->begin(); it!= this->end(); it++ )
     os << "|" << it->first
@@ -134,6 +149,13 @@ ModelMaterials::saveMD(std::ostream &os)
        << "|" << it->second.E()
        << "|" << it->second.nu()
        << "|" << it->second.sigma()
+       << "|" << it->second.Cs()
+       << "|" << it->second.Cl()
+       << "|" << it->second.L()
+       << "|" << it->second.Ks()
+       << "|" << it->second.Kl()
+       << "|" << it->second.Tsol()
+       << "|" << it->second.Tliq()
        << "|\n";
   os << "\n";
 }
