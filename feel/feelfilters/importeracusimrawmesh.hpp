@@ -38,6 +38,8 @@
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
+namespace pt =  boost::property_tree;
+
 namespace Feel
 {
 namespace detail
