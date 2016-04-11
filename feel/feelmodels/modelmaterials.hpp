@@ -144,6 +144,12 @@ struct ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::string const& sym, ExprT e ) { return expr( M_p.get( key, "0" ), sym, e ); }
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e ) { return expr( M_p.get( key, "0" ), sym, e ); }
+    template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e, std::map<std::string, double> params )
+        {
+            auto ex = expr( M_p.get( key, "0" ), sym, e );
+            ex->setParameterValues( params );
+            return ex;
+        }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key )
         {
             std::string s = "{0";
