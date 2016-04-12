@@ -116,19 +116,19 @@ void runStokesDirichletLM()
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     auto a_01 = form2( _trial=Vh21, _test=Vh1 ,_matrix=A,
-                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() );
+                       _rowstart=0, _colstart=2 );
     auto a_10 = form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
-                       _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 );
+                       _rowstart=2, _colstart=0 );
     auto a_11=form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-                     _rowstart=Vh1->nLocalDofWithGhost(),
-                     _colstart=Vh1->nLocalDofWithGhost() );
+                     _rowstart=2,
+                     _colstart=2 );
     auto a_02 = form2( _trial=Vh22, _test=Vh1 ,_matrix=A,
-                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+                       _rowstart=0, _colstart=3 );
     auto a_20 = form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-                       _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 );
+                       _rowstart=3, _colstart=0 );
     auto a_22=form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-                     _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
-                     _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+                     _rowstart=3,
+                     _colstart=3 );
 
 
     BlocksBaseVector<double> myblockVec(3);
@@ -214,7 +214,7 @@ void runStokesDirichletLM()
 
     std::cout << "Vh22 test " << outlet << "\n";
     form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-               _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
+               _rowstart=3, _colstart=0 )
         +=integrate( markedelements( submesh, outlet ),
                      -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*(Clag2outlet));
 #endif
@@ -223,14 +223,13 @@ void runStokesDirichletLM()
     std::cout << "diag Vh1\n";
 
     form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=2, _colstart=2 )
         +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda1)*id(lambda1) );
 
     std::cout << "diag Vh2\n";
     cout << "forcing terms on inlet" << std::endl;
     form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
-           _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
+           _rowstart=3,_colstart=3 )
         +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda2)*id(lambda2));
 #endif
     cout << "forcing terms on inlet" << std::endl;

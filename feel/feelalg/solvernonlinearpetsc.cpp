@@ -176,14 +176,14 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else // MPI
         {
-            R.reset( new Feel::VectorPetsc<double>( r ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+            R.reset( new Feel::VectorPetsc<double>( r, solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x, solver->mapColPtr() ) );
         }
 
         //if (solver->residual != NULL) solver->residual (X_local, R);
@@ -223,7 +223,7 @@ extern "C"
 #else
             Jac.reset( new Feel::MatrixPetscMPI<double>( jac,solver->mapRowPtr(),solver->mapColPtr() ) );
 #endif
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapColPtr() ) );
         }
 
         else

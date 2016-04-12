@@ -1,7 +1,7 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"elastic",
+    "Model":"Elasticity",
     "Materials":
     {
         "Omega":
@@ -45,10 +45,5 @@
                 }
             }
         }
-    },
-    "PostProcess":
-    {
-        "Fields":["displacement"]
     }
-
 }
