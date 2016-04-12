@@ -234,7 +234,7 @@ struct ModelMaterial
     // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key )
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key )
         {
             std::string s = "{0";
             for ( auto i : range(T1*T2-1) )
@@ -242,7 +242,7 @@ struct ModelMaterial
             s += "}";
             return expr<T1,T2>( M_p.get( key, s ) );
         }
-    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::pair<std::string,double> const& params )
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::pair<std::string,double> const& params )
         {
             std::string s = "{0";
             for ( auto i : range(T1*T2-1) )
@@ -250,7 +250,7 @@ struct ModelMaterial
             s += "}";
             return expr<T1,T2>( M_p.get( key, s ), params );
         }
-    template<int T1, int T2> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::map<std::string,double> const& params )
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key, std::map<std::string,double> const& params )
         {
             std::string s = "{0";
             for ( auto i : range(T1*T2-1) )
