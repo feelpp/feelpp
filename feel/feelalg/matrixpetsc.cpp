@@ -259,7 +259,7 @@ void MatrixPetsc<T>::init ( const size_type m,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+    ierr = MatSetOption ( M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
     CHKERRABORT( this->comm(),ierr );
 #endif // 0
 
@@ -426,7 +426,7 @@ void MatrixPetsc<T>::init ( const size_type m,
 #endif
 
 
-#if 0
+#if 1
     // additional insertions will not be allowed if they generate
     // a new nonzero
     //ierr = MatSetOption (M_mat, MAT_NO_NEW_NONZERO_LOCATIONS);
