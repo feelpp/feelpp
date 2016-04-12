@@ -21,13 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file serialization.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2011-04-26
- */
-#ifndef __Serialization_H
-#define __Serialization_H 1
+#ifndef FEELPP_SERIALIZATION_HPP
+#define FEELPP_SERIALIZATION_HPP 1
 
 #include <boost/multi_array.hpp>
 #include <boost/serialization/split_free.hpp>
