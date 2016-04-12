@@ -30,5 +30,4 @@ feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST )
 feelpp_add_test( rbspace )
 feelpp_add_test( rbspacevector )
 
-configure_file(heat1d.cfg ${CMAKE_BINARY_DIR}/testsuite/feelcrb)
-feelpp_add_test( db )
+feelpp_add_test( db CFG test_db.cfg GEO test_db.geo )

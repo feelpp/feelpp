@@ -75,17 +75,36 @@ makeAbout()
 
 using namespace Feel;
 
+char ** gArgv = NULL;
+int gArgc = 0;
+
+/* cleanup memory */
+void cleanup()
+{
+    if(gArgv)
+    {
+        for(int i = 0; i < gArgc; i++)
+        {
+            free(gArgv[i]);
+        }
+        delete[] gArgv;
+    }
+}
+
+/* This test is based on the Heat1d application */
+/* It tests different setup for the databases: */
+/* - Whether we create or load a new db */
+/* - Whether we use the boost or hdf5 backend */
 int main(int argc, char **argv)
 {
-    char ** argv1;
-    int argc1 = 3;
-    argv1 = new char*[argc1 + 1];
-    argv1[0] = strdup("test_db");
-    argv1[1] = strdup("--config-file");
-    argv1[2] = strdup("/ssd/ancel/feelpp/clang/build/testsuite/feelcrb/heat1d.cfg");
-    argv1[3] = NULL;
+    gArgc = 3;
+    gArgv = new char*[gArgc + 1];
+    gArgv[0] = strdup("feelpp_test_db");
+    gArgv[1] = strdup("--config-file");
+    gArgv[2] = strdup("test_db.cfg");
+    gArgv[3] = NULL;
 
-    Feel::Environment env( _argc=argc1, _argv=argv1,
+    Feel::Environment env( _argc=gArgc, _argv=gArgv,
                            _desc=opusapp_options("heat1d")
                            .add(crbOptions())
                            .add(crbSEROptions())
@@ -204,6 +223,7 @@ int main(int argc, char **argv)
     {
         if(wnSize[0] == wnSize[i])
         {
+            cleanup();
             return 1;
         }
     }
@@ -212,6 +232,7 @@ int main(int argc, char **argv)
     {
         if(wnSize[0] != wnSize[i])
         {
+            cleanup();
             return 1;
         }
     }   
@@ -219,6 +240,7 @@ int main(int argc, char **argv)
     /* Check that we have the correct amount of samples */
     if(wnSample.size() != 4 * sampleSize)
     {
+        cleanup();
         return 1;
     }
 
@@ -232,5 +254,6 @@ int main(int argc, char **argv)
         BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 4 * sampleSize], tolerance);
     }
 
+    cleanup();
     return 0;
 }
