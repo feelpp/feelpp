@@ -1433,6 +1433,9 @@ typedef boost::shared_ptr<backend_type> backend_ptrtype;
 typedef Backend<std::complex<double>> c_backend_type;
 typedef boost::shared_ptr<c_backend_type> c_backend_ptrtype;
 
+template<typename T = double>
+using backend_ptr_t = boost::shared_ptr<Backend<T>>;
+
 namespace detail
 {
 template<typename T>
