@@ -288,19 +288,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     if (this->isStandardModel())
     {
-        auto & vecAlgebraic = M_blockVectorSolution.vector();
-        auto const& fieldDisp = this->fieldDisplacement();
-        for (int k=0;k< M_XhDisplacement->nLocalDofWithGhost() ;++k)
-            vecAlgebraic->set(k, fieldDisp(k) );
+        M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldDisplacement(), 0 );
 
         if ( M_useDisplacementPressureFormulation )
         {
-            auto const& fieldPressure = this->fieldPressure();
-            size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
-            for (int k=0;k< M_XhPressure->nLocalDofWithGhost() ;++k)
-                vecAlgebraic->set( startDofIndexPressure+k, fieldPressure(k) );
+            size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldPressure(), blockIndexPressure );
         }
-        vecAlgebraic->close();
+        M_blockVectorSolution.vector()->close();
     }
     else if (this->is1dReducedModel())
     {

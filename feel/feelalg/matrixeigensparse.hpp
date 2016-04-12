@@ -184,16 +184,6 @@ public:
 
 
     /**
-     * see if Eigen matrix has been closed
-     * and fully assembled yet
-     */
-    bool closed() const
-    {
-        return M_is_closed;
-    }
-
-
-    /**
      * Returns the read optimized eigen matrix.
      */
     matrix_type const& mat () const
@@ -410,7 +400,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 
@@ -421,7 +411,6 @@ protected:
 private:
 
     bool M_is_initialized;
-    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure
