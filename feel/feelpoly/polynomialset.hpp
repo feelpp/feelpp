@@ -1638,11 +1638,11 @@ public:
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
-                return M_grad[i][0]( c1,c2 );
+                return M_grad[i][0]( c1,c2,0 );
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false>  ) const
             {
-                return M_grad[i][q]( c1,c2 );
+                return M_grad[i][q]( c1,c2,0 );
             }
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
@@ -1652,12 +1652,12 @@ public:
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][0]( c1,0 );
+                return M_grad[i][0]( c1,0,0 );
             }
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][q]( c1,0 );
+                return M_grad[i][q]( c1,0,0 );
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
@@ -1666,12 +1666,12 @@ public:
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][0]( c1,1 );
+                return M_grad[i][0]( c1,1,0 );
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][q]( c1,1 );
+                return M_grad[i][q]( c1,1,0 );
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
@@ -1680,12 +1680,12 @@ public:
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][0]( c1,2 );
+                return M_grad[i][0]( c1,2,0 );
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
             {
                 BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
-                return M_grad[i][q]( c1,2 );
+                return M_grad[i][q]( c1,2,0 );
             }
 
         /**
@@ -1735,11 +1735,11 @@ public:
             }
         dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
-                return M_grad[i][0].col(0);
+                return M_grad[i][0].chip(0,1);
             }
         dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<false> ) const
             {
-                return M_grad[i][q].col(0);
+                return M_grad[i][q].chip(0,1);
             }
         dy_type  dy( uint16_type i, uint32_type q ) const
             {
@@ -1747,11 +1747,11 @@ public:
             }
         dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
-                return M_grad[i][0].col(1);
+                return M_grad[i][0].chip(1,1);
             }
         dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<false> ) const
             {
-                return M_grad[i][q].col(1);
+                return M_grad[i][q].chip(1,1);
             }
         dz_type  dz( uint16_type i, uint32_type q ) const
             {
@@ -1759,11 +1759,11 @@ public:
             }
         dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
             {
-                return M_grad[i][0].col(1);
+                return M_grad[i][0].chip(2,1);
             }
         dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<false> ) const
             {
-                return M_grad[i][q].col(1);
+                return M_grad[i][q].chip(2,1);
             }
 
         /**
@@ -1989,7 +1989,7 @@ public:
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
             {
-                return M_hessian[i][q]( c1,c2 );
+                return M_hessian[i][q]( c1,c2,0 );
             }
         laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
             {
