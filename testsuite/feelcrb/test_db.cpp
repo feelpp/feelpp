@@ -217,7 +217,7 @@ int main(int argc, char **argv)
     }   
 
     /* Check that we have the correct amount of samples */
-    if(wnSample.size != 4 * sampleSize)
+    if(wnSample.size() != 4 * sampleSize)
     {
         return 1;
     }
