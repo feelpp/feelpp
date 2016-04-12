@@ -356,6 +356,8 @@ protected:
             {
                 for ( uint16_type j = 0; j < element_type::numEdges; j++ )
                 {
+                    if ( !elt->hasFace( j ) )
+                        continue;
                     if ( elt->face( j ).isConnectedTo1() &&
                          elt->face( j ).ad_second() == elt->id() )
                     {
