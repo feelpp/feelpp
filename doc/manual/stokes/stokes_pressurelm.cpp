@@ -45,11 +45,13 @@ createMeshStokesDirichletLM( mpl::int_<3> /**/ )
     C.setMarker(_type="surface",_name="wall",_marker3=true);
     C.setMarker(_type="volume",_name="OmegaFluid",_markerAll=true);
 
+#if 0
     GeoTool::Special3D_1 S( meshSize/3.,"shapeStruct");
     S.setMarker(_type="surface",_name="wall",_markerAll=true);
     //S.setMarker(_type="surface",_name="fsiwall",_marker1=true);
     //S.setMarker(_type="surface",_name="wallcylinder",_marker2=true);
     S.setMarker(_type="volume",_name="OmegaStruct",_markerAll=true);
+#endif
 
     auto mesh = C.createMesh(_mesh=new mesh_type,
                              _name="mymesh3d",
@@ -114,19 +116,19 @@ void runStokesDirichletLM()
     auto A = backend()->newBlockMatrix(_block=myblockGraph);
 
     auto a_01 = form2( _trial=Vh21, _test=Vh1 ,_matrix=A,
-                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() );
+                       _rowstart=0, _colstart=2 );
     auto a_10 = form2( _test=Vh21, _trial=Vh1 ,_matrix=A,
-                       _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 );
+                       _rowstart=2, _colstart=0 );
     auto a_11=form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-                     _rowstart=Vh1->nLocalDofWithGhost(),
-                     _colstart=Vh1->nLocalDofWithGhost() );
+                     _rowstart=2,
+                     _colstart=2 );
     auto a_02 = form2( _trial=Vh22, _test=Vh1 ,_matrix=A,
-                       _rowstart=0, _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+                       _rowstart=0, _colstart=3 );
     auto a_20 = form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-                       _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 );
+                       _rowstart=3, _colstart=0 );
     auto a_22=form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-                     _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
-                     _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() );
+                     _rowstart=3,
+                     _colstart=3 );
 
 
     BlocksBaseVector<double> myblockVec(3);
@@ -174,13 +176,20 @@ void runStokesDirichletLM()
     {
         a_01 +=integrate( markedfaces( mesh, bdy ),
                           -trans(cross(id(u),N()))*(Clag1t) );
+        a_10 +=integrate( markedfaces( mesh, bdy ),
+                          -trans(cross(idt(u),N()))*(Clag1) );
 
-
+    }
+    cout << "block(0,1) block(1,0) done";
+    for( auto bdy : { inlet, outlet } )
+    {
         a_02 +=integrate( markedfaces( mesh, bdy ),
                           -trans(cross(id(u),N()))*(Clag2t) );
+        a_20 +=integrate( markedfaces( mesh, bdy ),
+                          -trans(cross(idt(u),N()))*(Clag2) );
     }
-
-
+    cout << "block(0,2) block(2,0) done";
+#if 0
     auto Clag1TT = vec( cst(0.), cst(0.), id(lambda1) );
     auto Clag2inlet = vec( cst(0.), id(lambda2), cst(0.) );
     auto Clag2outlet = vec( cst(0.), -id(lambda2), cst(0.) );
@@ -205,43 +214,48 @@ void runStokesDirichletLM()
 
     std::cout << "Vh22 test " << outlet << "\n";
     form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-               _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(), _colstart=0 )
+               _rowstart=3, _colstart=0 )
         +=integrate( markedelements( submesh, outlet ),
                      -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*(Clag2outlet));
+#endif
 
-
+#if 0
     std::cout << "diag Vh1\n";
+
     form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=2, _colstart=2 )
         +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda1)*id(lambda1) );
 
     std::cout << "diag Vh2\n";
+    cout << "forcing terms on inlet" << std::endl;
     form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost(),
-           _colstart=Vh1->nLocalDofWithGhost()+Vh21->nLocalDofWithGhost() )
+           _rowstart=3,_colstart=3 )
         +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda2)*id(lambda2));
-
-
+#endif
+    cout << "forcing terms on inlet" << std::endl;
     form1( _test=Vh1, _vector=F,_rowstart=0 )
         += integrate(
             _range=markedfaces(mesh,"inlet"),
             _expr= -10*trans(N())*id(u) );
+    cout << "forcing terms on outlet" << std::endl;
     form1( _test=Vh1, _vector=F,_rowstart=0 )
         += integrate(
             _range=markedfaces(mesh,"outlet"),
             _expr= -trans(N())*id(u) );
-
+    cout << "boundary conditions for lagrange multiplier 1" << std::endl;
     a_11        += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
 
+    cout << "boundary conditions for lagrange multiplier 2" << std::endl;
     a_22
         += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda2, _expr=cst(0.));
 
-    A->printMatlab("A.m");
-
+    //A->printMatlab("A.m");
+    cout << "solve" << std::endl;
     //stokes += on ( _range=markedfaces(mesh,"wall"), _rhs=F, _element=u, _expr=cst(0.));
-    F->printMatlab("F.m");
+    //F->printMatlab("F.m");
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=UVec );
 
+    cout << "norms" << std::endl;
     double normL1_A = A->l1Norm();
     double normL2_F = F->l2Norm();
     double normL2_U = UVec->l2Norm();
@@ -252,10 +266,13 @@ void runStokesDirichletLM()
                   << " normL2_U " << std::setprecision( 9 ) << normL2_U
                   << std::endl;
 
+    cout << "localize" << std::endl;
     myblockVecSol.localize(UVec);
 
     if (OrderGeo==1)
     {
+        cout << "exporter" << std::endl;
+
         auto e = exporter( _mesh=mesh,_name="export"+configstr );
         e->add( "u"+configstr, u );
         e->add( "p"+configstr, p );

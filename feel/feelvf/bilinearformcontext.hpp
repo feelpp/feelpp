@@ -737,13 +737,11 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0 )
 {
-    size_type row_start = M_lb.front().globalRowStart();
-    size_type col_start = M_lb.front().globalColumnStart();
+    //size_type row_start = M_lb.front().globalRowStart();
+    //size_type col_start = M_lb.front().globalColumnStart();
 
 #if !defined(NDEBUG)
     DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] row start " << row_start << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
     bool do_less = ( !UseMortar && ( M_form.isPatternDefault() &&
                        ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
@@ -755,10 +753,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         {
             M_c_rep = M_rep.block( c*test_dof_type::fe_type::nLocalDof, c*trial_dof_type::fe_type::nLocalDof,
                                     test_dof_type::fe_type::nLocalDof, trial_dof_type::fe_type::nLocalDof );
-            M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array().segment( c*test_dof_type::fe_type::nLocalDof,
-                                     test_dof_type::fe_type::nLocalDof ) + row_start;
-            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( elt_0 ).array().segment( c*trial_dof_type::fe_type::nLocalDof,
-                                     trial_dof_type::fe_type::nLocalDof ) + col_start;
+            M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array().segment( c*test_dof_type::fe_type::nLocalDof,
+                                    test_dof_type::fe_type::nLocalDof );
+            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTrial() ).array().segment( c*trial_dof_type::fe_type::nLocalDof,
+                                    trial_dof_type::fe_type::nLocalDof );
 
             if ( test_dof_type::is_modal || trial_dof_type::is_modal )
             {
@@ -791,12 +789,6 @@ assemble( std::pair<size_type,size_type> const& elt )
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
 
-#if !defined(NDEBUG)
-    DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] row start " << row_start << "\n";
-    DVLOG(2) << "[BilinearForm::assemble] col start " << col_start << "\n";
-#endif /* NDEBUG */
-
     size_type trial_eid= elt.second;
     //
     DCHECK( trial_eid != invalid_size_type_value )
@@ -804,14 +796,25 @@ assemble( std::pair<size_type,size_type> const& elt )
 
     DVLOG(2) << "local Assembly for element " << elt_0
              << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
+
 #if !defined(NDEBUG)
     bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( elt_0 );
     bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( trial_eid );
 #endif
     if ( UseMortarType == 0 )
     {
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
+
+        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
+
+        if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
+             is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
+             is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
+        {
+            CHECK(false) << "TODO";
+        }
 
         if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
              is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
@@ -831,8 +834,8 @@ assemble( std::pair<size_type,size_type> const& elt )
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
+        M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
 
         if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
              is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
@@ -840,10 +843,9 @@ assemble( std::pair<size_type,size_type> const& elt )
         {
             CHECK(false) << "TODO";
         }
-
-        M_form.addMatrix( M_mortarTest_local_rows.data(), M_mortarTest_local_rows.size(),
-                          M_local_cols.data(), M_local_cols.size(),
-                          M_mortarTest_rep.data() );
+        M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
+                          M_mortarTrial_local_cols.data(), M_mortarTrial_local_cols.size(),
+                          M_mortarTrial_rep.data() );
     }
     else if ( UseMortarType == 2 )
     {
@@ -873,8 +875,8 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( size_type elt_0, size_type elt_1  )
 {
-    size_type row_start = M_lb.front().globalRowStart();
-    size_type col_start = M_lb.front().globalColumnStart();
+    //size_type row_start = M_lb.front().globalRowStart();
+    //size_type col_start = M_lb.front().globalColumnStart();
 
     size_type trial_e0id= this->trialElementId( elt_0 );
     size_type trial_e1id= this->trialElementId( elt_1 );
@@ -895,18 +897,11 @@ assemble( std::pair<size_type,size_type> const& elt_0,
     size_type trial_elt_0 = elt_0.second;
     size_type trial_elt_1 = elt_1.second;
 
-    size_type row_start = M_lb.front().globalRowStart();
-    size_type col_start = M_lb.front().globalColumnStart();
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array();
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1,M_form.dofIdToContainerIdTest() ).array();
 
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() =
-        M_test_dof->localToGlobalIndices( test_elt_0 ).array() + row_start;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() =
-        M_test_dof->localToGlobalIndices( test_elt_1 ).array() + row_start;
-
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() =
-        M_trial_dof->localToGlobalIndices( trial_elt_0 ).array() + col_start;
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() =
-        M_trial_dof->localToGlobalIndices( trial_elt_1 ).array() + col_start;
+    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e0id,M_form.dofIdToContainerIdTrial() ).array();
+    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e1id,M_form.dofIdToContainerIdTrial() ).array();
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {
@@ -943,8 +938,8 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assembleInCaseOfInterpolate()
 {
-    size_type row_start = M_lb.front().globalRowStart();
-    size_type col_start = M_lb.front().globalColumnStart();
+    //size_type row_start = M_lb.front().globalRowStart();
+    //size_type col_start = M_lb.front().globalColumnStart();
 
     size_type eltTestId = fusion::at_key<gmc<0> >( M_test_gmc )->id();
     size_type eltTrialId = fusion::at_key<gmc<0> >( M_trial_gmc )->id();
@@ -956,8 +951,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     if ( UseMortarType == 0 )
     {
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId ).array() + col_start;
+        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
         DVLOG(2) << "M_local_rows: " << M_local_rows;
         DVLOG(2) << "M_local_cols: " << M_local_cols;
         if ( test_dof_type::is_modal || trial_dof_type::is_modal )
@@ -976,8 +971,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId ).array() + col_start;
+        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
+
         DVLOG(2) << "M_mortarTest_local_rows: " << M_mortarTest_local_rows;
         DVLOG(2) << "M_local_cols: " << M_local_cols;
         if ( test_dof_type::is_modal || trial_dof_type::is_modal )
@@ -994,8 +990,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId ).array() + row_start;
-        M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId ).array() + col_start;
+        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
+        M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
         if ( test_dof_type::is_modal || trial_dof_type::is_modal )
         {
             CHECK( false ) << "TODO";

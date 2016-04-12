@@ -51,6 +51,7 @@ public :
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
     typedef boost::shared_ptr<Backend<T> > backend_ptrtype;
+    //using local_vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
 
     BlocksBaseVector(uint16_type nr = 0)
         :
@@ -88,9 +89,18 @@ public :
     void localize();
 
     /**
-     * build vector representating all blocks
+     * build vector representing all blocks
      */
     void buildVector( backend_ptrtype _backend = Feel::backend(_rebuild=false));
+
+    /**
+     * set values of VectorBlock from subvector
+     */
+    void setVector( vector_type & vec, vector_type const& subvec , int blockId ) const;
+    /**
+     * set values of subvector from global vector build with VectorBlock
+     */
+    void setSubVector( vector_type & subvec, vector_type const& vec , int blockId ) const;
 
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
@@ -131,6 +141,7 @@ public :
 
 private :
     vector_ptrtype M_vector;
+    //std::unordered_map<size_type, local_vector_type> M_local_vec;
 };
 
 template <int NR, typename T=double>
