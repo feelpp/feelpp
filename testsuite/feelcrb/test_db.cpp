@@ -216,5 +216,21 @@ int main(int argc, char **argv)
         }
     }   
 
+    /* Check that we have the correct amount of samples */
+    if(wnSample.size != 4 * sampleSize)
+    {
+        return 1;
+    }
+
+    double tolerance = 1e-9;
+    int nbGroups = wnSample.size() / sampleSize;
+    for(int i = 0; i < sampleSize; i++)
+    {
+        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + sampleSize], tolerance);
+        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 2 * sampleSize], tolerance);
+        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 3 * sampleSize], tolerance);
+        BOOST_CHECK_CLOSE(wnSample[i], wnSample[i + 4 * sampleSize], tolerance);
+    }
+
     return 0;
 }
