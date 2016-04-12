@@ -548,13 +548,10 @@ struct updateDataMapProcess
             M_dm->setNLocalDofWithGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
 
             M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
-            M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
 
             for ( size_type i=0; i<nLocWithGhost; ++i )
                 M_dm->setMapGlobalProcessToGlobalCluster( i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
 
-            for ( size_type i=0; i<nLocWithoutGhost; ++i )
-                M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 
@@ -588,7 +585,6 @@ struct updateDataMapProcess
 
         // update map
         M_dmOnOff->resizeMapGlobalProcessToGlobalCluster( nLocWithGhostOnOff );
-        M_dmOnOff->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhostOnOff );
 
         size_type startGlobClusterDof = M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
         size_type startGlobProcessDof = M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
@@ -596,11 +592,6 @@ struct updateDataMapProcess
         for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
         {
             M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
-        }
-
-        for ( size_type i=0; i<x->dof()->nLocalDofWithoutGhost(); ++i )
-        {
-            M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 
@@ -627,102 +618,23 @@ struct updateDataMapProcess
 }; // updateDataMapProcess
 
 
-
 template<typename DofType>
 struct updateDataMapProcessStandard
 {
-    updateDataMapProcessStandard( std::vector<WorldComm> const & worldsComm,
-                                  WorldComm const& worldCommFusion,
-                                  uint16_type lastCursor,
-                                  std::vector<size_type> const& startDofGlobalCluster,
-                                  std::vector<size_type> nLocWithoutGhost, std::vector<size_type> nLocWithGhost)
+    updateDataMapProcessStandard( WorldComm const& worldComm,
+                                  uint16_type nSpaces )
         :
+        M_worldComm( worldComm ),
         M_cursor( 0 ),
-        M_start_index( worldCommFusion.globalSize(), 0 ),//  M_startDofGlobalCluster[worldCommFusion.globalRank()] ),
-        M_startIndexWithGhost( 0 ),
-        M_lastCursor( lastCursor ),
-        M_worldsComm( worldsComm ),
-        M_dm( new DofType( worldCommFusion ) ),
-        M_startDofGlobalCluster(startDofGlobalCluster),
-        M_nLocWithoutGhost(nLocWithoutGhost),
-        M_nLocWithGhost(nLocWithGhost)
-    {
-
-        const int myrank = M_dm->worldComm().globalRank();
-        const int worldsize = M_dm->worldComm().globalSize();
-        for (int proc = 0 ; proc < worldsize ; ++proc)
-        {
-            M_dm->setNLocalDofWithoutGhost( proc, nLocWithoutGhost[proc] );
-            M_dm->setNLocalDofWithGhost( proc, nLocWithGhost[proc] );
-            M_start_index[proc] = M_startDofGlobalCluster[proc];// nLocWithoutGhost;
-        }
-
-        M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost[myrank] );
-        M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost[myrank] );
-    }
+        M_lastCursor( nSpaces-1 )
+    {}
 
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        const int myrank = M_dm->worldComm().globalRank();
-        const int worldsize = M_dm->worldComm().globalSize();
-        const size_type nLocWithGhost=x->dof()->nLocalDofWithGhost(myrank);
-        const size_type nLocWithoutGhost=x->dof()->nLocalDofWithoutGhost(myrank);
-
-        M_dm->addNeighborSubdomains( x->dof()->neighborSubdomains() );
-
-        for (int proc = 0 ; proc < worldsize ; ++proc)
-        {
-            if ( M_cursor==0 )
-            {
-                M_dm->setFirstDof( proc,  x->dof()->firstDof(proc) );
-                M_dm->setFirstDofGlobalCluster( proc, M_startDofGlobalCluster[proc] );
-                M_dm->setLastDof( proc, x->dof()->lastDof(proc) );
-                if (x->dof()->nLocalDofWithoutGhost(proc) == 0)
-                    M_dm->setLastDofGlobalCluster( proc, M_startDofGlobalCluster[proc] );
-                else
-                    M_dm->setLastDofGlobalCluster( proc, M_startDofGlobalCluster[proc] + x->dof()->nLocalDofWithoutGhost(proc) - 1 );
-            }
-            else
-            {
-                M_dm->setLastDof( proc, M_dm->lastDof(proc) + x->dof()->nLocalDofWithGhost(proc)  );
-                M_dm->setLastDofGlobalCluster( proc, M_dm->lastDofGlobalCluster(proc) + x->dof()->nLocalDofWithoutGhost(proc) );
-            }
-        }
-
-        const size_type firstDofGC = M_dm->firstDofGlobalCluster();
-        const size_type firstDofGCSubSpace = x->dof()->firstDofGlobalCluster();
-
-        for (size_type gdof = x->dof()->firstDof(myrank) ; gdof < x->dof()->nLocalDofWithGhost(myrank) ; ++gdof )
-        {
-            const size_type localDof = M_startIndexWithGhost+gdof;//nLocalDofStart+gdof;
-            const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
-
-            if ( x->dof()->dofGlobalClusterIsOnProc( gdofGC ) )
-            {
-                const size_type globalDof = M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
-                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-                M_dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
-            }
-            else
-            {
-                const int realproc = x->dof()->procOnGlobalCluster(gdofGC);
-                const size_type globalDof = M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
-                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-            }
-        }
-
-        for ( auto const& activeDofShared : x->dof()->activeDofSharedOnCluster() )
-        {
-            M_dm->setActiveDofSharedOnCluster( M_startIndexWithGhost + activeDofShared.first, activeDofShared.second );
-        }
-
-
-
-        for (int proc = 0 ; proc < worldsize ; ++proc)
-            M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
-        M_startIndexWithGhost+=nLocWithGhost;
-
+        M_subdm.push_back( x->mapPtr() );
+        if ( M_cursor == M_lastCursor )
+            M_dm.reset( new DofType( M_subdm,M_worldComm ) );
         ++M_cursor;
     }
 
@@ -730,20 +642,13 @@ struct updateDataMapProcessStandard
     {
         return M_dm;
     }
-    boost::shared_ptr<DofType> dataMapOnOff() const
-    {
-        return M_dm;
-    }
 
+    WorldComm const& M_worldComm;
     mutable uint16_type M_cursor;
-    mutable std::vector<size_type> M_start_index;
-    mutable size_type M_startIndexWithGhost;
     uint16_type M_lastCursor;
-    std::vector<WorldComm> M_worldsComm;
     mutable boost::shared_ptr<DofType> M_dm;
-    std::vector<size_type> M_startDofGlobalCluster;
-    std::vector<size_type> M_nLocWithoutGhost, M_nLocWithGhost;
-}; // updateDataMapProcessStandard
+    mutable std::vector<datamap_ptrtype> M_subdm;
+};
 
 
 
@@ -1929,7 +1834,7 @@ public:
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
-            typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
+            typedef typename fs_type::template Element<value_type, typename Cont/*VectorUblas<T>*/::range::type > element_type;
             typedef std::pair< keyType, boost::shared_ptr<element_type> > the_type;
 
             typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
@@ -1941,7 +1846,7 @@ public:
         typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
-        typedef typename VectorUblas<T>::range::type ct_type;
+        typedef typename Cont/*VectorUblas<T>*/::range::type ct_type;
 
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
@@ -2031,7 +1936,7 @@ public:
 
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef typename component_functionspace_type::template Element<T,typename VectorUblas<value_type>::slice::type> component_type;
+        typedef typename component_functionspace_type::template Element<T,typename Cont/*VectorUblas<value_type>*/::slice::type> component_type;
 
         /**
          * geometry typedef
@@ -2082,6 +1987,11 @@ public:
                  size_type __start = 0,
                  ComponentType __ct = ComponentType::NO_COMPONENT,
                  ComponentType __ct2 = ComponentType::NO_COMPONENT );
+
+        Element( functionspace_ptrtype const& __functionspace,
+                 size_type nActiveDof, value_type* arrayActiveDof,
+                 size_type nGhostDof, value_type* arrayGhostDof );
+
 
         ~Element();
 
@@ -2134,8 +2044,10 @@ public:
         comp()
         {
             //return comp( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
-            return this->template comp<THECOMP>( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            //return this->template comp<THECOMP>( typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return this->comp( THECOMP );
         }
+#if 0
         template<ComponentType THECOMP>
         component_type
         comp( mpl::bool_<true> )
@@ -2162,7 +2074,7 @@ public:
                                    start()+(int)THECOMP,
                                    THECOMP );
         }
-
+#endif
         /**
          * get the component of the element
          * const version
@@ -2174,7 +2086,9 @@ public:
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
             //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
+                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
+
         }
         component_type
         comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
@@ -2193,14 +2107,17 @@ public:
                     startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
-            cout << "tc extract component " << (int)i << "," << (int)j
-                 << " startSlice:" << startSlice
-                 << " comp: " << nRealComponents
-                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
+                              typename component_type::container_type( this->vec().data().expression(), sActive,
+                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
+                                                                       this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i );
@@ -2223,15 +2140,17 @@ public:
                     startSlice = ((int)i)*nComponents2+((int)j);
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
-            cout << "fc extract component " << (int)i << "," << (int)j
-                 << " startSlice:" << startSlice
-                 << " comp: " << nRealComponents
-                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
+                              typename component_type::container_type( ( container_type& )*this, sActive, sGhost, this->compSpace()->dof() ),
                               //typename component_type::container_type( this->data().expression(), r ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
@@ -2249,7 +2168,8 @@ public:
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
             //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, j, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
+                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
         }
         component_type
         comp( ComponentType i, ComponentType j, mpl::bool_<true> )
@@ -2272,16 +2192,18 @@ public:
                 __name += "_" + componentToString( j );
 
             }
-            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
-            cout << "t extract component " << (int)i << "," << (int)j
-                 << " startSlice:" << startSlice
-                 << " comp: " << nRealComponents
-                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n" ;
+
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), s, this->compSpace()->dof() ),
+                              typename component_type::container_type( this->vec().data().expression(), sActive,
+                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
+                                                                       this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i,j );
@@ -2306,16 +2228,18 @@ public:
                 }
                 __name += "_" + componentToString( j );
             }
-            auto s = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofPerComponent() );
-            cout << "f extract component " << (int)i << "," << (int)j
-                 << " startSlice:" << startSlice
-                 << " comp: " << nRealComponents
-                 << " size: " << M_functionspace->nLocalDofPerComponent() << "\n";
+
+            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
+            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
+                              typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
                               __name,
                               startContainerIndex,//start()+(size_type)i,
                               i,j );
@@ -2325,13 +2249,13 @@ public:
         operator[]( ComponentType i )
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         component_type
         operator[]( ComponentType i ) const
             {
                 //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-                return comp( i, ComponentType::NO_COMPONENT, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
+                return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
         operator[]( size_type i )
@@ -3346,11 +3270,11 @@ public:
         element( ExprT e, std::string const& name = "u",
                  bool updateOffViews = true,
                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 );
-
+#if 0
         template<int i>
         typename sub_element<i>::type
         elementImpl( std::string const& name ="u", bool updateOffViews=true ) const;
-
+#endif
         template<int i>
         typename sub_element<i>::type &
         element( std::string const& name ="u", bool updateOffViews=true )
@@ -3874,7 +3798,9 @@ public:
     //@{
     typedef Element<value_type> element_type;
     typedef Element<value_type> real_element_type;
+    typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef boost::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
 
@@ -4255,6 +4181,22 @@ public:
         return this->nLocalDof()/qDim();
     }
 
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalDofWithoutGhostPerComponent() const
+    {
+        return this->nLocalDofWithoutGhost()/qDim();
+    }
+
+    /**
+     * \return the number of degrees of freedom per dim
+     */
+    size_type nLocalGhostPerComponent() const
+    {
+        return (this->nLocalDofWithGhost()-this->nLocalDofWithoutGhost())/qDim();
+    }
+
 
     /**
        \return the mesh associated with the approximation
@@ -4582,6 +4524,65 @@ public:
         {
             u[i] = boost::make_shared<element_type>( e, name );
         }
+        return u;
+    }
+
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space with value shared by the input vector
+     */
+    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element( boost::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
+    {
+        return this->element( *vec, blockIdStart );
+    }
+
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space which use the storage values of the input vector
+     */
+    element_external_storage_type
+    element( Vector<value_type> const& vec, int blockIdStart = 0 )
+    {
+        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        CHECK( vecPetsc ) << "only petsc vector";
+
+        auto const& dmVec = vec.map();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
+        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
+        size_type nGhostDof = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
+                                         nGhostDof, arrayGhostDof );
+        return u;
+    }
+
+    /**
+     * \param vec input vector
+     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
+     * \return the element of the function space which use the storage values of the input vector
+     */
+    element_external_storage_ptrtype
+    elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
+    {
+        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        CHECK( vecPetsc ) << "only petsc vector";
+
+        auto const& dmVec = vec.map();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
+        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
+        size_type nGhostDof = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
+        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
+                                                                               nGhostDof, arrayGhostDof ) );
         return u;
     }
 
@@ -4975,36 +4976,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
     if ( !M_worldComm )
         M_worldComm = boost::shared_ptr<WorldComm>( new WorldComm( M_worldsComm[0] ));
 
-    if ( this->worldComm().globalSize()>1 )
+    if ( true )// this->worldComm().globalSize()>1 )
     {
         if ( this->hasEntriesForAllSpaces() )
             {
                 // construction with same partionment for all subspaces
                 // and each processors has entries for all subspaces
                 DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
-                // build usefull data for Feel::detail::updateDataMapProcessStandard
-                const int worldsize = this->worldComm().globalSize();
-                std::vector<size_type> startDofGlobalCluster(worldsize);
-                std::vector<size_type> nLocalDofWithoutGhostWorld(worldsize),nLocalDofWithGhostWorld(worldsize);
-                for (int proc = 0; proc<worldsize ; ++proc )
-                {
-                    nLocalDofWithoutGhostWorld[proc] = this->nLocalDofWithoutGhostOnProc(proc);
-                    nLocalDofWithGhostWorld[proc] = this->nLocalDofWithGhostOnProc(proc);
-                }
-
-                startDofGlobalCluster[0]=0;
-                for (int p=1;p<worldsize;++p)
-                    {
-                        startDofGlobalCluster[p] = startDofGlobalCluster[p-1] + nLocalDofWithoutGhostWorld[p-1];
-                    }
 
                 // build datamap
-                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
-                                                                                 this->nSubFunctionSpace()-1,
-                                                                                 startDofGlobalCluster,
-                                                                                 nLocalDofWithoutGhostWorld,
-                                                                                 nLocalDofWithGhostWorld
-                                                                                 );
+                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldComm(),
+                                                                                       this->nSubFunctionSpace() );
                 fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
                 M_dof = dofInitTool.dataMap();
@@ -5041,19 +5023,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
                 M_dofOnOff->updateDataInWorld();
             }
     }
-
-    else // sequential
-    {
-        // update DofTable for the mixedSpace (here On is not build properly but OnOff yes and On=OnOff, see Feel::detail::updateDataMapProcess)
-        auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
-        fusion::for_each( M_functionspaces, dofInitTool );
-        M_dof = dofInitTool.dataMapOnOff();
-        M_dof->setNDof( this->nDof() );
-        M_dofOnOff = dofInitTool.dataMapOnOff();
-        M_dofOnOff->setNDof( this->nDof() );
-    }
+#if 0
     M_dof->setIndexSplit( this->buildDofIndexSplit() );
     M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
+#endif
     //M_dof->indexSplit().showMe();
 
 }
