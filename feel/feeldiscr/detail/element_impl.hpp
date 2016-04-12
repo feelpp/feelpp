@@ -992,16 +992,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
             value_type v_ = this->globalValue( gdof );
-            //std::cout << " . v(" << gdof << ")=" << v_ << "\n";
             for ( size_type q = 0; q < Q; ++q )
             {
                 v[q] += context.div( ldof, q )*(s(ldof)*v_);
             }
         }
     }
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
