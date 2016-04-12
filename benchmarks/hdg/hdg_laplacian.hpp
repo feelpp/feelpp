@@ -286,31 +286,14 @@ Hdg<Dim, OrderP>::convergence()
         auto nDofphat = phat.functionSpace()->nDof();
 
         tic();
-        // build the big matrix associated to bilinear form over Vh x Wh x Mh
-        BlocksBaseGraphCSR hdg_graph(3,3);
-        hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+        // build csr graph blocks from set of function spaces Vh Wh and Mh
+        auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
 
-        auto A = backend()->newBlockMatrix(_block=hdg_graph);
+        // build vector blocks from sub-vector of size given by set of function spaces
+        auto F = backend()->newBlockVector(_block=vectorBlocks(Vh,Wh,Mh));
 
-        BlocksBaseVector<double> hdg_vec(3);
-        hdg_vec(0,0) = backend()->newVector( Vh );
-        hdg_vec(1,0) = backend()->newVector( Wh );
-        hdg_vec(2,0) = backend()->newVector( Mh );
-        auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-        BlocksBaseVector<double> hdg_sol(3);
-        hdg_sol(0,0) = up;
-        hdg_sol(1,0) = pp;
-        hdg_sol(2,0) = phatp;
-        auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
+        // build vector blocks from concatenation of subvectors up pp and phatp
+        auto U = backend()->newBlockVector(_block=vectorBlocks(up,pp,phatp));
 
         assemble_A_and_F( A, F, Vh, Wh, Mh, p_exact, gradp_exact );
         toc("matrices",true);
