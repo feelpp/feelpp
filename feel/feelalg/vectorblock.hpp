@@ -95,6 +95,40 @@ public :
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 
+    /**
+     * termination function to fill BlocksBaseVector
+     */
+    void fill( int r, backend_ptr_t<double> b  ) {}
+#if 0
+    /**
+     * recurse through first row and column of submatrix of size (n,n) 
+     */
+    template<typename Arg1, typename ...Args>
+    void
+    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args, 
+          backend_ptr_t<double> b = backend(),
+          typename std::enable_if<std::is_base_of<FunctionSpaceBase,Arg1>::value>::type* = nullptr )
+        {
+            M_vector[n] = b->newBlockVector( arg1 );
+            // do submatrix (n+1,n+1)
+            fill( ++n, args..., b );
+        }
+#endif
+    /**
+     * recurse through first row and column of submatrix of size (n,n) 
+     */
+    template<typename Arg1, typename ...Args>
+    void
+    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args, 
+          backend_ptr_t<typename decay_type<Arg1>::value_type> b = backend(),
+          typename std::enable_if<std::is_base_of<FunctionSpaceBase,Arg1>::value>::type* = nullptr )
+        {
+            M_vector[n] = b->newBlockVector( arg1 );
+            // do submatrix (n+1,n+1)
+            fill( ++n, args..., b );
+        }
+
+
 private :
     vector_ptrtype M_vector;
 };
@@ -259,6 +293,26 @@ public:
 
 }; // VectorBlock
 
+
+/**
+ * Build blocks of CSR graphs with function spaces \p
+ * (args1,args2,argn). Variadic template is used to handle an arbitrary number of
+ * function spaces.
+ * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
+ *
+ */
+template<typename Arg1, typename ...Args>
+BlocksBaseVector<typename decay_type<Arg1>::value_type>
+vectorBlocks( const Arg1& arg1, const Args&... args, 
+              backend_ptr_t<typename decay_type<Arg1>::value_type> b = backend(),
+              typename std::enable_if<std::is_base_of<FunctionSpaceBase,decay_type<Arg1>>::value>::type* = nullptr )
+{
+    const int size = sizeof...(Args)+1;
+    BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size );
+    int n = 0;
+    g.fill( n, arg1, args..., b );
+    return g;
+}
 
 } // Feel
 
