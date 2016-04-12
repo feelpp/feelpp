@@ -77,8 +77,7 @@ class OpusApp   : public Application
     typedef Application super;
 public:
 
-    typedef double value_type;
-
+    
     //! model type
     typedef ModelType model_type;
     typedef boost::shared_ptr<ModelType> model_ptrtype;
@@ -398,12 +397,9 @@ public:
             int i=0;
             do
             {
-                LOG(INFO) << "[SER] step i= " << i << "\n";
                 //Begin with rb since first eim has already been built in initModel
-                if( i == 0 || crb->getOfflineStep() )
-                {
-                    this->loadDB(); // update AffineDecomposition and enrich RB database
-                }
+                this->loadDB(); // update AffineDecomposition and enrich RB database
+
                 crb->setRebuild( false ); //do not rebuild since co-build is not finished
                 int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
@@ -452,7 +448,7 @@ public:
                 }
                 ++i;
             }
-            while( crb->getOfflineStep() || do_offline_eim );
+            while( crb->getOfflineStep() );
         }
 
     FEELPP_DONT_INLINE
@@ -854,8 +850,15 @@ public:
             vectorN_type time_crb_vector_prediction;
             vectorN_type time_crb_vector_error_estimation;
             vectorN_type relative_estimated_error_vector;
-
             vectorN_type scm_relative_error;
+
+            //Minimization problem
+            std::string min_func_str;
+            if( this->vm().count("crb.minimization-func") )
+                min_func_str = soption(_name="crb.minimization-func");
+            std::map<std::string,double> min_map, min_value;
+            std::map<std::string,parameter_type> min_mu;
+            fs::path min_file("min_func");
 
             bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
 
@@ -1047,8 +1050,19 @@ public:
                                 time_fem_vector[curpar-1] = ti.elapsed();
 
                                 std::ofstream res(soption(_name="result-file") );
-
                                 res << "output="<< o[0] << "\n";
+
+                                if( this->vm().count("crb.minimization-func") )
+                                {
+                                    auto min_func = expr( min_func_str, "min_func" );
+                                    min_map[soption(_name="crb.minimization-param-name")] = output_fem;
+                                    auto min = min_func.evaluate( min_map );
+                                    if( min < min_value["fem"] || curpar == 1 )
+                                    {
+                                        min_value["fem"] = min;
+                                        min_mu["fem"] = mu;
+                                    }
+                                }
 
                             }
                             break;
@@ -1233,6 +1247,18 @@ public:
                                         }
                                     }
 
+                                    if( this->vm().count("crb.minimization-func") )
+                                    {
+                                        auto min_func = expr( min_func_str, "min_func" );
+                                        min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
+                                        auto min = min_func.evaluate( min_map );
+                                        if( min < min_value["fem"] || curpar == 1 )
+                                        {
+                                            min_value["fem"] = min;
+                                            min_mu["fem"] = mu;
+                                        }
+                                    }
+
                                 }//compute-fem-during-online
 
                                 if ( crb->errorType()==2 )
@@ -1260,6 +1286,18 @@ public:
                                         }
                                         std::ofstream res(soption(_name="result-file") );
                                         res << "output="<< ocrb << "\n";
+
+                                        if( this->vm().count("crb.minimization-func") )
+                                        {
+                                            auto min_func = expr( min_func_str, "min_func" );
+                                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                            auto min = min_func.evaluate( min_map );
+                                            if( min < min_value["rb"] || curpar == 1 )
+                                            {
+                                                min_value["rb"] = min;
+                                                min_mu["rb"] = mu;
+                                            }
+                                        }
                                     }
 
                                 }//end of crb->errorType==2
@@ -1292,6 +1330,19 @@ public:
                                         }
                                         std::ofstream res(soption(_name="result-file") );
                                         res << "output="<< ocrb << "\n";
+
+                                        if( this->vm().count("crb.minimization-func") )
+                                        {
+                                            auto min_func = expr( min_func_str, "min_func" );
+                                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                            auto min = min_func.evaluate( min_map );
+                                            if( min < min_value["rb"] || curpar == 1 )
+                                            {
+                                                min_value["rb"] = min;
+                                                min_mu["rb"] = mu;
+                                            }
+                                        }
+
                                     }//end of proc==master
                                 }//end of else (errorType==2)
 
@@ -2169,6 +2220,23 @@ public:
                     file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb_prediction<<"\n\n";
                 }
             }//end of compute-stat CRB
+
+            // Find the output which minimize user-defined functional
+            if( this->vm().count("crb.minimization-func") && proc_number == Environment::worldComm().masterRank() )
+            {
+                if( M_mode==CRBModelMode::PFEM || compute_fem )
+                {
+                    file_summary_of_simulations << "[Minimization - PFEM] min value = " << min_value["fem"] << " at mu = [";
+                    int size = min_mu["fem"].size();
+                    for ( int i=0; i<size-1; i++ ) file_summary_of_simulations << (min_mu["fem"])[i] <<" , ";
+                    file_summary_of_simulations << (min_mu["fem"])[size-1]<<" ]\n ";
+                }
+                file_summary_of_simulations << "[Minimization - RB] min value = " << min_value["rb"] << " at mu = [";
+                int size = min_mu["rb"].size();
+                for ( int i=0; i<size-1; i++ ) file_summary_of_simulations << (min_mu["rb"])[i] <<" , ";
+                file_summary_of_simulations << (min_mu["rb"])[size-1]<<" ]\n ";
+            }
+
             if( M_mode==CRBModelMode::SCM )
             {
                 LOG( INFO ) << "compute statistics \n";
