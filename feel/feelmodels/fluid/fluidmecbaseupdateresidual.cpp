@@ -664,11 +664,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         {
             //auto const& t = M_thermodynModel->fieldTemperature();
             auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element("t");//U = *XVec;
+            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
             auto const& thermalProperties = M_thermodynModel->thermalProperties();
-            // copy vector values in fluid element
-            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
-                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
 
             auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
             form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
