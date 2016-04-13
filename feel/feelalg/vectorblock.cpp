@@ -39,60 +39,11 @@ template <typename T>
 void
 BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
 {
-    vb->close();
+    if ( !vb->closed() )
+        vb->close();
 
-    size_type _start_iloc=0;
-    for ( uint16_type i=0; i<this->nRow(); ++i )
-    {
-        size_type nBlockRow = this->operator()( i,0 )->localSize();
-
-        if ( !this->vector() )
-        {
-            for ( size_type k=0; k<nBlockRow; ++k )
-            {
-                this->operator()( i,0 )->set( k, vb->operator()( _start_i+k ) );
-            }
-        }
-        else
-        {
-            for ( size_type k=0; k<nBlockRow; ++k )
-            {
-                const T val = vb->operator()( _start_i+k );
-                this->operator()( i,0 )->set( k, val );
-                this->vector()->set( _start_iloc+k, val );
-            }
-        }
-
-        this->operator()( i,0 )->close();
-        _start_i += nBlockRow;
-        _start_iloc += nBlockRow;
-    }
-}
-
-template <typename T>
-void
-BlocksBaseVector<T>::localize()
-{
-    if ( !this->vector() ) return;
-
-    this->vector()->close();
-#if 0
-    size_type _start_i=0;
-    for ( uint16_type i=0; i<this->nRow(); ++i )
-    {
-        size_type nBlockRow = this->operator()( i,0 )->localSize();
-
-            for ( size_type k=0; k<nBlockRow; ++k )
-            {
-                this->operator()( i,0 )->set( k, this->vector()->operator()( _start_i+k ) );
-            }
-
-        this->operator()( i,0 )->close();
-        _start_i += nBlockRow;
-    }
-#else
-    auto const& dm = this->vector()->map();
-    int currentDataBaseId = 0;
+    auto const& dm = vb->map();
+    int currentDataBaseId = _start_i;
     for ( uint16_type i=0; i<this->nRow(); ++i )
     {
         //size_type nBlockRow = this->operator()( i,0 )->localSize();
@@ -104,14 +55,20 @@ BlocksBaseVector<T>::localize()
             auto const& dofIdToContainerIdVec = dm.dofIdToContainerId(currentDataBaseId);
             for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             {
-                this->operator()( i,0 )->set( dofIdToContainerIdBlock[k], this->vector()->operator()( dofIdToContainerIdVec[k] ) );
+                this->operator()( i,0 )->set( dofIdToContainerIdBlock[k], vb->operator()( dofIdToContainerIdVec[k] ) );
             }
         }
         this->operator()( i,0 )->close();
     }
+}
 
+template <typename T>
+void
+BlocksBaseVector<T>::localize()
+{
+    if ( !this->vector() ) return;
 
-#endif
+    this->localize( this->vector() );
 }
 
 template <typename T>
