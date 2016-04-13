@@ -897,11 +897,11 @@ assemble( std::pair<size_type,size_type> const& elt_0,
     size_type trial_elt_0 = elt_0.second;
     size_type trial_elt_1 = elt_1.second;
 
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array();
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1,M_form.dofIdToContainerIdTest() ).array();
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_0,M_form.dofIdToContainerIdTest() ).array();
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_1,M_form.dofIdToContainerIdTest() ).array();
 
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e0id,M_form.dofIdToContainerIdTrial() ).array();
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_e1id,M_form.dofIdToContainerIdTrial() ).array();
+    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_elt_0,M_form.dofIdToContainerIdTrial() ).array();
+    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_elt_1,M_form.dofIdToContainerIdTrial() ).array();
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {
