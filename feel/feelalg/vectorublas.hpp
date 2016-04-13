@@ -33,6 +33,7 @@
 
 #include <set>
 #include <boost/operators.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <feel/feelcore/application.hpp>
