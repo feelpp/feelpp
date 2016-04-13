@@ -129,8 +129,6 @@ public:
         M_tau_constant( doption("tau_constant") ),
         M_tau_order( ioption("tau_order") )
     {
-        if(Environment::isMasterRank())
-            std::cout << "[TestHDiv]\n";
         this->changeRepository( boost::format( "benchmark_hdg/%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("hsize")
@@ -290,10 +288,15 @@ Hdg<Dim, OrderP>::convergence()
         auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
 
         // build vector blocks from sub-vector of size given by set of function spaces
-        auto F = backend()->newBlockVector(_block=vectorBlocks(Vh,Wh,Mh));
+        BlocksBaseVector<double> hdg_vec(3);
+        hdg_vec(0,0) = backend()->newVector( Vh );
+        hdg_vec(1,0) = backend()->newVector( Wh );
+        hdg_vec(2,0) = backend()->newVector( Mh );
+        auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
         // build vector blocks from concatenation of subvectors up pp and phatp
-        auto U = backend()->newBlockVector(_block=vectorBlocks(up,pp,phatp));
+        auto hdg_sol = vectorBlocks(up,pp,phatp);
+        auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
 
         assemble_A_and_F( A, F, Vh, Wh, Mh, p_exact, gradp_exact );
         toc("matrices",true);
@@ -394,7 +397,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     auto rhs2 = form1( _test=Wh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost() );
+                       _rowstart=1 );
 
     rhs2 += integrate(_range=elements(mesh),
                       _expr=f*id(w));
@@ -403,7 +406,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: changed signs (to move terms to the left)
     auto rhs3 = form1( _test=Mh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                       _rowstart=2);
     rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
                       _expr=-id(l)*K*gradp_exact*N());
     rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
@@ -418,14 +421,14 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "a11 works fine" << std::endl;
 
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=0, _colstart=1 );
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
     cout << "a12 works fine" << std::endl;
 
     // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                      _rowstart=0, _colstart=2);
 
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=( idt(phat)*leftface(trans(id(v))*N())+
@@ -438,7 +441,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: added extended pattern
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=0);
+                      _rowstart=1, _colstart=0);
 
     // end dp
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
@@ -456,7 +459,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: added extended pattern
     auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=1, _colstart=1 );
 
     // end dp
     a22 += integrate(_range=internalfaces(mesh),
@@ -470,7 +473,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: added extended pattern, multiplied by 0.5
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                      _rowstart=1, _colstart=2);
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) *
                      ( leftface( pow(h(),M_tau_order)*id(w) )+
@@ -483,7 +486,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: added extended pattern, multiplied by 0.5
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
+                      _rowstart=2, _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
                      _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
                                     rightfacet(trans(idt(u))*N())) ) );
@@ -497,7 +500,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // begin dp: added extended pattern, mulitplied by 0.5
     auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost());
+                      _rowstart=2, _colstart=1);
     a32 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
                                                     rightfacet( pow(h(),M_tau_order)*idt(p) )));
@@ -508,7 +511,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "a32 works fine" << std::endl;
 
     auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                     _rowstart=2, _colstart=2);
     // begin dp: mulitplied by 0.25
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
