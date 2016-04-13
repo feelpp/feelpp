@@ -53,24 +53,23 @@ public :
     typedef boost::shared_ptr<Backend<T> > backend_ptrtype;
     //using local_vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
 
-    BlocksBaseVector(uint16_type nr = 0)
+    BlocksBaseVector(uint16_type nr = 0,
+                     backend_ptr_t<T> b = backend() )
         :
-        super_type(nr,1)
+        super_type(nr,1),
+        M_backend( b ) 
     {}
 
-    BlocksBaseVector(self_type const & b)
-        :
-        super_type(b),
-        M_vector( b.M_vector )
-    {}
+    BlocksBaseVector(self_type const & b) = default;
 
     BlocksBaseVector(super_type const & b)
         :
-        super_type(b)
+        super_type(b),
+        M_backend( backend() )
     {}
 
     /**
-     * push_back methode
+     * push_back method
      */
     self_type
     operator<<( vector_ptrtype const& m ) const
@@ -106,41 +105,43 @@ public :
     vector_ptrtype const& vector() const { return M_vector; }
 
     /**
-     * termination function to fill BlocksBaseVector
+     * termination function to fill 
      */
-    void fill( int r, backend_ptr_t<double> b  ) {}
-#if 0
+    void fill( int r  ) {}
+
     /**
-     * recurse through first row and column of submatrix of size (n,n) 
+     * termination function to fillWithNewVector
+     */
+    void fillWithNewVector( int r  ) {}
+
+    /**
+     * recurse through entries of subvector
      */
     template<typename Arg1, typename ...Args>
     void
-    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args, 
-          backend_ptr_t<double> b = backend(),
-          typename std::enable_if<std::is_base_of<FunctionSpaceBase,Arg1>::value>::type* = nullptr )
+    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
         {
-            M_vector[n] = b->newBlockVector( arg1 );
+            this->operator()( n ) = M_backend->newBlockVector( arg1 );
             // do submatrix (n+1,n+1)
-            fill( ++n, args..., b );
+            fillWithNewVector( ++n, args... );
         }
-#endif
+
     /**
-     * recurse through first row and column of submatrix of size (n,n) 
+     * recurse through entries of subvector
      */
     template<typename Arg1, typename ...Args>
     void
-    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args, 
-          backend_ptr_t<typename decay_type<Arg1>::value_type> b = backend(),
-          typename std::enable_if<std::is_base_of<FunctionSpaceBase,Arg1>::value>::type* = nullptr )
+    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
         {
-            M_vector[n] = b->newBlockVector( arg1 );
+            this->operator()( n ) = arg1;
             // do submatrix (n+1,n+1)
-            fill( ++n, args..., b );
+            fill( ++n, args... );
         }
 
 
 private :
     vector_ptrtype M_vector;
+    backend_ptr_t<T> M_backend;
     //std::unordered_map<size_type, local_vector_type> M_local_vec;
 };
 
@@ -314,14 +315,31 @@ public:
  */
 template<typename Arg1, typename ...Args>
 BlocksBaseVector<typename decay_type<Arg1>::value_type>
-vectorBlocks( const Arg1& arg1, const Args&... args, 
-              backend_ptr_t<typename decay_type<Arg1>::value_type> b = backend(),
-              typename std::enable_if<std::is_base_of<FunctionSpaceBase,decay_type<Arg1>>::value>::type* = nullptr )
+newVectorBlocks( const Arg1& arg1, const Args&... args )
 {
     const int size = sizeof...(Args)+1;
-    BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size );
+    BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
     int n = 0;
-    g.fill( n, arg1, args..., b );
+    g.fillWithNewVector( n, arg1, args... );
+    return g;
+}
+
+
+/**
+ * Build blocks of CSR graphs with function spaces \p
+ * (args1,args2,argn). Variadic template is used to handle an arbitrary number of
+ * function spaces.
+ * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
+ *
+ */
+template<typename Arg1, typename ...Args>
+BlocksBaseVector<typename decay_type<Arg1>::value_type>
+vectorBlocks( const Arg1& arg1, const Args&... args )
+{
+    const int size = sizeof...(Args)+1;
+    BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
+    int n = 0;
+    g.fill( n, arg1, args... );
     return g;
 }
 
