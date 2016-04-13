@@ -170,7 +170,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         void exportMeasures( double time );
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
-
+        void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void build();
         void loadMesh( mesh_ptrtype mesh );

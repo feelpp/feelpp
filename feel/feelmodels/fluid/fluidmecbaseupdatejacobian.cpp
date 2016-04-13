@@ -463,9 +463,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
         if ( BuildNonCstPart )
         {
             auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element("t");
-            for ( size_type k=0;k<XhT->nLocalDofWithGhost();++k )
-                t(k) = XVec->operator()(M_thermodynModel->rowStartInVector()+k);
+            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
             auto const& thermalProperties = M_thermodynModel->thermalProperties();
 
             auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());

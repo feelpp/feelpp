@@ -914,6 +914,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
                                                          this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
         M_thermodynModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
         M_thermodynModel->loadMesh( this->mesh() );
+        // disable thermo exporter if we use fluid exporter
+        M_thermodynModel->setDoExportResults( false );
         M_thermodynModel->init( !M_useGravityForce/*false*/ );
     }
     //-------------------------------------------------//
