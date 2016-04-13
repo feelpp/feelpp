@@ -61,6 +61,16 @@ matrix:
         packages:
         - *1
         - clang-3.7
+  - env: BUILD="llvm-3.8" COMPILER_VERSION="clang-3.8" FEELPP_CXX=clang++-3.8
+      FEELPP_CC=clang-3.8 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O2 -DNDEBUG"
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-precise-3.8
+        packages:
+        - *1
+        - clang-3.8
   - env: BUILD="gcc-5" COMPILER_VERSION="g++-5" FEELPP_CXX=g++-5
       FEELPP_CC=gcc-5 BUILDTYPE=Release TARGET=quickstart CXXFLAGS="-O0 -DNDEBUG"
     addons:
