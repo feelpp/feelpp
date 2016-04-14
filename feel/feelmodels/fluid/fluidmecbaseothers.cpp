@@ -1937,10 +1937,15 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     // copy velocity/pressure in block
+#if 0
     auto & vecAlgebraic = M_blockVectorSolution.vector();
     auto const& fieldVelPres = this->fieldVelocityPressure();
     for (int k=0;k< this->functionSpace()->nLocalDofWithGhost() ;++k)
         vecAlgebraic->set(k, fieldVelPres(k) );
+#else
+    //M_blockVectorSolution.vector()->close();
+    M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldVelocityPressure(), 0 );
+#endif
 
     // do nothing for others block (fields define only in blockVectorSolution)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
