@@ -285,7 +285,22 @@ Hdg<Dim, OrderP>::convergence()
 
         tic();
         // build csr graph blocks from set of function spaces Vh Wh and Mh
+#if 0
         auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
+#else
+        BlocksBaseGraphCSR hdg_graph(3,3);
+        hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+        hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
+        auto A = backend()->newBlockMatrix(_block=hdg_graph);
+#endif
+        
 
         // build vector blocks from sub-vector of size given by set of function spaces
         BlocksBaseVector<double> hdg_vec(3);
