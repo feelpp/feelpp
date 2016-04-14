@@ -67,8 +67,6 @@ public:
     // update for use
     void init( bool buildMethodNum = true );
 
-    void solve();
-
     //___________________________________________________________________________________//
     // assembly using bc
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;

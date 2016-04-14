@@ -542,6 +542,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         myPrecBlockNs->setParameterValues( paramValues );
     }
 
+    if ( this->M_useThermodynModel && this->M_useGravityForce )
+        this->M_thermodynModel->updateParameterValues();
+
     super_type::solve();
 }
 
