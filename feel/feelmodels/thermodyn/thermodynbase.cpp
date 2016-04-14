@@ -435,6 +435,19 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     return _ostr;
 }
 
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateParameterValues()
+{
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    M_bcDirichlet.setParameterValues( paramValues );
+    M_bcNeumann.setParameterValues( paramValues );
+    M_bcRobin.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
+}
+
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -442,6 +455,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("ThermoDynamics","solve", "start");
     this->timerTool("Solve").start();
+
+    this->updateParameterValues();
 
     //M_algebraicFactory->linearSolver(this->blockVectorSolution().vector());
     M_algebraicFactory->solve( "LinearSystem", this->blockVectorSolution().vector() );
