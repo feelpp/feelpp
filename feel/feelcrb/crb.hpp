@@ -2246,6 +2246,7 @@ CRB<TruthModelType>::offline()
             bool check=true;
             boost::tie( mu, index ) = M_Xi->min( check );
         }
+        M_current_mu = mu;
 
         int size = mu.size();
         if( this->worldComm().isMasterRank() )
