@@ -15,7 +15,7 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_type const& U,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_external_storage_type/*element_fluid_type*/ const& U,
                                                              vector_ptrtype& R,
                                                              bool BuildCstPart,
                                                              bool UseJacobianLinearTerms ) const

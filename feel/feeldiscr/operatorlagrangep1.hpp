@@ -915,7 +915,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                         size_type thenewptid=invalid_size_type_value;
                         if ( this->domainSpace()->dof()->dofGlobalClusterIsOnProc(globclusterdofRecv))
                         {
-                            const size_type theoldptid = this->domainSpace()->dof()->mapGlobalClusterToGlobalProcess( globclusterdofRecv - this->domainSpace()->dof()->firstDofGlobalCluster() );
+                            const size_type theoldptid = globclusterdofRecv - this->domainSpace()->dof()->firstDofGlobalCluster();
                             thenewptid = new_node_numbers[theoldptid];
                             CHECK( thenewptid!=invalid_size_type_value ) << "--1---invalid point id theoldptid="<<theoldptid << " thenewptid="<<thenewptid<< "\n";
                         }

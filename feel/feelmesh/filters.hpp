@@ -1047,7 +1047,7 @@ element( ElementType const& elt  )
 
 template<typename MeshType>
 ext_elements_t<MeshType>
-elements( MeshType const& mesh, EntityProcessType entity )
+elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<false> )
 {
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
@@ -1062,8 +1062,8 @@ elements( MeshType const& mesh, EntityProcessType entity )
     {
         std::set<size_type> eltGhostDone;
 
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto face_it = mesh.interProcessFaces().first;
+        auto const face_en = mesh.interProcessFaces().second;
         for ( ; face_it!=face_en ; ++face_it )
         {
             auto const& elt0 = face_it->element0();
@@ -1084,6 +1084,21 @@ elements( MeshType const& mesh, EntityProcessType entity )
                               myelts->begin(),
                               myelts->end(),
                               myelts );
+}
+
+template<typename MeshType>
+ext_elements_t<MeshType>
+elements( MeshType const& mesh, EntityProcessType entity, mpl::bool_<true> )
+{
+    return elements( *mesh, entity, mpl::bool_<false>() );
+}
+
+template<typename MeshType>
+ext_elements_t<MeshType>
+elements( MeshType const& mesh, EntityProcessType entity )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return elements( mesh, entity, is_ptr_or_shared_ptr() );
 }
 
 

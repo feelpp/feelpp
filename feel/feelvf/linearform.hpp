@@ -579,6 +579,7 @@ public:
                 M_row_startInVector = lf.M_row_startInVector;
                 M_do_threshold = lf.M_do_threshold;
                 M_threshold = lf.M_threshold;
+                M_dofIdToContainerId = lf.M_dofIdToContainerId;
             }
             return *this;
         }
@@ -734,6 +735,21 @@ public:
         return M_row_startInVector;
     }
 
+    /**
+     * \return the threshold
+     */
+    value_type threshold() const
+    {
+        return M_threshold;
+    }
+
+    /**
+     * return true if do threshold. false otherwise
+     */
+    bool doThreshold() const
+    {
+        return M_do_threshold;
+    }
 
     /**
      * \return \c true if threshold applies, false otherwise
@@ -742,6 +758,11 @@ public:
     {
         return ( math::abs( v ) > M_threshold );
     }
+
+    /**
+     * \return mapping from test dof id to container id with global process numbering
+     */
+    std::vector<size_type> const& dofIdToContainerId() const { return *M_dofIdToContainerId; }
 
     //@}
 
@@ -778,6 +799,11 @@ public:
     {
         M_do_threshold = do_threshold;
     }
+    /**
+     * set mapping from test dof id to container id with global process numbering
+     */
+    void setDofIdToContainerId( std::vector<size_type> const& gpmap ) { M_dofIdToContainerId = std::addressof( gpmap ); }
+
 
     //@}
 
@@ -793,11 +819,11 @@ public:
         if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                M_F->add( i+this->rowStartInVector(), v );
+                M_F->add( i, v );
         }
 
         else
-            M_F->add( i+this->rowStartInVector(), v );
+            M_F->add( i, v );
     }
 
     /**
@@ -806,10 +832,6 @@ public:
      */
     void addVector( int* i, int n,  value_type* v )
     {
-        if ( this->rowStartInVector()!=0 )
-            for ( int k = 0; k< n ; ++k )
-                i[k]+=this->rowStartInVector();
-
         M_F->addVector( i, n, v );
     }
 
@@ -858,6 +880,9 @@ private:
 
     bool M_do_threshold;
     value_type M_threshold;
+
+    std::vector<size_type> const* M_dofIdToContainerId;
+
 };
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -868,8 +893,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_lb( __vf.M_lb ),
     M_row_startInVector( __vf.M_row_startInVector ),
     M_do_threshold( __vf.M_do_threshold ),
-    M_threshold( __vf.M_threshold )
-
+    M_threshold( __vf.M_threshold ),
+    M_dofIdToContainerId( __vf.M_dofIdToContainerIdTest )
 {
     // add the vector contrib
     *M_F += *__vf.M_F;
@@ -907,6 +932,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
                       << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
+    datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
+    this->setDofIdToContainerId( dm->dofIdToContainerId( M_row_startInVector ) );
     if (  init )
         M_F->zero();
 }
@@ -967,23 +994,11 @@ struct LFAssign
                 return;
             }
 
-            list_block_type __list_block;
-
-            if ( M_lf.testSpace()->worldsComm()[M_index].globalSize()>1 )
-                {
-                    if (M_lf.testSpace()->hasEntriesForAllSpaces())
-                        __list_block.push_back( Block( 0, 0, M_Xh->nLocalDofStart( M_index ), 0 ) );
-                    else
-                        __list_block.push_back( Block( 0, 0, 0, 0 ) );
-                }
-            else
-                __list_block.push_back( Block( 0, 0, M_Xh->nDofStart( M_index ), 0 ) );
-
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                    M_lf.vectorPtr(),
-                    __list_block,
-                    M_lf.rowStartInVector(),
-                    false );
+                                                                                                  M_lf.vectorPtr(),
+                                                                                                  M_lf.rowStartInVector() + M_index,
+                                                                                                  false,
+                                                                                                  M_lf.doThreshold(), M_lf.threshold() );
 
             //
             // in composite integration, make sure that if M_init is \p
@@ -1037,6 +1052,10 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> )
 {
+    // do nothing if process not active for this space
+    if ( !M_X->worldComm().isActive() )
+        return;
+    // do assembly for each subspace
     fusion::for_each( M_X->functionSpaces(), make_lfassign( *this, M_X, __expr, init ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -1044,30 +1063,16 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> )
 {
-    if ( M_lb.empty() )
-    {
-        M_lb.push_back( Block( 0, 0, 0, 0 ) );
-    }
+    // do nothing if process not active for this space
+    if ( !M_X->worldComm().isActive() )
+        return;
 
     if ( init )
     {
-        typename list_block_type::const_iterator __bit = M_lb.begin();
-        typename list_block_type::const_iterator __ben = M_lb.end();
-
-        for ( ; __bit != __ben; ++__bit )
-        {
-            DVLOG(2) << "LinearForm:: block: " << *__bit << "\n";
-            size_type g_ic_start = __bit->globalRowStart();
-            DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
-
-            M_F->zero( g_ic_start,g_ic_start + M_X->nDof() );
-        }
+        M_F->zero();
     }
 
     __expr.assemble( M_X, *this );
-    //vector_range_type r( M_F, ublas::range( M_v.start(),M_v.start()+ M_v.size() ) );
-    //std::cout << "r = " << r << "\n";
-    //std::cout << "after F= " << M_F << "\n";
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename ExprT>
