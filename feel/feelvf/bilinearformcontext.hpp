@@ -806,16 +806,6 @@ assemble( std::pair<size_type,size_type> const& elt )
         M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
 
-        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
-
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-             is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
-             is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            CHECK(false) << "TODO";
-        }
-
         if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
              is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
              is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
@@ -834,8 +824,8 @@ assemble( std::pair<size_type,size_type> const& elt )
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
-        M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
+        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
 
         if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
              is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
@@ -843,9 +833,11 @@ assemble( std::pair<size_type,size_type> const& elt )
         {
             CHECK(false) << "TODO";
         }
-        M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
-                          M_mortarTrial_local_cols.data(), M_mortarTrial_local_cols.size(),
-                          M_mortarTrial_rep.data() );
+
+        M_form.addMatrix( M_mortarTest_local_rows.data(), M_mortarTest_local_rows.size(),
+                          M_local_cols.data(), M_local_cols.size(),
+                          M_mortarTest_rep.data() );
+
     }
     else if ( UseMortarType == 2 )
     {

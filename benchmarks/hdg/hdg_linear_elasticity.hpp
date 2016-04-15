@@ -285,6 +285,9 @@ Hdg<Dim, OrderP>::convergence()
 
         tic();
         // build the big matrix associated to bilinear form over Vh x Wh x Mh
+#if 0
+        auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
+#else
         BlocksBaseGraphCSR hdg_graph(3,3);
         hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
         hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
@@ -297,17 +300,14 @@ Hdg<Dim, OrderP>::convergence()
         hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
 
         auto A = backend()->newBlockMatrix(_block=hdg_graph);
-
+#endif
         BlocksBaseVector<double> hdg_vec(3);
         hdg_vec(0,0) = backend()->newVector( Vh );
         hdg_vec(1,0) = backend()->newVector( Wh );
         hdg_vec(2,0) = backend()->newVector( Mh );
         auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-        BlocksBaseVector<double> hdg_sol(3);
-        hdg_sol(0,0) = sigmap;
-        hdg_sol(1,0) = up;
-        hdg_sol(2,0) = uhatp;
+        auto hdg_sol = vectorBlocks(sigmap,up,uhatp);
         auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
 
         assemble_A_and_F( A, F, Vh, Wh, Mh, u_exact, sigma_exact, f );
@@ -413,7 +413,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
 
     // Building the RHS
     auto rhs2 = form1( _test=Wh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost() );
+                       _rowstart=1 );
 
     rhs2 += integrate(_range=elements(mesh),
                       _expr=trans(div_sigma_exact)*id(w));
@@ -421,7 +421,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "rhs2 works fine" << std::endl;
 
     auto rhs3 = form1( _test=Mh, _vector=F,
-                       _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                       _rowstart=2);
 
     // in convergence test Neumann condition is given from the displacement and
     // constitutive law
@@ -452,7 +452,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "a11 works fine" << std::endl;
 
     auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=0, _colstart=1 );
     a12 += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
 
     auto a12_b = form2( _trial=Wh, _test=Vh );
@@ -461,7 +461,7 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     cout << "a12 works fine" << std::endl;
 
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                      _rowstart=0, _colstart=2);
 
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
@@ -469,41 +469,15 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=-trans(idt(uhat))*(id(v)*N()));
 
-    auto a13_b1 = form2( _trial=Mh, _test=Vh );
-    auto a13_b2 = form2( _trial=Mh, _test=Vh );
-
-    a13_b1 = integrate(_range=internalfaces(mesh),
-                       _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-                               trans(idt(uhat))*rightface(id(v)*N())) );
-    a13_b2 = integrate(_range=boundaryfaces(mesh),
-                       _expr=-trans(idt(uhat))*(id(v)*N()));
-
-    v.on(_range=elements(mesh),_expr=expr<Dim,Dim>(soption("v_testfun")) );
-    sigma.on(_range=elements(mesh),_expr=sigma_exact );
-    u.on(_range=elements(mesh),_expr=u_exact );
-    uhat.on(_range=elements(face_mesh),_expr=u_exact );
-    double a11b1v = a11_b1(v,sigma);
-    double a11b2v = a11_b2(v,sigma);
-    double a12bv = a12_b(v,u);
-    double a13b1v = a13_b1(v,uhat);
-    double a13b2v = a13_b2(v,uhat);
-    cout << "1st row: "  << a11b1v << " + " << a11b2v << " + " << a12bv << " + " << a13b1v << " + " << a13b2v << " = " << a11b1v+a11b2v+a12bv+a13b1v+a13b2v << std::endl;
-    cout << "a13 works fine" << std::endl;
-
     auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=0);
+                      _rowstart=1, _colstart=0);
 
 
     a21 += integrate(_range=elements(mesh),_expr=(trans(id(w))*divt(sigma)));
 
-    auto a21_v = form2( _trial=Vh, _test=Wh);
-    a21_v += integrate(_range=elements(mesh),_expr=(trans(id(w))*divt(sigma)));
-
-    cout << "a21 works fine" << std::endl;
-
     // begin dp: here we need to put the projection of u on the faces
     auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost() );
+                      _rowstart=1, _colstart=1);
 
     a22 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant *
@@ -512,23 +486,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
 
-    auto a221_v = form2( _trial=Wh, _test=Wh );
-
-    a221_v += integrate(_range=internalfaces(mesh),
-                     _expr=-tau_constant *
-                     ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-                       rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
-
-    auto a222_v = form2( _trial=Wh, _test=Wh );
-    a222_v += integrate(_range=boundaryfaces(mesh),
-                     _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
-
-    // end dp
-
-    cout << "a22 works fine" << std::endl;
-
     auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                      _rowstart=1, _colstart=2);
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant *
                      ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
@@ -537,37 +496,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a23 += integrate(_range=boundaryfaces(mesh),
                      _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
-    auto a231_v = form2( _trial=Mh, _test=Wh);
-#if 0
-    a231_v += integrate(_range=internalfaces(mesh),
-                        _expr=tau_constant * ( leftfacet(pow(idv(H),M_tau_order)*trans(idt(uhat)))*leftface( id(w))+
-                                               rightfacet(pow(idv(H),M_tau_order)*trans(idt(uhat)))*rightface( id(w) )));
-#else
-    a231_v += integrate(_range=internalfaces(mesh),
-                        _expr=tau_constant * pow(idv(H),M_tau_order)*trans(idt(uhat)) * ( leftface( id(w))+rightface(id(w))));
-#endif
-    auto a232_v = form2( _trial=Mh, _test=Wh);
-    a232_v += integrate(_range=boundaryfaces(mesh),
-                        _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
-
-    cout << "a23 works fine" << std::endl;
-
-    w.on(_range=elements(mesh),_expr=expr<Dim,1>(soption("w_testfun")) );
-    double a21v=a21_v(w,sigma);
-    double a221v=a221_v(w,u);
-    double a222v=a222_v(w,u);
-    double a231v=a231_v(w,uhat);
-    double a232v=a232_v(w,uhat);
-
-    auto rhs2_v = form1( _test=Wh);
-    rhs2_v = integrate(_range=elements(mesh),
-                     _expr=trans(div_sigma_exact)*id(w));
-    cout << "2nd row: "  << a21v
-         << " + " << a221v << " + " << a222v
-         << " + " << a231v << " + " << a232v
-         << " - " << rhs2_v(w) << " = " << a21v+a221v+a222v+a231v+a232v-rhs2_v(w) << std::endl;
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=0);
+                      _rowstart=2, _colstart=0);
     a31 += integrate(_range=internalfaces(mesh),
                      _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
                                     rightfacet(idt(sigma)*N())) ) );
@@ -576,11 +506,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a31 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"} ),
                      _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
-    cout << "a31 works fine" << std::endl;
-
-    // begin dp - Here we need the projection again
     auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
-                      _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost());
+                      _rowstart=2, _colstart=1);
     a32 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
                                                     rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
@@ -588,12 +515,8 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     a32 += integrate(_range=markedfaces(mesh,{"Neumann","Tip"}),
                      _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-    // end dp
-
-    cout << "a32 works fine" << std::endl;
-
     auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost(), _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost());
+                     _rowstart=2, _colstart=2);
 
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
@@ -603,8 +526,6 @@ Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
                      _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
     a33 += integrate(_range=markedfaces(mesh,{"Dirichlet"}),
                      _expr=trans(idt(uhat)) * id(m) );
-
-    cout << "a33 works fine" << std::endl;
 
 }
 

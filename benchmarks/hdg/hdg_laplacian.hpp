@@ -300,7 +300,7 @@ Hdg<Dim, OrderP>::convergence()
         hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
         auto A = backend()->newBlockMatrix(_block=hdg_graph);
 #endif
-        
+
 
         // build vector blocks from sub-vector of size given by set of function spaces
         BlocksBaseVector<double> hdg_vec(3);
