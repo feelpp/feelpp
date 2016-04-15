@@ -223,7 +223,8 @@ public:
         M_backend( backend() ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 )
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -244,7 +245,8 @@ public:
         M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 )
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -268,7 +270,8 @@ public:
         M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 )
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -289,7 +292,8 @@ public:
         M_backend_l2( backend( _name="backend-l2") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 )
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -313,7 +317,8 @@ public:
         M_backend_l2( o.M_backend_l2 ),
         M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms ),
         M_isSteadyModel( o.M_isSteadyModel ),
-        M_numberOfTimeStep( o.M_numberOfTimeStep )
+        M_numberOfTimeStep( o.M_numberOfTimeStep ),
+        M_useSER( o.M_useSER )
     {
         this->init();
     }
@@ -335,19 +340,19 @@ public:
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                  _worldcomm=M_backend_primal->comm(),
                                                  _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=false/*true*/);
+                                                 _rebuild=M_useSER);
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=false/*true*/);
+                                               _rebuild=M_useSER);
         M_preconditioner_l2 = preconditioner(_pc=(PreconditionerType) M_backend_l2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                              _backend= M_backend_l2,
                                              _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_l2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                              _worldcomm=M_backend_l2->comm(),
                                              _prefix=M_backend_l2->prefix() ,
-                                             _rebuild=false/*true*/);
+                                             _rebuild=M_useSER);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -1135,8 +1140,7 @@ public:
      */
     void countAffineDecompositionTerms()
     {
-        bool cobuild = (ioption(_name="ser.rb-frequency") != 0);
-        if( M_alreadyCountAffineDecompositionTerms && !cobuild)
+        if( M_alreadyCountAffineDecompositionTerms && !M_useSER)
             return;
         else
             M_alreadyCountAffineDecompositionTerms=true;
@@ -1527,12 +1531,20 @@ public:
     }
 
     /*
-     * return true if the model use EIM
+     * return true if the model uses EIM
      */
     bool hasEim()
     {
         return M_has_eim;
     }
+    /*
+     * return true if the model uses SER
+     */
+    bool useSER()
+    {
+        return M_useSER;
+    }
+
 
     eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
@@ -2644,6 +2656,7 @@ private:
     int M_numberOfTimeStep;
 
     bool M_has_eim;
+    bool M_useSER;
 
 };
 
