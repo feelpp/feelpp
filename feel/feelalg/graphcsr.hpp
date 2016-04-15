@@ -472,20 +472,23 @@ public :
     fill( int& n, int& c, const Arg1& arg1, const Arg2& arg2, const Args&... args )
         {
             this->operator()( n,c ) = stencil( _test=arg1,_trial=arg2, _diag_is_nonzero=false, _close=false)->graph();
-            this->operator()( c,n ) = stencil( _test=arg2,_trial=arg1, _diag_is_nonzero=false, _close=false)->graph();
-    
+            if ( c > n )
+                this->operator()( c,n ) = stencil( _test=arg2,_trial=arg1, _diag_is_nonzero=false, _close=false)->graph();
+            DCHECK( this->operator()( n,c ) != nullptr ) << "Invalid stencil " << n << "," << c;
+            DCHECK( this->operator()( c,n ) != nullptr ) << "Invalid stencil " << c << "," << n;
+            cout << "stencil for (" << n << "," << c << ") and (" << c << "," << n << ")\n";
             // go to next submatrix
             fill( n, ++c, arg1, args... );
         }
 
-  
+
     /**
      * termination function for rowcol recusion
      */
     void rowcol( int r  ) {}
 
     /**
-     * recurse through first row and column of submatrix of size (n,n) 
+     * recurse through first row and column of submatrix of size (n,n)
      */
     template<typename Arg1, typename ...Args>
     void
