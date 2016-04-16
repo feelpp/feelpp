@@ -29,9 +29,10 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
-#include <feel/feelfilters/geo.hpp>
-#include <feel/feelfilters/creategmshmesh.hpp>
-#include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+//#include <feel/feelfilters/geo.hpp>
+//#include <feel/feelfilters/creategmshmesh.hpp>
+//#include <feel/feelfilters/loadgmshmesh.hpp>
 
 namespace Feel
 {
@@ -43,13 +44,13 @@ boost::shared_ptr<MeshType>
 reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straighten )
 {
     typedef MeshType mesh_type;
-    //std::string nameFile = "FluidMechanicsMesh.path";
+
+    // reload mesh path stored in file
     std::ifstream file( nameFile.c_str() );
     if ( !file )
     {
         CHECK( false ) << "Fail to open the txt file containing path of msh file : " << nameFile << "\n";
     }
-
     std::string mshfile;
     if ( ! ( file >> mshfile ) )
     {
@@ -58,30 +59,20 @@ reloadMesh(std::string const& nameFile, WorldComm const& worldComm, int straight
     file.close();
 
 #if 0
-    //auto mshfile=this->application()->vm()["fluid.mshfile"].as< std::string >() ;
-
-    ImporterGmsh<mesh_type> import( mshfile );
-    import.setVersion( "2.1" );
-
-    boost::shared_ptr<mesh_type> mesh( new mesh_type );
-    mesh->accept( import );
-    mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    mesh->updateForUse();
-
-
-    if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh );
-    else
-        return mesh;
-#else
-
     return loadGMSHMesh(_mesh=new mesh_type,
                         _filename=mshfile,
                         _worldcomm=worldComm,
                         _straighten=straighten,
                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-
-
+#else
+    return loadMesh(_mesh=new mesh_type( worldComm ),
+                    _filename=mshfile,
+                    _worldcomm=worldComm,
+                    //_prefix=model.prefix(),
+                    _rebuild_partitions=false,
+                    _savehdf5=0,
+                    _straighten=straighten,
+                    _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 #endif
 
 } // reloadFluidMesh()
@@ -107,12 +98,15 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
     {
         if (model.hasMshfileStr())
         {
-            std::string path = model.rootRepository();
-            std::string mshfileRebuildPartitions = path + "/" + model.prefix() + ".msh";
+            std::string rootpath = model.rootRepository();
+            std::string mshfileRebuildPartitions = rootpath + "/" + model.prefix() + ".msh";
 
-            model.log("createMeshModel","", "load msh file : " + model.mshfileStr());
-
+            model.log("createMeshModel","", "load mesh file : " + model.mshfileStr());
+            std::string meshFileExt = fs::path( model.mshfileStr() ).extension().string();
             bool rebuildPartition = boption(_prefix=model.prefix(),_name="gmsh.partition");
+            if ( rebuildPartition && meshFileExt != ".msh" )
+                CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
+#if 0
             mesh = loadGMSHMesh(_mesh=new mesh_type,
                                 _filename=model.mshfileStr(),
                                 _worldcomm=model.worldComm(),
@@ -121,6 +115,17 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
                                 _rebuild_partitions_filename=mshfileRebuildPartitions,
                                 _partitions=model.worldComm().localSize(),
                                 _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
+#else
+            mesh = loadMesh(_mesh=new mesh_type( model.worldComm() ),
+                            _filename=model.mshfileStr(),
+                            _worldcomm=model.worldComm(),
+                            _prefix=model.prefix(),
+                            _rebuild_partitions=rebuildPartition,
+                            _rebuild_partitions_filename=mshfileRebuildPartitions,
+                            _partitions=model.worldComm().localSize(),
+                            _savehdf5=0,
+                            _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+#endif
 
             if (rebuildPartition/*model.rebuildMeshPartitions()*/) model.setMshfileStr(mshfileRebuildPartitions);
         }

@@ -18,6 +18,7 @@
   * \sa class CwiseBinaryOp, cwiseAbs2
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const EIGEN_CWISE_PRODUCT_RETURN_TYPE(Derived,OtherDerived)
 cwiseProduct(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
@@ -37,6 +38,7 @@ cwiseProduct(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   * \sa cwiseNotEqual(), isApprox(), isMuchSmallerThan()
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 inline const CwiseBinaryOp<std::equal_to<Scalar>, const Derived, const OtherDerived>
 cwiseEqual(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
@@ -56,6 +58,7 @@ cwiseEqual(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   * \sa cwiseEqual(), isApprox(), isMuchSmallerThan()
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 inline const CwiseBinaryOp<std::not_equal_to<Scalar>, const Derived, const OtherDerived>
 cwiseNotEqual(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
@@ -70,6 +73,7 @@ cwiseNotEqual(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   * \sa class CwiseBinaryOp, max()
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived, const OtherDerived>
 cwiseMin(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
@@ -80,6 +84,7 @@ cwiseMin(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   *
   * \sa class CwiseBinaryOp, min()
   */
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived, const ConstantReturnType>
 cwiseMin(const Scalar &other) const
 {
@@ -94,6 +99,7 @@ cwiseMin(const Scalar &other) const
   * \sa class CwiseBinaryOp, min()
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived, const OtherDerived>
 cwiseMax(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
@@ -104,6 +110,7 @@ cwiseMax(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   *
   * \sa class CwiseBinaryOp, min()
   */
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived, const ConstantReturnType>
 cwiseMax(const Scalar &other) const
 {
@@ -119,8 +126,27 @@ cwiseMax(const Scalar &other) const
   * \sa class CwiseBinaryOp, cwiseProduct(), cwiseInverse()
   */
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC
 EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_quotient_op<Scalar>, const Derived, const OtherDerived>
 cwiseQuotient(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
   return CwiseBinaryOp<internal::scalar_quotient_op<Scalar>, const Derived, const OtherDerived>(derived(), other.derived());
+}
+
+typedef CwiseBinaryOp<internal::scalar_cmp_op<Scalar,internal::cmp_EQ>, const Derived, const ConstantReturnType> CwiseScalarEqualReturnType;
+
+/** \returns an expression of the coefficient-wise == operator of \c *this and a scalar \a s
+  *
+  * \warning this performs an exact comparison, which is generally a bad idea with floating-point types.
+  * In order to check for equality between two vectors or matrices with floating-point coefficients, it is
+  * generally a far better idea to use a fuzzy comparison as provided by isApprox() and
+  * isMuchSmallerThan().
+  *
+  * \sa cwiseEqual(const MatrixBase<OtherDerived> &) const
+  */
+EIGEN_DEVICE_FUNC
+inline const CwiseScalarEqualReturnType
+cwiseEqual(const Scalar& s) const
+{
+  return CwiseScalarEqualReturnType(derived(), Derived::Constant(rows(), cols(), s), internal::scalar_cmp_op<Scalar,internal::cmp_EQ>());
 }

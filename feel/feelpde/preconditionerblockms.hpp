@@ -104,7 +104,8 @@ public:
     PreconditionerBlockMS( space_ptrtype Xh,
                            ModelProperties model,
                            std::string const& s,
-                           sparse_matrix_ptrtype A);
+                           sparse_matrix_ptrtype A,
+                           value_type relax=1);
 
     void init( void );
     void initAMS( void );
@@ -192,6 +193,7 @@ private:
     sparse_matrix_ptrtype M_mass;
     sparse_matrix_ptrtype M_L;
 
+    /// Warning: at this point the permittivity is set to one for the domain
     value_type M_er; // permittivity
 
     ModelProperties M_model;
@@ -220,20 +222,22 @@ private:
 
     sparse_matrix_ptrtype M_a_alpha;
     sparse_matrix_ptrtype M_a_beta;
+
+    value_type M_relax;
 };
 
     template < typename space_type >
 PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
                                                          ModelProperties model,        // model
                                                          std::string const& p,         // prefix
-                                                         sparse_matrix_ptrtype AA )    // The matrix
+                                                         sparse_matrix_ptrtype AA, value_type relax )    // The matrix
     :
         M_backend(backend()),           // the backend associated to the PC
         M_Xh( Xh ),
         M_Vh( Xh->template functionSpace<0>() ), // Potential
         M_Qh( Xh->template functionSpace<1>() ), // Lagrange
-        M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-        M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+        M_Vh_indices( AA->mapRow().dofIdToContainerId( 0 ) ),
+        M_Qh_indices( AA->mapRow().dofIdToContainerId( 1 ) ),
         M_uin( M_backend->newVector( M_Vh )  ),
         M_uout( M_backend->newVector( M_Vh )  ),
         M_pin( M_backend->newVector( M_Qh )  ),
@@ -259,16 +263,13 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_X(M_backend->newVector( M_Qh )),
         M_Y(M_backend->newVector( M_Qh )),
         M_Z(M_backend->newVector( M_Qh )),
-        phi(M_Qh, "phi")
+        phi(M_Qh, "phi"),
+        M_relax(relax)
 {
     tic();
     LOG(INFO) << "[PreconditionerBlockMS] setup starts";
     this->setMatrix( AA );
     this->setName(M_prefix);
-
-    /* Indices are need to extract sub matrix */
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
@@ -289,10 +290,16 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
+#if 0
+    //If you want to manage the relative permittivity materials per material,
+    //here is the entry to deal with.
     for(auto it : M_model.materials() )
     { 
         f2L += integrate(_range=markedelements(M_Qh->mesh(),marker(it)), _expr=M_er*inner(gradt(phi), grad(phi)));
     }
+#else
+    f2L += integrate(_range=elements(M_Qh->mesh()), _expr=M_er*inner(gradt(phi), grad(phi)));
+#endif
     auto f1LQ = form1(_test=M_Qh);
 
     for(auto const & it : m_dirichlet_p)
@@ -326,7 +333,8 @@ PreconditionerBlockMS<space_type>::init( void )
     // Is the zero() necessary ?
     M_11->zero();
     this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
-    M_11->addMatrix(1,M_mass);                            // A-k^2 M + M = A+(1-k^2) M
+    LOG(INFO) << "Use relax = " << M_relax << std::endl;
+    M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_dirichlet_u )

@@ -52,6 +52,8 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
+#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
+
 
 
 
@@ -113,6 +115,7 @@ public:
     typedef boost::shared_ptr<space_fluid_type> space_fluid_ptrtype;
     typedef typename space_fluid_type::element_type element_fluid_type;
     typedef boost::shared_ptr<element_fluid_type> element_fluid_ptrtype;
+    typedef typename space_fluid_type::element_external_storage_type element_fluid_external_storage_type;
     // subspace velocity
     typedef typename space_fluid_type::template sub_functionspace<0>::type space_fluid_velocity_type;
     typedef typename space_fluid_type::template sub_functionspace<0>::ptrtype space_fluid_velocity_ptrtype;
@@ -325,6 +328,13 @@ public:
     typedef typename space_fluid_pressure_type::Context context_pressure_type;
     typedef boost::shared_ptr<context_pressure_type> context_pressure_ptrtype;
 
+
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    // thermo dynamics coupling
+    typedef FeelModels::ThermoDynamics< convex_type,
+                                        Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > thermodyn_model_type;
+    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -410,7 +420,7 @@ public:
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     size_type nLocalDof() const;
-    std::map<std::string,size_type> const& startDofIndexFieldsInMatrix() const { return M_startDofIndexFieldsInMatrix; }
+    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
@@ -759,9 +769,9 @@ public :
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
-    void updateJacobianModel( element_fluid_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+    void updateJacobianModel( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
                               bool BuildCstPart ) const;
-    void updateResidualModel( element_fluid_type const& U, vector_ptrtype& R,
+    void updateResidualModel( element_fluid_external_storage_type const& U, vector_ptrtype& R,
                               bool BuildCstPart, bool UseJacobianLinearTerms ) const;
 
     virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
@@ -773,10 +783,10 @@ public :
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCPressureResidual( vector_ptrtype& R ) const = 0;
 
-    void updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
-                                     bool BuildCstPart, bool UseJacobianLinearTerms) const;
-    void updateJacobianStabilisation(element_fluid_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                     bool BuildCstPart ) const;
+    void updateResidualStabilisation( element_fluid_external_storage_type const& U, vector_ptrtype& R,
+                                      bool BuildCstPart, bool UseJacobianLinearTerms) const;
+    void updateJacobianStabilisation( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
+                                      bool BuildCstPart ) const;
 
 
     // linear
@@ -902,6 +912,9 @@ protected:
     MeshMover<trace_mesh_type> M_fluidOutletWindkesselMeshMover;
 #endif
     //----------------------------------------------------
+    vector_field_expression<nDim,1,2> M_gravityForce;
+    bool M_useGravityForce;
+    //----------------------------------------------------
     // post-process field exported
     std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
     // exporter option
@@ -938,7 +951,7 @@ protected:
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
     // start dof index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startDofIndexFieldsInMatrix;
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
     //----------------------------------------------------
@@ -947,6 +960,11 @@ protected:
     updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
+
+    //----------------------------------------------------
+    bool M_useThermodynModel;
+    thermodyn_model_ptrtype M_thermodynModel;
+    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 

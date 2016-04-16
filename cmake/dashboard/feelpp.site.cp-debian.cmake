@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(OS_VERSION debian-wheezy)
+set(OS_VERSION debian-sid)
 set(ARCH x86_64)
 set(GCC_MAKE_ARGS "-j1")
 set(GCC_PARALLEL "1")

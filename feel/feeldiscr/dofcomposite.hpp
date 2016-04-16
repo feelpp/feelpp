@@ -60,6 +60,7 @@ public:
 
     DofComposite( WorldComm const& _worldComm = Environment::worldComm() ): super( _worldComm ) {}
     DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() ) : super( n, n_local, _worldComm ) {}
+    DofComposite( std::vector< datamap_ptrtype > const& subdm, WorldComm const& _worldComm ) : super( subdm, _worldComm ) {}
     DofComposite( DofComposite const & dc ) : super( dc ) {}
     ~DofComposite() {}
 

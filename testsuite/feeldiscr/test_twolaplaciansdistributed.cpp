@@ -131,38 +131,29 @@ void run()
     auto A2 = backend2->newMatrix(_test=Xh2,_trial=Xh2);
     auto F1 = backend1->newVector(Xh1);
     auto F2 = backend2->newVector(Xh2);
+
     //---------------------------------------------------------------------------------------//
     // assembly
     form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
         integrate( _range=elements(mesh1), _expr=gradt(u1)*trans(grad(u1)) );
     form1( _test=Xh1, _vector=F1 ) +=
         integrate( _range=elements(mesh1), _expr=id(u1) );
-
-    if (Xh1->worldComm().isActive())  //(todo vincent : simplifier)
-    {
-        //A1->close();F1->close();
-        form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
-            on( _range=boundaryfaces(mesh1),
-                _element=u1,_rhs=F1,
-                _expr=cst(0.) );
-    }
+    form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
+        on( _range=boundaryfaces(mesh1),
+            _element=u1,_rhs=F1,
+            _expr=cst(0.) );
 
     form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
         integrate( _range=elements(mesh2), _expr=gradt(u2)*trans(grad(u2)) );
     form1( _test=Xh2, _vector=F2 ) +=
         integrate( _range=elements(mesh2), _expr=id(u2) );
-
-    if (Xh2->worldComm().isActive())  //(todo vincent : simplifier)
-    {
-        //A2->close();F2->close();
-        form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
-            on( _range=boundaryfaces(mesh2),
-                _element=u2,_rhs=F2,
-                _expr=cst(0.) );
-    }
+    form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
+        on( _range=boundaryfaces(mesh2),
+            _element=u2,_rhs=F2,
+            _expr=cst(0.) );
 
     //---------------------------------------------------------------------------------------//
-    // solve (todo vincent : simplifier (+rajouter le worldcomm automatiquement dans prec defaut de la fonction solve et nlsolve  )
+    // solve
     if (Xh1->worldComm().isActive())
     {
         backend1->solve(_matrix=A1,_solution=u1,_rhs=F1/*,_prec=prec1*/);
@@ -193,7 +184,6 @@ void run()
     auto myexporter2 = exporter( _mesh=mesh2, _name="MyExportDomain2" );
     myexporter2->step(0)->add( "u2", u2 );
     myexporter2->save();
-
 }
 
 } //namespace test_twolaplaciansdistributed
