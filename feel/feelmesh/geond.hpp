@@ -896,6 +896,17 @@ public:
         return M_measures.find(GEOND_MEASURES::MEAS_NEIGHBORS_ELEMENT)->second[0];
     }
 
+    /**
+     * @return a quadrature to compute the measure of the element
+     */
+    static quad_meas_type imMeasure() { return quad_meas_type( (nOrder-1)*nDim ); }
+    
+    /**
+     * @return a quadrature to compute the measure of the order 1 approximation
+     * of the element
+     */
+    static quad_meas1_type imMeasureOrder1()  { return quad_meas1_type( 0 ); }
+
     void update();
     void updateWithPc( typename gm_type::precompute_ptrtype const& pc,
                        typename gm_type::faces_precompute_type & pcf,

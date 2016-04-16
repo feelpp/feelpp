@@ -112,9 +112,12 @@ public:
 
     IMGeneral( uint16_type o ): super(o) 
         {
-            auto gm = makeGeometricTransformation<convex_type,T>();
-            auto face_qr = boost::make_shared<face_quad_type>(o);
-            this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
+            if ( nDim > 0 )
+            {
+                auto gm = makeGeometricTransformation<convex_type,T>();
+                auto face_qr = boost::make_shared<face_quad_type>(o);
+                this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
+            }
         }
     ~IMGeneral() = default;
 

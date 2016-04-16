@@ -372,8 +372,8 @@ Mesh<Shape, T, Tag>::updateMeasures()
 
     typedef typename element_type::quad_meas_type quad_meas_type;
     typedef typename element_type::quad_meas1_type quad_meas1_type;
-    quad_meas_type thequad;
-    quad_meas1_type thequad1;
+    quad_meas_type thequad = element_type::imMeasure();
+    quad_meas1_type thequad1 = element_type::imMeasureOrder1();
     typename gm_type::precompute_ptrtype pc;
     typename gm_type::faces_precompute_type pcf;
     typename gm1_type::precompute_ptrtype pc1;

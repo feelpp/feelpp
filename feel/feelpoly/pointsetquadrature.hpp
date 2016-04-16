@@ -85,10 +85,17 @@ public :
         : super( order ), 
           M_order( order ),
           M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
-          M_quad( *IMFactory<double>::instance().createObject( M_name )),
-          M_w( M_quad.numberOfPoints() ), M_prod( M_quad.numberOfPoints() ), M_exprq( M_quad.numberOfPoints() )
+          M_quad(),
+          M_w(), M_prod(), M_exprq()
         {
-           create( order );
+            if ( nDim > 0 )
+            {
+                M_quad = *IMFactory<double>::instance().createObject( M_name );
+                M_w.resize(M_quad.numberOfPoints());
+                M_prod.resize( M_quad.numberOfPoints() );
+                M_exprq.resize( M_quad.numberOfPoints() );
+                create( order );
+            }
         }
 
     PointSetQuadrature( weights_type Wts )
