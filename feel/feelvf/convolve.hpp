@@ -72,7 +72,7 @@ BOOST_PARAMETER_FUNCTION(
     LOG(INFO) << "convolve::dof:" << space->dof()->dofPoints().size();
     for( auto const& d :  space->dof()->dofPoints() )
     {
-        auto const& y = d.template get<0>();
+        auto const& y = d.second.template get<0>();
         for ( int i = 0; i < nDim; ++i ) Y(i)=y(i);
         X.push_back( Y );
     }

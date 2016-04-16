@@ -1238,7 +1238,23 @@ public:
     }
 
 
+    /**
+     * \return true if element have an edge connected
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
 
+    /**
+     * \return true if element have a face connected
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        return this->hasEdge( i );
+    }
 
     /**
      * \sa face()
@@ -1592,6 +1608,28 @@ public:
     {
         return invalid_uint16_type_value;
     }
+
+
+    /**
+     * \return true if GeoElement3D is connected to an edge
+     */
+    bool hasEdge( uint16_type i ) const
+    {
+        if ( i >= numLocalEdges )
+            return false;
+        return M_edges[i] != nullptr;
+    }
+
+    /**
+     * \return true if GeoElement3D is connected to a face
+     */
+    bool hasFace( uint16_type i ) const
+    {
+        if ( i >= numLocalFaces )
+            return false;
+        return M_faces[i] != nullptr;
+    }
+
 
     edge_type const& edge( uint16_type i ) const
     {

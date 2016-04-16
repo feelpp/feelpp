@@ -433,7 +433,7 @@ MeshALE<Convex>::updateIdentityMap()
 
 template< class Convex >
 void
-MeshALE<Convex>::revertReferenceMesh()
+MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnReferenceMesh() )
     {
@@ -446,9 +446,9 @@ MeshALE<Convex>::revertReferenceMesh()
             temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
 #endif
         temporaryDisp.scale(-1.);
-
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
-
+        M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
     }
@@ -458,7 +458,7 @@ MeshALE<Convex>::revertReferenceMesh()
 
 template< class Convex >
 void
-MeshALE<Convex>::revertMovingMesh()
+MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnMovingMesh() )
     {
@@ -469,8 +469,9 @@ MeshALE<Convex>::revertMovingMesh()
         for (size_type i=0;i<temporaryDisp.nLocalDof();++i)
             temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
 #endif
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
         M_mesh_mover.apply(M_movingMesh, temporaryDisp );
-
+        M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = false;
         M_isOnMovingMesh = true;
     }

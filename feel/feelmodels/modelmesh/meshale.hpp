@@ -43,7 +43,7 @@
 #include <feel/feelvf/geometricdata.hpp>
 
 
-#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.h>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelmesh/ale.hpp>
 
@@ -229,12 +229,12 @@ public :
     /**
      * \Revert mesh_ho in reference state
      */
-    void revertReferenceMesh();
+    void revertReferenceMesh( bool updateMeshMeasures = true );
 
     /**
      * \Revert mesh_ho in reference state
      */
-    void revertMovingMesh();
+    void revertMovingMesh( bool updateMeshMeasures = true );
 
     /**
      * \Revert mesh_ho in moving state

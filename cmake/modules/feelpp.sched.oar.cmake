@@ -22,7 +22,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
 if (FEELPP_ENABLE_SCHED_OAR )
+   string (REPLACE ";" " " _TMP_MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS}")
     if (FEELPP_MACHINE_NAME MATCHES "rheticus")
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar "#! /bin/bash
 ## Set Job name to app name
@@ -79,19 +81,15 @@ source /softs/cemracs_2015/cemracs.sh
             foreach( cfg ${FEELPP_APP_CFG} )
                 get_filename_component( CFG_NAME ${cfg} NAME )
                 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
-                    "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
-    -mca plm_rsh_agent \"oarsh\" \\
+                    "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE ${_TMP_MPIEXEC_PREFLAGS} \\
     ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-    --config-file=${CMAKE_CURRENT_BINARY_DIR}/${cfg}  
-# "
+    --config-file=${CMAKE_CURRENT_BINARY_DIR}/${cfg} "
                 )
             endforeach()
         else()
             file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oar 
-            "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE  \\
-    -mca plm_rsh_agent \"oarsh\" \\
-    ${CMAKE_CURRENT_BINARY_DIR}/${execname} \\
-# "
+            "mpirun -x LD_LIBRARY_PATH -machinefile $OAR_NODEFILE ${_TMP_MPIEXEC_PREFLAGS} \\
+    ${CMAKE_CURRENT_BINARY_DIR}/${execname} "
             )
         endif()
 
@@ -99,15 +97,20 @@ source /softs/cemracs_2015/cemracs.sh
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.oarsub "#! /bin/bash
 #OAR -r ${execname}                # Request name
 #OAR -l /nodes=64,walltime=0:30:00 # Number of tasks to use and Elapsed time limit of the job
-#OAR --stdout ${execname}_%I.o     # Standard output. %I is the job id
-#OAR --stdout ${execname}_%I.e     # Error output. %I is the job id
-#OAR --project feelpp-freeride     # Project ID
+#OAR --stdout ${execname}_%jobid%.o     # Standard output. %I is the job id
+#OAR --stdout ${execname}_%jobid%.e     # Error output. %I is the job id
+#OAR --project hpcfeelpp     # Project ID
+##OAR --notify exec:/usr/local/bin/sendmail.sh     # Send mail upon exit
 
+# if you use nix instead of modules comment out the 4 following lines
 #set -x
 source /applis/ciment/v2/env.bash
 module load openmpi/1.4.4_gcc-4.6.2
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib64
 
+# if you use nix instead of modules uncomment the next line
+# source /applis/site/nix.sh
+ 
 cd $OAR_WORKDIR
 # Number of cores
 nbcores=`cat $OAR_NODE_FILE|wc -l`
@@ -123,8 +126,7 @@ echo \"nbnodes=\" $nbnodes
 cat $OAR_NODE_FILE
 
 # launch the application
-mpirun -np $nbcores -x LD_LIBRARY_PATH --prefix $openmpi_DIR --machinefile $OAR_NODE_FILE  \\
-    -mca plm_rsh_agent \"oarsh\" \\
+mpirun -np $nbcores -x LD_LIBRARY_PATH --prefix $openmpi_DIR -machinefile $OAR_NODEFILE ${_TMP_MPIEXEC_PREFLAGS} \\
     ${CMAKE_CURRENT_BINARY_DIR}/${execname}
 ")
     endif()

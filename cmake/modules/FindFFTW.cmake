@@ -50,6 +50,14 @@ if( FFTW_ROOT )
   )
 
   find_library(
+    FFTW_MPI_LIB
+    NAMES "fftw3_mpi"
+    PATHS ${FFTW_ROOT}
+    PATH_SUFFIXES "lib" "lib64"
+    NO_DEFAULT_PATH
+  )
+
+  find_library(
     FFTWF_LIB
     NAMES "fftw3f"
     PATHS ${FFTW_ROOT}
@@ -83,6 +91,12 @@ else()
   )
 
   find_library(
+    FFTW_MPI_LIB
+    NAMES "fftw3_mpi"
+    PATHS ${PKG_FFTW_LIBRARY_DIRS} ${LIB_INSTALL_DIR}
+  )
+
+  find_library(
     FFTWF_LIB
     NAMES "fftw3f"
     PATHS ${PKG_FFTW_LIBRARY_DIRS} ${LIB_INSTALL_DIR}
@@ -103,11 +117,28 @@ else()
 
 endif( FFTW_ROOT )
 
-set(FFTW_LIBRARIES ${FFTW_LIB} ${FFTWF_LIB})
+if(FFTW_LIB)
+  set(FFTW_LIBRARIES ${FFTW_LIB})
+endif()
+
+if(FFTW_MPI_LIB)
+  set(FFTW_LIBRARIES ${FFTW_LIBRARIES} ${FFTW_MPI_LIB})
+endif()
+
+if(FFTWF_LIB)
+  set(FFTW_LIBRARIES ${FFTW_LIBRARIES} ${FFTWF_LIB})
+endif()
 
 if(FFTWL_LIB)
   set(FFTW_LIBRARIES ${FFTW_LIBRARIES} ${FFTWL_LIB})
 endif()
+
+MESSAGE("FFTW_INCLUDES = ${FFTW_INCLUDES}")
+MESSAGE("FFTW_LIBRARIES = ${FFTW_LIBRARIES}")
+MESSAGE("FFTW_LIB = ${FFTW_LIB}")
+MESSAGE("FFTW_MPI_LIB = ${FFTW_MPI_LIB}")
+MESSAGE("FFTWF_LIB = ${FFTWF_LIB}")
+MESSAGE("FFTWL_LIB = ${FFTWL_LIB}")
 
 set( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SAV} )
 

@@ -44,12 +44,12 @@ makeOptions()
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "k", po::value<std::string>()->default_value( "-1" ), "k" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "k" )
         ( "p_exact", po::value<std::string>()->default_value( "(1/(2*Pi*Pi))*sin(Pi*x)*sin(Pi*y):x:y" ), "p exact" )
         // ( "p_exacts", po::value<std::vector<std::string> >(), "p exact to test" )
         ( "d1", po::value<double>()->default_value( 0.5 ), "d1 (stabilization term)" )
         ( "d2", po::value<double>()->default_value( 0.5 ), "d2 (stabilization term)" )
-        ( "d3", po::value<double>()->default_value( 0.5 ), "d3 (stabilization term)" )
+        ( "d3", po::value<double>()->default_value( 0. ), "d3 (stabilization term)" )
         ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( true ), "use hypercube or a given geometry" )
         ;
@@ -173,7 +173,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
     auto p_exact = expr(soption("p_exact"));
     auto gradp_exact = grad<Dim>(p_exact);
     auto u_exact = -k*trans(gradp_exact);
-    auto f = -k*laplacian(p_exact);
+    auto f = -k*laplacian(p_exact)-grad<Dim>(k)*trans(gradp_exact);
 
     if( Environment::isMasterRank()){
         std::cout << "k : " << k /*<< "\tlambda : " << lambda*/ << std::endl;
@@ -209,6 +209,8 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             cvg_inter << "hsize" << "\t" << "nDof" << "\t" << "l2err" << "\n";
         }
 
+    export_ptrtype exporter_cvg( export_type::New( this->about().appName() ) );
+
     double current_hsize = meshSize;
     for(int i=0; i<ioption("nb_refine"); i++)
         {
@@ -223,8 +225,8 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             }
 
             tic();
-            // be careful to delete the mesh if you rerun the benchmarks
-            if( !fs::exists(mesh_name+".msh") )
+
+            if( i == 0 )
                 {
                     //std::cout << "createGMSHmesh" << std::endl;
                     LOG(INFO) << "[Darcy] Mesh has been created \n";
@@ -234,7 +236,7 @@ Darcy<Dim, OrderU, OrderP>::convergence()
                                                              _shape = "hypercube",
                                                              _usenames = true,
                                                              _dim = Dim,
-                                                             _h = meshSize,
+                                                             _h = current_hsize,
                                                              _xmin=0,_xmax=2,
                                                              _ymin=0,_ymax=2,
                                                              _zmin=0,_zmax=2 ) );
@@ -243,11 +245,26 @@ Darcy<Dim, OrderU, OrderP>::convergence()
                 }
             else
                 {
-                    //std::cout << "loadGMSHmesh" << std::endl;
-                    LOG(INFO) << "[Darcy] Mesh has been loaded (refine level = " << i << ") \n";
-                    mesh = loadGMSHMesh( _mesh=new mesh_type,
-                                         _filename=mesh_name+".msh",
-                                         _refine=i );
+                    if( Dim == 2 )
+                    {
+                        //std::cout << "loadGMSHmesh" << std::endl;
+                        LOG(INFO) << "[Darcy] Mesh has been loaded (refine level = " << i << ") \n";
+                        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                                             _filename=mesh_name+".msh",
+                                             _refine=i );
+                    }
+                    else
+                    {
+                        mesh = createGMSHMesh( _mesh=new mesh_type,
+                                               _desc=domain( _name = mesh_name ,
+                                                             _shape = "hypercube",
+                                                             _usenames = true,
+                                                             _dim = Dim,
+                                                             _h = current_hsize,
+                                                             _xmin=0,_xmax=2,
+                                                             _ymin=0,_ymax=2,
+                                                             _zmin=0,_zmax=2 ) );
+                    }
                 }
             toc("mesh");
 
@@ -259,7 +276,8 @@ Darcy<Dim, OrderU, OrderP>::convergence()
             lagrange_space_v_ptrtype Xhvec = lagrange_space_v_type::New( mesh );
             toc("spaces");
             if( Environment::isMasterRank() )
-                std::cout << "RT<" << OrderU << "> : " << RTh->nDof() << std::endl
+                std::cout << "hsize : " << current_hsize << std::endl
+                          << "RT<" << OrderU << "> : " << RTh->nDof() << std::endl
                           << "Xh<" << OrderP << "> : " << Xh->nDof() << std::endl
                           << "Xhvec<" << OrderP << "> : " << Xhvec->nDof() << std::endl;
 
@@ -364,22 +382,14 @@ Darcy<Dim, OrderU, OrderP>::convergence()
 
             // ****** Export results ******
             tic();
-            std::string exportName =  ( boost::format( "%1%-refine-%2%" ) % this->about().appName() % i ).str();
-            std::string uName = ( boost::format( "velocity-refine-%1%" ) % i ).str();
-            std::string u_exName = ( boost::format( "velocity-ex-refine-%1%" ) % i ).str();
-            std::string pName = ( boost::format( "potential-refine-%1%" ) % i ).str();
-            std::string p_exName = ( boost::format( "potential-ex-refine-%1%" ) % i ).str();
-
             auto u_ex_proj = vf::project(Xhvec, elements(mesh), u_exact );
             auto p_ex_proj = vf::project(p_rt.functionSpace(), elements(mesh), p_exact );
 
-            export_ptrtype exporter_cvg( export_type::New( exportName ) );
-
             exporter_cvg->step( i )->setMesh( mesh );
-            exporter_cvg->step( i )->add( uName, u_rt );
-            exporter_cvg->step( i )->add( pName, p_rt );
-            exporter_cvg->step( i )->add( u_exName, u_ex_proj );
-            exporter_cvg->step( i )->add( p_exName, p_ex_proj );
+            exporter_cvg->step( i )->add( "velocity", u_rt );
+            exporter_cvg->step( i )->add( "potential", p_rt );
+            exporter_cvg->step( i )->add( "velocity_ex", u_ex_proj );
+            exporter_cvg->step( i )->add( "potential_ex", p_ex_proj );
             exporter_cvg->save();
 
             current_hsize /= 2.0;

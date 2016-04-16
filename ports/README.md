@@ -5,6 +5,7 @@ Gmsh ne dépend ni de Petsc ni d'openMPI !
 ## OpenMPI 
 ```
 openmpiDir=/data/software/install/openmpi-1.10.0
+# Enable fortran binding: --enable-mpi-fortran=all
 ./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=$openmpiDir
 make -j all install
 export PATH=$openmpiDir/bin:$PATH
@@ -54,6 +55,7 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
  
 ## hdf5
 ```
+# For codes using fortran, add FC=`which mpif90` and the "--enable-fortran --enable-fortran2003" options
 CC=`which mpicc` CXX=`which mpic++` ./configure --enable-parallel --prefix=/data/software/install/hdf5/1.8.15-patch1/gcc-4.9.0/openmpi-1.10 --enable-build-all --enable-production
 make install
 ```
@@ -63,7 +65,14 @@ make install
 cmake /data/software/src/VTK/VTK5.10.1 -DCMAKE_INSTALL_PREFIX=/data/software/install/VTK/5.10.1/gcc-4.9.0/openmpi-1.10 -DCMAKE_BUILT_TYPE=Release -DVTK_USE_PARALLEL=ON -DBUILD_SHARED_LIBS=ON -DVTK_WRAP_PYTHON=ON -DVTK_USE_MPI=ON
 make install
 ```
+## FFTW
+```
+wget http://fftw.org/fftw-3.3.4.tar.gz && tar zxvf fftw-3.3.4.tar.gz && cd fftw-3.3.4
+./configure --enable-mpi --enable-threads --enable-openmp --enable-shared --prefix=/data/software/install/fftw/3.3.4/gcc-4.9.0/openmpi-1.10
+make install
+```
 
+<!--
 ## To Export
 Be carreful, there is a conflict :
 ```
@@ -81,3 +90,4 @@ export GMSH_DIR=/data/software/install/gmsh-2.10.1
 export PETSC_DIR=/data/software/install/petsc-3.6.1/openmpi-1.10.0/
 export SLEPC_DIR=/data/software/install/slepc-3.6.1/openmpi-1.10.0
 ```
+-->
