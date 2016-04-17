@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -e
 
 echo '--- apt-get update'
 apt-get -qq update
