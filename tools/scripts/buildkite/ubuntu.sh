@@ -2,6 +2,9 @@
 
 set -e
 
+echo '+++ install apt-add-repository'
+apt-get install software-properties-common python-software-properties
+
 echo '+++ added gcc toolchain and clang repo'
 apt-add-repository 'deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main'
 apt-add-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 main'
