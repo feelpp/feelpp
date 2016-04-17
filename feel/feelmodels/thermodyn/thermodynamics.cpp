@@ -103,20 +103,6 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::init(bool buildMethodNum)
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::solve()
-{
-    this->modelProperties().parameters().updateParameterValues();
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    this->M_bcNeumann.setParameterValues( paramValues );
-    this->M_bcRobin.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
-    super_type::solve();
-}
-
-THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
 THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
