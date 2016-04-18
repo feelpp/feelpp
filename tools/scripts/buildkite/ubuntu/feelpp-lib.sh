@@ -11,7 +11,8 @@ export PYTHONPATH=${FEELPP_DEP_INSTALL_PREFIX}/lib/python2.7/site-packages:${FEE
 export MANPATH=${FEELPP_DEP_INSTALL_PREFIX}/share/man:$MANPATH
 
 echo '--- build directory'
-mkdir build
+if [ -d build ]; then rm -rf build; fi
+mkdir -p build
 cd build
 
 echo '--- configure -r'
