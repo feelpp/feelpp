@@ -19,4 +19,4 @@ echo '--- configure -r'
 ../configure -r  --cmakeflags="-DFEELPP_ENABLE_VTK_INSITU=ON -DCMAKE_INSTALL_PREFIX=${FEELPP_HOME}"
 
 echo '--- make feelpp library'
-make -j8 install-feelpp-base
+make -j4 feelpp
