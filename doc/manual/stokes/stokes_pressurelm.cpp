@@ -7,72 +7,6 @@
 
 namespace Feel
 {
-
-template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
-createMeshStokesDirichletLM( mpl::int_<2> /**/ )
-{
-    typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
-    double meshSize = option("gmsh.hsize").as<double>();
-
-    GeoTool::Node x1(0,-0.5);
-    GeoTool::Special_1b R( meshSize,"unrectangle",x1);
-    R.setMarker(_type="line",_name="inlet",_marker2=true);
-    R.setMarker(_type="line",_name="wall",_marker1=true);
-    R.setMarker(_type="line",_name="outlet",_marker3=true);
-    R.setMarker(_type="surface",_name="OmegaFluide",_markerAll=true);
-
-    auto mesh = R.createMesh(_mesh=new mesh_type,_name="mymesh2d.msh");
-
-    return mesh;
-}
-
-
-template <uint16_type OrderGeo>
-boost::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
-createMeshStokesDirichletLM( mpl::int_<3> /**/ )
-{
-    typedef Mesh<Simplex<3,OrderGeo> > mesh_type;
-    double meshSize = option("gmsh.hsize").as<double>();
-
-    GeoTool::Node Centre(0,0,0.205);
-    GeoTool::Node Rayon( 0.205);
-    GeoTool::Node Dir(1,0,0);
-    GeoTool::Node Lg(2.5,0,0);
-    GeoTool::Cylindre C( meshSize,"Cyl",Centre,Dir,Rayon,Lg);
-    C.setMarker(_type="surface",_name="inlet",_marker1=true);
-    C.setMarker(_type="surface",_name="outlet",_marker2=true);
-    C.setMarker(_type="surface",_name="wall",_marker3=true);
-    C.setMarker(_type="volume",_name="OmegaFluid",_markerAll=true);
-
-#if 0
-    GeoTool::Special3D_1 S( meshSize/3.,"shapeStruct");
-    S.setMarker(_type="surface",_name="wall",_markerAll=true);
-    //S.setMarker(_type="surface",_name="fsiwall",_marker1=true);
-    //S.setMarker(_type="surface",_name="wallcylinder",_marker2=true);
-    S.setMarker(_type="volume",_name="OmegaStruct",_markerAll=true);
-#endif
-
-    auto mesh = C.createMesh(_mesh=new mesh_type,
-                             _name="mymesh3d",
-                             _hmax=meshSize );
-
-    return mesh;
-}
-
-decltype( (Py()-1)*(Py()+1)*N() )
-inletVelocityExpr( mpl::int_<2> /**/ )
-{
-    return (Py()-1)*(Py()+1)*N();
-}
-
-decltype( 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N() )
-inletVelocityExpr( mpl::int_<3> /**/ )
-{
-    return 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N();
-}
-
-
 template <uint16_type Dim,uint16_type OrderGeo>
 void runStokesDirichletLM()
 {
@@ -80,7 +14,7 @@ void runStokesDirichletLM()
 
     std::string configstr = (boost::format("%1%dGeo%2%")%Dim %OrderGeo).str();
 
-    auto mesh = createMeshStokesDirichletLM<OrderGeo>( mpl::int_<Dim>() );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     std::list<std::string> listMarker{"inlet","wall"};
     std::list<std::string> presslm{"inlet","outlet"};
     auto submesh = createSubmesh(mesh,markedfaces(mesh,presslm));
@@ -89,14 +23,11 @@ void runStokesDirichletLM()
     auto Vh21 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
     auto Vh22 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,1>(submesh);
 
-    if (Environment::worldComm().isMasterRank())
-    {
-        std::cout << "mesh->numGlobalElements() "<<mesh->numGlobalElements() << std::endl;
-        std::cout << "submesh->numGlobalElements() "<<submesh->numGlobalElements() << std::endl;
-        std::cout << "Vh1->nDof() "<<Vh1->nDof() << std::endl;
-        std::cout << "Vh21->nDof() "<<Vh21->nDof() << std::endl;
-        std::cout << "Vh22->nDof() "<<Vh22->nDof() << std::endl;
-    }
+    cout << "mesh->numGlobalElements() "<<mesh->numGlobalElements() << std::endl;
+    cout << "submesh->numGlobalElements() "<<submesh->numGlobalElements() << std::endl;
+    cout << "Vh1->nDof() "<<Vh1->nDof() << std::endl;
+    cout << "Vh21->nDof() "<<Vh21->nDof() << std::endl;
+    cout << "Vh22->nDof() "<<Vh22->nDof() << std::endl;
 
     auto U = Vh1->elementPtr();
     auto u = U->template element<0>();
@@ -146,8 +77,7 @@ void runStokesDirichletLM()
     auto deft = sym(gradt( u ));
     auto def = sym(grad( u ));
 
-    auto u_in = inletVelocityExpr( mpl::int_<Dim>() );
-
+    cout << ".. assembler" << std::endl;
     double mu=1;
     auto stokes = form2( _test=Vh1, _trial=Vh1, _matrix=A );
     stokes += integrate( _range=elements( mesh ),
@@ -171,112 +101,77 @@ void runStokesDirichletLM()
     auto Clag2t = alpha*vec( idt(lambda2)*Ny(), -idt(lambda2)*Nx(), cst(0.) );
 
     //stokes +=integrate( markedfaces( mesh,inlet ), -trans(id(v))*(C*lagt));
-    std::cout << "Vh21/Vh22 trial\n";
+    cout << ".. block(0,1) block(1,0) done";
     for( auto bdy : { inlet, outlet } )
     {
         a_01 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(id(u),N()))*(Clag1t) );
+                          -trans(cross(id(u),N()))(0,2)*idt(lambda1)*alpha);
+                          //-trans(cross(id(u),N()))*(Clag1t) );
         a_10 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(idt(u),N()))*(Clag1) );
+                          -trans(cross(idt(u),N()))(0,2)*id(lambda1)*alpha);
+        a_10 += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
+            //-trans(cross(idt(u),N()))*(Clag1) );
 
     }
-    cout << "block(0,1) block(1,0) done";
+    cout << ".. block(0,2) block(2,0) done";
     for( auto bdy : { inlet, outlet } )
     {
         a_02 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(id(u),N()))*(Clag2t) );
+                          -trans(cross(id(u),N()))(0,0)*alpha*idt(lambda2)*Ny()
+                          +trans(cross(id(u),N()))(0,1)*alpha*idt(lambda2)*Nx());
+        
+                          //-trans(cross(id(u),N()))*(Clag2t) );
         a_20 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(idt(u),N()))*(Clag2) );
+                          -trans(cross(idt(u),N()))(0,0)*alpha*id(lambda2)*Ny()
+                          +trans(cross(idt(u),N()))(0,1)*alpha*id(lambda2)*Nx());
+        a_20 += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda2, _expr=cst(0.));
+            //-trans(cross(idt(u),N()))*(Clag2) );
     }
-    cout << "block(0,2) block(2,0) done";
-#if 0
-    auto Clag1TT = vec( cst(0.), cst(0.), id(lambda1) );
-    auto Clag2inlet = vec( cst(0.), id(lambda2), cst(0.) );
-    auto Clag2outlet = vec( cst(0.), -id(lambda2), cst(0.) );
-
-
-    std::cout << "Vh21 test " << inlet << "\n";
-
-
-
-    a_10   +=integrate( markedelements( submesh, inlet  ),
-                     -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*Clag1TT);
-
-    std::cout << "Vh21 test " << outlet << "\n";
-
-    a_10 +=integrate( markedelements( submesh, outlet ),
-                      -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*Clag1TT);
-
-    std::cout << "Vh22 test " << inlet << "\n";
-
-    a_20 +=integrate( markedelements( submesh, inlet ),
-                      -trans(cross(idt(u),vec(cst(-1.0),cst(0.),cst(0.))))*(Clag2inlet));
-
-    std::cout << "Vh22 test " << outlet << "\n";
-    form2( _test=Vh22, _trial=Vh1 ,_matrix=A,
-               _rowstart=3, _colstart=0 )
-        +=integrate( markedelements( submesh, outlet ),
-                     -trans(cross(idt(u),vec(cst(1.0),cst(0.),cst(0.))))*(Clag2outlet));
-#endif
-
-#if 0
-    std::cout << "diag Vh1\n";
-
-    form2( _test=Vh21, _trial=Vh21 ,_matrix=A,
-           _rowstart=2, _colstart=2 )
-        +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda1)*id(lambda1) );
-
-    std::cout << "diag Vh2\n";
-    cout << "forcing terms on inlet" << std::endl;
-    form2( _test=Vh22, _trial=Vh22 ,_matrix=A,
-           _rowstart=3,_colstart=3 )
-        +=integrate( elements( submesh ), doption("eps-lag")*idt(lambda2)*id(lambda2));
-#endif
-    cout << "forcing terms on inlet" << std::endl;
+    cout << ".. forcing terms on inlet" << std::endl;
     form1( _test=Vh1, _vector=F,_rowstart=0 )
         += integrate(
             _range=markedfaces(mesh,"inlet"),
             _expr= -10*trans(N())*id(u) );
-    cout << "forcing terms on outlet" << std::endl;
+    cout << ".. forcing terms on outlet" << std::endl;
     form1( _test=Vh1, _vector=F,_rowstart=0 )
         += integrate(
             _range=markedfaces(mesh,"outlet"),
             _expr= -trans(N())*id(u) );
-    cout << "boundary conditions for lagrange multiplier 1" << std::endl;
+    cout << ".. boundary conditions for lagrange multiplier 1" << std::endl;
     a_11        += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
 
-    cout << "boundary conditions for lagrange multiplier 2" << std::endl;
+    cout << ".. boundary conditions for lagrange multiplier 2" << std::endl;
     a_22
         += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda2, _expr=cst(0.));
 
-    //A->printMatlab("A.m");
-    cout << "solve" << std::endl;
-    //stokes += on ( _range=markedfaces(mesh,"wall"), _rhs=F, _element=u, _expr=cst(0.));
-    //F->printMatlab("F.m");
+    cout << ".. solver" << std::endl;
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=UVec );
-
-    cout << "norms" << std::endl;
-    double normL1_A = A->l1Norm();
-    double normL2_F = F->l2Norm();
-    double normL2_U = UVec->l2Norm();
-
-    if (Environment::worldComm().isMasterRank())
-        std::cout << " normL1_A " << std::setprecision( 9 ) << normL1_A
-                  << " normL2_F " << std::setprecision( 9 ) << normL2_F
-                  << " normL2_U " << std::setprecision( 9 ) << normL2_U
-                  << std::endl;
-
-    cout << "localize" << std::endl;
     myblockVecSol.localize(UVec);
 
+    auto e1 = exporter( _mesh=mesh,_name="export"+configstr );
+    if ( (soption( "functions.u" ) != "0") && (soption( "functions.p" ) != "0") )
+    {
+        auto Ue = Vh1->element();
+        auto ue = Ue.template element<0>();
+        auto pe = Ue.template element<1>();
+        ue.on( _range=elements(mesh), _expr=expr<3,1>(soption( "functions.u" )));
+        pe.on( _range=elements(mesh), _expr=expr(soption( "functions.p" )));
+        e1->add("ue"+configstr, ue );
+        e1->add("pe"+configstr, pe );
+        cout << "||u-ue||_L2 = " << normL2( _range=elements(mesh), _expr=idv(u)-idv(ue)) << std::endl;
+        cout << "||p-pe||_L2 = " << normL2( _range=elements(mesh), _expr=idv(p)-idv(pe)) << std::endl;
+    }
     if (OrderGeo==1)
     {
-        cout << "exporter" << std::endl;
+        cout << ".. exporter" << std::endl;
+        e1->add( "u"+configstr, u );
+        e1->add( "p"+configstr, p );
+        e1->save();
 
-        auto e = exporter( _mesh=mesh,_name="export"+configstr );
-        e->add( "u"+configstr, u );
-        e->add( "p"+configstr, p );
-        e->save();
+        auto es = exporter( _mesh=submesh,_name="subexport"+configstr );
+        es->add( "lambda1"+configstr, *lambda1 );
+        es->add( "lambda2"+configstr, *lambda2 );
+        es->save();
     }
     else
     {
