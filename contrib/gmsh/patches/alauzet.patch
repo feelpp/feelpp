@@ -1,0 +1,39 @@
+Index: gmsh-tetgen-2.8.5~svn19081/Mesh/Field.cpp
+===================================================================
+--- gmsh-tetgen-2.8.5~svn19081.orig/Mesh/Field.cpp
++++ gmsh-tetgen-2.8.5~svn19081/Mesh/Field.cpp
+@@ -1340,17 +1340,21 @@ class MinAnisoField : public Field
+   }
+   virtual void operator() (double x, double y, double z, SMetric3 &metr, GEntity *ge=0)
+   {
++    //std::cout << "MinAnisoField idlist=" << idlist.size() << "\n";
+     SMetric3 v (1./MAX_LC);
+     for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
+       Field *f = (GModel::current()->getFields()->get(*it));
++      //std::cout << "Field[" << *it << "]\n";
+       SMetric3 ff;
+       if(f && *it != id) {
+ 	if (f->isotropic()){
+ 	  double l = (*f) (x, y, z, ge);
+ 	  ff = SMetric3(1./(l*l));
++	  //printf("ff=[%g %g %g %g %g %g]\n",ff(0,0),ff(1,1),ff(2,2),ff(0,1),ff(0,2),ff(1,2));
+ 	}
+ 	else{
+ 	  (*f) (x, y, z, ff, ge);
++	  //printf("ff_iso=[%g %g %g %g %g %g]\n",ff(0,0),ff(1,1),ff(2,2),ff(0,1),ff(0,2),ff(1,2));
+ 	}
+ 	v = intersection_conserve_mostaniso(v,ff);
+       }
+Index: gmsh-tetgen-2.8.5~svn19081/Geo/STensor3.h
+===================================================================
+--- gmsh-tetgen-2.8.5~svn19081.orig/Geo/STensor3.h
++++ gmsh-tetgen-2.8.5~svn19081/Geo/STensor3.h
+@@ -175,6 +175,8 @@ SMetric3 intersection (const SMetric3 &m
+                        const SMetric3 &m2);
+ SMetric3 intersection_alauzet (const SMetric3 &m1,
+                        const SMetric3 &m2);
++SMetric3 intersection_alauzet (const SMetric3 &m1,
++                       const SMetric3 &m2);
+ SMetric3 interpolation (const SMetric3 &m1,
+                         const SMetric3 &m2,
+                         const double t);

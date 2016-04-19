@@ -884,6 +884,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem2::mesh_type::element_type>::type same2_mesh_type;
     typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
 
+    // specifiy matrix (form2) is in assembly state
+    __form.matrixPtr()->setIsClosed( false );
+
     element_iterator it, en;
     // get one elt for init
     bool findEltForInit = false;
@@ -930,6 +933,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
 #endif
 
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same_mesh_type;
+
+    // specifiy vector (form1) is in assembly state
+    __form.vectorPtr()->setIsClosed( false );
 
     element_iterator it, en;
     bool findEltForInit = false;

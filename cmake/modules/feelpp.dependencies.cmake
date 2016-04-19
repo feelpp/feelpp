@@ -270,7 +270,7 @@ IF ( MPI_FOUND )
           # Automatically add oarsh to the options when using OpenMPI
           # See: https://oar.readthedocs.org/en/2.5/user/usecases.html#using-mpi-with-oarsh
           if(FEELPP_ENABLE_SCHED_OAR)
-              set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\"")
+              set(MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} -mca plm_rsh_agent \"oarsh\")
               message(STATUS "[feelpp] OAR detected - Automatically adding transport option to MPIEXEC_PREFLAGS (-mca plm_rsh_agent \"oarsh\")")
           endif()
       endif()
@@ -458,6 +458,7 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 
 # undefined BOOST_UBLAS_TYPE_CHECK
 add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+add_definitions(-DBOOST_UBLAS_SHALLOW_ARRAY_ADAPTOR)
 
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
@@ -1095,7 +1096,7 @@ if(NOT GMSH_FOUND)#Download and Instal it
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
   message(STATUS "[feelpp] Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
   execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh ${NProcs2}
+    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh/ ${FEELPP_HOME_DIR}/contrib/gmsh/patches ${NProcs2} ${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
     #      OUTPUT_QUIET
     OUTPUT_FILE "gmsh-configure"

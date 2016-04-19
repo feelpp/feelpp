@@ -41,6 +41,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -82,7 +83,7 @@ makeAbout()
 
 
     
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( prepost_solve_suite )
 
