@@ -19,10 +19,11 @@ endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;MARKERS;DESC;GEO;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;ADD_CMAKE_INSTALL"
+    "LIB_NAME;LIB_DIR;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;ADD_CMAKE_INSTALL"
     ""
     ${ARGN}
     )
+
   set( FEELMODELS_GENLIB_APPLICATION_DIR ${FEELMODELS_GENLIB_BASE_LIB_DIR} )
   #CAR(APPLICATION_NAME      ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
   #CDR(FEELMODELS_GENLIB_APPLICATION_DIR       ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
@@ -42,43 +43,6 @@ macro(genLibBase)
 
   add_custom_target(codegen_${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
 
-  if ( FEELMODELS_GENLIB_BASE_MARKERS )
-    # bcmarker
-    set(BCMARKER_FILE ${FEELMODELS_GENLIB_BASE_MARKERS})
-    if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
-      #configure_file( ${BCMARKER_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp COPYONLY)
-      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp "") #write empty file
-    endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${BCMARKER_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/bcmarker.cpp )
-    # bctool
-    if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
-      #configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp COPYONLY)
-      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp "") #write empty file
-    endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/bctool.hpp ${FEELMODELS_GENLIB_APPLICATION_DIR}/bctool.hpp )
-  endif()
-  # .bc
-  if ( FEELMODELS_GENLIB_BASE_DESC )
-    set(BCDESC_FILE ${FEELMODELS_GENLIB_BASE_DESC})
-    if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
-      #configure_file( ${BCDESC_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc COPYONLY)
-      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc "") #write empty file
-    endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${BCDESC_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.bc )
-  endif()
-  # .mesh
-  if ( FEELMODELS_GENLIB_BASE_GEO )
-    set(MESH_FILE ${FEELMODELS_GENLIB_BASE_GEO})
-    if ( NOT EXISTS ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
-      #configure_file( ${MESH_FILE} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh COPYONLY)
-      file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh "") #write empty file
-    endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${MESH_FILE}  ${FEELMODELS_GENLIB_APPLICATION_DIR}/${PREFIX_FILES_TO_COPY}.mesh )
-  endif()
   # lib files
   foreach(filepath ${CODEGEN_FILES_TO_COPY})
     get_filename_component(filename ${filepath} NAME)
@@ -114,59 +78,8 @@ macro(genLibBase)
   endif()
 
 endmacro(genLibBase)
-#############################################################################
 
 #############################################################################
-macro(genExecutableBase)
-  PARSE_ARGUMENTS(FEELMODELS_APP
-    "SRC;LIB_DEPENDS;CONFIG_PATH;APPLICATION_DIR"
-    ""
-    ${ARGN}
-    )
-  CAR(APPLICATION_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
-  #CDR(APPLICATION_DIR ${FEELMODELS_APP_DEFAULT_ARGS})
-  set(APPLICATION_DIR ${FEELMODELS_APP_APPLICATION_DIR})
-  set(MAIN_FILE ${FEELMODELS_APP_SRC})
-  set(LIB_DEPENDS ${FEELMODELS_APP_LIB_DEPENDS})
-
-  if ( FEELMODELS_APP_CONFIG_PATH )
-    set(GENEXECBASE_CONFIG_PATH       ${FEELMODELS_APP_CONFIG_PATH})
-    get_filename_component(GENEXECBASE_CONFIG_FILENAME_WE ${GENEXECBASE_CONFIG_PATH} NAME_WE)
-    CONFIGURE_FILE( ${GENEXECBASE_CONFIG_PATH} ${APPLICATION_DIR}/${GENEXECBASE_CONFIG_FILENAME_WE}.h  )
-  endif()
-
-  if ( NOT EXISTS ${APPLICATION_DIR}/applimanagement.hpp )
-    foreach(filename applimanagement.hpp)
-      #configure_file( ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} COPYONLY)
-      file(WRITE ${APPLICATION_DIR}/${filename} "") #write empty file
-    endforeach()
-  endif()
-  add_custom_target(codegen_env_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
-  foreach(filename applimanagement.hpp)
-    add_custom_command(TARGET codegen_env_${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${FEELPP_MODELS_SOURCE_DIR}/modelcore/codegen/${filename} ${APPLICATION_DIR}/${filename} )
-  endforeach()
-
-  if ( NOT EXISTS ${APPLICATION_DIR}/${MAIN_FILE} )
-    foreach(filename ${MAIN_FILE})
-      #configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} COPYONLY)
-      file(WRITE ${APPLICATION_DIR}/${filename} "") #write empty file
-    endforeach()
-  endif()
-  add_custom_target(codegen_src_${APPLICATION_NAME} ALL COMMENT "Copying modified files"  )
-  foreach(filename ${MAIN_FILE})
-    add_custom_command(TARGET codegen_src_${APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_FILE} ${APPLICATION_DIR}/${MAIN_FILE} )
-  endforeach()
-
-
-  add_executable( ${APPLICATION_NAME} ${APPLICATION_DIR}/${MAIN_FILE} )
-  add_dependencies(${APPLICATION_NAME} codegen_env_${APPLICATION_NAME})
-  add_dependencies(${APPLICATION_NAME} codegen_src_${APPLICATION_NAME})
-
-  target_link_libraries(${APPLICATION_NAME} ${LIB_DEPENDS} )
-
-endmacro(genExecutableBase)
 #############################################################################
 #############################################################################
 #############################################################################
@@ -342,10 +255,12 @@ macro( genLibSolidMechanics )
   endif()
 
 endmacro( genLibSolidMechanics )
-# #############################################################################
-# #############################################################################
-# #############################################################################
-# #############################################################################
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro(genLibFluidMechanics)
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS;ADD_CMAKE_INSTALL_BIS"
@@ -499,11 +414,13 @@ macro(genLibFluidMechanics)
 
   endif()
 
- endmacro( genLibFluidMechanics )
-# #############################################################################
-# #############################################################################
-# #############################################################################
-# #############################################################################
+endmacro( genLibFluidMechanics )
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC;SOLID_DENSITY_COEFFLAME_TYPE"
