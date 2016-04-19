@@ -894,7 +894,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_row_startInVector( __vf.M_row_startInVector ),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold ),
-    M_dofIdToContainerId( __vf.M_dofIdToContainerIdTest )
+    M_dofIdToContainerId( __vf.M_dofIdToContainerId )
 {
     // add the vector contrib
     *M_F += *__vf.M_F;
