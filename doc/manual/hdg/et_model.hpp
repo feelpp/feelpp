@@ -42,7 +42,34 @@
 
 namespace Feel {
 
+inline
+po::options_description
+makeETHDGOptions()
+{
+    po::options_description testhdivoptions( "Electro-Thermal Model options" );
+    testhdivoptions.add_options()
+        ( "Tw", po::value<double>()->default_value( 1 ), "water temperature" )
+        ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
+        ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "picard.itol", po::value<double>()->default_value( 1e-4 ), "tolerance" )
+        ( "picard.itmax", po::value<int>()->default_value( 10 ), "iterations max" )
+        // ("Kp", po::value<double>()->default_value(100.), "PID proportional coefficient")
+        // ("Ki", po::value<double>()->default_value(0.), "PID integral coefficient")
+        // ("Kd", po::value<double>()->default_value(0.), "PID derivative coefficient")
+        ("model_json", po::value<std::string>()->default_value("model.json"), "json file for the model")
+        ;
+    return testhdivoptions;
+}
 
+inline
+po::options_description
+makeETHDGLibOptions()
+{
+    po::options_description libOptions( "Lib options" );
+    libOptions.add( backend_options( "potential" ) );
+    libOptions.add( backend_options( "temperature" ) );
+    return libOptions.add( feel_options() );
+}
 
 template<int Dim, int OrderP>
 class ElectroThermal
@@ -111,6 +138,8 @@ private:
     Xh_ptr_t M_Xh; // temperature
     Ch_ptr_t M_Ch; // constant
 
+    backend_ptrtype M_pBackend;
+    backend_ptrtype M_tBackend;
     sparse_matrix_ptrtype M_A;
     sparse_matrix_ptrtype M_A_cst;
     vector_ptrtype M_F;
@@ -131,6 +160,7 @@ private:
     void assembleACst();
     void assembleA( int iter = -1 );
     void assembleF( int iter = -1 );
+    void solveT( int iter = -1 );
 
 public:
     void init();
@@ -189,6 +219,9 @@ ElectroThermal<Dim, OrderP>::init()
     if ( M_integralCondition )
         cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
+    M_pBackend = backend( _name="potential", _rebuild=true);
+    M_tBackend = backend( _name="temperature", _rebuild=true);
+
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
     M_Tp = M_Xh->elementPtr( "T" );
@@ -224,8 +257,10 @@ ElectroThermal<Dim, OrderP>::solve()
         {
             assembleA(it);
             assembleF(it);
-            backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
+            M_pBackend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
             M_hdg_sol.localize(M_U);
+
+            solveT(it);
 
             incrp = normL2( _range=elements(mesh), _expr=idv(*M_pp)-idv(po) );
             incrT = normL2( _range=elements(mesh), _expr=idv(*M_Tp)-idv(To) );
@@ -242,8 +277,9 @@ ElectroThermal<Dim, OrderP>::solve()
     else {
         assembleA();
         assembleF();
-        backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
+        M_pBackend->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
         M_hdg_sol.localize(M_U);
+        solveT();
     }
 }
 
@@ -253,43 +289,33 @@ ElectroThermal<Dim, OrderP>::initGraphs()
 {
     auto phatp = M_Mh->elementPtr( "phat" );
 
-    BlocksBaseGraphCSR hdg_graph(4,4);
+    BlocksBaseGraphCSR hdg_graph(3,3);
     hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,0) = stencil( _test=M_Xh,_trial=M_Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,1) = stencil( _test=M_Xh,_trial=M_Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(3,2) = stencil( _test=M_Xh,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
-    hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,3) = stencil( _test=M_Xh,_trial=M_Xh, _diag_is_nonzero=false, _close=false)->graph();
+    M_A = M_pBackend->newBlockMatrix(_block=hdg_graph);
+    M_A_cst = M_pBackend->newBlockMatrix(_block=hdg_graph);
 
-    M_A = backend()->newBlockMatrix(_block=hdg_graph);
-    M_A_cst = backend()->newBlockMatrix(_block=hdg_graph);
+    BlocksBaseVector<double> hdg_vec(3);
+    hdg_vec(0,0) = M_pBackend->newVector( M_Vh );
+    hdg_vec(1,0) = M_pBackend->newVector( M_Wh );
+    hdg_vec(2,0) = M_pBackend->newVector( M_Mh );
+    M_F = M_pBackend->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-    BlocksBaseVector<double> hdg_vec(4);
-    hdg_vec(0,0) = backend()->newVector( M_Vh );
-    hdg_vec(1,0) = backend()->newVector( M_Wh );
-    hdg_vec(2,0) = backend()->newVector( M_Mh );
-    hdg_vec(3,0) = backend()->newVector( M_Xh );
-    M_F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(4);
+    M_hdg_sol = BlocksBaseVector<double>(3);
     M_hdg_sol(0,0) = M_up;
     M_hdg_sol(1,0) = M_pp;
     M_hdg_sol(2,0) = phatp;
-    M_hdg_sol(3,0) = M_Tp;
-    M_U = backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+    M_U = M_pBackend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
 }
 
 template<int Dim, int OrderP>
@@ -299,54 +325,42 @@ ElectroThermal<Dim, OrderP>::initGraphsWithIntegralCond()
     auto phatp = M_Mh->elementPtr( "phat" );
     auto mup = M_Ch->elementPtr( "c1" );
 
-    BlocksBaseGraphCSR hdg_graph(5,5);
+    BlocksBaseGraphCSR hdg_graph(4,4);
     hdg_graph(0,0) = stencil( _test=M_Vh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,0) = stencil( _test=M_Wh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,0) = stencil( _test=M_Mh,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(3,0) = stencil( _test=M_Ch,_trial=M_Vh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(4,0) = stencil( _test=M_Xh,_trial=M_Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,1) = stencil( _test=M_Vh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,1) = stencil( _test=M_Wh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,1) = stencil( _test=M_Mh,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(3,1) = stencil( _test=M_Ch,_trial=M_Wh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(4,1) = stencil( _test=M_Xh,_trial=M_Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,2) = stencil( _test=M_Vh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,2) = stencil( _test=M_Wh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,2) = stencil( _test=M_Mh,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(3,2) = stencil( _test=M_Ch,_trial=M_Mh, _diag_is_nonzero=false, _close=false)->graph();
-    hdg_graph(4,2) = stencil( _test=M_Xh,_trial=M_Mh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
     hdg_graph(0,3) = stencil( _test=M_Vh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(1,3) = stencil( _test=M_Wh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(2,3) = stencil( _test=M_Mh,_trial=M_Ch, _diag_is_nonzero=false, _close=false)->graph();
     hdg_graph(3,3) = stencil( _test=M_Ch,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(4,3) = stencil( _test=M_Xh,_trial=M_Ch, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
 
-    hdg_graph(0,4) = stencil( _test=M_Vh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(1,4) = stencil( _test=M_Wh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(2,4) = stencil( _test=M_Mh,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(3,4) = stencil( _test=M_Ch,_trial=M_Xh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
-    hdg_graph(4,4) = stencil( _test=M_Xh,_trial=M_Xh, _diag_is_nonzero=false, _close=false)->graph();
+    M_A = M_pBackend->newBlockMatrix(_block=hdg_graph);
 
-    M_A = backend()->newBlockMatrix(_block=hdg_graph);
+    BlocksBaseVector<double> hdg_vec(4);
+    hdg_vec(0,0) = M_pBackend->newVector( M_Vh );
+    hdg_vec(1,0) = M_pBackend->newVector( M_Wh );
+    hdg_vec(2,0) = M_pBackend->newVector( M_Mh );
+    hdg_vec(3,0) = M_pBackend->newVector( M_Ch );
+    M_F = M_pBackend->newBlockVector(_block=hdg_vec, _copy_values=false);
 
-    BlocksBaseVector<double> hdg_vec(5);
-    hdg_vec(0,0) = backend()->newVector( M_Vh );
-    hdg_vec(1,0) = backend()->newVector( M_Wh );
-    hdg_vec(2,0) = backend()->newVector( M_Mh );
-    hdg_vec(3,0) = backend()->newVector( M_Ch );
-    hdg_vec(4,0) = backend()->newVector( M_Xh );
-    M_F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
-
-    M_hdg_sol = BlocksBaseVector<double>(5);
+    M_hdg_sol = BlocksBaseVector<double>(4);
     M_hdg_sol(0,0) = M_up;
     M_hdg_sol(1,0) = M_pp;
     M_hdg_sol(2,0) = phatp;
     M_hdg_sol(3,0) = mup;
-    M_hdg_sol(4,0) = M_Tp;
-    M_U = backend()->newBlockVector(_block=M_hdg_sol, _copy_values=false);
+    M_U = M_pBackend->newBlockVector(_block=M_hdg_sol, _copy_values=false);
 }
 
 template<int Dim, int OrderP>
@@ -358,20 +372,10 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
 
     auto mesh = M_Vh->mesh();
 
-    auto T = M_Xh->element( "T" );
-    auto q = M_Xh->element( "q" );
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
 
-    size_type VhDof = M_Vh->nLocalDofWithGhost();
-    size_type WhDof = M_Wh->nLocalDofWithGhost();
-    size_type MhDof = M_Mh->nLocalDofWithGhost();
-    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
-
     auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
-    auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A_cst,
-                     _rowstart=VhDof+WhDof+MhDof+ChDof,
-                     _colstart=VhDof+WhDof+MhDof+ChDof);
 
     for( auto const& pairMat : M_modelProperties->materials() )
     {
@@ -385,37 +389,13 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
             auto sigma0 = material.getDouble("sigma0");
             auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
             sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
-            auto k0 = material.getDouble("k0");
-            auto k = material.getScalar("k", "T", idv(M_Tp));
-            k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
 
             // (sigma^-1 j, v)
             a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/sigma );
-            // (k grad(T), grad(q))
-            a55 += integrate(_range=markedelements(mesh,marker), _expr=k*gradt(T)*trans(grad(T)) );
         }
         else {
             // (sigma^-1 j, v)
             a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("sigma0") );
-            // (k grad(T), grad(q))
-            a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k0")*gradt(T)*trans(grad(T)) );
-        }
-    }
-
-    auto itField = M_modelProperties->boundaryConditions().find( "temperature");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
-    {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Robin" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression1());
-                // <hT, q>_Gamma_C
-                a55 += integrate(_range=markedfaces(mesh,marker), _expr=g*idt(T)*id(q));
-            }
         }
     }
 }
@@ -447,7 +427,6 @@ ElectroThermal<Dim, OrderP>::assembleACst()
     size_type VhDof = M_Vh->nLocalDofWithGhost();
     size_type WhDof = M_Wh->nLocalDofWithGhost();
     size_type MhDof = M_Mh->nLocalDofWithGhost();
-    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
 
     auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A_cst,
                       _rowstart=0,
@@ -633,43 +612,15 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
     auto mesh = M_Vh->mesh();
     auto nu = M_Ch->element( "nu" );
     auto l = M_Mh->element( "lambda" );
-    auto q = M_Xh->element( "q" );
-
-    auto Tw = M_modelProperties->parameters()["Tw"].value();
 
     // Building the RHS
 
     size_type VhDof = M_Vh->nLocalDofWithGhost();
     size_type WhDof = M_Wh->nLocalDofWithGhost();
     size_type MhDof = M_Mh->nLocalDofWithGhost();
-    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
 
     auto rhs3 = form1( _test=M_Mh, _vector=M_F,
                        _rowstart=VhDof+WhDof);
-    auto rhs4 = form1( _test=M_Xh, _vector=M_F,
-                       _rowstart=VhDof+WhDof+MhDof+ChDof);
-
-    for( auto const& pairMat : M_modelProperties->materials() )
-    {
-        auto marker = pairMat.first;
-        auto material = pairMat.second;
-        if ( M_isPicard && iter > 0 )
-        {
-            auto alpha = material.getDouble("alpha");
-            auto T0 = material.getDouble("T0");
-            auto sigma0 = material.getDouble("sigma0");
-            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
-            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
-
-            // (j^2/sigma,q)_Omega
-            rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/sigma * id(q));
-        }
-        else
-        {
-            // (j^2/sigma,q)_Omega
-            rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/material.getScalar("sigma0") * id(q));
-        }
-    }
 
     auto itField = M_modelProperties->boundaryConditions().find( "potential");
     if ( itField != M_modelProperties->boundaryConditions().end() )
@@ -711,8 +662,57 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
             }
         }
     }
+}
 
-    itField = M_modelProperties->boundaryConditions().find( "temperature");
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::solveT( int iter )
+{
+    auto mesh = M_Vh->mesh();
+
+    auto Tw = M_modelProperties->parameters()["Tw"].value();
+
+    auto T = M_Xh->element( "T" );
+    auto q = M_Xh->element( "q" );
+
+    auto ma = M_tBackend->newMatrix( _test=M_Xh, _trial=M_Xh );
+    auto vf = M_tBackend->newVector( M_Xh );
+    auto a = form2( _test=M_Xh, _trial=M_Xh, _matrix=ma );
+    auto f = form1( _test=M_Xh, _vector=vf );
+
+    for( auto const& pairMat : M_modelProperties->materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+
+        if ( M_isPicard && iter > 0)
+        {
+            auto alpha = material.getDouble("alpha");
+            auto T0 = material.getDouble("T0");
+            auto sigma0 = material.getDouble("sigma0");
+            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
+            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
+            auto k0 = material.getDouble("k0");
+            auto k = material.getScalar("k", "T", idv(M_Tp));
+            k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
+            // (k grad(T), grad(q))
+            a += integrate(_range=markedelements(mesh,marker),
+                           _expr=k*gradt(T)*trans(grad(q)) );
+            // (j^2/sigma,q)_Omega
+            f += integrate(_range=markedelements(mesh, marker),
+                           _expr=inner(idv(*M_up))/sigma * id(q));
+        }
+        else {
+            // (k grad(T), grad(q))
+            a += integrate(_range=markedelements(mesh,marker),
+                           _expr=material.getScalar("k0")*gradt(T)*trans(grad(q)) );
+            // (j^2/sigma,q)_Omega
+            f += integrate(_range=markedelements(mesh, marker),
+                           _expr=inner(idv(*M_up))/material.getScalar("sigma0") * id(q));
+        }
+    }
+
+    auto itField = M_modelProperties->boundaryConditions().find( "temperature");
     if ( itField != M_modelProperties->boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -722,14 +722,20 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
+                auto g1 = expr(exAtMarker.expression1());
+                // <hT, q>_Gamma_C
+                a += integrate(_range=markedfaces(mesh,marker),
+                               _expr=g1*idt(T)*id(q));
                 std::string gst = exAtMarker.expression2();
-                auto g = expr(gst, {{"Tw",Tw}});
+                auto g2 = expr(gst, {{"Tw",Tw}});
                 // <hT_w,q>_Gamma_C
-                rhs4 += integrate(_range=markedfaces(mesh,marker),
-                                  _expr=g*id(q));
+                f += integrate(_range=markedfaces(mesh,marker),
+                               _expr=g2*id(q));
             }
         }
     }
+
+    M_tBackend->solve( _matrix=ma, _rhs=vf, _solution=M_Tp);
 }
 
 template<int Dim, int OrderP>
