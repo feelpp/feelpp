@@ -12,10 +12,11 @@
         {
             "name":"copper",
             "alpha":"3.35e-3",
-            "sigma0":"48e+6",
-            "sigma":"sigma0/(1+alpha*(T-Tw)):sigma0:alpha:T:Tw",
+            "T0":"293",
+            "sigma0":"58e+3",
             "k0":"0.38",
-            "k":"k0/(Tw*alpha*(T-Tw))*T:k0:Tw:alpha:T"
+            "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
+            "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
         }
     },
     "BoundaryConditions":
@@ -26,7 +27,7 @@
             {
                 "V0":
                 {
-                    "expr":"1"
+                    "expr":"0.25"
                 },
                 "V1":
                 {

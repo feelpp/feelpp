@@ -112,6 +112,7 @@ private:
     Ch_ptr_t M_Ch; // constant
 
     sparse_matrix_ptrtype M_A;
+    sparse_matrix_ptrtype M_A_cst;
     vector_ptrtype M_F;
     BlocksBaseVector<double> M_hdg_sol;
     vector_ptrtype M_U;
@@ -120,8 +121,6 @@ private:
     Wh_element_ptr_t M_pp;
     Xh_element_ptr_t M_Tp;
 
-    boost::optional<double> M_V;
-
     int M_tau_order;
 
     bool M_integralCondition;
@@ -129,6 +128,7 @@ private:
 
     void initGraphs();
     void initGraphsWithIntegralCond();
+    void assembleACst();
     void assembleA( int iter = -1 );
     void assembleF( int iter = -1 );
 
@@ -163,8 +163,6 @@ ElectroThermal<Dim, OrderP>::init()
 
     int proc_rank = Environment::worldComm().globalRank();
 
-    M_V = boost::none;
-
     M_tau_order = ioption("tau_order");
 
     tic();
@@ -187,8 +185,9 @@ ElectroThermal<Dim, OrderP>::init()
     cout << "Vh<" << OrderP << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << M_Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << M_Mh->nDof() << std::endl
-         << "Xh<" << OrderP << "> : " << M_Xh->nDof() << std::endl
-         << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
+         << "Xh<" << OrderP << "> : " << M_Xh->nDof() << std::endl;
+    if ( M_integralCondition )
+        cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
     M_up = M_Vh->elementPtr( "u" );
     M_pp = M_Wh->elementPtr( "p" );
@@ -206,6 +205,7 @@ template<int Dim, int OrderP>
 void
 ElectroThermal<Dim, OrderP>::solve()
 {
+    assembleACst();
     if ( boost::icontains(M_modelProperties->model(),"hdg-picard") )
     {
         int itmax = ioption( "picard.itmax" );
@@ -226,11 +226,12 @@ ElectroThermal<Dim, OrderP>::solve()
             assembleF(it);
             backend(_rebuild=true)->solve( _matrix=M_A, _rhs=M_F, _solution=M_U );
             M_hdg_sol.localize(M_U);
+
             incrp = normL2( _range=elements(mesh), _expr=idv(*M_pp)-idv(po) );
             incrT = normL2( _range=elements(mesh), _expr=idv(*M_Tp)-idv(To) );
-
             po = *M_pp;
             To=*M_Tp;
+
             // compute current
             double I = integrate(_range=markedfaces(mesh,"bottom"),
                                  _expr=inner(idv(*M_up),N())).evaluate()(0,0);
@@ -274,6 +275,7 @@ ElectroThermal<Dim, OrderP>::initGraphs()
     hdg_graph(3,3) = stencil( _test=M_Xh,_trial=M_Xh, _diag_is_nonzero=false, _close=false)->graph();
 
     M_A = backend()->newBlockMatrix(_block=hdg_graph);
+    M_A_cst = backend()->newBlockMatrix(_block=hdg_graph);
 
     BlocksBaseVector<double> hdg_vec(4);
     hdg_vec(0,0) = backend()->newVector( M_Vh );
@@ -352,6 +354,77 @@ void
 ElectroThermal<Dim, OrderP>::assembleA( int iter )
 {
     M_A->zero();
+    M_A->addMatrix(1,M_A_cst);
+
+    auto mesh = M_Vh->mesh();
+
+    auto T = M_Xh->element( "T" );
+    auto q = M_Xh->element( "q" );
+    auto u = M_Vh->element( "u" );
+    auto v = M_Vh->element( "v" );
+
+    size_type VhDof = M_Vh->nLocalDofWithGhost();
+    size_type WhDof = M_Wh->nLocalDofWithGhost();
+    size_type MhDof = M_Mh->nLocalDofWithGhost();
+    size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
+
+    auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
+    auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A_cst,
+                     _rowstart=VhDof+WhDof+MhDof+ChDof,
+                     _colstart=VhDof+WhDof+MhDof+ChDof);
+
+    for( auto const& pairMat : M_modelProperties->materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+
+        if ( M_isPicard && iter > 0)
+        {
+            auto alpha = material.getDouble("alpha");
+            auto T0 = material.getDouble("T0");
+            auto sigma0 = material.getDouble("sigma0");
+            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
+            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
+            auto k0 = material.getDouble("k0");
+            auto k = material.getScalar("k", "T", idv(M_Tp));
+            k.setParameterValues({{"k0",k0},{"T0",T0},{"alpha",alpha}});
+
+            // (sigma^-1 j, v)
+            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/sigma );
+            // (k grad(T), grad(q))
+            a55 += integrate(_range=markedelements(mesh,marker), _expr=k*gradt(T)*trans(grad(T)) );
+        }
+        else {
+            // (sigma^-1 j, v)
+            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("sigma0") );
+            // (k grad(T), grad(q))
+            a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k0")*gradt(T)*trans(grad(T)) );
+        }
+    }
+
+    auto itField = M_modelProperties->boundaryConditions().find( "temperature");
+    if ( itField != M_modelProperties->boundaryConditions().end() )
+    {
+        auto mapField = (*itField).second;
+        auto itType = mapField.find( "Robin" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                auto g = expr(exAtMarker.expression1());
+                // <hT, q>_Gamma_C
+                a55 += integrate(_range=markedfaces(mesh,marker), _expr=g*idt(T)*id(q));
+            }
+        }
+    }
+}
+
+template<int Dim, int OrderP>
+void
+ElectroThermal<Dim, OrderP>::assembleACst()
+{
+    M_A_cst->zero();
     auto mesh = M_Vh->mesh();
 
     // stabilisation parameter
@@ -376,45 +449,44 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
     size_type MhDof = M_Mh->nLocalDofWithGhost();
     size_type ChDof = M_integralCondition ? M_Ch->nLocalDofWithGhost() : 0;
 
-    auto a11 = form2( _trial=M_Vh, _test=M_Vh,_matrix=M_A );
-    auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A,
+    auto a12 = form2( _trial=M_Wh, _test=M_Vh,_matrix=M_A_cst,
                       _rowstart=0,
                       _colstart=VhDof );
-    auto a13 = form2( _trial=M_Mh, _test=M_Vh,_matrix=M_A,
+    auto a13 = form2( _trial=M_Mh, _test=M_Vh,_matrix=M_A_cst,
                       _rowstart=0,
                       _colstart=VhDof+WhDof);
-    auto a21 = form2( _trial=M_Vh, _test=M_Wh,_matrix=M_A,
+    auto a21 = form2( _trial=M_Vh, _test=M_Wh,_matrix=M_A_cst,
                       _rowstart=VhDof,
                       _colstart=0);
-    auto a22 = form2( _trial=M_Wh, _test=M_Wh,_matrix=M_A,
+    auto a22 = form2( _trial=M_Wh, _test=M_Wh,_matrix=M_A_cst,
                       _rowstart=VhDof,
                       _colstart=VhDof );
-    auto a23 = form2( _trial=M_Mh, _test=M_Wh,_matrix=M_A,
+    auto a23 = form2( _trial=M_Mh, _test=M_Wh,_matrix=M_A_cst,
                       _rowstart=VhDof,
                       _colstart=VhDof+WhDof);
-    auto a31 = form2( _trial=M_Vh, _test=M_Mh,_matrix=M_A,
+    auto a31 = form2( _trial=M_Vh, _test=M_Mh,_matrix=M_A_cst,
                       _rowstart=VhDof+WhDof,
                       _colstart=0);
-    auto a32 = form2( _trial=M_Wh, _test=M_Mh,_matrix=M_A,
+    auto a32 = form2( _trial=M_Wh, _test=M_Mh,_matrix=M_A_cst,
                       _rowstart=VhDof+WhDof,
                       _colstart=VhDof);
-    auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A,
+    auto a33 = form2(_trial=M_Mh, _test=M_Mh,_matrix=M_A_cst,
                      _rowstart=VhDof+WhDof,
                      _colstart=VhDof+WhDof);
-    auto a55 = form2(_trial=M_Xh, _test=M_Xh,_matrix=M_A,
-                     _rowstart=VhDof+WhDof+MhDof+ChDof,
-                     _colstart=VhDof+WhDof+MhDof+ChDof);
 
+    // -(p,div(v))
     a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
 
+    // <phat,v.n>_Gamma
     a13 += integrate(_range=internalfaces(mesh),
                      _expr=( idt(phat)*leftface(trans(id(v))*N())+
                              idt(phat)*rightface(trans(id(v))*N())) );
     a13 += integrate(_range=boundaryfaces(mesh),
                      _expr=idt(phat)*trans(id(v))*N());
 
-
+    // -(j, grad(w))
     a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+    // <j.n,w>_Gamma
     a21 += integrate(_range=internalfaces(mesh),
                      _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
     a21 += integrate(_range=internalfaces(mesh),
@@ -422,6 +494,7 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
     a21 += integrate(_range=boundaryfaces(mesh),
                      _expr=(id(w)*trans(idt(u))*N()));
 
+    // <tau p, w>_Gamma
     a22 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant *
                      ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
@@ -429,6 +502,7 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
     a22 += integrate(_range=boundaryfaces(mesh),
                      _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
+    // <-tau phat, w>_Gamma
     a23 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) *
                      ( leftface( pow(h(),M_tau_order)*id(w) )+
@@ -437,41 +511,20 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
                      _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
 
 
+    // <j.n,mu>_Omega/Gamma
     a31 += integrate(_range=internalfaces(mesh),
                      _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
                                     rightfacet(trans(idt(u))*N())) ) );
 
+    // <tau p, mu>_Omega/Gamma
     a32 += integrate(_range=internalfaces(mesh),
                      _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
                                                     rightfacet( pow(h(),M_tau_order)*idt(p) )));
 
+    // <-tau phat, mu>_Omega/Gamma
     a33 += integrate(_range=internalfaces(mesh),
                      _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
                                                                  rightface( pow(h(),M_tau_order) )));
-
-    for( auto const& pairMat : M_modelProperties->materials() )
-    {
-        auto marker = pairMat.first;
-        auto material = pairMat.second;
-
-        if ( M_isPicard && iter > 0)
-        {
-            auto sigma0 = material.getDouble("sigma0");
-            auto alpha = material.getDouble("alpha");
-            auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
-            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"Tw",Tw}});
-            auto k0 = material.getDouble("k0");
-            auto k = material.getScalar("k", "T", idv(M_Tp));
-            k.setParameterValues({{"k0",k0},{"Tw",Tw},{"alpha",alpha}});
-
-            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/sigma );
-            a55 += integrate(_range=markedelements(mesh,marker), _expr=k*gradt(T)*trans(grad(T)) );
-        }
-        else {
-            a11 += integrate(_range=markedelements(mesh,marker), _expr=(trans(idt(u))*id(v))/material.getScalar("sigma0") );
-            a55 += integrate(_range=markedelements(mesh,marker), _expr=material.getScalar("k0")*gradt(T)*trans(grad(T)) );
-        }
-    }
 
 
     // BC
@@ -486,6 +539,7 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
+                // <phat, mu>_{Gamma_in,Gamma_out}
                 a33 += integrate(_range=markedfaces(mesh,marker),
                                  _expr=idt(phat) * id(l) );
             }
@@ -496,12 +550,15 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
+                // <j.n,mu>_Gamma_E
                 a31 += integrate(_range=markedfaces(mesh,marker),
                                  _expr=( id(l)*(trans(idt(u))*N()) ));
 
+                // <tau p, mu>_Gamma_E
                 a32 += integrate(_range=markedfaces(mesh,marker),
                                  _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
 
+                // <-tau phat, mu>_Gamma_E
                 a33 += integrate(_range=markedfaces(mesh,marker),
                                  _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
             }
@@ -510,22 +567,22 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
 
     if ( M_integralCondition )
     {
-        auto a14 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A,
+        auto a14 = form2(_trial=M_Ch, _test=M_Vh,_matrix=M_A_cst,
                          _rowstart=0,
                          _colstart=VhDof+WhDof+MhDof);
-        auto a34 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A,
+        auto a34 = form2(_trial=M_Ch, _test=M_Mh,_matrix=M_A_cst,
                          _rowstart=VhDof+WhDof,
                          _colstart=VhDof+WhDof+MhDof);
-        auto a41 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A,
+        auto a41 = form2(_trial=M_Vh, _test=M_Ch,_matrix=M_A_cst,
                          _rowstart=VhDof+WhDof+MhDof,
                          _colstart=0);
-        auto a42 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A,
+        auto a42 = form2(_trial=M_Wh, _test=M_Ch,_matrix=M_A_cst,
                          _rowstart=VhDof+WhDof+MhDof,
                          _colstart=VhDof);
-        auto a43 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A,
+        auto a43 = form2(_trial=M_Mh, _test=M_Ch,_matrix=M_A_cst,
                          _rowstart=VhDof+WhDof+MhDof,
                          _colstart=VhDof+WhDof);
-        auto a24 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A,
+        auto a24 = form2(_trial=M_Ch, _test=M_Wh,_matrix=M_A_cst,
                          _rowstart=VhDof,
                          _colstart=VhDof+WhDof+MhDof);
         itField = M_modelProperties->boundaryConditions().find( "current");
@@ -540,39 +597,29 @@ ElectroThermal<Dim, OrderP>::assembleA( int iter )
                 {
                     std::string marker = exAtMarker.marker();
 
+                    // <lambda, v.n>_Gamma_out
                     a14 += integrate( _range=markedfaces(mesh,marker), _expr=trans(id(u))*N()*idt(nu) );
 
+                    // <lambda, tau w>_Gamma_out
                     a24 += integrate( _range=markedfaces(mesh,marker),
                                       _expr=tau_constant * ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
 
+                    // <lambda, -tau mu>_Gamma_out
                     a34 += integrate(_range=markedfaces(mesh,marker),
                                      _expr=-tau_constant * idt(nu) * id(l) * ( pow(h(),M_tau_order) ));
 
+                    // <j.n, m>_Gamma_out
                     a41 += integrate( _range=markedfaces(mesh,marker), _expr=trans(idt(u))*N()*id(nu) );
 
+                    // <tau p, m>_Gamma_out
                     a42 += integrate( _range=markedfaces(mesh,marker), _expr=tau_constant *
                                       ( pow(h(),M_tau_order)*idt(p) ) * id(nu) );
 
+                    // <tau phat, m>_Gamma_out
                     a43 += integrate(_range=markedfaces(mesh,marker),
                                      _expr=-tau_constant * id(nu) * idt(phat) * ( pow(h(),M_tau_order) ));
 
                 }
-            }
-        }
-    }
-
-    itField = M_modelProperties->boundaryConditions().find( "temperature");
-    if ( itField != M_modelProperties->boundaryConditions().end() )
-    {
-        auto mapField = (*itField).second;
-        auto itType = mapField.find( "Robin" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                auto g = expr(exAtMarker.expression1());
-                a55 += integrate(_range=markedfaces(mesh,marker), _expr=g*idt(T)*id(q));
             }
         }
     }
@@ -608,15 +655,18 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
         auto material = pairMat.second;
         if ( M_isPicard && iter > 0 )
         {
-            auto sigma0 = material.getDouble("sigma0");
             auto alpha = material.getDouble("alpha");
+            auto T0 = material.getDouble("T0");
+            auto sigma0 = material.getDouble("sigma0");
             auto sigma = material.getScalar("sigma", "T", idv(M_Tp));
-            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"Tw",Tw}});
+            sigma.setParameterValues({{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
 
+            // (j^2/sigma,q)_Omega
             rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/sigma * id(q));
         }
         else
         {
+            // (j^2/sigma,q)_Omega
             rhs4 += integrate(_range=markedelements(mesh, marker),_expr=inner(idv(*M_up))/material.getScalar("sigma0") * id(q));
         }
     }
@@ -631,17 +681,10 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
             for ( auto const& exAtMarker : (*itType).second )
             {
                 std::string marker = exAtMarker.marker();
-                if ( M_V )
-                {
-                    double V = *M_V;
-                    rhs3 += integrate(_range=markedfaces(mesh,marker),
-                                      _expr=id(l)*V);
-                }
-                else {
-                    auto g = expr(exAtMarker.expression());
-                    rhs3 += integrate(_range=markedfaces(mesh,marker),
-                                      _expr=id(l)*g);
-                }
+                auto g = expr(exAtMarker.expression());
+                // <V, mu>_Gamma_out
+                rhs3 += integrate(_range=markedfaces(mesh,marker),
+                                  _expr=id(l)*g);
             }
         }
     }
@@ -661,6 +704,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
                 {
                     std::string marker = exAtMarker.marker();
                     auto g = expr(exAtMarker.expression());
+                    // <I_target,m>_Gamma_out
                     rhs5 += integrate(_range=markedfaces(mesh,marker),
                                       _expr=g*id(nu));
                 }
@@ -680,6 +724,7 @@ ElectroThermal<Dim, OrderP>::assembleF( int iter )
                 std::string marker = exAtMarker.marker();
                 std::string gst = exAtMarker.expression2();
                 auto g = expr(gst, {{"Tw",Tw}});
+                // <hT_w,q>_Gamma_C
                 rhs4 += integrate(_range=markedfaces(mesh,marker),
                                   _expr=g*id(q));
             }
