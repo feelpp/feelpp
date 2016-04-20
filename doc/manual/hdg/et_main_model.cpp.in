@@ -24,24 +24,6 @@
 #include <et_model.hpp>
 
 using namespace Feel;
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testhdivoptions( "Electro-Thermal Model options" );
-    testhdivoptions.add_options()
-        ( "Tw", po::value<double>()->default_value( 1 ), "water temperature" )
-        ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( "picard.itol", po::value<double>()->default_value( 1e-4 ), "tolerance" )
-        ( "picard.itmax", po::value<int>()->default_value( 10 ), "iterations max" )
-        ("Kp", po::value<double>()->default_value(100.), "PID proportional coefficient")
-        ("Ki", po::value<double>()->default_value(0.), "PID integral coefficient")
-        ("Kd", po::value<double>()->default_value(0.), "PID derivative coefficient")
-        ("model_json", po::value<std::string>()->default_value("model.json"), "json file for the model")
-        ;
-    return testhdivoptions;
-}
 
 inline
 AboutData
@@ -66,10 +48,11 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=makeOptions() );
+                           _desc=makeETHDGOptions(),
+                           _desc_lib=makeETHDGLibOptions() );
 
     typedef ElectroThermal<@D@,@P@> et_type;
-    
+
     et_type ET;
     ET.init();
     ET.solve();
