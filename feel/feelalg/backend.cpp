@@ -84,44 +84,6 @@ Backend<T>::Backend( WorldComm const& worldComm )
 }
 
 template <typename T>
-Backend<T>::Backend( Backend const& backend )
-    :
-    M_worldComm( backend.M_worldComm ),
-    M_backend( backend.M_backend ),
-    M_prefix( backend.M_prefix ),
-    M_nlsolver( backend.M_nlsolver ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_rtolerance( backend.M_rtolerance ),
-    M_dtolerance( backend.M_dtolerance ),
-    M_atolerance( backend.M_atolerance ),
-    M_rtoleranceSNES( backend.M_rtoleranceSNES ),
-    M_stoleranceSNES( backend.M_stoleranceSNES ),
-    M_atoleranceSNES( backend.M_atoleranceSNES ),
-    M_rtoleranceKSPinSNES( backend.M_rtoleranceKSPinSNES ),
-    M_reuse_prec( backend.M_reuse_prec ),
-    M_reuse_jac( backend.M_reuse_jac ),
-    M_reusePrecIsBuild( backend.M_reusePrecIsBuild) ,
-    M_reusePrecRebuildAtFirstNewtonStep( backend.M_reusePrecRebuildAtFirstNewtonStep ),
-    M_reuseJacIsBuild( backend.M_reuseJacIsBuild) ,
-    M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
-    M_transpose( backend.M_transpose ),
-    M_maxitKSP( backend.M_maxitKSP ),
-    M_maxitKSPinSNES( backend.M_maxitKSPinSNES ),
-    M_maxitSNES( backend.M_maxitSNES ),
-    M_maxitKSPReuse( backend.M_maxitKSPReuse ),
-    M_maxitKSPinSNESReuse( backend.M_maxitKSPinSNESReuse ),
-    M_maxitSNESReuse( backend.M_maxitSNESReuse ),
-    M_export( backend.M_export ),
-    M_ksp( backend.M_ksp ),
-    M_pc( backend.M_pc ),
-    M_fieldSplit( backend.M_fieldSplit ),
-    M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage ),
-    M_constant_null_space( backend.M_constant_null_space ),
-    M_showKSPMonitor( backend.M_showKSPMonitor ),
-    M_showKSPConvergedReason( backend.M_showKSPConvergedReason )
-{
-}
-template <typename T>
 Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
@@ -196,7 +158,9 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
 
     case BACKEND_PETSC:
     {
-        return backend_ptrtype( new BackendPetsc<value_type>( worldComm ) );
+        auto b = backend_ptrtype( new BackendPetsc<value_type>( worldComm ) );
+        b->attachPreconditioner();
+        return b;
     }
     break;
 #endif
@@ -219,6 +183,7 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
 
     return backend_ptrtype();
 }
+
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
 Backend<std::complex<double>>::build( BackendType bt, WorldComm const& worldComm )
@@ -264,7 +229,11 @@ Backend<T>::build( std::string const& kind, std::string const& prefix, WorldComm
         return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
 #if defined ( FEELPP_HAS_PETSC_H )
     if ( kind == "petsc")
-        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
+    {
+        auto b = backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
+        b->attachPreconditioner();
+        return b;
+    }
 #else
     if ( kind == "petsc")
         LOG(FATAL) << "Backend 'petsc' not available";
@@ -285,11 +254,25 @@ Backend<std::complex<double>>::build( std::string const& kind, std::string const
     return backend_ptrtype();
 }
 
+
 template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( BackendType bt, std::string const& prefix, WorldComm const& worldComm )
 {
     return build( enumToKind( bt ), prefix, worldComm );
+}
+
+template<>
+inline void 
+Backend<double>::attachPreconditioner()
+{
+    auto p = Feel::preconditioner( _prefix=this->prefix(),
+                                   _pc=this->pcEnumType(),
+                                   _backend=this->shared_from_this(),
+                                   _pcfactormatsolverpackage=this->matSolverPackageEnumType() );
+    if ( M_preconditioner && M_preconditioner != p )
+        M_preconditioner->clear();
+    M_preconditioner = p;
 }
 
 template <typename T>
@@ -445,6 +428,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         // reset to initial solution
         x_save->close();
         *x=*x_save;
+        x->close();
 
         //M_nlsolver->init();
         //M_nlsolver->setPreconditionerType( this->pcEnumType() );
@@ -563,7 +547,6 @@ Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y )
     mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;
 }
-
 
 template <typename T>
 void

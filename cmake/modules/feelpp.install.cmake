@@ -78,13 +78,19 @@ INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT 
 #
 # this target installs the libraries, header files and cmake files
 #
+set(_INSTALL_FEELPP_LIB_COMMAND ${CMAKE_COMMAND})
+
+if(FEELPP_ENABLE_METIS)
+    set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
+endif()
+
+set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} 
+    -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake" 
+    -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
+
 add_custom_target(install-feelpp-lib
   DEPENDS feelpp
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Libs
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Devel
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+  COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
 )
 
 #

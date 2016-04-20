@@ -29,7 +29,7 @@
 #ifndef ModelCrbBase_H
 #define ModelCrbBase_H 1
 
-#include <feel/feel.hpp>
+//#include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -274,16 +274,26 @@ public :
         M_is_initialized( false )
     {
     }
+    virtual ~ModelCrbBase() {}
 
     virtual std::string modelName() { return "generic-model-name"; }
 
+    /**
+     * return directory path where symbolic expression (ginac) are built
+     * empty means current path
+     */
+    std::string const& symbolicExpressionBuildDir() const { return M_symbolicExpressionBuildDir; }
+    /**
+     * set directory path where symbolic expression (ginac) are built
+     */
+    void setSymbolicExpressionBuildDir( std::string const& dir ) { M_symbolicExpressionBuildDir=dir; }
 
 
     void addLhs( boost::tuple< form2_type, std::string > const & tuple )
-        {
-            M_Aq.push_back( tuple.template get<0>().matrixPtr() );
-            M_betaAqString.push_back( tuple.template get<1>() );
-        }
+    {
+        M_Aq.push_back( tuple.template get<0>().matrixPtr() );
+        M_betaAqString.push_back( tuple.template get<1>() );
+    }
     /*
      * return the left hand side terms from the affine decomposition
      * that is to say bilinear forms Aq and beta coefficients associated
@@ -417,6 +427,18 @@ public :
 
     virtual void initModel() = 0;
 
+    virtual void assemble()
+    {
+        if( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) )
+        {
+            Feel::cout << "************************************************************************ \n"
+                       << "** SER method is asked without implementation of assemble() function. ** \n"
+                       << "** assemble() function is needed to update affine decomposition during \n"
+                       << "** the simultaneous basis functions build ** \n"
+                       << "************************************************************************" << std::endl;
+        }
+    };
+
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
         return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
@@ -514,6 +536,18 @@ public :
         return boost::make_tuple( M_Aqm , M_Fqm );
     }
 
+    virtual affine_decomposition_type computePicardAffineDecomposition()
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
+            std::cout<<"** computePicardAffineDecomposition(...) **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeAffineDecomposition();
+    }
+
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
         return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
@@ -567,6 +601,10 @@ public :
         auto tuple = computeBetaQm( mu , time );
         return tuple.template get<0>();
     }
+
+    // Default updateResidual / updateJacobian functions
+    virtual bool updateResidual(element_type const& X, std::vector< std::vector<std::vector<vector_ptrtype> > >& Rqm){ return false; }
+    virtual bool updateJacobian(element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm){ return false; }
 
     virtual betaq_type computeBetaQ( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false )
     {
@@ -657,6 +695,19 @@ public :
     {
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
+
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu );
+    }
+
     virtual betaq_type computeBetaQ( parameter_type const& mu )
     {
         return computeBetaQ( mu, mpl::bool_< is_time_dependent >() );
@@ -733,7 +784,18 @@ public :
         return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-
+    virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( mu, time , only_terms_time_dependent );
+    }
+    
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
         //not that the parameter mu is here to indicates
@@ -745,12 +807,15 @@ public :
             std::string symbol = ( boost::format("mu%1%") %i ).str();
             M_symbols_vec.push_back( symbol );
         }
+        fs::path dir( Environment::expand( M_symbolicExpressionBuildDir ) );
         if( M_betaAqString.size() > 0 )
         {
             int size = M_betaAqString.size();
             for(int q=0; q<size; q++)
             {
                 std::string filename = ( boost::format("GinacA%1%") %q ).str();
+                if ( !M_symbolicExpressionBuildDir.empty() )
+                    filename = ( dir / fs::path( filename ) ).string();
                 M_ginacAq.push_back( expr( M_betaAqString[q], Symbols( M_symbols_vec ) , filename ) );
             }
         }
@@ -760,6 +825,8 @@ public :
             for(int q=0; q<size; q++)
             {
                 std::string filename = ( boost::format("GinacM%1%") %q ).str();
+                if ( !M_symbolicExpressionBuildDir.empty() )
+                    filename = ( dir / fs::path( filename ) ).string();
                 M_ginacMq.push_back( expr( M_betaMqString[q], Symbols( M_symbols_vec ) , filename ) );
             }
         }
@@ -773,6 +840,8 @@ public :
                 for(int q=0; q<size; q++)
                 {
                     std::string filename = ( boost::format("GinacF%1%.%2%") %output %q ).str();
+                    if ( !M_symbolicExpressionBuildDir.empty() )
+                        filename = ( dir / fs::path( filename ) ).string();
                     M_ginacFq[output].push_back( expr( M_betaFqString[output][q], Symbols( M_symbols_vec ) , filename ) );
                 }
             }
@@ -831,6 +900,29 @@ public :
         }
         betaqm_type dummy_beta_coeff;
         return dummy_beta_coeff;
+    }
+
+    virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return this->computeBetaQm( u, mu );
+    }
+    virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
+    {
+        if( Environment::worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        {
+            std::cout<<"****************************************************************"<<std::endl;
+            std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
+            std::cout<<"** computePicardBetaQm(...) function **"<<std::endl;
+            std::cout<<"****************************************************************"<<std::endl;
+        }
+        return computeBetaQm( u, mu, time, only_time_dependent_terms );
     }
 
 
@@ -1453,6 +1545,7 @@ protected :
     std::vector< Expr<GinacEx<2> > > M_ginacMq;
     std::vector< std::vector< Expr<GinacEx<2> > > > M_ginacFq;
     std::vector< std::string > M_symbols_vec;
+    std::string M_symbolicExpressionBuildDir;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;

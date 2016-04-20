@@ -230,7 +230,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
         {
-            meshinv.addPointWithId( *it_dofpt );
+            meshinv.addPointWithId( it_dofpt->second );
         }
 
         FEELPP_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );

@@ -310,8 +310,8 @@ PreconditionerBlockNS( std::string t,
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
-    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
+    M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( properties_space_type::New(Xh->mesh()) ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
@@ -340,8 +340,6 @@ PreconditionerBlockNS( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     this->createSubMatrices();
 
@@ -370,8 +368,8 @@ PreconditionerBlockNS( std::string t,
     M_Xh( Xh ),
     M_Vh( M_Xh->template functionSpace<0>() ),
     M_Qh( M_Xh->template functionSpace<1>() ),
-    M_Vh_indices( M_Vh->nLocalDofWithGhost() ),
-    M_Qh_indices( M_Qh->nLocalDofWithGhost() ),
+    M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
+    M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( Ph ),
     M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
     G( M_b->newMatrix( M_Vh, M_Vh ) ),
@@ -400,8 +398,6 @@ PreconditionerBlockNS( std::string t,
     tic();
     LOG(INFO) << "[PreconditionerBlockNS] setup starts";
     this->setMatrix( A );
-    std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-    std::iota( M_Qh_indices.begin(), M_Qh_indices.end(), M_Vh->nLocalDofWithGhost() );
 
     this->createSubMatrices();
 

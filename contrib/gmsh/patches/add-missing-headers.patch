@@ -1,0 +1,25 @@
+Description: Adds missing headers 
+Author: Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+Reviewed-by: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2012-06-24
+
+Index: gmsh-tetgen-2.12.0/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.12.0.orig/CMakeLists.txt
++++ gmsh-tetgen-2.12.0/CMakeLists.txt
+@@ -130,6 +130,7 @@ set(GMSH_API
+     Mesh/meshGFaceElliptic.h Mesh/meshPartition.h Mesh/meshGFaceDelaunayInsertion.h
+     Mesh/simple3D.h Mesh/meshPartitionOptions.h Mesh/directions3D.h Mesh/yamakawa.h
+     Mesh/Voronoi3D.h Mesh/Levy3D.h Mesh/periodical.h Mesh/meshMetric.h Mesh/ThinLayer.h
++    Mesh/Field.h
+   Numeric/mathEvaluator.h
+   Solver/dofManager.h Solver/femTerm.h Solver/laplaceTerm.h Solver/elasticityTerm.h
+     Solver/crossConfTerm.h Solver/orthogonalTerm.h
+@@ -141,6 +142,7 @@ set(GMSH_API
+   Post/PViewDataList.h Post/PViewDataGModel.h Post/PViewOptions.h Post/ColorTable.h
+    Numeric/nodalBasis.h Post/adaptiveData.h
+   Graphics/drawContext.h
++  Graphics/Camera.h Graphics/Trackball.h
+   contrib/kbipack/gmp_normal_form.h contrib/kbipack/gmp_matrix.h
+     contrib/kbipack/gmp_blas.h contrib/kbipack/mpz.h
+   contrib/DiscreteIntegration/Integration3D.h

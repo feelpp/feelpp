@@ -25,7 +25,6 @@ SET(FileToCopy
   cv.geo
   cv.mod
   torus_quart.cfg
-  torus_quart.geo
   torus_quart.mod
   )
 

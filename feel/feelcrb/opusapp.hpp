@@ -33,14 +33,12 @@
 
 #include <feel/feel.hpp>
 
-#include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
-#include <boost/assign/list_of.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -79,8 +77,7 @@ class OpusApp   : public Application
     typedef Application super;
 public:
 
-    typedef double value_type;
-
+    
     //! model type
     typedef ModelType model_type;
     typedef boost::shared_ptr<ModelType> model_ptrtype;
@@ -137,6 +134,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
@@ -149,6 +147,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( mode )
         {
@@ -161,6 +160,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
@@ -172,6 +172,7 @@ public:
                .add( od )
                .add( crbOptions() )
                .add( eimOptions() )
+               .add( crbSEROptions() )
                .add( podOptions() )),
         M_mode( mode )
         {
@@ -227,6 +228,9 @@ public:
             }
 
         }
+
+    crb_ptrtype & crbPtr() { return crb; }
+    crb_ptrtype const& crbPtr() const { return crb; }
 
     void setMode( std::string const& mode )
         {
@@ -304,15 +308,21 @@ public:
                 }
             }
 
-            if ( !crb->isDBLoaded() || crb->rebuildDB() )
+            if ( !crb->isDBLoaded() || crb->getRebuild() )
             {
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
                 {
-                    if( proc_number == Environment::worldComm().masterRank() )
+                    if( proc_number == Environment::worldComm().masterRank() && !ioption(_name="ser.rb-frequency") )
                         std::cout << "No CRB DB available, do crb offline computations...\n";
                     crb->setOfflineStep( true );
-                    crb->offline();
+                    do  // SER r-adaptation for RB
+                    {
+                        crb->setAdaptationSER( false ); //re-init to false
+                        crb->offline();
+                    }
+                    while(crb->getAdaptationSER());
+
                     if( write_memory_evolution )
                         this->generateMemoryEvolution(pslogfile);
                 }
@@ -321,7 +331,8 @@ public:
                     throw std::logic_error( "CRB/SCM Database could not be loaded" );
             }
 
-            if( crb->isDBLoaded() )
+            //if( crb->isDBLoaded() )
+            else
             {
                 int Nrestart = ioption(_name="crb.restart-from-N");
                 bool do_offline = false;
@@ -343,6 +354,7 @@ public:
                 if( ! do_offline )
                 {
                     crb->loadSCMDB();
+                    crb->setOfflineStep( false );
                 }
 
                 if( do_offline )
@@ -374,7 +386,74 @@ public:
             return u_crb;
         }
 
-    
+    void SER()
+        {
+            bool do_offline_eim = false;
+            // Identifiy is offline eim still needs to be done
+            auto eim_sc_vector = model->scalarContinuousEim();
+            auto eim_sd_vector = model->scalarDiscontinuousEim();
+            for( auto eim_sc : eim_sc_vector )
+                do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+            for( auto eim_sd : eim_sd_vector )
+                do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+
+            int i=0;
+            do
+            {
+                //Begin with rb since first eim has already been built in initModel
+                this->loadDB(); // update AffineDecomposition and enrich RB database
+
+                crb->setRebuild( false ); //do not rebuild since co-build is not finished
+                int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
+
+                if( do_offline_eim && crb->getOfflineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
+                {
+                    do_offline_eim = false; //re-init
+                    for( auto eim_sc : eim_sc_vector )
+                    {
+                        eim_sc->setRestart( false ); //do not restart since co-build is not finished
+
+                        if( use_rb )
+                        {
+                            eim_sc->setRB( crb ); //update rb model member to be used in eim offline
+                            eim_sc->setModel( model );
+                        }
+                        do //r-adaptation for EIM
+                        {
+                            eim_sc->setAdaptationSER( false ); //re-init to false
+                            eim_sc->offline();
+                        }
+                        while( eim_sc->getAdaptationSER() );
+
+                        do_offline_eim = do_offline_eim || eim_sc->getOfflineStep();
+                    }
+                    for( auto eim_sd : eim_sd_vector )
+                    {
+                        eim_sd->setRestart( false ); //do not restart since co-build is not finished
+                        //eim_sd->setAdaptationSER( false ); //re-init to false
+
+                        if( use_rb )
+                        {
+                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
+                            eim_sd->setModel( model );
+                        }
+                        do //r-adaptation for EIM
+                        {
+                            eim_sd->setAdaptationSER( false ); //re-init to false
+                            eim_sd->offline();
+                        }
+                        while( eim_sd->getAdaptationSER() );
+
+                        do_offline_eim = do_offline_eim || eim_sd->getOfflineStep();
+                    }
+
+                    model->assemble(); //Affine decomposition has changed since eim has changed
+                }
+                ++i;
+            }
+            while( crb->getOfflineStep() );
+        }
+
     FEELPP_DONT_INLINE
     void run()
         {
@@ -407,7 +486,13 @@ public:
                 }
             }
 
+            tic();
+            if( model->hasEim() && model->useSER() )
+            {
+                this->SER(); // Simultaneous EIM - RB
+            }
             this->loadDB();
+            toc("Offline", FLAGS_v>0);
 
             int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));
             SamplingMode run_sampling_type = ( SamplingMode )ioption(_name=_o( this->about().appName(),"run.sampling.mode" ));
@@ -629,12 +714,11 @@ public:
 
 
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
-            using namespace boost::assign;
-            std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "output error" )( "Conditionning" )( "l2_error" )( "h1_error" );
-            std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "output error" );
-            std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
-            std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
+            std::vector<std::string> pfemhdrs{"FEM Output", "PFEM Output", "FEM Time", "l2_error", "h1_error", "output error"};
+            std::vector<std::string> crbhdrs{"FEM Output", "FEM Time", "RB Output", "Error Bounds", "CRB Time", "output error", "Conditionning", "l2_error", "h1_error"};
+            std::vector<std::string> scmhdrs{"Lb","Lb Time", "Ub", "Ub Time", "FEM", "FEM Time", "output error"};
+            std::vector<std::string> crbonlinehdrs{"RB Output", "Error Bounds", "CRB Time"};
+            std::vector<std::string> scmonlinehdrs{"Lb", "Lb Time", "Ub", "Ub Time", "Rel.(FEM-Lb)"};
             hdrs[CRBModelMode::PFEM] = pfemhdrs;
             hdrs[CRBModelMode::CRB] = crbhdrs;
             hdrs[CRBModelMode::SCM] = scmhdrs;
@@ -768,8 +852,15 @@ public:
             vectorN_type time_crb_vector_prediction;
             vectorN_type time_crb_vector_error_estimation;
             vectorN_type relative_estimated_error_vector;
-
             vectorN_type scm_relative_error;
+
+            //Minimization problem
+            std::string min_func_str;
+            if( this->vm().count("crb.minimization-func") )
+                min_func_str = soption(_name="crb.minimization-func");
+            std::map<std::string,double> min_map, min_value;
+            std::map<std::string,parameter_type> min_mu;
+            fs::path min_file("min_func");
 
             bool solve_dual_problem = boption(_name="crb.solve-dual-problem");
 
@@ -794,7 +885,7 @@ public:
                 }
             }
 
-            if( M_mode==CRBModelMode::CRB )
+            if( M_mode==CRBModelMode::CRB || M_mode==CRBModelMode::PFEM )
             {
 
                 l2_error_vector.resize( Sampling->size() );
@@ -853,7 +944,7 @@ public:
 
             int sampling_size = Sampling->size();
 
-            BOOST_FOREACH( auto mu, *Sampling )
+            for( auto mu : *Sampling )
             {
                 int size = mu.size();
 
@@ -927,24 +1018,53 @@ public:
                                 boost::mpi::timer ti;
 
                                 model->computeAffineDecomposition();
-                                auto u_fem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
-                                std::ostringstream u_fem_str;
-                                u_fem_str << "u_fem(" << mu_str.str() << ")";
-                                u_fem.setName( u_fem_str.str()  );
+                                bool use_newton = option(_name="crb.use-newton").template as<bool>();
+                                element_type u_pfem;
+                                if( use_newton )
+                                    u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
+                                else
+                                    u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                                std::ostringstream u_pfem_str;
+                                u_pfem_str << "u_pfem(" << mu_str.str() << ")";
+                                u_pfem.setName( u_pfem_str.str()  );
 
                                 LOG(INFO) << "compute output\n";
                                 if( export_solution )
                                     {
-                                        std::string exportName = u_fem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
-                                        e->add( exportName, u_fem );
+                                        std::string exportName = u_pfem.name().substr(0,exportNameSize) + "-" + std::to_string(curpar);
+                                        e->add( exportName, u_pfem );
                                     }
-                                //model->solve( mu );
-                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
+                                auto u_fem = model->solve( mu );
+                                auto u_error = (( u_fem - u_pfem ).pow(2)).sqrt();
+                                auto l2_error = l2Norm( u_error );
+                                auto h1_error = h1Norm( u_error );
+                                auto output_fem = model->output( output_index,mu , u_fem, true);
+                                auto output_pfem = model->output( output_index,mu , u_pfem, true);
+                                auto output_error = math::abs( output_fem - output_pfem );
+
+                                std::vector<double> o{output_fem, output_pfem, ti.elapsed(), l2_error, h1_error, output_error};
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
 
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                relative_error_vector[curpar-1] = output_error;
+                                time_fem_vector[curpar-1] = ti.elapsed();
+
                                 std::ofstream res(soption(_name="result-file") );
                                 res << "output="<< o[0] << "\n";
+
+                                if( this->vm().count("crb.minimization-func") )
+                                {
+                                    auto min_func = expr( min_func_str, "min_func" );
+                                    min_map[soption(_name="crb.minimization-param-name")] = output_fem;
+                                    auto min = min_func.evaluate( min_map );
+                                    if( min < min_value["fem"] || curpar == 1 )
+                                    {
+                                        min_value["fem"] = min;
+                                        min_mu["fem"] = mu;
+                                    }
+                                }
 
                             }
                             break;
@@ -955,13 +1075,13 @@ public:
                                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                                     std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
 
-
                                 boost::mpi::timer ti;
 
                                 LOG(INFO) << "solve crb\n";
                                 //google::FlushLogFiles(google::GLOG_INFO);
 
                                 //dimension of the RB (not necessarily the max)
+
                                 int N =  ioption(_name="crb.dimension");
 
                                 bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
@@ -1042,7 +1162,8 @@ public:
                                     {
                                         if( boption(_name="crb.solve-fem-monolithic") )
                                         {
-                                            u_fem = model->solveFemMonolithicFormulation( mu );
+                                            //u_fem = model->solveFemMonolithicFormulation( mu );
+                                            u_fem = model->solve( mu );
                                         }
                                         else
                                         {
@@ -1067,9 +1188,12 @@ public:
                                     }
 
                                     ti.restart();
-                                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
+                                    std::vector<double> ofem{model->output( output_index, mu, u_fem, false ), ti.elapsed()};
 
-                                    relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
+                                    if( boption(_name="crb.absolute-error") )
+                                        relative_error = std::abs( ofem[0]- ocrb);
+                                    else
+                                        relative_error = std::abs( ofem[0]- ocrb) /ofem[0];
                                     relative_estimated_error = output_estimated_error / ofem[0];
 
                                     //compute || u_fem - u_crb||_L2
@@ -1090,8 +1214,16 @@ public:
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
 
-                                    l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                                    h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                    if( boption(_name="crb.absolute-error") )
+                                    {
+                                        l2_error = l2Norm( u_error );
+                                        h1_error = h1Norm( u_error );
+                                    }
+                                    else
+                                    {
+                                        l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                                        h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                    }
 
                                     output_fem = ofem[0];
                                     time_fem = ofem[1]+time_fem_solve;
@@ -1117,6 +1249,18 @@ public:
                                         }
                                     }
 
+                                    if( this->vm().count("crb.minimization-func") )
+                                    {
+                                        auto min_func = expr( min_func_str, "min_func" );
+                                        min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
+                                        auto min = min_func.evaluate( min_map );
+                                        if( min < min_value["fem"] || curpar == 1 )
+                                        {
+                                            min_value["fem"] = min;
+                                            min_mu["fem"] = mu;
+                                        }
+                                    }
+
                                 }//compute-fem-during-online
 
                                 if ( crb->errorType()==2 )
@@ -1124,7 +1268,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
 
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
@@ -1144,6 +1288,18 @@ public:
                                         }
                                         std::ofstream res(soption(_name="result-file") );
                                         res << "output="<< ocrb << "\n";
+
+                                        if( this->vm().count("crb.minimization-func") )
+                                        {
+                                            auto min_func = expr( min_func_str, "min_func" );
+                                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                            auto min = min_func.evaluate( min_map );
+                                            if( min < min_value["rb"] || curpar == 1 )
+                                            {
+                                                min_value["rb"] = min;
+                                                min_mu["rb"] = mu;
+                                            }
+                                        }
                                     }
 
                                 }//end of crb->errorType==2
@@ -1155,7 +1311,7 @@ public:
                                     auto output_vector=o.template get<0>();
                                     double output_vector_size=output_vector.size();
                                     double ocrb = output_vector[output_vector_size-1];//output at last time
-                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( ocrb )( relative_estimated_error )( time_crb_prediction )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
@@ -1176,6 +1332,19 @@ public:
                                         }
                                         std::ofstream res(soption(_name="result-file") );
                                         res << "output="<< ocrb << "\n";
+
+                                        if( this->vm().count("crb.minimization-func") )
+                                        {
+                                            auto min_func = expr( min_func_str, "min_func" );
+                                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                                            auto min = min_func.evaluate( min_map );
+                                            if( min < min_value["rb"] || curpar == 1 )
+                                            {
+                                                min_value["rb"] = min;
+                                                min_mu["rb"] = mu;
+                                            }
+                                        }
+
                                     }//end of proc==master
                                 }//end of else (errorType==2)
 
@@ -1669,7 +1838,7 @@ public:
                                             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
                                         std::string file_name = "convergence"+mu_str+".dat";
                                         std::ofstream conv( file_name );
-                                        BOOST_FOREACH( auto en, conver )
+                                        for( auto en : conver )
                                             conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
                                             "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
 #endif
@@ -1689,7 +1858,7 @@ public:
 
                                 if ( crb->errorType()==2 )
                                     {
-                                        std::vector<double> v = boost::assign::list_of( ocrb )( ti.elapsed() );
+                                        std::vector<double> v{ocrb, ti.elapsed()};
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
                                         printEntry( ostr, mu, v );
                                     }
@@ -1705,7 +1874,7 @@ public:
                                         auto output_vector = o.template get<0>();
                                         double output_vector_size = output_vector.size();
                                         double output = output_vector[ output_vector_size-1 ];
-                                        std::vector<double> v = boost::assign::list_of( output )( output_estimated_error )( ti.elapsed() );
+                                        std::vector<double> v{output, output_estimated_error, ti.elapsed()};
                                         std::cout << "output=" << ocrb << " with " << o.template get<1>() <<
                                             " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
                                         printEntry( ostr, mu, v );
@@ -1747,7 +1916,7 @@ public:
                                             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
                                         std::string file_name = "convergence-scm-"+mu_str+".dat";
                                         std::ofstream conv( file_name );
-                                        BOOST_FOREACH( auto en, conver )
+                                        for( auto en : conver )
                                             conv << en.first << "\t" << en.second.get<0>()  ;
                                     }
                                 }//end of cvg-study
@@ -1806,7 +1975,7 @@ public:
                     }
                     estimated_error_outputs_storage.resize( cutting_direction0 );
                     Sampling->logEquidistributeProduct( sampling_each_direction , mu_ );
-                    BOOST_FOREACH( auto mu, *Sampling )
+                    for( auto mu : *Sampling )
                     {
                         double x = mu(vary_mu_comp0);
                         double mu0 = mu(vary_mu_comp0);
@@ -1982,7 +2151,7 @@ public:
             if (boption(_name="crb.scm.cvg-study") && M_mode==CRBModelMode::SCM )
                 this->doTheScmConvergenceStat( Sampling->size() );
 
-            if ( compute_stat && compute_fem && M_mode==CRBModelMode::CRB )
+            if ( compute_stat && compute_fem && (M_mode==CRBModelMode::CRB || M_mode==CRBModelMode::PFEM) )
             {
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;
@@ -2007,15 +2176,22 @@ public:
                 double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
                 double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
                 double mean_time_fem = time_fem_vector.mean();
-                double max_time_crb_prediction = time_crb_vector_prediction.maxCoeff(&index_max_time_crb_prediction);
-                double min_time_crb_prediction = time_crb_vector_prediction.minCoeff(&index_min_time_crb_prediction);
-                double mean_time_crb_prediction = time_crb_vector_prediction.mean();
+                double max_time_crb_prediction = 0;
+                double min_time_crb_prediction = 0;
+                double mean_time_crb_prediction = 0;
                 double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
                 double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
                 double mean_output_error = relative_error_vector.mean();
                 double max_estimated_error = 0;
                 double min_estimated_error = 0;
                 double mean_estimated_error = 0;
+
+                if( M_mode==CRBModelMode::CRB )
+                {
+                    max_time_crb_prediction = time_crb_vector_prediction.maxCoeff(&index_max_time_crb_prediction);
+                    min_time_crb_prediction = time_crb_vector_prediction.minCoeff(&index_min_time_crb_prediction);
+                    mean_time_crb_prediction = time_crb_vector_prediction.mean();
+                }
 
                 if( crb->errorType()!=2 )
                 {
@@ -2046,6 +2222,23 @@ public:
                     file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb_prediction<<"\n\n";
                 }
             }//end of compute-stat CRB
+
+            // Find the output which minimize user-defined functional
+            if( this->vm().count("crb.minimization-func") && proc_number == Environment::worldComm().masterRank() )
+            {
+                if( M_mode==CRBModelMode::PFEM || compute_fem )
+                {
+                    file_summary_of_simulations << "[Minimization - PFEM] min value = " << min_value["fem"] << " at mu = [";
+                    int size = min_mu["fem"].size();
+                    for ( int i=0; i<size-1; i++ ) file_summary_of_simulations << (min_mu["fem"])[i] <<" , ";
+                    file_summary_of_simulations << (min_mu["fem"])[size-1]<<" ]\n ";
+                }
+                file_summary_of_simulations << "[Minimization - RB] min value = " << min_value["rb"] << " at mu = [";
+                int size = min_mu["rb"].size();
+                for ( int i=0; i<size-1; i++ ) file_summary_of_simulations << (min_mu["rb"])[i] <<" , ";
+                file_summary_of_simulations << (min_mu["rb"])[size-1]<<" ]\n ";
+            }
+
             if( M_mode==CRBModelMode::SCM )
             {
                 LOG( INFO ) << "compute statistics \n";
@@ -2106,7 +2299,7 @@ private:
                 os  << hdrmanip( oprec+7 ) << s.str();
             }
 
-            BOOST_FOREACH( auto output, outputhdrs )
+            for( auto output : outputhdrs )
             {
                 os << hdrmanip( 15 ) << output;
             }
@@ -2121,7 +2314,7 @@ private:
             for ( int i = 0; i < mu.size(); ++i )
                 os  << std::right <<std::setw( oprec+7 ) << dmanip << mu[i];
 
-            BOOST_FOREACH( auto o, outputs )
+            for( auto o : outputs )
             {
                 os << tabmanip( 15 ) << o;
             }
@@ -2503,8 +2696,8 @@ private:
     void doTheScmConvergenceStat( int sampling_size )
     {
         auto N = crb->scm()->KMax();
-        std::list<std::string> list_error_type = boost::assign::list_of("RelativeError");
-        BOOST_FOREACH( auto error_name, list_error_type)
+        std::list<std::string> list_error_type{"RelativeError"};
+        for( auto error_name : list_error_type)
         {
             std::ofstream conv;
             std::string file_name = "cvg-scm-"+ error_name +"-stats.dat";

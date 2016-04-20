@@ -41,7 +41,7 @@
 
 */
 /*****************************************************************************/
-int METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+int Feel_METIS_MeshToDual(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
           idx_t *ncommon, idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
 {
   int sigrval=0, renumber=0;
@@ -111,7 +111,7 @@ SIGTHROW:
 
 */
 /*****************************************************************************/
-int METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
+int Feel_METIS_MeshToNodal(idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, 
           idx_t *numflag,  idx_t **r_xadj, idx_t **r_adjncy)
 {
   int sigrval=0, renumber=0;
