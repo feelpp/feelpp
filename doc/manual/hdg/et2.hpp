@@ -211,7 +211,7 @@ ElectroThermal<Dim, OrderP>::run()
 
     #else
     // build the big matrix associated to bilinear form over Vh x Wh x Mh
-    auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Xh,Wh,Mh,Ch,Xh));
+    auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh,Ch,Xh));
 #endif
     BlocksBaseVector<double> hdg_vec(5);
     hdg_vec(0,0) = backend()->newVector( Vh );
@@ -428,7 +428,7 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a24 = form2(_trial=Ch, _test=Wh,_matrix=A,
                      _rowstart=1,
                      _colstart=3);
-    a24 += integrate( _range=markedfaces(mesh,"bottom"), _expr=tau_constant *
+    a24 += integrate( _range=markedfaces(mesh,"bottom"), _expr=-tau_constant *
                       ( pow(h(),M_tau_order)*id(w) ) * idt(nu) );
 
     auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
@@ -478,12 +478,11 @@ ElectroThermal<Dim, OrderP>::assemble_A_and_F( MatrixType A,
     auto a44 = form2(_trial=Ch, _test=Ch,_matrix=A,
         _rowstart=3,
         _colstart=3);
-    a44 += integrate( _range=markedfaces(mesh,"bottom"), _expr=pow(h(),M_tau_order)*id(nu)*idt(nu) );
+    a44 += integrate( _range=markedfaces(mesh,"bottom"), _expr=-pow(h(),M_tau_order)*id(nu)*idt(nu) );
 
 
     auto a55 = form2(_trial=Xh, _test=Xh,_matrix=A,
-                     _rowstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost(),
-                     _colstart=Vh->nLocalDofWithGhost()+Wh->nLocalDofWithGhost()+Mh->nLocalDofWithGhost()+Ch->nLocalDofWithGhost());
+                     _rowstart=4, _colstart=4);
     a55 += integrate(_range=elements(mesh), _expr=k*gradt(T)*trans(grad(T)));
     a55 += integrate(_range=markedfaces(mesh,"R"), _expr=doption("h")*idt(T)*id(q));
 }
