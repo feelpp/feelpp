@@ -31,6 +31,7 @@
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/importeracusimrawmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/domain.hpp>
 
@@ -54,8 +55,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( required
       ( mesh, *)
-
-        ) // 4. one required parameter, and
+      ) // 4. one required parameter, and
 
     ( optional
       ( prefix,(std::string), "" )
@@ -77,8 +77,8 @@ BOOST_PARAMETER_FUNCTION(
       ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
-        )
-    )
+      )
+                         )
 {
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -94,8 +94,7 @@ BOOST_PARAMETER_FUNCTION(
     fs::path mesh_name=fs::path(Environment::findFile(filenameExpand));
     int proc_rank = worldcomm.globalRank();
     //Environment::isMasterRank()
-    if ( proc_rank == 0 )
-        std::cout << "[loadMesh] Loading " << fs::system_complete(mesh_name) << "\n";
+   
     LOG_IF( WARNING,
             mesh_name.extension() != ".geo" &&
             mesh_name.extension() != ".json" &&
@@ -106,17 +105,24 @@ BOOST_PARAMETER_FUNCTION(
     if ( mesh_name.extension() == ".geo" )
     {
 #if defined(FEELPP_HAS_HDF5)
-        auto json_fname = mesh_name.stem().string()+".json";
-        if ( boption(_name="gmsh.use-json") && fs::exists(json_fname) )
+        if ( boption(_name="mesh.load.enable") && soption(_name="mesh.load.format") == "json+h5" )
         {
-            LOG(INFO) << " Loading mesh in JSON/HDF5 format";
-            CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
-            auto m = boost::make_shared<_mesh_type>();
-            m->loadHDF5( json_fname );
-            return m;
+            auto json_fname = mesh_name.stem().string()+".json";
+            if( fs::exists(json_fname) )
+            {
+                if ( proc_rank == 0 )
+                    std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
+                CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
+                _mesh_ptrtype m( mesh );
+                m->setWorldComm( worldcomm );
+                m->loadHDF5( json_fname );
+                return m;
+            }
         }
 #endif
-
+        if ( proc_rank == 0 )
+            std::cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
         auto m = createGMSHMesh(
             _mesh=mesh,
             _desc= (!desc) ? geo( _filename=mesh_name.string(),
@@ -136,7 +142,7 @@ BOOST_PARAMETER_FUNCTION(
             _partitions=partitions,
             _partitioner=partitioner,
             _partition_file=partition_file
-            );
+                                );
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
@@ -147,20 +153,22 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( mesh_name.extension() == ".msh"  )
     {
+        if ( proc_rank == 0 )
+            std::cout << "[loadMesh] Loading mesh in format msh: " << fs::system_complete(mesh_name) << "\n";
         auto m = loadGMSHMesh( _mesh=mesh,
-                             _filename=mesh_name.string(),
-                             _straighten=straighten,
-                             _refine=refine,
-                             _update=update,
-                             _physical_are_elementary_regions=physical_are_elementary_regions,
-                             _worldcomm=worldcomm,
-                             _respect_partition=respect_partition,
-                             _rebuild_partitions=rebuild_partitions,
-                             _rebuild_partitions_filename=rebuild_partitions_filename,
-                             _partitions=partitions,
-                             _partitioner=partitioner,
-                             _partition_file=partition_file
-            );
+                               _filename=mesh_name.string(),
+                               _straighten=straighten,
+                               _refine=refine,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               _respect_partition=respect_partition,
+                               _rebuild_partitions=rebuild_partitions,
+                               _rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file
+                               );
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
             m->saveHDF5( mesh_name.stem().string()+".json" );
@@ -170,29 +178,54 @@ BOOST_PARAMETER_FUNCTION(
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        LOG(INFO) << " Loading mesh in HDF5 format";
+        if ( proc_rank == 0 )
+            std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
-        auto m = boost::make_shared<_mesh_type>();
-        m->loadHDF5( mesh_name.string() );
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        m->loadHDF5( mesh_name.string(), update );
         return m;
     }
 #endif
 
+    // Acusim Raw Mesh
+    if ( mesh_name.extension() == ".arm"  )
+    {
+        if ( proc_rank == 0 )
+            std::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        ImporterAcusimRawMesh<_mesh_type> i( mesh_name.string(), worldcomm );
+        i.visit( m.get() );
+        m->components().reset();
+        m->components().set( update );
+        m->updateForUse();
+        return m;
+    }
+
+    mesh_name = soption(_name="gmsh.domain.shape");
+    if ( proc_rank == 0 )
+        std::cout << "[loadMesh] no file name or unrecognized extension provided\n"
+                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: " 
+                  << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_mesh=mesh,
-                          _desc=domain( _name=soption(_name="gmsh.domain.shape"), _h=h, _worldcomm=worldcomm ),
-                          _h=h,
-                          _refine=refine,
-                          _update=update,
-                          _physical_are_elementary_regions=physical_are_elementary_regions,
-                          _force_rebuild=force_rebuild,
-                          _worldcomm=worldcomm,
-                          _respect_partition=respect_partition,
-                          _rebuild_partitions=rebuild_partitions,
-                          _rebuild_partitions_filename=rebuild_partitions_filename,
-                          _partitions=partitions,
-                          _partitioner=partitioner,
-                          _partition_file=partition_file );
+                            _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
+                            _h=h,
+                            _refine=refine,
+                            _update=update,
+                            _physical_are_elementary_regions=physical_are_elementary_regions,
+                            _force_rebuild=force_rebuild,
+                            _worldcomm=worldcomm,
+                            _respect_partition=respect_partition,
+                            _rebuild_partitions=rebuild_partitions,
+                            _rebuild_partitions_filename=rebuild_partitions_filename,
+                            _partitions=partitions,
+                            _partitioner=partitioner,
+                            _partition_file=partition_file );
 
 #if defined(FEELPP_HAS_HDF5)
     if ( savehdf5 )

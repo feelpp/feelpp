@@ -21,7 +21,7 @@
 
 
 FRENAME(
-    METIS_PartGraphRecursive, 
+    Feel_METIS_PartGraphRecursive, 
     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
@@ -36,7 +36,7 @@ FRENAME(
     
 
 FRENAME(
-    METIS_PartGraphKway,
+    Feel_METIS_PartGraphKway,
     (idx_t *nvtxs, idx_t *ncon, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
      idx_t *vsize, idx_t *adjwgt, idx_t *nparts, real_t *tpwgts, 
      real_t *ubvec, idx_t *options, idx_t *edgecut, idx_t *part),
@@ -50,7 +50,7 @@ FRENAME(
 )
 
 FRENAME(
-  METIS_MeshToDual,
+  Feel_METIS_MeshToDual,
   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *ncommon, idx_t *numflag, 
    idx_t **r_xadj, idx_t **r_adjncy),
   (ne, nn, eptr, eind, ncommon, numflag, r_xadj, r_adjncy),
@@ -62,7 +62,7 @@ FRENAME(
 
 
 FRENAME(
-  METIS_MeshToNodal,
+  Feel_METIS_MeshToNodal,
   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *numflag, idx_t **r_xadj, 
    idx_t **r_adjncy),
   (ne, nn, eptr, eind, numflag, r_xadj, r_adjncy),
@@ -74,7 +74,7 @@ FRENAME(
   
 
 FRENAME(
-  METIS_PartMeshNodal,
+  Feel_METIS_PartMeshNodal,
   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
    idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, idx_t *epart, 
    idx_t *npart),
@@ -87,7 +87,7 @@ FRENAME(
 
 
 FRENAME(
-  METIS_PartMeshDual,
+  Feel_METIS_PartMeshDual,
   (idx_t *ne, idx_t *nn, idx_t *eptr, idx_t *eind, idx_t *vwgt, idx_t *vsize, 
    idx_t *ncommon, idx_t *nparts, real_t *tpwgts, idx_t *options, idx_t *objval, 
    idx_t *epart, idx_t *npart),
@@ -100,7 +100,7 @@ FRENAME(
 
 
 FRENAME(
-  METIS_NodeND,
+  Feel_METIS_NodeND,
   (idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, idx_t *options, idx_t *perm, 
    idx_t *iperm),
   (nvtxs, xadj, adjncy, vwgt, options, perm, iperm),
@@ -112,7 +112,7 @@ FRENAME(
 
 
 FRENAME(
-  METIS_Free,
+  Feel_METIS_Free,
   (void *ptr),
   (ptr),
   METIS_FREE,
@@ -123,7 +123,7 @@ FRENAME(
 
 
 FRENAME(
-  METIS_SetDefaultOptions,
+  Feel_METIS_SetDefaultOptions,
   (idx_t *options),
   (options),
   METIS_SETDEFAULTOPTIONS,

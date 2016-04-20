@@ -186,7 +186,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_type const& U, vector_ptrtype& R,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_external_storage_type const& U, vector_ptrtype& R,
                                                                     bool BuildCstPart, bool UseJacobianLinearTerms) const
 {
     using namespace Feel::vf;
@@ -359,7 +359,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_fluid_type const& U,
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_fluid_external_storage_type const& U,
                                                                     sparse_matrix_ptrtype& J , vector_ptrtype& R,
                                                                     bool BuildCstPart ) const
 {

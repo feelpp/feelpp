@@ -228,6 +228,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
 
     //--------------------------------------------------------------//
+    // gravity
+    std::string gravityStr;
+    if ( Environment::vm().count(prefixvm(this->prefix(),"gravity-force").c_str()) )
+        gravityStr = soption(_name="gravity-force",_prefix=this->prefix());
+    else if (nDim == 2 )
+        gravityStr = "{0,-9.80665}";
+    else if (nDim == 3 )
+        gravityStr = "{0,0,-9.80665}";
+    M_gravityForce = expr<nDim,1,2>( gravityStr );
+    M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
+
+    // thermodynamics coupling
+    M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
+    M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
 
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
@@ -894,6 +908,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
         this->updateMarkedZonesInMesh();
 
+    if ( M_useThermodynModel )
+    {
+        M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
+                                                         this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
+        M_thermodynModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
+        M_thermodynModel->loadMesh( this->mesh() );
+        // disable thermo exporter if we use fluid exporter
+        M_thermodynModel->setDoExportResults( false );
+        M_thermodynModel->init( !M_useGravityForce/*false*/ );
+    }
     //-------------------------------------------------//
     // add ALE markers
     if (this->isMoveDomain())
@@ -938,24 +962,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     this->initPostProcess();
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
-    size_type currentStartIndex = 0;
-    currentStartIndex += M_Xh->nLocalDofWithGhost();
+    size_type currentStartIndex = 2;// velocity and pressure before
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startDofIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
-        currentStartIndex += M_XhMeanPressureLM->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
     }
     if (this->hasMarkerDirichletBClm())
     {
-        M_startDofIndexFieldsInMatrix["dirichletlm"] = currentStartIndex;
-        currentStartIndex += this->XhDirichletLM()->nLocalDofWithGhost() ;
+        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        M_startDofIndexFieldsInMatrix["windkessel"] = currentStartIndex;
-        currentStartIndex += 2*this->nFluidOutletWindkesselImplicit();
+        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
     }
-
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
+        M_thermodynModel->setColStartInMatrix( currentStartIndex );
+        M_thermodynModel->setRowStartInVector( currentStartIndex );
+        ++currentStartIndex;
+    }
     //-------------------------------------------------//
     // prepare block vector
     int nBlock = this->nBlockMatrixGraph();
@@ -983,6 +1009,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             ++cptBlock;
         }
     }
+    // thermodynamics model
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
+    }
+
     // init vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
     //-------------------------------------------------//

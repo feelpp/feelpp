@@ -6,6 +6,12 @@
   "Description":"Magnetostatique",
   "Parameters":
   {
+    "mu_0":
+    {
+      "type":"constant",
+      "name":"model parameter 1",
+      "value":12.566370614e-7
+    },
     "a":
     {
       "type":"constant",
@@ -49,6 +55,16 @@
         "Border":
         {
           "expr":"{0,0,0}:x:y:z"
+        }
+      }
+    },
+    "phi":
+    {
+      "Dirichlet":
+      {
+        "Border":
+        {
+          "expr":"0:x:y:z"
         }
       }
     }

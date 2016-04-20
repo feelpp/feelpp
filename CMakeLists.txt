@@ -308,14 +308,15 @@ include( feelpp.dependencies )
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
-#   there is README.md file in the directory
+#   there is README.{md,adoc} file in the directory
 #   that the directory path include "research"
 # for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
 # option which are set to OFF by default
 MESSAGE(STATUS "[feelpp] Feel++ projects :")
 feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
 foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md )
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
+      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
     string(TOUPPER ${project} PROJECT)
     if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "HYDROMORPHO" OR ${PROJECT} STREQUAL "SIVIBIRPP"  )
       option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)

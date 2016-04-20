@@ -17,30 +17,29 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 {
+    // restart exporter
     if (this->doRestart() && this->restartPath().empty())
     {
-        if (!M_isHOVisu)
+        if ( this->isStandardModel() )
         {
-            if ( M_exporter->doExport() ) M_exporter->restart(time);
+            if (!M_isHOVisu)
+            {
+                if ( M_exporter->doExport() )
+                    M_exporter->restart(this->timeInitial());
+            }
+            else
+            {
+#if defined(FEELPP_HAS_VTK)
+                if ( M_exporter_ho->doExport() )
+                    M_exporter_ho->restart(this->timeInitial());
+#endif
+            }
         }
         else
         {
-#if defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho->doExport() ) M_exporter_ho->restart(time);
-#endif
+            if ( M_exporter_1dReduced->doExport() )
+                M_exporter_1dReduced->restart(this->timeInitial());
         }
-    }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters1dReduced( double time )
-{
-    if (this->doRestart() && this->restartPath().empty())
-    {
-        if ( M_exporter_1dReduced->doExport() ) M_exporter_1dReduced->restart(time);
     }
 }
 
@@ -115,6 +114,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
         doExport_str=(doExport_str.empty())?"fsi":doExport_str+" - fsi";
     if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::Pid ) )
         doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
+    for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+        doExport_str=(doExport_str.empty())?userFieldName:doExport_str+" - "+userFieldName;
 
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
@@ -135,8 +136,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoNeumannEulerianFrameBC()
            << this->getInfoRobinBC()
            << this->getInfoFluidStructureInterfaceBC();
-    *_ostr << "\n   Space Discretization"
-           << "\n     -- msh file name   : " << this->mshfileStr()
+    *_ostr << "\n   Space Discretization";
+    if ( this->hasGeofileStr() )
+        *_ostr << "\n     -- geo file name   : " << this->geofileStr();
+    *_ostr << "\n     -- msh file name   : " << this->mshfileStr()
            << "\n     -- nb elt in mesh : " << nElt
            << "\n     -- nb dof (displacement) : " << nDof
            << "\n     -- polynomial order : " << nOrder;
@@ -285,19 +288,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     if (this->isStandardModel())
     {
-        auto & vecAlgebraic = M_blockVectorSolution.vector();
-        auto const& fieldDisp = this->fieldDisplacement();
-        for (int k=0;k< M_XhDisplacement->nLocalDofWithGhost() ;++k)
-            vecAlgebraic->set(k, fieldDisp(k) );
+        M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldDisplacement(), 0 );
 
         if ( M_useDisplacementPressureFormulation )
         {
-            auto const& fieldPressure = this->fieldPressure();
-            size_type startDofIndexPressure = this->startDofIndexFieldsInMatrix().find("pressure")->second;
-            for (int k=0;k< M_XhPressure->nLocalDofWithGhost() ;++k)
-                vecAlgebraic->set( startDofIndexPressure+k, fieldPressure(k) );
+            size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldPressure(), blockIndexPressure );
         }
-        vecAlgebraic->close();
+        M_blockVectorSolution.vector()->close();
     }
     else if (this->is1dReducedModel())
     {
@@ -399,6 +397,20 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
             M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-interface-from-fluid"), this->fieldVelocityInterfaceFromFluid() );
             hasFieldToExport = true;
         }
+        for ( std::string const& userFieldName : M_postProcessUserFieldExported )
+        {
+            if ( this->hasFieldUserScalar( userFieldName ) )
+            {
+                M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserScalar( userFieldName ) );
+                hasFieldToExport = true;
+            }
+            else if ( this->hasFieldUserVectorial( userFieldName ) )
+            {
+                M_exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserVectorial( userFieldName ) );
+                hasFieldToExport = true;
+            }
+        }
+
         //M_exporter->step( time )->add( "prestress", *U_displ_struct_prestress);
         if ( hasFieldToExport )
             M_exporter->save();
@@ -501,7 +513,37 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
     }
 
 }
+#if 0
+namespace detail
+{
+template <typename ElementTensor2Type>
+typename ElementTensor2Type::component_functionspace_type::element_ptrtype
+componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c1, uint16_type c2 )
+{
+    auto compSpace = uTensor2.compSpace();
+    auto uComp = compSpace->elementPtr();
+    static const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
+    auto dofTensor2 = uTensor2.functionSpace()->dof();
+    auto dofComp = compSpace->dof();
+    int nLocDofPerComp = dofTensor2->nLocalDof( true );
+    CHECK(  nLocDofPerComp == dofComp->nLocalDof() ) << "must be same size";
 
+    for ( auto const& elt : elements(uTensor2.mesh()) )
+    {
+        for ( size_type j =0; j < nLocDofPerComp;++j )
+        {
+            uint16_type compTensor2 = c1*nComponents2+c2;
+            size_type gdofTensor2 = dofTensor2->localToGlobal( elt, j, compTensor2 ).index();
+            double val = uTensor2( gdofTensor2 );
+
+            size_type gdofComp = dofComp->localToGlobal( elt, j, 0 ).index();
+            uComp->set( gdofComp, val );
+        }
+    }
+    return uComp;
+}
+} // namespace detail
+#endif
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -523,6 +565,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
+                                                    "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -554,6 +598,13 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
                 int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("pressure",ptNameExport);
                 if ( ptIdInCtx >= 0 )
                     M_postProcessMeasuresContextPressure->replace( ptIdInCtx, ptCoord );
+            }
+            else if ( fieldNameStressScalar.find( field ) != fieldNameStressScalar.end() )
+            {
+                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
+                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId(field,ptNameExport);
+                if ( ptIdInCtx >= 0 )
+                    M_postProcessMeasuresContextStressScalar->replace( ptIdInCtx, ptCoord );
             }
         }
     }
@@ -600,6 +651,67 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
             hasMeasure = true;
         }
     }
+    if ( M_postProcessMeasuresContextStressScalar )
+    {
+        this->updateStressCriterions();
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> evalAtNodes;
+        for ( std::string const& field : fieldNameStressScalar )
+        {
+            if ( !this->postProcessMeasuresEvaluatorContext().has(field) ) continue;
+
+            if ( field == "Von-Mises")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldVonMisesCriterions()) );
+            else if ( field == "Tresca")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldTrescaCriterions()) );
+            else if ( field == "princial-stress-1")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldPrincipalStresses(0)) );
+            else if ( field == "princial-stress-2")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldPrincipalStresses(1)) );
+            else if ( field == "princial-stress-3" && nDim == 3 )
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldPrincipalStresses(2)) );
+            else if ( field == "stress_xx")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::X)) );
+            else if ( field == "stress_xy")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::Y)) );
+            else if ( field == "stress_xz" && nDim == 3 )
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::X,Component::Z)) );
+            else if ( field == "stress_yx")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::X)) );
+            else if ( field == "stress_yy")
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::Y)) );
+            else if ( field == "stress_yz" && nDim == 3)
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Y,Component::Z)) );
+            else if ( field == "stress_zx" && nDim == 3)
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::X)) );
+            else if ( field == "stress_zy" && nDim == 3)
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::Y)) );
+            else if ( field == "stress_zz" && nDim == 3)
+                evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextStressScalar,
+                                                   _expr=idv(this->fieldStressTensor().comp(Component::Z,Component::Z)) );
+            for ( int ctxId=0;ctxId<M_postProcessMeasuresContextStressScalar->nPoints();++ctxId )
+            {
+                if ( !this->postProcessMeasuresEvaluatorContext().has( field, ctxId ) ) continue;
+                std::string const& ptNameExport = this->postProcessMeasuresEvaluatorContext().name( field,ctxId );
+                this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
+                hasMeasure = true;
+            }
+
+        }
+    }
+
 
     // extremum evaluation
     for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum() )
@@ -654,6 +766,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
         // up current time
         this->updateTime( M_newmark_displ_1dReduced->time() );
     }
+
+    // update user functions which depend of time only
+    this->updateUserFunctions(true);
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
 

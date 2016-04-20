@@ -1,0 +1,184 @@
+Feel++ 
+======
+:toc:
+:toc-placement: preamble
+:toclevels: 1
+
+The Finite Element Embedded Library in C++
+
+== Gitter Discussion Forum 
+
+image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
+
+== Continuous Integration
+
+|===
+| Platform & Compiler | `master` | `develop` 
+| Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| Buildkite Ubuntu 14.04 
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feel-plus-plus-consortium/feelpp"] 
+|===
+
+== Introduction
+
+link:http://www.feelpp.org[Feel\+\+] is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
+
+ * the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
+ * the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
+ * build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE),
+ * the creation of a library entirely in C++ allowing to create complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic.
+
+
+Some basic installation procedure are available in the link:INSTALL.md[INSTALL] file, the detailled process is available link:http://www.feelpp.org/docs/develop/BuildingP.html[here].
+
+== Releases
+
+Here are the latest releases of Feel++
+
+ * Feel++ link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.45132"]
+
+ * Feel++ link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
+
+== Documentation
+
+ * develop branch : link:http://www.feelpp.org/docs/develop/index.html[Feel++ Online Reference Manual]
+ * master branch (latest release) : link:http://www.feelpp.org/docs/master/index.html[Feel++ Online Reference Manual]
+
+== Features
+
+ * 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
+ * continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
+ * domain specific embedded language in C++ for variational formulations
+ * interfaced with link:http://www.mcs.anl.gov/petsc/[PETSc] for linear and non-linear solvers
+ * seamless parallel computations using PETSc
+ * interfaced with link:http://www.grycap.upv.es/slepc/[SLEPc] for large-scale sparse standard and generalized eigenvalue  solvers
+ * supports link:http://www.geuz.org/gmsh[Gmsh] for mesh generation
+ * supports link:http://www.geuz.org/gmsh[Gmsh] for post-processing (including on high order geometries)
+ * supports link:http://www.paraview.org[Paraview] and CEI/Ensight for post-processing and the following file formats: ensight gold, gmsh, xdmf
+
+
+== Examples
+
+=== Laplacian in 2D using P3 Lagrange basis functions
+
+Here is a full example to solve
+$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
+
+[source,cpp]
+----
+#include <feel/feel.hpp>
+
+int main(int argc, char**argv )
+{
+    using namespace Feel;
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=feel_options(),
+                     _about=about(_name="qs_laplacian",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
+    auto mesh = unitSquare();
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto l = form1( _test=Vh );
+    l = integrate(_range=elements(mesh),
+                  _expr=id(v));
+
+    auto a = form2( _trial=Vh, _test=Vh );
+    a = integrate(_range=elements(mesh),
+                  _expr=gradt(u)*trans(grad(v)) );
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+          _expr=constant(0.) );
+    a.solve(_rhs=l,_solution=u);
+
+    auto e = exporter( _mesh=mesh, _name="qs_laplacian" );
+    e->add( "u", u );
+    e->save();
+    return 0;
+}
+----
+
+
+=== Bratu equation in 2D
+
+Here is a full non-linear example - the Bratu equation - to solve
+$$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+
+[source,cpp]
+----
+#include <feel/feel.hpp>
+
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description bratuoptions( "Bratu problem options" );
+    bratuoptions.add_options()
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ),
+                "exp() coefficient value for the Bratu problem" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 30 ),
+                 "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ),
+               "first h value to start convergence" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
+    return bratuoptions.add( Feel::feel_options() );
+}
+
+/**
+ * Bratu Problem
+ *
+ * solve \f$ -\Delta u + \lambda \exp(u) = 0, \quad u_\Gamma = 0\f$ on \f$\Omega\f$
+ */
+int
+main( int argc, char** argv )
+{
+
+    using namespace Feel;
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="bratu",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org"));
+    auto mesh = unitSquare();
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+    double penalbc = option(_name="penalbc").as<double>();
+    double lambda = option(_name="lambda").as<double>();
+
+    auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        {
+            auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
+            a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+            a += integrate( elements( mesh ), lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
+            a += integrate( boundaryfaces( mesh ),
+               ( - trans( id( v ) )*( gradt( u )*N() ) - trans( idt( u ) )*( grad( v )*N()  + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
+        };
+    auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+        {
+            auto u = Vh->element();
+            u = *X;
+            auto r = form1( _test=Vh, _vector=R );
+            r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
+            r +=  integrate( elements( mesh ),  lambda*exp( idv( u ) )*id( v ) );
+            r +=  integrate( boundaryfaces( mesh ),
+               ( - trans( id( v ) )*( gradv( u )*N() ) - trans( idv( u ) )*( grad( v )*N() ) + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
+        };
+    u.zero();
+    backend()->nlSolver()->residual = Residual;
+    backend()->nlSolver()->jacobian = Jacobian;
+    backend()->nlSolve( _solution=u );
+
+    auto e = exporter( _mesh=mesh );
+    e->add( "u", u );
+    e->save();
+}
+----
+
+

@@ -43,6 +43,7 @@
 
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/kdtree.hpp>
 
 namespace Feel
@@ -297,7 +298,7 @@ public:
 
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                BOOST_FOREACH( auto mu, V )
+                for( auto mu : V )
                     super::push_back( mu );
             }
 
@@ -487,7 +488,7 @@ public:
                                 mu = parameterspace_type::random( M_space, false );
                             }
 
-                            BOOST_FOREACH( auto _mu, *this )
+                            for( auto _mu : *this )
                             {
                                 if( mu == _mu )
                                     already_exist=true;
@@ -732,7 +733,7 @@ public:
                 element_type mu( M_space );
                 int size = mu.size();
                 int number = 0;
-                BOOST_FOREACH( mu, *this )
+                for( auto mu : *this )
                 {
                     file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
                     for(int i=0; i<size-1; i++)
@@ -929,7 +930,7 @@ public:
                 int index = 0;
                 int i = 0;
                 double mumin_norm = mumin.norm();
-                BOOST_FOREACH( mu, *this )
+                for( auto mu : *this )
                 {
                     if ( mu.norm() < mumin_norm  )
                     {
@@ -974,7 +975,7 @@ public:
                 int index = 0;
                 int i = 0;
                 double mumax_norm = mumax.norm();
-                BOOST_FOREACH( mu, *this )
+                for( auto mu : *this )
                 {
                     if ( mu.norm() > mumax_norm  )
                     {
@@ -1429,10 +1430,10 @@ ParameterSpace<P>::Sampling::complement() const
     {
         complement = sampling_ptrtype( new sampling_type( M_space, 1, M_supersampling ) );
         complement->clear();
-        BOOST_FOREACH( auto mu_supersampling, *M_supersampling )
+        for( auto mu_supersampling : *M_supersampling )
         {
             is_in_sampling=false;
-            BOOST_FOREACH( auto mu_sampling, *this )
+            for( auto mu_sampling : *this )
             {
                 if( mu_supersampling == mu_sampling )
                 {

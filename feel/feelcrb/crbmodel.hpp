@@ -116,7 +116,6 @@ public:
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
-
     typedef typename model_type::backend_type backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -222,7 +221,10 @@ public:
         M_is_initialized( false ),
         M_model( new model_type() ),
         M_backend( backend() ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -236,13 +238,15 @@ public:
         M_Fqm(),
         M_model( new model_type ),
         M_is_initialized( false ),
-        M_vm( vm ),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -259,13 +263,15 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_vm(),
         M_mode( CRBModelMode::PFEM ),
         M_backend( backend(_name="backend") ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -279,13 +285,15 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_vm(),
         M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
         M_backend_l2( backend( _name="backend-l2") ),
-        M_alreadyCountAffineDecompositionTerms( false )
+        M_alreadyCountAffineDecompositionTerms( false ),
+        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
+        M_numberOfTimeStep( 1 ),
+        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
         this->init();
     }
@@ -302,14 +310,15 @@ public:
         M_Fqm( o.M_Fqm ),
         M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
-        M_vm( o.M_vm ),
         M_mode( o.M_mode ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
         M_backend_l2( o.M_backend_l2 ),
-        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms )
-
+        M_alreadyCountAffineDecompositionTerms( o.M_alreadyCountAffineDecompositionTerms ),
+        M_isSteadyModel( o.M_isSteadyModel ),
+        M_numberOfTimeStep( o.M_numberOfTimeStep ),
+        M_useSER( o.M_useSER )
     {
         this->init();
     }
@@ -331,19 +340,19 @@ public:
                                                  _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                  _worldcomm=M_backend_primal->comm(),
                                                  _prefix=M_backend_primal->prefix() ,
-                                                 _rebuild=true);
+                                                 _rebuild=M_useSER);
         M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                                _backend= M_backend_dual,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                                _worldcomm=M_backend_dual->comm(),
                                                _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=true);
+                                               _rebuild=M_useSER);
         M_preconditioner_l2 = preconditioner(_pc=(PreconditionerType) M_backend_l2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                              _backend= M_backend_l2,
                                              _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_l2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
                                              _worldcomm=M_backend_l2->comm(),
                                              _prefix=M_backend_l2->prefix() ,
-                                             _rebuild=true);
+                                             _rebuild=M_useSER);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -364,18 +373,21 @@ public:
         }
 
         auto Xh = M_model->functionSpace();
-        u = Xh->element();
-        v = Xh->element();
+        M_u = Xh->element();
+        M_v = Xh->element();
 
         bool symmetric = boption(_name="crb.use-symmetric-matrix");
         bool stock = boption(_name="crb.stock-matrices");
 
+        // Access to eim eventually built in initModel
+        if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
+            M_has_eim = true;
+
         if( stock )
             this->computeAffineDecomposition();
+        else
+            this->countAffineDecompositionTerms(); //already called in computeAffineDecomposition() if stock
 
-        this->countAffineDecompositionTerms();
-
-        M_inner_product_matrix=this->newMatrix();
         if( this->hasEim() || (!symmetric) )
         {
             CHECK( stock )<<"There is some work to do before using operators free when using EIM, for now we compute (and stock matrices) affine decomposition to assemble the inner product \n";
@@ -384,14 +396,14 @@ public:
             //as the inner product
             auto muref = this->refParameter();
             auto betaqm = computeBetaLinearDecompositionA( muref );
+            M_inner_product_matrix = this->newMatrix();
             M_inner_product_matrix->zero();
             for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
             {
                 for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
-                {
                     M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
-                }
             }
+
             //check that the matrix is filled, else we take energy matrix
             double norm=M_inner_product_matrix->l1Norm();
             if( norm == 0 && symmetric )
@@ -408,7 +420,15 @@ public:
         }
         M_preconditioner_l2->setMatrix( M_inner_product_matrix );
 
-        M_bdf = M_model->bdfModel();
+
+        if ( this->isSteady() )
+            M_numberOfTimeStep=1;
+        else
+        {
+            M_numberOfTimeStep=0;
+            for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
+                ++M_numberOfTimeStep;
+        }
     }
 
     //@}
@@ -443,9 +463,9 @@ public:
     /**
      * \return  the \p variables_map
      */
-    po::variables_map vm() const
+    po::variables_map const& vm() const
     {
-        return M_vm;
+        return Environment::vm();
     }
 
     /**
@@ -776,11 +796,11 @@ public:
     {
         auto solution = M_model->functionSpace()->element();
         solution = *T;
-        return computeBetaQm( solution , mu , time , only_time_dependent_terms );
+        return computeBetaQm( solution , mu , time , only_time_dependent_terms);
     }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
     {
-        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
+        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
     }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
     {
@@ -820,9 +840,95 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
+    betaqm_type computePicardBetaQm( parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computePicardBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms );
+    }
+
+    betaqm_type computePicardBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        boost::tuple<beta_vector_type,beta_vector_type,std::vector<beta_vector_type> >  beta_coefficients;
+        beta_coefficients = M_model->computeBetaQm( mu , time , only_time_dependent_terms );
+        return beta_coefficients;
+    }
+    betaqm_type computePicardBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type,std::vector<beta_vector_type> > steady_beta;
+
+        steady_beta = M_model->computePicardBetaQm( mu );
+
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
+    betaqm_type computePicardBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        auto solution = M_model->functionSpace()->element();
+        solution = *T;
+        return computePicardBetaQm( solution , mu , time , only_time_dependent_terms);
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , double time=0 , bool only_time_dependent_terms=false )
+    {
+        return computePicardBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time , only_time_dependent_terms);
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        return M_model->computePicardBetaQm( T, mu, time , only_time_dependent_terms );
+    }
+    betaqm_type computePicardBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 , bool only_time_dependent_terms=false )
+    {
+        beta_vector_type betaAqm, betaMqm ;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type,std::vector<beta_vector_type> > steady_beta;
+
+        steady_beta = M_model->computePicardBetaQm(T, mu );
+        betaAqm = steady_beta.template get<0>();
+        betaFqm = steady_beta.template get<1>();
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
+
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+    }
 
     element_ptrtype assembleInitialGuess( parameter_type const& mu );
-
+    void assemble(){ return M_model->assemble(); }
     /**
      * \brief update the model wrt \p mu
      */
@@ -859,6 +965,13 @@ public:
     element_type solveFemMonolithicFormulation( parameter_type const& mu );
     element_type solveFemDualMonolithicFormulation( parameter_type const& mu );
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemUsingAffineDecompositionNewton( parameter_type const& mu );
+    void solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
+    void solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
+    bool updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm);
+    bool updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
+    bool updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm);
     element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
@@ -878,8 +991,6 @@ public:
     {
         return M_model->isInitialized();
     }
-
-
 
     /**
      * returns list of eim objects ( scalar continuous)
@@ -1029,7 +1140,7 @@ public:
      */
     void countAffineDecompositionTerms()
     {
-        if( M_alreadyCountAffineDecompositionTerms )
+        if( M_alreadyCountAffineDecompositionTerms && !M_useSER)
             return;
         else
             M_alreadyCountAffineDecompositionTerms=true;
@@ -1121,8 +1232,8 @@ public:
                 for(int q=0; q<M_Qm; q++)
                 {
                     M_mMaxM[q]=M_Mqm[q].size();
-                    if( M_mMaxM[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxM[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Qa=M_Aqm.size();
@@ -1130,8 +1241,8 @@ public:
                 for(int q=0; q<M_Qa; q++)
                 {
                     M_mMaxA[q]=M_Aqm[q].size();
-                    if( M_mMaxA[q] > 1 )
-                        M_has_eim=true;
+                    // if( M_mMaxA[q] > 1 )
+                    //     M_has_eim=true;
                 }
 
                 M_Nl=M_Fqm.size();
@@ -1144,8 +1255,9 @@ public:
                     for(int q=0; q<M_Ql[output]; q++)
                     {
                         M_mMaxF[output][q]=M_Fqm[output][q].size();
-                        if( M_mMaxF[output][q] > 1 )
-                            M_has_eim=true;
+                        //std::cout << "countAffineDecomposition terms : M_mMaxF[" << output << "][" << q << "] = " << M_mMaxF[output][q] << std::endl;
+                        // if( M_mMaxF[output][q] > 1 )
+                        //     M_has_eim=true;
                     }
                 }
 
@@ -1419,12 +1531,20 @@ public:
     }
 
     /*
-     * return true if the model use EIM
+     * return true if the model uses EIM
      */
     bool hasEim()
     {
         return M_has_eim;
     }
+    /*
+     * return true if the model uses SER
+     */
+    bool useSER()
+    {
+        return M_useSER;
+    }
+
 
     eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
@@ -1505,6 +1625,12 @@ public:
         if( Aq.size() == 0 )
         {
             boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            {
+                auto RF = M_model->computePicardAffineDecomposition();
+                M_RF_Aqm = RF.template get<1>();
+                M_RF_Fqm = RF.template get<2>();
+            }
         }
         else
         {
@@ -1639,10 +1765,16 @@ public:
 
         //first check is model provides a small affine decomposition or not
         boost::tie( Aq, Fq ) = M_model->computeAffineDecompositionLight();
-
         if( Aq.size() == 0 )
         {
             boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+
+            if( boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+            {
+                auto RF = M_model->computePicardAffineDecomposition();
+                M_RF_Aqm = RF.template get<0>();
+                M_RF_Fqm = RF.template get<1>();
+            }
         }
         else
         {
@@ -1756,7 +1888,6 @@ public:
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
 
-
     std::vector< std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition( )
     {
         return M_model->computeInitialGuessAffineDecomposition( );
@@ -1766,7 +1897,9 @@ public:
     {
         initial_guess_type initial_guess_v;
         initial_guess_v = M_model->computeInitialGuessAffineDecomposition();
-        this->assembleInitialGuessV( initial_guess_v);
+
+        this->assembleInitialGuessV( initial_guess_v); //Compute \int (q_initialguess) v
+
         for(int q=0; q<M_InitialGuessVector.size(); q++)
         {
             for(int m=0; m<M_InitialGuessVector[q].size(); m++)
@@ -1774,7 +1907,6 @@ public:
         }
         return M_InitialGuessV;
     }
-
 
     /**
      * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
@@ -1826,6 +1958,14 @@ public:
         }
     }
 
+    /**
+     * Returns the matrix \c Aqm ( if Newton is used, Aqm(q,m) returns the Jacobian)
+     */
+    std::vector< std::vector<sparse_matrix_ptrtype> > RF_Aqm(){ return M_RF_Aqm; }
+    /**
+     * Returns the matrix \c Fqm ( if Newton is used, Fqm(0,q,m) returns the Residual)
+     */
+    std::vector< std::vector< vector_ptrtype > > RF_Fqm(){ return M_RF_Fqm[0]; }
 
     /**
      * \brief Returns the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (time dependent)
@@ -2025,6 +2165,7 @@ public:
         if( boption(_name="crb.stock-matrices") )
         {
             //in this case matrices have already been stocked
+            //M_Mqm[q][m]->printMatlab("mass_matrix.m");
             return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
         }
         else
@@ -2062,7 +2203,6 @@ public:
     {
         return M_model->betaInitialGuessQm();
     }
-
 
     /**
      * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
@@ -2102,7 +2242,7 @@ public:
         }
     }
 
-    element_ptrtype  InitialGuessQm( uint16_type q, int m ) const
+    element_ptrtype InitialGuessQm( uint16_type q, int m ) const
     {
         return M_InitialGuessV[q][m];
     }
@@ -2200,6 +2340,13 @@ public:
             }
         }
 
+        return result;
+    }
+
+    value_type InitialGuessVqm( uint16_type q, uint16_type m, element_type const& xi)
+    {
+        value_type result=0;
+        result = inner_product( *M_InitialGuessV[q][m] , xi );
         return result;
     }
 
@@ -2358,87 +2505,49 @@ public:
         return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
     }
 
-    double timeStep()
+    bdf_ptrtype /*const&*/ bdfModel() const
     {
-        return timeStep( mpl::bool_<model_type::is_time_dependent>() );
+        return M_model->bdfModel();
     }
-    double timeStep( mpl::bool_<true> )
-    {
-        double timestep;
 
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        if ( is_steady )
-            timestep=1e30;
-        else timestep = M_bdf->timeStep();
+    int numberOfTimeStep() const { return M_numberOfTimeStep; }
+
+    double timeStep() const
+    {
+        double timestep = 1e30;
+        if ( !this->isSteady() )
+            timestep = this->bdfModel()->timeStep();
         return timestep;
     }
-    double timeStep( mpl::bool_<false> )
+    double timeInitial() const
     {
-        return 1e30;
+        double timeinitial = 0.;
+        if ( !this->isSteady() )
+            timeinitial = this->bdfModel()->timeInitial();
+        return timeinitial;
     }
-
-    double timeInitial()
+    double timeFinal() const
     {
-        return timeInitial( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    double timeInitial( mpl::bool_<true> )
-    {
-        return M_bdf->timeInitial();
-    }
-    double timeInitial( mpl::bool_<false> )
-    {
-        return 0;
-    }
-
-    double timeFinal()
-    {
-        return timeFinal( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    double timeFinal( mpl::bool_<true> )
-    {
-        double timefinal;
-
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        if ( is_steady )
-            timefinal=1e30;
-        else
-            timefinal = M_bdf->timeFinal();
+        double timefinal=1e30;
+        if ( !this->isSteady() )
+            timefinal = this->bdfModel()->timeFinal();
         return timefinal;
     }
-    double timeFinal( mpl::bool_<false> )
+    int timeOrder() const
     {
-        return 1e30;
-    }
-
-    int timeOrder()
-    {
-        return timeOrder( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    int timeOrder( mpl::bool_<true> )
-    {
-        return M_bdf->timeOrder();
-    }
-    int timeOrder( mpl::bool_<false> )
-    {
-        return 0;
+        int order = 0;
+        if ( !this->isSteady() )
+            order = this->bdfModel()->timeOrder();
+        return order;
     }
 
 
-    bool isSteady()
+    bool isSteady() const
     {
-        return isSteady( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    bool isSteady( mpl::bool_<true> )
-    {
-        bool is_steady = boption(_name="crb.is-model-executed-in-steady-mode");
-        return is_steady;
-    }
-    bool isSteady( mpl::bool_<false> )
-    {
-        return true;
+        return M_isSteadyModel;
     }
 
-    bool isLinear()
+    bool isLinear() const
     {
         return is_linear ;
     }
@@ -2482,11 +2591,14 @@ protected:
     //! model
     model_ptrtype M_model;
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Jqm;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > M_Rqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_RF_Aqm;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > M_RF_Fqm;
+
+
 private:
     bool M_is_initialized;
-
-    //! variables_map
-    po::variables_map M_vm;
 
     //! mode for CRBModel
     CRBModelMode M_mode;
@@ -2519,7 +2631,7 @@ private:
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> );
-    element_type u,v;
+    element_type M_u, M_v;
 
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
@@ -2540,9 +2652,11 @@ private:
 
     sparse_matrix_ptrtype M_inner_product_matrix;
 
-    bdf_ptrtype M_bdf;
+    bool M_isSteadyModel;
+    int M_numberOfTimeStep;
 
     bool M_has_eim;
+    bool M_useSER;
 
 };
 
@@ -2695,8 +2809,8 @@ struct AssembleInitialGuessVInCompositeCase
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleInitialGuessVInCompositeCase( element_type  const v ,
-                                          initial_guess_type  const initial_guess ,
+    AssembleInitialGuessVInCompositeCase( element_type const v ,
+                                          initial_guess_type const initial_guess ,
                                           boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
@@ -2708,6 +2822,8 @@ struct AssembleInitialGuessVInCompositeCase
     void
     operator()( const T& t ) const
     {
+        using namespace Feel::vf;
+
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
@@ -2717,13 +2833,11 @@ struct AssembleInitialGuessVInCompositeCase
             int m_max = M_crb_model->mMaxInitialGuess(q);
             for( int m = 0; m < m_max ; m++)
             {
-                auto initial_guess_qm = M_crb_model->InitialGuessVector(q,m);
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
-                form1( _test=Xh, _vector=initial_guess_qm ) +=
-                    integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( view ) )*Feel::vf::id( v ) );
+                form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
+                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*id( v ) );
             }
         }
-
     }
 
     element_type  M_composite_v;
@@ -2755,7 +2869,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
 
-    auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
+    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( M_u ),id( M_v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -2783,7 +2897,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> , bool light_v
     auto Xh = M_model->functionSpace();
 
     index_vector_type index_vector;
-    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( u , v );
+    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( M_u , M_v );
     fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
 
     auto op_mass = preassemble_mass_matrix_in_composite_case.opmass();
@@ -2810,7 +2924,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     auto mesh = Xh->mesh();
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
+        integrate( _range=elements( mesh ), _expr=inner(idt( M_u ),id( M_v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -2826,7 +2940,8 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this );
+    //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( M_u , M_v , this );
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
@@ -2865,7 +2980,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
     }
 
     index_vector_type index_vector;
-    AssembleInitialGuessVInCompositeCase<TruthModelType> assemble_initial_guess_v_in_composite_case ( v , initial_guess , this->shared_from_this());
+    AssembleInitialGuessVInCompositeCase<TruthModelType> assemble_initial_guess_v_in_composite_case ( M_v , initial_guess , this->shared_from_this());
     fusion::for_each( index_vector, assemble_initial_guess_v_in_composite_case );
 
     for(int q = 0; q < q_max; q++ )
@@ -2898,7 +3013,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=elements( mesh ), _expr=idv( initial_guess[q][m] )*id( v )  );
+                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( M_v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }
@@ -3298,6 +3413,95 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type const& mu )
+{
+    sparse_matrix_ptrtype J = this->newMatrix();
+    vector_ptrtype R = this->newVector();
+
+    // auto initialguess = this->functionSpace()->elementPtr();
+    // initialguess = this->assembleInitialGuess( mu ) ;
+
+
+    boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
+
+    backend()->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+                                                          boost::ref( *this ), _1, _2, mu );
+    backend()->nlSolver()->setType( TRUST_REGION );
+
+    auto solution = this->functionSpace()->element();
+    backend()->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+    return solution;
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
+{
+    J->zero();
+
+    beta_vector_type betaJqm;
+    this->updateJacobian( X, M_Jqm );
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Qa(); ++q )
+    {
+        for(int m=0; m<this->mMaxA(q); m++)
+        {
+            J->addMatrix( betaJqm[q][m], M_Jqm[q][m] );
+        }
+    }
+}
+
+template<typename TruthModelType>
+void
+CRBModel<TruthModelType>::solveFemUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu)
+{
+    R->zero();
+    std::vector< beta_vector_type > betaRqm;
+    this->updateResidual( X, M_Rqm );
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = this->computeBetaQm( X , mu , 0 );
+
+    for ( size_type q = 0; q < this->Ql( 0 ); ++q )
+    {
+        for(int m=0; m<this->mMaxF(0,q); m++)
+            R->add( betaRqm[0][q][m] , *M_Rqm[0][q][m] );
+    }
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( vector_ptrtype const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateJacobian( u, Jqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateJacobian( element_type const& X, std::vector< std::vector<sparse_matrix_ptrtype> >& Jqm )
+{
+    return M_model->updateJacobian( X, Jqm );
+}
+
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( vector_ptrtype const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    element_type u = this->functionSpace()->element();
+    u = *X;
+    return this->updateResidual( u, Rqm );
+}
+template<typename TruthModelType>
+bool
+CRBModel<TruthModelType>::updateResidual( element_type const& X, std::vector< std::vector< std::vector<vector_ptrtype> > >& Rqm)
+{
+    return M_model->updateResidual( X, Rqm );
 }
 
 template<typename TruthModelType>

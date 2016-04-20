@@ -30,6 +30,7 @@
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
+#include <feel/feelmodels/modelfunctions.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 
@@ -46,6 +47,9 @@ public:
     virtual ~ModelProperties();
 
     WorldComm const& worldComm() const { return M_worldComm; }
+
+    pt::ptree const& pTree() const { return M_p; }
+    pt::ptree & pTree() { return M_p; }
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
@@ -68,6 +72,9 @@ public:
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
+
+    ModelFunctions & functions() { return M_functions; }
+    ModelFunctions const& functions() const { return M_functions; }
 
     std::string getEntry(std::string &s);
 
@@ -94,6 +101,7 @@ private:
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
     ModelPostprocess M_postproc;
+    ModelFunctions M_functions;
 };
 
 

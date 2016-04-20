@@ -269,6 +269,7 @@ size_type numPoints() const
 /**
  * \return the edge index of the edge \p n in the element \p e
  */
+FEELPP_DEPRECATED
 element_edge_type const& localEdgeId( element_type const& e,
                                       size_type const n ) const
 {
@@ -278,6 +279,7 @@ element_edge_type const& localEdgeId( element_type const& e,
 /**
  * \return the edge index of the edge \p n in the element \p e
  */
+FEELPP_DEPRECATED
 element_edge_type const& localEdgeId( size_type const e,
                                       size_type const n ) const
 {
@@ -581,60 +583,74 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
                                              permutation ) );
     }
 
-    element_iterator iv,  en;
-    boost::tie( iv, en ) = this->elementsRange();
-
-    for ( ; iv != en; ++iv )
+#if !defined( NDEBUG )
+    if ( this->components().test( MESH_UPDATE_FACES ) )
     {
-        for ( size_type j = 0; j < numLocalFaces(); j++ )
+        element_iterator iv,  en;
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
         {
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
+            for ( size_type j = 0; j < numLocalFaces(); j++ )
+            {
+                FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
+            }
         }
     }
-
+#endif
     DVLOG(2) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
-
+#if 1
 template <typename GEOSHAPE>
 void
 Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 {
     boost::timer ti;
-    std::map<std::set<int>, size_type > _edges;
-    typename std::map<std::set<int>, size_type >::iterator _edgeit;
+    boost::unordered_map<std::set<size_type>, size_type > _edges;
+    typename boost::unordered_map<std::set<size_type>, size_type >::iterator _edgeit;
     int next_edge = 0;
-    M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
+    //M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
+    bool edgeinserted = false;
+
+    boost::unordered_map<size_type, edge_pair_type> _oriented_edges;
+    typedef typename boost::unordered_map<size_type, edge_pair_type>::iterator oe_iterator;
 
     size_type vid, i1, i2;
-    element_type ele;
-    face_type bele;
+    const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
+
 
     // First We check if we have already Edges stored
-    if ( ! this->edges().empty() )
+    if ( !this->edges().empty() )
     {
         // dump first the existing edges, to maintain the correct numbering
         // if everything is correct, the numbering structure will reflect
         // the actual edge numbering
-
-        for ( size_type j = 0; j < this->edges().size(); ++j )
+        edge_iterator eit = this->beginEdge();
+        edge_iterator een = this->endEdge();
+        for ( ; eit != een ; )
         {
-            std::set<int> s;
-            i1 = ( this->edge( j ).point( 0 ) ).id();
-            i2 = ( this->edge( j ).point( 1 ) ).id();
-            s.insert( i1 );
-            s.insert( i2 );
-            bool edgeinserted = false;
+            i1 = eit->point( 0 ).id();
+            i2 = eit->point( 1 ).id();
+            std::set<size_type> s( { i1,i2 } );
 
             boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
 
             if ( edgeinserted )
+            {
+                size_type newEdgeId = _edgeit->second;
+                this->edges().modify( eit, [&newEdgeId]( edge_type& e ) { e.setId( newEdgeId ); } );
                 ++next_edge;
-
+                ++eit;
+            }
+            else
+            {
+                eit = this->edges().erase( eit );
+            }
+#if 0
             FEELPP_ASSERT( edgeinserted )( i1 )( i2 )(j)( this->edge( j ).id() )( _edgeit->second )( this->edge( j ).marker() )
                 ( this->edge( _edgeit->second ).point( 0 ).node() )( this->edge( _edgeit->second ).point( 1 ).node() )
                 ( this->edge( j ).point( 0 ).node() )( this->edge( j ).point( 1 ).node() ).error( "Two identical Edges stored in EdgeList" );
             FEELPP_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
-
+#endif
         }
     }
 
@@ -643,52 +659,52 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
     edge_type edg;//(this->worldComm());
     edg.setProcessIdInPartition( this->worldComm().localRank() );
+    // reset the process id (edge not connected to an active elt take this value)
+    edg.setProcessId( invalid_rank_type_value );
+    // next edge inserted are on boundary
+    edg.setOnBoundary( true, 0 );
 
-    if ( this->edges().empty() )
+    if ( true )//this->edges().empty() )
     {
         // We want that the first edges be those on the boundary, in order to obey the paradigm for
         // a Mesh3D
-        const location_faces& location_index=this->faces().template get<Feel::detail::by_location>();
-        location_face_iterator ifa;
-        location_face_iterator efa;
-        boost::tie( ifa, efa ) = location_index.equal_range( boost::make_tuple( true ) );
-
+        location_face_iterator ifa = this->beginFaceOnBoundary();
+        location_face_iterator efa = this->endFaceOnBoundary();
         for ( ; ifa!=efa; ++ifa )
         {
             for ( uint16_type j = 0; j < face_type::numEdges; j++ )
             {
-                std::set<int> s;
-                i1 = bele.eToP( j, 0 );
-                i2 = bele.eToP( j, 1 );
-                // go to global
-                i1 = ( ifa->point( i1 ) ).id();
-                i2 = ( ifa->point( i2 ) ).id();
-                s.insert( i1 );
-                s.insert( i2 );
-                bool edgeinserted = false;
+                i1 = ifa->point( face_type::eToP( j, 0 ) ).id();
+                i2 = ifa->point( face_type::eToP( j, 1 ) ).id();
+                std::set<size_type> s( { i1,i2 } );
+
                 boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
 
-                if ( edgeinserted )
-                    ++next_edge;
 
-                // reset the process id (edge not connected to an active elt take this value)
-                edg.setProcessId( invalid_rank_type_value );
-
+                edge_iterator eit;
                 if ( edgeinserted )
                 {
                     // set edge id
                     edg.setId( _edgeit->second );
-                    edg.setOnBoundary( true, 0 );
+                    ++next_edge;
 
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                        edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
+                        edg.setPoint( k, ifa->point( face_type::eToP( j, k ) ) );
 
                     // TODO: should assocate a marker to the edge here ?
                     //edg.addElement( ifa->ad_first() );
-                    this->addEdge( edg );
+                    //this->addEdge( edg );
+                    eit = this->edges().insert( this->edges().end(), edg );
+                }
+                else
+                {
+                    eit = this->edgeIterator( _edgeit->second );
+                    if ( !eit->isOnBoundary() )
+                        this->edges().modify( eit, []( edge_type& e ) { e.setOnBoundary( true, 0 ); } );
                 }
                 // set the process id from element (only active element)
-                if (!ifa->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(ifa->processId()) );
+                if ( !ifa->isGhostCell() && eit->processId() != ifa->processId() )
+                    this->edges().modify( eit, Feel::detail::UpdateProcessId(ifa->processId()) );
             }
         }
     }
@@ -696,8 +712,11 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
-    std::map<size_type, edge_pair_type> _oriented_edges;
-    typedef typename std::map<size_type, edge_pair_type>::iterator oe_iterator;
+    // reset the process id (edge not connected to an active elt take this value)
+    edg.setProcessId( invalid_rank_type_value );
+    // we have already inserted edges on the boundary so
+    // this one _is_ not on the boundary
+    edg.setOnBoundary( false );
 
     for ( element_iterator elt_it = this->beginElement();
             elt_it != this->endElement(); ++elt_it )
@@ -706,53 +725,49 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
         for ( uint16_type j = 0; j < element_type::numEdges; ++j )
         {
-            uint16_type j1 = ele.eToP( j, 0 );
-            uint16_type j2 = ele.eToP( j, 1 );
+            auto const& pt0 = elt_it->point( element_type::eToP( j, 0 ) );
+            auto const& pt1 = elt_it->point( element_type::eToP( j, 1 ) );
+            i1 = pt0.id();
+            i2 = pt1.id();
+            std::set<size_type> s( { i1,i2 } );
 
-            // go to global
-            i1 = ( elt_it->point( j1 ) ).id();
-            i2 = ( elt_it->point( j2 ) ).id();
-            std::set<int> s;
-            s.insert( i1 );
-            s.insert( i2 );
-            bool edgeinserted = false;
             boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
 
-            if ( edgeinserted )
-                ++next_edge;
+            //M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
+            size_type edgeId = _edgeit->second;
 
-            M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
-
-            // reset the process id (edge not connected to an active elt take this value)
-            edg.setProcessId( invalid_rank_type_value );
-
+            edge_iterator eit;
             if ( edgeinserted )
             {
-                FEELPP_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
+#if !defined(NDEBUG)
+                FEELPP_ASSERT( edgeId >= this->numEdges() )( edgeId )( this->numEdges() ).error( "invalid edge index" );
+#endif
                 // set edge id
-                edg.setId( _edgeit->second );
-                // we have already inserted edges on the boundary so
-                // this one _is_ not on the boundary
-                edg.setOnBoundary( false );
-
-                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                edg.setId( edgeId );
+                // update connected element in edge
+                if ( updateComponentAddElements )
+                {
+                    edg.elements().clear();
                     edg.addElement( vid );
+                }
 
                 // number of points on the edge is 2 (number of
                 // vertices) plus the number of points in the
                 // interior of the edge
-                for ( uint16_type k = 0; k < 2 + element_type::nbPtsPerEdge; k++ )
-                    edg.setPoint( k, elt_it->point( elt_it->eToP( j, k ) ) );
+                edg.setPoint( 0, pt0 );
+                edg.setPoint( 1, pt1 );
+                for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
+                    edg.setPoint( k, elt_it->point( element_type::eToP( j, k ) ) );
 
-                // TODO: should assocate a marker to the edge here ?
-                //edg.addElement( vid );
-                this->addEdge( edg );
+                // add edge in mesh container
+                eit = this->edges().insert( this->edges().end(), edg );
+                // update next edge id
+                ++next_edge;
             }
-
             else
             {
-                auto eit =  this->edgeIterator( _edgeit->second );
-                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) || eit->marker().isOn() )
+                eit =  this->edgeIterator( edgeId );
+                if ( updateComponentAddElements || eit->marker().isOn() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
                     this->edges().modify( eit, [vid,j] ( edge_type& e ) { e.addElement( vid, j ); } );
@@ -760,56 +775,19 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             }
 
             // set the process id from element (only active element)
-            if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(elt_it->processId()) );
+            if (!elt_it->isGhostCell() && eit->processId() != elt_it->processId() )
+                this->edges().modify( eit, Feel::detail::UpdateProcessId(elt_it->processId()) );
 
-            this->elements().modify( elt_it,
-                                     Feel::detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
+            // update edge pointer in element
+            this->elements().modify( elt_it, Feel::detail::UpdateEdge<edge_type>( j, boost::cref( *eit ) ) );
 #if !defined(NDEBUG)
             this->elements().modify( elt_it,
                                      [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )( e.id() )( j ).error( "invalid edge in element" ); } );
 #endif
-        }
-        for ( uint16_type j = 0; j < element_type::numFaces; ++j )
-        {
-            auto fit = this->faces().iterator_to( elt_it->face(j));
-            for ( uint16_type e = 0; e < face_type::numEdges; ++e )
-            {
-                auto const& elt_edge = elt_it->edge( elt_it->f2e( j, e ) );
-                this->faces().modify( fit,
-                                      [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
-            }
-        }
-    }
 
-    DVLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
-    ti.restart();
-
-    for ( element_iterator elt_it = this->beginElement();
-            elt_it != this->endElement(); ++elt_it )
-    {
-        for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
-        {
-            size_type j1 = ele.eToP( j, 0 );
-            size_type j2 = ele.eToP( j, 1 );
-
-            // go to global
-            i1 = ( elt_it->point( j1 ) ).id();
-            i2 = ( elt_it->point( j2 ) ).id();
-            std::set<int> s;
-            s.insert( i1 );
-            s.insert( i2 );
-            bool edgeinserted = false;
-            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
-
-            if ( edgeinserted )
-                ++next_edge;
-
+            // update edge orientation in element
             edge_pair_type _current = std::make_pair( i1, i2 );
-
-            edge_permutation_type permutation( edge_permutation_type::IDENTITY );
-
-            oe_iterator _edge_it = _oriented_edges.find( _edgeit->second );
-
+            oe_iterator _edge_it = _oriented_edges.find( edgeId );
             if (  _edge_it != _oriented_edges.end() )
             {
                 edge_pair_type _default = _edge_it->second;
@@ -819,23 +797,337 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
                 if ( _default.first != _current.first )
                 {
-                    permutation = edge_permutation_type::REVERSE_PERMUTATION;
+                    edge_permutation_type permutation( edge_permutation_type::REVERSE_PERMUTATION );
                     this->elements().modify( elt_it,
-                                             Feel::detail::UpdateEdgePermutation<edge_permutation_type>( j,
-                                                     permutation ) );
+                                             Feel::detail::UpdateEdgePermutation<edge_permutation_type>( j,permutation ) );
                 }
             }
-
             else
             {
-                _oriented_edges.insert( std::make_pair( _edgeit->second, _current ) );
+                _oriented_edges.insert( std::make_pair( edgeId, _current ) );
             }
+
+        } // for ( uint16_type j = 0; j < element_type::numEdges; ++j )
+#if 0
+        // update edge pointer in faces
+        for ( uint16_type j = 0; j < element_type::numFaces; ++j )
+        {
+            if ( !elt_it->facePtr(j) ) continue;
+            auto fit = this->faces().iterator_to( elt_it->face(j));
+            for ( uint16_type e = 0; e < face_type::numEdges; ++e )
+            {
+                auto const& elt_edge = elt_it->edge( elt_it->f2e( j, e ) );
+                this->faces().modify( fit,
+                                      [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
+            }
+        }
+#endif
+    }
+
+    DVLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    // update edge pointers in faces
+    face_iterator face_it = this->beginFace();
+    face_iterator face_en = this->endFace();
+    for ( ; face_it != face_en ; ++face_it )
+    {
+        if ( !face_it->isConnectedTo0() )
+            continue;
+        auto const& elt0 = face_it->element0();
+        uint16_type j = face_it->pos_first();
+        for ( uint16_type e = 0; e < face_type::numEdges; ++e )
+        {
+            auto const& elt_edge = elt0.edge( elt0.f2e( j, e ) );
+            this->faces().modify( face_it,
+                                  [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
+
+        }
+    }
+    DVLOG(2) << "[Mesh3D::updateEdges] updating faces/edges : " << ti.elapsed() << "\n";
+    ti.restart();
+
+#if 0
+    edge_iterator e_it = this->beginEdge();
+    edge_iterator e_en = this->endEdge();
+
+    for ( ; e_it!=e_en; ++e_it )
+    {
+        // cleanup the edge data structure :
+
+        if ( e_it->numberOfElements() == 0 )
+        {
+            // remove all edges that are not connected to any elements
+            this->edges().erase( e_it );
+        }
+
+    }
+
+    DVLOG(2) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
+#endif
+    ti.restart();
+}
+#else
+
+template <typename GEOSHAPE>
+void
+Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
+{
+    boost::timer ti;
+    rank_type currentPid = this->worldComm().localRank();
+    boost::unordered_map<std::set<size_type>, edge_type* > _edges;
+    typename boost::unordered_map<std::set<size_type>, edge_type* >::iterator _edgeit;
+    int next_edge = 0;
+    bool edgeinserted = false;
+
+    std::vector<edge_type* > _edgesOrderedWithId;
+
+    std::vector< std::pair< element_iterator, std::vector<size_type> > > _elt2edges( this->numElements(),
+                                                                                     std::make_pair( this->endElement(),
+                                                                                                     std::vector<size_type>( element_type::numEdges, invalid_size_type_value ) ) );
+    size_type vid, i1, i2;
+
+    const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
+
+    // First We check if we have already Edges stored
+    if ( !this->edges().empty() )
+    {
+        // dump first the existing edges, to maintain the correct numbering
+        // if everything is correct, the numbering structure will reflect
+        // the actual edge numbering
+        edge_iterator eit = this->beginEdge();
+        edge_iterator een = this->endEdge();
+        for ( ; eit != een ; )
+        {
+            i1 = eit->point( 0 ).id();
+            i2 = eit->point( 1 ).id();
+            std::set<size_type> s( { i1,i2 } );
+
+            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, nullptr ) );
+
+            if ( edgeinserted )
+            {
+                _edgesOrderedWithId.push_back( new edge_type( *eit ) );
+
+                edge_type* edgePtr = _edgesOrderedWithId.back();
+                edgePtr->setId( next_edge++ );
+                _edgeit->second = edgePtr;
+                ++eit;
+            }
+            else
+            {
+                edge_type* edgePtr =  _edgeit->second;
+                if ( eit->marker() != edgePtr->marker() )
+                {
+                    edgePtr->setMarker2( eit->marker().value() );
+                }
+                eit = this->edges().erase( eit );
+            }
+        }
+        // clean edges container, rebuild properly after
+        this->edges().clear();
+    }
+
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    // We want that the first edges be those on the boundary, in order to obey the paradigm for
+    // a Mesh3D
+    location_face_iterator ifa = this->beginFaceOnBoundary();
+    location_face_iterator efa = this->endFaceOnBoundary();
+    for ( ; ifa!=efa; ++ifa )
+    {
+        for ( uint16_type j = 0; j < face_type::numEdges; j++ )
+        {
+            // go to global
+            i1 = ifa->point( face_type::eToP( j, 0 ) ).id();
+            i2 = ifa->point( face_type::eToP( j, 1 ) ).id();
+            std::set<size_type> s( { i1,i2 } );
+
+            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, nullptr ) );
+
+            edge_type* edgePtr;
+            if ( edgeinserted )
+            {
+                _edgesOrderedWithId.push_back( new edge_type( next_edge++ ) );
+
+                edgePtr = _edgesOrderedWithId.back();
+                edgePtr->setProcessIdInPartition( currentPid );
+                // set edge id
+                //edgePtr->setId( next_edge++ );
+                // reset the process id (edge not connected to an active elt take this value)
+                //edgePtr->setProcessId( invalid_rank_type_value );
+
+                for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
+                    edgePtr->setPoint( k, ifa->point( face_type::eToP( j, k ) ) );
+
+                _edgeit->second = edgePtr;
+            }
+            else
+            {
+                edgePtr =  _edgeit->second;
+            }
+            // set edge on boundary
+            edgePtr->setOnBoundary( true, 0 );
+            // set the process id from element (only active element)
+            if (!ifa->isGhostCell())
+                edgePtr->setProcessId( ifa->processId() );
+        }
+    }
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    boost::unordered_map<size_type, edge_pair_type> _oriented_edges;
+    typedef typename boost::unordered_map<size_type, edge_pair_type>::iterator oe_iterator;
+
+    size_type cptElt =0;
+    for ( element_iterator elt_it = this->beginElement();
+          elt_it != this->endElement(); ++elt_it, ++cptElt )
+    {
+        vid = elt_it->id();
+        auto & elt2edgesData = _elt2edges[cptElt];
+        elt2edgesData.first = elt_it;
+        for ( uint16_type j = 0; j < element_type::numEdges; ++j )
+        {
+            auto const& pt0 = elt_it->point( element_type::eToP( j, 0 ) );
+            auto const& pt1 = elt_it->point( element_type::eToP( j, 1 ) );
+            i1 = pt0.id();
+            i2 = pt1.id();
+
+            //i1 = elt_it->point( element_type::eToP( j, 0 ) ).id();
+            //i2 = elt_it->point( element_type::eToP( j, 1 ) ).id();
+            std::set<size_type> s( { i1,i2 } );
+
+            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, nullptr ) );
+
+            edge_type* edgePtr;
+            if ( edgeinserted )
+            {
+                _edgesOrderedWithId.push_back( new edge_type(next_edge++) );
+
+                edgePtr = _edgesOrderedWithId.back();
+                edgePtr->setProcessIdInPartition( currentPid );
+                // set edge id
+                //edgePtr->setId( next_edge++ );
+                // we have already inserted edges on the boundary so
+                // this one _is_ not on the boundary
+                edgePtr->setOnBoundary( false );
+                // reset the process id (edge not connected to an active elt take this value)
+                //edgePtr->setProcessId( invalid_rank_type_value );
+
+                if ( updateComponentAddElements ) //this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    edgePtr->addElement( vid );
+
+                // number of points on the edge is 2 (number of
+                // vertices) plus the number of points in the
+                // interior of the edge
+                edgePtr->setPoint( 0, pt0 );
+                edgePtr->setPoint( 1, pt1 );
+                for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
+                    edgePtr->setPoint( k, elt_it->point( element_type::eToP( j, k ) ) );
+
+                _edgeit->second = edgePtr;
+            }
+            else
+            {
+                edgePtr = _edgeit->second;
+
+                if ( updateComponentAddElements/*this->components().test( MESH_ADD_ELEMENTS_INFO )*/ || edgePtr->marker().isOn() )
+                    edgePtr->addElement( vid, j );
+            }
+
+            // set the process id from element (only active element)
+            if ( !elt_it->isGhostCell() )
+                edgePtr->setProcessId( elt_it->processId() );
+
+            elt2edgesData.second[j] = edgePtr->id();
+        }
+    }
+
+    for ( edge_type* edgePtr : _edgesOrderedWithId )
+    {
+        this->edges().insert( this->edges().end(),*edgePtr );
+        delete edgePtr;
+    }
+    _edgesOrderedWithId.clear();
+    _edges.clear();
+
+
+    /*D*/VLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    std::vector< std::pair< edge_iterator,edge_permutation_type> > eltToEdgeDatas( element_type::numEdges,
+                                                                                   std::make_pair( this->edges().end(), edge_permutation_type( edge_permutation_type::IDENTITY ) ) );
+    // update edge pointers and permutation in elements
+    for ( auto const& _elt2edgesData : _elt2edges )
+    {
+        element_iterator elt_it = _elt2edgesData.first;
+        for ( uint16_type j = 0; j < element_type::numEdges; ++j )
+        {
+            size_type edgeId = _elt2edgesData.second[j];
+            if ( edgeId == invalid_size_type_value )
+            {
+                eltToEdgeDatas[j].first = this->edges().end();
+                continue;
+            }
+            edge_iterator edgeIt = this->edgeIterator( edgeId );
+            eltToEdgeDatas[j].first = edgeIt;
+
+            // go to global
+            i1 = elt_it->point( element_type::eToP( j, 0 ) ).id();
+            i2 = elt_it->point( element_type::eToP( j, 1 ) ).id();
+
+            edge_pair_type _current = std::make_pair( i1, i2 );
+            oe_iterator _edge_it = _oriented_edges.find( edgeId );
+            if (  _edge_it != _oriented_edges.end() )
+            {
+                edge_pair_type _default = _edge_it->second;
+
+                FEELPP_ASSERT( _default.first == _current.first ||
+                               _default.first == _current.second ).error( "invalid edge index" );
+
+                if ( _default.first != _current.first )
+                {
+                    eltToEdgeDatas[j].second = edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION );
+                }
+                else
+                    eltToEdgeDatas[j].second = edge_permutation_type( edge_permutation_type::IDENTITY );
+            }
+            else
+            {
+                _oriented_edges.insert( std::make_pair( edgeId, _current ) );
+                eltToEdgeDatas[j].second = edge_permutation_type( edge_permutation_type::IDENTITY );
+            }
+        }
+        this->elements().modify( elt_it,
+                                 Feel::detail::UpdateEdgeAndEdgePermutation<edge_iterator,edge_permutation_type>( eltToEdgeDatas ) );
+    }
+    _elt2edges.clear();
+
+
+    /*D*/VLOG(2) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
+    ti.restart();
+
+    // update edge pointers in faces
+    face_iterator face_it = this->beginFace();
+    face_iterator face_en = this->endFace();
+    for ( ; face_it != face_en ; ++face_it )
+    {
+        if ( !face_it->isConnectedTo0() )
+            continue;
+        auto const& elt0 = face_it->element0();
+        uint16_type j = face_it->pos_first();
+        for ( uint16_type e = 0; e < face_type::numEdges; ++e )
+        {
+            auto const& elt_edge = elt0.edge( elt0.f2e( j, e ) );
+            this->faces().modify( face_it,
+                                  [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
 
         }
     }
 
-    DVLOG(2) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
-    ti.restart();
+
+
 #if 0
     edge_iterator e_it = this->beginEdge();
     edge_iterator e_en = this->endEdge();
@@ -857,6 +1149,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     ti.restart();
 }
 
+#endif
 } // Feel
 
 #endif /* __Mesh3D_H */
