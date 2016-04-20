@@ -2,13 +2,21 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
+    "Parameters":
+    {
+        "Tw":"293"
+    },
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "sigma":"50",
-            "k":"300"
+            "alpha":"3.35e-3",
+            "T0":"293",
+            "sigma0":"50",
+            "k0":"300",
+            "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
+            "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
         }
     },
     "BoundaryConditions":
