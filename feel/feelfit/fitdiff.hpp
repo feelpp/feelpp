@@ -60,14 +60,8 @@ template<typename ExprT, typename InterpolatorT>
 
             typedef FitDiff<ExprT,InterpolatorT> this_type;
 
-            explicit FitDiff( expression_type const & __expr, InterpolatorT __int) : M_expr(__expr),M_interpolator(__int)
-        {
-                M_interpolator.printInfo();
-        }
-            FitDiff(FitDiff const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) 
-        {
-                M_interpolator.printInfo();
-        }
+            explicit FitDiff( expression_type const & __expr, InterpolatorT __int) : M_expr(__expr),M_interpolator(__int){}
+            FitDiff(FitDiff const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) {}
             //~FitDiff(){}
             expression_type const& expression() const
             {
