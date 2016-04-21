@@ -25,6 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
 
+#ifndef __FEELPP_INTERPOLATOR_H
+#define __FEELPP_INTERPOLATOR_H 1
+
 enum interpol_type
 {
     P0=0,
@@ -51,10 +54,11 @@ class Interpolator
         LOG(INFO) << "Interpolator::M_data.size() = " << M_data.size() << std::endl;
         std::sort(M_data.begin(), M_data.end(), []( pair_type a, pair_type b){ return a.first < b.first; });
     }
+        Interpolator(const Interpolator &) = default;
         // Evaluate the interpolant
-        virtual value_type operator()(double _x) = 0;
+        virtual value_type operator()(double _x){return 0.;};
         // Evaluate the interpolant derivative
-        virtual value_type diff(double _x) = 0;
+        virtual value_type diff(double _x){return 0.;};
     protected:
         std::vector<std::pair<value_type, value_type>> M_data;
 };// class interpolBase
@@ -77,6 +81,7 @@ class InterpolatorP0 : public Interpolator
             center
         };
         InterpolatorP0( std::vector<pair_type> data, interpol_type_P0 iType = left ) : super(data), M_iType(iType) {}
+        InterpolatorP0(const InterpolatorP0 &) = default;
         value_type diff(double _x) { return 0.; }
         value_type operator()(double _x)
         {
@@ -141,6 +146,7 @@ class InterpolatorP1 : public Interpolator
             extrapol
         };
         // Extrapolation method at left or right can be different
+        InterpolatorP1(const InterpolatorP1 &) = default;
         InterpolatorP1( std::vector<pair_type> data, extrapol_type_P1 r = zero, extrapol_type_P1 l = zero ) : super(data), M_r_type(r), M_l_type(l)
     {
     }
@@ -346,6 +352,7 @@ class InterpolatorSpline : public Interpolator
         Eigen::SparseQR<SpMat,Eigen::COLAMDOrdering<int>> solver(A);
         sol = solver.solve(b);
     }
+        InterpolatorSpline(const InterpolatorSpline &) = default;
         value_type operator()(double _x)
         {
             double a = 0.;
@@ -457,6 +464,7 @@ class InterpolatorAkima : public Interpolator
         Eigen::SparseQR<SpMat,Eigen::COLAMDOrdering<int>> solver(A);
         sol = solver.solve(b);
     }
+        InterpolatorAkima(const InterpolatorAkima &) = default;
         value_type operator()(double _x)
         {
             double a = 0.;
@@ -577,3 +585,4 @@ Interpolator* Interpolator::New( interpol_type type, std::vector<pair_type> data
     }
 }
 
+#endif //__FEELPP_INTERPOLATOR_H
