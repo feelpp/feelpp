@@ -60,14 +60,8 @@ template<typename ExprT, typename InterpolatorT>
 
             typedef Fit<ExprT, InterpolatorT> this_type;
 
-            explicit Fit( expression_type const & __expr, interpolator_type __int) : M_expr(__expr),M_interpolator(__int)
-        {
-                M_interpolator.printInfo();
-        }
-            Fit(Fit const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) 
-        {
-                M_interpolator.printInfo();
-        }
+            explicit Fit( expression_type const & __expr, interpolator_type __int) : M_expr(__expr),M_interpolator(__int){}
+            Fit(Fit const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) {}
             //~Fit(){}
             expression_type const& expression() const
             {
