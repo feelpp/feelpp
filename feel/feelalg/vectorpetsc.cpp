@@ -30,6 +30,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/topetsc.hpp>
 #include <feel/feeltiming/tic.hpp>
 #if BOOST_VERSION < 105900
 #include <boost/smart_ptr/make_shared.hpp>
@@ -50,11 +51,17 @@ template <typename T>
 typename VectorPetsc<T>::clone_ptrtype
 VectorPetsc<T>::clone () const
 {
-    clone_ptrtype cloned_vector ( new VectorPetsc<T>( this->mapPtr() ) );
+    clone_ptrtype cloned_vector;
+    if ( dynamic_cast<VectorPetscMPIRange<T> const*>( this ) )
+        cloned_vector.reset( new VectorPetscMPIRange<T>( this->mapPtr() ) );
+    else if ( dynamic_cast<VectorPetscMPI<T> const*>( this ) )
+        cloned_vector.reset( new VectorPetscMPI<T>( this->mapPtr() ) );
+    else
+        cloned_vector.reset( new VectorPetsc<T>( this->mapPtr() ) );
     CHECK( cloned_vector->size() == this->size() ) << "Invalid cloned vector size : " << cloned_vector->size()
                                                    << " expected size : " << this->size() ;
     //*cloned_vector = *this;
-    CHECK( this->closed() ) << "VectorPETSc is closed and should not";
+    //CHECK( this->closed() ) << "VectorPETSc is closed and should not";
     return cloned_vector;
 }
 
@@ -66,14 +73,12 @@ VectorPetsc<T>::init ( const size_type n,
                        const bool fast )
 {
     int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_local=static_cast<int>( n_local );
-
+    int petsc_n = static_cast<PetscInt>( n );
+    int petsc_n_local=static_cast<PetscInt>( n_local );
 
     // Clear initialized vectors
     if ( this->isInitialized() )
         this->clear();
-
 
     // create a sequential vector if on only 1 processor
     if ( n_local == n )
@@ -98,15 +103,25 @@ VectorPetsc<T>::init ( const size_type n,
         CHKERRABORT( this->comm(),ierr );
     }
 
-    this->M_is_initialized = true;
+    this->setInitialized( true );
+    this->setIsClosed( true );
 
-
-    if ( fast == false )
+    if ( !fast )
         this->zero ();
 }
+
+template<typename T>
+void
+VectorPetsc<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+    this->init( this->map().nLocalDofWithoutGhost(), this->map().nDof() );
+}
+
 template <typename T>
 void
-VectorPetsc<T>::set ( const value_type& value )
+VectorPetsc<T>::set( const value_type& value )
 {
     int ierr=0;
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
@@ -116,10 +131,9 @@ VectorPetsc<T>::set ( const value_type& value )
 }
 template <typename T>
 void
-VectorPetsc<T>::set ( size_type i, const value_type& value )
+VectorPetsc<T>::set( const size_type i, const value_type& value )
 {
     DCHECK( i<size() ) << "invalid index " << i <<  " size : " << size();
-
 
     int ierr=0;
     int i_val = static_cast<int>( i );
@@ -174,71 +188,152 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 template <typename T>
 typename VectorPetsc<T>::value_type
 VectorPetsc<T>::operator() ( const size_type i ) const
-    {
-        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
-        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
-                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
-                                                       << " first local index: "  << this->firstLocalIndex()
-                                                       << " last local index:  " << this->lastLocalIndex();
+{
+    DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+    DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+               ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                   << " first local index: "  << this->firstLocalIndex()
+                                                   << " last local index:  " << this->lastLocalIndex();
 
-        int ierr=0;
-        PetscScalar *values, value=0.;
+    int ierr=0;
+    PetscScalar *values, value=0.;
 
 
-        ierr = VecGetArray( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecGetArray( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        value = values[i - this->firstLocalIndex()];
+    value = values[i - this->firstLocalIndex()];
 
-        ierr = VecRestoreArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
+    ierr = VecRestoreArray ( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<value_type>( value );
-    }
+    return static_cast<value_type>( value );
+}
 template <typename T>
 typename VectorPetsc<T>::value_type&
 VectorPetsc<T>::operator() ( const size_type i )
+{
+    DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
+    DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
+               ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
+                                                   << " first local index: "  << this->firstLocalIndex()
+                                                   << " last local index:  " << this->lastLocalIndex();
+
+    int ierr=0;
+    PetscScalar *values;
+
+    ierr = VecGetArray( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
+
+    PetscScalar& value = values[i - this->firstLocalIndex()];
+
+    ierr = VecRestoreArray ( M_vec, &values );
+    CHKERRABORT( this->comm(),ierr );
+
+    return static_cast<value_type&>( value );
+}
+
+template <typename T>
+void
+VectorPetsc<T>::close()
+{
+    if ( !this->isInitialized() )
+        return;
+
+    int ierr=0;
+
+    ierr = VecAssemblyBegin( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecAssemblyEnd( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+
+    this->M_is_closed = true;
+}
+
+template <typename T>
+Vector<typename VectorPetsc<T>::value_type>&
+VectorPetsc<T>::operator= ( const Vector<value_type> &V )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
+
+    const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &V );
+    if ( vecPetsc )
     {
-        DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
-        DCHECK ( ( ( i >= this->firstLocalIndex() ) &&
-                   ( i <  this->lastLocalIndex() ) ) ) << "invalid vector index " <<  i
-                                                       << " first local index: "  << this->firstLocalIndex()
-                                                       << " last local index:  " << this->lastLocalIndex();
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
 
         int ierr=0;
-        PetscScalar *values;
-
-        ierr = VecGetArray( M_vec, &values );
+        ierr = VecCopy( vecPetsc->vec(), M_vec );
         CHKERRABORT( this->comm(),ierr );
-
-        PetscScalar& value = values[i - this->firstLocalIndex()];
-
-        ierr = VecRestoreArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        return static_cast<value_type&>( value );
+        return *this;
     }
+
+    auto vecPetscCastPair = Feel::detail::toPETScPairPtr( V, false );
+    VectorPetsc<T> const* vecPetscCast = vecPetscCastPair.first;
+    if ( vecPetscCast )
+        return this->operator=( *vecPetscCast );
+
+    return super::operator=( V );
+}
+
+template <typename T>
+Vector<typename VectorPetsc<T>::value_type>&
+VectorPetsc<T>::operator= ( const VectorPetsc<value_type> &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
+}
+
+template <typename T>
+void
+VectorPetsc<T>::pointwiseOperationsImpl( Vector<T> const& xx, Vector<T> const& yy, int op )
+{
+   if ( !this->closed() )
+       this->close();
+   if ( !xx.closed() )
+        const_cast<Vector<T>*>( &xx )->close();
+   if ( !yy.closed() )
+        const_cast<Vector<T>*>( &yy )->close();
+
+    const VectorPetsc<T>* vecxPetsc = dynamic_cast<const VectorPetsc<T>*>( &xx );
+    const VectorPetsc<T>* vecyPetsc = dynamic_cast<const VectorPetsc<T>*>( &yy );
+    if ( vecxPetsc && vecyPetsc )
+    {
+        int ierr = 0;
+        if ( op == 0 )
+            ierr =  VecPointwiseMult( this->vec(), vecxPetsc->vec(), vecyPetsc->vec() );
+        else
+            ierr =  VecPointwiseDivide( this->vec(), vecxPetsc->vec(), vecyPetsc->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPair_xx = Feel::detail::toPETScPairPtr( xx, true );
+    VectorPetsc<T> const* vecPetscCast_xx = vecPetscCastPair_xx.first;
+    auto vecPetscCastPair_yy = Feel::detail::toPETScPairPtr( yy, true );
+    VectorPetsc<T> const* vecPetscCast_yy = vecPetscCastPair_yy.first;
+    if ( vecPetscCast_xx && vecPetscCast_yy )
+    {
+        if ( op == 0 )
+            this->pointwiseMult( *vecPetscCast_xx,*vecPetscCast_yy );
+        else
+            this->pointwiseDivide( *vecPetscCast_xx,*vecPetscCast_yy );
+        return;
+    }
+
+    CHECK( false ) << "TODO other kind of vector";
+
+}
 
 template <typename T>
 void
 VectorPetsc<T>::pointwiseMult ( Vector<T> const& xx, Vector<T> const& yy )
-{    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
-    if ( this->comm().size()>1 )
-    {
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
-    }
-    else
-    {
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
-    }
-
-    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
-    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
-    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
-    auto ierr =  VecPointwiseMult(this->vec(), x->vec(), y->vec() );
-    CHKERRABORT( this->comm(),ierr );
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    this->pointwiseOperationsImpl( xx,yy,0 );
 }
 
 template <typename T>
@@ -246,33 +341,19 @@ void
 VectorPetsc<T>::pointwiseDivide ( Vector<T> const& xx, Vector<T> const& yy )
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
-    if ( this->comm().size()>1 )
-    {
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &xx ) )->close();
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &yy ) )->close();
-    }
-    else
-    {
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &xx ) )->close();
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &yy ) )->close();
-    }
-
-    const VectorPetsc<T>* x = dynamic_cast<const VectorPetsc<T>*>( &xx );
-    const VectorPetsc<T>* y = dynamic_cast<const VectorPetsc<T>*>( &yy );
-    CHECK( x != 0 && y != 0 ) << "invalid Vector<> types";
-    auto ierr =  VecPointwiseDivide(this->vec(), x->vec(), y->vec() );
-    CHKERRABORT( this->comm(),ierr );
+    this->pointwiseOperationsImpl( xx,yy,1 );
 }
 template <typename T>
 void
 VectorPetsc<T>::zero()
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        this->close();
 
     int ierr=0;
-
     PetscScalar z=0.;
-    this->close();
+    //this->close();
     // 2.2.x & earlier style
 #if PETSC_VERSION_LESS_THAN(2,2,0)
     ierr = VecSet ( &z, M_vec );
@@ -288,7 +369,13 @@ int
 VectorPetsc<T>::reciprocal()
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
-    return VecReciprocal( M_vec );
+    if ( !this->closed() )
+        this->close();
+
+    int ierr=0;
+    ierr = VecReciprocal( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+    return ierr;
 }
 
 
@@ -335,48 +422,33 @@ template <typename T>
 void
 VectorPetsc<T>::scale ( T factor_in )
 {
+    if ( !this->closed() )
+        this->close();
+
     int ierr = 0;
     PetscScalar factor = static_cast<PetscScalar>( factor_in );
 
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-
     ierr = VecScale( &factor, M_vec );
     CHKERRABORT( this->comm(),ierr );
-
     // 2.3.x & later style
 #else
-
     ierr = VecScale( M_vec, factor );
     CHKERRABORT( this->comm(),ierr );
-
 #endif
 }
 template <typename T>
 void
 VectorPetsc<T>::add ( const value_type& v_in )
 {
-    int ierr=0;
-    PetscScalar* values;
+    if ( !this->closed() )
+        this->close();
+
     const PetscScalar v = static_cast<PetscScalar>( v_in );
-    const int n   = static_cast<int>( this->localSize() );
-    const int fli = static_cast<int>( this->firstLocalIndex() );
-
-    for ( int i=0; i<n; i++ )
-    {
-        ierr = VecGetArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        int ig = fli + i;
-
-        PetscScalar value = ( values[ig] + v );
-
-        ierr = VecRestoreArray ( M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        ierr = VecSetValues ( M_vec, 1, &ig, &value, INSERT_VALUES );
-        CHKERRABORT( this->comm(),ierr );
-    }
+    int ierr=0;
+    ierr = VecShift( M_vec, v );
+    CHKERRABORT( this->comm(),ierr );
 }
 template <typename T>
 void
@@ -388,36 +460,35 @@ template <typename T>
 void
 VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
 {
+    if ( !this->closed() )
+        this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
-    if ( this->comm().size()>1 )
+    const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &v_in );
+    if ( vecPetsc )
     {
-        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &v_in ) )->close();
-    }
-    else
-    {
-        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &v_in ) )->close();
-    }
-
-    const VectorPetsc<T>* v = dynamic_cast<const VectorPetsc<T>*>( &v_in );
-
-    CHECK ( v != NULL ) << "dynamic cast failed";
-    CHECK( this->size() == v->size() ) << "invalid vector this.size : " << this->size() << " != v.size: " << v->size();
-
-    // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-
-    ierr = VecAXPY( &a, v->M_vec, M_vec );
-    CHKERRABORT( this->comm(),ierr );
-
-    // 2.3.x & later style
+        ierr = VecAXPY( &a, vecPetsc->M_vec, M_vec );
+        CHKERRABORT( this->comm(),ierr );
 #else
-
-    ierr = VecAXPY( M_vec, a, v->M_vec );
-    CHKERRABORT( this->comm(),ierr );
-
+        ierr = VecAXPY( M_vec, a, vecPetsc->M_vec );
+        CHKERRABORT( this->comm(),ierr );
 #endif
+        return;
+    }
+
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( v_in, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
+    {
+        this->add( a_in, *vecPetscCastIn );
+        return;
+    }
 }
 
 
@@ -426,6 +497,8 @@ typename VectorPetsc<T>::real_type
 VectorPetsc<T>::min () const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
 
     int index=0, ierr=0;
     PetscReal min=0.;
@@ -442,6 +515,8 @@ typename VectorPetsc<T>::real_type
 VectorPetsc<T>::max() const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
 
     int index=0, ierr=0;
     PetscReal max=0.;
@@ -455,7 +530,7 @@ VectorPetsc<T>::max() const
 
 template <typename T>
 typename VectorPetsc<T>::real_type
-VectorPetsc<T>:: l1Norm () const
+VectorPetsc<T>::l1Norm () const
 {
     CHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
     if ( !this->closed() )
@@ -506,7 +581,7 @@ VectorPetsc<T>::linftyNorm () const
 
 template <typename T>
 typename VectorPetsc<T>::value_type
-VectorPetsc<T>:: sum () const
+VectorPetsc<T>::sum () const
 {
     CHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
     if ( !this->closed() )
@@ -589,64 +664,67 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
 
 template <typename T>
 typename VectorPetsc<T>::value_type
-VectorPetsc<T>::dot( Vector<T> const& __v )
+VectorPetsc<T>::dot( Vector<T> const& __v ) const
 {
-    this->close();
-    PetscScalar e;
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
 
-    VectorPetsc<value_type> v( __v.size(), __v.localSize() );
+
+    const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &__v );
+    if ( vecPetsc )
     {
-        size_type s = v.localSize();
-        size_type start = v.firstLocalIndex();
-
-        for ( size_type i = 0; i < s; ++i )
-            v.set( start + i, __v( start + i ) );
+        int ierr = 0;
+        PetscScalar e;
+        ierr = VecDot( this->vec(), vecPetsc->vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
+        return e;
     }
 
-    VecDot( this->vec(), v.vec(), &e );
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( __v, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
+        return this->dot( *vecPetscCastIn );
 
-    return e;
+    return value_type(0);
 }
 
 template <typename T>
 void
 VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
                             const MatrixSparse<value_type>& A_in )
-
-    {
-        const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
-        const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
-
-        CHECK ( A != 0 ) << "Invalid PETSc matrix\n";
+{
+    if ( !this->closed() )
         this->close();
-        A->close();
-        int ierr=0;
+    if ( !V_in.closed() )
+        const_cast<Vector<T>*>( &V_in )->close();
+    if ( !A_in.closed() )
+        A_in.close();
 
+    const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
+    CHECK( A != 0 ) << "Invalid PETSc matrix\n";
 
-        if ( !V )
-        {
-            if ( this->comm().size()>1 )
-            {
-                VectorPetscMPI<T> tmp( V_in.mapPtr() );
-                dynamic_cast<Vector<T>&>( tmp ) = V_in;
-                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
-            }
-            else
-            {
-                VectorPetsc<T> tmp( V_in.mapPtr() );
-                dynamic_cast<Vector<T>&>( tmp ) = V_in;
-                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
-            }
-        }
-        else
-        {
-            // The const_cast<> is not elegant, but it is required since PETSc
-            // is not const-correct.
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->M_vec, M_vec, M_vec );
-
-        }
+    int ierr = 0;
+    const VectorPetsc<T>* vecPetsc =  dynamic_cast<const VectorPetsc<T>*>( &V_in );
+    if ( vecPetsc )
+    {
+        ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), vecPetsc->M_vec, M_vec, M_vec );
         CHKERRABORT( this->comm(),ierr );
+        // update ghost values (do nothing in sequential)
+        this->localize();
+        return;
     }
+
+    // try to use a view petsc format else create a new vector (values copied)
+    auto vecPetscCastPairIn = Feel::detail::toPETScPairPtr( V_in, true );
+    VectorPetsc<T> const* vecPetscCastIn = vecPetscCastPairIn.first;
+    if ( vecPetscCastIn )
+    {
+        this->addVector( *vecPetscCastIn, A_in );
+        return;
+    }
+
+}
 
 template <typename T>
 boost::shared_ptr<Vector<T> >
@@ -691,6 +769,9 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
                                    Vec &subvec,
                                    bool init ) const
 {
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
     int ierr=0;
     IS isrow;
     PetscInt *rowMap;
@@ -765,25 +846,15 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 //----------------------------------------------------------------------------------------------------//
 
 
-template <typename T>
-typename VectorPetscMPI<T>::clone_ptrtype
-VectorPetscMPI<T>::clone () const
-{
-    clone_ptrtype cloned_vector ( new VectorPetscMPI<T>( this->mapPtr() ) );
-    CHECK( cloned_vector->size() == this->size() ) << "Invalid cloned vector size : " << cloned_vector->size()
-                                                   << " expected size : " << this->size() ;
-    //*cloned_vector = *this;
-    CHECK( this->closed() ) << "VectorPETSc is closed and should not";
-    return cloned_vector;
-}
-
-
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm, bool doInit )
     :
     super( dm,false ) //false for not init
 {
-    this->init( dm->nDof(), dm->nLocalDofWithoutGhost() );
+    if ( doInit )
+        this->initImpl();
+
+    //this->init( dm->nDof(), dm->nLocalDofWithoutGhost() );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -791,160 +862,108 @@ VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
 template<typename T>
 VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm, bool duplicate )
     :
-    super( v,dm,duplicate )
+    super( dm,false )
 {
-    int ierr=0;
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
+    this->M_destroy_vec_on_exit = duplicate;
 
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
+    if ( duplicate )
+    {
+        int ierr = 0;
+        ierr = VecDuplicate( v, &this->M_vec );
+        CHKERRABORT( this->comm(),ierr );
 
-    IS isGlob;
-    IS isLoc;
-    ISLocalToGlobalMapping isLocToGlobMap;
+        Vec lx;
+        ierr = VecGhostGetLocalForm(this->vec(),&lx);
+        CHKERRABORT( this->comm(),ierr );
+        if ( !lx )
+        {
+            int petsc_n_localWithoutGhost = static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+            int petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+            PetscInt *idx = NULL;
+            if ( petsc_n_localGhost > 0 )
+            {
+                idx = new PetscInt[petsc_n_localGhost];
+                std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                           this->map().mapGlobalProcessToGlobalCluster().end(),
+                           idx );
+            }
 
-    // create IS for vecScatter
-    PetscInt *idx;
-    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
-    idx = new PetscInt[n_idx];
-    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
-               this->map().mapGlobalProcessToGlobalCluster().end(),
-               idx );
+            ierr = VecMPISetGhost( this->vec(), petsc_n_localGhost, idx );
+            CHKERRABORT( this->comm(),ierr );
+        }
+        ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+        CHKERRABORT( this->comm(),ierr );
 
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &isGlob );
-#else
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // create LocalToGlobalMapping
-    ierr=ISLocalToGlobalMappingCreateIS( isGlob, &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create vecScatter
-    ierr = VecScatterCreate( this->vec(), isGlob,
-                             M_vecLocal, isLoc,
-                             &M_vecScatter );
-    CHKERRABORT( this->comm(),ierr );
-
-    // Clean up
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISDestroy ( &isGlob );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( &isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = ISDestroy ( isGlob );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-    delete[] idx;
+        ierr = VecCopy( v, this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+        this->M_vec = v;
 
     this->M_is_initialized = true;
-
-    this->close();
+    this->localize();
+    this->setIsClosed( true );
 }
 
 //----------------------------------------------------------------------------------------------------//
-
 template<typename T>
 void
 VectorPetscMPI<T>::init( const size_type n,
                          const size_type n_localWithoutGhost,
                          const bool fast )
 {
-    //std::cout << "MPI init start" << std::endl;
-    int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_localWithoutGhost=static_cast<int>( n_localWithoutGhost );
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
-    //std::cout << "petsc_n_localWithoutGhost "<< petsc_n_localWithoutGhost << std::endl;
-    //std::cout << "petsc_n_localWithGhost "<< petsc_n_localWithGhost << std::endl;
+    CHECK( false ) << "not allowed";
+}
 
-    // Clear initialized vectors
+template<typename T>
+void
+VectorPetscMPI<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+    this->initImpl();
+}
+
+template<typename T>
+void
+VectorPetscMPI<T>::initImpl( const bool fast )
+{
+    int ierr=0;
+    int petsc_n = static_cast<PetscInt>( this->map().nDof() );
+    int petsc_n_localWithoutGhost = static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+    int petsc_n_localWithGhost = static_cast<PetscInt>( this->map().nLocalDofWithGhost() );
+    int petsc_n_localGhost = static_cast<PetscInt>( this->map().nLocalGhosts() );
+    FEELPP_ASSERT( petsc_n_localWithoutGhost < petsc_n )( petsc_n_localWithoutGhost )( petsc_n ).warn( "invalid local size" );
+
+    // clear initialized vectors
     if ( this->isInitialized() )
         this->clear();
 
-    FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
-
-    ierr = VecCreateMPI ( this->comm(), petsc_n_localWithoutGhost, petsc_n,
-                          &this->M_vec );
+    PetscInt *idx = NULL;
+    if ( petsc_n_localGhost > 0 )
+    {
+        idx = new PetscInt[petsc_n_localGhost];
+        std::copy( this->map().mapGlobalProcessToGlobalCluster().begin()+petsc_n_localWithoutGhost,
+                   this->map().mapGlobalProcessToGlobalCluster().end(),
+                   idx );
+    }
+    ierr = VecCreateGhostWithArray( this->comm(),
+                                    petsc_n_localWithoutGhost, petsc_n,
+                                    petsc_n_localGhost,
+                                    idx,
+                                    NULL, &this->M_vec );
     CHKERRABORT( this->comm(),ierr );
-
-    // localToGlobalMapping
-    IS is;
-    ISLocalToGlobalMapping isLocToGlobMap;
-
-    PetscInt *idx;
-    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
-    idx = new PetscInt[n_idx];
-    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
-               this->map().mapGlobalProcessToGlobalCluster().end(),
-               idx );
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &is );
-#else
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &is );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // create LocalToGlobalMapping
-    ierr=ISLocalToGlobalMappingCreateIS( is, &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create local vector
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
-
-    // create vecScatter
-    IS isLoc;
-    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = VecScatterCreate( this->vec(), is,
-                             M_vecLocal, isLoc,
-                             &M_vecScatter );
-    CHKERRABORT( this->comm(),ierr );
-
-
-
-    // Clean up
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISDestroy( &is );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISLocalToGlobalMappingDestroy( &isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( &isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = ISDestroy( is );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISLocalToGlobalMappingDestroy( isLocToGlobMap );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = ISDestroy ( isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-
-    delete[] idx;
 
     ierr = VecSetFromOptions( this->vec() );
     CHKERRABORT( this->comm(),ierr );
 
-    ierr = VecSetFromOptions( M_vecLocal );
-    CHKERRABORT( this->comm(),ierr );
+    if ( petsc_n_localGhost > 0 )
+        delete[] idx;
 
+    this->setInitialized( true );
+    this->setIsClosed( true );
 
-    this->M_is_initialized = true;
-
-    if ( fast == false )
+    if ( !fast )
         this->zero ();
 }
 
@@ -955,15 +974,24 @@ typename VectorPetscMPI<T>::value_type
 VectorPetscMPI<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
-    PetscScalar *values, value=0.;
-    ierr = VecGetArray( M_vecLocal, &values );
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
-    //std::cout << "\n operator MPI ";
-    value =  values[i /*- this->firstLocalIndex()*/ ];
-
-    ierr = VecRestoreArray( M_vecLocal, &values );
+#if 0
+    CHECK( lx ) << "is not a GhostGetLocalForm";
+    PetscBool hola;
+    ierr = VecGhostIsLocalForm(this->vec(),lx, &hola);
     CHKERRABORT( this->comm(),ierr );
-
+    CHECK( hola ) << "is not a GhostGetLocalForm2";
+#endif
+    PetscScalar *values;
+    ierr = VecGetArray(lx,&values);
+    CHKERRABORT( this->comm(),ierr );
+    PetscScalar& value =  values[i];
+    ierr = VecRestoreArray( lx, &values );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     return static_cast<value_type>( value );
 }
 template <typename T>
@@ -971,26 +999,221 @@ typename VectorPetscMPI<T>::value_type&
 VectorPetscMPI<T>::operator() ( const size_type i )
 {
     int ierr=0;
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+#if 0
+    CHECK( lx ) << "is not a GhostGetLocalForm";
+    PetscBool hola;
+    ierr = VecGhostIsLocalForm(this->vec(),lx, &hola);
+    CHKERRABORT( this->comm(),ierr );
+    CHECK( hola ) << "is not a GhostGetLocalForm2";
+#endif
     PetscScalar *values;
-    ierr = VecGetArray( M_vecLocal, &values );
+    ierr = VecGetArray(lx,&values);
     CHKERRABORT( this->comm(),ierr );
-    //std::cout << "\n operator MPI ";
-    PetscScalar& value =  values[i /*- this->firstLocalIndex()*/ ];
-
-    ierr = VecRestoreArray( M_vecLocal, &values );
+    PetscScalar& value =  values[i];
+    ierr = VecRestoreArray( lx, &values );
     CHKERRABORT( this->comm(),ierr );
-
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     return static_cast<value_type&>( value );
 }
-//----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+Vector<typename VectorPetscMPI<T>::value_type>&
+VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
+
+    int ierr=0;
+    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+    if ( !vecOutPetscMPIRange )
+    {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
+        const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
+        if ( vecPetscMPIRange )
+        {
+            ierr = VecCopy( vecPetscMPIRange->vec(), this->vec() );
+            CHKERRABORT( this->comm(),ierr );
+
+            size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
+            size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
+
+            Vec lxOut;
+            ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
+
+            PetscScalar *valuesOut;
+            PetscScalar *valuesInGhost;
+            ierr = VecGetArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+            for ( size_type k=0;k<nLocalGhost;++k )
+                valuesOut[nLocalDofWithoutGhost+k] = valuesInGhost[k];
+            ierr = VecRestoreArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
+
+            return *this;
+        }
+        const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
+        if ( vecPetscMPI )
+        {
+            Vec lx;
+            ierr = VecGhostGetLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            Vec lxIn;
+            ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecCopy( lxIn, lx );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            return *this;
+        }
+    }
+    return super::operator=( V );
+}
+
+template <typename T>
+Vector<typename VectorPetsc<T>::value_type>&
+VectorPetscMPI<T>::operator= ( const VectorPetscMPI<value_type> &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
+}
+
+template <typename T>
+void
+VectorPetscMPI<T>::set( const value_type& value )
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr=0;
+    const PetscScalar val = static_cast<PetscScalar>( value );
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecSet ( lx, val );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+VectorPetscMPI<T>::add( const value_type& v_in )
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr=0;
+    const PetscScalar v = static_cast<PetscScalar>( v_in );
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecShift( lx, v );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
+    int ierr = 0;
+    PetscScalar a = static_cast<PetscScalar>( a_in );
+
+    VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+    if ( !vecOutPetscMPIRange )
+    {
+        const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &v_in );
+        if ( vecPetscMPIRange )
+        {
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
+            ierr = VecAXPY( &a, vecPetscMPIRange->vec(), this->vec() );
+            CHKERRABORT( this->comm(),ierr );
+#else
+            ierr = VecAXPY( this->vec(), a, vecPetscMPIRange->vec() );
+            CHKERRABORT( this->comm(),ierr );
+#endif
+            size_type nLocalDofWithoutGhost = vecPetscMPIRange->map().nLocalDofWithoutGhost();
+            size_type nLocalGhost = vecPetscMPIRange->map().nLocalGhosts();
+
+            Vec lxOut;
+            ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
+
+            PetscScalar *valuesOut;
+            PetscScalar *valuesInGhost;
+            ierr = VecGetArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGetArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+            for ( size_type k=0;k<nLocalGhost;++k )
+                valuesOut[nLocalDofWithoutGhost+k] += a*valuesInGhost[k];
+            ierr = VecRestoreArray( lxOut, &valuesOut );
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecRestoreArray( vecPetscMPIRange->vecGhost(), &valuesInGhost );
+            CHKERRABORT( this->comm(),ierr );
+
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
+            CHKERRABORT( this->comm(),ierr );
+
+            return;
+        }
+        const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
+        if ( vecPetscMPI )
+        {
+            //CHECK( this->size() == v->size() ) << "invalid vector this.size : " << this->size() << " != v.size: " << v->size();
+            Vec lx;
+            ierr = VecGhostGetLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            Vec lxIn;
+            ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
+            ierr = VecAXPY( &a, lxIn, lx );
+            CHKERRABORT( this->comm(),ierr );
+#else
+            ierr = VecAXPY( lx, a, lxIn );
+            CHKERRABORT( this->comm(),ierr );
+#endif
+            ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+            CHKERRABORT( this->comm(),ierr );
+            ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+            CHKERRABORT( this->comm(),ierr );
+            return;
+        }
+    }
+
+    // try others casts
+    super::add( a_in, v_in );
+}
+
 
 template <typename T>
 void
 VectorPetscMPI<T>::set( size_type i, const value_type& value )
 {
-    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
-    //if ( this->map().dofGlobalProcessIsGhost(i) ) return;
-
     int ierr=0;
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
@@ -1021,8 +1244,6 @@ template <typename T>
 void
 VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 {
-    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
-
     int ierr=0;
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
@@ -1052,11 +1273,237 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
 
 template <typename T>
 void
-VectorPetscMPI<T>::addVector( const Vector<value_type>& V_in,
-                              const MatrixSparse<value_type>& A_in )
+VectorPetscMPI<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
 {
-    super::addVector( V_in,A_in );
-    this->localize();
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+
+    int ierr = 0;
+    const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
+    const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
+
+    if( vecxPetscMPI && vecyPetscMPI )
+    {
+        VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+        if ( !vecOutPetscMPIRange )
+        {
+            const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+            const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+            if ( vecxPetscMPI && vecyPetscMPI && !vecxPetscMPIRange && !vecyPetscMPIRange )
+            {
+                Vec lx;
+                ierr = VecGhostGetLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxInx;
+                ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxIny;
+                ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+
+                ierr =  VecPointwiseMult(lx, lxInx, lxIny );
+                CHKERRABORT( this->comm(),ierr );
+
+                ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+                return;
+            }
+        }
+
+        this->pointwiseOperationOthersPetscImpl(x,y,0);
+        return;
+    }
+    // default method
+    super::pointwiseMult( x,y );
+}
+
+template <typename T>
+void
+VectorPetscMPI<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+
+    int ierr = 0;
+    const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
+    const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
+    if( vecxPetscMPI && vecyPetscMPI )
+    {
+        VectorPetscMPI<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+        if ( !vecOutPetscMPIRange )
+        {
+            const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+            const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+            if ( !vecxPetscMPIRange && !vecyPetscMPIRange )
+            {
+                Vec lx;
+                ierr = VecGhostGetLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxInx;
+                ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                Vec lxIny;
+                ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+
+                ierr =  VecPointwiseDivide(lx, lxInx, lxIny );
+                CHKERRABORT( this->comm(),ierr );
+
+                ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
+                CHKERRABORT( this->comm(),ierr );
+                ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
+                CHKERRABORT( this->comm(),ierr );
+                return;
+            }
+        }
+
+        this->pointwiseOperationOthersPetscImpl(x,y,1);
+        return;
+    }
+
+    // default method
+    super::pointwiseDivide( x,y );
+}
+
+template <typename T>
+void
+VectorPetscMPI<T>::pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector<T> const& y, int op )
+{
+    int ierr = 0;
+    const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+    const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+    const VectorPetscMPI<T>* vecxPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &x );
+    const VectorPetscMPI<T>* vecyPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &y );
+    VectorPetscMPIRange<T>* vecOutPetscMPIRange =  dynamic_cast<VectorPetscMPIRange<T>*>( &(*this) );
+    CHECK( vecxPetscMPI && vecyPetscMPI ) << "is not petsc vectors";
+
+    // active part
+    Vec thevecActiveInx = (vecxPetscMPIRange)? vecxPetscMPIRange->vec() : vecxPetscMPI->vec();
+    Vec thevecActiveIny = (vecyPetscMPIRange)? vecyPetscMPIRange->vec() : vecyPetscMPI->vec();
+    if ( op == 0 )
+        ierr = VecPointwiseMult(this->vec(), thevecActiveInx, thevecActiveIny );
+    else if ( op == 1 )
+        ierr = VecPointwiseDivide(this->vec(), thevecActiveInx, thevecActiveIny );
+    CHKERRABORT( this->comm(),ierr );
+
+    // ghosts part
+    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+    size_type nLocalGhost = this->map().nLocalGhosts();
+
+    PetscScalar *valuesOut;
+    PetscScalar *valuesInxGhost;
+    PetscScalar *valuesInyGhost;
+    Vec lxOut = 0, lxInx = 0, lxIny = 0;
+    size_type startOutGhostDof = 0, startxGhostDof = 0, startyGhostDof = 0;
+
+    // get array in each context
+    if ( vecOutPetscMPIRange )
+    {
+        ierr = VecGetArray( vecOutPetscMPIRange->vecGhost(), &valuesOut );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecGhostGetLocalForm(this->vec(),&lxOut);
+        CHKERRABORT( this->comm(),ierr );
+        CHECK( lxOut ) << "aie";
+        ierr = VecGetArray( lxOut, &valuesOut );
+        CHKERRABORT( this->comm(),ierr );
+        startOutGhostDof = nLocalDofWithoutGhost;
+    }
+    if ( vecxPetscMPIRange )
+    {
+        ierr = VecGetArray( vecxPetscMPIRange->vecGhost(), &valuesInxGhost );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecGhostGetLocalForm(vecxPetscMPI->vec(),&lxInx);
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetArray( lxInx, &valuesInxGhost );
+        CHKERRABORT( this->comm(),ierr );
+        startxGhostDof = nLocalDofWithoutGhost;
+    }
+    if ( vecyPetscMPIRange )
+    {
+        ierr = VecGetArray( vecyPetscMPIRange->vecGhost(), &valuesInyGhost );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecGhostGetLocalForm(vecyPetscMPI->vec(),&lxIny);
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetArray( lxIny, &valuesInyGhost );
+        CHKERRABORT( this->comm(),ierr );
+        startyGhostDof = nLocalDofWithoutGhost;
+    }
+
+    // apply op on ghosts
+    if ( op == 0)
+    {
+        // apply pointwiseMult on ghosts
+        for ( size_type k=0;k<nLocalGhost;++k )
+            valuesOut[startOutGhostDof+k] = valuesInxGhost[startxGhostDof+k]*valuesInyGhost[startyGhostDof+k];
+    }
+    else if ( op == 1 )
+    {
+        // apply pointwiseDiv on ghosts
+        for ( size_type k=0;k<nLocalGhost;++k )
+            valuesOut[startOutGhostDof+k] = valuesInxGhost[startxGhostDof+k]/valuesInyGhost[startyGhostDof+k];
+    }
+
+    // clean petsc object
+    if ( vecOutPetscMPIRange )
+    {
+        ierr = VecRestoreArray( vecOutPetscMPIRange->vecGhost(), &valuesOut );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecRestoreArray( lxOut, &valuesOut );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
+        CHKERRABORT( this->comm(),ierr );
+    }
+    if ( vecxPetscMPIRange )
+    {
+        ierr = VecRestoreArray( vecxPetscMPIRange->vecGhost(), &valuesInxGhost );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecRestoreArray( lxInx, &valuesInxGhost );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGhostRestoreLocalForm(vecxPetscMPI->vec(),&lxInx);
+        CHKERRABORT( this->comm(),ierr );
+    }
+    if ( vecyPetscMPIRange )
+    {
+        ierr = VecRestoreArray( vecyPetscMPIRange->vecGhost(), &valuesInyGhost );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = VecRestoreArray( lxIny, &valuesInyGhost );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
+        CHKERRABORT( this->comm(),ierr );
+    }
+
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1065,18 +1512,18 @@ template <typename T>
 void
 VectorPetscMPI<T>::zero()
 {
-    super::zero();
-
-    int ierr=0;
+    if ( !this->closed() )
+        this->close();
+    int ierr = 0;
+    //this->close();
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
     PetscScalar z=0.;
-    // 2.2.x & earlier style
-#if PETSC_VERSION_LESS_THAN(2,2,0)
-    ierr = VecSet ( &z, M_vecLocal );
+    ierr = VecSet ( lx, z );
     CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = VecSet ( M_vecLocal, z );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
-#endif
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1088,19 +1535,6 @@ VectorPetscMPI<T>::clear()
     if ( this->isInitialized() )
     {
         super::clear();
-
-       int ierr=0;
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = VecDestroy( &M_vecLocal );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecScatterDestroy( &M_vecScatter );
-        CHKERRABORT( this->comm(),ierr );
-#else
-        ierr = VecDestroy( M_vecLocal );
-        CHKERRABORT( this->comm(),ierr );
-        ierr = VecScatterDestroy( M_vecScatter );
-        CHKERRABORT( this->comm(),ierr );
-#endif
     }
 }
 
@@ -1109,13 +1543,13 @@ VectorPetscMPI<T>::clear()
 template <typename T>
 void VectorPetscMPI<T>::localize()
 {
+    if ( !this->isInitialized() )
+        return;
+
     int ierr = 0;
-
-    // Perform the scatter
-    ierr = VecScatterBegin( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecGhostUpdateBegin(this->vec(),INSERT_VALUES,SCATTER_FORWARD);
     CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterEnd  ( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecGhostUpdateEnd(this->vec(),INSERT_VALUES,SCATTER_FORWARD);
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -1135,6 +1569,24 @@ VectorPetscMPI<T>::close()
 }
 
 //----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+int
+VectorPetscMPI<T>::reciprocal()
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr = 0;
+    Vec lx;
+    ierr = VecGhostGetLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecReciprocal( lx );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
+    CHKERRABORT( this->comm(),ierr );
+    return ierr;
+}
+
 
 template <typename T>
 size_type
@@ -1216,7 +1668,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
             if ( original_dofCluster>=vecInput.map().firstDofGlobalCluster() &&
                  original_dofCluster<=vecInput.map().lastDofGlobalCluster() )
             {
-                const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                const size_type original_dofProcess = original_dofCluster-original_firstDofCluster;
                 this->set( convert_dofProcess, vecInput(original_dofProcess) );
             }
             else
@@ -1344,7 +1796,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
                     const size_type original_dofCluster = originaldofClusterMissing_recv[k];
                     if (original_dofCluster >=vecInput.map().firstDofGlobalCluster() && original_dofCluster<=vecInput.map().lastDofGlobalCluster())
                     {
-                        const size_type original_dofProcess = vecInput.map().mapGlobalClusterToGlobalProcess()[original_dofCluster-original_firstDofCluster];
+                        const size_type original_dofProcess = original_dofCluster-original_firstDofCluster;
                         dofClusterMissing_RequestVal[k]=vecInput(original_dofProcess);
                         dofClusterMissing_RequestIsFind[k]=1;
                     }
@@ -1381,60 +1833,513 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
 
 
 template <typename T>
-typename VectorPetsc<T>::value_type
-VectorPetscMPI<T>::dot( Vector<T> const& __v )
-{
-    this->close();
-    PetscScalar e;
-
-    VectorPetscMPI<value_type> v( this->mapPtr() );
-    {
-        size_type s = v.map().nLocalDofWithGhost();
-        size_type start = v.firstLocalIndex();
-
-        for ( size_type i = 0; i < s; ++i )
-            v.set( start + i, __v( start + i ) );
-    }
-
-    v.close();
-
-    VecDot( this->vec(), v.vec(), &e );
-
-    return e;
-}
-
-//----------------------------------------------------------------------------------------------------//
-
-template <typename T>
 size_type
 VectorPetscMPI<T>::localSize() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
 
+#if 0
     int petsc_size=0;
     int ierr = VecGetLocalSize( M_vecLocal, &petsc_size );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<size_type>( petsc_size );
+#else
+    return this->map().nLocalDofWithGhost();
+#endif
 }
+
+
+
+template <typename T>
+VectorPetscMPIRange<T>::VectorPetscMPIRange( datamap_ptrtype const& dm )
+    :
+    super_type( dm, false )
+{
+    const PetscScalar* arrayActive = NULL;
+    const PetscScalar* arrayGhost = NULL;
+    this->initRangeView( arrayActive,arrayGhost );
+}
+
+template<typename T>
+void
+VectorPetscMPIRange<T>::init( datamap_ptrtype const& dm )
+{
+    if ( !this->map().isCompatible( *dm ) )
+        this->setMap( dm );
+
+    const PetscScalar* arrayActive = NULL;
+    const PetscScalar* arrayGhost = NULL;
+    this->initRangeView( arrayActive,arrayGhost );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::initRangeView( const PetscScalar arrayActive[], const PetscScalar arrayGhost[] )
+{
+    // clear initialized vectors
+    if ( this->isInitialized() )
+        this->clear();
+
+    int ierr=0;
+    PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
+    PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
+    PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
+
+    // active dof view
+    if ( arrayActive )
+        ierr = VecCreateMPIWithArray( this->comm(),1, petsc_n_localWithoutGhost, petsc_n_dof, arrayActive, &this->vec() );
+    else
+        ierr = VecCreateMPI( this->comm(), petsc_n_localWithoutGhost, petsc_n_dof, &this->vec() );
+    CHKERRABORT( this->comm(),ierr );
+
+    // ghost dof view
+    if ( arrayGhost )
+        ierr = VecCreateSeqWithArray( PETSC_COMM_SELF,1,petsc_n_localGhost,arrayGhost, &M_vecGhost );
+    else
+        ierr = VecCreateSeq( PETSC_COMM_SELF, petsc_n_localGhost, &M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+    // localToGlobalMapping
+    IS is;
+    ISLocalToGlobalMapping isLocToGlobMap;
+
+    PetscInt *idx;
+    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
+    idx = new PetscInt[n_idx];
+    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
+               this->map().mapGlobalProcessToGlobalCluster().end(),
+               idx );
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &is );
+#else
+    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &is );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    // create LocalToGlobalMapping
+    ierr=ISLocalToGlobalMappingCreateIS( is, &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+
+    // create vecScatter
+    IS isScatter;
+    PetscInt* idxGhost = ( petsc_n_localGhost > 0 )? std::addressof( idx[petsc_n_localWithoutGhost] ) : NULL;
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral( this->comm(), petsc_n_localGhost, idxGhost, PETSC_COPY_VALUES, &isScatter );
+#else
+    ierr = ISCreateGeneral( this->comm(), petsc_n_localGhost, idxGhost, &isScatter );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    IS isLoc;
+    ierr = ISCreateStride( PETSC_COMM_SELF,petsc_n_localGhost,0,1,&isLoc );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecScatterCreate( this->vec(), isScatter,
+                             M_vecGhost, isLoc,
+                             &M_vecScatterGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+
+    // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISDestroy( &is );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISLocalToGlobalMappingDestroy( &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( &isScatter );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( &isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISDestroy( is );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISLocalToGlobalMappingDestroy( isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( isScatter );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+
+    delete[] idx;
+
+    ierr = VecSetFromOptions( this->vec() );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecSetFromOptions( M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+
+
+    this->setInitialized( true );
+    this->setIsClosed( true );
+}
+
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::clear()
+{
+    if ( !this->isInitialized() )
+        return;
+
+    super_type::clear();
+    int ierr=0;
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = VecDestroy( &M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecScatterDestroy( &M_vecScatterGhost );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = VecDestroy( M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecScatterDestroy( M_vecScatterGhost );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+}
+
+template <typename T>
+typename VectorPetscMPIRange<T>::value_type
+VectorPetscMPIRange<T>::operator() ( const size_type i ) const
+{
+    int ierr=0;
+    PetscScalar *values;
+    if ( i < this->map().nLocalDofWithoutGhost() )
+    {
+        ierr = VecGetArray( this->vec(), &values );
+        CHKERRABORT( this->comm(),ierr );
+        PetscScalar value =  values[i];
+        ierr = VecRestoreArray( this->vec(), &values );
+        CHKERRABORT( this->comm(),ierr );
+        return static_cast<value_type>( value );
+    }
+    else
+    {
+        ierr = VecGetArray( M_vecGhost, &values );
+        CHKERRABORT( this->comm(),ierr );
+        PetscScalar value =  values[i-this->map().nLocalDofWithoutGhost()];
+        ierr = VecRestoreArray( M_vecGhost, &values );
+        CHKERRABORT( this->comm(),ierr );
+        return static_cast<value_type>( value );
+    }
+}
+
+template <typename T>
+typename VectorPetscMPIRange<T>::value_type&
+VectorPetscMPIRange<T>::operator() ( const size_type i )
+{
+    int ierr=0;
+    PetscScalar *values;
+    if ( i < this->map().nLocalDofWithoutGhost() )
+    {
+        ierr = VecGetArray( this->vec(), &values );
+        CHKERRABORT( this->comm(),ierr );
+        PetscScalar& value =  values[i];
+        ierr = VecRestoreArray( this->vec(), &values );
+        CHKERRABORT( this->comm(),ierr );
+        return static_cast<value_type&>( value );
+    }
+    else
+    {
+        ierr = VecGetArray( M_vecGhost, &values );
+        CHKERRABORT( this->comm(),ierr );
+        PetscScalar& value =  values[i-this->map().nLocalDofWithoutGhost()];
+        ierr = VecRestoreArray( M_vecGhost, &values );
+        CHKERRABORT( this->comm(),ierr );
+        return static_cast<value_type&>( value );
+    }
+}
+
+template <typename T>
+Vector<typename VectorPetscMPIRange<T>::value_type>&
+VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !V.closed() )
+        const_cast<Vector<T>*>( &V )->close();
+
+    int ierr=0;
+    const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &V );
+    if ( vecPetscMPIRange )
+    {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
+        ierr = VecCopy( vecPetscMPIRange->vec(), this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecCopy( vecPetscMPIRange->vecGhost(), this->vecGhost() );
+        CHKERRABORT( this->comm(),ierr );
+        return *this;
+    }
+    const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
+    if ( vecPetscMPI )
+    {
+        if ( !this->map().isCompatible( V.map() ) )
+            this->setMap( V.mapPtr() );
+
+        ierr = VecCopy( vecPetscMPI->vec(), this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+
+        size_type nLocalDofWithoutGhost = vecPetscMPI->map().nLocalDofWithoutGhost();
+        size_type nLocalGhost = vecPetscMPI->map().nLocalGhosts();
+
+        Vec lxIn;
+        ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+        CHKERRABORT( this->comm(),ierr );
+
+        PetscScalar *valuesIn;
+        PetscScalar *valuesOutGhost;
+        ierr = VecGetArray( lxIn, &valuesIn );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetArray( this->vecGhost(), &valuesOutGhost );
+        CHKERRABORT( this->comm(),ierr );
+        for ( size_type k=0;k<nLocalGhost;++k )
+            valuesOutGhost[k] = valuesIn[nLocalDofWithoutGhost+k];
+
+        ierr = VecRestoreArray( lxIn, &valuesIn );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecRestoreArray( this->vecGhost(), &valuesOutGhost );
+        CHKERRABORT( this->comm(),ierr );
+
+        ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+        CHKERRABORT( this->comm(),ierr );
+
+        return *this;
+    }
+
+    return super_type::operator= ( V );
+}
+
+template <typename T>
+Vector<typename VectorPetscMPIRange<T>::value_type>&
+VectorPetscMPIRange<T>::operator= ( const VectorPetscMPIRange<value_type> &V )
+{
+    return this->operator=( *dynamic_cast< Vector<value_type> const* >( &V ) );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::set( const value_type& value )
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr=0;
+    const PetscScalar val = static_cast<PetscScalar>( value );
+    ierr = VecSet ( this->vec(), val );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecSet ( M_vecGhost, val );
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::add( const value_type& v_in )
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr=0;
+    const PetscScalar v = static_cast<PetscScalar>( v_in );
+    ierr = VecShift( this->vec(), v );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecShift( M_vecGhost, v );
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !v_in.closed() )
+        const_cast<Vector<T>*>( &v_in )->close();
+
+    int ierr = 0;
+    PetscScalar a = static_cast<PetscScalar>( a_in );
+
+    const VectorPetscMPIRange<T>* vecPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &v_in );
+    if ( vecPetscMPIRange )
+    {
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
+        ierr = VecAXPY( &a, vecPetscMPIRange->vec(), this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecAXPY( &a, vecPetscMPIRange->vecGhost(), this->vecGhost() );
+        CHKERRABORT( this->comm(),ierr );
+
+#else
+        ierr = VecAXPY( this->vec(), a, vecPetscMPIRange->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecAXPY( this->vecGhost(), a, vecPetscMPIRange->vecGhost() );
+        CHKERRABORT( this->comm(),ierr );
+#endif
+        return;
+    }
+    const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
+    if ( vecPetscMPI )
+    {
+#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
+        ierr = VecAXPY( &a, vecPetscMPI->vec(), this->vec() );
+        CHKERRABORT( this->comm(),ierr );
+#else
+        ierr = VecAXPY( this->vec(), a, vecPetscMPI->vec() );
+        CHKERRABORT( this->comm(),ierr );
+#endif
+
+        size_type nLocalDofWithoutGhost = vecPetscMPI->map().nLocalDofWithoutGhost();
+        size_type nLocalGhost = vecPetscMPI->map().nLocalGhosts();
+
+        Vec lxIn;
+        ierr = VecGhostGetLocalForm(vecPetscMPI->vec(),&lxIn);
+        CHKERRABORT( this->comm(),ierr );
+
+        PetscScalar *valuesIn;
+        PetscScalar *valuesOutGhost;
+        ierr = VecGetArray( lxIn, &valuesIn );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecGetArray( this->vecGhost(), &valuesOutGhost );
+        CHKERRABORT( this->comm(),ierr );
+        for ( size_type k=0;k<nLocalGhost;++k )
+            valuesOutGhost[k] += a*valuesIn[nLocalDofWithoutGhost+k];
+
+        ierr = VecRestoreArray( lxIn, &valuesIn );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecRestoreArray( this->vecGhost(), &valuesOutGhost );
+        CHKERRABORT( this->comm(),ierr );
+
+        ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
+        CHKERRABORT( this->comm(),ierr );
+
+        return;
+    }
+
+    super_type::add( a_in, v_in );
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+    int ierr = 0;
+    const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+    const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+    if ( vecxPetscMPIRange && vecyPetscMPIRange )
+    {
+        ierr = VecPointwiseMult(this->vec(), vecxPetscMPIRange->vec(), vecyPetscMPIRange->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecPointwiseMult(this->vecGhost(), vecxPetscMPIRange->vecGhost(), vecyPetscMPIRange->vecGhost() );
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+
+    super_type::pointwiseMult( x,y );
+}
+template <typename T>
+void
+VectorPetscMPIRange<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
+{
+    if ( !this->closed() )
+        this->close();
+    if ( !x.closed() )
+        const_cast<Vector<T>*>( &x )->close();
+    if ( !y.closed() )
+        const_cast<Vector<T>*>( &y )->close();
+    int ierr = 0;
+    const VectorPetscMPIRange<T>* vecxPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &x );
+    const VectorPetscMPIRange<T>* vecyPetscMPIRange =  dynamic_cast<const VectorPetscMPIRange<T>*>( &y );
+    if ( vecxPetscMPIRange && vecyPetscMPIRange )
+    {
+        ierr = VecPointwiseDivide(this->vec(), vecxPetscMPIRange->vec(), vecyPetscMPIRange->vec() );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecPointwiseDivide(this->vecGhost(), vecxPetscMPIRange->vecGhost(), vecyPetscMPIRange->vecGhost() );
+        CHKERRABORT( this->comm(),ierr );
+        return;
+    }
+    super_type::pointwiseDivide( x,y );
+}
+
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::zero()
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr = 0;
+    PetscScalar z=0.;
+    ierr = VecSet( this->vec(), z );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecSet( M_vecGhost, z );
+    CHKERRABORT( this->comm(),ierr );
+}
+
+template <typename T>
+int
+VectorPetscMPIRange<T>::reciprocal()
+{
+    if ( !this->closed() )
+        this->close();
+    int ierr = 0;
+    ierr = VecReciprocal( this->vec() );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecReciprocal( M_vecGhost );
+    CHKERRABORT( this->comm(),ierr );
+    return ierr;
+}
+
+template <typename T>
+void
+VectorPetscMPIRange<T>::localize()
+{
+    if ( !this->closed() )
+        this->close();
+
+    int ierr = 0;
+
+    // Perform the scatter
+    ierr = VecScatterBegin( M_vecScatterGhost, this->vec(), M_vecGhost, INSERT_VALUES, SCATTER_FORWARD );
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = VecScatterEnd( M_vecScatterGhost, this->vec(), M_vecGhost, INSERT_VALUES, SCATTER_FORWARD );
+    CHKERRABORT( this->comm(),ierr );
+}
+
+
+
+
 
 #if BOOST_VERSION < 105900
 vector_ptrtype
 vec( Vec v, datamap_ptrtype datamap )
 {
-    return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+    if ( datamap->worldComm().localSize() > 1 )
+        return boost::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
+    else
+        return boost::make_shared<Feel::VectorPetsc<double>>( v, datamap );
 }
 #else
 vector_uptrtype
 vec( Vec v, datamap_ptrtype datamap )
 {
-    return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    if ( datamap->worldComm().localSize() > 1 )
+        return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
+    else
+        return std::make_unique<Feel::VectorPetsc<double>>( v, datamap );
     // using vector_ptrtype = boost::shared_ptr<Feel::Vector<double> >;
 }
 #endif
 
+
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;
+template class VectorPetscMPIRange<double>;
 
 } // Feel
 

@@ -458,6 +458,7 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 
 # undefined BOOST_UBLAS_TYPE_CHECK
 add_definitions(-UBOOST_UBLAS_TYPE_CHECK )
+add_definitions(-DBOOST_UBLAS_SHALLOW_ARRAY_ADAPTOR)
 
 # this fix an issue with boost filesystem: boost is usually no compiled with
 # std=c++0x and we compile with it, this causes problems with the macro
