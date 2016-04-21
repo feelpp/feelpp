@@ -14,10 +14,10 @@ If ( shape == 1 )
 EndIf
 If ( shape == 2 )
   Point(1) = {0,0,0,h};
-  Point(2) = {R,0,0,h};
-  Point(3) = {0,R,0,h};
-  Point(4) = {0,-R,0,h};
-  Point(5) = {-R,0,0,h};
+  Point(2) = {0,R,0,h};
+  Point(3) = {0,0,R,h};
+  Point(4) = {0,0,-R,h};
+  Point(5) = {0,-R,0,h};
 
   Circle(1) = {2,1,3};
   Circle(2) = {3,1,5};
@@ -28,16 +28,21 @@ EndIf
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 If ( tier == 1 )
-  Extrude Surface {6, {0,1,0}, {-2,0,0}, 2*Pi/3}{Layers{1./h};};
+  Extrude Surface {6, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1./h};};
+  
   Physical Surface("inlet") = {28};
   Physical Surface("outlet") = {6};
   Physical Surface("wall") = {19, 15, 27, 23};
+  
+  Physical Volume("fluid") = {1};
 EndIf
 If ( tier == 2 )
-  Extrude Surface {28, {0,1,0}, {-2,0,0}, 2*Pi/3}{Layers{1/.h};};
+  Extrude Surface {28, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1/.h};};
 EndIf
 If ( tier == 3 )
-  Extrude Surface {50, {0,1,0}, {-2,0,0}, 2*Pi/3}{Layers{1/.h};};
+  Extrude Surface {50, {0,0,1}, {0,-2,0}, 2*Pi/3}{Layers{1/.h};};
 EndIf
+
+
 
 
