@@ -549,6 +549,8 @@ public :
     void setDefinePressureCstMethod(std::string s) { M_definePressureCstMethod = s; }
     double definePressureCstPenalisationBeta() const { return M_definePressureCstPenalisationBeta; }
 
+    void updateDefinePressureCst();
+
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu,...
     densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
@@ -895,8 +897,7 @@ protected:
     bool M_definePressureCst;
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
-    //----------------------------------------------------
-    double M_Newton_fix_mean_pressure;
+    vector_ptrtype M_definePressureCstAlgebraicOperatorMeanPressure;
     //----------------------------------------------------
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)

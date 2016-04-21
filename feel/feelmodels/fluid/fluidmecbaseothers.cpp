@@ -15,6 +15,7 @@
 #include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/one.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/mean.hpp>
 //#include <fsi/fsicore/variousfunctions.hpp>
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -866,41 +867,31 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void 
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void 
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {
-    if( M_Newton_fix_mean_pressure >= 0 )
+    if ( this->definePressureCstMethod() == "algebraic" )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Call postsolve: remove mean value to Newton pressure increment\n";
-
-        std::vector<size_type> indices_p(this->functionSpacePressure()->nLocalDofWithGhost());
-        size_type indexStart_p = this->functionSpaceVelocity()->nLocalDofWithGhost();
-        std::iota( indices_p.begin(), indices_p.end(), indexStart_p );
-        auto Up_vec = sol->createSubVector(indices_p);
-        auto Up = this->functionSpacePressure()->element();
-        Up = *Up_vec;
-        Up.close();
-        double mean_pressure = mean( _range=elements(this->mesh()), _expr=idv(Up) )(0,0);
-        Up.add( -mean_pressure );
-        *Up_vec = Up;
-        sol->updateSubVector( Up_vec, indices_p );
-        sol->close();
+        auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
+        auto pSol = upSol.template element<1>();
+        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
+        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
+        pSol.add( -meanPressureCurrent );
     }
 }
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void 
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void 
+void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
@@ -916,6 +907,24 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
+{
+    if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    else if ( this->definePressureCstMethod() == "algebraic" )
+    {
+        auto p = this->functionSpacePressure()->element();
+        M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
+                                                                      _range=elements(this->mesh()),
+                                                                      _expr=id(p) ).vectorPtr();
+        M_definePressureCstAlgebraicOperatorMeanPressure->close();
+    }
+}
+
 
 //---------------------------------------------------------------------------------------------------------//
 
