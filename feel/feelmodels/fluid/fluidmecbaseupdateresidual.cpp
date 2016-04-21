@@ -766,17 +766,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
              _expr=-idv(inletVel)*N() );
     }
 
-    if( M_Newton_fix_mean_pressure >= 0 )
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
-        double fixed_mean_pressure = M_Newton_fix_mean_pressure;
-        double initial_guess_mean_pressure = this->computePressureMean();
-         
-        std::vector<size_type> indices_p(this->functionSpacePressure()->nLocalDofWithGhost());
-        size_type indexStart_p = this->functionSpaceVelocity()->nLocalDofWithGhost();
-        std::iota( indices_p.begin(), indices_p.end(), indexStart_p );
-        auto Up_vec = U->createSubVector(indices_p);
-        Up_vec->add( -initial_guess_mean_pressure + fixed_mean_pressure );
-        U->updateSubVector( Up_vec, indices_p );
+        auto upSol = this->functionSpace()->element( U, this->rowStartInVector() );
+        auto pSol = upSol.template element<1>();
+        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
+        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
+        double meanPressureImposed = 0;
+        pSol.add( meanPressureImposed - meanPressureCurrent );
     }
 
     if ( M_useThermodynModel && M_useGravityForce )
