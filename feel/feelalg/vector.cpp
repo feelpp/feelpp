@@ -127,12 +127,14 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
-        M_map = v.mapPtr();
+        if ( !M_map->isCompatible( v.map() ) )
+            M_map = v.mapPtr();
 
         for ( size_type i = 0; i < this->map().nLocalDofWithGhost(); ++i )
         {
             this->set( i,  v( v.firstLocalIndex() + i ) );
         }
+        this->close();
     }
 
     return *this;
@@ -578,7 +580,7 @@ sync( Vector<T> & v, detail::syncOperator<T> const& opSync )
         for ( auto const& ghostDofVal : ghostDofValues )
         {
             size_type gcdof = ghostDofVal.first;
-            size_type gpdof = dataMap->mapGlobalClusterToGlobalProcess( gcdof - dataMap->firstDofGlobalCluster() );
+            size_type gpdof = gcdof - dataMap->firstDofGlobalCluster();
 #if !defined(NDEBUG)
             auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
             CHECK( boost::get<0>( resSearchDof ) ) << "dof not found";

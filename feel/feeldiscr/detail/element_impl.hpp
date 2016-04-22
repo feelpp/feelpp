@@ -45,9 +45,12 @@ typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template s
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name,
                                                                       bool updateOffViews )
 {
-    size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
-                                                 size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
+    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
+    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
+    if ( !Cont::is_shallow_array_adaptor_vector )
+        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -57,7 +60,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 
     if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
     {
-        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
+                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         // update M_containersOffProcess<i> : send
@@ -91,6 +95,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // build a subrange view identical
         ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                     ublas::range( 0, space->nLocalDof() ),
+                    ublas::range( 0, 0 ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
@@ -117,16 +122,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::strin
     return this->element<i>(name,updateOffViews);
 #endif
 }
-
+#if 0
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<int i>
 typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name, bool updateOffViews ) const
 {
-    size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
-                                                 size_type( 0 ),
-                                                 Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
+    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
+    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
+    if ( !Cont::is_shallow_array_adaptor_vector )
+        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
     DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -137,7 +144,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     if ( this->functionSpace()->worldsComm()[i].isActive() )
     {
         ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
-                    ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+                    ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
+                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         // update M_containersOffProcess<i> : send
@@ -167,6 +175,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
         // build a subrange view identical
         ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                     ublas::range( 0, space->nLocalDof() ),
+                    ublas::range( 0, 0 ),
                     M_functionspace->template functionSpace<i>()->dof() );
 
         DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
@@ -176,7 +185,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
 
 
 }
-
+#endif
 
 //
 // Element implementation
@@ -284,6 +293,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     :
     Element( __functionspace, __c, __name, __name, __start, __ct, __ct2 )
 {}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+                                                             size_type nActiveDof, value_type* arrayActiveDof,
+                                                             size_type nGhostDof, value_type* arrayGhostDof )
+    :
+    super( nActiveDof,arrayActiveDof,nGhostDof,arrayGhostDof, __functionspace->dof() ),
+    M_functionspace( __functionspace ),
+    //M_name( __name ),
+    //M_desc( __desc ),
+    M_start( 0 ),
+    M_ct( ComponentType::NO_COMPONENT ),
+    M_ct2( ComponentType::NO_COMPONENT ),
+    M_containersOffProcess( boost::none )
+{
+    this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -992,16 +1019,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
-            //value_type v_ = (*this)( gdof );
             value_type v_ = this->globalValue( gdof );
-            //std::cout << " . v(" << gdof << ")=" << v_ << "\n";
             for ( size_type q = 0; q < Q; ++q )
             {
                 v[q] += context.div( ldof, q )*(s(ldof)*v_);
             }
         }
     }
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
