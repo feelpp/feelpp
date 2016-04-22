@@ -229,6 +229,9 @@ public:
 
         }
 
+    crb_ptrtype & crbPtr() { return crb; }
+    crb_ptrtype const& crbPtr() const { return crb; }
+
     void setMode( std::string const& mode )
         {
             if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
@@ -483,9 +486,8 @@ public:
                 }
             }
 
-            bool cobuild = ( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) );
             tic();
-            if( model->hasEim() && cobuild)
+            if( model->hasEim() && model->useSER() )
             {
                 this->SER(); // Simultaneous EIM - RB
             }

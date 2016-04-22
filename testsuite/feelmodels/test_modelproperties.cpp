@@ -41,8 +41,9 @@ int main( int argc, char** argv )
         auto mu = mat.getVector<2>( "mu" );
         auto nu = mat.getVector<3>( "nu" );
         auto curlnu = curl(nu);
-        auto chi = mat.getTensor<2>( "chi" );
-        auto xhi = mat.getTensor<3>( "xhi" );
+        auto chi = mat.getMatrix<2>( "chi" );
+        auto xhi = mat.getMatrix<3>( "xhi" );
+
         std::cout << "\t" << rho << std::endl;
         std::cout << "\t" << mu << std::endl;
         std::cout << "\t" << nu << std::endl;

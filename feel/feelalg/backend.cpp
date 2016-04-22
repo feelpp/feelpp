@@ -428,6 +428,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         // reset to initial solution
         x_save->close();
         *x=*x_save;
+        x->close();
 
         //M_nlsolver->init();
         //M_nlsolver->setPreconditionerType( this->pcEnumType() );

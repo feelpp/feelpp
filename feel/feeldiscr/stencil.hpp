@@ -995,14 +995,15 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( s
 
     const size_type globalDofRowStart = this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
     const size_type globalDofColStart = this->trialSpace()->dof()->firstDofGlobalCluster()  +  this->trialSpace()->nLocalDofWithoutGhostOnProcStart( myrank, trial_index );
-    const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+    //const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+    const size_type locdofStart = this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
 
     typename graph_type::const_iterator it = g->begin();
     typename graph_type::const_iterator en = g->end();
     for ( ; it != en; ++it )
     {
         size_type theglobalrow = globalDofRowStart + ( it->first - mapOnTest.firstDofGlobalCluster() );
-        const size_type thelocalrow = locdofStart + it->second.get<1>();
+        /*const*/ size_type thelocalrow = locdofStart + it->second.get<1>();
 
         if (it->second.get<0>()!=g->worldComm().globalRank() )
         {
@@ -1010,6 +1011,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( s
             const size_type realrowStart = this->testSpace()->dof()->firstDofGlobalCluster(proc)
                 + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index );
             theglobalrow = realrowStart+(it->first-mapOnTest.firstDofGlobalCluster(proc));
+            thelocalrow = this->testSpace()->nLocalDofWithoutGhost()
+                + (this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index ) - locdofStart)
+                + (it->second.get<1>() -mapOnTest.nLocalDofWithoutGhost());
         }
 
         std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
