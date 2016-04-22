@@ -31,51 +31,53 @@ namespace Feel
 {
 namespace vf
 {
-template<typename ExprT, typename InterpolatorT>
+template<typename ExprT>
     class FitDiff
     {
-        public:
-            typedef ExprT expression_type;
-            typedef InterpolatorT interpolator_type;
-            
-            // list of mathematical objet that has to be precomputed
-            static const size_type context = expression_type::context;
-            // idv(T) is terminal
-            // idv(T)+idv(T) is not
-            // That is for optimisation
-            // if not know: false
-            static const bool is_terminal = expression_type::is_terminal;
-            // im: integration method
-            // l'ordre polynomial de la représentaiton
-            static const uint16_type imorder = expression_type::imorder;
-            // ...
-            static const bool imIsPoly = expression_type::imIsPoly;
-            
-            using test_basis = typename expression_type::test_basis;
-            using trial_basis = typename expression_type::trial_basis;
-           
-            typedef typename expression_type::value_type value_type;
-            // scalar, vectorial (to be checked)
-            typedef typename expression_type::evaluate_type evaluate_type;
+    public:
+    typedef ExprT expression_type;
+    
+    // list of mathematical objet that has to be precomputed
+    static const size_type context = expression_type::context;
+    // idv(T) is terminal
+    // idv(T)+idv(T) is not
+    // That is for optimisation
+    // if not know: false
+    static const bool is_terminal = expression_type::is_terminal;
+    // im: integration method
+    // l'ordre polynomial de la représentaiton
+    static const uint16_type imorder = expression_type::imorder;
+    // ...
+    static const bool imIsPoly = expression_type::imIsPoly;
+    
+    using test_basis = typename expression_type::test_basis;
+    using trial_basis = typename expression_type::trial_basis;
+    
+    typedef typename expression_type::value_type value_type;
+    // scalar, vectorial (to be checked)
+    typedef typename expression_type::evaluate_type evaluate_type;
 
-            typedef FitDiff<ExprT,InterpolatorT> this_type;
+    typedef FitDiff<ExprT> this_type;
 
-            explicit FitDiff( expression_type const & __expr, InterpolatorT __int) : M_expr(__expr),M_interpolator(__int){}
-            FitDiff(FitDiff const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) {}
-            //~FitDiff(){}
-            expression_type const& expression() const
-            {
-                  return M_expr;
-            }
-            InterpolatorT const& interpolator() const
-            {
-                  return M_interpolator;
-            }
+    explicit FitDiff( expression_type const & __expr, std::string dataFile = soption("fit.datafile"), int T = 3 ) : M_expr(__expr)
+    {
+        M_interpolator = Interpolator::New(static_cast<interpol_type>(T), dataFile);
+    }
+    FitDiff(FitDiff const & te) : M_expr(te.M_expr),M_interpolator(te.M_interpolator) {}
+    //~FitDiff(){}
+    expression_type const& expression() const
+    {
+          return M_expr;
+    }
+    Interpolator* const& interpolator() const
+    {
+          return M_interpolator;
+    }
 
 
-            // geo_t : transformation geométrique
-            // basis_i_t : fonctions tests
-            // basis_j_t : fonctions trial
+    // geo_t : transformation geométrique
+    // basis_i_t : fonctions tests
+    // basis_j_t : fonctions trial
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
@@ -191,29 +193,31 @@ template<typename ExprT, typename InterpolatorT>
         {
             // here : call the interpolator
             //return M_interpolator(M_tensor_expr.evalq(c1, c2, q));
-            return M_interpolator.diff(M_tensor_expr.evalq(c1, c2, q));
+            return M_interpolator->diff(M_tensor_expr.evalq(c1, c2, q));
         }
 
     private:
         tensor_expr_type M_tensor_expr;
-        mutable InterpolatorT M_interpolator;
+        Interpolator* M_interpolator;
     };
     /// end of tensor
         private:
             mutable expression_type  M_expr;
-            mutable InterpolatorT  M_interpolator;
+            Interpolator*  M_interpolator;
     };
 
 /**
  * \brief FitDiff
  **/
-template<typename ExprT, typename InterpolatorT>
+template<typename ExprT>
 inline
-Expr< FitDiff<ExprT, InterpolatorT> >
-fitDiff( ExprT v, InterpolatorT i )
+Expr< FitDiff<ExprT> >
+fitDiff( ExprT v,
+        std::string dataFile = soption("fit.datafile"), 
+        int intType = ioption("fit.kind") )
 {
-    typedef FitDiff<ExprT,InterpolatorT> fit_t;
-    return Expr< fit_t >(  fit_t( v, i ) );
+    typedef FitDiff<ExprT> fit_t;
+    return Expr< fit_t >(  fit_t( v, dataFile, intType  ) );
 }
 
 }
