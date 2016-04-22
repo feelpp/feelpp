@@ -1,6 +1,6 @@
 #include <feel/feel.hpp>
-#include <feel/feelfit/fit.hpp>
-#include <feel/feelfit/fitdiff.hpp>
+
+#include <feel/feelfit/interpolator.hpp>
 
 #define GSL 1
 
@@ -14,7 +14,7 @@ using namespace Feel;
 
 int main(int argc, char **argv)
 {
-  std::vector<std::pair<double, double>> data;
+#if GSL == 1
   std::ifstream infile("data.txt");
   double a, b;
   int i = 0;
@@ -22,12 +22,10 @@ int main(int argc, char **argv)
   double gsl_x[size], gsl_y[size];
   while (infile >> a >> b)
   {
-    data.push_back({a,b});
     gsl_x[i] = a;
     gsl_y[i] = b;
     i++;
   }
-#if GSL == 1
   // Cspline
   gsl_interp_accel *acc_spline = gsl_interp_accel_alloc ();
   //gsl_spline *spline = gsl_spline_alloc (gsl_interp_akima, size);
@@ -38,10 +36,10 @@ int main(int argc, char **argv)
   gsl_spline *akima = gsl_spline_alloc (gsl_interp_akima, size);
   gsl_spline_init (akima, gsl_x, gsl_y, size);
 #endif
-  Interpolator* po = Interpolator::New(P0,data);
-  Interpolator* p1 = Interpolator::New(P1,data);
-  Interpolator* cb = Interpolator::New(Spline,data);
-  Interpolator* ak = Interpolator::New(Akima,data);
+  auto po = Interpolator::New(P0,    "data.txt");
+  auto p1 = Interpolator::New(P1,    "data.txt");
+  auto cb = Interpolator::New(Spline,"data.txt");
+  auto ak = Interpolator::New(Akima, "data.txt");
   std::ofstream ofile("data_interp.txt");
   ofile << "x\tP0\tP1\tSpline\tAkima\tGSL\n";
   double gsl_ak = 0., err_ak = 0.;
