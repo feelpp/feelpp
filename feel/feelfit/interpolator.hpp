@@ -47,18 +47,29 @@ class Interpolator
         using pair_type = std::pair<value_type, value_type>;
 
         static Interpolator* New( interpol_type type, std::vector<pair_type> data);
+        static Interpolator* New( interpol_type type, std::string dataFile);
 
         // Sort the data
         Interpolator(std::vector<pair_type> data) : M_data(data)
     {
         LOG(INFO) << "Interpolator::M_data.size() = " << M_data.size() << std::endl;
         std::sort(M_data.begin(), M_data.end(), []( pair_type a, pair_type b){ return a.first < b.first; });
+        for(auto it : M_data)
+            LOG(INFO) << it.first << " : " << it.second << std::endl;
     }
         Interpolator(const Interpolator &) = default;
         // Evaluate the interpolant
-        virtual value_type operator()(double _x){return 0.;};
+        virtual value_type operator()(double _x)
+        {
+            LOG(INFO) << "[interpolator] Base class operator()\n";
+            return 0.;
+        }
         // Evaluate the interpolant derivative
-        virtual value_type diff(double _x){return 0.;};
+        virtual value_type diff(double _x)
+        {
+            LOG(INFO) << "[interpolator] Base class diff()\n";
+            return 0.;
+        }
     protected:
         std::vector<std::pair<value_type, value_type>> M_data;
 };// class interpolBase
@@ -564,17 +575,23 @@ Interpolator* Interpolator::New( interpol_type type, std::vector<pair_type> data
     {
         case P0:
             {
-                return new InterpolatorP0(data);
+                return new InterpolatorP0(data, static_cast<InterpolatorP0::interpol_type_P0>(Feel::ioption("fit.P0")));
                 break;
             }
         case P1:
             {
-                return new InterpolatorP1(data);
+                return new InterpolatorP1(data,
+                        static_cast<InterpolatorP1::extrapol_type_P1>(Feel::ioption("fit.P1_right")), 
+                        static_cast<InterpolatorP1::extrapol_type_P1>(Feel::ioption("fit.P1_left"))
+                        );
                 break;
             }
         case Spline:
             {
-                return new InterpolatorSpline(data);
+                return new InterpolatorSpline(data, 
+                        static_cast<InterpolatorSpline::extrapol_type_spline>(Feel::ioption("fit.Spline_right")),
+                        static_cast<InterpolatorSpline::extrapol_type_spline>(Feel::ioption("fit.Spline_left"))
+                        );
                 break;
             }
         case Akima:
@@ -583,6 +600,30 @@ Interpolator* Interpolator::New( interpol_type type, std::vector<pair_type> data
                 break;
             }
     }
+}
+
+Interpolator* Interpolator::New( interpol_type type, std::string dataFile)
+{
+    std::vector<std::pair<double, double>> data;
+    std::ifstream infile(Feel::Environment::expand(dataFile));
+    std::string line;
+    double a, b;
+    if (infile.is_open()) {
+        while (getline(infile,line)) 
+        {
+            if(line[0] != '#')
+            {
+                std::istringstream iss(line);
+                iss >> a >> b;
+                data.push_back({a,b});
+            }
+        }
+        infile.close();
+    }
+    else{
+        Feel::cout << "Error opening file" << Feel::Environment::expand(dataFile) << "\n";
+    }
+    return Interpolator::New( type, data);
 }
 
 #endif //__FEELPP_INTERPOLATOR_H
