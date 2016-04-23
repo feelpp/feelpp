@@ -102,13 +102,13 @@ using functionspace_type = typename mpl::if_<is_functionspace<decay_type<FESpace
  * then provides the member constant value equal to true, false otherwise
  */
 template<typename ElementType>
-using is_functionspace_element = typename std::is_base_of<ElementBase,ElementType>::type;
+using is_functionspace_element = typename std::is_base_of<FunctionSpaceBase::ElementBase,ElementType>::type;
 
 /**
  * helper variable template for is_functionspace_element
  */
 template<typename ElementType>
-constexpr bool is_functionspace_element_v = is_element_of_functionspace_v<ElementType>::value;
+constexpr bool is_functionspace_element_v = is_functionspace_element<ElementType>::value;
 
 
 /**
