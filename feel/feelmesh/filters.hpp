@@ -103,6 +103,20 @@ using ext_faces_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                  boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > >
                                  >;
 
+
+template<typename IteratorType>
+using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
+template<typename IteratorType>
+using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
+template<typename IteratorType>
+using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
+
+template<typename IteratorType>
+using ext_faces_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
+                                               typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                               typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                               boost::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
+                                               >;
 template<typename MeshType>
 using idfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
                                 typename MeshTraits<MeshType>::face_const_iterator,
@@ -1320,36 +1334,6 @@ marked2faces( MeshType const& mesh, boost::any flag, EntityProcessType entity )
 
 }
 
-/**
- * this function takes two sets of iterators and generate a data structure that
- * will hold the corresponding reference of mesh elenents. This data structure
- * can then be used to iterate over meshes like other mesh filters.
- *
- * \param it1 (begin,end) iterators to concatenate \param it2 (begin,end)
- * iterators to concatenate \return a data structure that holds the merge
- * between two sets of pair of iterators
- */
-template<typename IteratorType>
-boost::tuple<mpl::size_t<boost::tuples::element<0,IteratorType>::type::value>,
-             typename std::vector<boost::reference_wrapper<typename boost::tuples::element<1,IteratorType>::type::value_type const> >::const_iterator,
-             typename std::vector<boost::reference_wrapper<typename boost::tuples::element<1,IteratorType>::type::value_type const> >::const_iterator,
-             boost::shared_ptr<std::vector<boost::reference_wrapper<typename boost::tuples::element<1,IteratorType>::type::value_type const> > >
-             >
-concatenate( IteratorType it1, IteratorType it2 )
-{
-    typedef std::vector<boost::reference_wrapper<typename boost::tuples::element<1,IteratorType>::type::value_type  const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-
-    auto append = [&myelts]( typename boost::tuples::element<1,IteratorType>::type::value_type  const& e ) { myelts->push_back( boost::cref(e) ); };
-    std::for_each( begin( it1 ), end( it1 ), append );
-    std::for_each( begin( it2 ), end( it2 ), append );
-
-    return boost::make_tuple( mpl::size_t<boost::tuples::element<0,IteratorType>::type::value>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
-
-}
 
 template<typename MeshType>
 ext_edges_t<MeshType>
