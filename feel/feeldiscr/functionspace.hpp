@@ -5272,25 +5272,6 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
     return os;
 }
 
-
-namespace detail
-{
-
-template<typename FuncSpaceType>
-struct is_function_space_ptr : mpl::false_ {};
-
-template<typename FuncSpaceType>
-struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
-} // detail
-
-template<typename FESpace>
-using functionspace_type = typename mpl::if_<Feel::detail::is_function_space_ptr<FESpace>,
-                                             mpl::identity<typename FESpace::element_type>,
-                                             mpl::identity<FESpace>>::type::type;
-
-
-
-
 } // Feel
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
