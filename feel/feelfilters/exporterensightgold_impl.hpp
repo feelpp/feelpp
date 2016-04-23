@@ -2316,6 +2316,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename tim
                 nComponents = 9;
 
             size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
+
             ublas::vector<float> __field( __field_size );
             __field.clear();
 
