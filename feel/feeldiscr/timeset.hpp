@@ -449,12 +449,20 @@ public:
             DVLOG(2) << "[TimeSet::setMesh] setMesh start\n";
         }
 
-        void addScalar( std::string const& name, scalar_type const& __s, bool cst = false )
+        FEELPP_DEPRECATED void addScalar( std::string const& name, scalar_type const& __s, bool cst = false )
         {
             M_scalar[sanitize(name)] =  std::make_pair( __s, cst );
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
+        template<typename T>
+        void add( std::string const& name, T const& __s, bool cst = false,
+                  typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
+            {
+                M_scalar[sanitize(name)] =  std::make_pair( __s, cst );
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+            }
 
         void addComplex( std::string const& name, complex_type const& __s )
         {
@@ -507,19 +515,22 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::initializer_list<std::string>  __n, FunctionType const& func )
+        void add( std::initializer_list<std::string>  __n, FunctionType const& func,
+                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             std::vector<std::string> str( sanitize( __n ) );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
 
         template<typename FunctionType>
-        void add( std::vector<std::string> const& __n, FunctionType const& func )
+        void add( std::vector<std::string> const& __n, FunctionType const& func,
+                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func )
+        void add( std::string const& __n, FunctionType const& func,
+                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             tic();
             add_( sanitize(__n), func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
